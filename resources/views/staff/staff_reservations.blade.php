@@ -116,8 +116,11 @@
                             </thead>
                             <tbody id="reservationTableBody">
                                 @forelse ($reservations as $reservation)
+                                    @php
+                                        $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
+                                    @endphp
                                     <tr
-                                        class="guest-row reservation-row {{ $reservation->reservation_date === now()->toDateString() ? 'today-reservation' : '' }}"
+                                        class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }}"
                                         data-reservation-id="{{ $reservation->id }}"
                                         data-booker-name="{{ e($reservation->booker_name) }}"
                                         data-email="{{ e($reservation->email) }}"
@@ -132,7 +135,12 @@
                                         aria-label="View reservation details for {{ e($reservation->booker_name) }}"
                                     >
                                         <td>
-                                            <div class="guest-name">{{ $reservation->booker_name }}</div>
+                                            <div class="guest-name">
+                                                {{ $reservation->booker_name }}
+                                                @if ($isToday)
+                                                    <span class="today-reservation-badge">TODAY</span>
+                                                @endif
+                                            </div>
                                             <div class="guest-meta">{{ $reservation->email }}</div>
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>

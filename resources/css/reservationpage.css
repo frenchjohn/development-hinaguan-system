@@ -1972,6 +1972,27 @@ html {
 
 }
 
+.rp-amenity-pricing-select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.rp-amenity-pricing-select:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.rp-amenity-pricing-select option {
+    background: #1a1a1a;
+    color: white;
+}
+
 
 
 .rp-selection-sheet__item-price {

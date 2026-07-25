@@ -1027,11 +1027,35 @@
 
 /* Today Reservation */
 .today-reservation {
-    background: rgba(200, 164, 93, 0.1);
+    background: linear-gradient(135deg, #fff9c4 0%, #ffeb3b 100%) !important;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4);
+    border-left: 4px solid #ff9800;
+}
+
+.today-reservation td {
+    position: relative;
+}
+
+.today-reservation-badge {
+    display: inline-block;
+    background: #ff9800;
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-left: 0.5rem;
 }
 
 [data-theme="dark"] .today-reservation {
-    background: rgba(200, 164, 93, 0.15);
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.3) 0%, rgba(255, 152, 0, 0.3) 100%) !important;
+    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+    border-left-color: #ffb74d;
+}
+
+[data-theme="dark"] .today-reservation-badge {
+    background: #ffb74d;
 }
 
 @media (max-width: 992px) {

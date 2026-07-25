@@ -1,3 +1,6 @@
+// Store per-amenity pricing type choices
+const amenityPricingTypes = {};
+
 document.addEventListener('DOMContentLoaded', () => {
 
     const siteHeader = document.getElementById('rpSiteHeader');
@@ -1244,11 +1247,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const desc = c.dataset.description || 'No additional details available.';
 
-                return `<div class="rp-amenity-desc-item"><strong>${c.dataset.name}</strong><p>${desc}</p></div>`;
+                const choice = multiSelectionChoices[c.dataset.amenityId] || 'without';
+                const pricingType = amenityPricingTypes[c.dataset.amenityId] || selectedSlot;
+
+                // Build pricing type label with aircon suffix
+                let pricingTypeLabel = pricingType;
+                if (choice === 'with') {
+                    pricingTypeLabel = pricingType.includes('Aircon') ? pricingType : `${pricingType} Aircon`;
+                }
+
+                return `<div class="rp-amenity-desc-item" data-amenity-id="${c.dataset.amenityId}">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                        <strong>${c.dataset.name}</strong>
+                        <select class="rp-amenity-pricing-select" data-amenity-id="${c.dataset.amenityId}">
+                            <option value="Daytime" ${pricingType === 'Daytime' ? 'selected' : ''}>Daytime</option>
+                            <option value="Nighttime" ${pricingType === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
+                            <option value="DayNight Time" ${pricingType === 'DayNight Time' ? 'selected' : ''}>DayNight Time</option>
+                        </select>
+                    </div>
+                    <p>${desc}</p>
+                </div>`;
 
             }).join('');
 
             modalDescription.innerHTML = descriptionsHtml;
+
+            // Re-attach event listeners to the new dropdowns
+            modalDescription.querySelectorAll('.rp-amenity-pricing-select').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    const amenityId = e.target.dataset.amenityId;
+                    const pricingType = e.target.value;
+                    amenityPricingTypes[amenityId] = pricingType;
+
+                    // Recalculate and update modal price display
+                    const total = getSelectionTotal();
+                    const calculation = selectedCards.map(c => {
+                        const choiceForCard = multiSelectionChoices[c.dataset.amenityId] || 'without';
+                        const pricingTypeForCard = amenityPricingTypes[c.dataset.amenityId] || selectedSlot;
+                        const price = getAmenityPrice(c, choiceForCard, pricingTypeForCard);
+                        return price.toFixed(2);
+                    }).join(' + ');
+
+                    const modalPriceLabelEl = document.getElementById('modalPriceLabel');
+                    const modalPriceValueEl = document.getElementById('modalPriceValue');
+                    const modalPriceHintEl = document.getElementById('modalPriceHint');
+
+                    if (modalPriceLabelEl) modalPriceLabelEl.textContent = 'Total from selection';
+                    if (modalPriceValueEl) modalPriceValueEl.textContent = `₱${total.toFixed(2)}`;
+                    if (modalPriceHintEl) modalPriceHintEl.textContent = `${calculation} = ₱${total.toFixed(2)}`;
+                });
+            });
 
         } else {
 
@@ -1304,8 +1352,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return selectedCards.reduce((total, card) => {
 
             const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
+            const pricingType = amenityPricingTypes[card.dataset.amenityId] || selectedSlot;
 
-            return total + getAmenityPrice(card, choice);
+            return total + getAmenityPrice(card, choice, pricingType);
 
         }, 0);
 
@@ -1585,19 +1634,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    const getAmenityPrice = (card, choice) => {
+    const getAmenityPrice = (card, choice, pricingType = selectedSlot) => {
 
         let basePrice, airconPrice;
 
-        
+        const slot = pricingType || selectedSlot;
 
-        if (selectedSlot === 'Nighttime') {
+        if (slot === 'Nighttime') {
 
             basePrice = Number(card.dataset.nighttimePrice);
 
             airconPrice = Number(card.dataset.nighttimeAirconPrice);
 
-        } else if (selectedSlot === 'DayNight Time') {
+        } else if (slot === 'DayNight Time') {
 
             // For DayNight Time, combine daytime and nighttime prices
 
@@ -1614,8 +1663,6 @@ document.addEventListener('DOMContentLoaded', () => {
             airconPrice = Number(card.dataset.daytimeAirconPrice);
 
         }
-
-
 
         return choice === 'with' ? airconPrice : basePrice;
 
@@ -2622,6 +2669,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+
     const submitButton = bookingForm.querySelector('button[type="submit"]');
 
     let isSubmitting = false;
@@ -2687,10 +2735,11 @@ document.addEventListener('DOMContentLoaded', () => {
             amenitiesArray = selectedCards.map(card => {
 
                 const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
+                const pricingTypeForCard = amenityPricingTypes[card.dataset.amenityId] || selectedSlot;
 
-                const price = getAmenityPrice(card, choice);
+                const price = getAmenityPrice(card, choice, pricingTypeForCard);
 
-                const pricingType = choice === 'with' ? `${selectedSlot} Aircon` : selectedSlot;
+                const pricingType = choice === 'with' ? `${pricingTypeForCard} Aircon` : pricingTypeForCard;
 
                 return {
 
