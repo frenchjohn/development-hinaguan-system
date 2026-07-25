@@ -1144,14 +1144,14 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ->orderBy('first_name')
             ->get();
 
-        $activeReservations = Reservation::where('status', 'Checked In')
-            ->whereNotNull('check_in')
+        $activeReservations = Reservation::whereNotNull('check_in')
             ->whereNull('check_out')
             ->with(['reservationGuests' => function ($query) {
                 $query->with('customer');
             }, 'reservationAmenities.amenity'])
             ->orderBy('check_in', 'desc')
             ->get();
+
 
         // Update number_of_guests to match actual guest count
         foreach ($activeReservations as $reservation) {

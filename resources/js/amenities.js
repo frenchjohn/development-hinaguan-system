@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     const siteHeader = document.getElementById('amSiteHeader');
     const modal = document.getElementById('infoModal');

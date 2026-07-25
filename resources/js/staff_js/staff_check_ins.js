@@ -18,6 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentReservationId = null;
     let companionCount = 0;
 
+    // Initialize: show reservation table by default
+    if (guestTableSection && reservationTableSection) {
+        guestTableSection.style.display = 'none';
+        reservationTableSection.style.display = '';
+        if (tabGuestBtn && tabReservationBtn) {
+            tabGuestBtn.style.backgroundColor = 'var(--hp-cream)';
+            tabGuestBtn.style.color = 'var(--hp-text)';
+            tabGuestBtn.style.boxShadow = 'none';
+            tabGuestBtn.style.transform = 'none';
+            tabReservationBtn.style.backgroundColor = 'var(--hp-green-dark)';
+            tabReservationBtn.style.color = 'white';
+            tabReservationBtn.style.boxShadow = '0 4px 12px rgba(13, 44, 29, 0.3)';
+            tabReservationBtn.style.transform = 'translateY(-2px)';
+        }
+    }
+
     // Tab switching
     const switchToGuest = () => {
         guestTableSection.style.display = '';
@@ -52,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openReservationModal = (reservationId) => {
         currentReservationId = reservationId;
         const reservation = reservationData[reservationId];
-        
+
         if (!reservation) return;
 
         // Build modal content
@@ -73,18 +89,72 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         if (companions.length > 0) {
-            html += `
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Companions (${companions.length})</h4>
-                    ${companions.map(c => `
+            // DEBUG: Log all companions
+            console.log('All companions:', companions);
+
+            // Separate individual companions (with names) from bulk companions (generic names)
+            const individualCompanions = companions.filter(c =>
+                c.customer &&
+                c.customer.first_name &&
+                !c.customer.first_name.toLowerCase().includes('companion') &&
+                !c.customer.first_name.toLowerCase().includes('reservation')
+            );
+
+            const bulkCompanions = companions.filter(c =>
+                !c.customer ||
+                !c.customer.first_name ||
+                c.customer.first_name.toLowerCase().includes('companion') ||
+                c.customer.first_name.toLowerCase().includes('reservation')
+            );
+
+            console.log('Individual companions:', individualCompanions);
+            console.log('Bulk companions:', bulkCompanions);
+
+            // Group bulk companions by gender, foreigner status, and age
+            const bulkGroups = {};
+            bulkCompanions.forEach(c => {
+                if (!c.customer) return;
+                const gender = c.customer.gender || 'Unknown';
+                const status = c.customer.is_foreigner ? 'Foreigner' : 'Filipino';
+                const age = c.customer.age || 'Unknown';
+                const key = `${gender}/${status}/${age}`;
+                if (!bulkGroups[key]) {
+                    bulkGroups[key] = { gender, status, age, count: 0 };
+                }
+                bulkGroups[key].count++;
+            });
+
+            console.log('Bulk groups:', bulkGroups);
+
+            html += `<div style="margin-bottom: 1.5rem;">`;
+
+            // Display individual companions
+            if (individualCompanions.length > 0) {
+                html += `
+                    <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Companions (${individualCompanions.length})</h4>
+                    ${individualCompanions.map(c => `
                         <div style="padding: 0.75rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; margin-bottom: 0.5rem;">
                             <div><strong>${c.customer.first_name} ${c.customer.middle_name || ''} ${c.customer.last_name}</strong></div>
                             <div style="font-size: 0.875rem; color: #666;">Age: ${c.customer.age || 'N/A'} | Gender: ${c.customer.gender || 'N/A'} | Status: ${c.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                             <div style="font-size: 0.875rem; color: #666;">Phone: ${c.customer.phone || 'N/A'} | Email: ${c.customer.email || 'N/A'}</div>
                         </div>
                     `).join('')}
-                </div>
-            `;
+                `;
+            }
+
+            // Display bulk companions as groups
+            if (Object.keys(bulkGroups).length > 0) {
+                html += `
+                    <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Bulk Companions</h4>
+                    ${Object.values(bulkGroups).map(group => `
+                        <div style="padding: 0.75rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                            <div><strong>${group.gender}/${group.status}/${group.age} = ${group.count}</strong></div>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            html += `</div>`;
         }
 
         if (reservation.reservation_amenities && reservation.reservation_amenities.length > 0) {

@@ -137,12 +137,12 @@
 								<select id="guestReservationSelect">
 									<option value="">All Reservations</option>
 									@php
-										$activeReservations = collect($reservations ?? collect())->filter(function ($reservation) {
+										$filteredReservations = collect($reservations ?? collect())->filter(function ($reservation) {
 											$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
 											return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out' && $reservation->check_in;
 										});
 									@endphp
-									@forelse ($activeReservations as $reservation)
+									@forelse ($filteredReservations as $reservation)
 										@php
 											$primaryGuest = $reservation->reservationGuests->first(function ($guest) {
 												return $guest->is_primary_guest && $guest->customer;
@@ -245,7 +245,7 @@
 				</section>
 
 				{{-- RESERVATION TABLE --}}
-				<section class="dash-panel guest-panel" id="reservationTableSection" style="display: none;">
+				<section class="dash-panel guest-panel" id="reservationTableSection">
 					<div class="dash-panel__head guest-panel__head">
 						<div>
 							<h3 class="dash-panel__title">Active Reservations</h3>
