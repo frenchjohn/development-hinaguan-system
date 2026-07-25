@@ -46,7 +46,10 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             // Prevent duplicate amenity entries
-            $table->unique(['reservation_id', 'amenity_id']);
+            $table->unique(
+                ['reservation_id', 'amenity_id', 'pricing_type'],
+                'reservation_amenity_unique'
+            );
         });
     }
 

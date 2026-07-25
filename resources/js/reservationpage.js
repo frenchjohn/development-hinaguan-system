@@ -2847,7 +2847,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } else {
 
-                bookingNotice.textContent = result.message || 'Reservation could not be saved.';
+                // Show error modal for duplicate reservations
+                if (response.status === 409) {
+                    const errorModal = document.getElementById('reservationErrorModal');
+                    if (errorModal) {
+                        const errorMessage = errorModal.querySelector('.rp-modal__error-message');
+                        if (errorMessage) {
+                            errorMessage.textContent = result.message || 'Your Reservation sounds like someone already booked that amenity on that slot, check and book again';
+                        }
+                        errorModal.classList.add('is-open');
+                        errorModal.setAttribute('aria-hidden', 'false');
+                        updateOverlayScrollLock();
+                    }
+                } else {
+                    bookingNotice.textContent = result.message || 'Reservation could not be saved.';
+                }
 
             }
 
@@ -2878,6 +2892,36 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', closeSelectionSheet);
 
     });
+
+    // Error modal close button
+    const errorConfirmBtn = document.getElementById('errorConfirmBtn');
+    if (errorConfirmBtn) {
+        errorConfirmBtn.addEventListener('click', () => {
+            const errorModal = document.getElementById('reservationErrorModal');
+            if (errorModal) {
+                errorModal.classList.remove('is-open');
+                errorModal.setAttribute('aria-hidden', 'true');
+                updateOverlayScrollLock();
+                // Refresh the page after closing the modal
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            }
+        });
+    }
+
+    // Error modal backdrop click
+    const errorModalBackdrop = document.querySelector('[data-close-error-modal]');
+    if (errorModalBackdrop) {
+        errorModalBackdrop.addEventListener('click', () => {
+            const errorModal = document.getElementById('reservationErrorModal');
+            if (errorModal) {
+                errorModal.classList.remove('is-open');
+                errorModal.setAttribute('aria-hidden', 'true');
+                updateOverlayScrollLock();
+            }
+        });
+    }
 
 
 

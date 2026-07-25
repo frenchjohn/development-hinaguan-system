@@ -3245,6 +3245,90 @@ html {
 
 }
 
+/* ── Error Modal ── */
+
+.rp-modal--error {
+
+    z-index: 130;
+
+}
+
+.rp-modal__panel--error {
+
+    max-width: 42rem;
+
+    text-align: center;
+
+    padding: 2rem 2.5rem;
+
+    background: linear-gradient(135deg, rgba(60, 20, 20, 0.98) 0%, rgba(80, 30, 30, 0.98) 100%);
+
+    border: 2px solid #ef4444;
+
+    box-shadow: 0 20px 60px rgba(239, 68, 68, 0.3), 0 0 0 4px rgba(239, 68, 68, 0.15);
+
+}
+
+.rp-modal__error-icon {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 4rem;
+
+    height: 4rem;
+
+    margin: 0 auto 1rem;
+
+    border-radius: 50%;
+
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+
+    color: white;
+
+    box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+
+}
+
+.rp-modal__error-content h2 {
+
+    font-size: 1.75rem;
+
+    font-weight: 700;
+
+    color: white;
+
+    margin-bottom: 1rem;
+
+}
+
+.rp-modal__error-details {
+
+    margin-bottom: 1.5rem;
+
+}
+
+.rp-modal__error-message {
+
+    color: rgba(255, 255, 255, 0.85);
+
+    font-size: 1rem;
+
+    line-height: 1.6;
+
+}
+
+.rp-modal__error-actions {
+
+    display: flex;
+
+    justify-content: center;
+
+}
+
 
 
 .rp-modal__panel--success {

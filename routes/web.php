@@ -304,6 +304,25 @@ Route::post('/reservation/prototype', function (Request $request) {
 
     $reservationDate = $data['reservation_date'] ?? $data['check_in'] ?? null;
 
+    // Check for duplicate reservations (same date, amenity_id, and pricing_type)
+    foreach ($amenities as $amenity) {
+        $exists = Reservation::query()
+            ->whereDate('reservation_date', $reservationDate)
+            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->whereHas('reservationAmenities', function ($query) use ($amenity): void {
+                $query->where('amenity_id', $amenity['amenity_id'])
+                    ->where('pricing_type', $amenity['pricing_type']);
+            })
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
+            ], 409);
+        }
+    }
+
     // Calculate total from all amenities
     $totalAmount = array_sum(array_column($amenities, 'price_at_booking'));
 
