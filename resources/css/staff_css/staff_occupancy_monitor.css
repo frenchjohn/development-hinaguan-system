@@ -1,0 +1,244 @@
+/* Occupancy Monitor */
+.occupancy-monitor {
+    padding: 1.5rem;
+}
+
+.occupancy-monitor__header {
+    margin-bottom: 2rem;
+}
+
+.occupancy-monitor__title {
+    font-family: var(--hp-font-display);
+    font-size: 1.75rem;
+    color: var(--hp-text);
+    margin: 0 0 0.5rem 0;
+}
+
+.occupancy-monitor__subtitle {
+    color: var(--hp-text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Occupancy Grid */
+.occupancy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .occupancy-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .occupancy-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Occupancy Card */
+.occupancy-card {
+    background: #fff;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(13, 44, 29, 0.08);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+}
+
+[data-theme="dark"] .occupancy-card {
+    background: rgba(30, 30, 30, 0.95);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.occupancy-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(13, 44, 29, 0.12);
+}
+
+[data-theme="dark"] .occupancy-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Occupancy Card Image */
+.occupancy-card__image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    background: var(--hp-cream);
+}
+
+.occupancy-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.occupancy-card:hover .occupancy-card__image img {
+    transform: scale(1.05);
+}
+
+.occupancy-card__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hp-text-muted);
+}
+
+.occupancy-card__placeholder svg {
+    width: 3rem;
+    height: 3rem;
+}
+
+.occupancy-card__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(13, 44, 29, 0.7) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+[data-theme="dark"] .occupancy-card__overlay {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
+}
+
+/* Occupancy Card Status Overlay */
+.occupancy-card__status-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.75rem;
+    z-index: 10;
+}
+
+.occupancy-card__status-overlay--occupied {
+    bottom: 0;
+    background: rgba(220, 38, 38, 0.9);
+    border-top: 2px solid #dc2626;
+    backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .occupancy-card__status-overlay--occupied {
+    background: rgba(220, 38, 38, 0.85);
+    border-top-color: #f87171;
+}
+
+.occupancy-card__status-overlay--reserved {
+    bottom: auto;
+    top: 0;
+    background: rgba(200, 164, 93, 0.9);
+    border-bottom: 2px solid var(--hp-gold-dark);
+    backdrop-filter: blur(4px);
+}
+
+[data-theme="dark"] .occupancy-card__status-overlay--reserved {
+    background: rgba(200, 164, 93, 0.85);
+    border-bottom-color: #fbbf24;
+}
+
+.occupancy-card__status-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.occupancy-card__status-item:last-child {
+    margin-bottom: 0;
+}
+
+.occupancy-card__status-label {
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.occupancy-card__status-id {
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.occupancy-card__status-slot {
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: capitalize;
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Occupancy Card Content */
+.occupancy-card__content {
+    padding: 1rem;
+    position: relative;
+    background: #fff;
+    transition: background 0.3s ease;
+}
+
+[data-theme="dark"] .occupancy-card__content {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+.occupancy-card__name {
+    font-family: var(--hp-font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--hp-text);
+    margin: 0 0 0.5rem 0;
+    line-height: 1.3;
+}
+
+.occupancy-card__capacity {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.occupancy-card__capacity-label {
+    color: var(--hp-text-muted);
+    font-weight: 500;
+}
+
+.occupancy-card__capacity-value {
+    color: var(--hp-green);
+    font-weight: 600;
+}
+
+/* Occupancy Empty State */
+.occupancy-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--hp-text-muted);
+    text-align: center;
+}
+
+.occupancy-empty svg {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.occupancy-empty p {
+    font-size: 1rem;
+    margin: 0;
+}

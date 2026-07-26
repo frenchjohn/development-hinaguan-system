@@ -109,6 +109,7 @@
                                 <tr>
                                     <th>Booker</th>
                                     <th>Reservation date</th>
+                                    <th>Time Slots</th>
                                     <th>Guests</th>
                                     <th>Status</th>
                                     <th>Amount</th>
@@ -118,6 +119,7 @@
                                 @forelse ($reservations as $reservation)
                                     @php
                                         $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
+                                        $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
                                     @endphp
                                     <tr
                                         class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }}"
@@ -144,6 +146,17 @@
                                             <div class="guest-meta">{{ $reservation->email }}</div>
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>
+                                        <td>
+                                            @if (!empty($timeSlots))
+                                                <div class="time-slot-labels">
+                                                    @foreach ($timeSlots as $slot)
+                                                        <span class="time-slot-label time-slot-label--{{ strtolower(str_replace(' ', '', $slot)) }}">{{ $slot }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
                                         <td>{{ $reservation->number_of_guests }}</td>
                                         <td>
                                             <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }}">{{ $reservation->status }}</span>
@@ -152,7 +165,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="guest-empty">No pending online reservations found.</td>
+                                        <td colspan="6" class="guest-empty">No pending online reservations found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

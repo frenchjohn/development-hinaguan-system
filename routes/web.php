@@ -1086,6 +1086,23 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ->get();
 
         $reservationData = $reservations->mapWithKeys(function ($reservation) {
+            // Extract unique time slots from reservation amenities
+            $timeSlots = $reservation->reservationAmenities
+                ->pluck('pricing_type')
+                ->map(function ($pricingType) {
+                    // Normalize pricing type to base slot (remove Aircon suffix)
+                    $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
+                    // Map to standard slot names
+                    if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
+                    if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
+                    if (str_contains($baseSlot, 'DayNight')) return 'DayNight Time';
+                    return $baseSlot;
+                })
+                ->unique()
+                ->values()
+                ->sort()
+                ->toArray();
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
@@ -1100,6 +1117,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 'amount_paid' => $reservation->amount_paid,
                 'remaining_balance' => $reservation->remaining_balance,
                 'payment_status' => $reservation->payment_status,
+                'time_slots' => $timeSlots,
                 'reservation_amenities' => $reservation->reservationAmenities->map(function ($reservationAmenity) {
                     return [
                         'pricing_type' => $reservationAmenity->pricing_type,
@@ -1134,6 +1152,74 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
         return view('staff.staff_reservations', compact('reservations', 'reservationData'));
     })->name('reservations');
+
+    Route::get('/occupancy-monitor', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return redirect()->route('login');
+        }
+
+        $amenities = \App\Models\Amenity::where('status', true)
+            ->orderBy('amenities_name')
+            ->get();
+
+        $today = now()->toDateString();
+
+        // Fetch reservations for occupancy monitor
+        // Include: Checked In (any date), Pending (today only)
+        // Exclude: Cancelled, Checked Out
+        $reservations = \App\Models\Reservation::query()
+            ->where(function ($query) use ($today) {
+                $query->where('status', 'Checked In')
+                      ->orWhere(function ($q) use ($today) {
+                          $q->where('status', 'Pending')
+                            ->whereDate('reservation_date', $today);
+                      });
+            })
+            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->with(['reservationAmenities' => function ($query) {
+                $query->with('amenity');
+            }])
+            ->get();
+
+        // Build occupancy data for each amenity
+        $occupancyData = [];
+        foreach ($amenities as $amenity) {
+            $occupancyData[$amenity->id] = [
+                'occupied' => [],
+                'reserved' => [],
+            ];
+
+            foreach ($reservations as $reservation) {
+                foreach ($reservation->reservationAmenities as $ra) {
+                    if ($ra->amenity_id === $amenity->id) {
+                        $timeSlot = $ra->pricing_type;
+                        // Normalize time slot
+                        if (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
+                        elseif (str_contains($timeSlot, 'Nighttime')) $timeSlot = 'Nighttime';
+                        elseif (str_contains($timeSlot, 'DayNight')) $timeSlot = 'DayNight Time';
+
+                        $entry = [
+                            'reservation_id' => $reservation->id,
+                            'time_slot' => $timeSlot,
+                            'status' => $reservation->status,
+                        ];
+
+                        if ($reservation->status === 'Checked In') {
+                            $occupancyData[$amenity->id]['occupied'][] = $entry;
+                        } elseif ($reservation->status === 'Pending') {
+                            $reservationDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString();
+                            if ($reservationDate === $today) {
+                                $occupancyData[$amenity->id]['reserved'][] = $entry;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return view('staff.staff_occupancy_monitor', compact('amenities', 'occupancyData'));
+    })->name('occupancy-monitor');
 
     Route::get('/reports', function (Request $request) {
         $user = $request->session()->get('auth_user');

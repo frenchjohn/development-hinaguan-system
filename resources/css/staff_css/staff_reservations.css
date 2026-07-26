@@ -1058,6 +1058,64 @@
     background: #ffb74d;
 }
 
+/* Time Slot Labels */
+.time-slot-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.time-slot-label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
+}
+
+.time-slot-label--daytime {
+    background: rgba(255, 152, 0, 0.15);
+    color: #ff9800;
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+[data-theme="dark"] .time-slot-label--daytime {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ffb74d;
+    border-color: rgba(255, 152, 0, 0.4);
+}
+
+.time-slot-label--nighttime {
+    background: rgba(103, 58, 183, 0.15);
+    color: #673ab7;
+    border: 1px solid rgba(103, 58, 183, 0.3);
+}
+
+[data-theme="dark"] .time-slot-label--nighttime {
+    background: rgba(103, 58, 183, 0.2);
+    color: #9575cd;
+    border-color: rgba(103, 58, 183, 0.4);
+}
+
+.time-slot-label--daynighttime {
+    background: rgba(0, 150, 136, 0.15);
+    color: #009688;
+    border: 1px solid rgba(0, 150, 136, 0.3);
+}
+
+[data-theme="dark"] .time-slot-label--daynighttime {
+    background: rgba(0, 150, 136, 0.2);
+    color: #4db6ac;
+    border-color: rgba(0, 150, 136, 0.4);
+}
+
+.text-muted {
+    color: var(--hp-text-muted);
+}
+
 @media (max-width: 992px) {
     .guest-summary-card__header {
         flex-direction: column;
