@@ -304,22 +304,74 @@ Route::post('/reservation/prototype', function (Request $request) {
 
     $reservationDate = $data['reservation_date'] ?? $data['check_in'] ?? null;
 
+    // Block Daytime and DayNight Time bookings for today's date
+    $today = now()->toDateString();
+    foreach ($amenities as $amenity) {
+        $pricingType = $amenity['pricing_type'];
+
+        // Check if reservation date is today and pricing type is Daytime or DayNight Time
+        if ($reservationDate === $today) {
+            if ($pricingType === 'Daytime' || $pricingType === 'Daytime Aircon' ||
+                $pricingType === 'DayNight Time' || $pricingType === 'DayNight Time Aircon') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Daytime and DayNight Time bookings are not allowed for today. Please choose Nighttime or select a different date.',
+                ], 409);
+            }
+        }
+    }
+
     // Check for duplicate reservations (same date, amenity_id, and pricing_type)
     foreach ($amenities as $amenity) {
-        $exists = Reservation::query()
-            ->whereDate('reservation_date', $reservationDate)
-            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-            ->whereHas('reservationAmenities', function ($query) use ($amenity): void {
-                $query->where('amenity_id', $amenity['amenity_id'])
-                    ->where('pricing_type', $amenity['pricing_type']);
-            })
-            ->exists();
+        $pricingType = $amenity['pricing_type'];
+        $amenityId = $amenity['amenity_id'];
 
-        if ($exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
-            ], 409);
+        // For DayNight Time, check if either Daytime or Nighttime is already booked
+        if ($pricingType === 'DayNight Time' || $pricingType === 'DayNight Time Aircon') {
+            $conflictExists = Reservation::query()
+                ->whereDate('reservation_date', $reservationDate)
+                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+                ->whereHas('reservationAmenities', function ($query) use ($amenityId): void {
+                    $query->where('amenity_id', $amenityId)
+                        ->whereIn('pricing_type', ['Daytime', 'Daytime Aircon', 'Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
+                })
+                ->exists();
+
+            if ($conflictExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
+                ], 409);
+            }
+        } else {
+            // For Daytime or Nighttime, check for exact match or DayNight Time conflict
+            $exists = Reservation::query()
+                ->whereDate('reservation_date', $reservationDate)
+                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+                ->whereHas('reservationAmenities', function ($query) use ($amenityId, $pricingType): void {
+                    $query->where('amenity_id', $amenityId);
+
+                    // If booking Daytime, check for Daytime or DayNight Time conflicts
+                    if ($pricingType === 'Daytime' || $pricingType === 'Daytime Aircon') {
+                        $query->whereIn('pricing_type', ['Daytime', 'Daytime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
+                    }
+                    // If booking Nighttime, check for Nighttime or DayNight Time conflicts
+                    elseif ($pricingType === 'Nighttime' || $pricingType === 'Nighttime Aircon') {
+                        $query->whereIn('pricing_type', ['Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
+                    }
+                    // Otherwise, check for exact match
+                    else {
+                        $query->where('pricing_type', $pricingType);
+                    }
+                })
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
+                ], 409);
+            }
         }
     }
 

@@ -1256,13 +1256,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     pricingTypeLabel = pricingType.includes('Aircon') ? pricingType : `${pricingType} Aircon`;
                 }
 
+                // Check availability for each pricing type
+                const daytimeAvailable = isAvailableForSlot(c, dateInput.value, 'Daytime');
+                const nighttimeAvailable = isAvailableForSlot(c, dateInput.value, 'Nighttime');
+                const dayNightAvailable = daytimeAvailable && nighttimeAvailable;
+
                 return `<div class="rp-amenity-desc-item" data-amenity-id="${c.dataset.amenityId}">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
                         <strong>${c.dataset.name}</strong>
                         <select class="rp-amenity-pricing-select" data-amenity-id="${c.dataset.amenityId}">
-                            <option value="Daytime" ${pricingType === 'Daytime' ? 'selected' : ''}>Daytime</option>
-                            <option value="Nighttime" ${pricingType === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
-                            <option value="DayNight Time" ${pricingType === 'DayNight Time' ? 'selected' : ''}>DayNight Time</option>
+                            <option value="Daytime" ${pricingType === 'Daytime' ? 'selected' : ''} ${!daytimeAvailable ? 'disabled' : ''}>Daytime</option>
+                            <option value="Nighttime" ${pricingType === 'Nighttime' ? 'selected' : ''} ${!nighttimeAvailable ? 'disabled' : ''}>Nighttime</option>
+                            <option value="DayNight Time" ${pricingType === 'DayNight Time' ? 'selected' : ''} ${!dayNightAvailable ? 'disabled' : ''}>DayNight Time</option>
                         </select>
                     </div>
                     <p>${desc}</p>
@@ -2902,10 +2907,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorModal.classList.remove('is-open');
                 errorModal.setAttribute('aria-hidden', 'true');
                 updateOverlayScrollLock();
-                // Refresh the page after closing the modal
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
+                // Hide the booking notice text since reservation failed
+                if (bookingNotice) {
+                    bookingNotice.textContent = '';
+                }
             }
         });
     }

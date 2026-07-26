@@ -1993,6 +1993,12 @@ html {
     color: white;
 }
 
+.rp-amenity-pricing-select option:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
 
 
 .rp-selection-sheet__item-price {
