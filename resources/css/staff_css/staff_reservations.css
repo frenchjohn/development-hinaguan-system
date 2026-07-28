@@ -821,7 +821,7 @@
 }
 
 [data-theme="dark"] .skeleton {
-    background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+    background: linear-gradient(90deg, #001a11 25%, #002d1f 50%, #001a11 75%);
     background-size: 200% 100%;
 }
 

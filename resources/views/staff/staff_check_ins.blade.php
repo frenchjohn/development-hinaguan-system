@@ -26,6 +26,21 @@
 		<x-staff_sidemenu active="checkins" />
 
 		<div class="dash-main">
+			<div class="page-transition-overlay" id="pageTransitionOverlay">
+				<div class="page-transition-skeleton">
+					<div class="page-transition-skeleton__header skeleton"></div>
+					<div class="page-transition-skeleton__stats">
+						<div class="page-transition-skeleton__stat skeleton"></div>
+						<div class="page-transition-skeleton__stat skeleton"></div>
+						<div class="page-transition-skeleton__stat skeleton"></div>
+					</div>
+					<div class="page-transition-skeleton__grid">
+						<div class="page-transition-skeleton__panel skeleton"></div>
+						<div class="page-transition-skeleton__panel skeleton"></div>
+					</div>
+				</div>
+			</div>
+
 			<x-header
 				title="Check Ins"
 				subtitle="Active check-ins and walk-ins"

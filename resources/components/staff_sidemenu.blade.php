@@ -34,6 +34,7 @@
                     <a
                         href="{{ $link['url'] }}"
                         class="dash-sidebar__link {{ $active === $link['key'] ? 'is-active' : '' }}"
+                        data-page-transition
                     >
                         @include('components.partials.sidemenu-icon', ['icon' => $link['icon']])
                         {{ $link['label'] }}
