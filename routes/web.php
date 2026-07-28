@@ -443,20 +443,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
-        $reservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        $totalReservations = $reservations->count();
-        $totalGuests = $reservations->sum('number_of_guests');
-        $todayVisitors = $reservations
-            ->where('check_in', now()->toDateString())
-            ->sum('number_of_guests');
-        $currentMonthRevenue = $reservations
-            ->filter(fn ($reservation) => $reservation->check_in && \Illuminate\Support\Carbon::parse($reservation->check_in)->isCurrentMonth())
+        // Optimize queries by only fetching needed data
+        $totalReservations = Reservation::count();
+        $totalGuests = Reservation::sum('number_of_guests');
+        $todayVisitors = Reservation::whereDate('check_in', now()->toDateString())->sum('number_of_guests');
+        $currentMonthRevenue = Reservation::whereMonth('check_in', now()->month)
+            ->whereYear('check_in', now()->year)
             ->sum('amount_paid');
-        $pendingReservations = $reservations->where('status', 'Pending')->count();
-        $cancelledReservations = $reservations->where('status', 'Cancelled')->count();
+        $pendingReservations = Reservation::where('status', 'Pending')->count();
+        $cancelledReservations = Reservation::where('status', 'Cancelled')->count();
         $checkedInGuests = ReservationGuest::query()
             ->whereNull('checked_out_at')
             ->whereHas('reservation', function ($query) {
@@ -464,7 +459,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             })
             ->count();
 
-        $uniqueCustomerCount = $reservations
+        // Get recent reservations with eager loading for display only
+        $recentReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+            ->orderByDesc('created_at')
+            ->take(4)
+            ->get();
+
+        // Calculate unique customer count from recent reservations only (for performance)
+        $uniqueCustomerCount = $recentReservations
             ->flatMap(function ($reservation) {
                 $guestNames = $reservation->reservationGuests
                     ->map(fn ($guest) => trim(($guest->customer?->first_name ?? '') . ' ' . ($guest->customer?->last_name ?? '')))
@@ -476,7 +478,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->filter()
             ->count();
 
-        $topAmenity = $reservations
+        // Calculate top amenity from recent reservations only (for performance)
+        $topAmenity = $recentReservations
             ->flatMap(fn ($reservation) => $reservation->reservationAmenities)
             ->groupBy(fn ($item) => $item->amenity?->amenities_name ?? 'Unknown')
             ->map(fn ($items) => [
@@ -486,8 +489,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->sortByDesc('count')
             ->values()
             ->first();
-
-        $recentReservations = $reservations->take(4);
 
         return view('admin.admin_dashboard', [
             'totalReservations' => $totalReservations,
@@ -745,7 +746,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
-        $reservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+        // Optimize by fetching only needed fields for aggregations
+        $reservations = Reservation::select('id', 'reservation_type', 'payment_status', 'amount_paid', 'status', 'number_of_guests', 'booker_name', 'reservation_date', 'created_at')
+            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->orderByDesc('created_at')
             ->get();
 

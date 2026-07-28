@@ -588,3 +588,134 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Skeleton Loading */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(90deg, #001a11 25%, #002d1f 50%, #001a11 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton--text {
+    height: 1em;
+    margin-bottom: 0.5em;
+}
+
+.skeleton--title {
+    height: 1.5em;
+    margin-bottom: 0.75em;
+    width: 60%;
+}
+
+.skeleton--card {
+    height: 100%;
+    min-height: 120px;
+}
+
+.skeleton--stat-value {
+    height: 2.5em;
+    width: 40%;
+    margin-bottom: 0.5em;
+}
+
+.skeleton--stat-label {
+    height: 0.75em;
+    width: 70%;
+}
+
+.skeleton--table-row {
+    height: 3em;
+    margin-bottom: 0.5em;
+}
+
+.skeleton--panel {
+    min-height: 200px;
+}
+
+/* Page transition overlay */
+.dash-main {
+    position: relative;
+}
+
+.page-transition-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #fff;
+    z-index: 9999;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+[data-theme="dark"] .page-transition-overlay {
+    background: #001a11;
+}
+
+.page-transition-overlay.is-active {
+    display: block;
+    opacity: 1;
+}
+
+.page-transition-overlay.is-exiting {
+    opacity: 0;
+}
+
+.page-transition-skeleton {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-transition-skeleton__header {
+    height: 3rem;
+    margin-bottom: 2rem;
+}
+
+.page-transition-skeleton__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+.page-transition-skeleton__stat {
+    height: 120px;
+}
+
+.page-transition-skeleton__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.page-transition-skeleton__panel {
+    height: 300px;
+}
+
+@media (max-width: 992px) {
+    .page-transition-skeleton__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-transition-skeleton__stats {
+        grid-template-columns: 1fr;
+    }
+}

@@ -37,9 +37,91 @@
                         <p class="occupancy-monitor__subtitle">Click on an amenity to view details and current occupancy</p>
                     </div>
 
+                    <div class="occupancy-monitor__filter-toggle">
+                        <button type="button" id="filterToggleBtn" class="filter-toggle-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                            </svg>
+                            Filters
+                        </button>
+                    </div>
+
+                    <div class="occupancy-monitor__filter-panel" id="filterPanel">
+                        <div class="filter-panel__row">
+                            <div class="filter-panel__field">
+                                <label for="searchAmenities">Search Amenities</label>
+                                <input type="text" id="searchAmenities" placeholder="Search by name..." />
+                            </div>
+                            <div class="filter-panel__field">
+                                <label for="timeSlotFilter">Time Slot</label>
+                                <select id="timeSlotFilter">
+                                    <option value="all">All Time Slots</option>
+                                    <option value="daytime">Daytime</option>
+                                    <option value="nighttime">Nighttime</option>
+                                    <option value="daynight">DayNight Time</option>
+                                </select>
+                            </div>
+                            <div class="filter-panel__field">
+                                <label for="availabilityFilter">Availability</label>
+                                <select id="availabilityFilter">
+                                    <option value="all">All</option>
+                                    <option value="available">Available</option>
+                                    <option value="unavailable">Unavailable</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-panel__actions">
+                            <button type="button" id="clearFiltersBtn" class="filter-panel__secondary">Clear Filters</button>
+                        </div>
+                    </div>
+
                     <div class="occupancy-grid">
                         @forelse ($amenities as $amenity)
-                            <div class="occupancy-card" data-amenity-id="{{ $amenity->id }}">
+                            @php
+                                $amenityOccupancy = $occupancyData[$amenity->id] ?? ['occupied' => [], 'reserved' => []];
+                                
+                                // Determine occupied time slots
+                                $occupiedSlots = [];
+                                foreach ($amenityOccupancy['occupied'] as $occupied) {
+                                    $timeSlot = strtolower($occupied['time_slot']);
+                                    if (str_contains($timeSlot, 'daytime')) {
+                                        $occupiedSlots[] = 'daytime';
+                                    } elseif (str_contains($timeSlot, 'nighttime')) {
+                                        $occupiedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'daynight')) {
+                                        // DayNight covers both daytime and nighttime
+                                        $occupiedSlots[] = 'daytime';
+                                        $occupiedSlots[] = 'nighttime';
+                                    }
+                                }
+                                
+                                // Determine reserved time slots
+                                $reservedSlots = [];
+                                foreach ($amenityOccupancy['reserved'] as $reserved) {
+                                    $timeSlot = strtolower($reserved['time_slot']);
+                                    if (str_contains($timeSlot, 'daytime')) {
+                                        $reservedSlots[] = 'daytime';
+                                    } elseif (str_contains($timeSlot, 'nighttime')) {
+                                        $reservedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'daynight')) {
+                                        // DayNight covers both daytime and nighttime
+                                        $reservedSlots[] = 'daytime';
+                                        $reservedSlots[] = 'nighttime';
+                                    }
+                                }
+                                
+                                // Combine occupied and reserved slots
+                                $unavailableSlots = array_unique(array_merge($occupiedSlots, $reservedSlots));
+                                
+                                // Determine available slots (all slots minus unavailable)
+                                $allSlots = ['daytime', 'nighttime'];
+                                $availableSlots = array_diff($allSlots, $unavailableSlots);
+                            @endphp
+                            <div class="occupancy-card" 
+                                 data-amenity-id="{{ $amenity->id }}" 
+                                 data-amenity-name="{{ strtolower($amenity->amenities_name) }}"
+                                 data-available-slots="{{ implode(',', $availableSlots) }}"
+                                 data-unavailable-slots="{{ implode(',', $unavailableSlots) }}">
                                 <div class="occupancy-card__image">
                                     @if ($amenity->image)
                                         <img src="{{ asset('storage/' . $amenity->image) }}" alt="{{ $amenity->amenities_name }}" loading="lazy">
@@ -51,9 +133,6 @@
                                         </div>
                                     @endif
                                     <div class="occupancy-card__overlay"></div>
-                                    @php
-                                        $amenityOccupancy = $occupancyData[$amenity->id] ?? ['occupied' => [], 'reserved' => []];
-                                    @endphp
                                     @if (!empty($amenityOccupancy['occupied']))
                                         <div class="occupancy-card__status-overlay occupancy-card__status-overlay--occupied">
                                             @foreach ($amenityOccupancy['occupied'] as $occupied)
