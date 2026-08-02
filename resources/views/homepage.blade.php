@@ -20,10 +20,10 @@
             <div class="hp-topbar__inner">
                 <p class="hp-topbar__text">
                     <strong>Now Open!</strong>
-                    Daytime: Adult &#8369;70 &middot; Child &#8369;50 &nbsp;|&nbsp;
-                    Overnight: Adult &#8369;100 &nbsp;|&nbsp;
+                    Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
+                    Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
                     <a href="{{ route('reservation') }}">Reserve Now</a>
-                    &nbsp;&middot;&nbsp; Call: 0917 861 8383
+                    &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
                 </p>
             </div>
         </div>
@@ -147,7 +147,7 @@
                     <div class="hp-about__image-secondary">
                         <img src="{{ asset('images/River_Trecking.jpg') }}" alt="River trekking at Hinaguan Nature Park" loading="lazy">
                     </div>
-                    <div class="hp-about__badge">&#8369;20 Entrance Fee</div>
+                    <div class="hp-about__badge">&#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 20 }} Entrance Fee</div>
                 </div>
 
                 <div class="hp-about__text" data-animate="fade-up" data-delay="150">
@@ -316,11 +316,11 @@
                     <p class="hp-rate-card__meta">Entrance Fee &middot; Full park access during the day</p>
                     <div class="hp-rate-card__price-box">
                         <span class="hp-rate-card__badge">Adult</span>
-                        <p class="hp-rate-card__price">&#8369;70 <span>per person</span></p>
+                        <p class="hp-rate-card__price">&#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} <span>per person</span></p>
                     </div>
                     <div class="hp-rate-card__price-box hp-rate-card__price-box--child">
                         <span class="hp-rate-card__badge">Child</span>
-                        <p class="hp-rate-card__price">&#8369;50 <span>per person</span></p>
+                        <p class="hp-rate-card__price">&#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} <span>per person</span></p>
                     </div>
                 </div>
 
@@ -333,17 +333,17 @@
                     <p class="hp-rate-card__meta">Entrance Fee &middot; Check-in 6:00 PM &middot; Check-out 8:00 AM</p>
                     <div class="hp-rate-card__price-box">
                         <span class="hp-rate-card__badge">Adult</span>
-                        <p class="hp-rate-card__price">&#8369;100 <span>per person</span></p>
+                        <p class="hp-rate-card__price">&#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} <span>per person</span></p>
                     </div>
                     <div class="hp-rate-card__price-box hp-rate-card__price-box--child">
                         <span class="hp-rate-card__badge">Child</span>
-                        <p class="hp-rate-card__price">&#8369;70 <span>per person</span></p>
+                        <p class="hp-rate-card__price">&#8369;{{ $parkSettings->nighttime_child_entrance_fee ?? 70 }} <span>per person</span></p>
                     </div>
                 </div>
             </div>
 
             <div class="hp-rates-note" data-animate="fade-up">
-                <p>Entrance fee of &#8369;20 applies to all visitors. Cottage and amenity rentals are priced separately.</p>
+                <p>Entrance fee of &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 20 }} applies to all visitors. Cottage and amenity rentals are priced separately.</p>
                 <a href="{{ route('reservation') }}" class="hp-btn hp-btn--hero">Book Your Visit</a>
             </div>
         </div>
@@ -394,7 +394,7 @@
                         </div>
                         <div>
                             <p class="hp-contact-item__label">Phone</p>
-                            <p class="hp-contact-item__value"><a href="tel:+639178618383">0917 861 8383</a></p>
+                            <p class="hp-contact-item__value"><a href="tel:+63{{ preg_replace('/[^0-9]/', '', $parkSettings->contact_number ?? '0917 861 8383') }}">{{ $parkSettings->contact_number ?? '0917 861 8383' }}</a></p>
                         </div>
                     </div>
                     <div class="hp-contact-item">
@@ -403,7 +403,7 @@
                         </div>
                         <div>
                             <p class="hp-contact-item__label">Email</p>
-                            <p class="hp-contact-item__value"><a href="mailto:info@hinaguannaturepark.com">info@hinaguannaturepark.com</a></p>
+                            <p class="hp-contact-item__value"><a href="mailto:{{ $parkSettings->email ?? 'info@hinaguannaturepark.com' }}">{{ $parkSettings->email ?? 'info@hinaguannaturepark.com' }}</a></p>
                         </div>
                     </div>
                     <div class="hp-contact-item">
@@ -412,7 +412,7 @@
                         </div>
                         <div>
                             <p class="hp-contact-item__label">Park Hours</p>
-                            <p class="hp-contact-item__value">Daily &middot; 6:00 AM – 6:00 PM<br>Overnight check-in from 6:00 PM</p>
+                            <p class="hp-contact-item__value">Daily &middot; {{ $parkSettings->opening_time ? date('g:i A', strtotime($parkSettings->opening_time)) : '6:00 AM' }} – {{ $parkSettings->closing_time ? date('g:i A', strtotime($parkSettings->closing_time)) : '6:00 PM' }}<br>Overnight check-in from {{ $parkSettings->nighttime_start ? date('g:i A', strtotime($parkSettings->nighttime_start)) : '6:00 PM' }}</p>
                         </div>
                     </div>
 

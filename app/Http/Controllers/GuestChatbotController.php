@@ -112,24 +112,73 @@ class GuestChatbotController extends Controller
             return '';
         }
         
-        // If asking about specific amenities
-        if (str_contains($messageLower, 'amenit') || str_contains($messageLower, 'cottage') || str_contains($messageLower, 'room') || str_contains($messageLower, 'pool') || str_contains($messageLower, 'hall')) {
-            $context .= "\n\nAvailable Amenities:\n";
-            foreach ($amenities as $amenity) {
-                $context .= "- {$amenity->amenities_name}: ";
-                if ($amenity->daytime_price) {
-                    $context .= "Daytime ₱" . number_format($amenity->daytime_price, 2);
+        // Always provide amenities data for better recommendations
+        $context .= "\n\nAvailable Amenities:\n";
+        
+        // Sort amenities by capacity and price for easier analysis
+        $amenitiesByCapacity = $amenities->sortByDesc('maximum_capacity');
+        $amenitiesByPrice = $amenities->sortBy('daytime_price');
+        
+        // Detailed amenities list
+        foreach ($amenities as $amenity) {
+            $context .= "- {$amenity->amenities_name}: ";
+            if ($amenity->daytime_price) {
+                $context .= "Daytime ₱" . number_format($amenity->daytime_price, 2);
+            }
+            if ($amenity->nighttime_price) {
+                $context .= ($amenity->daytime_price ? ', ' : '') . "Nighttime ₱" . number_format($amenity->nighttime_price, 2);
+            }
+            if ($amenity->minimum_capacity && $amenity->maximum_capacity) {
+                $context .= ", Capacity: {$amenity->minimum_capacity}-{$amenity->maximum_capacity} guests";
+            }
+            if ($amenity->description) {
+                $context .= ". {$amenity->description}";
+            }
+            $context .= "\n";
+        }
+        
+        // Add recommendations based on query
+        // Capacity-based recommendations
+        if (preg_match('/(\d+)\s*(people|guests|person|pax)/', $messageLower, $matches)) {
+            $guestCount = (int)$matches[1];
+            $suitableAmenities = $amenities->filter(function($amenity) use ($guestCount) {
+                return $amenity->minimum_capacity <= $guestCount && $amenity->maximum_capacity >= $guestCount;
+            });
+            
+            if ($suitableAmenities->isNotEmpty()) {
+                $context .= "\n\nSuitable for {$guestCount} guests:\n";
+                foreach ($suitableAmenities as $amenity) {
+                    $context .= "- {$amenity->amenities_name} (Capacity: {$amenity->minimum_capacity}-{$amenity->maximum_capacity})\n";
                 }
-                if ($amenity->nighttime_price) {
-                    $context .= ($amenity->daytime_price ? ', ' : '') . "Nighttime ₱" . number_format($amenity->nighttime_price, 2);
-                }
-                if ($amenity->minimum_capacity && $amenity->maximum_capacity) {
-                    $context .= ", Capacity: {$amenity->minimum_capacity}-{$amenity->maximum_capacity} guests";
-                }
-                if ($amenity->description) {
-                    $context .= ". {$amenity->description}";
-                }
-                $context .= "\n";
+            }
+        }
+        
+        // Price-based recommendations
+        if (str_contains($messageLower, 'cheap') || str_contains($messageLower, 'cheapest') || str_contains($messageLower, 'affordable') || str_contains($messageLower, 'budget')) {
+            $context .= "\n\nMost Affordable Options:\n";
+            $cheapest = $amenitiesByPrice->take(3);
+            foreach ($cheapest as $amenity) {
+                $context .= "- {$amenity->amenities_name}: Daytime ₱" . number_format($amenity->daytime_price, 2) . "\n";
+            }
+        }
+        
+        // Large capacity recommendations
+        if (str_contains($messageLower, 'large') || str_contains($messageLower, 'big') || str_contains($messageLower, 'many people') || str_contains($messageLower, 'group')) {
+            $context .= "\n\nLarge Capacity Options:\n";
+            $largest = $amenitiesByCapacity->take(3);
+            foreach ($largest as $amenity) {
+                $context .= "- {$amenity->amenities_name}: Up to {$amenity->maximum_capacity} guests\n";
+            }
+        }
+        
+        // Sleeping/overnight recommendations
+        if (str_contains($messageLower, 'sleep') || str_contains($messageLower, 'overnight') || str_contains($messageLower, 'stay')) {
+            $context .= "\n\nOvernight Options:\n";
+            $overnightAmenities = $amenities->filter(function($amenity) {
+                return $amenity->nighttime_price && $amenity->nighttime_price > 0;
+            });
+            foreach ($overnightAmenities as $amenity) {
+                $context .= "- {$amenity->amenities_name}: Nighttime ₱" . number_format($amenity->nighttime_price, 2) . "\n";
             }
         }
         
@@ -149,7 +198,6 @@ class GuestChatbotController extends Controller
             $context .= "\n\nRates:\n";
             $context .= "Daytime Entrance: Adult ₱70, Child ₱50\n";
             $context .= "Overnight Entrance: Adult ₱100, Child ₱70\n";
-            $context .= "Cottage and amenity rentals priced separately (see amenities list above)\n";
             $context .= "Downpayment: 10% of total amount\n";
         }
         

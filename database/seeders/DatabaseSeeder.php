@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            ParkSettingSeeder::class,
+        ]);
+
         StaffAccount::firstOrCreate(
             ['email' => 'staff@example.com'],
             [

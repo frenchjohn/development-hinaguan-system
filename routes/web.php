@@ -885,8 +885,42 @@ Route::prefix('admin')->name('admin.')->group(function () {
         if (! $user || $user['role'] !== 'admin') {
             return redirect()->route('login');
         }
-        return view('admin.admin_settings');
+        $parkSettings = \App\Models\ParkSetting::first();
+        return view('admin.admin_settings', ['parkSettings' => $parkSettings]);
     })->name('settings');
+
+    Route::post('/settings/park/update', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'contact_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'daytime_start' => 'required',
+            'daytime_end' => 'required',
+            'nighttime_start' => 'required',
+            'nighttime_end' => 'required',
+            'daytime_adult_entrance_fee' => 'required|numeric|min:0',
+            'daytime_child_entrance_fee' => 'required|numeric|min:0',
+            'nighttime_adult_entrance_fee' => 'required|numeric|min:0',
+            'nighttime_child_entrance_fee' => 'required|numeric|min:0',
+            'day_pool_fee' => 'required|numeric|min:0',
+            'night_pool_fee' => 'required|numeric|min:0',
+            'facebook_link' => 'nullable|url|max:255',
+        ]);
+
+        $parkSettings = \App\Models\ParkSetting::first();
+        if (!$parkSettings) {
+            $parkSettings = new \App\Models\ParkSetting();
+        }
+
+        $parkSettings->fill($validated);
+        $parkSettings->save();
+
+        return redirect()->route('admin.settings')->with('success', 'Park settings updated successfully.');
+    })->name('settings.park.update');
 
     Route::post('/send-password-otp', function (Request $request) {
         $user = $request->session()->get('auth_user');

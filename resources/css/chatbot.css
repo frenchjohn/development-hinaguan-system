@@ -226,6 +226,7 @@
 .chatbot-message--bot .chatbot-message__content {
     border-bottom-left-radius: 0.25rem;
     border: 1px solid rgba(13, 44, 29, 0.1);
+    color: rgba(13, 44, 29, 0.9);
 }
 
 .chatbot-message--user .chatbot-message__content {
@@ -396,6 +397,7 @@
 [data-theme="dark"] .chatbot-message__content {
     background: #2a2a2a;
     border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 [data-theme="dark"] .chatbot-input {
@@ -414,6 +416,25 @@
 
 [data-theme="dark"] .chatbot-input-wrapper {
     border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chatbot-model-selector {
+    background: #0d0d0d;
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .chatbot-model-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .chatbot-model-select {
+    background: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="dark"] .chatbot-model-select:focus {
+    border-color: #c8a45d;
 }
 
 /* Responsive Design */

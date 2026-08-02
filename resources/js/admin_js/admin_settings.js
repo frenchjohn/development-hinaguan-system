@@ -1,4 +1,125 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // Drill-down navigation functionality
+    const settingsMenu = document.getElementById('settingsMenu');
+    const menuCards = document.querySelectorAll('.admin-settings__menu-card');
+    const contentSections = document.querySelectorAll('.admin-settings__content');
+    const backButtons = document.querySelectorAll('.admin-settings__back-btn');
+
+    // Handle menu card clicks
+    menuCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const targetId = card.getAttribute('data-target');
+            
+            // Hide menu
+            settingsMenu.classList.add('admin-settings__menu--hidden');
+            
+            // Show target content
+            contentSections.forEach(section => {
+                section.classList.add('admin-settings__content--hidden');
+            });
+            const targetContent = document.getElementById(targetId);
+            if (targetContent) {
+                targetContent.classList.remove('admin-settings__content--hidden');
+            }
+        });
+    });
+
+    // Handle back button clicks
+    backButtons.forEach(backBtn => {
+        backBtn.addEventListener('click', () => {
+            // Hide all content sections
+            contentSections.forEach(section => {
+                section.classList.add('admin-settings__content--hidden');
+            });
+            
+            // Show menu
+            settingsMenu.classList.remove('admin-settings__menu--hidden');
+        });
+    });
+
+    // Park Settings Edit functionality
+    const editParkSettingsBtn = document.getElementById('editParkSettingsBtn');
+    const cancelParkSettingsBtn = document.getElementById('cancelParkSettingsBtn');
+    const parkSettingsForm = document.getElementById('parkSettingsForm');
+    const parkSettingsFormActions = document.getElementById('parkSettingsFormActions');
+    const parkSettingsInputs = parkSettingsForm ? parkSettingsForm.querySelectorAll('input') : [];
+    const parkSettingsSuccessModal = document.getElementById('parkSettingsSuccessModal');
+    const closeParkSettingsSuccessModal = document.getElementById('closeParkSettingsSuccessModal');
+
+    // Store original values for cancel functionality
+    let originalParkSettingsValues = {};
+
+    editParkSettingsBtn?.addEventListener('click', () => {
+        // Store original values
+        parkSettingsInputs.forEach(input => {
+            originalParkSettingsValues[input.id] = input.value;
+            input.disabled = false;
+        });
+
+        // Show form actions, hide edit button
+        parkSettingsFormActions.classList.remove('admin-settings__form-actions--hidden');
+        editParkSettingsBtn.classList.add('admin-settings__btn--hidden');
+    });
+
+    cancelParkSettingsBtn?.addEventListener('click', () => {
+        // Restore original values
+        parkSettingsInputs.forEach(input => {
+            input.value = originalParkSettingsValues[input.id] || '';
+            input.disabled = true;
+        });
+
+        // Hide form actions, show edit button
+        parkSettingsFormActions.classList.add('admin-settings__form-actions--hidden');
+        editParkSettingsBtn.classList.remove('admin-settings__btn--hidden');
+    });
+
+    // Handle park settings form submission
+    parkSettingsForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(parkSettingsForm);
+        
+        try {
+            const response = await fetch(parkSettingsForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            
+            if (response.ok) {
+                // Show success modal
+                parkSettingsSuccessModal.style.display = 'flex';
+                
+                // Disable fields and hide form actions
+                parkSettingsInputs.forEach(input => {
+                    input.disabled = true;
+                });
+                parkSettingsFormActions.classList.add('admin-settings__form-actions--hidden');
+                editParkSettingsBtn.classList.remove('admin-settings__btn--hidden');
+            } else {
+                // Handle error
+                const errorData = await response.json();
+                console.error('Error updating park settings:', errorData);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    });
+
+    // Close success modal
+    closeParkSettingsSuccessModal?.addEventListener('click', () => {
+        parkSettingsSuccessModal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside
+    parkSettingsSuccessModal?.addEventListener('click', (e) => {
+        if (e.target === parkSettingsSuccessModal) {
+            parkSettingsSuccessModal.style.display = 'none';
+        }
+    });
+
     // Page transition with skeleton loading
     const pageTransitionOverlay = document.getElementById('pageTransitionOverlay');
     
