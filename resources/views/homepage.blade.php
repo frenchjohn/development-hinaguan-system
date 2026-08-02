@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
 
-    @vite(['resources/css/app.css', 'resources/css/homepage.css', 'resources/js/homepage.js'])
+    @vite(['resources/css/app.css', 'resources/css/homepage.css', 'resources/css/chatbot.css', 'resources/js/homepage.js', 'resources/js/guest_chatbot.js'])
 </head>
 <body class="antialiased">
 
@@ -463,6 +463,8 @@
     <button class="hp-fab hp-fab--top" id="scrollToTop" aria-label="Scroll to top">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/></svg>
     </button>
+
+    <x-guest_chatbot />
 
 </body>
 </html>

@@ -6,7 +6,7 @@
     <title>Amenities — Hinaguan Nature Park</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
-    @vite(['resources/css/app.css', 'resources/css/amenities.css', 'resources/js/amenities.js'])
+    @vite(['resources/css/app.css', 'resources/css/amenities.css', 'resources/css/chatbot.css', 'resources/js/amenities.js', 'resources/js/guest_chatbot.js'])
 </head>
 <body class="antialiased am-page" style="--am-page-bg: url('{{ asset('images/background.jpeg') }}')">
 
@@ -92,5 +92,7 @@
     </div>
 
     <footer class="am-footer"><p>&copy; {{ date('Y') }} <strong>Hinaguan Nature Park</strong>. All rights reserved.</p></footer>
+
+    <x-guest_chatbot />
 </body>
 </html>

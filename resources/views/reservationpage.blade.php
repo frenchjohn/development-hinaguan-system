@@ -16,7 +16,7 @@
 
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
 
-    @vite(['resources/css/app.css', 'resources/css/reservationpage.css', 'resources/js/reservationpage.js'])
+    @vite(['resources/css/app.css', 'resources/css/reservationpage.css', 'resources/css/chatbot.css', 'resources/js/reservationpage.js', 'resources/js/guest_chatbot.js'])
 
 </head>
 
@@ -906,6 +906,8 @@
         <p>&copy; {{ date('Y') }} <strong>Hinaguan Nature Park</strong>. All rights reserved.</p>
 
     </footer>
+
+    <x-guest_chatbot />
 
 </body>
 

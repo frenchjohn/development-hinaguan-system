@@ -15,10 +15,12 @@
 		'resources/components/css_js/sidemenu.css',
 		'resources/css/staff_css/staff_dashboard.css',
 		'resources/css/staff_css/staff_check_ins.css',
+		'resources/css/chatbot.css',
 		'resources/components/css_js/header.js',
 		'resources/components/css_js/sidemenu.js',
 		'resources/js/staff_js/staff_check_ins.js',
 		'resources/js/staff_js/staff_reservations.js',
+		'resources/js/staff_chatbot.js',
 	])
 </head>
 <body class="antialiased">
@@ -94,6 +96,23 @@
 									return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
 								})->isNotEmpty();
 							});
+
+							// Calculate guest summary counts
+							$guestSummaryFemale = $activeCustomers->filter(function ($customer) {
+								return strtolower((string) ($customer->gender ?? '')) === 'female';
+							})->count();
+
+							$guestSummaryMale = $activeCustomers->filter(function ($customer) {
+								return strtolower((string) ($customer->gender ?? '')) === 'male';
+							})->count();
+
+							$guestSummaryForeign = $activeCustomers->filter(function ($customer) {
+								return (bool) ($customer->is_foreigner ?? false);
+							})->count();
+
+							$guestSummaryFilipino = $activeCustomers->filter(function ($customer) {
+								return ! (bool) ($customer->is_foreigner ?? false);
+							})->count();
 						@endphp
 
 						<div class="guest-summary">
@@ -103,19 +122,19 @@
 							</div>
 							<div class="guest-summary-card">
 								<span>Female</span>
-								<strong id="guestSummaryFemale">0</strong>
+								<strong id="guestSummaryFemale">{{ $guestSummaryFemale }}</strong>
 							</div>
 						<div class="guest-summary-card">
 							<span>Male</span>
-							<strong id="guestSummaryMale">0</strong>
+							<strong id="guestSummaryMale">{{ $guestSummaryMale }}</strong>
 						</div>
 						<div class="guest-summary-card">
 							<span>Foreign</span>
-							<strong id="guestSummaryForeign">0</strong>
+							<strong id="guestSummaryForeign">{{ $guestSummaryForeign }}</strong>
 						</div>
 						<div class="guest-summary-card">
 							<span>Filipino</span>
-							<strong id="guestSummaryFilipino">0</strong>
+							<strong id="guestSummaryFilipino">{{ $guestSummaryFilipino }}</strong>
 						</div>
 					</div>
 
@@ -768,11 +787,14 @@
 
 				</main>
 			</div>
-			</div>
-			</body>
-			</html>
+		</div>
+	</div>
 
-			<script>
-				window.staffGuestData = @json($guestData ?? []);
-				window.staffReservationData = @json($reservationData ?? []);
-			</script>
+	<x-staff_chatbot />
+
+	<script>
+		window.staffGuestData = @json($guestData ?? []);
+		window.staffReservationData = @json($reservationData ?? []);
+	</script>
+</body>
+</html>

@@ -14,9 +14,11 @@
         'resources/components/css_js/sidemenu.css',
         'resources/css/staff_css/staff_dashboard.css',
         'resources/css/staff_css/staff_records.css',
+        'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_records.js',
+        'resources/js/staff_chatbot.js',
     ])
 </head>
 <body class="antialiased">
@@ -271,6 +273,9 @@
             </main>
         </div>
     </div>
+
+    <x-staff_chatbot />
+
     <script>
         window.staffGuestData = @json($guestData ?? []);
         window.staffReservationData = @json($reservationData ?? []);

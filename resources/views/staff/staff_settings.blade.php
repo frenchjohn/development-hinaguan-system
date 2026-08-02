@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Staff Settings — Hinaguan Nature Park</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
@@ -12,8 +13,10 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/sidemenu.css',
         'resources/css/staff_css/staff_settings.css',
+        'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/js/staff_js/staff_settings.js',
+        'resources/js/staff_chatbot.js',
     ])
 </head>
 <body class="antialiased">
@@ -109,5 +112,7 @@
             </main>
         </div>
     </div>
+
+    <x-staff_chatbot />
 </body>
 </html>

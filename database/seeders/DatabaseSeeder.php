@@ -41,11 +41,11 @@ class DatabaseSeeder extends Seeder
 
         $mountainPicnicHut = Amenity::create([
             'id' => Str::uuid(),
-            'amenities_name' => 'Mountain Picnic Hut',
-            'daytime_price' => 2500,
-            'nighttime_price' => 3000,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
+            'amenities_name' => 'A-House 1',
+            'daytime_price' => 300,
+            'nighttime_price' => 500,
+            'daytime_aircon_price' => 700,
+            'nighttime_aircon_price' => 1000,
             'additional_per_head' => 150,
             'minimum_capacity' => 5,
             'maximum_capacity' => 15,
@@ -56,9 +56,9 @@ class DatabaseSeeder extends Seeder
 
         $lakefrontPavilion = Amenity::create([
             'id' => Str::uuid(),
-            'amenities_name' => 'Lakefront Pavilion',
-            'daytime_price' => 4200,
-            'nighttime_price' => 5200,
+            'amenities_name' => 'Function Hall',
+            'daytime_price' => 5000,
+            'nighttime_price' => 10000,
             'daytime_aircon_price' => null,
             'nighttime_aircon_price' => null,
             'additional_per_head' => 200,
@@ -71,24 +71,24 @@ class DatabaseSeeder extends Seeder
 
         Amenity::create([
             'id' => Str::uuid(),
-            'amenities_name' => 'Air-conditioned Conference Hall',
-            'daytime_price' => 6800,
-            'nighttime_price' => 7800,
-            'daytime_aircon_price' => 1200,
-            'nighttime_aircon_price' => 1500,
+            'amenities_name' => 'Cottage 1',
+            'daytime_price' => 150,
+            'nighttime_price' => 250,
+            'daytime_aircon_price' => null,
+            'nighttime_aircon_price' => null,
             'additional_per_head' => 300,
             'minimum_capacity' => 20,
             'maximum_capacity' => 80,
             'description' => 'Climate-controlled space for corporate events and seminars.',
             'image' => null,
-            'status' => false,
+            'status' => true,
         ]);
 
         $gardenBbqArea = Amenity::create([
             'id' => Str::uuid(),
-            'amenities_name' => 'Garden BBQ Area',
-            'daytime_price' => 3100,
-            'nighttime_price' => 3600,
+            'amenities_name' => 'Payag',
+            'daytime_price' => 250,
+            'nighttime_price' => 300,
             'daytime_aircon_price' => null,
             'nighttime_aircon_price' => null,
             'additional_per_head' => 180,
@@ -126,7 +126,7 @@ class DatabaseSeeder extends Seeder
             'maximum_capacity' => 12,
             'description' => 'Exclusive elevated suite with private access and comfort amenities.',
             'image' => null,
-            'status' => true,
+            'status' => false,
         ]);
     }
 }

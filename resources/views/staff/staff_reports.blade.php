@@ -13,9 +13,11 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/sidemenu.css',
         'resources/css/staff_css/staff_reports.css',
+        'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_reports.js',
+        'resources/js/staff_chatbot.js',
     ])
 </head>
 <body class="antialiased">
@@ -173,5 +175,7 @@
             </main>
         </div>
     </div>
+
+    <x-staff_chatbot />
 </body>
 </html>

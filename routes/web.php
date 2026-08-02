@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\StaffChatbotController;
+use App\Http\Controllers\GuestChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Mail\ReservationQrMail;
 use App\Models\Amenity;
@@ -19,6 +21,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::post('/chatbot', [StaffChatbotController::class, 'chat'])->name('chatbot.chat');
+
+Route::post('/guest-chatbot', [GuestChatbotController::class, 'chat'])->name('chatbot.guest')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/api/active-guests-count', function () {
     $count = ReservationGuest::query()
