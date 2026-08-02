@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Staff Settings — Hinaguan Nature Park</title>
+    <script>
+        // Prevent flash of wrong theme by setting theme immediately
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
     @vite([
@@ -15,6 +23,7 @@
         'resources/css/staff_css/staff_settings.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
+        'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_settings.js',
         'resources/js/staff_chatbot.js',
     ])

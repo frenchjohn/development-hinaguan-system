@@ -1,5 +1,44 @@
+/* Animated Background */
+.dash-main {
+    position: relative;
+    background: var(--hp-cream);
+    overflow: visible;
+}
+
+.dash-main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.08;
+    z-index: 0;
+    animation: bgPan 30s ease-in-out infinite alternate;
+}
+
+@keyframes bgPan {
+    0% {
+        background-position: center center;
+        transform: scale(1);
+    }
+    100% {
+        background-position: center center;
+        transform: scale(1.05);
+    }
+}
+
+.dash-content {
+    position: relative;
+    z-index: 1;
+    padding: 1rem;
+    max-width: 100%;
+    margin: 0;
+    background: transparent;
+}
+
 .guest-panel {
-    padding: 1.5rem;
+    padding: 0;
 }
 
 .records-tabs {
@@ -21,8 +60,9 @@
 }
 
 [data-theme="dark"] .records-tab-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a3d1e;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .records-tab-btn:hover,
@@ -93,8 +133,8 @@
 }
 
 [data-theme="dark"] .guest-toolbar {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-toolbar__field {
@@ -123,8 +163,9 @@
 
 [data-theme="dark"] .guest-toolbar__field input,
 [data-theme="dark"] .guest-toolbar__field select {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #0d2812;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-toolbar__clear {
@@ -144,7 +185,8 @@
 }
 
 [data-theme="dark"] .guest-toolbar__clear {
-    background: rgba(255, 255, 255, 0.1);
+    background: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-toolbar__meta {
@@ -176,8 +218,9 @@
 }
 
 [data-theme="dark"] .guest-filter-toggle {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a3d1e;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-filter-toggle:hover {
@@ -186,7 +229,8 @@
 }
 
 [data-theme="dark"] .guest-filter-toggle:hover {
-    background: rgba(200, 164, 93, 0.2);
+    background: #2d5a32;
+    border-color: #4a8a52;
 }
 
 .guest-filter-toggle__icon {
@@ -211,8 +255,8 @@
 }
 
 [data-theme="dark"] .guest-summary-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-summary-card span {
@@ -239,7 +283,7 @@
 }
 
 [data-theme="dark"] .guest-table-wrap {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #2d5a32;
 }
 
 .guest-table {
@@ -251,7 +295,7 @@
 }
 
 [data-theme="dark"] .guest-table {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a2e1d;
 }
 
 .guest-table th,
@@ -265,8 +309,8 @@
 
 [data-theme="dark"] .guest-table th,
 [data-theme="dark"] .guest-table td {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-    color: var(--hp-text);
+    border-bottom-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-table th {
@@ -282,8 +326,8 @@
 }
 
 [data-theme="dark"] .guest-table th {
-    background: #1e1e1e;
-    color: var(--hp-gold);
+    background: #1a3d1e;
+    color: #81c784;
 }
 
 .guest-row,
@@ -305,7 +349,7 @@
 [data-theme="dark"] .guest-row:focus-visible,
 [data-theme="dark"] .reservation-row:hover,
 [data-theme="dark"] .reservation-row:focus-visible {
-    background: rgba(255, 255, 255, 0.1);
+    background: #2d5a32;
 }
 
 .today-reservation {
@@ -376,8 +420,9 @@
 }
 
 [data-theme="dark"] .guest-form__chip {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__row {
@@ -418,8 +463,9 @@
 
 [data-theme="dark"] .guest-form__field input,
 [data-theme="dark"] .guest-form__field select {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #0d2812;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__toggle {
@@ -441,8 +487,8 @@
 }
 
 [data-theme="dark"] .guest-form__section {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-form__section-header {
@@ -478,7 +524,8 @@
 }
 
 [data-theme="dark"] .guest-form__secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__button {
@@ -518,8 +565,9 @@
 }
 
 [data-theme="dark"] .guest-companion-pill {
-    background: rgba(200, 164, 93, 0.2);
-    border-color: rgba(200, 164, 93, 0.4);
+    background: #2d5a32;
+    border-color: #4a8a52;
+    color: #c8e6c8;
 }
 
 .guest-companion-pill__delete {
@@ -567,8 +615,8 @@
 }
 
 [data-theme="dark"] .guest-amenity-option {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-amenity-option__body {
@@ -596,7 +644,8 @@
 }
 
 [data-theme="dark"] .guest-selected-amenity {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 .guest-form__summary {
@@ -663,7 +712,7 @@
 }
 
 [data-theme="dark"] .guest-modal__content {
-    background: rgba(30, 30, 30, 0.95);
+    background: #1a2e1d;
 }
 
 .guest-modal__close {
@@ -706,7 +755,8 @@
 }
 
 [data-theme="dark"] .guest-modal__role-badge {
-    background: rgba(200, 164, 93, 0.2);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 .guest-modal__role-badge--companion {
@@ -745,8 +795,8 @@
 }
 
 [data-theme="dark"] .guest-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-card__grid {
@@ -782,7 +832,8 @@
 }
 
 [data-theme="dark"] .guest-pill {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 .guest-list {
@@ -818,8 +869,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-relationship-item--main {
@@ -828,8 +879,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item--main {
-    background: rgba(200, 164, 93, 0.2);
-    border-color: rgba(200, 164, 93, 0.4);
+    background: #2d5a32;
+    border-color: #4a8a52;
 }
 
 .guest-relationship-item--companion {
@@ -838,8 +889,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item--companion {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-relationship-item--empty {

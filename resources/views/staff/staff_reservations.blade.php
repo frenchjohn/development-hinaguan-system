@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Reservations — Hinaguan Nature Park</title>
+    <script>
+        // Prevent flash of wrong theme by setting theme immediately
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
     @vite([
@@ -20,6 +28,11 @@
         'resources/js/staff_js/staff_reservations.js',
         'resources/js/staff_chatbot.js',
     ])
+    <style>
+        .dash-main::before {
+            background-image: url('{{ asset('storage/design_images/background_image1.png') }}');
+        }
+    </style>
 </head>
 <body class="antialiased">
     <div class="dash-layout">
@@ -50,17 +63,16 @@
             />
 
             <main class="dash-content">
-                <section class="dash-panel guest-panel">
-                    <div class="dash-panel__head guest-panel__head">
-                        <div>
-                            <h3 class="dash-panel__title">Pending Online Reservations</h3>
-                            <p class="dash-panel__subtitle">Reservations that have not been checked in yet</p>
-                        </div>
+                <div class="dash-panel__head guest-panel__head">
+                    <div>
+                        <h3 class="dash-panel__title">Pending Online Reservations</h3>
+                        <p class="dash-panel__subtitle">Reservations that have not been checked in yet</p>
                     </div>
+                </div>
 
-                    @if (session('success'))
-                        <div class="guest-alert">{{ session('success') }}</div>
-                    @endif
+                @if (session('success'))
+                    <div class="guest-alert">{{ session('success') }}</div>
+                @endif
 
                     <div class="guest-filter-shell">
                         <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
@@ -188,7 +200,6 @@
                             </tbody>
                         </table>
                     </div>
-                </section>
 
                 <div class="guest-modal" id="reservationModal" aria-hidden="true">
                     <div class="guest-modal__backdrop" data-close-reservation-modal="true"></div>

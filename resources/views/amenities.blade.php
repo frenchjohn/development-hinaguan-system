@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Amenities — Hinaguan Nature Park</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/css/amenities.css', 'resources/css/chatbot.css', 'resources/js/amenities.js', 'resources/js/guest_chatbot.js'])

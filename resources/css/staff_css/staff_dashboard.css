@@ -1,12 +1,56 @@
 /* Staff dashboard — page-specific styles */
 
+/* Animated Background */
+.dash-main {
+    position: relative;
+    background: var(--hp-cream);
+    overflow: visible;
+}
+
+.dash-main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.08;
+    z-index: 0;
+    animation: bgPan 30s ease-in-out infinite alternate;
+}
+
+@keyframes bgPan {
+    0% {
+        background-position: center center;
+        transform: scale(1);
+    }
+    100% {
+        background-position: center center;
+        transform: scale(1.05);
+    }
+}
+
+.dash-content {
+    position: relative;
+    z-index: 1;
+    padding: 1rem;
+    max-width: 100%;
+    margin: 0;
+    background: transparent;
+}
+
 .dash-welcome {
-    padding: 2rem 1.75rem;
-    border-radius: 0.75rem;
+    padding: 1.5rem 1.25rem;
+    border-radius: 0.5rem;
     background: linear-gradient(135deg, var(--hp-green-mid) 0%, var(--hp-green-dark) 100%);
     color: #fff;
-    margin-bottom: 2rem;
-    box-shadow: 0 8px 32px rgba(13, 44, 29, 0.2);
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(13, 44, 29, 0.15);
+}
+
+[data-theme="dark"] .dash-welcome {
+    background: linear-gradient(135deg, #1a3d1e 0%, #0d2812 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .dash-welcome .hp-section__label {
@@ -37,27 +81,32 @@
 .dash-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    margin-bottom: 2rem;
+    gap: 1rem;
+    margin-bottom: 1rem;
 }
 
 .dash-stat-card {
-    padding: 1.5rem;
+    padding: 1rem;
     background: #fff;
     border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 20px rgba(13, 44, 29, 0.06);
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(13, 44, 29, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="dark"] .dash-stat-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dash-stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(13, 44, 29, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 44, 29, 0.1);
+}
+
+[data-theme="dark"] .dash-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .dash-stat-card__icon {
@@ -81,6 +130,10 @@
     color: var(--hp-text-muted);
 }
 
+[data-theme="dark"] .dash-stat-card__label {
+    color: #81c784;
+}
+
 .dash-stat-card__value {
     margin: 0 0 0.5rem;
     font-family: var(--hp-font-display);
@@ -90,6 +143,10 @@
     line-height: 1;
 }
 
+[data-theme="dark"] .dash-stat-card__value {
+    color: #c8e6c8;
+}
+
 .dash-stat-card__hint {
     margin: 0;
     font-size: 0.8125rem;
@@ -97,36 +154,39 @@
     line-height: 1.5;
 }
 
+[data-theme="dark"] .dash-stat-card__hint {
+    color: #81c784;
+}
+
 .dash-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .dash-panel {
     background: #fff;
     border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(13, 44, 29, 0.06);
-    transition: background 0.3s ease, border-color 0.3s ease;
+    box-shadow: 0 2px 8px rgba(13, 44, 29, 0.05);
 }
 
 [data-theme="dark"] .dash-panel {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dash-panel__head {
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(13, 44, 29, 0.08);
-    background: var(--hp-cream);
-    transition: background 0.3s ease, border-color 0.3s ease;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(13, 44, 29, 0.1);
+    background: #f5f5f5;
 }
 
 [data-theme="dark"] .dash-panel__head {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    background: #1a3d1e;
+    border-bottom-color: #2d5a32;
 }
 
 .dash-panel__title {
@@ -135,6 +195,10 @@
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--hp-text);
+}
+
+[data-theme="dark"] .dash-panel__title {
+    color: #c8e6c8;
 }
 
 .dash-task-list {

@@ -1,8 +1,47 @@
 /* Check Ins specific styles */
 
+/* Animated Background */
+.dash-main {
+    position: relative;
+    background: var(--hp-cream);
+    overflow: visible;
+}
+
+.dash-main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.08;
+    z-index: 0;
+    animation: bgPan 30s ease-in-out infinite alternate;
+}
+
+@keyframes bgPan {
+    0% {
+        background-position: center center;
+        transform: scale(1);
+    }
+    100% {
+        background-position: center center;
+        transform: scale(1.05);
+    }
+}
+
+.dash-content {
+    position: relative;
+    z-index: 1;
+    padding: 1rem;
+    max-width: 100%;
+    margin: 0;
+    background: transparent;
+}
+
 /* Guest Panel */
 .guest-panel {
-    padding: 1.5rem;
+    padding: 0;
 }
 
 /* Guest Summary Container */
@@ -10,7 +49,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
 }
 
 .guest-summary-card {
@@ -19,11 +58,10 @@
     align-items: center;
     justify-content: center;
     gap: 0.35rem;
-    background: var(--hp-cream);
+    background: #fff;
     border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 1rem;
-    padding: 1.25rem;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    border-radius: 0.5rem;
+    padding: 1rem;
 }
 
 .guest-summary-card span {
@@ -41,16 +79,16 @@
 }
 
 [data-theme="dark"] .guest-summary-card strong {
-    color: var(--hp-green);
+    color: #c8e6c8;
 }
 
 [data-theme="dark"] .guest-summary-card span {
-    color: var(--hp-text);
+    color: #81c784;
 }
 
 [data-theme="dark"] .guest-summary-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 /* Filter Shell */
@@ -74,8 +112,9 @@
 }
 
 [data-theme="dark"] .guest-filter-toggle {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a3d1e;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-filter-toggle:hover {
@@ -120,7 +159,8 @@
 }
 
 [data-theme="dark"] .guest-toolbar__clear {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-toolbar__clear:hover {
@@ -157,8 +197,9 @@
 }
 
 [data-theme="dark"] .guest-alert {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a3d1e;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 /* Guest Panel Button */
@@ -185,16 +226,15 @@
 
 /* Guest Table Wrapper */
 .guest-table-wrap {
-    background: #fff;
-    border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 1rem;
-    overflow: hidden;
-    transition: background 0.3s ease, border-color 0.3s ease;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
 }
 
 [data-theme="dark"] .guest-table-wrap {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
+    border: none;
 }
 
 /* Guest Table */
@@ -204,28 +244,30 @@
 }
 
 .guest-table th {
-    background: var(--hp-cream);
+    background: #f5f5f5;
     color: var(--hp-text);
     font-weight: 700;
     text-align: left;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 [data-theme="dark"] .guest-table th {
-    background: rgba(255, 255, 255, 0.08);
+    background: #1a3d1e;
+    color: #81c784;
 }
 
 .guest-table td {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     border-top: 1px solid rgba(13, 44, 29, 0.08);
     color: var(--hp-text);
 }
 
 [data-theme="dark"] .guest-table td {
-    border-top-color: rgba(255, 255, 255, 0.08);
+    border-top-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-row:hover {
@@ -233,7 +275,7 @@
 }
 
 [data-theme="dark"] .guest-row:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #2d5a32;
 }
 
 /* Guest Form */
@@ -268,8 +310,9 @@
 
 [data-theme="dark"] .guest-form__field input,
 [data-theme="dark"] .guest-form__field select {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #0d2812;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__chips {
@@ -288,7 +331,8 @@
 }
 
 [data-theme="dark"] .guest-form__chip {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__chip input {
@@ -342,7 +386,7 @@
 }
 
 [data-theme="dark"] .guest-modal__content {
-    background: rgba(30, 30, 30, 0.95);
+    background: #1a2e1d;
 }
 
 .guest-modal__close {
@@ -380,8 +424,8 @@
 }
 
 [data-theme="dark"] .guest-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-card__grid {
@@ -417,7 +461,8 @@
 }
 
 [data-theme="dark"] .guest-pill {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 /* Guest List */
@@ -454,8 +499,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-relationship-item--main {
@@ -464,8 +509,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item--main {
-    background: rgba(200, 164, 93, 0.2);
-    border-color: rgba(200, 164, 93, 0.4);
+    background: #2d5a32;
+    border-color: #4a8a52;
 }
 
 .guest-relationship-item--companion {
@@ -474,8 +519,8 @@
 }
 
 [data-theme="dark"] .guest-relationship-item--companion {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-relationship-item--empty {
@@ -513,8 +558,8 @@
 }
 
 [data-theme="dark"] .guest-amenity-option {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-selected-amenity {
@@ -529,7 +574,8 @@
 }
 
 [data-theme="dark"] .guest-selected-amenity {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 /* Companion Pills */
@@ -547,7 +593,8 @@
 }
 
 [data-theme="dark"] .guest-companion-pill {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 .guest-companion-pill__name {
@@ -570,7 +617,8 @@
 }
 
 [data-theme="dark"] .guest-companion-pill__delete {
-    background: rgba(255, 255, 255, 0.1);
+    background: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-companion-pill__delete:hover {
@@ -594,7 +642,7 @@
 }
 
 [data-theme="dark"] .guest-form__actions {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: #2d5a32;
 }
 
 .guest-form__button {
@@ -624,7 +672,8 @@
 }
 
 [data-theme="dark"] .guest-form__button--secondary {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 .guest-form__button--secondary:hover {
@@ -647,7 +696,8 @@
 }
 
 [data-theme="dark"] .guest-modal__role-badge {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 /* Reservation Status */
@@ -683,19 +733,23 @@
 }
 
 [data-theme="dark"] .reservation-status--pending {
-    background: rgba(200, 164, 93, 0.2);
+    background: #2d5a32;
+    color: #fbbf24;
 }
 
 [data-theme="dark"] .reservation-status--confirmed {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a3d1e;
+    color: #c8e6c8;
 }
 
 [data-theme="dark"] .reservation-status--checked_in {
-    background: rgba(59, 130, 246, 0.2);
+    background: #1a3d1e;
+    color: #60a5fa;
 }
 
 [data-theme="dark"] .reservation-status--checked_out {
-    background: rgba(255, 255, 255, 0.05);
+    background: #1a2e1d;
+    color: #81c784;
 }
 
 /* Guest Toolbar (from records) */
@@ -713,8 +767,8 @@
 }
 
 [data-theme="dark"] .guest-toolbar {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #1a2e1d;
+    border-color: #2d5a32;
 }
 
 .guest-toolbar__field {
@@ -743,8 +797,9 @@
 
 [data-theme="dark"] .guest-toolbar__field input,
 [data-theme="dark"] .guest-toolbar__field select {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #0d2812;
+    border-color: #2d5a32;
+    color: #c8e6c8;
 }
 
 /* Panel Head */
