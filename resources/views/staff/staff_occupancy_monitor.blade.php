@@ -19,7 +19,7 @@
         'resources/css/app.css',
         'resources/css/homepage.css',
         'resources/components/css_js/header.css',
-        'resources/components/css_js/sidemenu.css',
+        'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_occupancy_monitor.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',

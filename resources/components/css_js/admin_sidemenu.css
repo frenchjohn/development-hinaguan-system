@@ -1,4 +1,4 @@
-/* Dashboard shell — sidemenu with Nature Theme */
+/* Admin Dashboard Sidemenu Styles */
 
 :root {
     --nature-forest-green: #244A2D;
@@ -239,12 +239,10 @@
     }
 }
 
-/* Loading state should override active state glow */
 .dash-sidebar__link.is-loading.is-active {
     box-shadow: 0 4px 12px rgba(110, 159, 84, 0.4);
 }
 
-/* Ensure loading state doesn't conflict with active state */
 .dash-sidebar__link.is-loading.is-active {
     opacity: 0.7;
 }
@@ -320,11 +318,11 @@
     margin-left: 28px;
 }
 
-/* Profile Section */
+/* Profile Section - New Design */
 .dash-sidebar__profile {
     position: relative;
     z-index: 5;
-    padding: 16px 16px 16px;
+    padding: 14px 10px;
     flex-shrink: 0;
 }
 
@@ -333,32 +331,44 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: all 0.3s ease;
     position: relative;
     z-index: 5;
 }
 
 .dash-sidebar__profile-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
 .dash-sidebar__profile-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--nature-moss-green) 0%, var(--nature-forest-green) 100%);
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--nature-moss-green);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
     flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.dash-sidebar__profile-avatar svg {
+    width: 18px;
+    height: 18px;
+    stroke: white;
+    stroke-width: 2;
+}
+
+.dash-sidebar__profile-btn:hover .dash-sidebar__profile-avatar {
+    background: var(--nature-moss-green-light);
 }
 
 .dash-sidebar__profile-info {
@@ -369,7 +379,7 @@
 
 .dash-sidebar__profile-name {
     display: block;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     color: white;
     line-height: 1.2;
@@ -380,10 +390,9 @@
 
 .dash-sidebar__profile-role {
     display: block;
-    font-size: 9px;
-    color: var(--nature-off-white);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.7);
     text-transform: capitalize;
-    opacity: 0.8;
     margin-top: 2px;
 }
 
@@ -392,21 +401,21 @@
     left: calc(160px + 8px);
     bottom: 16px;
     transform: translateX(-8px);
-    min-width: 180px;
-    padding: 8px;
+    min-width: 160px;
+    padding: 6px;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.2s, transform 0.2s, visibility 0.2s, background 0.3s ease;
+    transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
     z-index: 1000;
     pointer-events: none;
 }
 
 [data-theme="dark"] .dash-sidebar__profile-dropdown {
     background: #1a3d2a;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 .dash-sidebar__profile-dropdown.is-open {
@@ -420,18 +429,18 @@
 .dash-sidebar__profile-logout {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    padding: 12px;
+    padding: 10px 12px;
     color: var(--nature-forest-green);
     text-decoration: none;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
     text-align: left;
     transition: all 0.2s ease;
     border: none;
-    background: none;
+    background: transparent;
     cursor: pointer;
 }
 
@@ -442,11 +451,10 @@
 
 .dash-sidebar__profile-dropdown a svg,
 .dash-sidebar__profile-logout svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
     stroke: var(--nature-forest-green);
-    transition: stroke 0.3s ease;
 }
 
 [data-theme="dark"] .dash-sidebar__profile-dropdown a svg {
@@ -459,13 +467,13 @@
 
 .dash-sidebar__profile-dropdown a:hover,
 .dash-sidebar__profile-logout:hover {
-    background: rgba(36, 74, 45, 0.1);
+    background: rgba(36, 74, 45, 0.08);
     transform: translateX(2px);
 }
 
 [data-theme="dark"] .dash-sidebar__profile-dropdown a:hover,
 [data-theme="dark"] .dash-sidebar__profile-logout:hover {
-    background: rgba(169, 201, 139, 0.15);
+    background: rgba(169, 201, 139, 0.12);
 }
 
 .dash-sidebar__profile-logout {
@@ -477,11 +485,11 @@
 }
 
 .dash-sidebar__profile-logout:hover {
-    background: rgba(220, 38, 38, 0.1);
+    background: rgba(220, 38, 38, 0.08);
 }
 
 [data-theme="dark"] .dash-sidebar__profile-logout:hover {
-    background: rgba(248, 113, 113, 0.15);
+    background: rgba(248, 113, 113, 0.12);
 }
 
 .dash-sidebar__profile-form {
@@ -531,7 +539,6 @@
         pointer-events: auto;
     }
 
-    /* On mobile, remove default margin and only add when sidebar is open */
     .dash-main {
         margin-left: 0 !important;
     }

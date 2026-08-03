@@ -17,7 +17,7 @@
     @vite([
         'resources/css/app.css',
         'resources/components/css_js/header.css',
-        'resources/components/css_js/sidemenu.css',
+        'resources/components/css_js/admin_sidemenu.css',
         'resources/css/admin_css/admin_reports.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -26,7 +26,7 @@
 </head>
 <body class="antialiased">
     <div class="dash-layout">
-        <x-admin_sidemenu active="reports" />
+        <x-admin_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
@@ -47,9 +47,6 @@
             <x-header
                 title="Park Reports"
                 subtitle="Reservation, revenue, and amenity analytics"
-                userName="Admin User"
-                userRole="Administrator"
-                :settingsUrl="route('admin.settings')"
             />
 
             <main class="dash-content">

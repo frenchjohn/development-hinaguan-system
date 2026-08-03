@@ -17,7 +17,7 @@
     @vite([
         'resources/css/app.css',
         'resources/components/css_js/header.css',
-        'resources/components/css_js/sidemenu.css',
+        'resources/components/css_js/admin_sidemenu.css',
         'resources/css/admin_css/admin_dashboard.css',
         'resources/css/admin_css/admin_settings.css',
         'resources/components/css_js/header.js',
@@ -27,7 +27,7 @@
 </head>
 <body class="antialiased">
     <div class="dash-layout">
-        <x-admin_sidemenu active="settings" />
+        <x-admin_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
             <div class="page-transition-overlay" id="pageTransitionOverlay">
@@ -44,7 +44,7 @@
                     </div>
                 </div>
             </div>
-            <x-header title="Settings" subtitle="Manage park settings and security" userName="Admin User" userRole="Administrator" :settingsUrl="route('admin.settings')" />
+            <x-header title="Settings" subtitle="Manage park settings and security" />
             <main class="dash-content">
                 <div class="admin-settings">
                     <!-- Horizontal Card Menu -->
