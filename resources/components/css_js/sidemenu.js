@@ -3,6 +3,25 @@ window.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.querySelector('[data-dash-sidebar-toggle]');
     const sidebarOverlay = document.querySelector('.dash-sidebar__overlay');
     const dashLayout = document.querySelector('.dash-layout');
+    const userToggle = document.querySelector('[data-dash-user-toggle]');
+    const themeToggle = document.querySelector('[data-theme-toggle]');
+
+    // Initialize theme from localStorage
+    const storedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', storedTheme);
+
+    // Update theme text based on current theme
+    function updateThemeText() {
+        const themeText = document.querySelector('.dash-sidebar__theme-text');
+        if (themeText) {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            // Show the current mode name
+            themeText.textContent = currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
+        }
+    }
+
+    // Call initially after DOM is ready
+    setTimeout(updateThemeText, 0);
 
     if (!dashLayout) {
         console.error('Sidemenu: dash-layout element not found');
@@ -22,6 +41,17 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // Get sidebar links early for use in navigation handler
     const sidebarLinks = document.querySelectorAll('.dash-sidebar__link');
+
+    // Clean up any loading states from previous navigation
+    function cleanupLoadingStates() {
+        sidebarLinks.forEach(link => {
+            link.classList.remove('is-loading');
+        });
+        hideLoading();
+    }
+
+    // Run cleanup on page load
+    cleanupLoadingStates();
 
     function toggleSidebar(e) {
         if (e) e.preventDefault();
@@ -67,6 +97,9 @@ window.addEventListener('DOMContentLoaded', function() {
 
         e.preventDefault();
         
+        // Clean up any previous loading states
+        cleanupLoadingStates();
+        
         // Instantly update active state - remove from all links, add to clicked
         sidebarLinks.forEach(l => l.classList.remove('is-active'));
         link.classList.add('is-active');
@@ -101,6 +134,52 @@ window.addEventListener('DOMContentLoaded', function() {
     sidebarLinks.forEach(link => {
         link.addEventListener('click', handleNavigationClick);
     });
+
+    // Handle user dropdown toggle
+    if (userToggle) {
+        userToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const dropdown = userToggle.nextElementSibling;
+            if (dropdown) {
+                const isOpen = dropdown.classList.contains('is-open');
+                if (isOpen) {
+                    dropdown.classList.remove('is-open');
+                    userToggle.classList.remove('is-open');
+                } else {
+                    dropdown.classList.add('is-open');
+                    userToggle.classList.add('is-open');
+                    // Update theme text when dropdown opens
+                    updateThemeText();
+                }
+            }
+        });
+    }
+
+    // Close user dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (userToggle) {
+            const dropdown = userToggle.nextElementSibling;
+            const profileSection = userToggle.closest('.dash-sidebar__profile');
+            if (!profileSection.contains(e.target)) {
+                dropdown.classList.remove('is-open');
+                userToggle.classList.remove('is-open');
+            }
+        }
+    });
+
+    // Handle theme toggle
+    if (themeToggle) {
+        themeToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeText();
+        });
+    }
 
     // Handle window resize
     window.addEventListener('resize', () => {

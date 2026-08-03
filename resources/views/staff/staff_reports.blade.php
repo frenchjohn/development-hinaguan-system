@@ -14,7 +14,7 @@
     </script>
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -35,7 +35,7 @@
 </head>
 <body class="antialiased">
     <div class="dash-layout">
-        <x-staff_sidemenu active="reports" />
+        <x-staff_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
             <div class="page-transition-overlay" id="pageTransitionOverlay">
@@ -56,9 +56,6 @@
             <x-header
                 title="Staff Reports"
                 subtitle="Customer, reservation, and amenity insights"
-                userName="Staff User"
-                userRole="Staff"
-                :settingsUrl="route('staff.settings')"
             />
 
             <main class="dash-content">

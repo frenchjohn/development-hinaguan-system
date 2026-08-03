@@ -16,7 +16,7 @@
     --hp-font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
     --hp-font-body: 'Montserrat', system-ui, -apple-system, sans-serif;
     --dash-header-h: 4rem;
-    --dash-sidebar-w: 16.5rem;
+    --dash-sidebar-w: 10rem;
 }
 
 [data-theme="dark"] {
