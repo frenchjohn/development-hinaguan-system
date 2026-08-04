@@ -190,4 +190,56 @@ window.addEventListener('DOMContentLoaded', function() {
             dashLayout.classList.remove('sidebar-collapsed');
         }
     });
+
+    // Handle logout confirmation modal
+    const logoutConfirmBtn = document.querySelector('[data-logout-confirm]');
+    const logoutModal = document.getElementById('logoutModal');
+    const logoutCancelBtn = document.querySelector('[data-logout-cancel]');
+    const logoutConfirmSubmitBtn = document.querySelector('.logout-modal__btn--confirm');
+
+    if (logoutConfirmBtn && logoutModal) {
+        logoutConfirmBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            logoutModal.classList.add('is-open');
+            logoutModal.setAttribute('aria-hidden', 'false');
+        });
+    }
+
+    if (logoutCancelBtn && logoutModal) {
+        logoutCancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            logoutModal.classList.remove('is-open');
+            logoutModal.setAttribute('aria-hidden', 'true');
+        });
+    }
+
+    // Handle logout confirm button with loading effect
+    if (logoutConfirmSubmitBtn) {
+        logoutConfirmSubmitBtn.addEventListener('click', (e) => {
+            // Add loading state
+            logoutConfirmSubmitBtn.classList.add('is-loading');
+            // The form will submit naturally after this
+        });
+    }
+
+    // Close modal when clicking backdrop
+    if (logoutModal) {
+        const backdrop = logoutModal.querySelector('.logout-modal__backdrop');
+        if (backdrop) {
+            backdrop.addEventListener('click', () => {
+                logoutModal.classList.remove('is-open');
+                logoutModal.setAttribute('aria-hidden', 'true');
+            });
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && logoutModal.classList.contains('is-open')) {
+                logoutModal.classList.remove('is-open');
+                logoutModal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
 });

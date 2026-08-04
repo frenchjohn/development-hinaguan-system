@@ -44,12 +44,11 @@
                     </div>
                 </div>
             </div>
-            <x-header
-                title="Park Reports"
-                subtitle="Reservation, revenue, and amenity analytics"
-            />
-
             <main class="dash-content">
+                <x-header
+                    title="Park Reports"
+                    subtitle="Reservation, revenue, and amenity analytics"
+                />
                 <section class="reports-head">
                     <div>
                         <p class="reports-head__eyebrow">Reports</p>

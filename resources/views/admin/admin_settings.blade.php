@@ -44,8 +44,8 @@
                     </div>
                 </div>
             </div>
-            <x-header title="Settings" subtitle="Manage park settings and security" />
             <main class="dash-content">
+                <x-header title="Settings" subtitle="Manage park settings and security" />
                 <div class="admin-settings">
                     <!-- Horizontal Card Menu -->
                     <div class="admin-settings__menu" id="settingsMenu">

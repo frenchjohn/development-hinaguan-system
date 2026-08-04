@@ -53,19 +53,12 @@
                 </div>
             </div>
 
-            <x-header
-                title="Staff Dashboard"
-                subtitle="Daily tasks and guest activity at the park"
-            />
-
             <main class="dash-content">
-                <section class="dash-welcome">
-                    <span class="hp-section__label">Staff Portal</span>
-                    <h2 class="dash-welcome__title">Welcome back, Staff!</h2>
-                    <p class="dash-welcome__text">
-                        Track today's check-ins, pending reservations, and on-site guests at Hinaguan Nature Park.
-                    </p>
-                </section>
+                <x-header
+                    title="Staff Dashboard"
+                    subtitle="Daily tasks and guest activity at the park"
+                    :showWelcome="true"
+                />
 
                 <div class="dash-stats">
                     <article class="dash-stat-card">

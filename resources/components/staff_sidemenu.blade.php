@@ -81,17 +81,34 @@
                 </svg>
                 <span>Back to Website</span>
             </a>
-            <form method="POST" action="{{ route('logout') }}" class="dash-sidebar__profile-form">
-                @csrf
-                <button type="submit" class="dash-sidebar__profile-logout">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="dash-sidebar__dropdown-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                    <span>Sign out</span>
-                </button>
-            </form>
+            <button type="button" class="dash-sidebar__profile-logout" data-logout-confirm>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="dash-sidebar__dropdown-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span>Sign out</span>
+            </button>
         </div>
     </div>
 </aside>
 
 <div class="dash-sidebar__overlay" aria-hidden="true"></div>
+
+<!-- Logout Confirmation Modal -->
+<div class="logout-modal" id="logoutModal" aria-hidden="true">
+    <div class="logout-modal__backdrop"></div>
+    <div class="logout-modal__content">
+        <div class="logout-modal__header">
+            <h3 class="logout-modal__title">Confirm Logout</h3>
+        </div>
+        <div class="logout-modal__body">
+            <p class="logout-modal__message">Are you sure you want to sign out of your account?</p>
+        </div>
+        <div class="logout-modal__footer">
+            <button type="button" class="logout-modal__btn logout-modal__btn--cancel" data-logout-cancel>Cancel</button>
+            <form method="POST" action="{{ route('logout') }}" class="logout-modal__form">
+                @csrf
+                <button type="submit" class="logout-modal__btn logout-modal__btn--confirm"><span>Sign out</span></button>
+            </form>
+        </div>
+    </div>
+</div>

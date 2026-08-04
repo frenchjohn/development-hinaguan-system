@@ -56,34 +56,26 @@
 				</div>
 			</div>
 
-			<x-header
-				title="Check Ins"
-				subtitle="Active check-ins and walk-ins"
-			/>
-
 			<main class="dash-content">
-				<section class="dash-panel guest-panel">
-					<div class="dash-panel__head guest-panel__head">
-						<div>
-							<h3 class="dash-panel__title">Current Check-ins</h3>
-							<p class="dash-panel__subtitle">Guests currently checked in or not yet checked out</p>
-						</div>
-						<div style="display: flex; gap: 0.5rem;">
-							<button type="button" class="guest-panel__button" id="tabGuestBtn" style="background-color: var(--hp-green-dark); color: white; box-shadow: 0 4px 12px rgba(13, 44, 29, 0.3); transform: translateY(-2px);">Guest</button>
-							<button type="button" class="guest-panel__button" id="tabReservationBtn" style="background-color: var(--hp-cream); color: var(--hp-text);">Reservation</button>
-							<a href="#" class="guest-panel__button" data-open-add-guest-modal="true" style="background-color: var(--hp-gold); color: white;">Add Guest</a>
-							<button type="button" class="guest-panel__button" id="scanQrBtn" style="background-color: var(--hp-green-dark); color: white;">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-									<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-								</svg>
-							</button>
-						</div>
-					</div>
+				<x-header
+					title="Check Ins"
+					subtitle="Active check-ins and walk-ins"
+				/>
+				<div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+					<button type="button" class="guest-panel__button" id="tabGuestBtn" style="background-color: var(--hp-green-dark); color: white; box-shadow: 0 4px 12px rgba(13, 44, 29, 0.3); transform: translateY(-2px);">Guest</button>
+					<button type="button" class="guest-panel__button" id="tabReservationBtn" style="background-color: var(--hp-cream); color: var(--hp-text);">Reservation</button>
+					<a href="#" class="guest-panel__button" data-open-add-guest-modal="true" style="background-color: var(--hp-gold); color: white;">Add Guest</a>
+					<button type="button" class="guest-panel__button" id="scanQrBtn" style="background-color: var(--hp-green-dark); color: white;">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+						</svg>
+					</button>
+				</div>
 
-					@if (session('success'))
-						<div class="guest-alert">{{ session('success') }}</div>
-					@endif
+				@if (session('success'))
+					<div class="guest-alert">{{ session('success') }}</div>
+				@endif
 
 					{{-- GUEST TABLE --}}
 					<div id="guestTableSection">

@@ -103,59 +103,90 @@ document.addEventListener('DOMContentLoaded', () => {
         checkInCompanionList.innerHTML = '';
         checkInCompanionHiddenFields.innerHTML = '';
 
-        if (!bulkCompanionGroups.length) {
+        // Render individual companions (single additions)
+        if (checkInCompanions.length > 0) {
+            checkInCompanions.forEach((companion, index) => {
+                const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+                const item = document.createElement('div');
+                item.className = 'guest-companion-pill';
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '0.5rem';
+                
+                const infoSpan = document.createElement('span');
+                infoSpan.textContent = `${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age || 'N/A'} - ${companion.gender}`;
+                item.appendChild(infoSpan);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'guest-companion-pill__delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    checkInCompanions.splice(index, 1);
+                    renderCheckInCompanions();
+                });
+                item.appendChild(deleteBtn);
+                checkInCompanionList.appendChild(item);
+            });
+        }
+
+        // Render bulk companion groups
+        if (bulkCompanionGroups.length > 0) {
+            bulkCompanionGroups.forEach((group, index) => {
+                const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+                const item = document.createElement('div');
+                item.className = 'guest-companion-pill';
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.gap = '0.5rem';
+                
+                const infoSpan = document.createElement('span');
+                infoSpan.textContent = `${group.gender} - ${nationality} - ${group.age_group} - `;
+                item.appendChild(infoSpan);
+                
+                const quantityInput = document.createElement('input');
+                quantityInput.type = 'number';
+                quantityInput.min = '1';
+                quantityInput.max = '500';
+                quantityInput.value = group.quantity;
+                quantityInput.style.width = '60px';
+                quantityInput.style.padding = '0.25rem';
+                quantityInput.style.border = '1px solid #ccc';
+                quantityInput.style.borderRadius = '0.25rem';
+                quantityInput.addEventListener('change', (e) => {
+                    const newQuantity = parseInt(e.target.value, 10) || 1;
+                    group.quantity = Math.min(Math.max(newQuantity, 1), 500);
+                    e.target.value = group.quantity;
+                    renderCheckInCompanions();
+                });
+                item.appendChild(quantityInput);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'guest-companion-pill__delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    bulkCompanionGroups.splice(index, 1);
+                    renderCheckInCompanions();
+                });
+                item.appendChild(deleteBtn);
+                checkInCompanionList.appendChild(item);
+            });
+        }
+
+        if (checkInCompanions.length === 0 && bulkCompanionGroups.length === 0) {
             checkInCompanionList.innerHTML = '<p class="guest-empty">No companions added yet.</p>';
             return;
         }
 
-        bulkCompanionGroups.forEach((group, index) => {
-            const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
-            const item = document.createElement('div');
-            item.className = 'guest-companion-pill';
-            item.style.display = 'flex';
-            item.style.alignItems = 'center';
-            item.style.gap = '0.5rem';
-            
-            const infoSpan = document.createElement('span');
-            infoSpan.textContent = `${group.gender} - ${nationality} - ${group.age_group} - `;
-            item.appendChild(infoSpan);
-            
-            const quantityInput = document.createElement('input');
-            quantityInput.type = 'number';
-            quantityInput.min = '1';
-            quantityInput.max = '500';
-            quantityInput.value = group.quantity;
-            quantityInput.style.width = '60px';
-            quantityInput.style.padding = '0.25rem';
-            quantityInput.style.border = '1px solid #ccc';
-            quantityInput.style.borderRadius = '0.25rem';
-            quantityInput.addEventListener('change', (e) => {
-                const newQuantity = parseInt(e.target.value, 10) || 1;
-                group.quantity = Math.min(Math.max(newQuantity, 1), 500);
-                e.target.value = group.quantity;
-                renderCheckInCompanions();
-            });
-            item.appendChild(quantityInput);
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.className = 'guest-companion-pill__delete';
-            deleteBtn.textContent = '×';
-            deleteBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                bulkCompanionGroups.splice(index, 1);
-                renderCheckInCompanions();
-            });
-            item.appendChild(deleteBtn);
-            checkInCompanionList.appendChild(item);
-        });
-
         // Generate individual companions from bulk groups for form submission
-        checkInCompanions = [];
+        const allCompanions = [...checkInCompanions];
         bulkCompanionGroups.forEach(group => {
             for (let i = 0; i < group.quantity; i++) {
                 companionCount++;
-                checkInCompanions.push({
+                allCompanions.push({
                     first_name: `Reservation ${pendingReservationId || 'Guest'}`,
                     middle_name: '',
                     last_name: `C${companionCount}`,
@@ -168,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        checkInCompanions.forEach((companion, index) => {
+        allCompanions.forEach((companion, index) => {
             Object.entries(companion).forEach(([key, value]) => {
                 const field = document.createElement('input');
                 field.type = 'hidden';

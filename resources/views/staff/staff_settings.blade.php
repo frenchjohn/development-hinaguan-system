@@ -47,24 +47,16 @@
                 </div>
             </div>
 
-            <x-header title="Settings" subtitle="Update your profile securely" />
             <main class="dash-content">
-                <section class="dash-panel settings-panel">
-                    <div class="settings-panel__header">
-                        <div>
-                            <p class="settings-panel__eyebrow">Secure profile update</p>
-                            <h2 class="settings-panel__title">Update your account details</h2>
-                            <p class="settings-panel__text">Any name, email, or password change requires a one-time verification code sent to your email.</p>
-                        </div>
-                    </div>
+                <x-header title="Settings" subtitle="Update your profile securely" />
 
-                    @if(session('success'))
-                        <div class="alert alert--success">{{ session('success') }}</div>
-                    @endif
+                @if(session('success'))
+                    <div class="alert alert--success">{{ session('success') }}</div>
+                @endif
 
-                    @if(session('error'))
-                        <div class="alert alert--error">{{ session('error') }}</div>
-                    @endif
+                @if(session('error'))
+                    <div class="alert alert--error">{{ session('error') }}</div>
+                @endif
 
                     <form method="POST" action="{{ route('staff.settings.update') }}" class="settings-form">
                         @csrf

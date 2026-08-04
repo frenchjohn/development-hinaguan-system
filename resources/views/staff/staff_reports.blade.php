@@ -53,22 +53,11 @@
                 </div>
             </div>
 
-            <x-header
-                title="Staff Reports"
-                subtitle="Customer, reservation, and amenity insights"
-            />
-
             <main class="dash-content">
-                <section class="reports-head">
-                    <div>
-                        <p class="reports-head__eyebrow">Staff Reports</p>
-                        <h2 class="reports-head__title">Track reservations, guest details, and amenities</h2>
-                        <p class="reports-head__text">Filter by customer, amenity, status, and check-in range. Print only the rows shown in the filtered report.</p>
-                    </div>
-                    <div class="reports-head__actions">
-                        <button type="button" class="btn btn--ghost reports-print-button" id="printReportsButton">Print PDF</button>
-                    </div>
-                </section>
+                <x-header
+                    title="Staff Reports"
+                    subtitle="Customer, reservation, and amenity insights"
+                />
 
                 <section class="reports-filters" id="reportsFilters">
                     <div class="reports-filter-group">

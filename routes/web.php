@@ -1957,6 +1957,72 @@ Route::prefix('staff')->name('staff.')->group(function () {
             'status' => 'Checked Out',
         ]);
 
+        // Send receipt emails to all guests with email addresses
+        $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity']);
+        $checkInDateTime = $reservation->check_in ? $reservation->check_in->format('F j, Y g:i A') : now()->format('F j, Y g:i A');
+        $checkOutDateTime = now()->format('F j, Y g:i A');
+
+        // Calculate total cost from amenities
+        $totalCost = 0;
+        $amenities = [];
+        foreach ($reservation->reservationAmenities as $reservationAmenity) {
+            $amenityCost = $reservationAmenity->price_at_booking * $reservationAmenity->quantity;
+            $totalCost += $amenityCost;
+            $amenities[] = [
+                'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
+                'price' => $amenityCost,
+            ];
+        }
+
+        \Log::info('Reservation checkout - attempting to send receipts', [
+            'reservation_id' => $reservation->id,
+            'total_guests' => $reservation->reservationGuests->count(),
+            'total_cost' => $totalCost,
+        ]);
+
+        // Send email to each guest who has an email
+        foreach ($reservation->reservationGuests as $reservationGuest) {
+            $customer = $reservationGuest->customer;
+            \Log::info('Checking guest for email', [
+                'reservation_guest_id' => $reservationGuest->id,
+                'has_customer' => $customer ? true : false,
+                'customer_email' => $customer?->email,
+            ]);
+
+            if ($customer && $customer->email) {
+                try {
+                    \Log::info('Sending checkout receipt to guest', [
+                        'customer_email' => $customer->email,
+                    ]);
+
+                    Mail::mailer('smtp')->send(
+                        new \App\Mail\CheckoutReceiptMail(
+                            $customer,
+                            $reservation,
+                            $amenities,
+                            $checkInDateTime,
+                            $checkOutDateTime,
+                            $totalCost
+                        )
+                    );
+
+                    \Log::info('Checkout receipt sent successfully to guest', [
+                        'customer_email' => $customer->email,
+                    ]);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to send checkout receipt email: ' . $e->getMessage(), [
+                        'customer_id' => $customer->id,
+                        'reservation_id' => $reservation->id,
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
+            } else {
+                \Log::info('Skipping guest - no email', [
+                    'reservation_guest_id' => $reservationGuest->id,
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'check_out' => $reservation->check_out,
@@ -2072,6 +2138,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
         // Check if all guests in the reservation are now checked out
         $reservation = $reservationGuest->reservation;
+        $allGuestsCheckedOut = false;
+
         if ($reservation) {
             $allGuestsCheckedOut = ReservationGuest::where('reservation_id', $reservation->id)
                 ->whereNotNull('checked_out_at')
@@ -2083,6 +2151,71 @@ Route::prefix('staff')->name('staff.')->group(function () {
                     'status' => 'Checked Out',
                 ]);
             }
+        }
+
+        // Send receipt email if customer has email
+        $customer = $reservationGuest->customer;
+        \Log::info('Checkout attempt', [
+            'reservation_guest_id' => $reservationGuest->id,
+            'has_customer' => $customer ? true : false,
+            'customer_email' => $customer?->email,
+            'reservation_id' => $reservation?->id,
+        ]);
+
+        if ($customer && $customer->email) {
+            try {
+                $checkInDateTime = $reservation && $reservation->check_in
+                    ? $reservation->check_in->format('F j, Y g:i A')
+                    : now()->format('F j, Y g:i A');
+
+                $checkOutDateTime = now()->format('F j, Y g:i A');
+
+                // Calculate total cost from amenities
+                $totalCost = 0;
+                $amenities = [];
+
+                if ($reservation) {
+                    $reservation->load('reservationAmenities.amenity');
+                    foreach ($reservation->reservationAmenities as $reservationAmenity) {
+                        $amenityCost = $reservationAmenity->price_at_booking * $reservationAmenity->quantity;
+                        $totalCost += $amenityCost;
+                        $amenities[] = [
+                            'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
+                            'price' => $amenityCost,
+                        ];
+                    }
+                }
+
+                \Log::info('Sending checkout receipt', [
+                    'customer_email' => $customer->email,
+                    'total_cost' => $totalCost,
+                ]);
+
+                Mail::mailer('smtp')->send(
+                    new \App\Mail\CheckoutReceiptMail(
+                        $customer,
+                        $reservation,
+                        $amenities,
+                        $checkInDateTime,
+                        $checkOutDateTime,
+                        $totalCost
+                    )
+                );
+
+                \Log::info('Checkout receipt sent successfully', [
+                    'customer_email' => $customer->email,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to send checkout receipt email: ' . $e->getMessage(), [
+                    'customer_id' => $customer->id,
+                    'reservation_guest_id' => $reservationGuest->id,
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
+        } else {
+            \Log::info('No email sent - customer has no email', [
+                'reservation_guest_id' => $reservationGuest->id,
+            ]);
         }
 
         return response()->json([

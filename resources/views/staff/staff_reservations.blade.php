@@ -54,18 +54,11 @@
                 </div>
             </div>
 
-            <x-header
-                title="Reservations"
-                subtitle="Pending online reservations waiting for check-in"
-            />
-
             <main class="dash-content">
-                <div class="dash-panel__head guest-panel__head">
-                    <div>
-                        <h3 class="dash-panel__title">Pending Online Reservations</h3>
-                        <p class="dash-panel__subtitle">Reservations that have not been checked in yet</p>
-                    </div>
-                </div>
+                <x-header
+                    title="Reservations"
+                    subtitle="Pending online reservations waiting for check-in"
+                />
 
                 @if (session('success'))
                     <div class="guest-alert">{{ session('success') }}</div>

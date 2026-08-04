@@ -44,12 +44,11 @@
                     </div>
                 </div>
             </div>
-            <x-header
-                title="Amenities Management"
-                subtitle="Create, edit, and maintain park amenities"
-            />
-
             <main class="dash-content">
+                <x-header
+                    title="Amenities Management"
+                    subtitle="Create, edit, and maintain park amenities"
+                />
                 <section class="amenities-head">
                     <div>
                         <p class="amenities-head__eyebrow">Manage Amenities</p>

@@ -44,12 +44,11 @@
                     </div>
                 </div>
             </div>
-            <x-header
-                title="Admin Dashboard"
-                subtitle="Overview of park operations and reservations"
-            />
-
             <main class="dash-content">
+                <x-header
+                    title="Admin Dashboard"
+                    subtitle="Overview of park operations and reservations"
+                />
                 <section class="dash-welcome">
                     <h2 class="dash-welcome__title">Good day, Admin!</h2>
                     <p class="dash-welcome__text">

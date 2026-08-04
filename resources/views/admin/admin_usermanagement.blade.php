@@ -44,12 +44,11 @@
                     </div>
                 </div>
             </div>
-            <x-header
-                title="User Management"
-                subtitle="Manage staff accounts and access"
-            />
-
             <main class="dash-content">
+                <x-header
+                    title="User Management"
+                    subtitle="Manage staff accounts and access"
+                />
                 <section class="users-head">
                     <div>
                         <p class="users-head__eyebrow">Manage Staff Accounts</p>

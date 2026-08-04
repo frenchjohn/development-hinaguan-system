@@ -54,12 +54,11 @@
                 </div>
             </div>
 
-            <x-header
-                title="Records"
-                subtitle="View checked-out guests and completed reservations"
-            />
-
             <main class="dash-content">
+                <x-header
+                    title="Records"
+                    subtitle="View checked-out guests and completed reservations"
+                />
                 <!-- TAB BUTTONS -->
                 <div class="records-tabs">
                     <button type="button" class="records-tab-btn records-tab-btn--active" data-tab="guests" id="guestsTabBtn">
@@ -72,12 +71,6 @@
 
                 <!-- GUESTS TABLE SECTION -->
                 <section class="dash-panel guest-panel" data-tab-content="guests">
-                    <div class="dash-panel__head guest-panel__head">
-                        <div>
-                            <h3 class="dash-panel__title">Checked-Out Guests</h3>
-                            <p class="dash-panel__subtitle">Records of guests who have checked out</p>
-                        </div>
-                    </div>
 
                     @if (session('success'))
                         <div class="guest-alert">{{ session('success') }}</div>
