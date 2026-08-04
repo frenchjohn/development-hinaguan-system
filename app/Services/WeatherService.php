@@ -8,6 +8,63 @@ use Illuminate\Support\Facades\Http;
 
 class WeatherService
 {
+    public function getMultiDayForecast(int $days = 3): ?array
+    {
+        $key = config('services.weatherapi.key');
+        $location = config('services.weatherapi.location');
+
+        if (! $key || ! $location) {
+            return null;
+        }
+
+        return Cache::remember(
+            'header_weather_forecast_'.md5($location),
+            now()->addMinutes(30),
+            function () use ($key, $location, $days) {
+                $response = Http::timeout(8)->get('https://api.weatherapi.com/v1/forecast.json', [
+                    'key' => $key,
+                    'q' => $location,
+                    'days' => $days,
+                    'aqi' => 'no',
+                    'alerts' => 'no',
+                ]);
+
+                if (! $response->successful()) {
+                    return null;
+                }
+
+                $data = $response->json();
+                $forecastDays = $data['forecast']['forecastday'] ?? [];
+                $result = [];
+
+                foreach ($forecastDays as $forecastDay) {
+                    $icon = $forecastDay['day']['condition']['icon'] ?? null;
+
+                    if ($icon && ! str_starts_with($icon, 'http')) {
+                        $icon = 'https:'.$icon;
+                    }
+
+                    $date = Carbon::parse($forecastDay['date'] ?? now()->toDateString());
+                    $isToday = $date->isSameDay(now());
+
+                    $result[] = [
+                        'date' => $forecastDay['date'] ?? $date->toDateString(),
+                        'day_name' => $isToday ? 'Today' : $date->format('l'),
+                        'condition' => $forecastDay['day']['condition']['text'] ?? null,
+                        'icon' => $icon,
+                        'max_temp_c' => $forecastDay['day']['maxtemp_c'] ?? null,
+                        'min_temp_c' => $forecastDay['day']['mintemp_c'] ?? null,
+                        'avg_temp_c' => $forecastDay['day']['avgtemp_c'] ?? null,
+                        'chance_of_rain' => $forecastDay['day']['daily_chance_of_rain'] ?? null,
+                        'is_today' => $isToday,
+                    ];
+                }
+
+                return $result;
+            }
+        );
+    }
+
     public function getTodayWeather(): ?array
     {
         $key = config('services.weatherapi.key');

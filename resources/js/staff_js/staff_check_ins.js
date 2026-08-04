@@ -594,10 +594,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const addGuestModal = document.getElementById('addGuestModal');
     const addGuestCloseButtons = document.querySelectorAll('[data-close-add-modal="true"]');
     const openAddGuestButtons = document.querySelectorAll('[data-open-add-guest-modal="true"]');
+    const guestModeRadios = document.querySelectorAll('input[name="guest_mode"]');
+    const primaryGuestSection = document.getElementById('primaryGuestSection');
+    const amenitySection = document.getElementById('amenitySection');
+    const chooseAmenitiesBtn = document.getElementById('chooseAmenitiesBtn');
+    const visitOnlyOptions = document.getElementById('visitOnlyOptions');
+    const visitAmenityOptions = document.getElementById('visitAmenityOptions');
+    const visitTimeType = document.getElementById('visit_time_type');
+    const visitIncludePool = document.getElementById('visit_include_pool');
+    const entranceFeeDisplay = document.getElementById('entranceFeeDisplay');
+    
+    // Park settings for pricing (will be loaded from server)
+    let parkSettings = {
+        daytime_adult_entrance_fee: 0,
+        daytime_child_entrance_fee: 0,
+        nighttime_adult_entrance_fee: 0,
+        nighttime_child_entrance_fee: 0,
+        day_pool_fee: 0,
+        night_pool_fee: 0,
+        daytime_start: '06:00',
+        daytime_end: '18:00',
+        nighttime_start: '18:00',
+        nighttime_end: '06:00'
+    };
 
     const openAddGuestModal = () => {
         addGuestModal.classList.add('is-open');
         addGuestModal.setAttribute('aria-hidden', 'false');
+        // Load park settings
+        loadParkSettings();
     };
 
     const closeAddGuestModal = () => {
@@ -616,10 +641,340 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', closeAddGuestModal);
     });
 
+    // Load park settings from server
+    const loadParkSettings = async () => {
+        try {
+            const response = await fetch('/api/park-settings');
+            if (response.ok) {
+                const data = await response.json();
+                parkSettings = { ...parkSettings, ...data };
+                // Set default time period based on current time
+                setDefaultTimePeriod();
+                // Calculate initial fee
+                calculateEntranceFee();
+            }
+        } catch (error) {
+            console.error('Failed to load park settings:', error);
+        }
+    };
+
+    // Set default time period based on current time
+    const setDefaultTimePeriod = () => {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        
+        const daytimeStart = parseTime(parkSettings.daytime_start);
+        const daytimeEnd = parseTime(parkSettings.daytime_end);
+        const nighttimeStart = parseTime(parkSettings.nighttime_start);
+        const nighttimeEnd = parseTime(parkSettings.nighttime_end);
+        
+        let defaultPeriod = 'daytime';
+        
+        if (currentTime >= daytimeStart && currentTime < daytimeEnd) {
+            defaultPeriod = 'daytime';
+        } else if (currentTime >= nighttimeStart || currentTime < nighttimeEnd) {
+            defaultPeriod = 'nighttime';
+        } else {
+            defaultPeriod = 'daynight';
+        }
+        
+        if (visitTimeType) {
+            visitTimeType.value = defaultPeriod;
+        }
+    };
+
+    // Parse time string to minutes
+    const parseTime = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    };
+
+    // Calculate entrance fee based on companions
+    const calculateEntranceFee = () => {
+        const timeType = visitTimeType?.value || 'daytime';
+        const includePool = visitIncludePool?.checked || false;
+        
+        // Calculate fee per person based on companions' age types
+        let totalFee = 0;
+        
+        // Add main guest fee (default to adult for main guest)
+        let mainGuestFee = 0;
+        if (timeType === 'daytime') {
+            mainGuestFee = parkSettings.daytime_adult_entrance_fee;
+        } else if (timeType === 'nighttime') {
+            mainGuestFee = parkSettings.nighttime_adult_entrance_fee;
+        } else if (timeType === 'daynight') {
+            mainGuestFee = parkSettings.daytime_adult_entrance_fee + parkSettings.nighttime_adult_entrance_fee;
+        }
+        
+        // Add pool fee for main guest if checked
+        if (includePool) {
+            if (timeType === 'daytime') {
+                mainGuestFee += parkSettings.day_pool_fee;
+            } else if (timeType === 'nighttime') {
+                mainGuestFee += parkSettings.night_pool_fee;
+            } else if (timeType === 'daynight') {
+                mainGuestFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+            }
+        }
+        
+        totalFee += mainGuestFee;
+        
+        // Calculate fees for companions
+        companions.forEach(companion => {
+            let companionFee = 0;
+            const ageType = companion.age_type || 'adult';
+            
+            if (timeType === 'daytime') {
+                companionFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+            } else if (timeType === 'nighttime') {
+                companionFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+            } else if (timeType === 'daynight') {
+                const daytimeFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+                const nighttimeFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                companionFee = daytimeFee + nighttimeFee;
+            }
+            
+            // Add pool fee for companion if checked
+            if (includePool) {
+                if (timeType === 'daytime') {
+                    companionFee += parkSettings.day_pool_fee;
+                } else if (timeType === 'nighttime') {
+                    companionFee += parkSettings.night_pool_fee;
+                } else if (timeType === 'daynight') {
+                    companionFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+                }
+            }
+            
+            totalFee += companionFee;
+        });
+        
+        // Calculate fees for bulk companions
+        bulkCompanionGroups.forEach(group => {
+            let groupFee = 0;
+            const ageType = group.age_type || 'adult';
+            
+            if (timeType === 'daytime') {
+                groupFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+            } else if (timeType === 'nighttime') {
+                groupFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+            } else if (timeType === 'daynight') {
+                const daytimeFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+                const nighttimeFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                groupFee = daytimeFee + nighttimeFee;
+            }
+            
+            // Add pool fee for bulk companions if checked
+            if (includePool) {
+                if (timeType === 'daytime') {
+                    groupFee += parkSettings.day_pool_fee;
+                } else if (timeType === 'nighttime') {
+                    groupFee += parkSettings.night_pool_fee;
+                } else if (timeType === 'daynight') {
+                    groupFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+                }
+            }
+            
+            totalFee += groupFee * group.quantity;
+        });
+        
+        if (entranceFeeDisplay) {
+            entranceFeeDisplay.textContent = `₱${totalFee.toFixed(2)}`;
+        }
+        
+        return totalFee;
+    };
+
+    // Guest mode switching
+    const handleGuestModeChange = () => {
+        const selectedMode = document.querySelector('input[name="guest_mode"]:checked')?.value;
+        
+        if (selectedMode === 'visitors_only') {
+            // Visit Only: Hide primary guest, hide amenity button, show visit-only options
+            if (primaryGuestSection) {
+                primaryGuestSection.style.display = 'none';
+            }
+            if (chooseAmenitiesBtn) {
+                chooseAmenitiesBtn.classList.add('hidden');
+            }
+            if (visitOnlyOptions) {
+                visitOnlyOptions.style.display = 'block';
+            }
+            if (visitAmenityOptions) {
+                visitAmenityOptions.style.display = 'none';
+            }
+            if (amenitySection) {
+                amenitySection.style.display = 'none';
+            }
+            // Calculate fee
+            calculateEntranceFee();
+        } else {
+            // Visit & Amenity: Show primary guest, show amenity button, hide visit-only options
+            if (primaryGuestSection) {
+                primaryGuestSection.style.display = 'block';
+            }
+            if (chooseAmenitiesBtn) {
+                chooseAmenitiesBtn.classList.remove('hidden');
+            }
+            if (visitOnlyOptions) {
+                visitOnlyOptions.style.display = 'none';
+            }
+            if (visitAmenityOptions) {
+                visitAmenityOptions.style.display = 'block';
+            }
+            if (amenitySection) {
+                amenitySection.style.display = 'block';
+            }
+        }
+    };
+
+    guestModeRadios.forEach(radio => {
+        radio.addEventListener('change', handleGuestModeChange);
+    });
+
+    // Listen for fee calculation changes
+    visitTimeType?.addEventListener('change', calculateEntranceFee);
+    visitIncludePool?.addEventListener('change', calculateEntranceFee);
+
+    // Initialize guest mode state
+    handleGuestModeChange();
+
+    // Visit Only Check-In Modal
+    const visitOnlyCheckInModal = document.getElementById('visitOnlyCheckInModal');
+    const visitOnlyCheckInBtn = document.getElementById('visitOnlyCheckInBtn');
+    const visitAmenitySubmitBtn = document.getElementById('visitAmenitySubmitBtn');
+    const proceedCheckInBtn = document.getElementById('proceedCheckInBtn');
+    const visitCheckInCloseButtons = document.querySelectorAll('[data-close-visit-check-in-modal="true"]');
+    
+    const summaryTimeType = document.getElementById('summaryTimeType');
+    const summaryPool = document.getElementById('summaryPool');
+    const summaryCompanions = document.getElementById('summaryCompanions');
+    const summaryTotal = document.getElementById('summaryTotal');
+
+    // Update submit button based on guest mode
+    const updateSubmitButton = () => {
+        const selectedMode = document.querySelector('input[name="guest_mode"]:checked')?.value;
+        if (selectedMode === 'visitors_only') {
+            visitOnlyCheckInBtn.style.display = 'inline-flex';
+            visitAmenitySubmitBtn.style.display = 'none';
+        } else {
+            visitOnlyCheckInBtn.style.display = 'none';
+            visitAmenitySubmitBtn.style.display = 'inline-flex';
+        }
+    };
+
+    guestModeRadios.forEach(radio => {
+        radio.addEventListener('change', updateSubmitButton);
+    });
+    updateSubmitButton();
+
+    // Open check-in confirmation modal
+    visitOnlyCheckInBtn?.addEventListener('click', () => {
+        // Calculate total with companions
+        const totalCost = calculateEntranceFee();
+        const totalCompanions = companions.length + bulkCompanionGroups.reduce((sum, group) => sum + group.quantity, 0);
+        
+        // Update summary
+        if (summaryTimeType) {
+            const timeMap = { daytime: 'Daytime', nighttime: 'Nighttime', daynight: 'Day & Night' };
+            summaryTimeType.textContent = timeMap[visitTimeType?.value] || 'Daytime';
+        }
+        if (summaryPool) {
+            summaryPool.textContent = visitIncludePool?.checked ? 'Yes' : 'No';
+        }
+        if (summaryCompanions) {
+            summaryCompanions.textContent = totalCompanions;
+        }
+        if (summaryTotal) {
+            summaryTotal.textContent = `₱${totalCost.toFixed(2)}`;
+        }
+        
+        // Store total for submission
+        visitOnlyCheckInBtn.dataset.totalCost = totalCost;
+        
+        visitOnlyCheckInModal.classList.add('is-open');
+        visitOnlyCheckInModal.setAttribute('aria-hidden', 'false');
+    });
+
+    // Close check-in modal
+    visitCheckInCloseButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            visitOnlyCheckInModal.classList.remove('is-open');
+            visitOnlyCheckInModal.setAttribute('aria-hidden', 'true');
+        });
+    });
+
+    // Proceed with check-in
+    proceedCheckInBtn?.addEventListener('click', async () => {
+        const totalCost = parseFloat(visitOnlyCheckInBtn.dataset.totalCost) || 0;
+        
+        // Prepare data for submission
+        const formData = new FormData();
+        formData.append('guest_mode', 'visitors_only');
+        formData.append('age_type', visitAgeType?.value || 'adult');
+        formData.append('time_type', visitTimeType?.value || 'daytime');
+        formData.append('include_pool', visitIncludePool?.checked ? '1' : '0');
+        formData.append('total_amount', totalCost);
+        
+        // Add companions
+        companions.forEach((companion, index) => {
+            formData.append(`companions[${index}][first_name]`, companion.first_name);
+            formData.append(`companions[${index}][middle_name]`, companion.middle_name || '');
+            formData.append(`companions[${index}][last_name]`, companion.last_name);
+            formData.append(`companions[${index}][age]`, companion.age || '');
+            formData.append(`companions[${index}][gender]`, companion.gender || '');
+            formData.append(`companions[${index}][is_foreigner]`, companion.is_foreigner ? '1' : '0');
+            formData.append(`companions[${index}][phone]`, companion.phone || '');
+            formData.append(`companions[${index}][email]`, companion.email || '');
+        });
+        
+        bulkCompanionGroups.forEach((group, groupIndex) => {
+            for (let i = 0; i < group.quantity; i++) {
+                const companionIndex = companions.length + groupIndex * 1000 + i;
+                formData.append(`companions[${companionIndex}][age]`, group.age);
+                formData.append(`companions[${companionIndex}][gender]`, group.gender);
+                formData.append(`companions[${companionIndex}][is_foreigner]`, group.is_foreigner ? '1' : '0');
+            }
+        });
+        
+        try {
+            const response = await fetch('/staff/checkins/visit-only-check-in', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Close modals
+                visitOnlyCheckInModal.classList.remove('is-open');
+                visitOnlyCheckInModal.setAttribute('aria-hidden', 'true');
+                addGuestModal.classList.remove('is-open');
+                addGuestModal.setAttribute('aria-hidden', 'true');
+                
+                // Reset form
+                document.getElementById('addGuestForm')?.reset();
+                companions = [];
+                bulkCompanionGroups = [];
+                renderCompanions();
+                
+                alert('Check-in successful!');
+                location.reload();
+            } else {
+                throw new Error(data.message || 'Check-in failed');
+            }
+        } catch (error) {
+            console.error('Check-in error:', error);
+            alert('Error during check-in: ' + error.message);
+        }
+    });
+
     // Amenity modal
     const amenityModal = document.getElementById('amenityModal');
     const amenityCloseButtons = document.querySelectorAll('[data-close-amenity-modal="true"]');
-    const chooseAmenitiesBtn = document.getElementById('chooseAmenitiesBtn');
     const selectedAmenitiesContainer = document.getElementById('selectedAmenitiesContainer');
     const reservationTotal = document.getElementById('reservationTotal');
     const totalAmountInput = document.getElementById('totalAmountInput');
@@ -637,6 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
         amenityModal.setAttribute('aria-hidden', 'true');
     };
 
+    // chooseAmenitiesBtn is already defined above in guest mode section
     chooseAmenitiesBtn?.addEventListener('click', openAmenityModal);
     amenityCloseButtons.forEach(button => {
         button.addEventListener('click', closeAmenityModal);
@@ -655,9 +1011,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const companionCloseButtons = document.querySelectorAll('[data-close-companion-modal="true"]');
     const addCompanionBtn = document.getElementById('addCompanionBtn');
     const companionForm = document.getElementById('companionForm');
+    const bulkCompanionForm = document.getElementById('bulkCompanionForm');
     const companionList = document.getElementById('companionList');
     const companionHiddenFields = document.getElementById('companionHiddenFields');
     const companionIsForeigner = document.getElementById('companionIsForeigner');
+    
+    let companions = [];
+    let bulkCompanionGroups = [];
 
     const openCompanionModal = () => {
         companionModal.classList.add('is-open');
@@ -667,6 +1027,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCompanionModal = () => {
         companionModal.classList.remove('is-open');
         companionModal.setAttribute('aria-hidden', 'true');
+        // Reset forms
+        companionForm?.reset();
+        bulkCompanionForm?.reset();
     };
 
     addCompanionBtn?.addEventListener('click', openCompanionModal);
@@ -674,35 +1037,148 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', closeCompanionModal);
     });
 
+    // Tab switching for companion modal
+    const companionTabs = document.querySelectorAll('[data-companion-tab]');
+    const companionTabContents = document.querySelectorAll('[data-companion-content]');
+
+    companionTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabType = tab.dataset.companionTab;
+            
+            // Update tabs
+            companionTabs.forEach(t => t.classList.remove('guest-form__tab--active'));
+            tab.classList.add('guest-form__tab--active');
+            
+            // Update content
+            companionTabContents.forEach(content => {
+                content.classList.remove('guest-form--tab-content--active');
+                if (content.dataset.companionContent === tabType) {
+                    content.classList.add('guest-form--tab-content--active');
+                }
+            });
+        });
+    });
+
+    // Render companions
+    const renderCompanions = () => {
+        companionList.innerHTML = '';
+        companionHiddenFields.innerHTML = '';
+
+        // Render individual companions
+        companions.forEach((companion, index) => {
+            const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+            const item = document.createElement('div');
+            item.className = 'guest-companion-pill';
+            item.innerHTML = `
+                <span class="guest-companion-pill__name">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age || 'N/A'} - ${companion.gender}</span>
+                <button type="button" class="guest-companion-pill__delete" data-companion-index="${index}">Remove</button>
+            `;
+            companionList.appendChild(item);
+
+            // Add hidden fields
+            companionHiddenFields.insertAdjacentHTML('beforeend', `
+                <input type="hidden" name="companions[${index}][first_name]" value="${companion.first_name}">
+                <input type="hidden" name="companions[${index}][middle_name]" value="${companion.middle_name || ''}">
+                <input type="hidden" name="companions[${index}][last_name]" value="${companion.last_name}">
+                <input type="hidden" name="companions[${index}][age]" value="${companion.age || ''}">
+                <input type="hidden" name="companions[${index}][gender]" value="${companion.gender || ''}">
+                <input type="hidden" name="companions[${index}][is_foreigner]" value="${companion.is_foreigner ? '1' : '0'}">
+                <input type="hidden" name="companions[${index}][phone]" value="${companion.phone || ''}">
+                <input type="hidden" name="companions[${index}][email]" value="${companion.email || ''}">
+            `);
+        });
+
+        // Render bulk companion groups
+        bulkCompanionGroups.forEach((group, groupIndex) => {
+            const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            const item = document.createElement('div');
+            item.className = 'guest-companion-pill guest-companion-pill--bulk';
+            item.innerHTML = `
+                <span class="guest-companion-pill__name">${group.gender} - ${nationality} - Age: ${group.age} - Qty: ${group.quantity}</span>
+                <button type="button" class="guest-companion-pill__delete" data-bulk-index="${groupIndex}">Remove</button>
+            `;
+            companionList.appendChild(item);
+
+            // Add hidden fields for each companion in the group
+            for (let i = 0; i < group.quantity; i++) {
+                const companionIndex = companions.length + groupIndex * 1000 + i;
+                companionHiddenFields.insertAdjacentHTML('beforeend', `
+                    <input type="hidden" name="companions[${companionIndex}][first_name]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][middle_name]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][last_name]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][age]" value="${group.age}">
+                    <input type="hidden" name="companions[${companionIndex}][gender]" value="${group.gender}">
+                    <input type="hidden" name="companions[${companionIndex}][is_foreigner]" value="${group.is_foreigner ? '1' : '0'}">
+                    <input type="hidden" name="companions[${companionIndex}][phone]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][email]" value="">
+                `);
+            }
+        });
+
+        if (companions.length === 0 && bulkCompanionGroups.length === 0) {
+            companionList.innerHTML = '<p class="guest-empty">No companions added yet.</p>';
+        }
+    };
+
+    // Single companion form submission
     companionForm?.addEventListener('submit', (e) => {
         e.preventDefault();
+        
         const formData = new FormData(companionForm);
-        const companionData = Object.fromEntries(formData.entries());
+        const companionData = {
+            first_name: formData.get('first_name'),
+            middle_name: formData.get('middle_name'),
+            last_name: formData.get('last_name'),
+            age: formData.get('age'),
+            age_type: formData.get('age_type'),
+            gender: formData.get('gender'),
+            is_foreigner: formData.get('is_foreigner') === '1',
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+        };
         
-        companionCount++;
-        const companionHtml = `
-            <div class="guest-companion-pill">
-                <span class="guest-companion-pill__name">${companionData.first_name} ${companionData.last_name}</span>
-                <button type="button" class="guest-companion-pill__delete" data-companion-index="${companionCount}">Remove</button>
-            </div>
-        `;
-        companionList.insertAdjacentHTML('beforeend', companionHtml);
-        
-        // Add hidden fields
-        const hiddenFieldsHtml = `
-            <input type="hidden" name="companions[${companionCount}][first_name]" value="${companionData.first_name}">
-            <input type="hidden" name="companions[${companionCount}][middle_name]" value="${companionData.middle_name || ''}">
-            <input type="hidden" name="companions[${companionCount}][last_name]" value="${companionData.last_name}">
-            <input type="hidden" name="companions[${companionCount}][age]" value="${companionData.age || ''}">
-            <input type="hidden" name="companions[${companionCount}][gender]" value="${companionData.gender || ''}">
-            <input type="hidden" name="companions[${companionCount}][is_foreigner]" value="${companionData.is_foreigner === '1' ? '1' : '0'}">
-            <input type="hidden" name="companions[${companionCount}][phone]" value="${companionData.phone || ''}">
-            <input type="hidden" name="companions[${companionCount}][email]" value="${companionData.email || ''}">
-        `;
-        companionHiddenFields.insertAdjacentHTML('beforeend', hiddenFieldsHtml);
-        
+        companions.push(companionData);
+        renderCompanions();
+        calculateEntranceFee();
         companionForm.reset();
         closeCompanionModal();
+    });
+
+    // Bulk companion form submission
+    bulkCompanionForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(bulkCompanionForm);
+        const bulkData = Object.fromEntries(formData.entries());
+        
+        bulkCompanionGroups.push({
+            gender: bulkData.gender,
+            age: bulkData.age,
+            age_type: bulkData.age_type,
+            is_foreigner: bulkData.is_foreigner === '1',
+            quantity: parseInt(bulkData.quantity) || 1,
+        });
+        
+        renderCompanions();
+        calculateEntranceFee();
+        bulkCompanionForm.reset();
+        closeCompanionModal();
+    });
+
+    // Delete companion handlers
+    companionList?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('guest-companion-pill__delete')) {
+            const index = e.target.dataset.companionIndex;
+            const bulkIndex = e.target.dataset.bulkIndex;
+            
+            if (index !== undefined) {
+                companions.splice(index, 1);
+            } else if (bulkIndex !== undefined) {
+                bulkCompanionGroups.splice(bulkIndex, 1);
+            }
+            
+            renderCompanions();
+            calculateEntranceFee();
+        }
     });
 
     // Guest filter toggle

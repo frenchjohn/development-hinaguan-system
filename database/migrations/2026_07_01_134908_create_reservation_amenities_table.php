@@ -16,7 +16,7 @@ return new class extends Migration
 
             // Foreign Keys
             $table->foreignId('reservation_id')->constrained('reservations')->cascadeOnDelete();
-            $table->string('amenity_id');
+            $table->string('amenity_id')->nullable();
 
             // Price selected during reservation
             $table->enum('pricing_type', [
@@ -29,7 +29,7 @@ return new class extends Migration
             ]);
 
             // Snapshot of the selected price
-            $table->decimal('price_at_booking', 10, 2);
+            $table->decimal('price_at_booking', 10, 2)->nullable();
 
             // Number of this amenity reserved
             $table->unsignedInteger('quantity')->default(1);

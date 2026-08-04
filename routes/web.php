@@ -39,6 +39,23 @@ Route::get('/api/active-guests-count', function () {
     ]);
 })->name('api.active-guests-count');
 
+Route::get('/api/park-settings', function () {
+    $settings = \App\Models\ParkSetting::first();
+    
+    return response()->json([
+        'daytime_adult_entrance_fee' => $settings->daytime_adult_entrance_fee ?? 0,
+        'daytime_child_entrance_fee' => $settings->daytime_child_entrance_fee ?? 0,
+        'nighttime_adult_entrance_fee' => $settings->nighttime_adult_entrance_fee ?? 0,
+        'nighttime_child_entrance_fee' => $settings->nighttime_child_entrance_fee ?? 0,
+        'day_pool_fee' => $settings->day_pool_fee ?? 0,
+        'night_pool_fee' => $settings->night_pool_fee ?? 0,
+        'daytime_start' => $settings->daytime_start ?? '06:00',
+        'daytime_end' => $settings->daytime_end ?? '18:00',
+        'nighttime_start' => $settings->nighttime_start ?? '18:00',
+        'nighttime_end' => $settings->nighttime_end ?? '06:00',
+    ]);
+})->name('api.park-settings');
+
 Route::get('/amenities', function () {
     $amenities = Amenity::where('status', true)
         ->orderBy('amenities_name')
@@ -1696,7 +1713,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
             'total_amount' => $data['total_amount'],
             'amount_paid' => 0,
             'remaining_balance' => $data['total_amount'],
-            'payment_status' => 'Pending',
+            'payment_status' => 'Partially Paid',
         ]);
 
         $primaryCustomer = null;
@@ -1784,6 +1801,102 @@ Route::prefix('staff')->name('staff.')->group(function () {
 
         return redirect()->route('staff.checkins')->with('success', 'Guest reservation created successfully.');
     })->name('checkins.guests.store');
+
+    Route::post('/checkins/visit-only-check-in', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $data = $request->validate([
+            'guest_mode' => ['required', 'in:visitors_only'],
+            'age_type' => ['required', 'in:adult,child'],
+            'time_type' => ['required', 'in:daytime,nighttime,daynight'],
+            'include_pool' => ['required', 'boolean'],
+            'total_amount' => ['required', 'numeric'],
+            'companions' => ['nullable', 'array'],
+            'companions.*.first_name' => ['nullable', 'string', 'max:255'],
+            'companions.*.middle_name' => ['nullable', 'string', 'max:255'],
+            'companions.*.last_name' => ['nullable', 'string', 'max:255'],
+            'companions.*.age' => ['nullable', 'string', 'max:255'],
+            'companions.*.gender' => ['nullable', 'in:Male,Female'],
+            'companions.*.is_foreigner' => ['nullable', 'boolean'],
+            'companions.*.phone' => ['nullable', 'string', 'max:255'],
+            'companions.*.email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        // Create a reservation for visit-only (without amenities)
+        $reservation = Reservation::create([
+            'booker_name' => 'Visit Only Guest',
+            'phone' => '',
+            'email' => '',
+            'reservation_date' => now(),
+            'check_in' => now(),
+            'number_of_guests' => 1 + count($data['companions'] ?? []),
+            'reservation_type' => 'walk_in',
+            'status' => 'Checked In',
+            'total_amount' => $data['total_amount'],
+            'amount_paid' => 0,
+            'remaining_balance' => $data['total_amount'],
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        // Create reservation amenity record for entrance fee (reservation_id can be null as per user request)
+        ReservationAmenity::create([
+            'reservation_id' => null, // null as requested
+            'amenity_id' => null, // null for entrance fee
+            'pricing_type' => ucfirst($data['time_type']),
+            'price_at_booking' => $data['total_amount'],
+            'quantity' => 1,
+            'remarks' => 'Visit Only - ' . ucfirst($data['age_type']) . ' - ' . ucfirst($data['time_type']) . ($data['include_pool'] ? ' with Pool' : ''),
+        ]);
+
+        // Create main guest record
+        $mainGuest = Customer::create([
+            'first_name' => 'Visit',
+            'middle_name' => 'Only',
+            'last_name' => 'Guest',
+            'age' => $data['age_type'] === 'adult' ? '18' : '12',
+            'gender' => 'Male',
+            'is_foreigner' => false,
+            'phone' => '',
+            'email' => '',
+        ]);
+
+        ReservationGuest::create([
+            'reservation_id' => $reservation->id,
+            'customer_id' => $mainGuest->id,
+            'is_primary_guest' => true,
+            'checked_out_at' => null,
+        ]);
+
+        // Create companion records
+        foreach ($data['companions'] ?? [] as $companionData) {
+            $companion = Customer::create([
+                'first_name' => $companionData['first_name'] ?? '',
+                'middle_name' => $companionData['middle_name'] ?? '',
+                'last_name' => $companionData['last_name'] ?? '',
+                'age' => $companionData['age'] ?? '',
+                'gender' => $companionData['gender'] ?? 'Male',
+                'is_foreigner' => isset($companionData['is_foreigner']) ? $companionData['is_foreigner'] : false,
+                'phone' => $companionData['phone'] ?? '',
+                'email' => $companionData['email'] ?? '',
+            ]);
+
+            ReservationGuest::create([
+                'reservation_id' => $reservation->id,
+                'customer_id' => $companion->id,
+                'is_primary_guest' => false,
+                'checked_out_at' => null,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in successful',
+            'reservation_id' => $reservation->id,
+        ]);
+    })->name('checkins.visit-only-check-in');
 
     Route::post('/reservations/{reservation}/check-in', function (Request $request, Reservation $reservation) {
         $user = $request->session()->get('auth_user');

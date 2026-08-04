@@ -64,7 +64,12 @@
 				<div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
 					<button type="button" class="guest-panel__button" id="tabGuestBtn" style="background-color: var(--hp-green-dark); color: white; box-shadow: 0 4px 12px rgba(13, 44, 29, 0.3); transform: translateY(-2px);">Guest</button>
 					<button type="button" class="guest-panel__button" id="tabReservationBtn" style="background-color: var(--hp-cream); color: var(--hp-text);">Reservation</button>
-					<a href="#" class="guest-panel__button" data-open-add-guest-modal="true" style="background-color: var(--hp-gold); color: white;">Add Guest</a>
+					<button type="button" class="guest-panel__button guest-panel__button--primary" data-open-add-guest-modal="true">
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+						</svg>
+						Add Guest
+					</button>
 					<button type="button" class="guest-panel__button" id="scanQrBtn" style="background-color: var(--hp-green-dark); color: white;">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -376,103 +381,167 @@
 					<div class="guest-modal__backdrop" data-close-add-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
 						<button type="button" class="guest-modal__close" data-close-add-modal="true" aria-label="Close add guest form">&times;</button>
-						<h3 id="addGuestModalTitle" class="guest-modal__title">Add Guest Reservation</h3>
+						<div class="guest-modal__header">
+							<h3 id="addGuestModalTitle" class="guest-modal__title">Add Guest Reservation</h3>
+						</div>
 						<form id="addGuestForm" class="guest-form" action="{{ route('staff.checkins.guests.store') }}" method="POST">
 							@csrf
-							<div class="guest-form__group">
-								<label class="guest-form__label">Guest mode</label>
-								<div class="guest-form__chips">
-									<label class="guest-form__chip">
-										<input type="radio" name="guest_mode" value="with_primary" checked>
-										<span>With primary guest</span>
-									</label>
-									<label class="guest-form__chip">
-										<input type="radio" name="guest_mode" value="visitors_only">
-										<span>Visitors only</span>
-									</label>
-								</div>
-							</div>
-
-							<div class="guest-form__row">
-								<label class="guest-form__field">
-									<span>Reservation type</span>
-									<select name="reservation_type" required>
-										<option value="online">Online</option>
-										<option value="walk_in">Walk-in</option>
-									</select>
-								</label>
-							</div>
-
-							<div class="guest-form__row">
-								<label class="guest-form__field">
-									<span>Check-in date</span>
-									<input type="date" name="check_in" value="{{ now()->toDateString() }}" required>
-								</label>
-							</div>
-							<div id="primaryGuestSection" class="guest-form__section">
-								<div class="guest-form__section-header">
-									<h4 class="guest-form__section-title">Primary guest</h4>
-								</div>
-								<div class="guest-form__row guest-form__row--three">
-									<label class="guest-form__field">
-										<span>First name</span>
-										<input type="text" name="primary_guest[first_name]" placeholder="First name">
-									</label>
-									<label class="guest-form__field">
-										<span>Middle name</span>
-										<input type="text" name="primary_guest[middle_name]" placeholder="Middle name">
-									</label>
-									<label class="guest-form__field">
-										<span>Last name</span>
-										<input type="text" name="primary_guest[last_name]" placeholder="Last name">
-									</label>
-								</div>
-								<div class="guest-form__row guest-form__row--three">
-									<label class="guest-form__field">
-										<span>Age</span>
-										<input type="number" name="primary_guest[age]" min="0" placeholder="Age">
-									</label>
-									<label class="guest-form__field">
-										<span>Gender</span>
-										<select name="primary_guest[gender]">
-											<option value="">Select gender</option>
-											<option value="Male">Male</option>
-											<option value="Female">Female</option>
-										</select>
-									</label>
-									<label class="guest-form__field">
-										<span>Nationality</span>
-											<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner">
-												<option value="0" selected>Filipino</option>
-												<option value="1">Foreigner</option>
+							
+							<div class="guest-form__grid">
+								<div class="guest-form__section guest-form__section--compact">
+									<div class="guest-form__section-header">
+										<h4 class="guest-form__section-title">Reservation Details</h4>
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label">Guest mode</label>
+										<div class="guest-form__chips">
+											<label class="guest-form__chip">
+												<input type="radio" name="guest_mode" value="with_primary" checked>
+												<span>Visit & Amenity</span>
+											</label>
+											<label class="guest-form__chip">
+												<input type="radio" name="guest_mode" value="visitors_only">
+												<span>Visit Only</span>
+											</label>
+										</div>
+									</div>
+									
+									<!-- Visit Only Options -->
+									<div id="visitOnlyOptions" class="guest-form__visit-only" style="display: none;">
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="visit_reservation_type">Reservation type</label>
+											<select name="visit_reservation_type" id="visit_reservation_type" class="guest-form__select">
+												<option value="online">Online</option>
+												<option value="walk_in">Walk-in</option>
 											</select>
-										</label>
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="visit_time_type">Time Period</label>
+											<select name="visit_time_type" id="visit_time_type" class="guest-form__select">
+												<option value="daytime">Daytime</option>
+												<option value="nighttime">Nighttime</option>
+												<option value="daynight">Day & Night</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__checkbox-wrapper">
+												<input type="checkbox" name="visit_include_pool" id="visit_include_pool">
+												<span>Include Pool Access</span>
+											</label>
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label">Additional Options</label>
+											<div class="guest-form__actions-inline">
+												<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+													</svg>
+													Add Companion
+												</button>
+											</div>
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label">Entrance Fee</label>
+											<div class="guest-form__fee-display">
+												<span id="entranceFeeDisplay">₱0.00</span>
+											</div>
+										</div>
+									</div>
+									
+									<!-- Visit & Amenity Options -->
+									<div id="visitAmenityOptions">
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="reservation_type">Reservation type</label>
+											<select name="reservation_type" id="reservation_type" required class="guest-form__select">
+												<option value="online">Online</option>
+												<option value="walk_in">Walk-in</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="check_in">Check-in date & time</label>
+											<input type="datetime-local" name="check_in" id="check_in" value="{{ now()->format('Y-m-d\TH:i') }}" required class="guest-form__input">
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label">Additional Options</label>
+											<div class="guest-form__actions-inline">
+												<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+													</svg>
+													Add Companion
+												</button>
+												<button type="button" class="guest-form__action-btn" id="chooseAmenitiesBtn">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+														<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+													</svg>
+													Choose Amenities
+												</button>
+											</div>
+										</div>
+									</div>
 								</div>
-								<div class="guest-form__row guest-form__row--two">
-									<label class="guest-form__field">
-										<span>Phone</span>
-										<input type="text" name="primary_guest[phone]" placeholder="Phone number">
-									</label>
-									<label class="guest-form__field">
-										<span>Email</span>
-										<input type="email" name="primary_guest[email]" placeholder="Email address">
-									</label>
+
+								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact">
+									<div class="guest-form__section-header">
+										<h4 class="guest-form__section-title">Primary Guest</h4>
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label" for="primary_first_name">First name</label>
+										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input">
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label" for="primary_middle_name">Middle name</label>
+										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input">
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label" for="primary_last_name">Last name</label>
+										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input">
+									</div>
+									<div class="guest-form__row guest-form__row--two">
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="primary_age">Age</label>
+											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age" class="guest-form__input">
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="primary_gender">Gender</label>
+											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select">
+												<option value="">Select gender</option>
+												<option value="Male">Male</option>
+												<option value="Female">Female</option>
+											</select>
+										</div>
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label" for="primary_is_foreigner">Nationality</label>
+										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select">
+											<option value="0" selected>Filipino</option>
+											<option value="1">Foreigner</option>
+										</select>
+									</div>
+									<div class="guest-form__row guest-form__row--two">
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="primary_phone">Phone</label>
+											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input">
+										</div>
+										<div class="guest-form__field-group">
+											<label class="guest-form__label" for="primary_email">Email</label>
+											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input">
+										</div>
+									</div>
 								</div>
 							</div>
 
 							<div class="guest-form__section">
 								<div class="guest-form__section-header">
 									<h4 class="guest-form__section-title">Companions</h4>
-									<button type="button" class="guest-form__secondary" id="addCompanionBtn">+ Add Companion</button>
 								</div>
 								<div id="companionList" class="guest-companion-list"></div>
 								<div id="companionHiddenFields"></div>
 							</div>
 
-							<div class="guest-form__section">
+							<div class="guest-form__section" id="amenitySection">
 								<div class="guest-form__section-header">
 									<h4 class="guest-form__section-title">Amenities</h4>
-									<button type="button" class="guest-form__secondary" id="chooseAmenitiesBtn">Choose Amenities</button>
 								</div>
 								<div id="selectedAmenitiesContainer"></div>
 								<div class="guest-form__summary">
@@ -483,10 +552,44 @@
 							</div>
 
 							<div class="guest-form__actions">
-								<button type="button" class="guest-form__secondary" data-close-add-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Create Reservation</button>
+								<button type="button" class="guest-form__button--secondary" data-close-add-modal="true">Cancel</button>
+								<button type="button" class="guest-form__button" id="visitOnlyCheckInBtn">Check In</button>
+								<button type="submit" class="guest-form__button" id="visitAmenitySubmitBtn" style="display: none;">Create Reservation</button>
 							</div>
 						</form>
+					</div>
+				</div>
+
+				<!-- Visit Only Check-In Confirmation Modal -->
+				<div class="guest-modal guest-modal--compact" id="visitOnlyCheckInModal" aria-hidden="true">
+					<div class="guest-modal__backdrop" data-close-visit-check-in-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="visitOnlyCheckInModalTitle">
+						<button type="button" class="guest-modal__close" data-close-visit-check-in-modal="true" aria-label="Close check-in confirmation">&times;</button>
+						<div class="guest-modal__header">
+							<h3 id="visitOnlyCheckInModalTitle" class="guest-modal__title">Confirm Check-In</h3>
+						</div>
+						<div class="guest-form__check-in-summary">
+							<div class="guest-form__summary-row">
+								<span>Time Period:</span>
+								<strong id="summaryTimeType">Daytime</strong>
+							</div>
+							<div class="guest-form__summary-row">
+								<span>Pool Access:</span>
+								<strong id="summaryPool">No</strong>
+							</div>
+							<div class="guest-form__summary-row">
+								<span>Companions:</span>
+								<strong id="summaryCompanions">0</strong>
+							</div>
+							<div class="guest-form__summary-row guest-form__summary-row--total">
+								<span>Total Cost:</span>
+								<strong id="summaryTotal">₱0.00</strong>
+							</div>
+						</div>
+						<div class="guest-form__actions">
+							<button type="button" class="guest-form__button--secondary" data-close-visit-check-in-modal="true">Cancel</button>
+							<button type="button" class="guest-form__button" id="proceedCheckInBtn">Proceed & Check In</button>
+						</div>
 					</div>
 				</div>
 
@@ -525,60 +628,111 @@
 					</div>
 				</div>
 
-				<div class="guest-modal guest-modal--compact" id="companionModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
 					<div class="guest-modal__backdrop" data-close-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
+					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
 						<button type="button" class="guest-modal__close" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
-						<h3 id="companionModalTitle" class="guest-modal__title">Add Companion</h3>
-						<form id="companionForm" class="guest-form" action="#">
-							<div class="guest-form__row guest-form__row--three">
-								<label class="guest-form__field">
-									<span>First name</span>
-									<input type="text" name="first_name" placeholder="First name">
-								</label>
-								<label class="guest-form__field">
-									<span>Middle name</span>
-									<input type="text" name="middle_name" placeholder="Middle name">
-								</label>
-								<label class="guest-form__field">
-									<span>Last name</span>
-									<input type="text" name="last_name" placeholder="Last name">
-								</label>
-							</div>
-							<div class="guest-form__row guest-form__row--three">
-								<label class="guest-form__field">
-									<span>Age</span>
-									<input type="number" name="age" min="0" placeholder="Age">
-								</label>
-								<label class="guest-form__field">
-									<span>Gender</span>
-									<select name="gender">
+						<div class="guest-modal__header">
+							<h3 id="companionModalTitle" class="guest-modal__title">Add Companion</h3>
+						</div>
+						<div class="guest-form__tabs">
+							<button type="button" class="guest-form__tab guest-form__tab--active" data-companion-tab="single">Single</button>
+							<button type="button" class="guest-form__tab" data-companion-tab="bulk">Bulk</button>
+						</div>
+						
+						<!-- Single Companion Form -->
+						<form id="companionForm" class="guest-form guest-form--tab-content guest-form--tab-content--active" data-companion-content="single">
+							<div class="guest-form__grid">
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_first_name">First name</label>
+									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_middle_name">Middle name</label>
+									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_last_name">Last name</label>
+									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_age">Age</label>
+									<input type="number" name="age" id="companion_age" min="0" placeholder="Age" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_age_type">Age Type</label>
+									<select name="age_type" id="companion_age_type" class="guest-form__select">
+										<option value="adult">Adult</option>
+										<option value="child">Child</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_gender">Gender</label>
+									<select name="gender" id="companion_gender" class="guest-form__select">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
 									</select>
-								</label>
-								<label class="guest-form__field">
-									<span>Nationality</span>
-									<select name="is_foreigner" id="companionIsForeigner">
-											<option value="0" selected>Filipino</option>
-											<option value="1">Foreigner</option>
-										</select>
-									</label>
-							</div>
-							<div class="guest-form__row guest-form__row--two">
-								<label class="guest-form__field">
-									<span>Phone</span>
-									<input type="text" name="phone" placeholder="Phone number">
-								</label>
-								<label class="guest-form__field">
-									<span>Email</span>
-									<input type="email" name="email" placeholder="Email address">
-								</label>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_phone">Phone</label>
+									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="companion_email">Email</label>
+									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input">
+								</div>
 							</div>
 							<div class="guest-form__actions">
-								<button type="button" class="guest-form__secondary" data-close-companion-modal="true">Cancel</button>
+								<button type="button" class="guest-form__button--secondary" data-close-companion-modal="true">Cancel</button>
 								<button type="submit" class="guest-form__button">Add Companion</button>
+							</div>
+						</form>
+
+						<!-- Bulk Companion Form -->
+						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content" data-companion-content="bulk">
+							<div class="guest-form__grid">
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="bulk_companion_gender">Gender</label>
+									<select name="gender" id="bulk_companion_gender" class="guest-form__select">
+										<option value="">Select gender</option>
+										<option value="Male">Male</option>
+										<option value="Female">Female</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="bulk_companion_age">Age</label>
+									<input type="number" name="age" id="bulk_companion_age" min="0" placeholder="Age" class="guest-form__input">
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="bulk_companion_age_type">Age Type</label>
+									<select name="age_type" id="bulk_companion_age_type" class="guest-form__select">
+										<option value="adult">Adult</option>
+										<option value="child">Child</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="bulk_companion_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group">
+									<label class="guest-form__label" for="bulk_companion_quantity">Quantity</label>
+									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input">
+								</div>
+							</div>
+							<div class="guest-form__actions">
+								<button type="button" class="guest-form__button--secondary" data-close-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button">Add Bulk Companions</button>
 							</div>
 						</form>
 					</div>
