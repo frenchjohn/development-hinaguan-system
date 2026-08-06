@@ -30,20 +30,6 @@
 
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
-            <div class="page-transition-overlay" id="pageTransitionOverlay">
-                <div class="page-transition-skeleton">
-                    <div class="skeleton skeleton--title page-transition-skeleton__header"></div>
-                    <div class="page-transition-skeleton__stats">
-                        <div class="skeleton skeleton--card page-transition-skeleton__stat"></div>
-                        <div class="skeleton skeleton--card page-transition-skeleton__stat"></div>
-                        <div class="skeleton skeleton--card page-transition-skeleton__stat"></div>
-                    </div>
-                    <div class="page-transition-skeleton__grid">
-                        <div class="skeleton skeleton--panel page-transition-skeleton__panel"></div>
-                        <div class="skeleton skeleton--panel page-transition-skeleton__panel"></div>
-                    </div>
-                </div>
-            </div>
             <main class="dash-content">
                 <x-header
                     title="Admin Dashboard"

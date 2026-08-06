@@ -213,8 +213,9 @@
         timePeriodCountdown.classList.add(currentPeriod === 'Daytime' ? 'is-nighttime' : 'is-daytime');
     }
 
-    // Update every second
-    setInterval(updateDateTime, 1000);
+    // Update every second (clear any previous timer so SPA navigation doesn't stack intervals)
+    if (window.__headerClockTimer) clearInterval(window.__headerClockTimer);
+    window.__headerClockTimer = setInterval(updateDateTime, 1000);
     updateDateTime();
 })();
 </script>

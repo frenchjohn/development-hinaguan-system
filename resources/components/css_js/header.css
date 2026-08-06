@@ -650,6 +650,22 @@ font-weight: 600;
     padding: 1.5rem;
 }
 
+/* SPA content swap animation */
+.dash-content.spa-swapped {
+    animation: spaContentIn 0.22s ease-out;
+}
+
+@keyframes spaContentIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 992px) {
     .dash-main {
         margin-left: 0;

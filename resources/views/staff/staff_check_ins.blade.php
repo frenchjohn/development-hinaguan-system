@@ -41,20 +41,6 @@
 		<x-staff_sidemenu active="checkins" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
 		<div class="dash-main">
-			<div class="page-transition-overlay" id="pageTransitionOverlay">
-				<div class="page-transition-skeleton">
-					<div class="page-transition-skeleton__header skeleton"></div>
-					<div class="page-transition-skeleton__stats">
-						<div class="page-transition-skeleton__stat skeleton"></div>
-						<div class="page-transition-skeleton__stat skeleton"></div>
-						<div class="page-transition-skeleton__stat skeleton"></div>
-					</div>
-					<div class="page-transition-skeleton__grid">
-						<div class="page-transition-skeleton__panel skeleton"></div>
-						<div class="page-transition-skeleton__panel skeleton"></div>
-					</div>
-				</div>
-			</div>
 
 			<main class="dash-content">
 				<x-header
@@ -393,89 +379,62 @@
 										<h4 class="guest-form__section-title">Reservation Details</h4>
 									</div>
 									<div class="guest-form__field-group">
-										<label class="guest-form__label">Guest mode</label>
-										<div class="guest-form__chips">
-											<label class="guest-form__chip">
-												<input type="radio" name="guest_mode" value="with_primary" checked>
-												<span>Visit & Amenity</span>
-											</label>
-											<label class="guest-form__chip">
-												<input type="radio" name="guest_mode" value="visitors_only">
-												<span>Visit Only</span>
-											</label>
+										<label class="guest-form__label" for="reservation_type">Reservation type</label>
+										<select name="reservation_type" id="reservation_type" class="guest-form__select">
+											<option value="walk_in" selected>Walk-in</option>
+											<option value="online">Online</option>
+										</select>
+									</div>
+									<input type="hidden" name="check_in" id="check_in">
+									<div class="guest-form__field-group">
+										<label class="guest-form__label" for="time_period">Time Period</label>
+										<select name="time_period" id="time_period" class="guest-form__select" disabled>
+											<option value="daytime">Daytime</option>
+											<option value="nighttime">Nighttime</option>
+											<option value="daynight">Day & Night</option>
+										</select>
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__checkbox-wrapper">
+											<input type="checkbox" name="include_pool" id="include_pool">
+											<span>Include Pool Access</span>
+										</label>
+									</div>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label">Additional Options</label>
+										<div class="guest-form__actions-inline">
+											<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+												</svg>
+												Add Companion
+											</button>
+											<button type="button" class="guest-form__action-btn" id="chooseAmenitiesBtn">
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+												</svg>
+												Choose Amenities
+											</button>
 										</div>
 									</div>
-									
-									<!-- Visit Only Options -->
-									<div id="visitOnlyOptions" class="guest-form__visit-only" style="display: none;">
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="visit_reservation_type">Reservation type</label>
-											<select name="visit_reservation_type" id="visit_reservation_type" class="guest-form__select">
-												<option value="online">Online</option>
-												<option value="walk_in">Walk-in</option>
-											</select>
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="visit_time_type">Time Period</label>
-											<select name="visit_time_type" id="visit_time_type" class="guest-form__select">
-												<option value="daytime">Daytime</option>
-												<option value="nighttime">Nighttime</option>
-												<option value="daynight">Day & Night</option>
-											</select>
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__checkbox-wrapper">
-												<input type="checkbox" name="visit_include_pool" id="visit_include_pool">
-												<span>Include Pool Access</span>
-											</label>
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label">Additional Options</label>
-											<div class="guest-form__actions-inline">
-												<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-													</svg>
-													Add Companion
-												</button>
+									<div class="guest-form__field-group">
+										<label class="guest-form__label">Entrance Fees</label>
+										<div class="guest-form__fees-list">
+											<div class="guest-form__fee-item">
+												<span>Adult Entrance Fee:</span>
+												<strong id="adultEntranceFee">₱0.00</strong>
 											</div>
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label">Entrance Fee</label>
-											<div class="guest-form__fee-display">
-												<span id="entranceFeeDisplay">₱0.00</span>
+											<div class="guest-form__fee-item">
+												<span>Child Entrance Fee:</span>
+												<strong id="childEntranceFee">₱0.00</strong>
 											</div>
-										</div>
-									</div>
-									
-									<!-- Visit & Amenity Options -->
-									<div id="visitAmenityOptions">
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="reservation_type">Reservation type</label>
-											<select name="reservation_type" id="reservation_type" required class="guest-form__select">
-												<option value="online">Online</option>
-												<option value="walk_in">Walk-in</option>
-											</select>
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="check_in">Check-in date & time</label>
-											<input type="datetime-local" name="check_in" id="check_in" value="{{ now()->format('Y-m-d\TH:i') }}" required class="guest-form__input">
-										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label">Additional Options</label>
-											<div class="guest-form__actions-inline">
-												<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-													</svg>
-													Add Companion
-												</button>
-												<button type="button" class="guest-form__action-btn" id="chooseAmenitiesBtn">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-													</svg>
-													Choose Amenities
-												</button>
+											<div class="guest-form__fee-item">
+												<span>Pool Fee:</span>
+												<strong id="poolFee">₱0.00</strong>
+											</div>
+											<div class="guest-form__fee-item guest-form__fee-item--total">
+												<span>Total (All Guests):</span>
+												<strong id="totalEntranceFee">₱0.00</strong>
 											</div>
 										</div>
 									</div>
@@ -553,43 +512,9 @@
 
 							<div class="guest-form__actions">
 								<button type="button" class="guest-form__button--secondary" data-close-add-modal="true">Cancel</button>
-								<button type="button" class="guest-form__button" id="visitOnlyCheckInBtn">Check In</button>
-								<button type="submit" class="guest-form__button" id="visitAmenitySubmitBtn" style="display: none;">Create Reservation</button>
+								<button type="submit" class="guest-form__button">Check In</button>
 							</div>
 						</form>
-					</div>
-				</div>
-
-				<!-- Visit Only Check-In Confirmation Modal -->
-				<div class="guest-modal guest-modal--compact" id="visitOnlyCheckInModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-visit-check-in-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="visitOnlyCheckInModalTitle">
-						<button type="button" class="guest-modal__close" data-close-visit-check-in-modal="true" aria-label="Close check-in confirmation">&times;</button>
-						<div class="guest-modal__header">
-							<h3 id="visitOnlyCheckInModalTitle" class="guest-modal__title">Confirm Check-In</h3>
-						</div>
-						<div class="guest-form__check-in-summary">
-							<div class="guest-form__summary-row">
-								<span>Time Period:</span>
-								<strong id="summaryTimeType">Daytime</strong>
-							</div>
-							<div class="guest-form__summary-row">
-								<span>Pool Access:</span>
-								<strong id="summaryPool">No</strong>
-							</div>
-							<div class="guest-form__summary-row">
-								<span>Companions:</span>
-								<strong id="summaryCompanions">0</strong>
-							</div>
-							<div class="guest-form__summary-row guest-form__summary-row--total">
-								<span>Total Cost:</span>
-								<strong id="summaryTotal">₱0.00</strong>
-							</div>
-						</div>
-						<div class="guest-form__actions">
-							<button type="button" class="guest-form__button--secondary" data-close-visit-check-in-modal="true">Cancel</button>
-							<button type="button" class="guest-form__button" id="proceedCheckInBtn">Proceed & Check In</button>
-						</div>
 					</div>
 				</div>
 
@@ -708,14 +633,12 @@
 									</select>
 								</div>
 								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_age">Age</label>
-									<input type="number" name="age" id="bulk_companion_age" min="0" placeholder="Age" class="guest-form__input">
-								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_age_type">Age Type</label>
-									<select name="age_type" id="bulk_companion_age_type" class="guest-form__select">
-										<option value="adult">Adult</option>
-										<option value="child">Child</option>
+									<label class="guest-form__label" for="bulk_companion_age_group">Age Group</label>
+									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select">
+										<option value="0-12">Kids (0-12)</option>
+										<option value="13-17">Teens (13-17)</option>
+										<option value="18-59">Adults (18-59)</option>
+										<option value="60+">Seniors (60+)</option>
 									</select>
 								</div>
 								<div class="guest-form__field-group">

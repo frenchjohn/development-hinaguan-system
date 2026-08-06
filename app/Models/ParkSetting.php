@@ -23,4 +23,6 @@ class ParkSetting extends Model
         'night_pool_fee',
         'facebook_link',
     ];
+
+    protected $table = 'park_settings';
 }

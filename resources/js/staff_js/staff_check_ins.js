@@ -1,33 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Page transition with skeleton loading
-    const pageTransitionOverlay = document.getElementById('pageTransitionOverlay');
-    
-    // Handle outgoing page transition (when clicking navigation links)
-    const transitionLinks = document.querySelectorAll('[data-page-transition]');
-    transitionLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetUrl = this.href;
-            
-            // Immediately update active state on sidemenu
-            const allLinks = document.querySelectorAll('.dash-sidebar__link');
-            allLinks.forEach(l => l.classList.remove('is-active'));
-            this.classList.add('is-active');
-            
-            // Show skeleton overlay immediately
-            if (pageTransitionOverlay) {
-                pageTransitionOverlay.classList.add('is-active');
-                
-                // Navigate after a short delay to allow the overlay to appear
-                setTimeout(() => {
-                    window.location.href = targetUrl;
-                }, 100);
-            } else {
-                // Fallback if overlay doesn't exist
-                window.location.href = targetUrl;
-            }
-        });
-    });
+window.AppPage = window.AppPage || {};
+window.AppPage['staff_check_ins'] = function () {
+
 
     const tabGuestBtn = document.getElementById('tabGuestBtn');
     const tabReservationBtn = document.getElementById('tabReservationBtn');
@@ -594,15 +567,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const addGuestModal = document.getElementById('addGuestModal');
     const addGuestCloseButtons = document.querySelectorAll('[data-close-add-modal="true"]');
     const openAddGuestButtons = document.querySelectorAll('[data-open-add-guest-modal="true"]');
-    const guestModeRadios = document.querySelectorAll('input[name="guest_mode"]');
     const primaryGuestSection = document.getElementById('primaryGuestSection');
     const amenitySection = document.getElementById('amenitySection');
     const chooseAmenitiesBtn = document.getElementById('chooseAmenitiesBtn');
-    const visitOnlyOptions = document.getElementById('visitOnlyOptions');
-    const visitAmenityOptions = document.getElementById('visitAmenityOptions');
-    const visitTimeType = document.getElementById('visit_time_type');
-    const visitIncludePool = document.getElementById('visit_include_pool');
-    const entranceFeeDisplay = document.getElementById('entranceFeeDisplay');
+    const timePeriod = document.getElementById('time_period');
+    const includePool = document.getElementById('include_pool');
+    const adultEntranceFee = document.getElementById('adultEntranceFee');
+    const childEntranceFee = document.getElementById('childEntranceFee');
+    const poolFee = document.getElementById('poolFee');
+    const totalEntranceFee = document.getElementById('totalEntranceFee');
     
     // Park settings for pricing (will be loaded from server)
     let parkSettings = {
@@ -623,6 +596,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addGuestModal.setAttribute('aria-hidden', 'false');
         // Load park settings
         loadParkSettings();
+        // Set default time period if no amenities selected
+        if (selectedAmenities.length === 0) {
+            setDefaultTimePeriod();
+        }
     };
 
     const closeAddGuestModal = () => {
@@ -647,11 +624,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/park-settings');
             if (response.ok) {
                 const data = await response.json();
+                console.log('Loaded park settings:', data);
                 parkSettings = { ...parkSettings, ...data };
-                // Set default time period based on current time
-                setDefaultTimePeriod();
-                // Calculate initial fee
-                calculateEntranceFee();
+                // Update fee display with loaded settings
+                updateFeeDisplay();
+            } else {
+                console.error('Failed to load park settings. Status:', response.status);
             }
         } catch (error) {
             console.error('Failed to load park settings:', error);
@@ -678,8 +656,8 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultPeriod = 'daynight';
         }
         
-        if (visitTimeType) {
-            visitTimeType.value = defaultPeriod;
+        if (timePeriod) {
+            timePeriod.value = defaultPeriod;
         }
     };
 
@@ -689,10 +667,61 @@ document.addEventListener('DOMContentLoaded', () => {
         return hours * 60 + minutes;
     };
 
+    // Update primary guest required status based on amenities
+    const updatePrimaryGuestRequirement = () => {
+        // Primary guest is always required now
+        const primaryGuestInputs = primaryGuestSection?.querySelectorAll('input');
+        
+        if (primaryGuestInputs) {
+            primaryGuestInputs.forEach(input => {
+                input.setAttribute('required', 'required');
+            });
+        }
+    };
+
+    // Update fee display based on time period
+    const updateFeeDisplay = () => {
+        const timeType = timePeriod?.value || 'daytime';
+        
+        let adultFee = 0;
+        let childFee = 0;
+        let poolFeeValue = 0;
+        
+        if (timeType === 'daytime') {
+            adultFee = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
+            childFee = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
+            poolFeeValue = parseFloat(parkSettings.day_pool_fee) || 0;
+        } else if (timeType === 'nighttime') {
+            adultFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
+            childFee = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
+            poolFeeValue = parseFloat(parkSettings.night_pool_fee) || 0;
+        } else if (timeType === 'daynight') {
+            adultFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
+            childFee = (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
+            poolFeeValue = (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
+        }
+        
+        console.log('Time Type:', timeType);
+        console.log('Adult Fee:', adultFee);
+        console.log('Child Fee:', childFee);
+        console.log('Pool Fee:', poolFeeValue);
+        console.log('Park Settings:', parkSettings);
+        
+        if (adultEntranceFee) {
+            adultEntranceFee.textContent = `₱${adultFee.toFixed(2)}`;
+        }
+        if (childEntranceFee) {
+            childEntranceFee.textContent = `₱${childFee.toFixed(2)}`;
+        }
+        if (poolFee) {
+            poolFee.textContent = `₱${poolFeeValue.toFixed(2)}`;
+        }
+    };
+
     // Calculate entrance fee based on companions
     const calculateEntranceFee = () => {
-        const timeType = visitTimeType?.value || 'daytime';
-        const includePool = visitIncludePool?.checked || false;
+        const timeType = timePeriod?.value || 'daytime';
+        const includePoolChecked = includePool?.checked || false;
         
         // Calculate fee per person based on companions' age types
         let totalFee = 0;
@@ -700,21 +729,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add main guest fee (default to adult for main guest)
         let mainGuestFee = 0;
         if (timeType === 'daytime') {
-            mainGuestFee = parkSettings.daytime_adult_entrance_fee;
+            mainGuestFee = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
         } else if (timeType === 'nighttime') {
-            mainGuestFee = parkSettings.nighttime_adult_entrance_fee;
+            mainGuestFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
         } else if (timeType === 'daynight') {
-            mainGuestFee = parkSettings.daytime_adult_entrance_fee + parkSettings.nighttime_adult_entrance_fee;
+            mainGuestFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
         }
         
         // Add pool fee for main guest if checked
-        if (includePool) {
+        if (includePoolChecked) {
             if (timeType === 'daytime') {
-                mainGuestFee += parkSettings.day_pool_fee;
+                mainGuestFee += parseFloat(parkSettings.day_pool_fee) || 0;
             } else if (timeType === 'nighttime') {
-                mainGuestFee += parkSettings.night_pool_fee;
+                mainGuestFee += parseFloat(parkSettings.night_pool_fee) || 0;
             } else if (timeType === 'daynight') {
-                mainGuestFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+                mainGuestFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
             }
         }
         
@@ -726,23 +755,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const ageType = companion.age_type || 'adult';
             
             if (timeType === 'daytime') {
-                companionFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+                companionFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
             } else if (timeType === 'nighttime') {
-                companionFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                companionFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
             } else if (timeType === 'daynight') {
-                const daytimeFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
-                const nighttimeFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
+                const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
                 companionFee = daytimeFee + nighttimeFee;
             }
             
             // Add pool fee for companion if checked
-            if (includePool) {
+            if (includePoolChecked) {
                 if (timeType === 'daytime') {
-                    companionFee += parkSettings.day_pool_fee;
+                    companionFee += parseFloat(parkSettings.day_pool_fee) || 0;
                 } else if (timeType === 'nighttime') {
-                    companionFee += parkSettings.night_pool_fee;
+                    companionFee += parseFloat(parkSettings.night_pool_fee) || 0;
                 } else if (timeType === 'daynight') {
-                    companionFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+                    companionFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
                 }
             }
             
@@ -755,220 +784,58 @@ document.addEventListener('DOMContentLoaded', () => {
             const ageType = group.age_type || 'adult';
             
             if (timeType === 'daytime') {
-                groupFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
+                groupFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
             } else if (timeType === 'nighttime') {
-                groupFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                groupFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
             } else if (timeType === 'daynight') {
-                const daytimeFee = ageType === 'adult' ? parkSettings.daytime_adult_entrance_fee : parkSettings.daytime_child_entrance_fee;
-                const nighttimeFee = ageType === 'adult' ? parkSettings.nighttime_adult_entrance_fee : parkSettings.nighttime_child_entrance_fee;
+                const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
+                const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
                 groupFee = daytimeFee + nighttimeFee;
             }
             
             // Add pool fee for bulk companions if checked
-            if (includePool) {
+            if (includePoolChecked) {
                 if (timeType === 'daytime') {
-                    groupFee += parkSettings.day_pool_fee;
+                    groupFee += parseFloat(parkSettings.day_pool_fee) || 0;
                 } else if (timeType === 'nighttime') {
-                    groupFee += parkSettings.night_pool_fee;
+                    groupFee += parseFloat(parkSettings.night_pool_fee) || 0;
                 } else if (timeType === 'daynight') {
-                    groupFee += parkSettings.day_pool_fee + parkSettings.night_pool_fee;
+                    groupFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
                 }
             }
             
             totalFee += groupFee * group.quantity;
         });
         
-        if (entranceFeeDisplay) {
-            entranceFeeDisplay.textContent = `₱${totalFee.toFixed(2)}`;
+        console.log('Total Fee Calculated:', totalFee);
+        
+        // Update total display
+        if (totalEntranceFee) {
+            totalEntranceFee.textContent = `₱${totalFee.toFixed(2)}`;
         }
         
         return totalFee;
     };
 
-    // Guest mode switching
-    const handleGuestModeChange = () => {
-        const selectedMode = document.querySelector('input[name="guest_mode"]:checked')?.value;
-        
-        if (selectedMode === 'visitors_only') {
-            // Visit Only: Hide primary guest, hide amenity button, show visit-only options
-            if (primaryGuestSection) {
-                primaryGuestSection.style.display = 'none';
-            }
-            if (chooseAmenitiesBtn) {
-                chooseAmenitiesBtn.classList.add('hidden');
-            }
-            if (visitOnlyOptions) {
-                visitOnlyOptions.style.display = 'block';
-            }
-            if (visitAmenityOptions) {
-                visitAmenityOptions.style.display = 'none';
-            }
-            if (amenitySection) {
-                amenitySection.style.display = 'none';
-            }
-            // Calculate fee
-            calculateEntranceFee();
-        } else {
-            // Visit & Amenity: Show primary guest, show amenity button, hide visit-only options
-            if (primaryGuestSection) {
-                primaryGuestSection.style.display = 'block';
-            }
-            if (chooseAmenitiesBtn) {
-                chooseAmenitiesBtn.classList.remove('hidden');
-            }
-            if (visitOnlyOptions) {
-                visitOnlyOptions.style.display = 'none';
-            }
-            if (visitAmenityOptions) {
-                visitAmenityOptions.style.display = 'block';
-            }
-            if (amenitySection) {
-                amenitySection.style.display = 'block';
-            }
-        }
-    };
-
-    guestModeRadios.forEach(radio => {
-        radio.addEventListener('change', handleGuestModeChange);
-    });
-
     // Listen for fee calculation changes
-    visitTimeType?.addEventListener('change', calculateEntranceFee);
-    visitIncludePool?.addEventListener('change', calculateEntranceFee);
-
-    // Initialize guest mode state
-    handleGuestModeChange();
-
-    // Visit Only Check-In Modal
-    const visitOnlyCheckInModal = document.getElementById('visitOnlyCheckInModal');
-    const visitOnlyCheckInBtn = document.getElementById('visitOnlyCheckInBtn');
-    const visitAmenitySubmitBtn = document.getElementById('visitAmenitySubmitBtn');
-    const proceedCheckInBtn = document.getElementById('proceedCheckInBtn');
-    const visitCheckInCloseButtons = document.querySelectorAll('[data-close-visit-check-in-modal="true"]');
-    
-    const summaryTimeType = document.getElementById('summaryTimeType');
-    const summaryPool = document.getElementById('summaryPool');
-    const summaryCompanions = document.getElementById('summaryCompanions');
-    const summaryTotal = document.getElementById('summaryTotal');
-
-    // Update submit button based on guest mode
-    const updateSubmitButton = () => {
-        const selectedMode = document.querySelector('input[name="guest_mode"]:checked')?.value;
-        if (selectedMode === 'visitors_only') {
-            visitOnlyCheckInBtn.style.display = 'inline-flex';
-            visitAmenitySubmitBtn.style.display = 'none';
-        } else {
-            visitOnlyCheckInBtn.style.display = 'none';
-            visitAmenitySubmitBtn.style.display = 'inline-flex';
-        }
-    };
-
-    guestModeRadios.forEach(radio => {
-        radio.addEventListener('change', updateSubmitButton);
+    timePeriod?.addEventListener('change', () => {
+        updateFeeDisplay();
+        calculateEntranceFee();
     });
-    updateSubmitButton();
+    includePool?.addEventListener('change', calculateEntranceFee);
 
-    // Open check-in confirmation modal
-    visitOnlyCheckInBtn?.addEventListener('click', () => {
-        // Calculate total with companions
-        const totalCost = calculateEntranceFee();
-        const totalCompanions = companions.length + bulkCompanionGroups.reduce((sum, group) => sum + group.quantity, 0);
-        
-        // Update summary
-        if (summaryTimeType) {
-            const timeMap = { daytime: 'Daytime', nighttime: 'Nighttime', daynight: 'Day & Night' };
-            summaryTimeType.textContent = timeMap[visitTimeType?.value] || 'Daytime';
-        }
-        if (summaryPool) {
-            summaryPool.textContent = visitIncludePool?.checked ? 'Yes' : 'No';
-        }
-        if (summaryCompanions) {
-            summaryCompanions.textContent = totalCompanions;
-        }
-        if (summaryTotal) {
-            summaryTotal.textContent = `₱${totalCost.toFixed(2)}`;
-        }
-        
-        // Store total for submission
-        visitOnlyCheckInBtn.dataset.totalCost = totalCost;
-        
-        visitOnlyCheckInModal.classList.add('is-open');
-        visitOnlyCheckInModal.setAttribute('aria-hidden', 'false');
-    });
-
-    // Close check-in modal
-    visitCheckInCloseButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            visitOnlyCheckInModal.classList.remove('is-open');
-            visitOnlyCheckInModal.setAttribute('aria-hidden', 'true');
-        });
-    });
-
-    // Proceed with check-in
-    proceedCheckInBtn?.addEventListener('click', async () => {
-        const totalCost = parseFloat(visitOnlyCheckInBtn.dataset.totalCost) || 0;
-        
-        // Prepare data for submission
-        const formData = new FormData();
-        formData.append('guest_mode', 'visitors_only');
-        formData.append('age_type', visitAgeType?.value || 'adult');
-        formData.append('time_type', visitTimeType?.value || 'daytime');
-        formData.append('include_pool', visitIncludePool?.checked ? '1' : '0');
-        formData.append('total_amount', totalCost);
-        
-        // Add companions
-        companions.forEach((companion, index) => {
-            formData.append(`companions[${index}][first_name]`, companion.first_name);
-            formData.append(`companions[${index}][middle_name]`, companion.middle_name || '');
-            formData.append(`companions[${index}][last_name]`, companion.last_name);
-            formData.append(`companions[${index}][age]`, companion.age || '');
-            formData.append(`companions[${index}][gender]`, companion.gender || '');
-            formData.append(`companions[${index}][is_foreigner]`, companion.is_foreigner ? '1' : '0');
-            formData.append(`companions[${index}][phone]`, companion.phone || '');
-            formData.append(`companions[${index}][email]`, companion.email || '');
-        });
-        
-        bulkCompanionGroups.forEach((group, groupIndex) => {
-            for (let i = 0; i < group.quantity; i++) {
-                const companionIndex = companions.length + groupIndex * 1000 + i;
-                formData.append(`companions[${companionIndex}][age]`, group.age);
-                formData.append(`companions[${companionIndex}][gender]`, group.gender);
-                formData.append(`companions[${companionIndex}][is_foreigner]`, group.is_foreigner ? '1' : '0');
-            }
-        });
-        
-        try {
-            const response = await fetch('/staff/checkins/visit-only-check-in', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                // Close modals
-                visitOnlyCheckInModal.classList.remove('is-open');
-                visitOnlyCheckInModal.setAttribute('aria-hidden', 'true');
-                addGuestModal.classList.remove('is-open');
-                addGuestModal.setAttribute('aria-hidden', 'true');
-                
-                // Reset form
-                document.getElementById('addGuestForm')?.reset();
-                companions = [];
-                bulkCompanionGroups = [];
-                renderCompanions();
-                
-                alert('Check-in successful!');
-                location.reload();
-            } else {
-                throw new Error(data.message || 'Check-in failed');
-            }
-        } catch (error) {
-            console.error('Check-in error:', error);
-            alert('Error during check-in: ' + error.message);
+    // Auto-fill check-in time on form submit
+    const addGuestForm = document.getElementById('addGuestForm');
+    addGuestForm?.addEventListener('submit', (e) => {
+        const checkInInput = document.getElementById('check_in');
+        if (checkInInput) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            checkInInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
         }
     });
 
@@ -992,17 +859,76 @@ document.addEventListener('DOMContentLoaded', () => {
         amenityModal.setAttribute('aria-hidden', 'true');
     };
 
-    // chooseAmenitiesBtn is already defined above in guest mode section
     chooseAmenitiesBtn?.addEventListener('click', openAmenityModal);
     amenityCloseButtons.forEach(button => {
         button.addEventListener('click', closeAmenityModal);
     });
 
-    // Amity checkbox handling
+    // Amenity checkbox changes
     amenitiesContainer?.addEventListener('change', (e) => {
         if (e.target.classList.contains('amenity-checkbox')) {
-            const select = e.target.closest('.guest-amenity-option').querySelector('.guest-amenity-option__select');
-            select.disabled = !e.target.checked;
+            const amenityId = e.target.dataset.amenityId;
+            const amenityName = e.target.dataset.amenityName;
+            const pricingType = e.target.dataset.pricingType || 'standard';
+            const price = parseFloat(e.target.dataset.price) || 0;
+
+            if (e.target.checked) {
+                selectedAmenities.push({
+                    amenity_id: amenityId,
+                    amenity_name: amenityName,
+                    pricing_type: pricingType,
+                    price_at_booking: price,
+                });
+            } else {
+                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
+            }
+
+            renderSelectedAmenities();
+            updatePrimaryGuestRequirement();
+            calculateEntranceFee();
+        }
+    });
+
+    const renderSelectedAmenities = () => {
+        if (!selectedAmenitiesContainer) return;
+
+        selectedAmenitiesContainer.innerHTML = '';
+
+        selectedAmenities.forEach(amenity => {
+            const pill = document.createElement('div');
+            pill.className = 'guest-amenity-pill';
+            pill.innerHTML = `
+                <span>${amenity.amenity_name} — ${amenity.pricing_type} · ₱${amenity.price_at_booking.toFixed(2)}</span>
+                <button type="button" class="guest-amenity-pill__remove" data-amenity-id="${amenity.amenity_id}">&times;</button>
+            `;
+            selectedAmenitiesContainer.appendChild(pill);
+        });
+
+        // Update total
+        const total = selectedAmenities.reduce((sum, a) => sum + a.price_at_booking, 0);
+        if (reservationTotal) {
+            reservationTotal.textContent = `₱${total.toFixed(2)}`;
+        }
+        if (totalAmountInput) {
+            totalAmountInput.value = total;
+        }
+    };
+
+    // Remove amenity from selected list
+    selectedAmenitiesContainer?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('guest-amenity-pill__remove')) {
+            const amenityId = e.target.dataset.amenityId;
+            selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
+            
+            // Uncheck the checkbox
+            const checkbox = amenitiesContainer?.querySelector(`input[data-amenity-id="${amenityId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+
+            renderSelectedAmenities();
+            updatePrimaryGuestRequirement();
+            calculateEntranceFee();
         }
     });
 
@@ -1094,7 +1020,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = 'guest-companion-pill guest-companion-pill--bulk';
             item.innerHTML = `
-                <span class="guest-companion-pill__name">${group.gender} - ${nationality} - Age: ${group.age} - Qty: ${group.quantity}</span>
+                <span class="guest-companion-pill__name">${group.gender} - ${nationality} - Age Group: ${group.age_group} - Qty: ${group.quantity}</span>
                 <button type="button" class="guest-companion-pill__delete" data-bulk-index="${groupIndex}">Remove</button>
             `;
             companionList.appendChild(item);
@@ -1106,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="hidden" name="companions[${companionIndex}][first_name]" value="">
                     <input type="hidden" name="companions[${companionIndex}][middle_name]" value="">
                     <input type="hidden" name="companions[${companionIndex}][last_name]" value="">
-                    <input type="hidden" name="companions[${companionIndex}][age]" value="${group.age}">
+                    <input type="hidden" name="companions[${companionIndex}][age_group]" value="${group.age_group}">
                     <input type="hidden" name="companions[${companionIndex}][gender]" value="${group.gender}">
                     <input type="hidden" name="companions[${companionIndex}][is_foreigner]" value="${group.is_foreigner ? '1' : '0'}">
                     <input type="hidden" name="companions[${companionIndex}][phone]" value="">
@@ -1150,10 +1076,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(bulkCompanionForm);
         const bulkData = Object.fromEntries(formData.entries());
         
+        // Map age_group to age_type for pricing
+        const ageGroup = bulkData.age_group || '18-59';
+        let ageType = 'adult';
+        if (ageGroup === '0-12' || ageGroup === '13-17') {
+            ageType = 'child';
+        } else if (ageGroup === '18-59' || ageGroup === '60+') {
+            ageType = 'adult';
+        }
+        
         bulkCompanionGroups.push({
             gender: bulkData.gender,
-            age: bulkData.age,
-            age_type: bulkData.age_type,
+            age_group: ageGroup,
+            age_type: ageType,
             is_foreigner: bulkData.is_foreigner === '1',
             quantity: parseInt(bulkData.quantity) || 1,
         });
@@ -1305,10 +1240,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Remove companion buttons
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('guest-companion-pill__delete')) {
-            e.target.closest('.guest-companion-pill').remove();
-        }
-    });
-});
+    // Remove companion buttons (delegated listener — bind once so SPA re-inits don't stack)
+    if (!window.__staffCheckInsDocClickBound) {
+        window.__staffCheckInsDocClickBound = true;
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('guest-companion-pill__delete')) {
+                e.target.closest('.guest-companion-pill').remove();
+            }
+        });
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_check_ins']());

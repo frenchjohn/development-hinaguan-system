@@ -612,6 +612,85 @@
     color: var(--hp-gold);
 }
 
+/* Fees List */
+.guest-form__fees-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(13, 44, 29, 0.03);
+    border-radius: 0.5rem;
+}
+
+[data-theme="dark"] .guest-form__fees-list {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.guest-form__fee-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid rgba(13, 44, 29, 0.08);
+}
+
+[data-theme="dark"] .guest-form__fee-item {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.guest-form__fee-item:last-child {
+    border-bottom: none;
+}
+
+.guest-form__fee-item span {
+    font-size: 0.85rem;
+    color: var(--hp-text-muted);
+}
+
+.guest-form__fee-item strong {
+    font-size: 0.9rem;
+    color: var(--hp-green);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .guest-form__fee-item strong {
+    color: var(--hp-gold);
+}
+
+.guest-form__fee-item--total {
+    border-top: 2px solid rgba(13, 44, 29, 0.15);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+[data-theme="dark"] .guest-form__fee-item--total {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.guest-form__fee-item--total span {
+    font-weight: 600;
+    color: var(--hp-text);
+}
+
+.guest-form__fee-item--total strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* Disabled select styling */
+.guest-form__select:disabled {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.guest-form__select:disabled::-ms-expand {
+    display: none;
+}
+
 /* Check-In Summary */
 .guest-form__check-in-summary {
     display: flex;

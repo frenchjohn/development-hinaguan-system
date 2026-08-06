@@ -32,20 +32,6 @@
     <div class="dash-layout">
         <x-staff_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
         <div class="dash-main">
-            <div class="page-transition-overlay" id="pageTransitionOverlay">
-                <div class="page-transition-skeleton">
-                    <div class="page-transition-skeleton__header skeleton"></div>
-                    <div class="page-transition-skeleton__stats">
-                        <div class="page-transition-skeleton__stat skeleton"></div>
-                        <div class="page-transition-skeleton__stat skeleton"></div>
-                        <div class="page-transition-skeleton__stat skeleton"></div>
-                    </div>
-                    <div class="page-transition-skeleton__grid">
-                        <div class="page-transition-skeleton__panel skeleton"></div>
-                        <div class="page-transition-skeleton__panel skeleton"></div>
-                    </div>
-                </div>
-            </div>
 
             <main class="dash-content">
                 <x-header title="Settings" subtitle="Update your profile securely" />
@@ -100,13 +86,13 @@
                             </div>
                         </div>
                         <script>
-                            document.addEventListener('DOMContentLoaded', function () {
+                            (function () {
                                 var modal = document.getElementById('staffOtpModal');
                                 if (modal) {
                                     modal.classList.add('is-open');
                                     modal.setAttribute('aria-hidden', 'false');
                                 }
-                            });
+                            })();
                         </script>
                     @endif
                 </section>
