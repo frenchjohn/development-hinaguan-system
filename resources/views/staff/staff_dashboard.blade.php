@@ -46,6 +46,28 @@
                     :showWelcome="true"
                 />
 
+                @php
+                    $donutColors = [
+                        'Pending' => '#c8a45d',
+                        'Confirmed' => '#4c9a5f',
+                        'Checked In' => '#2f6f45',
+                        'Checked Out' => '#94a3b8',
+                        'Cancelled' => '#d64550',
+                    ];
+                    $donutTotal = array_sum($statusBreakdown);
+                    $donutStart = 0;
+                    $donutStops = [];
+                    foreach ($statusBreakdown as $status => $count) {
+                        $pct = $donutTotal > 0 ? ($count / $donutTotal) * 360 : 0;
+                        $color = $donutColors[$status] ?? '#c8a45d';
+                        $donutStops[] = "{$color} {$donutStart}deg " . ($donutStart + $pct) . 'deg';
+                        $donutStart += $pct;
+                    }
+                    $donutStyle = $donutTotal > 0 ? 'background: conic-gradient(' . implode(', ', $donutStops) . ');' : '';
+                    $barMax = max(1, max($weekReservationCounts));
+                    $revenueMax = max(1, max($weekRevenue));
+                @endphp
+
                 <div class="dash-stats">
                     <article class="dash-stat-card">
                         <div class="dash-stat-card__icon">
@@ -77,28 +99,117 @@
                         <p class="dash-stat-card__value">{{ $guestsOnSiteCount }}</p>
                         <p class="dash-stat-card__hint">Guests still active and not checked out</p>
                     </article>
+                    <article class="dash-stat-card dash-stat-card--accent">
+                        <div class="dash-stat-card__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <p class="dash-stat-card__label">Today's Revenue</p>
+                        <p class="dash-stat-card__value">₱{{ number_format($todayRevenue) }}</p>
+                        <p class="dash-stat-card__hint">Collected from today's check-ins</p>
+                    </article>
                 </div>
 
-                <div class="dash-grid-2">
+                <div class="dash-charts">
+                    <section class="dash-panel dash-chart">
+                        <div class="dash-panel__head">
+                            <h3 class="dash-panel__title">Bookings &amp; Revenue — Last 7 Days</h3>
+                            <div class="dash-chart__legend">
+                                <span class="dash-legend__item"><i class="dash-legend__swatch dash-legend__swatch--count"></i>Reservations</span>
+                                <span class="dash-legend__item"><i class="dash-legend__swatch dash-legend__swatch--revenue"></i>Revenue (₱)</span>
+                            </div>
+                        </div>
+                        <div class="dash-barchart">
+                            @for ($i = 0; $i < 7; $i++)
+                                <div class="dash-barchart__col">
+                                    <div class="dash-barchart__bars">
+                                        <div class="dash-barchart__bar dash-barchart__bar--count"
+                                             style="--val: {{ round($weekReservationCounts[$i] / $barMax * 100) }}%"
+                                             title="{{ $weekReservationCounts[$i] }} reservation(s)"></div>
+                                        <div class="dash-barchart__bar dash-barchart__bar--revenue"
+                                             style="--val: {{ round($weekRevenue[$i] / $revenueMax * 100) }}%"
+                                             title="₱{{ number_format($weekRevenue[$i]) }} collected"></div>
+                                    </div>
+                                    <span class="dash-barchart__value">{{ $weekReservationCounts[$i] }}</span>
+                                    <span class="dash-barchart__label">{{ $weekDays[$i] }}</span>
+                                </div>
+                            @endfor
+                        </div>
+                    </section>
+
+                    <section class="dash-panel dash-chart">
+                        <div class="dash-panel__head">
+                            <h3 class="dash-panel__title">Reservation Status</h3>
+                        </div>
+                        @if ($donutTotal > 0)
+                            <div class="dash-donut-wrap">
+                                <div class="dash-donut" style="{{ $donutStyle }}">
+                                    <div class="dash-donut__hole">
+                                        <span class="dash-donut__total">{{ $donutTotal }}</span>
+                                        <small>total</small>
+                                    </div>
+                                </div>
+                                <ul class="dash-donut__legend">
+                                    @foreach ($statusBreakdown as $status => $count)
+                                        <li>
+                                            <i style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
+                                            {{ $status }}
+                                            <strong>{{ $count }}</strong>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @else
+                            <p class="dash-chart__empty">No reservations recorded yet.</p>
+                        @endif
+                    </section>
+                </div>
+
+                <div class="dash-grid-3">
+                    <section class="dash-panel dash-chart">
+                        <div class="dash-panel__head">
+                            <h3 class="dash-panel__title">Most Booked Amenities</h3>
+                        </div>
+                        @if ($topAmenities->isNotEmpty())
+                            <div class="dash-hbars">
+                                @foreach ($topAmenities as $amenity)
+                                    <div class="dash-hbar">
+                                        <div class="dash-hbar__row">
+                                            <span>{{ $amenity['name'] }}</span>
+                                            <strong>{{ $amenity['total'] }}</strong>
+                                        </div>
+                                        <div class="dash-hbar__track">
+                                            <div class="dash-hbar__fill" style="--val: {{ round($amenity['total'] / $topAmenityMax * 100) }}%"></div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="dash-chart__empty">No amenity bookings yet.</p>
+                        @endif
+                    </section>
+
                     <section class="dash-panel">
                         <div class="dash-panel__head">
-                            <h3 class="dash-panel__title">Today's Tasks</h3>
+                            <h3 class="dash-panel__title">Today's Expected Arrivals</h3>
                         </div>
-                        <ul class="dash-task-list">
-                            @foreach ([
-                                ['title' => 'Prepare Cottage A for 2:00 PM check-in', 'meta' => 'Guest: Maria Santos'],
-                                ['title' => 'Verify picnic area reservation list', 'meta' => 'Before noon'],
-                                ['title' => 'Restock welcome desk supplies', 'meta' => 'Front office'],
-                                ['title' => 'Assist camping ground orientation', 'meta' => '3:30 PM group'],
-                            ] as $task)
-                                <li class="dash-task">
-                                    <input type="checkbox" class="dash-task__check" aria-label="Mark task complete">
-                                    <div class="dash-task__body">
-                                        <p class="dash-task__title">{{ $task['title'] }}</p>
-                                        <p class="dash-task__meta">{{ $task['meta'] }}</p>
+                        <ul class="dash-arrivals">
+                            @forelse ($todayArrivals as $arrival)
+                                <li class="dash-arrival">
+                                    <span class="dash-arrival__dot" aria-hidden="true"></span>
+                                    <div class="dash-arrival__body">
+                                        <p class="dash-arrival__name">{{ $arrival->booker_name }}</p>
+                                        <p class="dash-arrival__meta">{{ $arrival->number_of_guests }} guest(s) ·
+                                            {{ \Carbon\Carbon::parse($arrival->reservation_date)->format('g:i A') }}</p>
                                     </div>
+                                    <span class="dash-arrival__badge dash-arrival__badge--{{ strtolower(str_replace(' ', '-', $arrival->status)) }}">{{ $arrival->status }}</span>
                                 </li>
-                            @endforeach
+                            @empty
+                                <li class="dash-arrival">
+                                    <p class="dash-arrival__empty">No arrivals expected today.</p>
+                                </li>
+                            @endforelse
                         </ul>
                     </section>
 

@@ -121,6 +121,21 @@
     border: 1px solid var(--hp-gold);
 }
 
+.alert--error {
+    background: rgba(214, 69, 80, 0.1);
+    color: #b91c1c;
+    border: 1px solid rgba(214, 69, 80, 0.35);
+}
+
+.alert__list {
+    margin: 0.4rem 0 0 1.1rem;
+    padding: 0;
+}
+
+.alert__list li {
+    margin-bottom: 0.2rem;
+}
+
 .modal {
     position: fixed;
     inset: 0;

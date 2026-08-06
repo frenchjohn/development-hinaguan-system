@@ -413,7 +413,7 @@
                         </div>
                         <div>
                             <p class="hp-contact-item__label">Park Hours</p>
-                            <p class="hp-contact-item__value">Daily &middot; {{ $parkSettings->opening_time ? date('g:i A', strtotime($parkSettings->opening_time)) : '6:00 AM' }} – {{ $parkSettings->closing_time ? date('g:i A', strtotime($parkSettings->closing_time)) : '6:00 PM' }}<br>Overnight check-in from {{ $parkSettings->nighttime_start ? date('g:i A', strtotime($parkSettings->nighttime_start)) : '6:00 PM' }}</p>
+                            <p class="hp-contact-item__value">Daily &middot; {{ $parkSettings?->opening_time ? date('g:i A', strtotime($parkSettings->opening_time)) : '6:00 AM' }} – {{ $parkSettings?->closing_time ? date('g:i A', strtotime($parkSettings->closing_time)) : '6:00 PM' }}<br>Overnight check-in from {{ $parkSettings?->nighttime_start ? date('g:i A', strtotime($parkSettings->nighttime_start)) : '6:00 PM' }}</p>
                         </div>
                     </div>
 

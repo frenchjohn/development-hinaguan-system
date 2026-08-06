@@ -1,3 +1,50 @@
+// ============================================================
+// GLOBAL BUSY TRACKING
+// Every fetch() the dashboard pages fire is treated as an
+// in-flight operation. While at least one is pending the app is
+// marked "busy": the sidebar shows a small indicator and page
+// navigation asks for confirmation instead of silently
+// interrupting (and possibly losing) the running task.
+//
+// Requests the SPA itself makes (page preload / swap / background
+// refresh) pass __skipBusy: true so they never count as user ops.
+// ============================================================
+if (!window.__busyTrackingInstalled) {
+    window.__busyTrackingInstalled = true;
+    window.__busyCount = 0;
+
+    const originalFetch = window.fetch;
+    window.fetch = function (input, init) {
+        if (init && init.__skipBusy) {
+            return originalFetch.call(this, input, init);
+        }
+
+        window.__busyCount += 1;
+        document.body?.classList.add('app-busy');
+
+        const promise = originalFetch.apply(this, arguments);
+        const settle = () => {
+            window.__busyCount = Math.max(0, window.__busyCount - 1);
+            if (window.__busyCount === 0) {
+                document.body?.classList.remove('app-busy');
+            }
+        };
+        promise.then(settle, settle);
+        return promise;
+    };
+
+    window.AppBusy = {
+        get isBusy() { return window.__busyCount > 0; },
+        get count() { return window.__busyCount; },
+        begin() { window.__busyCount += 1; document.body.classList.add('app-busy'); },
+        end() {
+            window.__busyCount = Math.max(0, window.__busyCount - 1);
+            if (window.__busyCount === 0) document.body.classList.remove('app-busy');
+        },
+        reset() { window.__busyCount = 0; document.body.classList.remove('app-busy'); },
+    };
+}
+
 // Sidemenu toggle functionality and instant navigation
 window.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.querySelector('[data-dash-sidebar-toggle]');
@@ -32,6 +79,80 @@ window.addEventListener('DOMContentLoaded', function() {
         console.error('Sidemenu: toggle button not found');
         return;
     }
+
+    // ------------------------------------------------------------
+    // Busy indicator + navigation guard modal
+    // ------------------------------------------------------------
+    function ensureBusyUI() {
+        if (!document.querySelector('.app-busy-indicator')) {
+            const pill = document.createElement('div');
+            pill.className = 'app-busy-indicator';
+            pill.setAttribute('role', 'status');
+            pill.innerHTML = '<span class="app-busy-indicator__spinner" aria-hidden="true"></span><span class="app-busy-indicator__text">Processing…</span>';
+            document.body.appendChild(pill);
+        }
+
+        if (!document.getElementById('appNavGuardModal')) {
+            const modal = document.createElement('div');
+            modal.id = 'appNavGuardModal';
+            modal.className = 'app-nav-guard';
+            modal.setAttribute('aria-hidden', 'true');
+            modal.innerHTML = `
+                <div class="app-nav-guard__backdrop" data-app-nav-guard="stay"></div>
+                <div class="app-nav-guard__panel" role="alertdialog" aria-modal="true" aria-labelledby="appNavGuardTitle">
+                    <div class="app-nav-guard__icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    </div>
+                    <h3 id="appNavGuardTitle">Processing still in progress</h3>
+                    <p>A task is still running on this page (e.g. saving a record or checking someone in). If you switch pages now, that task may be interrupted or lost.</p>
+                    <div class="app-nav-guard__actions">
+                        <button type="button" class="app-nav-guard__btn app-nav-guard__btn--ghost" data-app-nav-guard="stay">Stay on this page</button>
+                        <button type="button" class="app-nav-guard__btn app-nav-guard__btn--danger" data-app-nav-guard="leave">Switch anyway</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+        }
+    }
+    ensureBusyUI();
+
+    let pendingNavUrl = null;
+
+    const showNavGuardModal = () => {
+        const modal = document.getElementById('appNavGuardModal');
+        if (!modal) return;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+    };
+
+    const hideNavGuardModal = () => {
+        const modal = document.getElementById('appNavGuardModal');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.addEventListener('click', (e) => {
+        const button = e.target.closest('[data-app-nav-guard]');
+        if (!button) return;
+        const action = button.dataset.appNavGuard;
+        hideNavGuardModal();
+        if (action === 'leave') {
+            // Abandon the current page's pending tasks and leave anyway.
+            if (window.AppBusy) window.AppBusy.reset();
+            const url = pendingNavUrl;
+            pendingNavUrl = null;
+            if (url) navigateTo(url, true);
+        } else {
+            pendingNavUrl = null;
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideNavGuardModal();
+            pendingNavUrl = null;
+        }
+    });
 
     function toggleSidebar(e) {
         if (e) e.preventDefault();
@@ -289,6 +410,11 @@ window.addEventListener('DOMContentLoaded', function() {
     let navToken = 0;
 
     async function navigateTo(url, push = true) {
+        // Dismiss any open navigation-guard modal — it belongs to the page we're
+        // leaving (also covers browser Back while the modal is open).
+        hideNavGuardModal();
+        pendingNavUrl = null;
+
         const targetPath = new URL(url, window.location.origin).pathname;
         const currentPath = new URL(window.location.href).pathname;
         if (targetPath === currentPath) return;
@@ -308,6 +434,7 @@ window.addEventListener('DOMContentLoaded', function() {
             if (!newMain) {
                 const response = await fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    __skipBusy: true,
                 });
                 if (!response.ok) throw new Error('Bad status ' + response.status);
 
@@ -349,6 +476,9 @@ window.addEventListener('DOMContentLoaded', function() {
             // Refresh body-level data scripts
             syncBodyDataScripts(doc);
 
+            // Swap body-level overlays (modals kept outside <main>)
+            syncBodyOverlays(doc);
+
             // Run the page's init
             if (pageKey && window.AppPage && typeof window.AppPage[pageKey] === 'function') {
                 window.AppPage[pageKey]();
@@ -380,6 +510,33 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Bring the new page's body-level overlays (e.g. #userModal on admin/users,
+    // #amenityModal on admin/amenities, #staffOtpModal on staff/settings) into the
+    // live document. The SPA only swaps <main>, but a few pages keep modals at the
+    // <body> level — without this they silently disappear after SPA navigation and
+    // their open buttons throw errors.
+    function syncBodyOverlays(doc) {
+        const keepSelector = '.dash-layout, .chatbot-widget, .app-busy-indicator, .app-nav-guard';
+
+        // Drop leftover page-level overlays left behind by the previous page.
+        document.body.querySelectorAll('body > .modal, body > [id$="odal"]').forEach((el) => {
+            if (el.matches(keepSelector)) return;
+            el.remove();
+        });
+
+        // Bring in the new page's body-level overlays (cloned so the cached
+        // document keeps its own copy for future revisits).
+        Array.from(doc.body.children).forEach((el) => {
+            if (el.matches('script, style, link, meta')) return;
+            if (el.matches(keepSelector)) return;
+            if (el.matches('.modal') || /[Mm]odal/.test(el.id || '')) {
+                const existing = document.getElementById(el.id);
+                if (existing) existing.remove();
+                document.body.appendChild(el.cloneNode(true));
+            }
+        });
+    }
+
     // Intercept sidebar navigation links (dash-sidebar__link, profile dropdown
     // links and any [data-page-transition] links) so they navigate instantly.
     // Regular in-content links are left alone to keep their normal behavior.
@@ -404,6 +561,14 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!path.startsWith('/staff/') && !path.startsWith('/admin/')) return;
 
         e.preventDefault();
+
+        // If a task is still running, ask before interrupting it.
+        if (window.AppBusy && window.AppBusy.isBusy) {
+            pendingNavUrl = url.href;
+            showNavGuardModal();
+            return;
+        }
+
         navigateTo(url.href, true);
     });
 
@@ -428,6 +593,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
             const response = await fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                __skipBusy: true,
             });
             if (!response.ok) return false;
 

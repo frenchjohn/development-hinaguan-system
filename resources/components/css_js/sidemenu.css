@@ -575,3 +575,154 @@
         transform: rotate(360deg);
     }
 }
+
+/* ============================================================
+   Busy indicator + navigation guard modal
+   ============================================================ */
+.app-busy-indicator {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.95rem;
+    border-radius: 999px;
+    background: var(--nature-forest-green, #244a2d);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+body.app-busy .app-busy-indicator {
+    display: inline-flex;
+}
+
+.app-busy-indicator__spinner {
+    width: 0.95rem;
+    height: 0.95rem;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: var(--nature-sage-green, #a9c98b);
+    border-radius: 50%;
+    animation: appBusySpin 0.7s linear infinite;
+}
+
+@keyframes appBusySpin {
+    to { transform: rotate(360deg); }
+}
+
+.app-nav-guard {
+    position: fixed;
+    inset: 0;
+    z-index: 4000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.app-nav-guard.is-open {
+    display: flex;
+}
+
+.app-nav-guard__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 24, 14, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.app-nav-guard__panel {
+    position: relative;
+    width: min(440px, 100%);
+    background: #fff;
+    border: 1px solid rgba(13, 44, 29, 0.12);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+    animation: appNavGuardIn 0.18s ease-out;
+}
+
+[data-theme="dark"] .app-nav-guard__panel {
+    background: #1a2e1e;
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+@keyframes appNavGuardIn {
+    from { opacity: 0; transform: scale(0.96) translateY(6px); }
+}
+
+.app-nav-guard__icon {
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8a6d2f;
+    background: rgba(200, 164, 93, 0.16);
+}
+
+.app-nav-guard__panel h3 {
+    margin: 0 0 0.5rem;
+    font-family: var(--hp-font-display, Georgia, serif);
+    font-size: 1.125rem;
+    color: var(--hp-text, #12281b);
+}
+
+[data-theme="dark"] .app-nav-guard__panel h3 {
+    color: #c8e6c8;
+}
+
+.app-nav-guard__panel p {
+    margin: 0 0 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--hp-text-muted, #5b6f63);
+}
+
+.app-nav-guard__actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.app-nav-guard__btn {
+    border: 0;
+    border-radius: 0.7rem;
+    padding: 0.65rem 1.1rem;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.app-nav-guard__btn:active {
+    transform: scale(0.97);
+}
+
+.app-nav-guard__btn--ghost {
+    background: var(--hp-cream, #f4f1e8);
+    color: var(--hp-text, #12281b);
+    border: 1px solid rgba(13, 44, 29, 0.15);
+}
+
+.app-nav-guard__btn--ghost:hover {
+    opacity: 0.85;
+}
+
+.app-nav-guard__btn--danger {
+    background: #d64550;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(214, 69, 80, 0.35);
+}
+
+.app-nav-guard__btn--danger:hover {
+    box-shadow: 0 8px 20px rgba(214, 69, 80, 0.45);
+}

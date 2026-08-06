@@ -18,7 +18,7 @@ class StaffReservationsPageTest extends TestCase
             'booker_name' => 'Online Booker',
             'phone' => '09170000000',
             'email' => 'online@example.com',
-            'check_in' => now()->addDay()->toDateString(),
+            'check_in' => null, // not yet checked in — the page lists online bookings awaiting action
             'number_of_guests' => 2,
             'reservation_type' => 'online',
             'status' => 'Pending',

@@ -442,7 +442,21 @@ Route::post('/reservation/prototype', function (Request $request) {
     ]);
 })->name('reservation.prototype')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::get('/reservation/check-in/{reservation}', function (Reservation $reservation) {
+Route::post('/reservation/check-in/{reservation}', function (Request $request, Reservation $reservation) {
+    // Harden: only authenticated staff/admin may check a reservation in.
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    if ($reservation->status === 'Checked In') {
+        return response()->json([
+            'success' => true,
+            'reservation_id' => $reservation->id,
+            'message' => 'Reservation is already checked in.',
+        ]);
+    }
+
     $reservation->update([
         'status' => 'Checked In',
         'check_in' => now()->toDateTimeString(),
@@ -1117,11 +1131,71 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ];
         })->values();
 
+        // ---- Chart data for the redesigned dashboard ----
+        // Bookings + collected revenue for the last 7 days (oldest first).
+        $weekDays = [];
+        $weekReservationCounts = [];
+        $weekRevenue = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $weekDays[] = $date->format('D');
+            $weekReservationCounts[] = Reservation::query()
+                ->whereDate('reservation_date', $date)
+                ->whereNotIn('status', ['Cancelled'])
+                ->count();
+            $weekRevenue[] = (float) Reservation::query()
+                ->whereDate('check_in', $date)
+                ->whereNotIn('status', ['Cancelled'])
+                ->sum('amount_paid');
+        }
+        $todayRevenue = $weekRevenue[6] ?? 0;
+
+        // Reservation status breakdown (only statuses that actually exist).
+        $statusCounts = Reservation::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+        $statusBreakdown = collect(['Pending', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'])
+            ->mapWithKeys(fn ($status) => [$status => (int) ($statusCounts[$status] ?? 0)])
+            ->filter()
+            ->toArray();
+
+        // Most booked amenities (by reservation_amenities rows).
+        $topAmenities = ReservationAmenity::query()
+            ->selectRaw('amenity_id, COUNT(*) as total')
+            ->whereNotNull('amenity_id')
+            ->with('amenity')
+            ->groupBy('amenity_id')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get()
+            ->map(fn ($ra) => [
+                'name' => $ra->amenity?->amenities_name ?? 'Unknown',
+                'total' => (int) $ra->total,
+            ]);
+        $topAmenityMax = $topAmenities->max('total') ?: 1;
+
+        // Today's expected arrivals (still pending confirmation or confirmed).
+        $todayArrivals = Reservation::query()
+            ->whereDate('reservation_date', now()->toDateString())
+            ->whereIn('status', ['Pending', 'Confirmed'])
+            ->orderBy('reservation_date')
+            ->get(['booker_name', 'number_of_guests', 'status', 'reservation_date']);
+
         return view('staff.staff_dashboard', compact(
             'todayCheckIns',
             'pendingReservationsCount',
             'guestsOnSiteCount',
-            'activityItems'
+            'activityItems',
+            'weekDays',
+            'weekReservationCounts',
+            'weekRevenue',
+            'todayRevenue',
+            'statusBreakdown',
+            'topAmenities',
+            'topAmenityMax',
+            'todayArrivals'
         ));
     })->name('dashboard');
 
@@ -1370,14 +1444,8 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ->get();
 
 
-        // Update number_of_guests to match actual guest count
-        foreach ($activeReservations as $reservation) {
-            $actualGuestCount = $reservation->reservationGuests->count();
-            if ($reservation->number_of_guests !== $actualGuestCount) {
-                $reservation->update(['number_of_guests' => $actualGuestCount]);
-            }
-        }
-
+        // NOTE: number_of_guests is kept in sync inside the check-in POST
+        // handler (a GET request must never mutate data).
         $reservationData = $activeReservations->mapWithKeys(function ($reservation) {
             $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
             $primaryCustomer = $primaryGuest?->customer;
@@ -2043,6 +2111,13 @@ Route::prefix('staff')->name('staff.')->group(function () {
             'check_in' => now()->toDateTimeString(),
             'status' => 'Checked In',
         ]);
+
+        // Keep number_of_guests in sync with the actual guest list
+        // (moved here from the check-ins GET page so reads never mutate).
+        $actualGuestCount = $reservation->reservationGuests()->count();
+        if ((int) $reservation->number_of_guests !== $actualGuestCount) {
+            $reservation->update(['number_of_guests' => $actualGuestCount]);
+        }
 
         return response()->json([
             'success' => true,

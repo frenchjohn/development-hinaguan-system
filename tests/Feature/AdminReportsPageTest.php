@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminReportsPageTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_admin_reports_page_is_accessible_for_admin_users(): void
     {
         $response = $this->withSession([

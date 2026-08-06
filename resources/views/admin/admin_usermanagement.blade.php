@@ -48,6 +48,17 @@
                     <div class="alert alert--success">{{ session('success') }}</div>
                 @endif
 
+                @if($errors->any())
+                    <div class="alert alert--error">
+                        <strong>Unable to save the staff account:</strong>
+                        <ul class="alert__list">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <section class="users-table-wrap">
                     <table class="users-table">
                         <thead>
@@ -103,12 +114,12 @@
                     <h4 class="modal-form__section-title">Staff Details</h4>
                     <div class="modal-form__row">
                         <label for="user_name">Name <span>*</span></label>
-                        <input id="user_name" name="name" type="text" required disabled>
+                        <input id="user_name" name="name" type="text" value="{{ old('name') }}" required disabled>
                     </div>
 
                     <div class="modal-form__row">
                         <label for="user_email">Email <span>*</span></label>
-                        <input id="user_email" name="email" type="email" required disabled>
+                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" required disabled>
                     </div>
                 </div>
 
