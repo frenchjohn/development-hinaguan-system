@@ -1,20 +1,17 @@
 <!DOCTYPE html>
-
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
 
     <meta charset="utf-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Reserve cottages, huts, and amenities at Hinaguan Nature Park in Jasaan, Misamis Oriental. Pick a date, choose your amenity, and confirm your booking in minutes.">
 
     <title>Book a Visit — Hinaguan Nature Park</title>
 
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
-
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/css/reservationpage.css', 'resources/css/chatbot.css', 'resources/js/reservationpage.js', 'resources/js/guest_chatbot.js'])
@@ -24,7 +21,6 @@
 <body class="antialiased rp-page" style="--rp-page-bg: url('{{ asset('images/background.jpeg') }}')">
 
     {{-- Site header --}}
-
     <div class="rp-site-header" id="rpSiteHeader">
 
         <div class="rp-topbar">
@@ -35,13 +31,13 @@
 
                     <strong>Now Open!</strong>
 
-                    Daytime: Adult &#8369;70 &middot; Child &#8369;50 &nbsp;|&nbsp;
+                    Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
 
-                    Overnight: Adult &#8369;100 &nbsp;|&nbsp;
+                    Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
 
                     <a href="{{ route('reservation') }}">Reserve Now</a>
 
-                    &nbsp;&middot;&nbsp; Call: 0917 861 8383
+                    &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
 
                 </p>
 
@@ -145,6 +141,8 @@
 
     <main class="rp-main">
 
+        {{-- ── Hero ── --}}
+
         <section class="rp-hero">
 
             <div class="rp-hero__content">
@@ -165,9 +163,39 @@
 
                     <span class="rp-label">Reservations</span>
 
-                    <h1 class="rp-title">Book Your Visit to Hinaguan</h1>
+                    <h1 class="rp-title">Book Your Escape to <em>Hinaguan</em></h1>
 
-                    <p class="rp-desc">Choose an amenity to view its calendar, or pick a date when you are ready. Select daytime or overnight to see what is available.</p>
+                    <p class="rp-desc">Pick a date, choose your amenity, and we will take care of the rest. Daytime, overnight, or both — your riverside getaway starts here.</p>
+
+                </div>
+
+
+
+                <div class="rp-hero__stats" data-animate="fade-up" data-delay="150">
+
+                    <div class="rp-hero__stat">
+
+                        <strong>{{ $amenities->count() }}+</strong>
+
+                        <span>Amenities to choose from</span>
+
+                    </div>
+
+                    <div class="rp-hero__stat">
+
+                        <strong>Daily</strong>
+
+                        <span>Open every single day</span>
+
+                    </div>
+
+                    <div class="rp-hero__stat">
+
+                        <strong>&#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }}</strong>
+
+                        <span>Day entry from</span>
+
+                    </div>
 
                 </div>
 
@@ -177,19 +205,151 @@
 
 
 
-        <!-- Date Selection CTA -->
+        {{-- ── Scroll-to-booking hint (floats until the booking area is in view) ── --}}
+
+        <button type="button" class="rp-scroll-hint" id="scrollHint" aria-label="Scroll down to the booking section">
+
+            <span class="rp-scroll-hint__label">Start booking below</span>
+
+            <span class="rp-scroll-hint__arrow" aria-hidden="true">
+
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+
+                </svg>
+
+            </span>
+
+        </button>
+
+
+
+        {{-- ── How booking works (two paths) ── --}}
+
+        <section class="rp-steps" id="bookingSteps" data-animate="fade-up" data-delay="100" aria-label="How booking works">
+
+            <div class="rp-steps__head">
+
+                <span class="rp-label">Two ways to book</span>
+
+                <h2 class="rp-steps__title">Start wherever feels right</h2>
+
+                <p class="rp-steps__desc">Planning around a date, or already in love with a specific spot? Both routes lead to the same perfect day out.</p>
+
+            </div>
+
+            <div class="rp-steps__paths">
+
+                <article class="rp-step rp-step--date">
+
+                    <span class="rp-step__badge">Path 1 &middot; Date first</span>
+
+                    <div class="rp-step__icon">
+
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+
+                        </svg>
+
+                    </div>
+
+                    <h3>Know when you're going?</h3>
+
+                    <p>Pick your date first, then browse exactly which amenities are free that day.</p>
+
+                    <ol class="rp-step__list">
+
+                        <li><span>1</span> Choose your visit date</li>
+
+                        <li><span>2</span> Pick from what's available that day</li>
+
+                    </ol>
+
+                </article>
+
+                <article class="rp-step rp-step--amenity">
+
+                    <span class="rp-step__badge">Path 2 &middot; Amenity first</span>
+
+                    <div class="rp-step__icon">
+
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+
+                        </svg>
+
+                    </div>
+
+                    <h3>Got a favorite spot?</h3>
+
+                    <p>Tap any amenity to open its availability calendar, then book it on a date that suits you.</p>
+
+                    <ol class="rp-step__list">
+
+                        <li><span>1</span> Pick your favorite amenity</li>
+
+                        <li><span>2</span> Choose an open date from its calendar</li>
+
+                    </ol>
+
+                </article>
+
+            </div>
+
+            <article class="rp-step rp-step--finish">
+
+                <div class="rp-step__icon">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
+
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+
+                    </svg>
+
+                </div>
+
+                <div class="rp-step__finish-copy">
+
+                    <h3>Confirm &amp; get your QR</h3>
+
+                    <p>Both paths end the same way — enter your details, pay a small deposit, and your QR code arrives by email for check-in.</p>
+
+                </div>
+
+                <span class="rp-step__finish-num" aria-hidden="true">&#10003;</span>
+
+            </article>
+
+        </section>
+
+
+
+        {{-- ── Date selection CTA ── --}}
 
         <section class="rp-date-cta" data-animate="fade-up" data-delay="100" id="dateCtaSection">
 
             <div class="rp-date-cta__content">
 
-                <h2>Start Your Reservation</h2>
+                <span class="rp-date-cta__icon">
 
-                <p>Select your preferred date to begin booking</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+
+                    </svg>
+
+                </span>
+
+                <h2>Ready to reserve?</h2>
+
+                <p>Start by picking the date you want to visit — it only takes a few seconds.</p>
 
                 <button type="button" id="pickDateBtn" class="rp-date-cta__button">
 
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 
@@ -199,11 +359,15 @@
 
                 </button>
 
+                <p class="rp-date-cta__hint">Daytime &amp; overnight bookings are limited each day — early booking is recommended.</p>
+
             </div>
 
         </section>
 
 
+
+        {{-- ── Date controls (revealed after a date is chosen) ── --}}
 
         <section class="rp-filterbar" data-animate="fade-up" data-delay="100" id="dateControlsSection" hidden>
 
@@ -219,24 +383,42 @@
 
                         <button type="button" id="reservationDateTrigger" class="rp-date-card__day">Select date</button>
 
+                        <span class="rp-date-card__weekday" id="reservationDay"></span>
+
                     </div>
 
                     <div class="rp-date-card__weather" id="reservationWeatherPreview" hidden>
+
                         <div class="rp-weather-preview__wrap">
+
                             <img src="" alt="" class="rp-weather-preview__icon" id="weatherIcon" hidden>
+
                             <div class="rp-weather-preview__content">
+
                                 <strong id="weatherCondition"></strong>
+
                                 <span id="weatherTemp"></span>
+
                             </div>
+
                         </div>
+
                         <p class="rp-weather-preview__empty" id="weatherEmpty"></p>
+
                         <div class="rp-weather-preview__skeleton" id="weatherSkeleton">
+
                             <div class="rp-weather-preview__skeleton-icon"></div>
+
                             <div class="rp-weather-preview__skeleton-content">
+
                                 <div class="rp-weather-preview__skeleton-text"></div>
+
                                 <div class="rp-weather-preview__skeleton-text rp-weather-preview__skeleton-text--small"></div>
+
                             </div>
+
                         </div>
+
                     </div>
 
                 </div>
@@ -246,6 +428,8 @@
         </section>
 
 
+
+        {{-- ── Booking type ── --}}
 
         <section class="rp-slotbar" aria-label="Booking type" data-animate="fade-up" data-delay="150" id="slotControlsSection" hidden>
 
@@ -261,9 +445,13 @@
 
             </div>
 
+            <p class="rp-slotbar__hint">Daytime: 6:00 AM – 6:00 PM &middot; Overnight: check-in 6:00 PM</p>
+
         </section>
 
 
+
+        {{-- ── Filters & multi-select ── --}}
 
         <section class="rp-subfilters" data-animate="fade-up" data-delay="200">
 
@@ -271,15 +459,19 @@
 
                 <label for="filterType">Filter by</label>
 
-                <select id="filterType">
+                <div class="rp-select-wrap">
 
-                    <option value="all">All amenities</option>
+                    <select id="filterType">
 
-                    <option value="capacity">Capacity range</option>
+                        <option value="all">All amenities</option>
 
-                    <option value="price">Price range</option>
+                        <option value="capacity">Capacity range</option>
 
-                </select>
+                        <option value="price">Price range</option>
+
+                    </select>
+
+                </div>
 
             </div>
 
@@ -303,7 +495,9 @@
 
                 <input id="multiSelectionToggle" type="checkbox">
 
-                <span>Multiple selection</span>
+                <span class="rp-multi-toggle__track" aria-hidden="true"><span class="rp-multi-toggle__thumb"></span></span>
+
+                <span class="rp-multi-toggle__label">Multiple selection</span>
 
             </label>
 
@@ -311,21 +505,55 @@
 
 
 
+        {{-- ── Amenity grid ── --}}
+
         <section class="rp-grid" id="reservationGridShell" data-animate="fade-up" data-delay="250">
 
-            {{-- Skeleton loading state --}}
-            <div class="rp-grid__skeleton" id="gridSkeleton">
-                @for($i = 1; $i <= 6; $i++)
-                    <div class="rp-card rp-card--skeleton">
-                        <div class="rp-card__skeleton-image"></div>
-                        <div class="rp-card__skeleton-content">
-                            <div class="rp-card__skeleton-title"></div>
-                            <div class="rp-card__skeleton-meta"></div>
-                            <div class="rp-card__skeleton-price"></div>
-                        </div>
-                    </div>
-                @endfor
+            {{-- Section heading --}}
+
+            <div class="rp-grid__head">
+
+                <div>
+
+                    <span class="rp-label">Available amenities</span>
+
+                    <h2 class="rp-grid__title">Choose your spot</h2>
+
+                </div>
+
+                <p class="rp-grid__sub">Tap an amenity to see its calendar and rates, or start with a date above.</p>
+
             </div>
+
+
+
+            {{-- Skeleton loading state --}}
+
+            <div class="rp-grid__skeleton" id="gridSkeleton">
+
+                @for($i = 1; $i <= 6; $i++)
+
+                    <div class="rp-card rp-card--skeleton">
+
+                        <div class="rp-card__skeleton-image"></div>
+
+                        <div class="rp-card__skeleton-content">
+
+                            <div class="rp-card__skeleton-title"></div>
+
+                            <div class="rp-card__skeleton-meta"></div>
+
+                            <div class="rp-card__skeleton-price"></div>
+
+                        </div>
+
+                    </div>
+
+                @endfor
+
+            </div>
+
+
 
             <div class="rp-grid__loading" id="availabilityLoading" hidden>
 
@@ -334,6 +562,8 @@
                 <p>Loading amenities for this date and slot…</p>
 
             </div>
+
+
 
             @if($amenities->isEmpty())
 
@@ -413,15 +643,43 @@
 
                                 @endif
 
+                                <div class="rp-card__chips">
+
+                                    <span class="rp-card__chip rp-card__chip--capacity">
+
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+
+                                        {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
+
+                                    </span>
+
+                                    @if($minPrice)
+
+                                        <span class="rp-card__chip rp-card__chip--price">
+
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+
+                                            from &#8369;{{ number_format($minPrice) }}
+
+                                        </span>
+
+                                    @endif
+
+                                </div>
+
+                                @if($hasSale)
+
+                                    <div class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</div>
+
+                                @endif
+
                                 <div class="rp-card__overlay">
 
                                     <span>{{ $amenity->amenities_name }}</span>
 
                                 </div>
 
-                                @if($hasSale)
-                                    <div class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</div>
-                                @endif
+                                <span class="rp-card__cta">View &amp; Book</span>
 
                             </button>
 
@@ -443,6 +701,102 @@
 
 
 
+        {{-- ── Reassurance strip ── --}}
+
+        <section class="rp-perks" data-animate="fade-up">
+
+            <div class="rp-perk">
+
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+
+                <div><strong>Pay a small deposit</strong><span>50% down to lock in your booking</span></div>
+
+            </div>
+
+            <div class="rp-perk">
+
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+
+                <div><strong>QR check-in</strong><span>Your QR is sent straight to your email</span></div>
+
+            </div>
+
+            <div class="rp-perk">
+
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+
+                <div><strong>No hidden fees</strong><span>Pay the balance at check-in</span></div>
+
+            </div>
+
+        </section>
+
+
+
+        {{-- ── Help & FAQ ── --}}
+
+        <section class="rp-help" data-animate="fade-up" id="help">
+
+            <div class="rp-help__intro">
+
+                <span class="rp-label">Need a hand?</span>
+
+                <h2 class="rp-help__title">Questions about your visit</h2>
+
+                <p>Everything you need to know before booking. Still unsure? Give us a ring — we are happy to help.</p>
+
+                <a href="tel:+63{{ preg_replace('/[^0-9]/', '', $parkSettings->contact_number ?? '09178618383') }}" class="rp-help__call">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+
+                    Call {{ $parkSettings->contact_number ?? '0917 861 8383' }}
+
+                </a>
+
+            </div>
+
+            <div class="rp-help__faq">
+
+                <details class="rp-faq" open>
+
+                    <summary>Do I need to pay the full amount when booking?</summary>
+
+                    <p>No — a 50% deposit secures your reservation. You can settle the remaining balance when you check in at the park.</p>
+
+                </details>
+
+                <details class="rp-faq">
+
+                    <summary>How will I receive my booking confirmation?</summary>
+
+                    <p>Once your reservation is confirmed, a QR code is emailed to you. Present it at the check-in counter on the day of your visit.</p>
+
+                </details>
+
+                <details class="rp-faq">
+
+                    <summary>What are the park hours?</summary>
+
+                    <p>Daytime visits run from {{ $parkSettings?->opening_time ? date('g:i A', strtotime($parkSettings->opening_time)) : '6:00 AM' }} to {{ $parkSettings?->closing_time ? date('g:i A', strtotime($parkSettings->closing_time)) : '6:00 PM' }}. Overnight guests check in from {{ $parkSettings?->nighttime_start ? date('g:i A', strtotime($parkSettings->nighttime_start)) : '6:00 PM' }}.</p>
+
+                </details>
+
+                <details class="rp-faq">
+
+                    <summary>Can I book more than one amenity at a time?</summary>
+
+                    <p>Yes! Turn on "Multiple selection" above the amenity list to reserve several cottages or areas for your group in a single booking.</p>
+
+                </details>
+
+            </div>
+
+        </section>
+
+
+
+        {{-- ── Floating selection bar ── --}}
+
         <div class="rp-floating-actions" id="selectionFloatingBar" hidden>
 
             <div class="rp-floating-actions__copy">
@@ -458,6 +812,8 @@
         </div>
 
 
+
+        {{-- ── Selection sheet ── --}}
 
         <div class="rp-selection-sheet" id="selectionSheet" aria-hidden="true">
 
@@ -496,6 +852,8 @@
         </div>
 
 
+
+        {{-- ── Amenity detail / booking modal ── --}}
 
         <div class="rp-modal" id="amenityModal" aria-hidden="true">
 
@@ -565,6 +923,10 @@
 
                             <h3>Guest reservation</h3>
 
+                            <input type="hidden" name="check_in" id="bookingCheckIn">
+
+                            <input type="hidden" name="check_out" id="bookingCheckOut">
+
                             <label>
 
                                 Booker name
@@ -613,64 +975,167 @@
 
 
 
+        {{-- ── Cancel confirmation modal ── --}}
+
         <div class="rp-modal" id="cancelConfirmModal" aria-hidden="true">
+
             <div class="rp-modal__backdrop" data-close-cancel-confirm></div>
+
             <div class="rp-modal__panel">
+
                 <div class="rp-modal__header">
+
                     <h2>Cancel reservation?</h2>
+
                     <button type="button" class="rp-modal__close" data-close-cancel-confirm>&times;</button>
+
                 </div>
+
                 <div class="rp-modal__content">
+
                     <p>Are you sure you want to cancel? This will refresh the page.</p>
+
                     <div class="rp-modal__actions">
+
                         <button type="button" class="rp-modal__btn rp-modal__btn--secondary" data-close-cancel-confirm>No</button>
+
                         <button type="button" class="rp-modal__btn rp-modal__btn--primary" id="confirmCancelBtn">Yes, cancel</button>
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
 
 
+
+        {{-- ── Date picker modal ── --}}
 
         <div class="rp-modal" id="datePickerModal" aria-hidden="true">
+
             <div class="rp-modal__backdrop" data-close-date-picker></div>
+
             <div class="rp-modal__panel rp-modal__panel--calendar">
+
                 <div class="rp-modal__header">
-                    <h2>Select reservation date</h2>
+
+                    <div>
+
+                        <p class="rp-modal__eyebrow">When do you want to visit?</p>
+
+                        <h2>Select reservation date</h2>
+
+                    </div>
+
                     <button type="button" class="rp-modal__close" data-close-date-picker>&times;</button>
+
                 </div>
-                <div class="rp-modal__content">
-                    <div class="rp-calendar-controls">
-                        <select id="datePickerMonth" class="rp-calendar-controls__select">
-                            <option value="0">January</option>
-                            <option value="1">February</option>
-                            <option value="2">March</option>
-                            <option value="3">April</option>
-                            <option value="4">May</option>
-                            <option value="5">June</option>
-                            <option value="6">July</option>
-                            <option value="7">August</option>
-                            <option value="8">September</option>
-                            <option value="9">October</option>
-                            <option value="10">November</option>
-                            <option value="11">December</option>
-                        </select>
-                        <select id="datePickerYear" class="rp-calendar-controls__select"></select>
-                    </div>
-                    <div class="rp-slotbar rp-slotbar--modal">
-                        <span class="rp-slotbar__label">Booking type</span>
-                        <div class="rp-slotbar__buttons">
-                            <button type="button" class="rp-slot-btn is-active" data-slot="Daytime" id="modalSlotDaytime">Daytime</button>
-                            <button type="button" class="rp-slot-btn" data-slot="Nighttime" id="modalSlotNighttime">Nighttime</button>
-                            <button type="button" class="rp-slot-btn" data-slot="DayNight Time" id="modalSlotDayNight">DayNight Time</button>
+
+                <div class="rp-modal__content rp-modal__content--stacked">
+
+                    <div class="rp-dp-toolbar">
+
+                        <div class="rp-dp-toolbar__field">
+
+                            <label class="rp-dp-toolbar__label" for="datePickerMonth">Month</label>
+
+                            <div class="rp-select-wrap">
+
+                                <select id="datePickerMonth" class="rp-calendar-controls__select">
+
+                                    <option value="0">January</option>
+
+                                    <option value="1">February</option>
+
+                                    <option value="2">March</option>
+
+                                    <option value="3">April</option>
+
+                                    <option value="4">May</option>
+
+                                    <option value="5">June</option>
+
+                                    <option value="6">July</option>
+
+                                    <option value="7">August</option>
+
+                                    <option value="8">September</option>
+
+                                    <option value="9">October</option>
+
+                                    <option value="10">November</option>
+
+                                    <option value="11">December</option>
+
+                                </select>
+
+                            </div>
+
                         </div>
+
+                        <div class="rp-dp-toolbar__field">
+
+                            <label class="rp-dp-toolbar__label" for="datePickerYear">Year</label>
+
+                            <div class="rp-select-wrap">
+
+                                <select id="datePickerYear" class="rp-calendar-controls__select"></select>
+
+                            </div>
+
+                        </div>
+
                     </div>
+
+                    <div class="rp-dp-slot" role="group" aria-label="Booking type">
+
+                        <span class="rp-dp-slot__label">Booking type</span>
+
+                        <div class="rp-dp-slot__buttons">
+
+                            <button type="button" class="rp-slot-btn is-active" data-slot="Daytime" id="modalSlotDaytime">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+
+                                Daytime
+
+                            </button>
+
+                            <button type="button" class="rp-slot-btn" data-slot="Nighttime" id="modalSlotNighttime">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+
+                                Nighttime
+
+                            </button>
+
+                            <button type="button" class="rp-slot-btn" data-slot="DayNight Time" id="modalSlotDayNight">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8a4 4 0 100 8 4 4 0 000-8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+
+                                DayNight Time
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
                     <div class="rp-calendar" id="datePickerDays"></div>
+
+                    <p class="rp-dp-hint"><span class="rp-dp-hint__dot" aria-hidden="true"></span> Highlighted dates are open &mdash; dimmed dates are past or fully booked.</p>
+
                 </div>
+
             </div>
+
         </div>
 
 
+
+        {{-- ── Availability calendar modal ── --}}
 
         <div class="rp-modal" id="availabilityModal" aria-hidden="true">
 
@@ -756,6 +1221,8 @@
 
 
 
+        {{-- ── Multi aircon modal ── --}}
+
         <div class="rp-modal" id="multiAirconModal" aria-hidden="true">
 
             <div class="rp-modal__backdrop" data-close-multi-aircon-modal></div>
@@ -816,6 +1283,8 @@
 
 
 
+        {{-- ── Success modal ── --}}
+
         <div class="rp-modal rp-modal--success" id="reservationSuccessModal" aria-hidden="true">
 
             <div class="rp-modal__backdrop" data-close-success-modal></div>
@@ -859,6 +1328,10 @@
             </div>
 
         </div>
+
+
+
+        {{-- ── Error modal ── --}}
 
         <div class="rp-modal rp-modal--error" id="reservationErrorModal" aria-hidden="true">
 
@@ -904,7 +1377,33 @@
 
     <footer class="rp-footer">
 
-        <p>&copy; {{ date('Y') }} <strong>Hinaguan Nature Park</strong>. All rights reserved.</p>
+        <div class="rp-footer__inner">
+
+            <div class="rp-footer__brand">
+
+                <span class="rp-logo__name">Hinaguan Nature Park</span>
+
+                <p>Jasaan, Misamis Oriental, Philippines</p>
+
+            </div>
+
+            <div class="rp-footer__links">
+
+                <a href="{{ route('home') }}#about">About</a>
+
+                <a href="{{ route('home') }}#amenities">Amenities</a>
+
+                <a href="{{ route('home') }}#rates">Rates</a>
+
+                <a href="{{ route('home') }}#directions">Directions</a>
+
+                <a href="{{ route('reservation') }}">Reserve Now</a>
+
+            </div>
+
+            <p class="rp-footer__copy">&copy; {{ date('Y') }} <strong>Hinaguan Nature Park</strong>. All rights reserved.</p>
+
+        </div>
 
     </footer>
 
@@ -913,4 +1412,3 @@
 </body>
 
 </html>
-

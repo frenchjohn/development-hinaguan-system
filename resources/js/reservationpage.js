@@ -3195,4 +3195,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+
+
+// Scroll-to-booking hint: floats at the bottom while the booking area is
+// below the fold, scrolls down to it on click, and reappears on scroll up.
+
+(() => {
+
+    const hint = document.getElementById('scrollHint');
+
+    // Scroll target: the always-visible steps section (the CTA section gets
+
+    // hidden once a date is picked, so it cannot anchor the reappear logic).
+
+    const bookingAnchor = document.getElementById('bookingSteps')
+
+        || document.getElementById('reservationGridShell')
+
+        || document.getElementById('dateCtaSection');
+
+    const floatingBar = document.getElementById('selectionFloatingBar');
+
+
+
+    if (!hint || !bookingAnchor) return;
+
+
+
+    // Show while near the top (hero is compact, so scroll-position beats
+
+    // anchor geometry — the steps section is already inside the top 60% of
+
+    // the viewport on load). Hide once the user scrolls down past half a
+
+    // viewport or the selection bar is floating; reappear on scroll up.
+
+    const updateHint = () => {
+
+        const scrolledDown = window.scrollY > window.innerHeight * 0.5;
+
+        const barVisible = floatingBar && !floatingBar.hidden;
+
+        hint.classList.toggle('is-hidden', barVisible || scrolledDown);
+
+    };
+
+
+
+    hint.addEventListener('click', () => {
+
+        bookingAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    });
+
+
+
+    window.addEventListener('scroll', updateHint, { passive: true });
+
+    window.addEventListener('resize', updateHint, { passive: true });
+
+    updateHint();
+
+})();
+
     

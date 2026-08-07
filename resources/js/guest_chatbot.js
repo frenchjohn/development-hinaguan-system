@@ -47,22 +47,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const addMessage = (content, isBot = true, shouldSave = true) => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
-        
+
         if (isBot) {
             messageDiv.innerHTML = `
                 <div class="chatbot-message__avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
                     </svg>
                 </div>
-                <div class="chatbot-message__content">
-                    <p>${escapeHtml(content)}</p>
+                <div class="chatbot-message__body">
+                    <div class="chatbot-message__meta">
+                        <span class="chatbot-message__author">HinaguanBot</span>
+                    </div>
+                    <div class="chatbot-message__content">
+                        <p>${escapeHtml(content)}</p>
+                    </div>
                 </div>
             `;
         } else {
             messageDiv.innerHTML = `
-                <div class="chatbot-message__content">
-                    <p>${escapeHtml(content)}</p>
+                <div class="chatbot-message__body">
+                    <div class="chatbot-message__content">
+                        <p>${escapeHtml(content)}</p>
+                    </div>
                 </div>
             `;
         }
@@ -80,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Restore messages from localStorage
     if (messages.length > 0) {
         chatbotMessages.innerHTML = '';
+        chatbotWidget.classList.add('is-conversation');
         messages.forEach(msg => {
             addMessage(msg.content, msg.isBot, false);
         });
@@ -115,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isOpen = !isOpen;
         chatbotWindow.hidden = !isOpen;
         chatbotToggle.setAttribute('aria-expanded', isOpen);
+        chatbotToggle.setAttribute('aria-label', isOpen ? 'Close chatbot' : 'Open chatbot');
         
         if (isOpen) {
             chatbotInput.focus();
@@ -132,6 +142,52 @@ document.addEventListener('DOMContentLoaded', () => {
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
 
+    // Delete conversation (two-tap confirm to avoid accidental clears)
+    const chatbotClear = document.getElementById('chatbotClear');
+    let clearArmed = false;
+    let clearArmTimer = null;
+    // Set when the conversation is wiped; a reply still in flight must not resurrect it
+    let conversationCleared = false;
+    const disarmClear = () => {
+        clearArmed = false;
+        clearArmTimer = null;
+        chatbotClear?.classList.remove('is-armed');
+        chatbotClear?.setAttribute('aria-label', 'Delete conversation');
+    };
+    chatbotClear?.addEventListener('click', () => {
+        if (!clearArmed) {
+            clearArmed = true;
+            chatbotClear.classList.add('is-armed');
+            chatbotClear.setAttribute('aria-label', 'Click again to delete');
+            clearArmTimer = setTimeout(disarmClear, 2500);
+            return;
+        }
+        // Confirm: wipe the conversation
+        clearTimeout(clearArmTimer);
+        disarmClear();
+        conversationCleared = true;
+        messages = [];
+        saveState(isOpen, messages, selectedModel);
+        chatbotMessages.innerHTML = '';
+        // Bring back the welcome message + quick-reply chips
+        chatbotWidget.classList.remove('is-conversation');
+        addMessage('Hello! I\'m HinaguanBot 🌿 I can help you with our amenities, rates, and how to book your visit. What would you like to know?', true, false);
+        chatbotInput.focus();
+    });
+
+    // Quick-reply chips: send the preset question
+    document.querySelectorAll('[data-quick-reply]').forEach((chip) => {
+        chip.addEventListener('click', () => {
+            if (!chatbotInput || !chatbotForm) return;
+            chatbotInput.value = chip.dataset.quickReply || '';
+            if (typeof chatbotForm.requestSubmit === 'function') {
+                chatbotForm.requestSubmit();
+            } else {
+                chatbotForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        });
+    });
+
     // Close on escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && isOpen) {
@@ -146,15 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
         typingDiv.id = 'chatbotTyping';
         typingDiv.innerHTML = `
             <div class="chatbot-message__avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
                 </svg>
-            </div>
-            <div class="chatbot-message__content">
-                <div class="chatbot-typing">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+            </div>                <div class="chatbot-message__body">
+                    <div class="chatbot-message__content">
+                        <div class="chatbot-typing">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </div>
             </div>
         `;
@@ -185,6 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage(message, false);
         chatbotInput.value = '';
         
+        // Conversation started — hide the quick-reply chips
+        chatbotWidget.classList.add('is-conversation');
+        conversationCleared = false;
+        
         // Show typing indicator
         showTyping();
         
@@ -210,6 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log for debugging
             console.log('Guest chatbot response:', data);
             
+            // A wiped conversation must not be resurrected by a late reply
+            if (conversationCleared) return;
+            
             // Add bot response
             if (data.reply) {
                 addMessage(data.reply, true);
@@ -220,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Guest chatbot error:', error);
             hideTyping();
+            if (conversationCleared) return;
             addMessage('I apologize, but the service is temporarily unavailable. Please try again later.', true);
         } finally {
             // Re-enable send button

@@ -122,12 +122,6 @@ body.staff-portal, body.admin-portal {
     overflow-x: hidden;
 }
 
-/* Calm the faint nature texture used by page blades */
-body.staff-portal .dash-main::before , body.admin-portal .dash-main::before {
-    opacity: 0.025;
-    filter: saturate(0.4);
-}
-
 /* Content: fills the FULL available width — no centering cap, no big side
    gutters. Only modest balanced padding remains. */
 body.staff-portal .dash-content , body.admin-portal .dash-content {
@@ -1423,10 +1417,11 @@ body.staff-portal .alert--error , body.admin-portal .alert--error {
 
 /* ------------------------------------------------------------
    18. Chatbot widget
+   The toggle's gold-ring design and pulse animation live in
+   resources/css/chatbot.css; keep only portal refinements here.
    ------------------------------------------------------------ */
 body.staff-portal .chatbot-toggle , body.admin-portal .chatbot-toggle {
-    box-shadow: 0 10px 26px rgba(23, 42, 32, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(200, 164, 93, 0.55);
 }
 
 /* ------------------------------------------------------------
@@ -2060,6 +2055,118 @@ body.staff-portal .status-pill--online , body.admin-portal .status-pill--online 
     body.staff-portal .guest-modal__content, body.admin-portal .guest-modal__content,
     body.staff-portal .modal__panel, body.admin-portal .modal__panel,
     body.staff-portal .logout-modal__content , body.admin-portal .logout-modal__content {
+        animation: none;
+    }
+}
+/* ============================================================
+   24. Portal ambient art — nature backdrop + leaf overlays
+   The pages render a blurred, darkened nature photo behind the
+   content (staff = background_image1, admin = background_image2)
+   and layer the transparent leaf cutouts from
+   public/storage/design_images over the corners.
+   ============================================================ */
+
+/* --- Backdrop: calm blurred wash (replaces the old 2.5% ghost) --- */
+body.staff-portal .dash-main::before, body.admin-portal .dash-main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 0.38;
+    filter: blur(8px) saturate(1.15) brightness(1.05);
+    animation: none; /* static on purpose: smooth + cheap vs the old bgPan */
+}
+
+body.admin-portal .dash-main::before {
+    background-image: url('/storage/design_images/background_image2.png');
+}
+
+[data-theme="dark"] body.staff-portal .dash-main::before,
+[data-theme="dark"] body.admin-portal .dash-main::before {
+    opacity: 0.24;
+    filter: blur(10px) brightness(0.55) saturate(0.9);
+}
+
+/* --- Leaf overlays (pure decoration, never blocks clicks) --- */
+.portal-art {
+    position: fixed;
+    inset: 0;
+    z-index: 40; /* above content, below sidebar(50) / dropdowns(100+) / modals */
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.portal-art__leaves {
+    position: absolute;
+    right: -4.5rem;
+    bottom: -6rem;
+    width: min(52vw, 640px);
+    /* aspect-ratio matches the generated leaves_png2_web.png (1400x1172,
+       produced from the 8000x6702 original by trimming + downscaling). */
+    aspect-ratio: 1400 / 1172;
+    background: url('/storage/design_images/leaves_png2_web.png') no-repeat center / contain;
+    opacity: 0.55;
+    mix-blend-mode: multiply;
+    filter: saturate(1.15) brightness(1.02);
+    transform: rotate(-5deg);
+    animation: portal-leaf-float 24s ease-in-out infinite alternate;
+}
+
+.portal-art__leaf {
+    position: absolute;
+    top: 5.3rem;
+    right: -2.5rem;
+    width: min(22vw, 200px);
+    aspect-ratio: 1;
+    background: url('/storage/design_images/leaves_png1.png') no-repeat center / contain;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    filter: saturate(1.1);
+    transform: rotate(12deg);
+    animation: portal-leaf-float 30s ease-in-out infinite alternate-reverse;
+}
+
+/* Dark mode: leaves become quiet dark-foliage silhouettes (no neon glow) */
+[data-theme="dark"] .portal-art__leaves {
+    opacity: 0.4;
+    mix-blend-mode: normal;
+    filter: brightness(0.5) saturate(0.8);
+}
+
+[data-theme="dark"] .portal-art__leaf {
+    opacity: 0.38;
+    mix-blend-mode: normal;
+    filter: brightness(0.55);
+}
+
+@keyframes portal-leaf-float {
+    from { translate: 0 0; }
+    to   { translate: 0 -14px; }
+}
+
+@media (max-width: 640px) {
+    .portal-art__leaves {
+        width: 78vw;
+        opacity: 0.42;
+    }
+    .portal-art__leaf {
+        width: 36vw;
+        opacity: 0.4;
+    }
+    [data-theme="dark"] .portal-art__leaves {
+        opacity: 0.3;
+    }
+    [data-theme="dark"] .portal-art__leaf {
+        opacity: 0.3;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-art__leaves,
+    .portal-art__leaf {
         animation: none;
     }
 }

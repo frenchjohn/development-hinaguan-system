@@ -282,11 +282,13 @@ Route::get('/reservation', function (WeatherService $weather) {
     $selectedDate = now()->toDateString();
     $maxReservationDate = now()->addDays(3)->toDateString();
     $weatherPreview = $weather->getForecastForDate($selectedDate);
+    $parkSettings = \App\Models\ParkSetting::first();
 
     return view('reservationpage', [
         'amenities' => $amenities,
         'weatherPreview' => $weatherPreview,
         'maxReservationDate' => $maxReservationDate,
+        'parkSettings' => $parkSettings,
     ]);
 })->name('reservation');
 
