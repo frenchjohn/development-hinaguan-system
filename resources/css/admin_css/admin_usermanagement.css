@@ -431,3 +431,207 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================
+   User management redesign — stats strip, search toolbar,
+   row action buttons, status pills
+   ============================================================ */
+.users-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.users-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.users-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+.users-stat__icon {
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: var(--radius-md);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.users-stat__icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.users-stat__icon--total {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.users-stat__icon--active {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+.users-stat__icon--banned {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.users-stat__value {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+}
+
+.users-stat__label {
+    margin: 0.3rem 0 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+
+@media (max-width: 768px) {
+    .users-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Toolbar */
+.users-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.users-toolbar__search {
+    position: relative;
+    flex: 1;
+    min-width: 14rem;
+    max-width: 24rem;
+}
+
+.users-toolbar__search svg {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.95rem;
+    height: 0.95rem;
+    color: var(--ink-faint);
+    pointer-events: none;
+}
+
+.users-toolbar__search input {
+    width: 100%;
+    padding: 0.55rem 0.9rem 0.55rem 2.2rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 0.84rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.users-toolbar__search input:focus {
+    border-color: var(--green);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(23, 138, 82, 0.12);
+}
+
+.users-toolbar__count {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.28rem 0.75rem;
+    white-space: nowrap;
+}
+
+/* Row actions */
+.users-table__actions-head {
+    text-align: right;
+}
+
+.users-table__actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin-left: 0.3rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.row-action svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
+.row-action:hover {
+    transform: translateY(-1px);
+}
+
+.row-action--edit:hover {
+    background: var(--green-tint);
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.row-action--ban:hover {
+    background: var(--warn-soft);
+    border-color: rgba(168, 122, 21, 0.5);
+    color: var(--warn);
+}
+
+.row-action--delete:hover {
+    background: var(--danger-soft);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* Status pills for accounts */
+.status-pill--active {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+.status-pill--banned {
+    background: var(--danger-soft);
+    color: var(--danger);
+}

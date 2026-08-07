@@ -19,12 +19,13 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/admin_sidemenu.css',
         'resources/css/admin_css/admin_reports.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_reports.js',
     ])
 </head>
-<body class="antialiased">
+<body class="antialiased admin-portal">
     <div class="dash-layout">
         <x-admin_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
@@ -47,31 +48,66 @@
                 </section>
 
                 <section class="reports-filters" id="reportsFilters">
-                    <div class="reports-filter-group">
-                        <label for="amenityFilter">Amenity</label>
-                        <select id="amenityFilter">
-                            <option value="all">All amenities</option>
-                            @foreach($amenityOptions as $amenityOption)
-                                <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
-                            @endforeach
-                        </select>
+                    <div class="reports-filters__head">
+                        <div>
+                            <h3 class="reports-filters__title">Filter Report</h3>
+                            <p class="reports-filters__hint">Narrow the ledger by amenity, reservation status, or check-in range</p>
+                        </div>
+                        <div class="reports-filters__head-actions">
+                            <span class="reports-filters__active" id="activeFilterText">Showing all reservations</span>
+                            <button type="button" class="reports-filters__reset" id="resetFiltersBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Reset
+                            </button>
+                        </div>
                     </div>
-                    <div class="reports-filter-group">
-                        <label for="statusFilter">Reservation Status</label>
-                        <select id="statusFilter">
-                            <option value="all">All statuses</option>
-                            @foreach($statusOptions as $statusOption)
-                                <option value="{{ $statusOption }}">{{ $statusOption }}</option>
-                            @endforeach
-                        </select>
+                    <div class="reports-filters__grid">
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z"/></svg>
+                                Amenity
+                            </span>
+                            <select id="amenityFilter">
+                                <option value="all">All amenities</option>
+                                @foreach($amenityOptions as $amenityOption)
+                                    <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Reservation Status
+                            </span>
+                            <select id="statusFilter">
+                                <option value="all">All statuses</option>
+                                @foreach($statusOptions as $statusOption)
+                                    <option value="{{ $statusOption }}">{{ $statusOption }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                                Check-in from
+                            </span>
+                            <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}">
+                        </label>
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                                Check-in to
+                            </span>
+                            <input id="dateTo" type="date" value="{{ $lastCheckInDate }}">
+                        </label>
                     </div>
-                    <div class="reports-filter-group">
-                        <label for="dateFrom">Check-in from</label>
-                        <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}">
-                    </div>
-                    <div class="reports-filter-group">
-                        <label for="dateTo">Check-in to</label>
-                        <input id="dateTo" type="date" value="{{ $lastCheckInDate }}">
+                    <div class="reports-filters__presets">
+                        <span class="reports-filters__presets-label">Quick range:</span>
+                        <button type="button" class="preset-chip" data-preset="today">Today</button>
+                        <button type="button" class="preset-chip" data-preset="7d">Last 7 days</button>
+                        <button type="button" class="preset-chip" data-preset="30d">Last 30 days</button>
+                        <button type="button" class="preset-chip" data-preset="month">This month</button>
+                        <button type="button" class="preset-chip" data-preset="all">All time</button>
                     </div>
                 </section>
 
@@ -247,16 +283,24 @@
                                 </thead>
                                 <tbody>
                                     @forelse($reservations as $reservation)
+                                        @php $initials = strtoupper(implode('', array_map(fn ($w) => $w[0] ?? '', array_slice(preg_split('/\s+/', trim($reservation->booker_name ?? '?')), 0, 2)))); @endphp
                                         <tr data-amenity="{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') }}" data-status="{{ $reservation->status }}" data-checkin="{{ $reservation->reservation_date }}">
-                                            <td>{{ $reservation->booker_name }}</td>
-                                            <td>{{ $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'TBD' }}</td>
+                                            <td>
+                                                <span class="cell-person">
+                                                    <span class="cell-person__avatar">{{ $initials ?: '?' }}</span>
+                                                    <span class="cell-person__name">{{ $reservation->booker_name }}</span>
+                                                </span>
+                                            </td>
+                                            <td class="mono-cell">{{ $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'TBD' }}</td>
                                             <td>{{ $reservation->number_of_guests }}</td>
                                             <td>{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None' }}</td>
                                             <td>
-                                                <span class="badge badge--{{ strtolower(str_replace(' ', '-', $reservation->status)) }}">{{ $reservation->status }}</span>
+                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }}">{{ $reservation->status }}</span>
                                             </td>
-                                            <td>{{ $reservation->payment_status }}</td>
-                                            <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                            <td>
+                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->payment_status)) }}">{{ $reservation->payment_status }}</span>
+                                            </td>
+                                            <td class="num-cell">₱{{ number_format($reservation->total_amount, 2) }}</td>
                                         </tr>
                                     @empty
                                         <tr>

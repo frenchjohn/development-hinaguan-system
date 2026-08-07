@@ -527,6 +527,22 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->values()
             ->first();
 
+        // Reservation status breakdown for the donut chart
+        $statusBreakdown = Reservation::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        // Revenue per day for the last 7 days (bar chart)
+        $weekRevenue = [];
+        $weekDays = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $weekDays[] = $date->format('D');
+            $weekRevenue[] = (int) Reservation::whereDate('check_in', $date->toDateString())->sum('amount_paid');
+        }
+
         return view('admin.admin_dashboard', [
             'totalReservations' => $totalReservations,
             'totalGuests' => $totalGuests,
@@ -538,6 +554,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'uniqueCustomerCount' => $uniqueCustomerCount,
             'topAmenity' => $topAmenity,
             'recentReservations' => $recentReservations,
+            'statusBreakdown' => $statusBreakdown,
+            'weekRevenue' => $weekRevenue,
+            'weekDays' => $weekDays,
         ]);
     })->name('dashboard');
 
@@ -547,8 +566,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
+        $amenities = Amenity::orderBy('amenities_name')->get();
+
         return view('admin.admin_amenitiesmanagement', [
-            'amenities' => Amenity::orderBy('amenities_name')->get(),
+            'amenities' => $amenities,
+            'totalAmenities' => $amenities->count(),
+            'enabledAmenities' => $amenities->where('status', true)->count(),
+            'disabledAmenities' => $amenities->where('status', false)->count(),
+            'onSaleAmenities' => $amenities->filter(fn ($a) => $a->sale_percentage && $a->sale_percentage > 0)->count(),
         ]);
     })->name('amenities');
 
@@ -697,8 +722,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
+        $staffAccounts = StaffAccount::orderBy('name')->get();
+
         return view('admin.admin_usermanagement', [
-            'staffAccounts' => StaffAccount::orderBy('name')->get(),
+            'staffAccounts' => $staffAccounts,
+            'totalStaff' => $staffAccounts->count(),
+            'activeStaff' => $staffAccounts->where('ban_status', false)->count(),
+            'bannedStaff' => $staffAccounts->where('ban_status', true)->count(),
         ]);
     })->name('users');
 

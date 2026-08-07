@@ -26,10 +26,10 @@ window.AppPage['staff_reports'] = function () {
 
         let dateMatch = true;
         if (checkin) {
-            const checkinDate = new Date(checkin);
-            const fromDate = dateFrom.value ? new Date(dateFrom.value) : null;
-            const toDate = dateTo.value ? new Date(dateTo.value) : null;
-            dateMatch = (!fromDate || checkinDate >= fromDate) && (!toDate || checkinDate <= toDate);
+            // Compare date-only strings: new Date('YYYY-MM-DD') parses as UTC
+            // midnight, which shifts boundary days for UTC+ timezones (PH).
+            const checkinDay = String(checkin).slice(0, 10);
+            dateMatch = (!dateFrom.value || checkinDay >= dateFrom.value) && (!dateTo.value || checkinDay <= dateTo.value);
         }
 
         return customerMatch && amenityMatch && statusMatch && dateMatch;

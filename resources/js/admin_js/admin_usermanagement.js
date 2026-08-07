@@ -84,12 +84,71 @@ window.AppPage['admin_usermanagement'] = function () {
     });
 
     rows.forEach((row) => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (event) => {
+            if (event.target.closest('[data-action]')) return;
             prepareEditView(row);
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
         });
     });
+
+    const submitStaffAction = (row, method, suffix) => {
+        selectedUserId = row.dataset.userId;
+        formMethod.value = method;
+        form.action = `${form.dataset.updateBaseUrl}/${selectedUserId}${suffix || ''}`;
+        form.submit();
+    };
+
+    rows.forEach((row) => {
+        row.querySelectorAll('[data-action]').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const action = btn.dataset.action;
+                if (action === 'edit') {
+                    prepareEditView(row);
+                    modal.classList.add('is-open');
+                    modal.setAttribute('aria-hidden', 'false');
+                } else if (action === 'ban') {
+                    const verb = row.dataset.banStatus === 'banned' ? 'Unban' : 'Ban';
+                    if (!window.confirm(`${verb} ${row.dataset.name}?`)) return;
+                    submitStaffAction(row, 'PATCH', '/ban');
+                } else if (action === 'delete') {
+                    if (!window.confirm(`Delete ${row.dataset.name}'s account? This cannot be undone.`)) return;
+                    submitStaffAction(row, 'DELETE', '');
+                }
+            });
+        });
+    });
+
+    // ---- Client-side search over name/email ----
+    const userSearch = document.getElementById('userSearch');
+    const userCountText = document.getElementById('userCountText');
+    if (userSearch) {
+        const userTableBody = document.querySelector('.users-table tbody');
+        const totalUsers = rows.length;
+        userSearch.addEventListener('input', () => {
+            const q = userSearch.value.trim().toLowerCase();
+            let visible = 0;
+            rows.forEach((row) => {
+                const haystack = `${row.dataset.name || ''} ${row.dataset.email || ''}`.toLowerCase();
+                const show = !q || haystack.includes(q);
+                row.style.display = show ? '' : 'none';
+                if (show) visible += 1;
+            });
+            if (userCountText) userCountText.textContent = `${visible} of ${totalUsers} staff account(s)`;
+            let emptyRow = userTableBody.querySelector('.user-search-empty');
+            if (visible === 0) {
+                if (!emptyRow) {
+                    emptyRow = document.createElement('tr');
+                    emptyRow.className = 'user-search-empty';
+                    emptyRow.innerHTML = '<td colspan="5" class="table-empty">No staff match your search.</td>';
+                    userTableBody.appendChild(emptyRow);
+                }
+            } else if (emptyRow) {
+                emptyRow.remove();
+            }
+        });
+    }
 
     editButton?.addEventListener('click', (event) => {
         event.preventDefault();

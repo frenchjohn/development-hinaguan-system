@@ -18,16 +18,16 @@
         'resources/css/app.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/admin_sidemenu.css',
-        'resources/css/admin_css/admin_dashboard.css',
         'resources/css/admin_css/admin_settings.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_settings.js',
     ])
 </head>
-<body class="antialiased">
+<body class="antialiased admin-portal">
     <div class="dash-layout">
-        <x-admin_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
+        <x-admin_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content">

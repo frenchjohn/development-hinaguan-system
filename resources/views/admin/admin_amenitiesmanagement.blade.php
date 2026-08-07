@@ -19,12 +19,13 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/admin_sidemenu.css',
         'resources/css/admin_css/admin_amenitiesmanagement.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_amenitiesmanagement.js',
     ])
 </head>
-<body class="antialiased">
+<body class="antialiased admin-portal">
     <div class="dash-layout">
         <x-admin_sidemenu active="amenities" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
@@ -43,6 +44,45 @@
                     </div>
                     <button type="button" class="btn btn--primary" data-open-amenity-modal>New Amenity</button>
                 </section>
+
+                <div class="amenities-stats">
+                    <article class="amenity-stat">
+                        <span class="amenity-stat__icon amenity-stat__icon--total">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </span>
+                        <div class="amenity-stat__body">
+                            <p class="amenity-stat__value">{{ $totalAmenities }}</p>
+                            <p class="amenity-stat__label">Total Amenities</p>
+                        </div>
+                    </article>
+                    <article class="amenity-stat">
+                        <span class="amenity-stat__icon amenity-stat__icon--enabled">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="amenity-stat__body">
+                            <p class="amenity-stat__value">{{ $enabledAmenities }}</p>
+                            <p class="amenity-stat__label">Enabled</p>
+                        </div>
+                    </article>
+                    <article class="amenity-stat">
+                        <span class="amenity-stat__icon amenity-stat__icon--disabled">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        </span>
+                        <div class="amenity-stat__body">
+                            <p class="amenity-stat__value">{{ $disabledAmenities }}</p>
+                            <p class="amenity-stat__label">Disabled</p>
+                        </div>
+                    </article>
+                    <article class="amenity-stat">
+                        <span class="amenity-stat__icon amenity-stat__icon--sale">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                        </span>
+                        <div class="amenity-stat__body">
+                            <p class="amenity-stat__value">{{ $onSaleAmenities }}</p>
+                            <p class="amenity-stat__label">On Sale</p>
+                        </div>
+                    </article>
+                </div>
 
                 @if(session('success'))
                     <div class="alert alert--success">{{ session('success') }}</div>
@@ -94,6 +134,7 @@
                                 <th>Max cap</th>
                                 <th>Sale %</th>
                                 <th>Status</th>
+                                <th class="amenities-table__actions-head">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,41 +160,54 @@
                                     data-original-nighttime-aircon-price="{{ $amenity->original_nighttime_aircon_price ?? $amenity->nighttime_aircon_price }}"
                                     class="amenity-row {{ $amenity->sale_percentage && $amenity->sale_percentage > 0 ? 'amenity-row--sale' : '' }}"
                                 >
-                                    <td>{{ $amenity->amenities_name }}</td>
                                     <td>
+                                        <span class="amenity-cell-name">
+                                            <span class="amenity-cell-name__chip">{{ strtoupper(mb_substr($amenity->amenities_name, 0, 1)) }}</span>
+                                            <span class="amenity-cell-name__text">{{ $amenity->amenities_name }}</span>
+                                        </span>
+                                    </td>
+                                    <td class="num-cell">
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                            <span style="text-decoration: line-through; color: var(--hp-text-muted); margin-right: 0.5rem;">{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}</span>
-                                            <span style="color: var(--hp-green-dark); font-weight: 600;">{{ number_format($amenity->daytime_price, 2) }}</span>
+                                            <span class="price-old">₱{{ number_format($amenity->original_daytime_price ?? $amenity->daytime_price, 2) }}</span>
+                                            <span class="price-now">₱{{ number_format($amenity->daytime_price, 2) }}</span>
                                         @else
-                                            {{ number_format($amenity->daytime_price, 2) }}
+                                            <span>₱{{ number_format($amenity->daytime_price, 2) }}</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="num-cell">
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                            <span style="text-decoration: line-through; color: var(--hp-text-muted); margin-right: 0.5rem;">{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}</span>
-                                            <span style="color: var(--hp-green-dark); font-weight: 600;">{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                            <span class="price-old">₱{{ number_format($amenity->original_nighttime_price ?? $amenity->nighttime_price, 2) }}</span>
+                                            <span class="price-now">₱{{ number_format($amenity->nighttime_price, 2) }}</span>
                                         @else
-                                            {{ number_format($amenity->nighttime_price, 2) }}
+                                            <span>₱{{ number_format($amenity->nighttime_price, 2) }}</span>
                                         @endif
                                     </td>
-                                    <td>{{ $amenity->minimum_capacity !== null && $amenity->minimum_capacity !== '' ? $amenity->minimum_capacity : 'none' }}</td>
-                                    <td>{{ $amenity->maximum_capacity !== null && $amenity->maximum_capacity !== '' ? $amenity->maximum_capacity : 'none' }}</td>
+                                    <td class="num-cell">{{ $amenity->minimum_capacity !== null && $amenity->minimum_capacity !== '' ? $amenity->minimum_capacity : '—' }}</td>
+                                    <td class="num-cell">{{ $amenity->maximum_capacity !== null && $amenity->maximum_capacity !== '' ? $amenity->maximum_capacity : '—' }}</td>
                                     <td>
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
                                             <span class="badge badge--sale">{{ $amenity->sale_percentage }}% OFF</span>
                                         @else
-                                            <span>—</span>
+                                            <span class="num-cell">—</span>
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge {{ $amenity->status ? 'badge--enabled' : 'badge--disabled' }}">
+                                        <span class="status-pill {{ $amenity->status ? 'status-pill--enabled' : 'status-pill--disabled' }}">
                                             {{ $amenity->status ? 'Enabled' : 'Disabled' }}
                                         </span>
+                                    </td>
+                                    <td class="amenities-table__actions">
+                                        <button type="button" class="row-action row-action--edit" data-action="edit" title="Edit amenity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                        </button>
+                                        <button type="button" class="row-action row-action--delete" data-action="delete" title="Delete amenity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+                                        </button>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="table-empty">No amenities found yet.</td>
+                                    <td colspan="8" class="table-empty">No amenities found yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>

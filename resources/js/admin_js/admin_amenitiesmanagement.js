@@ -104,7 +104,7 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
             filteredRows.forEach(row => tbody.appendChild(row));
         } else {
             const emptyRow = document.createElement('tr');
-            emptyRow.innerHTML = '<td colspan="6" class="table-empty">No amenities found.</td>';
+            emptyRow.innerHTML = '<td colspan="8" class="table-empty">No amenities found.</td>';
             tbody.appendChild(emptyRow);
         }
     };
@@ -217,11 +217,39 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         }
     });
 
-    // Add row click listeners
+    // Add row click listeners (ignore clicks on the action buttons)
     amenityRows.forEach(row => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (event) => {
+            if (event.target.closest('[data-action]')) return;
             populateFormForEdit(row);
             openModal();
+        });
+    });
+
+    // Row-level action buttons
+    const deleteAmenityById = (amenityId) => {
+        if (!amenityId) return;
+        if (confirm('Are you sure you want to delete this amenity?')) {
+            const deleteForm = document.createElement('form');
+            deleteForm.method = 'POST';
+            deleteForm.action = `${form.dataset.updateBaseUrl}/${amenityId}`;
+            deleteForm.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('[name="_token"]').value + '"><input type="hidden" name="_method" value="DELETE">';
+            document.body.appendChild(deleteForm);
+            deleteForm.submit();
+        }
+    };
+
+    amenityRows.forEach(row => {
+        row.querySelectorAll('[data-action]').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                if (btn.dataset.action === 'edit') {
+                    populateFormForEdit(row);
+                    openModal();
+                } else if (btn.dataset.action === 'delete') {
+                    deleteAmenityById(row.dataset.amenityId);
+                }
+            });
         });
     });
 
@@ -286,20 +314,10 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         });
     });
 
-    // Handle delete button
+    // Handle delete button (reuses the row-level delete flow)
     deleteButton.addEventListener('click', (e) => {
         e.preventDefault();
-        const amenityId = deleteButton.dataset.deleteAmenity;
-        if (!amenityId) return;
-
-        if (confirm('Are you sure you want to delete this amenity?')) {
-            const deleteForm = document.createElement('form');
-            deleteForm.method = 'POST';
-            deleteForm.action = `${form.dataset.updateBaseUrl}/${amenityId}`;
-            deleteForm.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('[name="_token"]').value + '"><input type="hidden" name="_method" value="DELETE">';
-            document.body.appendChild(deleteForm);
-            deleteForm.submit();
-        }
+        deleteAmenityById(deleteButton.dataset.deleteAmenity);
     });
 };
 
