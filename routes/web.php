@@ -1284,7 +1284,23 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ]];
         });
 
-        return view('staff.staff_reservations', compact('reservations', 'reservationData'));
+        $pendingCount = $reservations->count();
+        $todayCheckIns = Reservation::query()
+            ->whereDate('check_in', now()->toDateString())
+            ->where('status', 'Checked In')
+            ->count();
+        $expectedGuests = Reservation::query()
+            ->whereDate('reservation_date', now()->toDateString())
+            ->whereIn('status', ['Pending', 'Confirmed'])
+            ->sum('number_of_guests');
+
+        return view('staff.staff_reservations', compact(
+            'reservations',
+            'reservationData',
+            'pendingCount',
+            'todayCheckIns',
+            'expectedGuests'
+        ));
     })->name('reservations');
 
     Route::get('/occupancy-monitor', function (Request $request) {
@@ -1400,6 +1416,27 @@ Route::prefix('staff')->name('staff.')->group(function () {
         })->unique()->count();
 
         $totalRevenue = $reportRows->sum('total_amount');
+        $totalGuests = $reservations->sum('number_of_guests');
+        $averageSpend = $totalReservations > 0 ? $totalRevenue / $totalReservations : 0;
+
+        // Revenue + booking counts for the last 6 months (oldest first).
+        $monthlyLabels = [];
+        $monthlyRevenue = [];
+        $monthlyCounts = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = now()->startOfMonth()->subMonths($i);
+            $monthEnd = $monthStart->copy()->endOfMonth();
+            $monthlyLabels[] = $monthStart->format('M');
+            $inMonth = $reservations->filter(function ($r) use ($monthStart, $monthEnd) {
+                $d = $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date) : null;
+                return $d && $d >= $monthStart && $d <= $monthEnd;
+            });
+            $monthlyRevenue[] = (float) $inMonth->sum('total_amount');
+            $monthlyCounts[] = $inMonth->count();
+        }
+
+        $reportStatusCounts = $reportRows->groupBy('status')->map->count();
+        $reportPaymentCounts = $reportRows->groupBy('payment_status')->map->count();
 
         return view('staff.staff_reports', compact(
             'reportRows',
@@ -1411,7 +1448,14 @@ Route::prefix('staff')->name('staff.')->group(function () {
             'totalReservations',
             'customerCount',
             'amenityCount',
-            'totalRevenue'
+            'totalRevenue',
+            'totalGuests',
+            'averageSpend',
+            'monthlyLabels',
+            'monthlyRevenue',
+            'monthlyCounts',
+            'reportStatusCounts',
+            'reportPaymentCounts'
         ));
     })->name('reports');
 
@@ -1647,6 +1691,12 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ->orderBy('amenities_name')
             ->get();
 
+        // Summary stats shown at the top of the records page.
+        $guestRecordsCount = $checkedOutGuests->count();
+        $completedReservationsCount = $checkedOutReservations->count();
+        $completedRevenue = (float) $checkedOutReservations->sum('amount_paid');
+        $uniqueGuestsCount = $checkedOutGuests->pluck('customer_id')->unique()->filter()->count();
+
         $guestData = $checkedOutGuests->mapWithKeys(function ($guest) {
             return [$guest->customer_id => [
                 'id' => $guest->customer->id,
@@ -1727,7 +1777,17 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ]];
         });
 
-        return view('staff.staff_records', compact('checkedOutGuests', 'checkedOutReservations', 'guestData', 'reservationData', 'amenities'));
+        return view('staff.staff_records', compact(
+            'checkedOutGuests',
+            'checkedOutReservations',
+            'guestData',
+            'reservationData',
+            'amenities',
+            'guestRecordsCount',
+            'completedReservationsCount',
+            'completedRevenue',
+            'uniqueGuestsCount'
+        ));
     })->name('records');
 
     Route::post('/check-ins/guests', function (Request $request) {
@@ -2262,6 +2322,21 @@ Route::prefix('staff')->name('staff.')->group(function () {
             ->get();
 
         $reservationData = $reservations->mapWithKeys(function ($reservation) {
+            // Extract unique time slots from reservation amenities
+            $timeSlots = $reservation->reservationAmenities
+                ->pluck('pricing_type')
+                ->map(function ($pricingType) {
+                    $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
+                    if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
+                    if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
+                    if (str_contains($baseSlot, 'DayNight')) return 'DayNight Time';
+                    return $baseSlot;
+                })
+                ->unique()
+                ->values()
+                ->sort()
+                ->toArray();
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
@@ -2276,6 +2351,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 'amount_paid' => $reservation->amount_paid,
                 'remaining_balance' => $reservation->remaining_balance,
                 'payment_status' => $reservation->payment_status,
+                'time_slots' => $timeSlots,
                 'reservation_amenities' => $reservation->reservationAmenities->map(function ($reservationAmenity) {
                     return [
                         'pricing_type' => $reservationAmenity->pricing_type,

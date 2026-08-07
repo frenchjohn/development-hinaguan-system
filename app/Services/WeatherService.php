@@ -35,7 +35,12 @@ class WeatherService
 
                 $data = $response->json();
                 $forecastDays = $data['forecast']['forecastday'] ?? [];
-                $result = [];
+
+                if ($forecastDays === []) {
+                    return null;
+                }
+
+                $daysOut = [];
 
                 foreach ($forecastDays as $forecastDay) {
                     $icon = $forecastDay['day']['condition']['icon'] ?? null;
@@ -47,7 +52,37 @@ class WeatherService
                     $date = Carbon::parse($forecastDay['date'] ?? now()->toDateString());
                     $isToday = $date->isSameDay(now());
 
-                    $result[] = [
+                    // WeatherAPI's forecast.json includes an hourly breakdown for
+                    // each day (24 entries: 12 AM, 1 AM, ... 11 PM) with temp,
+                    // condition, icon and rain chance per hour.
+                    $hourly = [];
+                    foreach (($forecastDay['hour'] ?? []) as $hourEntry) {
+                        $hourTime = isset($hourEntry['time']) ? Carbon::parse($hourEntry['time']) : null;
+                        if (! $hourTime) {
+                            continue;
+                        }
+
+                        $hourIcon = $hourEntry['condition']['icon'] ?? null;
+
+                        if ($hourIcon && ! str_starts_with($hourIcon, 'http')) {
+                            $hourIcon = 'https:'.$hourIcon;
+                        }
+
+                        // NOTE: is_past assumes the app timezone matches the
+                        // location's local time (both Asia/Manila for the park);
+                        // adjust if they ever diverge.
+                        $hourly[] = [
+                            'hour' => (int) $hourTime->format('G'),
+                            'time_label' => $hourTime->format('g A'),
+                            'temp_c' => $hourEntry['temp_c'] ?? null,
+                            'condition' => $hourEntry['condition']['text'] ?? null,
+                            'icon' => $hourIcon,
+                            'chance_of_rain' => $hourEntry['chance_of_rain'] ?? null,
+                            'is_past' => $isToday && $hourTime->lt(now()),
+                        ];
+                    }
+
+                    $daysOut[] = [
                         'date' => $forecastDay['date'] ?? $date->toDateString(),
                         'day_name' => $isToday ? 'Today' : $date->format('l'),
                         'condition' => $forecastDay['day']['condition']['text'] ?? null,
@@ -57,10 +92,33 @@ class WeatherService
                         'avg_temp_c' => $forecastDay['day']['avgtemp_c'] ?? null,
                         'chance_of_rain' => $forecastDay['day']['daily_chance_of_rain'] ?? null,
                         'is_today' => $isToday,
+                        'hourly' => $hourly,
                     ];
                 }
 
-                return $result;
+                // forecast.json also embeds the current conditions, so callers
+                // can derive "now" from this same (cached) response without a
+                // separate current.json request.
+                $current = $data['current'] ?? [];
+                $nowIcon = $current['condition']['icon'] ?? null;
+
+                if ($nowIcon && ! str_starts_with($nowIcon, 'http')) {
+                    $nowIcon = 'https:'.$nowIcon;
+                }
+
+                return [
+                    'location' => $data['location']['name'] ?? $location,
+                    'updated_at' => $current['last_updated'] ?? null,
+                    'now' => [
+                        'temp_c' => $current['temp_c'] ?? null,
+                        'feelslike_c' => $current['feelslike_c'] ?? null,
+                        'humidity' => $current['humidity'] ?? null,
+                        'wind_kph' => $current['wind_kph'] ?? null,
+                        'condition' => $current['condition']['text'] ?? null,
+                        'icon' => $nowIcon,
+                    ],
+                    'days' => $daysOut,
+                ];
             }
         );
     }
@@ -100,6 +158,7 @@ class WeatherService
                     'temp_c' => $data['current']['temp_c'] ?? null,
                     'feelslike_c' => $data['current']['feelslike_c'] ?? null,
                     'humidity' => $data['current']['humidity'] ?? null,
+                    'wind_kph' => $data['current']['wind_kph'] ?? null,
                     'condition' => $data['current']['condition']['text'] ?? null,
                     'icon' => $icon,
                 ];

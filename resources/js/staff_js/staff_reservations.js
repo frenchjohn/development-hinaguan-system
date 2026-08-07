@@ -3,7 +3,6 @@ import { Html5Qrcode } from 'html5-qrcode';
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_reservations'] = function () {
 
-
     const modal = document.getElementById('reservationModal');
     const modalBody = document.getElementById('reservationModalBody');
     const modalStatus = document.getElementById('reservationModalStatus');
@@ -63,6 +62,51 @@ window.AppPage['staff_reservations'] = function () {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+
+    const getInitials = (name) => String(name || '').trim().split(/\s+/)
+        .filter(Boolean)
+        .map(word => (word[0] || '').toUpperCase())
+        .slice(0, 2)
+        .join('') || '?';
+
+    const renderTimeSlots = (reservation) => {
+        const slots = reservation?.time_slots || [];
+        if (!slots.length) return '<span class="text-muted">—</span>';
+        return `<div class="time-slot-labels">${slots.map(slot => `<span class="time-slot-label time-slot-label--${String(slot).toLowerCase().replace(/\s+/g, '')}">${escapeHtml(slot)}</span>`).join('')}</div>`;
+    };
+
+    // Shared 7-column row markup (used by server rows, refresh + fallback renders)
+    const buildRowCells = (reservation) => {
+        const formatDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        };
+        return `
+                <td>
+                    <div class="resv-booker">
+                        <span class="resv-avatar">${escapeHtml(getInitials(reservation.booker_name))}</span>
+                        <div class="resv-booker__info">
+                            <div class="guest-name">${escapeHtml(reservation.booker_name)}</div>
+                            <div class="guest-meta">${escapeHtml(reservation.email)}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>${escapeHtml(formatDate(reservation.reservation_date))}</td>
+                <td>${renderTimeSlots(reservation)}</td>
+                <td>${escapeHtml(reservation.number_of_guests)}</td>
+                <td>
+                    <span class="reservation-status reservation-status--${String(reservation.status || '').toLowerCase()}">${escapeHtml(reservation.status)}</span>
+                </td>
+                <td>₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
+                <td>
+                    <button type="button" class="resv-row-action" aria-label="View reservation details">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </td>
+            `;
+    };
 
     let pendingReservationId = null;
     let checkInCompanions = [];
@@ -838,18 +882,7 @@ window.AppPage['staff_reservations'] = function () {
                 return date.toLocaleDateString('en-US', options);
             };
             
-            row.innerHTML = `
-                <td>
-                    <div class="guest-name">${escapeHtml(reservation.booker_name)}</div>
-                    <div class="guest-meta">${escapeHtml(reservation.email)}</div>
-                </td>
-                <td>${escapeHtml(formatDate(reservation.reservation_date))}</td>
-                <td>${escapeHtml(reservation.number_of_guests)}</td>
-                <td>
-                    <span class="reservation-status reservation-status--${reservation.status.toLowerCase()}">${escapeHtml(reservation.status)}</span>
-                </td>
-                <td>₱${Number(reservation.total_amount).toFixed(2)}</td>
-            `;
+            row.innerHTML = buildRowCells(reservation);
             
             tableBody.appendChild(row);
             
@@ -1007,6 +1040,9 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="skeleton skeleton-text skeleton-text--short"></div>
                     </td>
                     <td>
+                        <div class="skeleton skeleton-badge"></div>
+                    </td>
+                    <td>
                         <div class="skeleton skeleton-text skeleton-text--short"></div>
                     </td>
                     <td>
@@ -1014,6 +1050,9 @@ window.AppPage['staff_reservations'] = function () {
                     </td>
                     <td>
                         <div class="skeleton skeleton-text skeleton-text--short"></div>
+                    </td>
+                    <td>
+                        <div class="skeleton resv-skeleton-action"></div>
                     </td>
                 `;
                 tableBody.appendChild(skeletonRow);
@@ -1068,18 +1107,7 @@ window.AppPage['staff_reservations'] = function () {
                     row.setAttribute('role', 'button');
                     row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name}`);
                     
-                    row.innerHTML = `
-                        <td>
-                            <div class="guest-name">${escapeHtml(reservation.booker_name)}</div>
-                            <div class="guest-meta">${escapeHtml(reservation.email)}</div>
-                        </td>
-                        <td>${escapeHtml(formatDate(reservation.reservation_date))}</td>
-                        <td>${escapeHtml(reservation.number_of_guests)}</td>
-                        <td>
-                            <span class="reservation-status reservation-status--${reservation.status.toLowerCase()}">${escapeHtml(reservation.status)}</span>
-                        </td>
-                        <td>₱${Number(reservation.total_amount).toFixed(2)}</td>
-                    `;
+                    row.innerHTML = buildRowCells(reservation);
                     
                     tableBody.appendChild(row);
                     
@@ -1190,19 +1218,24 @@ window.AppPage['staff_reservations'] = function () {
                         const cells = tableRow.querySelectorAll('td');
                         if (cells[0]) {
                             cells[0].innerHTML = `
-                                <div class="guest-name">${escapeHtml(formData.get('booker_name'))}</div>
-                                <div class="guest-meta">${escapeHtml(formData.get('email'))}</div>
+                                <div class="resv-booker">
+                                    <span class="resv-avatar">${escapeHtml(getInitials(formData.get('booker_name')))}</span>
+                                    <div class="resv-booker__info">
+                                        <div class="guest-name">${escapeHtml(formData.get('booker_name'))}</div>
+                                        <div class="guest-meta">${escapeHtml(formData.get('email'))}</div>
+                                    </div>
+                                </div>
                             `;
                         }
                         if (cells[1]) {
                             cells[1].textContent = formatDate(formData.get('reservation_date'));
                         }
-                        if (cells[2]) {
-                            cells[2].textContent = formData.get('number_of_guests');
-                        }
                         if (cells[3]) {
+                            cells[3].textContent = formData.get('number_of_guests');
+                        }
+                        if (cells[4]) {
                             const status = formData.get('status');
-                            cells[3].innerHTML = `<span class="reservation-status reservation-status--${String(status || '').toLowerCase()}">${status}</span>`;
+                            cells[4].innerHTML = `<span class="reservation-status reservation-status--${String(status || '').toLowerCase()}">${status}</span>`;
                         }
                     }
 
@@ -1434,6 +1467,88 @@ window.AppPage['staff_reservations'] = function () {
         filterToggle.setAttribute('aria-expanded', String(!isExpanded));
         filterPanel?.toggleAttribute('hidden', isExpanded);
         filterPanel?.classList.toggle('guest-toolbar--collapsed', isExpanded);
+    });
+
+    // ------------------------------------------------------------
+    // Live clock + session badge (park settings come from data-park-settings)
+    // ------------------------------------------------------------
+    const resvMetricsEl = document.querySelector('.resv-metrics');
+    const resvTimeEl = document.getElementById('resvTime');
+    const resvSessionEl = document.getElementById('resvSession');
+    let resvParkSettings = {};
+    try {
+        resvParkSettings = JSON.parse(resvMetricsEl?.dataset.parkSettings || '{}');
+    } catch (e) { /* ignore */ }
+
+    const updateResvClock = () => {
+        const now = new Date();
+        if (resvTimeEl) {
+            resvTimeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+        if (resvSessionEl && resvParkSettings.nighttime_start && resvParkSettings.nighttime_end) {
+            const cur = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            const { nighttime_start: ns, nighttime_end: ne } = resvParkSettings;
+            let period = 'Daytime';
+            if (ns <= ne) {
+                if (cur >= ns && cur <= ne) period = 'Nighttime';
+            } else {
+                if (cur >= ns || cur <= ne) period = 'Nighttime';
+            }
+            const label = period.toUpperCase();
+            if (resvSessionEl.textContent !== label) {
+                resvSessionEl.textContent = label;
+                resvSessionEl.className = `resv-metric__badge resv-metric__badge--${period.toLowerCase()}`;
+            }
+        }
+    };
+    // Clear any previous timer so SPA re-inits don't stack intervals
+    if (window.__resvClockTimer) clearInterval(window.__resvClockTimer);
+    window.__resvClockTimer = setInterval(updateResvClock, 1000);
+    updateResvClock();
+
+    // ------------------------------------------------------------
+    // CSV export (exports the currently visible/filtered rows)
+    // ------------------------------------------------------------
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    exportCsvBtn?.addEventListener('click', () => {
+        const visibleRows = Array.from(document.querySelectorAll('#reservationTableBody .reservation-row'))
+            .filter(row => row.style.display !== 'none');
+        if (!visibleRows.length) {
+            window.alert('No reservations to export.');
+            return;
+        }
+        const header = ['Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Amount'];
+        const body = visibleRows.map(row => {
+            const cells = row.querySelectorAll('td');
+            return [
+                row.dataset.bookerName || '',
+                row.dataset.email || '',
+                cells[1]?.textContent.trim() || '',
+                (cells[2]?.textContent || '').replace(/\s+/g, ' ').trim(),
+                cells[3]?.textContent.trim() || '',
+                cells[4]?.textContent.trim() || '',
+                cells[5]?.textContent.trim() || '',
+            ];
+        });
+        const csv = [header, ...body]
+            .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
+            .join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `reservations-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
+
+    // ------------------------------------------------------------
+    // Add Walk-in → Check-Ins page (where walk-in guests are created)
+    // ------------------------------------------------------------
+    document.getElementById('addWalkInBtn')?.addEventListener('click', () => {
+        window.location.href = '/staff/check-ins';
     });
 
     applyFilters();

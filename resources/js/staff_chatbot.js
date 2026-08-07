@@ -200,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({ message, model: selectedModel }),
+                // AI replies can take a while; don't count this as a page task
+                // so the busy guard never blocks navigation mid-chat.
+                __skipBusy: true,
             });
             
             const data = await response.json();

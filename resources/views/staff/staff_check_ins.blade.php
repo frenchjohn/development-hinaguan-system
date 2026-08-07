@@ -23,6 +23,7 @@
 		'resources/components/css_js/staff_sidemenu.css',
 		'resources/css/staff_css/staff_dashboard.css',
 		'resources/css/staff_css/staff_check_ins.css',
+		'resources/css/staff_css/staff_theme.css',
 		'resources/css/chatbot.css',
 		'resources/components/css_js/header.js',
 		'resources/components/css_js/sidemenu.js',
@@ -36,7 +37,7 @@
 		}
 	</style>
 </head>
-<body class="antialiased">
+<body class="antialiased staff-portal">
 	<div class="dash-layout">
 		<x-staff_sidemenu active="checkins" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 

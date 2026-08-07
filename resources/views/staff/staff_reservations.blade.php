@@ -22,6 +22,7 @@
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_dashboard.css',
         'resources/css/staff_css/staff_reservations.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -34,75 +35,159 @@
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased staff-portal">
     <div class="dash-layout">
         <x-staff_sidemenu active="reservations" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
 
             <main class="dash-content">
+                @php
+                    $parkSettings = \App\Models\ParkSetting::first();
+                    $currentHour = now()->format('H:i');
+                    $daytimeStart = $parkSettings?->daytime_start ?? '06:00';
+                    $daytimeEnd = $parkSettings?->daytime_end ?? '17:00';
+                    $nighttimeStart = $parkSettings?->nighttime_start ?? '17:00';
+                    $nighttimeEnd = $parkSettings?->nighttime_end ?? '06:00';
+                    $timePeriod = 'Daytime';
+                    if ($nighttimeStart && $nighttimeEnd) {
+                        if ($nighttimeStart <= $nighttimeEnd) {
+                            if ($currentHour >= $nighttimeStart && $currentHour <= $nighttimeEnd) $timePeriod = 'Nighttime';
+                        } else {
+                            if ($currentHour >= $nighttimeStart || $currentHour <= $nighttimeEnd) $timePeriod = 'Nighttime';
+                        }
+                    }
+                @endphp
+
                 <x-header
                     title="Reservations"
-                    subtitle="Pending online reservations waiting for check-in"
+                    subtitle="Manage online reservations and walk-in check-ins"
                 />
+
+                <div class="resv-metrics" data-park-settings="{{ json_encode(['daytime_start' => $daytimeStart, 'daytime_end' => $daytimeEnd, 'nighttime_start' => $nighttimeStart, 'nighttime_end' => $nighttimeEnd]) }}">
+                    <article class="resv-metric">
+                        <span class="resv-metric__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </span>
+                        <div class="resv-metric__body">
+                            <p class="resv-metric__label">Date</p>
+                            <p class="resv-metric__value" id="resvDate">{{ now()->format('F j, Y') }}</p>
+                        </div>
+                    </article>
+                    <article class="resv-metric">
+                        <span class="resv-metric__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="resv-metric__body">
+                            <p class="resv-metric__label">Time</p>
+                            <p class="resv-metric__value" id="resvTime">{{ now()->format('g:i A') }}</p>
+                        </div>
+                    </article>
+                    <article class="resv-metric">
+                        <span class="resv-metric__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </span>
+                        <div class="resv-metric__body">
+                            <p class="resv-metric__label">Session</p>
+                            <span class="resv-metric__badge resv-metric__badge--{{ strtolower($timePeriod) }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="resv-stats">
+                    <article class="resv-stat resv-stat--orange">
+                        <span class="resv-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="resv-stat__body">
+                            <p class="resv-stat__value">{{ $pendingCount }}</p>
+                            <p class="resv-stat__label">Pending Reservations</p>
+                        </div>
+                    </article>
+                    <article class="resv-stat resv-stat--green">
+                        <span class="resv-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="resv-stat__body">
+                            <p class="resv-stat__value">{{ $todayCheckIns }}</p>
+                            <p class="resv-stat__label">Today's Check-ins</p>
+                        </div>
+                    </article>
+                    <article class="resv-stat resv-stat--blue">
+                        <span class="resv-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </span>
+                        <div class="resv-stat__body">
+                            <p class="resv-stat__value">{{ $expectedGuests }}</p>
+                            <p class="resv-stat__label">Expected Guests</p>
+                        </div>
+                    </article>
+                </div>
 
                 @if (session('success'))
                     <div class="guest-alert">{{ session('success') }}</div>
                 @endif
 
-                    <div class="guest-filter-shell">
-                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
-                            <button type="button" class="guest-filter-toggle" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
-                                <span>Filters</span>
-                                <span class="guest-filter-toggle__icon">▾</span>
-                            </button>
-                            <button type="button" class="guest-filter-toggle guest-filter-toggle--secondary" id="refreshTableBtn" style="background-color: var(--hp-green-dark); color: white;">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                Refresh
-                            </button>
-                            <button type="button" class="guest-filter-toggle guest-filter-toggle--secondary" id="scanQrBtn" style="background-color: var(--hp-green-dark); color: white;">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="guest-toolbar guest-toolbar--collapsed" id="reservationFilterPanel" hidden>
-                            <label class="guest-toolbar__field guest-toolbar__field--search">
-                                <span>Search</span>
-                                <input type="search" id="reservationSearchInput" placeholder="Search by booker, email, phone, or status">
-                            </label>
-                            <label class="guest-toolbar__field">
-                                <span>Sort by</span>
-                                <select id="reservationSortSelect">
-                                    <option value="date-asc">Reservation date (soonest)</option>
-                                    <option value="date-desc">Reservation date (latest)</option>
-                                    <option value="name-asc">Booker (A-Z)</option>
-                                    <option value="name-desc">Booker (Z-A)</option>
-                                    <option value="amount-desc">Amount (High-Low)</option>
-                                </select>
-                            </label>
-                            <label class="guest-toolbar__field">
-                                <span>Status</span>
-                                <select id="reservationStatusFilter">
-                                    <option value="all">All statuses</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="confirmed">Confirmed</option>
-                                </select>
-                            </label>
-                            <label class="guest-toolbar__field">
-                                <span>Reservation date from</span>
-                                <input type="date" id="reservationDateFrom">
-                            </label>
-                            <label class="guest-toolbar__field">
-                                <span>Reservation date to</span>
-                                <input type="date" id="reservationDateTo">
-                            </label>
-                            <button type="button" class="guest-toolbar__clear" id="reservationFiltersClear">Clear</button>
+                <div class="resv-toolbar">
+                    <div class="resv-toolbar__left">
+                        <button type="button" class="guest-filter-toggle" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
+                            <span>Filters</span>
+                            <span class="guest-filter-toggle__icon">▾</span>
+                        </button>
+                        <div class="resv-search">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                            <input type="search" id="reservationSearchInput" placeholder="Search reservations...">
                         </div>
                     </div>
+                    <div class="resv-toolbar__right">
+                        <button type="button" class="resv-tool-btn" id="refreshTableBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Refresh
+                        </button>
+                        <button type="button" class="resv-tool-btn" id="scanQrBtn" title="Scan reservation QR">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </button>
+                        <button type="button" class="resv-tool-btn" id="exportCsvBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                            Export
+                        </button>
+                        <button type="button" class="resv-tool-btn resv-tool-btn--primary" id="addWalkInBtn">
+                            <span class="resv-tool-btn__plus">+</span>
+                            Add Walk-in
+                        </button>
+                    </div>
+                </div>
+
+                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel" id="reservationFilterPanel" hidden>
+                    <label class="guest-toolbar__field">
+                        <span>Sort by</span>
+                        <select id="reservationSortSelect">
+                            <option value="date-asc">Reservation date (soonest)</option>
+                            <option value="date-desc">Reservation date (latest)</option>
+                            <option value="name-asc">Booker (A-Z)</option>
+                            <option value="name-desc">Booker (Z-A)</option>
+                            <option value="amount-desc">Amount (High-Low)</option>
+                        </select>
+                    </label>
+                    <label class="guest-toolbar__field">
+                        <span>Status</span>
+                        <select id="reservationStatusFilter">
+                            <option value="all">All statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                        </select>
+                    </label>
+                    <label class="guest-toolbar__field">
+                        <span>Reservation date from</span>
+                        <input type="date" id="reservationDateFrom">
+                    </label>
+                    <label class="guest-toolbar__field">
+                        <span>Reservation date to</span>
+                        <input type="date" id="reservationDateTo">
+                    </label>
+                    <button type="button" class="guest-toolbar__clear" id="reservationFiltersClear">Clear</button>
+                </div>
 
                     <div class="guest-toolbar__meta">
                         <span id="reservationResultsCount">Showing {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
@@ -114,10 +199,11 @@
                                 <tr>
                                     <th>Booker</th>
                                     <th>Reservation date</th>
-                                    <th>Time Slots</th>
+                                    <th>Session</th>
                                     <th>Guests</th>
                                     <th>Status</th>
                                     <th>Amount</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="reservationTableBody">
@@ -125,6 +211,11 @@
                                     @php
                                         $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
                                         $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
+                                        $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
+                                            ->filter()
+                                            ->take(2)
+                                            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+                                            ->implode('') ?: '?';
                                     @endphp
                                     <tr
                                         class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }}"
@@ -142,13 +233,18 @@
                                         aria-label="View reservation details for {{ e($reservation->booker_name) }}"
                                     >
                                         <td>
-                                            <div class="guest-name">
-                                                {{ $reservation->booker_name }}
-                                                @if ($isToday)
-                                                    <span class="today-reservation-badge">TODAY</span>
-                                                @endif
+                                            <div class="resv-booker">
+                                                <span class="resv-avatar">{{ $initials }}</span>
+                                                <div class="resv-booker__info">
+                                                    <div class="guest-name">
+                                                        {{ $reservation->booker_name }}
+                                                        @if ($isToday)
+                                                            <span class="today-reservation-badge">TODAY</span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="guest-meta">{{ $reservation->email }}</div>
+                                                </div>
                                             </div>
-                                            <div class="guest-meta">{{ $reservation->email }}</div>
                                         </td>
                                         <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>
                                         <td>
@@ -167,10 +263,15 @@
                                             <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }}">{{ $reservation->status }}</span>
                                         </td>
                                         <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                        <td>
+                                            <button type="button" class="resv-row-action" aria-label="View reservation details">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                            </button>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="guest-empty">No pending online reservations found.</td>
+                                        <td colspan="7" class="guest-empty">No pending online reservations found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

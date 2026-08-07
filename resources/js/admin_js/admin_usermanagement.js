@@ -1,7 +1,6 @@
 window.AppPage = window.AppPage || {};
 window.AppPage['admin_usermanagement'] = function () {
 
-
     const modal = document.getElementById('userModal');
     const modalTitle = document.getElementById('userModalTitle');
     const form = document.getElementById('userForm');
@@ -25,7 +24,7 @@ window.AppPage['admin_usermanagement'] = function () {
 
     const setFormEnabled = (enabled) => {
         [userNameInput, userEmailInput, userPasswordInput, userPasswordConfirmInput, banStatusInput].forEach((field) => {
-            field.disabled = !enabled;
+            if (field) field.disabled = !enabled;
         });
     };
 
@@ -102,6 +101,8 @@ window.AppPage['admin_usermanagement'] = function () {
             editMode = true;
             return;
         }
+
+        if (form && !form.reportValidity()) return;
 
         formMethod.value = 'PUT';
         form.action = `${form.dataset.updateBaseUrl}/${selectedUserId}`;

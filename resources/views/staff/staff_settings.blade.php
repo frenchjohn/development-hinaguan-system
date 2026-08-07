@@ -21,6 +21,7 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_settings.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -28,9 +29,9 @@
         'resources/js/staff_chatbot.js',
     ])
 </head>
-<body class="antialiased">
+<body class="antialiased staff-portal">
     <div class="dash-layout">
-        <x-staff_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
+        <x-staff_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
         <div class="dash-main">
 
             <main class="dash-content">

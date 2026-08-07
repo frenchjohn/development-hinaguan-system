@@ -1,52 +1,19 @@
 // ============================================================
-// GLOBAL BUSY TRACKING
-// Every fetch() the dashboard pages fire is treated as an
-// in-flight operation. While at least one is pending the app is
-// marked "busy": the sidebar shows a small indicator and page
-// navigation asks for confirmation instead of silently
-// interrupting (and possibly losing) the running task.
-//
-// Requests the SPA itself makes (page preload / swap / background
-// refresh) pass __skipBusy: true so they never count as user ops.
+// Sidebar navigation is always instant. (A previous "Processing
+// still in progress" guard modal was removed — it appeared even
+// when nothing real was running and confused users. In-flight
+// operations show their own button-level loading states.)
 // ============================================================
-if (!window.__busyTrackingInstalled) {
-    window.__busyTrackingInstalled = true;
-    window.__busyCount = 0;
-
-    const originalFetch = window.fetch;
-    window.fetch = function (input, init) {
-        if (init && init.__skipBusy) {
-            return originalFetch.call(this, input, init);
-        }
-
-        window.__busyCount += 1;
-        document.body?.classList.add('app-busy');
-
-        const promise = originalFetch.apply(this, arguments);
-        const settle = () => {
-            window.__busyCount = Math.max(0, window.__busyCount - 1);
-            if (window.__busyCount === 0) {
-                document.body?.classList.remove('app-busy');
-            }
-        };
-        promise.then(settle, settle);
-        return promise;
-    };
-
-    window.AppBusy = {
-        get isBusy() { return window.__busyCount > 0; },
-        get count() { return window.__busyCount; },
-        begin() { window.__busyCount += 1; document.body.classList.add('app-busy'); },
-        end() {
-            window.__busyCount = Math.max(0, window.__busyCount - 1);
-            if (window.__busyCount === 0) document.body.classList.remove('app-busy');
-        },
-        reset() { window.__busyCount = 0; document.body.classList.remove('app-busy'); },
-    };
-}
+window.AppBusy = {
+    get isBusy() { return false; },
+    get count() { return 0; },
+    begin() { },
+    end() { },
+    reset() { },
+};
 
 // Sidemenu toggle functionality and instant navigation
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', function () {
     const sidebarToggle = document.querySelector('[data-dash-sidebar-toggle]');
     const sidebarOverlay = document.querySelector('.dash-sidebar__overlay');
     const dashLayout = document.querySelector('.dash-layout');
@@ -80,85 +47,11 @@ window.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // ------------------------------------------------------------
-    // Busy indicator + navigation guard modal
-    // ------------------------------------------------------------
-    function ensureBusyUI() {
-        if (!document.querySelector('.app-busy-indicator')) {
-            const pill = document.createElement('div');
-            pill.className = 'app-busy-indicator';
-            pill.setAttribute('role', 'status');
-            pill.innerHTML = '<span class="app-busy-indicator__spinner" aria-hidden="true"></span><span class="app-busy-indicator__text">Processing…</span>';
-            document.body.appendChild(pill);
-        }
-
-        if (!document.getElementById('appNavGuardModal')) {
-            const modal = document.createElement('div');
-            modal.id = 'appNavGuardModal';
-            modal.className = 'app-nav-guard';
-            modal.setAttribute('aria-hidden', 'true');
-            modal.innerHTML = `
-                <div class="app-nav-guard__backdrop" data-app-nav-guard="stay"></div>
-                <div class="app-nav-guard__panel" role="alertdialog" aria-modal="true" aria-labelledby="appNavGuardTitle">
-                    <div class="app-nav-guard__icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    </div>
-                    <h3 id="appNavGuardTitle">Processing still in progress</h3>
-                    <p>A task is still running on this page (e.g. saving a record or checking someone in). If you switch pages now, that task may be interrupted or lost.</p>
-                    <div class="app-nav-guard__actions">
-                        <button type="button" class="app-nav-guard__btn app-nav-guard__btn--ghost" data-app-nav-guard="stay">Stay on this page</button>
-                        <button type="button" class="app-nav-guard__btn app-nav-guard__btn--danger" data-app-nav-guard="leave">Switch anyway</button>
-                    </div>
-                </div>`;
-            document.body.appendChild(modal);
-        }
-    }
-    ensureBusyUI();
-
-    let pendingNavUrl = null;
-
-    const showNavGuardModal = () => {
-        const modal = document.getElementById('appNavGuardModal');
-        if (!modal) return;
-        modal.classList.add('is-open');
-        modal.setAttribute('aria-hidden', 'false');
-    };
-
-    const hideNavGuardModal = () => {
-        const modal = document.getElementById('appNavGuardModal');
-        if (!modal) return;
-        modal.classList.remove('is-open');
-        modal.setAttribute('aria-hidden', 'true');
-    };
-
-    document.addEventListener('click', (e) => {
-        const button = e.target.closest('[data-app-nav-guard]');
-        if (!button) return;
-        const action = button.dataset.appNavGuard;
-        hideNavGuardModal();
-        if (action === 'leave') {
-            // Abandon the current page's pending tasks and leave anyway.
-            if (window.AppBusy) window.AppBusy.reset();
-            const url = pendingNavUrl;
-            pendingNavUrl = null;
-            if (url) navigateTo(url, true);
-        } else {
-            pendingNavUrl = null;
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            hideNavGuardModal();
-            pendingNavUrl = null;
-        }
-    });
-
     function toggleSidebar(e) {
         if (e) e.preventDefault();
-        
+
         const isMobile = window.innerWidth <= 992;
-        
+
         if (isMobile) {
             // Mobile: toggle sidebar-open class
             dashLayout.classList.toggle('sidebar-open');
@@ -170,7 +63,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
     function closeSidebar() {
         const isMobile = window.innerWidth <= 992;
-        
+
         if (isMobile) {
             dashLayout.classList.remove('sidebar-open');
         } else {
@@ -407,14 +300,42 @@ window.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Gentle entrance for dashboard content on initial load and SPA swaps.
+    // A single, quick fade-up of the whole content area — the old staggered
+    // per-element entrance felt excessive when switching pages. Inline styles
+    // are cleared once the entrance finishes so swaps stay clean.
+    let entranceTimer = null;
+    function runContentEntrance() {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const main = document.querySelector('main.dash-content');
+        if (!main) return;
+
+        // Cancel any still-running entrance from a previous navigation so a
+        // fast double-click can't leave a stale timer that snaps content visible.
+        clearTimeout(entranceTimer);
+
+        main.style.opacity = '0';
+        main.style.transform = 'translateY(6px)';
+        main.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+
+        requestAnimationFrame(() => {
+            main.style.opacity = '1';
+            main.style.transform = 'none';
+        });
+
+        // Also acts as the visibility fallback: clearing the inline opacity
+        // restores the stylesheet value, so content can never stay hidden.
+        entranceTimer = setTimeout(() => {
+            main.style.transition = '';
+            main.style.opacity = '';
+            main.style.transform = '';
+        }, 320);
+    }
+
     let navToken = 0;
 
     async function navigateTo(url, push = true) {
-        // Dismiss any open navigation-guard modal — it belongs to the page we're
-        // leaving (also covers browser Back while the modal is open).
-        hideNavGuardModal();
-        pendingNavUrl = null;
-
         const targetPath = new URL(url, window.location.origin).pathname;
         const currentPath = new URL(window.location.href).pathname;
         if (targetPath === currentPath) return;
@@ -495,10 +416,8 @@ window.addEventListener('DOMContentLoaded', function() {
             if (window.innerWidth <= 992) closeSidebar();
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Subtle entrance animation
-            main.classList.remove('spa-swapped');
-            void main.offsetWidth;
-            main.classList.add('spa-swapped');
+            // Gentle entrance for the swapped content
+            runContentEntrance();
 
             // Refresh ALL dashboard pages in the background so every cached page
             // stays current with the latest data (check-ins, reservations, etc.)
@@ -516,7 +435,7 @@ window.addEventListener('DOMContentLoaded', function() {
     // <body> level — without this they silently disappear after SPA navigation and
     // their open buttons throw errors.
     function syncBodyOverlays(doc) {
-        const keepSelector = '.dash-layout, .chatbot-widget, .app-busy-indicator, .app-nav-guard';
+        const keepSelector = '.dash-layout, .chatbot-widget';
 
         // Drop leftover page-level overlays left behind by the previous page.
         document.body.querySelectorAll('body > .modal, body > [id$="odal"]').forEach((el) => {
@@ -561,14 +480,6 @@ window.addEventListener('DOMContentLoaded', function() {
         if (!path.startsWith('/staff/') && !path.startsWith('/admin/')) return;
 
         e.preventDefault();
-
-        // If a task is still running, ask before interrupting it.
-        if (window.AppBusy && window.AppBusy.isBusy) {
-            pendingNavUrl = url.href;
-            showNavGuardModal();
-            return;
-        }
-
         navigateTo(url.href, true);
     });
 
@@ -620,30 +531,36 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // Force-refresh every page currently in the cache so cached data never
     // goes stale after in-app actions (check-ins, edits, etc.).
-    function refreshAllCachedPages() {
+    // Runs sequentially for the same reason as preloadAllPages (weather
+    // lookups per render + single-threaded PHP dev server).
+    async function refreshAllCachedPages() {
         const paths = Array.from(pageCache.keys());
-        paths.forEach((path, i) => {
-            setTimeout(() => {
-                const href = path;
-                // If the session expired the refresh will fail to find a
-                // dashboard page — clear the cache so the next click does a
-                // real navigation and hits the login redirect.
-                preloadPage(href, true).then((ok) => {
-                    if (ok === false) pageCache.delete(path);
-                });
-            }, i * 150);
-        });
+        for (const path of paths) {
+            // If the session expired the refresh will fail to find a
+            // dashboard page — clear the cache so the next click does a
+            // real navigation and hits the login redirect.
+            const ok = await preloadPage(path, true);
+            if (ok === false) pageCache.delete(path);
+            await new Promise((resolve) => setTimeout(resolve, 120));
+        }
     }
 
     // Preload every sidebar destination shortly after the page loads.
-    function preloadAllPages() {
+    // Runs SEQUENTIALLY (one page at a time) rather than firing all pages in
+    // parallel: each dashboard page render also performs weather API lookups
+    // (see header.blade.php), and on the single-threaded PHP dev server a
+    // parallel flood of 7 requests stalls the server entirely.
+    async function preloadAllPages() {
         const links = Array.from(document.querySelectorAll('.dash-sidebar__link[href], .dash-sidebar__profile-item[href]'));
-        // Stagger slightly so we don't hammer the server with 8 requests at once.
-        links.forEach((link, i) => {
-            const href = link.getAttribute('href');
-            if (!isDashboardHref(href)) return;
-            setTimeout(() => preloadPage(href), 300 + i * 180);
-        });
+        const hrefs = links
+            .map((link) => link.getAttribute('href'))
+            .filter(isDashboardHref);
+
+        for (const href of hrefs) {
+            await preloadPage(href);
+            // Small gap between preloads so the server can breathe.
+            await new Promise((resolve) => setTimeout(resolve, 120));
+        }
     }
 
     // Preload the hovered page immediately so the next click is already cached.
@@ -662,4 +579,7 @@ window.addEventListener('DOMContentLoaded', function() {
     } else {
         setTimeout(preloadAllPages, 800);
     }
+
+    // Initial content entrance (full page loads)
+    runContentEntrance();
 });

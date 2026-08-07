@@ -51,11 +51,31 @@ window.AppPage['staff_reports'] = function () {
         }
     };
 
+    const kpiReservations = document.getElementById('kpiReservations');
+    const kpiRevenue = document.getElementById('kpiRevenue');
+
+    const formatMoney = (value) => '₱' + Number(value || 0).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+
     const applyFilters = () => {
         const rows = reservationReportTable?.querySelectorAll('tbody tr') || [];
+        let visibleCount = 0;
+        let visibleRevenue = 0;
+
         rows.forEach((row) => {
-            row.style.display = matchesFilter(row) ? '' : 'none';
+            const visible = matchesFilter(row);
+            row.style.display = visible ? '' : 'none';
+            if (visible) {
+                visibleCount += 1;
+                visibleRevenue += Number(row.dataset.amount || 0);
+            }
         });
+
+        // Keep the KPI cards in sync with the visible rows.
+        if (kpiReservations) kpiReservations.textContent = visibleCount;
+        if (kpiRevenue) kpiRevenue.textContent = formatMoney(visibleRevenue);
     };
 
     [customerFilter, amenityFilter, statusFilter, dateFrom, dateTo].forEach((input) => {

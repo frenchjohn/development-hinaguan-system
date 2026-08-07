@@ -21,6 +21,7 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_occupancy_monitor.css',
+        'resources/css/staff_css/staff_theme.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -33,7 +34,7 @@
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased staff-portal">
     <div class="dash-layout">
         <x-staff_sidemenu active="occupancy-monitor" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
@@ -128,6 +129,18 @@
                             <div class="occupancy-card" 
                                  data-amenity-id="{{ $amenity->id }}" 
                                  data-amenity-name="{{ strtolower($amenity->amenities_name) }}"
+                                 data-display-name="{{ e($amenity->amenities_name) }}"
+                                 data-daytime-price="₱{{ number_format($amenity->daytime_price, 2) }}"
+                                 data-nighttime-price="₱{{ number_format($amenity->nighttime_price, 2) }}"
+                                 data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ? '₱'.number_format($amenity->daytime_aircon_price, 2) : 'N/A' }}"
+                                 data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ? '₱'.number_format($amenity->nighttime_aircon_price, 2) : 'N/A' }}"
+                                 data-additional-per-head="{{ $amenity->additional_per_head ? '₱'.number_format($amenity->additional_per_head, 2) : 'N/A' }}"
+                                 data-min-cap="{{ $amenity->minimum_capacity ?? 'N/A' }}"
+                                 data-max-cap="{{ $amenity->maximum_capacity ?? 'N/A' }}"
+                                 data-description="{{ e($amenity->description ?? 'No description available for this amenity.') }}"
+                                 data-image-src="{{ $amenity->image ? asset('storage/' . $amenity->image) : '' }}"
+                                 data-occupied-json="{{ json_encode($amenityOccupancy['occupied']) }}"
+                                 data-reserved-json="{{ json_encode($amenityOccupancy['reserved']) }}"
                                  data-available-slots="{{ implode(',', $availableSlots) }}"
                                  data-unavailable-slots="{{ implode(',', $unavailableSlots) }}">
                                 <div class="occupancy-card__image">
@@ -183,6 +196,61 @@
                     </div>
                 </section>
             </main>
+        </div>
+    </div>
+
+    <!-- Amenity Detail Modal -->
+    <div class="modal" id="amenityDetailModal" aria-hidden="true">
+        <div class="modal__backdrop" id="closeAmenityDetailModal"></div>
+        <div class="modal__panel amenity-detail-panel">
+            <div class="modal__header">
+                <h3 id="modalAmenityTitle">Amenity Details</h3>
+                <button type="button" class="modal__close" id="closeAmenityDetailModalBtn">&times;</button>
+            </div>
+            <div class="modal__body amenity-detail-body">
+                <div class="amenity-detail-img-wrap">
+                    <img id="modalAmenityImg" src="" alt="Amenity Image" style="display:none;">
+                    <div id="modalAmenityImgPlaceholder" class="amenity-detail-placeholder" style="display:none;">
+                        <span>No Image Available</span>
+                    </div>
+                </div>
+                <div class="amenity-detail-info">
+                    <p class="amenity-detail-desc" id="modalAmenityDesc"></p>
+                    <div class="amenity-detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Daytime Price</span>
+                            <span class="detail-val" id="modalDaytimePrice"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Nighttime Price</span>
+                            <span class="detail-val" id="modalNighttimePrice"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Day Aircon</span>
+                            <span class="detail-val" id="modalDayAircon"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Night Aircon</span>
+                            <span class="detail-val" id="modalNightAircon"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Additional / Head</span>
+                            <span class="detail-val" id="modalAddHead"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Capacity</span>
+                            <span class="detail-val" id="modalCapacity"></span>
+                        </div>
+                    </div>
+                    <div class="amenity-detail-status-section">
+                        <h4>Current Status & Active Reservations</h4>
+                        <div id="modalStatusList" class="status-list"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="btn btn--secondary" id="closeAmenityDetailModalFooter">Close</button>
+            </div>
         </div>
     </div>
 

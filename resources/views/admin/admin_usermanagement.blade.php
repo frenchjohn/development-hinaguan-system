@@ -114,12 +114,12 @@
                     <h4 class="modal-form__section-title">Staff Details</h4>
                     <div class="modal-form__row">
                         <label for="user_name">Name <span>*</span></label>
-                        <input id="user_name" name="name" type="text" value="{{ old('name') }}" required disabled>
+                        <input id="user_name" name="name" type="text" value="{{ old('name') }}" required>
                     </div>
 
                     <div class="modal-form__row">
                         <label for="user_email">Email <span>*</span></label>
-                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" required disabled>
+                        <input id="user_email" name="email" type="email" value="{{ old('email') }}" required>
                     </div>
                 </div>
 
@@ -127,17 +127,17 @@
                     <h4 class="modal-form__section-title">Access & Status</h4>
                     <div class="modal-form__row">
                         <label for="user_password">Password <span>*</span></label>
-                        <input id="user_password" name="password" type="password" disabled>
+                        <input id="user_password" name="password" type="password">
                     </div>
 
                     <div class="modal-form__row">
                         <label for="user_password_confirmation">Confirm Password <span>*</span></label>
-                        <input id="user_password_confirmation" name="password_confirmation" type="password" disabled>
+                        <input id="user_password_confirmation" name="password_confirmation" type="password">
                     </div>
 
                     <div class="modal-form__row">
                         <label for="ban_status">Account Status</label>
-                        <select id="ban_status" name="ban_status" disabled>
+                        <select id="ban_status" name="ban_status">
                             <option value="0">Active</option>
                             <option value="1">Banned</option>
                         </select>

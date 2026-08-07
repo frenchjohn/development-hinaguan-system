@@ -1,0 +1,1530 @@
+/* ============================================================
+   STAFF PORTAL — "Modern Professional"
+   A clean, calm, professional design system: neutral surfaces,
+   crisp 1px borders, soft shadows, emerald-green accent, strong
+   typographic hierarchy. No neon, no gold overload, no heavy
+   glass effects. Load this stylesheet LAST in every staff page
+   so its rules win over page-specific CSS. Light + dark mode.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. Design tokens (also refreshes the --hp-* tokens the
+   page-specific stylesheets rely on)
+   ------------------------------------------------------------ */
+body.staff-portal {
+    /* Legacy token names used by page CSS */
+    --hp-green-darkest: #0c2015;
+    --hp-green-dark: #14402b;
+    --hp-green: #1c5c3c;
+    --hp-green-mid: #2e7d55;
+    --hp-gold: #8a7a4d;
+    --hp-gold-light: #a8925f;
+    --hp-gold-dark: #6d6039;
+    --hp-cream: #f3f6f3;
+    --hp-light: #ffffff;
+    --hp-text: #1c2b22;
+    --hp-text-muted: #5c6b62;
+    --hp-text-light: #c6d2ca;
+
+    /* New token names */
+    --bg: #f4f6f4;
+    --surface: #ffffff;
+    --surface-2: #f7f9f7;
+    --border: #e3e8e4;
+    --border-strong: #cfd8d1;
+    --ink: #1c2b22;
+    --ink-muted: #5c6b62;
+    --ink-faint: #93a297;
+    --green: #178a52;
+    --green-deep: #0f5c38;
+    --green-soft: #e6f3ec;
+    --green-tint: #f1f8f4;
+    --danger: #cf4b47;
+    --danger-soft: #fbecec;
+    --success: #1f9d61;
+    --warn: #a87a15;
+    --warn-soft: #faf3e0;
+
+    --radius-xl: 16px;
+    --radius-lg: 14px;
+    --radius-md: 11px;
+    --radius-sm: 9px;
+
+    --shadow-xs: 0 1px 2px rgba(23, 42, 32, 0.04);
+    --shadow-sm: 0 1px 2px rgba(23, 42, 32, 0.05), 0 4px 12px rgba(23, 42, 32, 0.05);
+    --shadow-md: 0 2px 4px rgba(23, 42, 32, 0.05), 0 10px 24px rgba(23, 42, 32, 0.09);
+    --shadow-lg: 0 6px 14px rgba(23, 42, 32, 0.07), 0 22px 48px rgba(23, 42, 32, 0.14);
+
+    --font-ui: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-display: 'Poppins', 'Montserrat', system-ui, sans-serif;
+
+    /* Legacy font tokens used by page-specific stylesheets */
+    --hp-font-ui: var(--font-ui);
+    --hp-font-body: var(--font-ui);
+    --hp-font-display: var(--font-display);
+}
+
+[data-theme="dark"] body.staff-portal {
+    /* Cleaner, higher-contrast dark: neutral charcoal with a subtle green cast.
+       Surfaces are clearly lighter than the page background so cards read as
+       separate layers instead of one muddy green-black blob. */
+    --hp-green-darkest: #0b130d;
+    --hp-green-dark: #152619;
+    --hp-green: #1d3826;
+    --hp-green-mid: #2c6343;
+    --hp-gold: #c4b282;
+    --hp-gold-light: #d4c496;
+    --hp-gold-dark: #a08e5c;
+    --hp-cream: #151c17;
+    --hp-light: #121813;
+    --hp-text: #eaf0eb;
+    --hp-text-muted: #9baaa1;
+    --hp-text-light: #6d7b72;
+
+    --bg: #0d120e;
+    --surface: #1a221b;
+    --surface-2: #141b15;
+    --border: #28332b;
+    --border-strong: #3b4740;
+    --ink: #eaf0eb;
+    --ink-muted: #9baaa1;
+    --ink-faint: #6e7c73;
+    --green: #3cac77;
+    --green-deep: #a2dcc0;
+    --green-soft: #1d2f24;
+    --green-tint: #18261d;
+    --danger: #e5827a;
+    --danger-soft: #331e1c;
+    --success: #57c58a;
+    --warn: #d9b058;
+    --warn-soft: #302614;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 10px 24px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------------------
+   2. Page shell
+   ------------------------------------------------------------ */
+body.staff-portal {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    /* Guarantee no horizontal page scroll, ever. Inner tables that need to
+       scroll manage their own overflow-x on their wrappers. */
+    overflow-x: hidden;
+}
+
+/* Calm the faint nature texture used by page blades */
+body.staff-portal .dash-main::before {
+    opacity: 0.025;
+    filter: saturate(0.4);
+}
+
+/* Content: fills the FULL available width — no centering cap, no big side
+   gutters. Only modest balanced padding remains. */
+body.staff-portal .dash-content {
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+    padding: 1.25rem clamp(1rem, 1.6vw, 1.75rem) 2.75rem;
+}
+
+body.staff-portal .dash-main {
+    background: transparent;
+    min-width: 0;
+    /* clip (not hidden) so the y-axis stays visible per spec */
+    overflow-x: clip;
+}
+
+/* Let grid/flex children shrink below their content width so nowrap text,
+   badges and charts can never force the page wider than the viewport. */
+body.staff-portal .dash-stats>*,
+body.staff-portal .dash-charts>*,
+body.staff-portal .dash-grid-3>*,
+body.staff-portal .reports-metrics>*,
+body.staff-portal .records-summary>*,
+body.staff-portal .reports-charts>*,
+body.staff-portal .reports-filters>* {
+    min-width: 0;
+}
+
+/* Smooth theme switching on key surfaces */
+body.staff-portal .dash-panel,
+body.staff-portal .dash-stat-card,
+body.staff-portal .guest-table-wrap,
+body.staff-portal .reports-table-wrap,
+body.staff-portal .users-table-wrap,
+body.staff-portal .guest-panel,
+body.staff-portal .settings-panel,
+body.staff-portal .occupancy-card__content,
+body.staff-portal .guest-form__section,
+body.staff-portal .occupancy-monitor__filter-panel,
+body.staff-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.staff-portal .logout-modal__content,
+body.staff-portal .reports-metric-card {
+    transition: background-color 0.25s ease, border-color 0.25s ease,
+        box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* ------------------------------------------------------------
+   3. Header — clean professional bar
+   ------------------------------------------------------------ */
+body.staff-portal .dash-header {
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02), 0 6px 18px rgba(23, 42, 32, 0.04);
+    /* Compact bar instead of the tall 200px hero */
+    min-height: 0;
+    /* Edge-to-edge app bar: cancel the .dash-content gutters so the header
+       spans the full width and sits flush against the very top.
+       NOTE: these negative margins must stay in sync with the .dash-content
+       padding above (and its 992px / 768px overrides further down). */
+    margin-top: -1.25rem;
+    margin-left: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));
+    margin-right: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));
+    margin-bottom: 1.25rem;
+}
+
+body.staff-portal .dash-header__overlay {
+    background: transparent !important;
+}
+
+/* Let the header content wrap instead of overflowing/clipping on narrow
+   screens (this was a source of horizontal overflow). */
+body.staff-portal .dash-header__content {
+    flex-wrap: wrap;
+    padding: 1rem 1.4rem;
+}
+
+body.staff-portal .dash-header__left {
+    max-width: none;
+}
+
+body.staff-portal .dash-header__right {
+    flex-wrap: wrap;
+}
+
+body.staff-portal .dash-header__weather {
+    flex-wrap: wrap;
+}
+
+body.staff-portal .dash-header__date-time {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.45rem 0.8rem;
+    backdrop-filter: none;
+}
+
+body.staff-portal .dash-header__weather {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.45rem 0.7rem;
+    backdrop-filter: none;
+}
+
+body.staff-portal .dash-header__title {
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-header__subtitle {
+    color: var(--ink-muted);
+    font-weight: 500;
+    font-size: 0.82rem;
+}
+
+body.staff-portal .dash-header__toggle {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    box-shadow: none;
+}
+
+body.staff-portal .dash-header__toggle:hover {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .dash-header__date-time-item {
+    padding: 0.4rem 0.85rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: none;
+}
+
+body.staff-portal .dash-header__date-label,
+body.staff-portal .dash-header__time-label {
+    color: var(--ink-faint);
+    font-weight: 700;
+}
+
+body.staff-portal .dash-header__date,
+body.staff-portal .dash-header__time {
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+body.staff-portal .dash-header__period-indicator {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+}
+
+body.staff-portal .dash-header__period-indicator.is-daytime {
+    background: var(--green-soft);
+    color: var(--green-deep);
+    box-shadow: none;
+}
+
+body.staff-portal .dash-header__period-indicator.is-nighttime {
+    background: #e7edf7;
+    color: #3d5a8c;
+    box-shadow: none;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__period-indicator.is-nighttime {
+    background: #1d2a3d;
+    color: #9db4dd;
+}
+
+body.staff-portal .dash-header__time-period {
+    font-weight: 700;
+    font-size: 0.76rem;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-header__time-period-countdown {
+    font-size: 0.64rem;
+    color: var(--ink-faint);
+}
+
+body.staff-portal .dash-header__weather-item {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.4rem 0.65rem;
+    box-shadow: none;
+}
+
+body.staff-portal .dash-header__weather-item:hover {
+    background: var(--green-tint);
+}
+
+body.staff-portal .dash-header__weather-item.is-today {
+    background: var(--green-soft);
+    border-color: rgba(23, 138, 82, 0.35);
+}
+
+body.staff-portal .dash-header__weather-day {
+    color: var(--ink-faint);
+    font-weight: 700;
+}
+
+body.staff-portal .dash-header__weather-temp {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+body.staff-portal .dash-header__welcome {
+    background: var(--green-soft);
+    border: 1px solid rgba(23, 138, 82, 0.25);
+    border-radius: 999px;
+    padding: 0.42rem 0.95rem;
+    color: var(--green-deep);
+    font-weight: 600;
+    font-size: 0.8rem;
+    box-shadow: none;
+    animation: none;
+}
+
+body.staff-portal .dash-header__divider {
+    background: var(--border);
+}
+
+/* ------------------------------------------------------------
+   4. Dashboard greeting row (replaces the old hero band)
+   ------------------------------------------------------------ */
+.dash-greeting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 0.35rem 0.15rem 1.1rem;
+}
+
+.dash-greeting__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.dash-greeting__logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs);
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.dash-greeting__eyebrow {
+    margin: 0 0 0.1rem;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green);
+}
+
+.dash-greeting__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 1.9vw, 1.5rem);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+}
+
+.dash-greeting__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.dash-greeting__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: var(--green-soft);
+    border: 1px solid rgba(23, 138, 82, 0.25);
+    color: var(--green-deep);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.dash-greeting__live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: spPulseSoft 2.2s ease-out infinite;
+}
+
+.dash-greeting__date {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+@keyframes spPulseSoft {
+    0% {
+        box-shadow: 0 0 0 0 rgba(31, 157, 97, 0.45);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(31, 157, 97, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(31, 157, 97, 0);
+    }
+}
+
+/* ------------------------------------------------------------
+   5. Stat cards
+   ------------------------------------------------------------ */
+body.staff-portal .dash-stats {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+body.staff-portal .dash-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.05rem 1.15rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+body.staff-portal .dash-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border-strong);
+}
+
+body.staff-portal .dash-stat-card__icon {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    margin: 0;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-soft);
+    color: var(--green-deep);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+body.staff-portal .dash-stat-card:hover .dash-stat-card__icon {
+    transform: scale(1.06);
+}
+
+body.staff-portal .dash-stat-card__icon svg {
+    width: 23px;
+    height: 23px;
+    stroke-width: 1.9;
+}
+
+body.staff-portal .dash-stat-card--accent .dash-stat-card__icon {
+    background: var(--green);
+    color: #fff;
+}
+
+body.staff-portal .dash-stat-card__body {
+    min-width: 0;
+}
+
+body.staff-portal .dash-stat-card__label {
+    margin: 0 0 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-stat-card__value {
+    margin: 0 0 0.15rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-stat-card__hint {
+    margin: 0;
+    font-size: 0.71rem;
+    line-height: 1.45;
+    color: var(--ink-faint);
+}
+
+/* ------------------------------------------------------------
+   6. Panels
+   ------------------------------------------------------------ */
+body.staff-portal .dash-panel,
+body.staff-portal .reports-panel,
+body.staff-portal .settings-panel,
+body.staff-portal .guest-panel,
+body.staff-portal .occupancy-card__content,
+body.staff-portal .reports-metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+body.staff-portal .dash-panel:hover,
+body.staff-portal .reports-panel:hover {
+    border-color: var(--border-strong);
+}
+
+body.staff-portal .dash-panel__head,
+body.staff-portal .reports-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.25rem;
+}
+
+body.staff-portal .reports-panel__head>div {
+    min-width: 0;
+}
+
+body.staff-portal .reports-charts {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 992px) {
+    body.staff-portal .reports-charts {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.staff-portal .dash-panel__title,
+body.staff-portal .reports-panel__title {
+    font-family: var(--font-display);
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-panel__subtitle {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-panel__meta,
+body.staff-portal .reports-panel__meta {
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+}
+
+/* ------------------------------------------------------------
+   7. Charts
+   ------------------------------------------------------------ */
+body.staff-portal .dash-charts {
+    gap: 1rem;
+}
+
+body.staff-portal .dash-grid-3 {
+    gap: 1rem;
+}
+
+body.staff-portal .dash-chart__legend,
+body.staff-portal .dash-donut__legend {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-chart__empty {
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 2.2rem 1rem;
+}
+
+body.staff-portal .dash-barchart__bar {
+    border-radius: 7px 7px 2px 2px;
+}
+
+body.staff-portal .dash-barchart__bar--count {
+    background: linear-gradient(180deg, #2e9d68 0%, var(--green-deep) 100%);
+}
+
+body.staff-portal .dash-barchart__bar--revenue {
+    background: linear-gradient(180deg, #7fa08e 0%, #55715f 100%);
+}
+
+body.staff-portal .dash-barchart__value {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-barchart__label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-donut {
+    box-shadow: 0 0 0 8px var(--surface), 0 10px 26px rgba(23, 42, 32, 0.12);
+}
+
+body.staff-portal .dash-donut__hole {
+    background: var(--surface);
+}
+
+body.staff-portal .dash-donut__total {
+    color: var(--ink);
+    font-family: var(--font-display);
+}
+
+body.staff-portal .dash-donut__legend li {
+    color: var(--ink-muted);
+    font-size: 0.78rem;
+}
+
+body.staff-portal .dash-donut__legend strong {
+    color: var(--ink);
+}
+
+body.staff-portal .dash-hbar__track {
+    height: 0.5rem;
+    background: var(--surface-2);
+    border-radius: 999px;
+    box-shadow: inset 0 1px 2px rgba(23, 42, 32, 0.06);
+}
+
+body.staff-portal .dash-hbar__fill {
+    background: linear-gradient(90deg, var(--green) 0%, #4fbd85 100%);
+    border-radius: 999px;
+}
+
+body.staff-portal .dash-hbar__row strong {
+    color: var(--ink);
+    font-family: var(--font-display);
+}
+
+body.staff-portal .dash-arrival__name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 0.9rem;
+}
+
+body.staff-portal .dash-arrival__meta,
+body.staff-portal .dash-activity__time {
+    color: var(--ink-muted);
+    font-size: 0.76rem;
+}
+
+body.staff-portal .dash-arrival__dot {
+    background: var(--green-mid, var(--green));
+    box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+body.staff-portal .dash-activity__dot {
+    background: var(--success);
+    box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+body.staff-portal .dash-activity__text {
+    color: var(--ink);
+    font-size: 0.85rem;
+}
+
+/* ------------------------------------------------------------
+   7b. Chart layout (shared — also lets the Reports page render
+   bars/donut without loading staff_dashboard.css)
+   ------------------------------------------------------------ */
+body.staff-portal .dash-barchart {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 1rem;
+}
+
+body.staff-portal .dash-barchart__col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+body.staff-portal .dash-barchart__bars {
+    width: 100%;
+    height: 170px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.3rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+body.staff-portal .dash-barchart__bar {
+    width: 40%;
+    max-width: 1.6rem;
+    border-radius: 7px 7px 2px 2px;
+    height: 0;
+}
+
+/* Dashboard: staff_dashboard.js adds .is-animated to grow the bars. This rule
+   must out-specify the generic height:0 above (and the dashboard's own rule). */
+body.staff-portal .dash-barchart__bar.is-animated {
+    height: var(--val, 0%);
+    transition: height 0.55s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+/* Reports page: no dashboard JS here, so bars show directly */
+body.staff-portal .reports-charts .dash-barchart__bar {
+    height: var(--val, 0%);
+    transition: height 0.55s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+body.staff-portal .dash-donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+}
+
+body.staff-portal .dash-donut {
+    width: 132px;
+    height: 132px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+body.staff-portal .dash-donut__hole {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+body.staff-portal .dash-donut__hole small {
+    margin-top: 0.2rem;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-donut__legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    display: grid;
+    gap: 0.5rem;
+}
+
+body.staff-portal .dash-donut__legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.staff-portal .dash-donut__legend i {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+body.staff-portal .dash-donut__legend strong {
+    margin-left: auto;
+}
+
+body.staff-portal .dash-hbars {
+    padding: 1.25rem;
+    display: grid;
+    gap: 1rem;
+}
+
+body.staff-portal .dash-hbar__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+    font-size: 0.8125rem;
+    color: var(--ink);
+}
+
+body.staff-portal .dash-hbar__track {
+    overflow: hidden;
+}
+
+body.staff-portal .dash-hbar__fill {
+    height: 100%;
+    width: 0;
+    transition: width 0.6s cubic-bezier(0.22, 0.8, 0.32, 1);
+}
+
+body.staff-portal .dash-hbar__fill.is-animated {
+    width: var(--val, 0%);
+}
+
+/* ------------------------------------------------------------
+   8. Tables
+   ------------------------------------------------------------ */
+body.staff-portal .guest-table-wrap,
+body.staff-portal .reports-table-wrap,
+body.staff-portal .users-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+}
+
+body.staff-portal .guest-table,
+body.staff-portal .reports-table,
+body.staff-portal .users-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+}
+
+body.staff-portal .guest-table thead th,
+body.staff-portal .reports-table thead th,
+body.staff-portal .users-table thead th {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 1rem;
+    white-space: nowrap;
+}
+
+body.staff-portal .guest-table tbody td,
+body.staff-portal .reports-table tbody td,
+body.staff-portal .users-table tbody td {
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 1rem;
+    color: var(--ink);
+    font-size: 0.86rem;
+    vertical-align: middle;
+}
+
+body.staff-portal .guest-table tbody tr:last-child td,
+body.staff-portal .reports-table tbody tr:last-child td,
+body.staff-portal .users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+body.staff-portal .guest-table tbody tr,
+body.staff-portal .reports-table tbody tr,
+body.staff-portal .users-table .user-row {
+    transition: background 0.14s ease;
+}
+
+body.staff-portal .guest-table tbody tr:hover,
+body.staff-portal .reports-table tbody tr:hover,
+body.staff-portal .users-table .user-row:hover {
+    background: var(--green-tint);
+}
+
+body.staff-portal .guest-name {
+    font-weight: 700;
+    color: var(--ink);
+}
+
+body.staff-portal .guest-meta {
+    color: var(--ink-muted);
+    font-size: 0.74rem;
+}
+
+body.staff-portal .guest-empty,
+body.staff-portal .reports-table-empty {
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 2.5rem 1rem;
+}
+
+/* ------------------------------------------------------------
+   9. Status pills & badges
+   ------------------------------------------------------------ */
+body.staff-portal .status-pill,
+body.staff-portal .guest-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.24rem 0.62rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+body.staff-portal .status-pill--pending,
+body.staff-portal .dash-arrival__badge--pending {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .status-pill--confirmed,
+body.staff-portal .dash-arrival__badge--confirmed {
+    background: rgba(46, 125, 85, 0.13);
+    color: var(--green-deep);
+}
+
+body.staff-portal .status-pill--checked-in,
+body.staff-portal .dash-arrival__badge--checked-in {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .status-pill--checked-out,
+body.staff-portal .dash-arrival__badge--checked-out {
+    background: rgba(120, 130, 122, 0.13);
+    color: var(--ink-muted);
+}
+
+body.staff-portal .status-pill--cancelled,
+body.staff-portal .dash-arrival__badge--cancelled {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+body.staff-portal .status-pill--paid {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .status-pill--partially-paid {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .status-pill--unpaid {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+body.staff-portal .dash-arrival__badge {
+    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 0.24rem 0.6rem;
+}
+
+body.staff-portal .badge {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+body.staff-portal .badge--enabled {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .badge--disabled {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+/* ------------------------------------------------------------
+   10. Buttons
+   ------------------------------------------------------------ */
+body.staff-portal .btn,
+body.staff-portal .guest-panel__button,
+body.staff-portal .guest-form__button,
+body.staff-portal .reports-print-btn,
+body.staff-portal .filter-panel__secondary {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.2s ease,
+        background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+body.staff-portal .btn:hover,
+body.staff-portal .guest-panel__button:hover,
+body.staff-portal .guest-form__button:hover {
+    transform: translateY(-1px);
+}
+
+body.staff-portal .btn:active,
+body.staff-portal .guest-panel__button:active,
+body.staff-portal .guest-form__button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+body.staff-portal .btn--primary,
+body.staff-portal .guest-form__button--primary,
+body.staff-portal .guest-panel__button--primary {
+    background: var(--green);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(23, 138, 82, 0.22);
+}
+
+body.staff-portal .btn--primary:hover,
+body.staff-portal .guest-form__button--primary:hover,
+body.staff-portal .guest-panel__button--primary:hover {
+    background: var(--green-deep);
+    box-shadow: 0 8px 20px rgba(15, 92, 56, 0.28);
+}
+
+body.staff-portal .btn--primary:disabled,
+body.staff-portal .guest-form__button--primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+body.staff-portal .reports-print-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+body.staff-portal .reports-print-btn:hover {
+    background: var(--green-soft);
+    color: var(--green-deep);
+    border-color: rgba(23, 138, 82, 0.35);
+}
+
+/* ------------------------------------------------------------
+   11. Inputs
+   ------------------------------------------------------------ */
+body.staff-portal input[type="text"],
+body.staff-portal input[type="email"],
+body.staff-portal input[type="password"],
+body.staff-portal input[type="number"],
+body.staff-portal input[type="date"],
+body.staff-portal input[type="time"],
+body.staff-portal input[type="search"],
+body.staff-portal select,
+body.staff-portal textarea {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+body.staff-portal input:focus,
+body.staff-portal select:focus,
+body.staff-portal textarea:focus {
+    outline: none;
+    border-color: var(--green);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(23, 138, 82, 0.14);
+}
+
+body.staff-portal .settings-form__field label,
+body.staff-portal .guest-form__label {
+    color: var(--ink-muted);
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------
+   12. Tabs & filters
+   ------------------------------------------------------------ */
+body.staff-portal .records-tab-btn,
+body.staff-portal .guest-filter-toggle,
+body.staff-portal .guest-form__tab,
+body.staff-portal .filter-toggle-btn,
+body.staff-portal .occupancy-monitor__filter-toggle .filter-toggle-btn {
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-weight: 600;
+    transition: background 0.18s ease, color 0.18s ease,
+        border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+}
+
+body.staff-portal .records-tab-btn:hover,
+body.staff-portal .guest-filter-toggle:hover,
+body.staff-portal .guest-form__tab:hover,
+body.staff-portal .filter-toggle-btn:hover {
+    border-color: rgba(23, 138, 82, 0.45);
+    color: var(--green-deep);
+    transform: translateY(-1px);
+}
+
+body.staff-portal .records-tab-btn--active {
+    background: var(--green);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 5px 14px rgba(23, 138, 82, 0.24);
+}
+
+body.staff-portal .occupancy-monitor__filter-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+body.staff-portal .guest-toolbar__field>span {
+    color: var(--ink-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------
+   13. Forms
+   ------------------------------------------------------------ */
+body.staff-portal .guest-form__section {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+body.staff-portal .guest-form__section-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--ink);
+}
+
+body.staff-portal .guest-form__fee-item strong {
+    color: var(--green-deep);
+}
+
+/* ------------------------------------------------------------
+   14. Modals
+   ------------------------------------------------------------ */
+@keyframes spModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+body.staff-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.staff-portal .logout-modal__content,
+body.staff-portal .app-nav-guard__panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    animation: spModalIn 0.24s cubic-bezier(0.22, 0.8, 0.32, 1) both;
+}
+
+body.staff-portal .guest-modal__backdrop,
+body.staff-portal .modal__backdrop,
+body.staff-portal .logout-modal__backdrop,
+body.staff-portal .app-nav-guard__backdrop {
+    background: rgba(12, 22, 16, 0.5);
+    backdrop-filter: blur(3px);
+}
+
+body.staff-portal .guest-modal__header,
+body.staff-portal .modal__header,
+body.staff-portal .logout-modal__header {
+    border-bottom: 1px solid var(--border);
+}
+
+body.staff-portal .guest-modal__title,
+body.staff-portal .modal__header h3,
+body.staff-portal .logout-modal__title,
+body.staff-portal .app-nav-guard__panel h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--ink);
+}
+
+body.staff-portal .guest-modal__close {
+    border-radius: 9px;
+    transition: background 0.16s ease, transform 0.16s ease;
+}
+
+body.staff-portal .guest-modal__close:hover {
+    background: var(--green-soft);
+    color: var(--green-deep);
+    transform: rotate(90deg);
+}
+
+body.staff-portal .app-nav-guard__panel p {
+    color: var(--ink-muted);
+}
+
+body.staff-portal .app-nav-guard__icon {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .app-nav-guard__btn--ghost {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+}
+
+body.staff-portal .app-nav-guard__btn--danger {
+    background: var(--danger);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(207, 75, 71, 0.3);
+}
+
+body.staff-portal .guest-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+body.staff-portal .guest-label {
+    color: var(--ink-faint);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+body.staff-portal .guest-value {
+    color: var(--ink);
+}
+
+/* ------------------------------------------------------------
+   15. Occupancy cards
+   ------------------------------------------------------------ */
+body.staff-portal .occupancy-card__name {
+    font-family: var(--font-display);
+    color: var(--ink);
+}
+
+body.staff-portal .occupancy-card__status-slot {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+body.staff-portal .occupancy-card__overlay {
+    background: linear-gradient(to top, rgba(12, 26, 17, 0.55) 0%, transparent 55%);
+}
+
+body.staff-portal .occupancy-card__status-overlay--occupied {
+    background: rgba(207, 75, 71, 0.88);
+}
+
+body.staff-portal .occupancy-card__status-overlay--reserved {
+    background: rgba(168, 122, 21, 0.9);
+}
+
+/* ------------------------------------------------------------
+   16. KPI / summary cards (records + reports)
+   ------------------------------------------------------------ */
+body.staff-portal .reports-metric-card,
+body.staff-portal .records-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.05rem 1.15rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xs);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+body.staff-portal .reports-metric-card:hover,
+body.staff-portal .records-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--border-strong);
+}
+
+body.staff-portal .reports-metric-card__icon,
+body.staff-portal .records-summary-card__icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .reports-metric-card__icon svg,
+body.staff-portal .records-summary-card__icon svg {
+    width: 21px;
+    height: 21px;
+    stroke-width: 1.9;
+}
+
+body.staff-portal .reports-metric-card__label,
+body.staff-portal .records-summary-card__label {
+    margin: 0 0 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .reports-metric-card__value,
+body.staff-portal .records-summary-card__value {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+body.staff-portal .reports-metrics,
+body.staff-portal .records-summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+body.staff-portal .reports-filters {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.15rem;
+    margin-bottom: 1.25rem;
+    gap: 0.9rem;
+    box-shadow: var(--shadow-xs);
+}
+
+body.staff-portal .reports-filter-group label {
+    color: var(--ink-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+
+/* ------------------------------------------------------------
+   17. Alerts
+   ------------------------------------------------------------ */
+body.staff-portal .guest-alert,
+body.staff-portal .alert {
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+}
+
+body.staff-portal .alert--success {
+    background: var(--green-soft);
+    border-color: rgba(23, 138, 82, 0.25);
+    color: var(--green-deep);
+}
+
+body.staff-portal .alert--error {
+    background: var(--danger-soft);
+    border-color: rgba(207, 75, 71, 0.25);
+    color: var(--danger);
+}
+
+/* ------------------------------------------------------------
+   18. Chatbot widget
+   ------------------------------------------------------------ */
+body.staff-portal .chatbot-toggle {
+    box-shadow: 0 10px 26px rgba(23, 138, 82, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ------------------------------------------------------------
+   19. Print (reports)
+   ------------------------------------------------------------ */
+@media print {
+
+    body.staff-portal .dash-sidebar,
+    body.staff-portal .dash-header,
+    body.staff-portal .reports-filters,
+    body.staff-portal .reports-metrics,
+    body.staff-portal .reports-charts,
+    body.staff-portal .reports-print-btn,
+    body.staff-portal .chatbot-toggle,
+    body.staff-portal .chatbot-widget {
+        display: none !important;
+    }
+
+    body.staff-portal .dash-main {
+        margin-left: 0 !important;
+    }
+
+    body.staff-portal .dash-content {
+        padding: 0 !important;
+        max-width: none;
+    }
+
+    body.staff-portal .reports-print-summary {
+        display: block !important;
+    }
+
+    body.staff-portal .reports-table-wrap {
+        border: 1px solid #bbb;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    body.staff-portal .reports-table thead th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* ------------------------------------------------------------
+   20. Responsive
+   ------------------------------------------------------------ */
+@media (max-width: 1200px) {
+
+    body.staff-portal .dash-stats,
+    body.staff-portal .reports-metrics,
+    body.staff-portal .records-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    body.staff-portal .dash-content {
+        padding: 1.15rem 1.15rem 2.2rem;
+    }
+
+    body.staff-portal .dash-header {
+        margin-top: -1.15rem;
+        margin-left: -1.15rem;
+        margin-right: -1.15rem;
+    }
+
+    body.staff-portal .dash-header__date-time {
+        display: none;
+    }
+
+    body.staff-portal .dash-header__weather {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    body.staff-portal .reports-charts .dash-barchart__value {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    body.staff-portal .dash-content {
+        padding: 1rem 1rem 1.8rem;
+    }
+
+    body.staff-portal .dash-header {
+        margin-top: -1rem;
+        margin-left: -1rem;
+        margin-right: -1rem;
+    }
+
+    body.staff-portal .dash-stats,
+    body.staff-portal .reports-metrics,
+    body.staff-portal .records-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .dash-greeting__meta {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

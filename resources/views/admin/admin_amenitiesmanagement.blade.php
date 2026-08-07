@@ -99,7 +99,6 @@
                         <tbody>
                             @forelse($amenities as $amenity)
                                 <tr
-                                    class="amenity-row"
                                     data-amenity-id="{{ $amenity->id }}"
                                     data-amenities-name="{{ e($amenity->amenities_name) }}"
                                     data-daytime-price="{{ $amenity->daytime_price }}"
