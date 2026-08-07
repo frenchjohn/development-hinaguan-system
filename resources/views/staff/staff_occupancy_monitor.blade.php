@@ -125,7 +125,8 @@
                                     <option value="all">All Time Slots</option>
                                     <option value="daytime">Daytime</option>
                                     <option value="nighttime">Nighttime</option>
-                                    <option value="daynight">DayNight Time</option>
+                                    <option value="daytonight">Day to Night</option>
+                                    <option value="nighttoday">Night to Day</option>
                                 </select>
                             </div>
                             <div class="filter-panel__field">
@@ -151,13 +152,16 @@
                                 $occupiedSlots = [];
                                 foreach ($amenityOccupancy['occupied'] as $occupied) {
                                     $timeSlot = strtolower($occupied['time_slot']);
-                                    if (str_contains($timeSlot, 'daytime')) {
+                                    if (str_contains($timeSlot, 'daytonight')) {
+                                        // Day to Night covers both daytime and nighttime
+                                        $occupiedSlots[] = 'daytime';
+                                        $occupiedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                        // Night to Day occupies tonight (its daytime is tomorrow)
+                                        $occupiedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'daytime')) {
                                         $occupiedSlots[] = 'daytime';
                                     } elseif (str_contains($timeSlot, 'nighttime')) {
-                                        $occupiedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'daynight')) {
-                                        // DayNight covers both daytime and nighttime
-                                        $occupiedSlots[] = 'daytime';
                                         $occupiedSlots[] = 'nighttime';
                                     }
                                 }
@@ -166,13 +170,16 @@
                                 $reservedSlots = [];
                                 foreach ($amenityOccupancy['reserved'] as $reserved) {
                                     $timeSlot = strtolower($reserved['time_slot']);
-                                    if (str_contains($timeSlot, 'daytime')) {
+                                    if (str_contains($timeSlot, 'daytonight')) {
+                                        // Day to Night covers both daytime and nighttime
+                                        $reservedSlots[] = 'daytime';
+                                        $reservedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                        // Night to Day occupies tonight (its daytime is tomorrow)
+                                        $reservedSlots[] = 'nighttime';
+                                    } elseif (str_contains($timeSlot, 'daytime')) {
                                         $reservedSlots[] = 'daytime';
                                     } elseif (str_contains($timeSlot, 'nighttime')) {
-                                        $reservedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'daynight')) {
-                                        // DayNight covers both daytime and nighttime
-                                        $reservedSlots[] = 'daytime';
                                         $reservedSlots[] = 'nighttime';
                                     }
                                 }

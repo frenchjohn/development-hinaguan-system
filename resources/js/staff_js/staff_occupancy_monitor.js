@@ -42,8 +42,11 @@ window.AppPage['staff_occupancy_monitor'] = function () {
             if (selectedTimeSlot !== 'all') {
                 const availableSlotsArray = availableSlots.split(',').filter(s => s.trim());
 
-                if (selectedTimeSlot === 'daynight') {
+                if (selectedTimeSlot === 'daytonight') {
                     matchesTimeSlot = availableSlotsArray.includes('daytime') || availableSlotsArray.includes('nighttime');
+                } else if (selectedTimeSlot === 'nighttoday') {
+                    // Night to Day's relevant part today is tonight
+                    matchesTimeSlot = availableSlotsArray.includes('nighttime');
                 } else {
                     matchesTimeSlot = availableSlotsArray.includes(selectedTimeSlot);
                 }
@@ -55,7 +58,7 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                 const availableSlotsArray = availableSlots.split(',').filter(s => s.trim());
                 const unavailableSlotsArray = unavailableSlots.split(',').filter(s => s.trim());
 
-                if (selectedTimeSlot === 'daynight') {
+                if (selectedTimeSlot === 'daytonight' || selectedTimeSlot === 'nighttoday') {
                     const isDaytimeAvailable = availableSlotsArray.includes('daytime');
                     const isNighttimeAvailable = availableSlotsArray.includes('nighttime');
                     const isDaytimeUnavailable = unavailableSlotsArray.includes('daytime');

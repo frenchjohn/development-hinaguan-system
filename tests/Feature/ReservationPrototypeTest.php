@@ -185,6 +185,129 @@ class ReservationPrototypeTest extends TestCase
             ->assertJsonPath('occupied_amenity_ids.0', 'amenity-1');
     }
 
+    public function test_night_to_day_booking_blocks_same_day_nighttime_and_next_day_daytime(): void
+    {
+        $this->createAmenity('amenity-1');
+
+        $reservation = $this->createReservation('2026-08-10');
+
+        ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'NightToDay',
+            'price_at_booking' => 1200,
+            'quantity' => 1,
+        ]);
+
+        // Same-day nighttime is taken (the night leg)
+        $nighttime = $this->getJson('/reservation/availability?date=2026-08-10&slot=Nighttime');
+        $nighttime->assertOk()->assertJsonPath('occupied_amenity_ids.0', 'amenity-1');
+
+        // Next-day daytime is taken (the spillover day leg)
+        $nextDay = $this->getJson('/reservation/availability?date=2026-08-11&slot=Daytime');
+        $nextDay->assertOk()->assertJsonPath('occupied_amenity_ids.0', 'amenity-1');
+
+        // Same-day daytime stays free
+        $sameDay = $this->getJson('/reservation/availability?date=2026-08-10&slot=Daytime');
+        $sameDay->assertOk()->assertJsonCount(0, 'occupied_amenity_ids');
+
+        // A DayToNight booking on the same date must be rejected
+        $response = $this->postJson('/reservation/prototype', [
+            'booker_name' => 'Maria Santos',
+            'phone' => '09171234567',
+            'email' => 'maria@example.com',
+            'number_of_guests' => 12,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'DayToNight',
+            'price_at_booking' => 1200,
+            'check_in' => '2026-08-10',
+            'slot' => 'DayToNight',
+        ]);
+
+        $response->assertStatus(409);
+    }
+
+    public function test_calendar_endpoint_reports_daytonight_and_nighttoday_availability(): void
+    {
+        $this->createAmenity('amenity-1');
+
+        $reservation = $this->createReservation('2026-08-10');
+
+        ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'NightToDay',
+            'price_at_booking' => 1200,
+            'quantity' => 1,
+        ]);
+
+        $response = $this->getJson('/reservation/availability/calendar?amenity_id=amenity-1&slot=Daytime&month=7&year=2026');
+        $response->assertOk();
+
+        $availability = collect($response->json('availability'));
+
+        // On the reservation date, nighttoday is taken (its night leg)
+        $reservedDay = $availability->firstWhere('date', '2026-08-10');
+        $this->assertNotNull($reservedDay);
+        $this->assertTrue($reservedDay['daytime']);
+        $this->assertFalse($reservedDay['nighttime']);
+        $this->assertFalse($reservedDay['daytonight']);
+        $this->assertFalse($reservedDay['nighttoday']);
+
+        // The day after: daytime is taken by the spillover, but nighttime of
+        // that day and the following day's daytime are still free, so a
+        // NightToDay booking there is still possible.
+        $spilloverDay = $availability->firstWhere('date', '2026-08-11');
+        $this->assertNotNull($spilloverDay);
+        $this->assertFalse($spilloverDay['daytime']);
+        $this->assertTrue($spilloverDay['nighttime']);
+        $this->assertFalse($spilloverDay['daytonight']);
+        $this->assertTrue($spilloverDay['nighttoday']);
+
+        // A free day reports all four slots open
+        $freeDay = $availability->firstWhere('date', '2026-08-15');
+        $this->assertNotNull($freeDay);
+        $this->assertTrue($freeDay['daytime']);
+        $this->assertTrue($freeDay['nighttime']);
+        $this->assertTrue($freeDay['daytonight']);
+        $this->assertTrue($freeDay['nighttoday']);
+    }
+
+    private function createAmenity(string $id): void
+    {
+        Amenity::create([
+            'id' => $id,
+            'amenities_name' => 'Picnic Area',
+            'daytime_price' => '500',
+            'nighttime_price' => '700',
+            'daytime_aircon_price' => '800',
+            'nighttime_aircon_price' => '900',
+            'additional_per_head' => '100',
+            'minimum_capacity' => '10',
+            'maximum_capacity' => '20',
+            'description' => 'Test amenity',
+            'image' => null,
+            'status' => true,
+        ]);
+    }
+
+    private function createReservation(string $date): Reservation
+    {
+        return Reservation::create([
+            'booker_name' => 'Maria Santos',
+            'phone' => '09171234567',
+            'email' => 'maria@example.com',
+            'reservation_date' => $date,
+            'check_in' => $date,
+            'number_of_guests' => 12,
+            'status' => 'Pending',
+            'total_amount' => 500,
+            'amount_paid' => 250,
+            'remaining_balance' => 250,
+            'payment_status' => 'Partially Paid',
+        ]);
+    }
+
     public function test_it_sends_a_reservation_qr_email_with_an_embedded_qr_image(): void
     {
         Mail::fake();

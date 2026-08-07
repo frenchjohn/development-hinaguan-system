@@ -19,13 +19,17 @@ return new class extends Migration
             $table->string('amenity_id')->nullable();
 
             // Price selected during reservation
+            // DayToNight covers daytime + nighttime of the reservation date.
+            // NightToDay covers nighttime of the reservation date + daytime of the NEXT day.
             $table->enum('pricing_type', [
                 'Daytime',
                 'Nighttime',
                 'Daytime Aircon',
                 'Nighttime Aircon',
-                'DayNight Time',
-                'DayNight Time Aircon'
+                'DayToNight',
+                'DayToNight Aircon',
+                'NightToDay',
+                'NightToDay Aircon'
             ]);
 
             // Snapshot of the selected price

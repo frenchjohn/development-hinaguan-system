@@ -20,6 +20,91 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
+// ── Booking slot helpers ─────────────────────────────────────────────────
+// A slot covers one or more time periods relative to its reservation date:
+//   Daytime    = daytime of the date
+//   Nighttime  = nighttime of the date
+//   DayToNight = daytime + nighttime of the date
+//   NightToDay = nighttime of the date + daytime of the NEXT day
+// Returns (query date, covering pricing types) pairs whose reservations
+// clash with the requested slot on the given start date.
+$slotCoveringChecks = function (string $date, string $slot): array {
+    $base = rtrim(str_replace([' Aircon', 'Aircon'], '', $slot));
+    $day = \Illuminate\Support\Carbon::parse($date);
+    $before = $day->copy()->subDay()->toDateString();
+    $after = $day->copy()->addDay()->toDateString();
+
+    $daytimeTypes = ['Daytime', 'Daytime Aircon', 'DayToNight', 'DayToNight Aircon'];
+    $nighttimeTypes = ['Nighttime', 'Nighttime Aircon', 'DayToNight', 'DayToNight Aircon', 'NightToDay', 'NightToDay Aircon'];
+
+    return match ($base) {
+        'Daytime' => [
+            [$date, $daytimeTypes],
+            // Previous day's NightToDay spills its daytime into this date.
+            [$before, ['NightToDay', 'NightToDay Aircon']],
+        ],
+        'Nighttime' => [
+            [$date, $nighttimeTypes],
+        ],
+        'DayToNight' => [
+            [$date, array_merge($daytimeTypes, $nighttimeTypes)],
+            [$before, ['NightToDay', 'NightToDay Aircon']],
+        ],
+        'NightToDay' => [
+            [$date, $nighttimeTypes],
+            // Its daytime spills into the NEXT day.
+            [$after, $daytimeTypes],
+        ],
+        default => [],
+    };
+};
+
+// Returns true when the given amenity is already reserved/occupied for the
+// requested slot on the given start date.
+$isAmenitySlotTaken = function (string $amenityId, string $date, string $slot) use ($slotCoveringChecks): bool {
+    foreach ($slotCoveringChecks($date, $slot) as [$checkDate, $types]) {
+        $exists = Reservation::query()
+            ->whereDate('reservation_date', $checkDate)
+            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->whereHas('reservationAmenities', function ($query) use ($amenityId, $types): void {
+                $query->where('amenity_id', $amenityId)
+                    ->whereIn('pricing_type', $types);
+            })
+            ->exists();
+
+        if ($exists) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+// Returns the ids of all amenities already occupied for the requested slot
+// on the given start date (used by the availability endpoints).
+$occupiedAmenityIdsForSlot = function (string $date, string $slot) use ($slotCoveringChecks): array {
+    $occupied = [];
+    foreach ($slotCoveringChecks($date, $slot) as [$checkDate, $types]) {
+        $ids = Reservation::query()
+            ->whereDate('reservation_date', $checkDate)
+            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->whereHas('reservationAmenities', function ($query) use ($types): void {
+                $query->whereIn('pricing_type', $types);
+            })
+            ->with('reservationAmenities')
+            ->get()
+            ->flatMap(fn (Reservation $reservation) => $reservation->reservationAmenities
+                ->pluck('amenity_id'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $occupied = array_values(array_unique(array_merge($occupied, $ids)));
+    }
+
+    return $occupied;
+};
+
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::post('/chatbot', [StaffChatbotController::class, 'chat'])->name('chatbot.chat');
@@ -56,7 +141,7 @@ Route::get('/api/park-settings', function () {
     ]);
 })->name('api.park-settings');
 
-Route::get('/amenities', function () {
+Route::get('/amenities', function () use ($isAmenitySlotTaken) {
     $amenities = Amenity::where('status', true)
         ->orderBy('amenities_name')
         ->get();
@@ -70,27 +155,11 @@ Route::get('/amenities', function () {
 
         for ($i = 0; $i < 30; $i++) {
             $date = $dateCursor->toDateString();
-            $hasDaytime = ! Reservation::query()
-                ->whereDate('reservation_date', $date)
-                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-                ->whereHas('reservationAmenities', function ($query) use ($amenity): void {
-                    $query->where('amenity_id', $amenity->id)
-                        ->whereIn('pricing_type', ['Daytime', 'Daytime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
-                })
-                ->exists();
-            $hasNighttime = ! Reservation::query()
-                ->whereDate('reservation_date', $date)
-                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-                ->whereHas('reservationAmenities', function ($query) use ($amenity): void {
-                    $query->where('amenity_id', $amenity->id)
-                        ->whereIn('pricing_type', ['Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
-                })
-                ->exists();
 
             $slots[] = [
                 'date' => $date,
-                'daytime' => $hasDaytime,
-                'nighttime' => $hasNighttime,
+                'daytime' => ! $isAmenitySlotTaken($amenity->id, $date, 'Daytime'),
+                'nighttime' => ! $isAmenitySlotTaken($amenity->id, $date, 'Nighttime'),
             ];
 
             $dateCursor->addDay();
@@ -127,7 +196,7 @@ Route::get('/reservation/weather-preview', function (Request $request, WeatherSe
     ]);
 })->name('reservation.weather-preview');
 
-Route::get('/reservation/availability', function (Request $request) {
+Route::get('/reservation/availability', function (Request $request) use ($occupiedAmenityIdsForSlot) {
     $date = $request->query('date');
     $slot = $request->query('slot');
 
@@ -139,34 +208,7 @@ Route::get('/reservation/availability', function (Request $request) {
         ]);
     }
 
-    // Determine pricing types based on slot
-    if ($slot === 'Nighttime') {
-        $pricingTypes = ['Nighttime', 'Nighttime Aircon'];
-        // Also exclude DayNight Time bookings since they cover nighttime
-        $excludedTypes = ['Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon'];
-    } elseif ($slot === 'DayNight Time') {
-        // DayNight Time conflicts with ALL booking types since it covers the entire day
-        $excludedTypes = ['Daytime', 'Daytime Aircon', 'Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon'];
-    } else {
-        // Daytime (default)
-        $pricingTypes = ['Daytime', 'Daytime Aircon'];
-        // Also exclude DayNight Time bookings since they cover daytime
-        $excludedTypes = ['Daytime', 'Daytime Aircon', 'DayNight Time', 'DayNight Time Aircon'];
-    }
-
-    $occupiedAmenityIds = Reservation::query()
-        ->whereDate('reservation_date', $date)
-        ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-        ->whereHas('reservationAmenities', function ($query) use ($excludedTypes): void {
-            $query->whereIn('pricing_type', $excludedTypes);
-        })
-        ->with('reservationAmenities')
-        ->get()
-        ->flatMap(fn (Reservation $reservation) => $reservation->reservationAmenities
-            ->pluck('amenity_id'))
-        ->unique()
-        ->values()
-        ->all();
+    $occupiedAmenityIds = $occupiedAmenityIdsForSlot($date, $slot);
 
     return response()->json([
         'date' => $date,
@@ -175,7 +217,7 @@ Route::get('/reservation/availability', function (Request $request) {
     ]);
 })->name('reservation.availability');
 
-Route::get('/reservation/availability/calendar', function (Request $request) {
+Route::get('/reservation/availability/calendar', function (Request $request) use ($isAmenitySlotTaken) {
     $amenityId = $request->query('amenity_id');
     $slot = $request->query('slot', 'Daytime');
     $month = $request->query('month');
@@ -212,39 +254,18 @@ Route::get('/reservation/availability/calendar', function (Request $request) {
 
     for ($i = 0; $i < $numDays; $i++) {
         $date = $startDate->copy()->addDays($i)->toDateString();
-        
-        // Check daytime availability separately
-        // For Daytime, check Daytime and DayNight Time bookings
-        $daytimePricingTypes = ['Daytime', 'Daytime Aircon', 'DayNight Time', 'DayNight Time Aircon'];
-        $isDaytimeBooked = Reservation::query()
-            ->whereDate('reservation_date', $date)
-            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-            ->whereHas('reservationAmenities', function ($query) use ($amenityId, $daytimePricingTypes): void {
-                $query->where('amenity_id', $amenityId)
-                    ->whereIn('pricing_type', $daytimePricingTypes);
-            })
-            ->exists();
+        $nextDate = $startDate->copy()->addDays($i + 1)->toDateString();
 
-        // Check nighttime availability separately
-        // For Nighttime, check Nighttime and DayNight Time bookings
-        $nighttimePricingTypes = ['Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon'];
-        $isNighttimeBooked = Reservation::query()
-            ->whereDate('reservation_date', $date)
-            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-            ->whereHas('reservationAmenities', function ($query) use ($amenityId, $nighttimePricingTypes): void {
-                $query->where('amenity_id', $amenityId)
-                    ->whereIn('pricing_type', $nighttimePricingTypes);
-            })
-            ->exists();
+        $isDaytimeBooked = $isAmenitySlotTaken($amenityId, $date, 'Daytime');
+        $isNighttimeBooked = $isAmenitySlotTaken($amenityId, $date, 'Nighttime');
+        $isNextDaytimeBooked = $isAmenitySlotTaken($amenityId, $nextDate, 'Daytime');
 
-        // For DayNight Time, check if both daytime and nighttime are available
-        $isDayNightAvailable = ! $isDaytimeBooked && ! $isNighttimeBooked;
-        
         $availability[] = [
             'date' => $date,
             'daytime' => ! $isDaytimeBooked,
             'nighttime' => ! $isNighttimeBooked,
-            'daynight' => $isDayNightAvailable,
+            'daytonight' => ! $isDaytimeBooked && ! $isNighttimeBooked,
+            'nighttoday' => ! $isNighttimeBooked && ! $isNextDaytimeBooked,
         ];
     }
 
@@ -292,7 +313,7 @@ Route::get('/reservation', function (WeatherService $weather) {
     ]);
 })->name('reservation');
 
-Route::post('/reservation/prototype', function (Request $request) {
+Route::post('/reservation/prototype', function (Request $request) use ($isAmenitySlotTaken) {
     $data = $request->validate([
         'booker_name' => ['required', 'string', 'max:255'],
         'phone' => ['required', 'string', 'max:255'],
@@ -329,74 +350,32 @@ Route::post('/reservation/prototype', function (Request $request) {
 
     $reservationDate = $data['reservation_date'] ?? $data['check_in'] ?? null;
 
-    // Block Daytime and DayNight Time bookings for today's date
+    // Block daytime-covering bookings (Daytime & DayToNight) for today's date
     $today = now()->toDateString();
     foreach ($amenities as $amenity) {
         $pricingType = $amenity['pricing_type'];
 
-        // Check if reservation date is today and pricing type is Daytime or DayNight Time
         if ($reservationDate === $today) {
             if ($pricingType === 'Daytime' || $pricingType === 'Daytime Aircon' ||
-                $pricingType === 'DayNight Time' || $pricingType === 'DayNight Time Aircon') {
+                $pricingType === 'DayToNight' || $pricingType === 'DayToNight Aircon') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Daytime and DayNight Time bookings are not allowed for today. Please choose Nighttime or select a different date.',
+                    'message' => 'Daytime and DayToNight bookings are not allowed for today. Please choose Nighttime, NightToDay, or select a different date.',
                 ], 409);
             }
         }
     }
 
-    // Check for duplicate reservations (same date, amenity_id, and pricing_type)
+    // Check for slot conflicts (same date/amenity/overlapping period)
     foreach ($amenities as $amenity) {
         $pricingType = $amenity['pricing_type'];
         $amenityId = $amenity['amenity_id'];
 
-        // For DayNight Time, check if either Daytime or Nighttime is already booked
-        if ($pricingType === 'DayNight Time' || $pricingType === 'DayNight Time Aircon') {
-            $conflictExists = Reservation::query()
-                ->whereDate('reservation_date', $reservationDate)
-                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-                ->whereHas('reservationAmenities', function ($query) use ($amenityId): void {
-                    $query->where('amenity_id', $amenityId)
-                        ->whereIn('pricing_type', ['Daytime', 'Daytime Aircon', 'Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
-                })
-                ->exists();
-
-            if ($conflictExists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
-                ], 409);
-            }
-        } else {
-            // For Daytime or Nighttime, check for exact match or DayNight Time conflict
-            $exists = Reservation::query()
-                ->whereDate('reservation_date', $reservationDate)
-                ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-                ->whereHas('reservationAmenities', function ($query) use ($amenityId, $pricingType): void {
-                    $query->where('amenity_id', $amenityId);
-
-                    // If booking Daytime, check for Daytime or DayNight Time conflicts
-                    if ($pricingType === 'Daytime' || $pricingType === 'Daytime Aircon') {
-                        $query->whereIn('pricing_type', ['Daytime', 'Daytime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
-                    }
-                    // If booking Nighttime, check for Nighttime or DayNight Time conflicts
-                    elseif ($pricingType === 'Nighttime' || $pricingType === 'Nighttime Aircon') {
-                        $query->whereIn('pricing_type', ['Nighttime', 'Nighttime Aircon', 'DayNight Time', 'DayNight Time Aircon']);
-                    }
-                    // Otherwise, check for exact match
-                    else {
-                        $query->where('pricing_type', $pricingType);
-                    }
-                })
-                ->exists();
-
-            if ($exists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
-                ], 409);
-            }
+        if ($isAmenitySlotTaken($amenityId, $reservationDate, $pricingType)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This amenity is already booked for the selected time slot. Please choose a different time or amenity.',
+            ], 409);
         }
     }
 
@@ -1259,9 +1238,10 @@ Route::prefix('staff')->name('staff.')->group(function () {
                     // Normalize pricing type to base slot (remove Aircon suffix)
                     $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
                     // Map to standard slot names
+                    if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
+                    if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
                     if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
                     if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
-                    if (str_contains($baseSlot, 'DayNight')) return 'DayNight Time';
                     return $baseSlot;
                 })
                 ->unique()
@@ -1377,9 +1357,10 @@ Route::prefix('staff')->name('staff.')->group(function () {
                     if ($ra->amenity_id === $amenity->id) {
                         $timeSlot = $ra->pricing_type;
                         // Normalize time slot
-                        if (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
+                        if (str_contains($timeSlot, 'DayToNight')) $timeSlot = 'DayToNight';
+                        elseif (str_contains($timeSlot, 'NightToDay')) $timeSlot = 'NightToDay';
+                        elseif (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
                         elseif (str_contains($timeSlot, 'Nighttime')) $timeSlot = 'Nighttime';
-                        elseif (str_contains($timeSlot, 'DayNight')) $timeSlot = 'DayNight Time';
 
                         $entry = [
                             'reservation_id' => $reservation->id,
@@ -2002,7 +1983,7 @@ Route::prefix('staff')->name('staff.')->group(function () {
         $data = $request->validate([
             'guest_mode' => ['required', 'in:visitors_only'],
             'age_type' => ['required', 'in:adult,child'],
-            'time_type' => ['required', 'in:daytime,nighttime,daynight'],
+            'time_type' => ['required', 'in:daytime,nighttime,daytonight,nighttoday'],
             'include_pool' => ['required', 'boolean'],
             'total_amount' => ['required', 'numeric'],
             'companions' => ['nullable', 'array'],
@@ -2033,13 +2014,21 @@ Route::prefix('staff')->name('staff.')->group(function () {
         ]);
 
         // Create reservation amenity record for entrance fee (reservation_id can be null as per user request)
+        $timeTypeToPricing = [
+            'daytime' => 'Daytime',
+            'nighttime' => 'Nighttime',
+            'daytonight' => 'DayToNight',
+            'nighttoday' => 'NightToDay',
+        ];
+        $pricingType = $timeTypeToPricing[$data['time_type']] ?? 'Daytime';
+
         ReservationAmenity::create([
             'reservation_id' => null, // null as requested
             'amenity_id' => null, // null for entrance fee
-            'pricing_type' => ucfirst($data['time_type']),
+            'pricing_type' => $pricingType,
             'price_at_booking' => $data['total_amount'],
             'quantity' => 1,
-            'remarks' => 'Visit Only - ' . ucfirst($data['age_type']) . ' - ' . ucfirst($data['time_type']) . ($data['include_pool'] ? ' with Pool' : ''),
+            'remarks' => 'Visit Only - ' . ucfirst($data['age_type']) . ' - ' . $pricingType . ($data['include_pool'] ? ' with Pool' : ''),
         ]);
 
         // Create main guest record
@@ -2390,9 +2379,10 @@ Route::prefix('staff')->name('staff.')->group(function () {
                 ->pluck('pricing_type')
                 ->map(function ($pricingType) {
                     $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
+                    if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
+                    if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
                     if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
                     if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
-                    if (str_contains($baseSlot, 'DayNight')) return 'DayNight Time';
                     return $baseSlot;
                 })
                 ->unique()

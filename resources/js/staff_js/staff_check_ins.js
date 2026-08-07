@@ -635,7 +635,7 @@ window.AppPage['staff_check_ins'] = function () {
         } else if (currentTime >= nighttimeStart || currentTime < nighttimeEnd) {
             defaultPeriod = 'nighttime';
         } else {
-            defaultPeriod = 'daynight';
+            defaultPeriod = 'daytonight';
         }
         
         if (timePeriod) {
@@ -677,7 +677,7 @@ window.AppPage['staff_check_ins'] = function () {
             adultFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
             childFee = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
             poolFeeValue = parseFloat(parkSettings.night_pool_fee) || 0;
-        } else if (timeType === 'daynight') {
+        } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
             adultFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
             childFee = (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
             poolFeeValue = (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
@@ -714,7 +714,7 @@ window.AppPage['staff_check_ins'] = function () {
             mainGuestFee = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
         } else if (timeType === 'nighttime') {
             mainGuestFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
-        } else if (timeType === 'daynight') {
+        } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
             mainGuestFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
         }
         
@@ -724,7 +724,7 @@ window.AppPage['staff_check_ins'] = function () {
                 mainGuestFee += parseFloat(parkSettings.day_pool_fee) || 0;
             } else if (timeType === 'nighttime') {
                 mainGuestFee += parseFloat(parkSettings.night_pool_fee) || 0;
-            } else if (timeType === 'daynight') {
+            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
                 mainGuestFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
             }
         }
@@ -740,7 +740,7 @@ window.AppPage['staff_check_ins'] = function () {
                 companionFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
             } else if (timeType === 'nighttime') {
                 companionFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-            } else if (timeType === 'daynight') {
+            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
                 const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
                 const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
                 companionFee = daytimeFee + nighttimeFee;
@@ -752,7 +752,7 @@ window.AppPage['staff_check_ins'] = function () {
                     companionFee += parseFloat(parkSettings.day_pool_fee) || 0;
                 } else if (timeType === 'nighttime') {
                     companionFee += parseFloat(parkSettings.night_pool_fee) || 0;
-                } else if (timeType === 'daynight') {
+                } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
                     companionFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
                 }
             }
@@ -769,7 +769,7 @@ window.AppPage['staff_check_ins'] = function () {
                 groupFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
             } else if (timeType === 'nighttime') {
                 groupFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-            } else if (timeType === 'daynight') {
+            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
                 const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
                 const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
                 groupFee = daytimeFee + nighttimeFee;
@@ -781,7 +781,7 @@ window.AppPage['staff_check_ins'] = function () {
                     groupFee += parseFloat(parkSettings.day_pool_fee) || 0;
                 } else if (timeType === 'nighttime') {
                     groupFee += parseFloat(parkSettings.night_pool_fee) || 0;
-                } else if (timeType === 'daynight') {
+                } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
                     groupFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
                 }
             }

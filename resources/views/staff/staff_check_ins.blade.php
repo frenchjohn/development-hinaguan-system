@@ -411,7 +411,8 @@
 										<select name="time_period" id="time_period" class="guest-form__select" disabled>
 											<option value="daytime">Daytime</option>
 											<option value="nighttime">Nighttime</option>
-											<option value="daynight">Day & Night</option>
+											<option value="daytonight">Day to Night</option>
+											<option value="nighttoday">Night to Day</option>
 										</select>
 									</div>
 									<div class="guest-form__field-group">
@@ -550,21 +551,28 @@
 									<span class="guest-amenity-option__body">
 										<strong>{{ $amenity->amenities_name }}</strong>
 										<small>Choose a pricing option</small>
-									</span>
-									<select class="guest-amenity-option__select" disabled>
-										@if ($amenity->daytime_price !== null)
-											<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
-										@endif
-										@if ($amenity->nighttime_price !== null)
-											<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
-										@endif
-										@if ($amenity->daytime_aircon_price !== null)
-											<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
-										@endif
-										@if ($amenity->nighttime_aircon_price !== null)
-											<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
-										@endif
-									</select>
+									</span>										<select class="guest-amenity-option__select" disabled>
+											@if ($amenity->daytime_price !== null)
+												<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
+											@endif
+											@if ($amenity->nighttime_price !== null)
+												<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
+											@endif
+											@if ($amenity->daytime_price !== null && $amenity->nighttime_price !== null)
+												<option value="DayToNight" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Day to Night — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+												<option value="NightToDay" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Night to Day — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+											@endif
+											@if ($amenity->daytime_aircon_price !== null)
+												<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
+											@endif
+											@if ($amenity->nighttime_aircon_price !== null)
+												<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
+											@endif
+											@if ($amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
+												<option value="DayToNight Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Day to Night Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+												<option value="NightToDay Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Night to Day Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+											@endif
+										</select>
 								</label>
 							@empty
 								<p class="guest-empty">No active amenities are available yet.</p>
