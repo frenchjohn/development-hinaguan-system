@@ -49,15 +49,15 @@
 					subtitle="Active check-ins and walk-ins"
 				/>
 				<div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-					<button type="button" class="guest-panel__button" id="tabGuestBtn" style="background-color: var(--hp-green-dark); color: white; box-shadow: 0 4px 12px rgba(13, 44, 29, 0.3); transform: translateY(-2px);">Guest</button>
-					<button type="button" class="guest-panel__button" id="tabReservationBtn" style="background-color: var(--hp-cream); color: var(--hp-text);">Reservation</button>
+					<button type="button" class="guest-panel__button" id="tabGuestBtn">Guest</button>
+					<button type="button" class="guest-panel__button is-active" id="tabReservationBtn">Reservation</button>
 					<button type="button" class="guest-panel__button guest-panel__button--primary" data-open-add-guest-modal="true">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 						</svg>
 						Add Guest
 					</button>
-					<button type="button" class="guest-panel__button" id="scanQrBtn" style="background-color: var(--hp-green-dark); color: white;">
+					<button type="button" class="guest-panel__button" id="scanQrBtn">
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 							<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -232,6 +232,8 @@
 										})->first();
 										$reservationType = $reservationEntry?->reservation?->reservation_type;
 										$reservationTypeLabel = $reservationType === 'walk_in' ? 'walk-in' : ($reservationType ?? 'N/A');
+										$guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
+										$typePillClass = $reservationType === 'walk_in' ? 'status-pill--walk-in' : ($reservationType ? 'status-pill--online' : 'status-pill--checked-out');
 									@endphp
 									<tr
 										class="guest-row"
@@ -253,13 +255,22 @@
 										aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
 									>
 										<td>
-											<div class="guest-name">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
-											<div class="guest-meta">Customer ID: {{ $customer->id }}</div>
+											<div class="cell-person">
+												<span class="cell-person__avatar">{{ $guestInitials }}</span>
+												<div class="cell-person__body">
+													<div class="guest-name">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
+													<div class="guest-meta">Customer ID: {{ $customer->id }}</div>
+												</div>
+											</div>
 										</td>
 										<td>{{ $customer->age ?? 'N/A' }}</td>
 										<td>{{ $customer->gender ?? 'N/A' }}</td>
-										<td>{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</td>
-										<td>{{ $reservationTypeLabel }}</td>
+										<td>
+											<span class="status-pill {{ $customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
+										</td>
+										<td>
+											<span class="status-pill {{ $typePillClass }}">{{ ucfirst($reservationTypeLabel) }}</span>
+										</td>
 									</tr>
 								@empty
 									<tr>
@@ -311,6 +322,9 @@
 								@forelse ($activeReservations ?? collect() as $reservation)
 									@php
 										$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+										$guestInitials = $primaryGuest
+											? collect(explode(' ', trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?'
+											: '?';
 									@endphp
 									<tr
 										class="reservation-row"
@@ -323,10 +337,15 @@
 											<div class="guest-name">Reservation #{{ $reservation->id }}</div>
 											<div class="guest-meta">{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</div>
 										</td>
-										<td>{{ $reservation->check_in }}</td>
+										<td class="mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : '—' }}</td>
 										<td>
 											@if ($primaryGuest)
-												<div class="guest-name">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
+												<div class="cell-person">
+													<span class="cell-person__avatar">{{ $guestInitials }}</span>
+													<div class="cell-person__body">
+														<div class="guest-name">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
+													</div>
+												</div>
 											@else
 												<div class="guest-name">—</div>
 											@endif

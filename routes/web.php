@@ -1368,7 +1368,38 @@ Route::prefix('staff')->name('staff.')->group(function () {
             }
         }
 
-        return view('staff.staff_occupancy_monitor', compact('amenities', 'occupancyData'));
+        // Aggregate occupancy stats for the KPI strip
+        $occupiedCount = 0;
+        $reservedCount = 0;
+        $availableCount = 0;
+        $occupiedReservations = 0;
+        foreach ($occupancyData as $data) {
+            if (! empty($data['occupied'])) {
+                $occupiedCount++;
+                $occupiedReservations += count($data['occupied']);
+            }
+            if (! empty($data['reserved'])) {
+                $reservedCount++;
+            }
+            if (empty($data['occupied']) && empty($data['reserved'])) {
+                $availableCount++;
+            }
+        }
+        $totalAmenities = $amenities->count();
+        $inUseCount = $occupiedCount + $reservedCount;
+        $occupancyRate = $totalAmenities > 0 ? (int) round($inUseCount / $totalAmenities * 100) : 0;
+
+        return view('staff.staff_occupancy_monitor', compact(
+            'amenities',
+            'occupancyData',
+            'totalAmenities',
+            'occupiedCount',
+            'reservedCount',
+            'availableCount',
+            'occupiedReservations',
+            'inUseCount',
+            'occupancyRate'
+        ));
     })->name('occupancy-monitor');
 
     Route::get('/reports', function (Request $request) {

@@ -692,3 +692,191 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================
+   Reports filter redesign — header row, icon labels, date range,
+   quick-range preset chips
+   ============================================================ */
+body.staff-portal .reports-filters {
+    display: block;
+    padding: 1.15rem 1.25rem 1.05rem;
+}
+
+body.staff-portal .reports-filters__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--border);
+}
+
+body.staff-portal .reports-filters__title {
+    margin: 0 0 0.2rem;
+    font-family: var(--font-display);
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+body.staff-portal .reports-filters__hint {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .reports-filters__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+body.staff-portal .reports-filters__active {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.28rem 0.7rem;
+}
+
+body.staff-portal .reports-filters__reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+body.staff-portal .reports-filters__reset:hover {
+    background: var(--danger-soft);
+    border-color: rgba(207, 75, 71, 0.35);
+    color: var(--danger);
+}
+
+body.staff-portal .reports-filters__reset:active {
+    transform: scale(0.97);
+}
+
+body.staff-portal .reports-filters__reset svg {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+body.staff-portal .reports-filters__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.9rem;
+}
+
+@media (max-width: 1200px) {
+    body.staff-portal .reports-filters__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    body.staff-portal .reports-filters__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.staff-portal .reports-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+body.staff-portal .reports-filter-group__label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+}
+
+body.staff-portal .reports-filter-group__label svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    color: var(--green);
+}
+
+body.staff-portal .reports-filter-group select,
+body.staff-portal .reports-filter-group input {
+    width: 100%;
+}
+
+body.staff-portal .reports-filter-group__range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+body.staff-portal .reports-filter-group__range input {
+    flex: 1;
+    min-width: 0;
+}
+
+body.staff-portal .reports-filter-group__range-sep {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+body.staff-portal .reports-filters__presets {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+}
+
+body.staff-portal .reports-filters__presets-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+}
+
+body.staff-portal .preset-chip {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+body.staff-portal .preset-chip:hover {
+    border-color: rgba(23, 138, 82, 0.5);
+    color: var(--green-deep);
+    transform: translateY(-1px);
+}
+
+body.staff-portal .preset-chip.is-active {
+    background: var(--green);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 3px 0 var(--green-edge), 0 5px 12px rgba(23, 138, 82, 0.25);
+}

@@ -46,6 +46,64 @@
                     subtitle="Real-time view of all amenities and their availability"
                 />
 
+                {{-- Live status strip --}}
+                <div class="occupancy-stats">
+                    <article class="occupancy-stat">
+                        <span class="occupancy-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
+                        </span>
+                        <div class="occupancy-stat__body">
+                            <p class="occupancy-stat__value" data-count="{{ $totalAmenities }}">{{ $totalAmenities }}</p>
+                            <p class="occupancy-stat__label">Amenities</p>
+                        </div>
+                    </article>
+                    <article class="occupancy-stat occupancy-stat--occupied">
+                        <span class="occupancy-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                        </span>
+                        <div class="occupancy-stat__body">
+                            <p class="occupancy-stat__value" data-count="{{ $occupiedCount }}">{{ $occupiedCount }}</p>
+                            <p class="occupancy-stat__label">Occupied Now</p>
+                            <p class="occupancy-stat__hint">{{ $occupiedReservations }} active reservation{{ $occupiedReservations === 1 ? '' : 's' }}</p>
+                        </div>
+                    </article>
+                    <article class="occupancy-stat occupancy-stat--reserved">
+                        <span class="occupancy-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="occupancy-stat__body">
+                            <p class="occupancy-stat__value" data-count="{{ $reservedCount }}">{{ $reservedCount }}</p>
+                            <p class="occupancy-stat__label">Reserved Today</p>
+                        </div>
+                    </article>
+                    <article class="occupancy-stat occupancy-stat--available">
+                        <span class="occupancy-stat__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="occupancy-stat__body">
+                            <p class="occupancy-stat__value" data-count="{{ $availableCount }}">{{ $availableCount }}</p>
+                            <p class="occupancy-stat__label">Available Now</p>
+                        </div>
+                    </article>
+                    <article class="occupancy-stat occupancy-stat--rate">
+                        <div class="occupancy-rate-ring" style="--pct: {{ $occupancyRate }}">
+                            <span>{{ $occupancyRate }}%</span>
+                        </div>
+                        <div class="occupancy-stat__body">
+                            <p class="occupancy-stat__label">Occupancy Rate</p>
+                            <p class="occupancy-stat__hint">{{ $inUseCount }} of {{ $totalAmenities }} in use</p>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="occupancy-legend">
+                    <span class="occupancy-legend__live"><i class="occupancy-legend__pulse"></i> Live</span>
+                    <span class="occupancy-legend__item"><i class="occupancy-legend__dot occupancy-legend__dot--occupied"></i>Occupied</span>
+                    <span class="occupancy-legend__item"><i class="occupancy-legend__dot occupancy-legend__dot--reserved"></i>Reserved today</span>
+                    <span class="occupancy-legend__item"><i class="occupancy-legend__dot occupancy-legend__dot--available"></i>Available</span>
+                    <span class="occupancy-legend__hint">Click any amenity card for full details</span>
+                </div>
+
                 <div class="occupancy-monitor__filter-toggle">
                         <button type="button" id="filterToggleBtn" class="filter-toggle-btn">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
@@ -125,6 +183,22 @@
                                 // Determine available slots (all slots minus unavailable)
                                 $allSlots = ['daytime', 'nighttime'];
                                 $availableSlots = array_diff($allSlots, $unavailableSlots);
+
+                                // Card status badge
+                                $isOccupied = ! empty($amenityOccupancy['occupied']);
+                                $isReserved = ! empty($amenityOccupancy['reserved']);
+                                if ($isOccupied) {
+                                    $cardStatus = 'occupied';
+                                    $cardStatusLabel = 'Occupied';
+                                } elseif ($isReserved) {
+                                    $cardStatus = 'reserved';
+                                    $cardStatusLabel = 'Reserved';
+                                } else {
+                                    $cardStatus = 'available';
+                                    $cardStatusLabel = 'Available';
+                                }
+                                $hasDay = in_array('daytime', $availableSlots);
+                                $hasNight = in_array('nighttime', $availableSlots);
                             @endphp
                             <div class="occupancy-card" 
                                  data-amenity-id="{{ $amenity->id }}" 
@@ -154,6 +228,9 @@
                                         </div>
                                     @endif
                                     <div class="occupancy-card__overlay"></div>
+                                    <span class="occupancy-card__badge occupancy-card__badge--{{ $cardStatus }}">
+                                        <i class="occupancy-card__badge-dot"></i>{{ $cardStatusLabel }}
+                                    </span>
                                     @if (!empty($amenityOccupancy['occupied']))
                                         <div class="occupancy-card__status-overlay occupancy-card__status-overlay--occupied">
                                             @foreach ($amenityOccupancy['occupied'] as $occupied)
@@ -178,10 +255,28 @@
                                     @endif
                                 </div>
                                 <div class="occupancy-card__content">
-                                    <h4 class="occupancy-card__name">{{ $amenity->amenities_name }}</h4>
-                                    <div class="occupancy-card__capacity">
-                                        <span class="occupancy-card__capacity-label">Capacity:</span>
-                                        <span class="occupancy-card__capacity-value">{{ $amenity->minimum_capacity }} - {{ $amenity->maximum_capacity }}</span>
+                                    <div class="occupancy-card__head">
+                                        <h4 class="occupancy-card__name">{{ $amenity->amenities_name }}</h4>
+                                        <span class="occupancy-card__rate">₱{{ number_format($amenity->daytime_price, 2) }}<small>/day</small></span>
+                                    </div>
+                                    <div class="occupancy-card__slots">
+                                        <span class="slot-chip slot-chip--daytime {{ $hasDay ? 'is-free' : 'is-taken' }}">
+                                            <i class="slot-chip__dot"></i>Daytime
+                                        </span>
+                                        <span class="slot-chip slot-chip--nighttime {{ $hasNight ? 'is-free' : 'is-taken' }}">
+                                            <i class="slot-chip__dot"></i>Nighttime
+                                        </span>
+                                    </div>
+                                    <div class="occupancy-card__meta">
+                                        <span class="occupancy-card__capacity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                                            {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
+                                        </span>
+                                        <span class="occupancy-card__night-rate">Night ₱{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                    </div>
+                                    <div class="occupancy-card__footer">
+                                        <span>View details</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/></svg>
                                     </div>
                                 </div>
                             </div>
@@ -194,7 +289,6 @@
                             </div>
                         @endforelse
                     </div>
-                </section>
             </main>
         </div>
     </div>

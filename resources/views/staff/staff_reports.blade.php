@@ -47,40 +47,75 @@
                 />
 
                 <section class="reports-filters" id="reportsFilters">
-                    <div class="reports-filter-group">
-                        <label for="customerFilter">Customer</label>
-                        <select id="customerFilter">
-                            <option value="all">All customers</option>
-                            @foreach($customerOptions as $customerOption)
-                                <option value="{{ $customerOption }}">{{ $customerOption }}</option>
-                            @endforeach
-                        </select>
+                    <div class="reports-filters__head">
+                        <div>
+                            <h3 class="reports-filters__title">Filter Report</h3>
+                            <p class="reports-filters__hint">Narrow reservations by customer, amenity, status or check-in range</p>
+                        </div>
+                        <div class="reports-filters__head-actions">
+                            <span class="reports-filters__active" id="activeFilterText">Showing all reservations</span>
+                            <button type="button" class="reports-filters__reset" id="resetFiltersBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Reset
+                            </button>
+                        </div>
                     </div>
-                    <div class="reports-filter-group">
-                        <label for="amenityFilter">Amenity</label>
-                        <select id="amenityFilter">
-                            <option value="all">All amenities</option>
-                            @foreach($amenityOptions as $amenityOption)
-                                <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
-                            @endforeach
-                        </select>
+                    <div class="reports-filters__grid">
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                                Customer
+                            </span>
+                            <select id="customerFilter">
+                                <option value="all">All customers</option>
+                                @foreach($customerOptions as $customerOption)
+                                    <option value="{{ $customerOption }}">{{ $customerOption }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z"/></svg>
+                                Amenity
+                            </span>
+                            <select id="amenityFilter">
+                                <option value="all">All amenities</option>
+                                @foreach($amenityOptions as $amenityOption)
+                                    <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="reports-filter-group">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Reservation Status
+                            </span>
+                            <select id="statusFilter">
+                                <option value="all">All statuses</option>
+                                @foreach($statusOptions as $statusOption)
+                                    <option value="{{ $statusOption }}">{{ $statusOption }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="reports-filter-group reports-filter-group--range">
+                            <span class="reports-filter-group__label">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+                                Check-in Range
+                            </span>
+                            <div class="reports-filter-group__range">
+                                <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}" aria-label="Check-in from">
+                                <span class="reports-filter-group__range-sep">→</span>
+                                <input id="dateTo" type="date" value="{{ $lastCheckInDate }}" aria-label="Check-in to">
+                            </div>
+                        </label>
                     </div>
-                    <div class="reports-filter-group">
-                        <label for="statusFilter">Reservation Status</label>
-                        <select id="statusFilter">
-                            <option value="all">All statuses</option>
-                            @foreach($statusOptions as $statusOption)
-                                <option value="{{ $statusOption }}">{{ $statusOption }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="reports-filter-group">
-                        <label for="dateFrom">Check-in from</label>
-                        <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}">
-                    </div>
-                    <div class="reports-filter-group">
-                        <label for="dateTo">Check-in to</label>
-                        <input id="dateTo" type="date" value="{{ $lastCheckInDate }}">
+                    <div class="reports-filters__presets">
+                        <span class="reports-filters__presets-label">Quick range:</span>
+                        <button type="button" class="preset-chip" data-preset="today">Today</button>
+                        <button type="button" class="preset-chip" data-preset="7d">Last 7 days</button>
+                        <button type="button" class="preset-chip" data-preset="30d">Last 30 days</button>
+                        <button type="button" class="preset-chip" data-preset="month">This month</button>
+                        <button type="button" class="preset-chip" data-preset="all">All time</button>
                     </div>
                 </section>
 

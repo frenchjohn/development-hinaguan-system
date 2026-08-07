@@ -37,6 +37,8 @@ body.staff-portal {
     --ink-faint: #93a297;
     --green: #178a52;
     --green-deep: #0f5c38;
+    --green-edge: #0e5c37;
+    --green-hover: #0f5c38;
     --green-soft: #e6f3ec;
     --green-tint: #f1f8f4;
     --danger: #cf4b47;
@@ -91,6 +93,8 @@ body.staff-portal {
     --ink-faint: #6e7c73;
     --green: #3cac77;
     --green-deep: #a2dcc0;
+    --green-edge: #1d6e48;
+    --green-hover: #2a8a5f;
     --green-soft: #1d2f24;
     --green-tint: #18261d;
     --danger: #e5827a;
@@ -1421,7 +1425,7 @@ body.staff-portal .alert--error {
    18. Chatbot widget
    ------------------------------------------------------------ */
 body.staff-portal .chatbot-toggle {
-    box-shadow: 0 10px 26px rgba(23, 138, 82, 0.3);
+    box-shadow: 0 10px 26px rgba(23, 42, 32, 0.28);
     border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
@@ -1515,6 +1519,7 @@ body.staff-portal .chatbot-toggle {
         margin-top: -1rem;
         margin-left: -1rem;
         margin-right: -1rem;
+        margin-bottom: 1rem;
     }
 
     body.staff-portal .dash-stats,
@@ -1526,5 +1531,535 @@ body.staff-portal .chatbot-toggle {
     .dash-greeting__meta {
         width: 100%;
         justify-content: space-between;
+    }
+}
+
+/* ============================================================
+   21. Page-component normalization — kills the neon-green
+   containers that page-specific CSS forces on in dark mode
+   (reservations has the most: resv-metric / resv-stat / tables /
+   toolbars / forms all used #1a2e1d / #1a3d1e fills with
+   #81c784 / #c8e6c8 / #22c55e text). Loaded last, the
+   `body.staff-portal` prefix out-specifies every `[data-theme="dark"]`
+   page rule, so each rule below wins in both themes.
+   ============================================================ */
+
+/* Neutral card surfaces (dark-green containers -> neutral) */
+body.staff-portal .resv-metric,
+body.staff-portal .resv-stat,
+body.staff-portal .resv-weather,
+body.staff-portal .resv-search,
+body.staff-portal .guest-toolbar,
+body.staff-portal .guest-summary-card,
+body.staff-portal .guest-card,
+body.staff-portal .guest-relationship-item,
+body.staff-portal .occupancy-card,
+body.staff-portal .occupancy-card__content,
+body.staff-portal .occupancy-monitor__filter-panel {
+    background: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-xs);
+}
+
+body.staff-portal .guest-relationship-item--main {
+    background: var(--warn-soft);
+    border-color: rgba(168, 122, 21, 0.3);
+}
+
+/* Neutral inputs (kills #0d2812 dark fields) */
+body.staff-portal .guest-toolbar__field input,
+body.staff-portal .guest-toolbar__field select,
+body.staff-portal .guest-form__field input,
+body.staff-portal .guest-form__field select,
+body.staff-portal .guest-form__input,
+body.staff-portal .guest-form__select,
+body.staff-portal .filter-panel__field input,
+body.staff-portal .filter-panel__field select {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+
+/* Muted label / meta text (kills #81c784) */
+body.staff-portal .guest-meta,
+body.staff-portal .guest-empty,
+body.staff-portal .guest-toolbar__meta,
+body.staff-portal .guest-toolbar__field span,
+body.staff-portal .guest-summary-card span,
+body.staff-portal .resv-metric__label,
+body.staff-portal .resv-stat__label,
+body.staff-portal .resv-weather__label,
+body.staff-portal .resv-weather__cond,
+body.staff-portal .resv-weather__metric-label,
+body.staff-portal .resv-header__subtitle,
+body.staff-portal .occupancy-monitor__subtitle {
+    color: var(--ink-muted);
+}
+
+/* Primary text (kills #c8e6c8 / #e8f5e9) */
+body.staff-portal .guest-name,
+body.staff-portal .guest-value,
+body.staff-portal .guest-summary-card strong,
+body.staff-portal .resv-metric__value,
+body.staff-portal .resv-stat__value,
+body.staff-portal .resv-weather__temp,
+body.staff-portal .resv-weather__metric-value,
+body.staff-portal .resv-header__title,
+body.staff-portal .occupancy-monitor__title,
+body.staff-portal .occupancy-card__name {
+    color: var(--ink);
+}
+
+/* Guest table cells (kills #1a3d1e / #1a2e1d) */
+body.staff-portal .guest-table td {
+    background: transparent;
+    border-top-color: var(--border);
+    color: var(--ink);
+}
+
+body.staff-portal .guest-row:hover,
+body.staff-portal .guest-table tbody tr:hover {
+    background: var(--green-tint);
+}
+
+body.staff-portal .guest-row:hover td,
+body.staff-portal .guest-row:hover .guest-name,
+body.staff-portal .guest-row:hover .guest-meta {
+    color: var(--ink);
+}
+
+/* Status pills / badges (kills neon green fills) */
+body.staff-portal .reservation-status--pending {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .reservation-status--confirmed {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .reservation-status--checked_in {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+
+body.staff-portal .reservation-status--checked_out {
+    background: var(--surface-2);
+    color: var(--ink-muted);
+}
+
+body.staff-portal .guest-pill,
+body.staff-portal .guest-modal__role-badge,
+body.staff-portal .guest-summary-card__count {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+/* Icon chips (kills #81c784 icons) */
+body.staff-portal .resv-metric__icon,
+body.staff-portal .resv-stat--green .resv-stat__icon {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+body.staff-portal .resv-stat--orange .resv-stat__icon {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .resv-stat--blue .resv-stat__icon {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+
+body.staff-portal .resv-search svg {
+    color: var(--ink-faint);
+}
+
+/* Buttons & controls (kills dark-green fills) */
+body.staff-portal .resv-tool-btn {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+
+body.staff-portal .resv-tool-btn:hover {
+    background: var(--surface-2);
+    border-color: var(--green);
+    color: var(--green-deep);
+}
+
+body.staff-portal .resv-row-action {
+    border-color: var(--border);
+    color: var(--ink-muted);
+}
+
+body.staff-portal .guest-toolbar__clear {
+    background: var(--surface);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+
+body.staff-portal .guest-toolbar__clear:hover {
+    background: var(--warn-soft);
+    border-color: var(--warn);
+    color: var(--warn);
+}
+
+body.staff-portal .guest-form__secondary {
+    background: var(--surface-2);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+
+body.staff-portal .guest-form__button {
+    background: var(--green);
+    color: #fff;
+}
+
+/* Keep the theme's intended two-tone layering (form sections sit one step deeper) */
+body.staff-portal .guest-form__section {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+body.staff-portal .guest-form__chip span {
+    background: var(--surface-2);
+    border-color: var(--border-strong);
+    color: var(--ink);
+}
+
+body.staff-portal .guest-form__chip:has(input:checked) span {
+    background: var(--green-soft);
+    border-color: var(--green);
+    color: var(--green-deep);
+}
+
+/* Alerts & feedback */
+body.staff-portal .guest-alert {
+    background: var(--green-soft);
+    border-color: rgba(23, 138, 82, 0.25);
+    color: var(--green-deep);
+}
+
+body.staff-portal .guest-modal__success-icon {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+body.staff-portal .guest-modal__title--success {
+    color: var(--green);
+}
+
+/* Soften the loud yellow "today" row */
+body.staff-portal .today-reservation {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.14) 0%, rgba(255, 152, 0, 0.08) 100%) !important;
+    border-left: none !important;
+    box-shadow: inset 3px 0 0 #f0a63a, var(--shadow-sm) !important;
+}
+
+[data-theme="dark"] body.staff-portal .today-reservation {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.06) 100%) !important;
+    box-shadow: inset 3px 0 0 #f0a63a, var(--shadow-sm) !important;
+}
+
+/* Skeleton shimmer (kills the greenish dark gradient) */
+body.staff-portal .skeleton {
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
+    background-size: 200% 100%;
+}
+
+/* Records tab active state stays green in dark mode (kills gold !important) */
+[data-theme="dark"] body.staff-portal .records-tab-btn--active {
+    background: var(--green) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+    box-shadow: 0 3px 0 var(--green-edge), 0 7px 16px rgba(23, 138, 82, 0.25) !important;
+}
+
+/* ============================================================
+   22. 3D depth layer
+   Subtle physical depth across the portal: cards tilt toward the
+   viewer, buttons press like keys, progress bars get a glossy tube
+   finish, avatars read as coins, modals drop in from perspective.
+   ============================================================ */
+
+/* --- 3D card tilt & lift --- */
+body.staff-portal .dash-stat-card,
+body.staff-portal .reports-metric-card,
+body.staff-portal .records-summary-card,
+body.staff-portal .guest-summary-card,
+body.staff-portal .resv-stat,
+body.staff-portal .resv-metric,
+body.staff-portal .occupancy-card {
+    position: relative;
+    transform-style: preserve-3d;
+    transform-origin: center bottom;
+}
+
+body.staff-portal .dash-panel {
+    position: relative;
+}
+
+body.staff-portal .dash-stat-card:hover,
+body.staff-portal .reports-metric-card:hover,
+body.staff-portal .records-summary-card:hover,
+body.staff-portal .guest-summary-card:hover,
+body.staff-portal .resv-stat:hover,
+body.staff-portal .resv-metric:hover,
+body.staff-portal .occupancy-card:hover {
+    transform: perspective(950px) translateY(-4px) rotateX(3deg);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), var(--shadow-lg);
+    border-color: var(--border-strong);
+}
+
+[data-theme="dark"] body.staff-portal .dash-stat-card:hover,
+[data-theme="dark"] body.staff-portal .reports-metric-card:hover,
+[data-theme="dark"] body.staff-portal .records-summary-card:hover,
+[data-theme="dark"] body.staff-portal .guest-summary-card:hover,
+[data-theme="dark"] body.staff-portal .resv-stat:hover,
+[data-theme="dark"] body.staff-portal .resv-metric:hover,
+[data-theme="dark"] body.staff-portal .occupancy-card:hover {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow-lg);
+}
+
+body.staff-portal .dash-panel:hover,
+body.staff-portal .reports-panel:hover {
+    transform: perspective(950px) translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), var(--shadow-md);
+}
+
+[data-theme="dark"] body.staff-portal .dash-panel:hover,
+[data-theme="dark"] body.staff-portal .reports-panel:hover {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-md);
+}
+
+/* --- 3D key-press primary buttons --- */
+body.staff-portal .btn--primary,
+body.staff-portal .guest-form__button,
+body.staff-portal .guest-panel__button--primary,
+body.staff-portal .resv-tool-btn--primary,
+body.staff-portal .records-tab-btn--active {
+    box-shadow: 0 3px 0 var(--green-edge), 0 6px 16px rgba(23, 138, 82, 0.22);
+}
+
+body.staff-portal .btn--primary:hover,
+body.staff-portal .guest-form__button:hover,
+body.staff-portal .guest-panel__button--primary:hover,
+body.staff-portal .resv-tool-btn--primary:hover,
+body.staff-portal .records-tab-btn--active:hover {
+    box-shadow: 0 4px 0 var(--green-edge), 0 8px 20px rgba(23, 138, 82, 0.28);
+    transform: translateY(-1px);
+    background: var(--green-hover);
+    color: #fff;
+}
+
+body.staff-portal .btn--primary:active,
+body.staff-portal .guest-form__button:active,
+body.staff-portal .guest-panel__button--primary:active,
+body.staff-portal .resv-tool-btn--primary:active,
+body.staff-portal .records-tab-btn--active:active {
+    box-shadow: 0 1px 0 var(--green-edge), 0 2px 6px rgba(23, 138, 82, 0.2);
+    transform: translateY(2px);
+}
+
+/* Dark mode: hover sinks to a slightly deeper green (not pale mint) */
+[data-theme="dark"] body.staff-portal .btn--primary:hover,
+[data-theme="dark"] body.staff-portal .guest-form__button:hover,
+[data-theme="dark"] body.staff-portal .guest-panel__button--primary:hover,
+[data-theme="dark"] body.staff-portal .resv-tool-btn--primary:hover,
+[data-theme="dark"] body.staff-portal .records-tab-btn--active:hover {
+    background: var(--green-hover);
+    color: #fff;
+}
+
+/* --- Glossy 3D bars (hbar fills + bar charts) --- */
+body.staff-portal .dash-hbar__fill,
+body.staff-portal .dash-barchart__bar {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Bar gradient end must stay a deep green in dark mode (--green-deep goes pale) */
+body.staff-portal .dash-barchart__bar--count {
+    background: linear-gradient(180deg, #2f9d68 0%, var(--green-edge) 100%);
+}
+
+/* --- 3D donut ring --- */
+body.staff-portal .dash-donut {
+    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.35), 0 0 0 8px var(--surface), 0 10px 26px rgba(23, 42, 32, 0.12);
+}
+
+[data-theme="dark"] body.staff-portal .dash-donut {
+    box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.06), 0 0 0 8px var(--surface), 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* --- 3D avatar coins --- */
+body.staff-portal .resv-avatar {
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.35), inset 0 -2px 4px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(23, 42, 32, 0.18);
+}
+
+body.staff-portal .dash-sidebar__profile-avatar {
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Modal drops in from perspective --- */
+@keyframes spModalIn {
+    from {
+        opacity: 0;
+        transform: perspective(1100px) translateY(16px) rotateX(5deg) scale(0.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: perspective(1100px) translateY(0) rotateX(0) scale(1);
+    }
+}
+
+body.staff-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.staff-portal .logout-modal__content {
+    backface-visibility: hidden;
+}
+
+/* --- Table row hover: inset left accent = "raised" feel --- */
+body.staff-portal .guest-table tbody tr:hover,
+body.staff-portal .reports-table tbody tr:hover,
+body.staff-portal .users-table .user-row:hover,
+body.staff-portal .guest-row:hover {
+    box-shadow: inset 3px 0 0 var(--green);
+}
+
+/* --- Pills & tags get a lit top edge --- */
+body.staff-portal .status-pill,
+body.staff-portal .guest-pill,
+body.staff-portal .time-slot-label,
+body.staff-portal .resv-metric__badge,
+body.staff-portal .reservation-status {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] body.staff-portal .status-pill,
+[data-theme="dark"] body.staff-portal .guest-pill,
+[data-theme="dark"] body.staff-portal .time-slot-label,
+[data-theme="dark"] body.staff-portal .resv-metric__badge,
+[data-theme="dark"] body.staff-portal .reservation-status {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* --- Inputs: recessed 3D well --- */
+body.staff-portal input[type="text"],
+body.staff-portal input[type="email"],
+body.staff-portal input[type="password"],
+body.staff-portal input[type="number"],
+body.staff-portal input[type="date"],
+body.staff-portal input[type="time"],
+body.staff-portal input[type="search"],
+body.staff-portal select,
+body.staff-portal textarea {
+    box-shadow: inset 0 1px 2px rgba(23, 42, 32, 0.06);
+}
+
+/* --- Sidebar active link: raised 3D pill, green glow removed --- */
+body.staff-portal .dash-sidebar__link.is-active {
+    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.12),
+        inset 0 2px 3px rgba(255, 255, 255, 0.22), inset 0 -3px 5px rgba(0, 0, 0, 0.22) !important;
+}
+
+/* ============================================================
+   23. Data tables — modern professional polish
+   ============================================================ */
+
+/* Person cells (initials avatar + name/meta) */
+body.staff-portal .cell-person {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+body.staff-portal .cell-person__avatar {
+    width: 2.1rem;
+    height: 2.1rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #178a52 0%, #0e5c37 100%);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.3), inset 0 -2px 4px rgba(0, 0, 0, 0.22),
+        0 2px 6px rgba(23, 42, 32, 0.14);
+}
+
+body.staff-portal .cell-person__avatar--hash {
+    background: linear-gradient(135deg, #3f5c8f 0%, #2b3f68 100%);
+}
+
+body.staff-portal .cell-person__body {
+    min-width: 0;
+}
+
+/* Numeric cells (amounts) */
+body.staff-portal td.num-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Timestamp cells */
+body.staff-portal td.mono-cell {
+    white-space: nowrap;
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+}
+
+/* Reservation type pills */
+body.staff-portal .status-pill--walk-in {
+    background: var(--warn-soft);
+    color: var(--warn);
+}
+
+body.staff-portal .status-pill--online {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+
+/* --- Respect reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+    body.staff-portal .dash-stat-card:hover,
+    body.staff-portal .reports-metric-card:hover,
+    body.staff-portal .records-summary-card:hover,
+    body.staff-portal .guest-summary-card:hover,
+    body.staff-portal .resv-stat:hover,
+    body.staff-portal .resv-metric:hover,
+    body.staff-portal .occupancy-card:hover,
+    body.staff-portal .dash-panel:hover,
+    body.staff-portal .reports-panel:hover,
+    body.staff-portal .btn--primary:hover,
+    body.staff-portal .guest-form__button:hover,
+    body.staff-portal .guest-panel__button--primary:hover,
+    body.staff-portal .resv-tool-btn--primary:hover,
+    body.staff-portal .records-tab-btn--active:hover,
+    body.staff-portal .btn--primary:active,
+    body.staff-portal .guest-form__button:active,
+    body.staff-portal .guest-panel__button--primary:active,
+    body.staff-portal .resv-tool-btn--primary:active,
+    body.staff-portal .records-tab-btn--active:active {
+        transform: none;
+    }
+
+    body.staff-portal .dash-sidebar__link {
+        transform: none !important;
+    }
+
+    body.staff-portal .guest-modal__content,
+    body.staff-portal .modal__panel,
+    body.staff-portal .logout-modal__content {
+        animation: none;
     }
 }

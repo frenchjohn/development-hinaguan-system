@@ -26,14 +26,8 @@ window.AppPage['staff_check_ins'] = function () {
         guestTableSection.style.display = 'none';
         reservationTableSection.style.display = '';
         if (tabGuestBtn && tabReservationBtn) {
-            tabGuestBtn.style.backgroundColor = 'var(--hp-cream)';
-            tabGuestBtn.style.color = 'var(--hp-text)';
-            tabGuestBtn.style.boxShadow = 'none';
-            tabGuestBtn.style.transform = 'none';
-            tabReservationBtn.style.backgroundColor = 'var(--hp-green-dark)';
-            tabReservationBtn.style.color = 'white';
-            tabReservationBtn.style.boxShadow = '0 4px 12px rgba(13, 44, 29, 0.3)';
-            tabReservationBtn.style.transform = 'translateY(-2px)';
+            tabGuestBtn.classList.remove('is-active');
+            tabReservationBtn.classList.add('is-active');
         }
     }
 
@@ -41,27 +35,15 @@ window.AppPage['staff_check_ins'] = function () {
     const switchToGuest = () => {
         guestTableSection.style.display = '';
         reservationTableSection.style.display = 'none';
-        tabGuestBtn.style.backgroundColor = 'var(--hp-green-dark)';
-        tabGuestBtn.style.color = 'white';
-        tabGuestBtn.style.boxShadow = '0 4px 12px rgba(13, 44, 29, 0.3)';
-        tabGuestBtn.style.transform = 'translateY(-2px)';
-        tabReservationBtn.style.backgroundColor = 'var(--hp-cream)';
-        tabReservationBtn.style.color = 'var(--hp-text)';
-        tabReservationBtn.style.boxShadow = 'none';
-        tabReservationBtn.style.transform = 'none';
+        tabGuestBtn.classList.add('is-active');
+        tabReservationBtn.classList.remove('is-active');
     };
 
     const switchToReservation = () => {
         guestTableSection.style.display = 'none';
         reservationTableSection.style.display = '';
-        tabGuestBtn.style.backgroundColor = 'var(--hp-cream)';
-        tabGuestBtn.style.color = 'var(--hp-text)';
-        tabGuestBtn.style.boxShadow = 'none';
-        tabGuestBtn.style.transform = 'none';
-        tabReservationBtn.style.backgroundColor = 'var(--hp-green-dark)';
-        tabReservationBtn.style.color = 'white';
-        tabReservationBtn.style.boxShadow = '0 4px 12px rgba(13, 44, 29, 0.3)';
-        tabReservationBtn.style.transform = 'translateY(-2px)';
+        tabGuestBtn.classList.remove('is-active');
+        tabReservationBtn.classList.add('is-active');
     };
 
     tabGuestBtn?.addEventListener('click', switchToGuest);

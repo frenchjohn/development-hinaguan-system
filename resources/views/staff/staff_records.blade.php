@@ -161,6 +161,7 @@
                                 @forelse ($checkedOutGuests as $guestEntry)
                                     @php
                                         $customer = $guestEntry->customer;
+                                        $guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
                                     @endphp
                                     <tr
                                         class="guest-row"
@@ -176,15 +177,20 @@
                                         aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
                                     >
                                         <td>
-                                            <div class="guest-name">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
-                                            <div class="guest-meta">Customer ID: {{ $customer->id }}</div>
+                                            <div class="cell-person">
+                                                <span class="cell-person__avatar">{{ $guestInitials }}</span>
+                                                <div class="cell-person__body">
+                                                    <div class="guest-name">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
+                                                    <div class="guest-meta">Customer ID: {{ $customer->id }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>{{ $customer->age ?? 'N/A' }}</td>
                                         <td>{{ $customer->gender ?? 'N/A' }}</td>
                                         <td>
                                             <span class="status-pill {{ $customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
                                         </td>
-                                        <td>{{ $guestEntry->checked_out_at ? \Carbon\Carbon::parse($guestEntry->checked_out_at)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                        <td class="mono-cell">{{ $guestEntry->checked_out_at ? \Carbon\Carbon::parse($guestEntry->checked_out_at)->format('M d, Y h:i A') : 'N/A' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
@@ -269,17 +275,25 @@
                                         aria-label="View details for {{ $reservation->booker_name }}"
                                     >
                                         <td>
-                                            <div class="guest-name">{{ $reservation->booker_name }}</div>
-                                            <div class="guest-meta">ID: {{ $reservation->id }}</div>
+                                            @php
+                                                $bookerInitials = collect(explode(' ', trim($reservation->booker_name ?? '')))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
+                                            @endphp
+                                            <div class="cell-person">
+                                                <span class="cell-person__avatar">{{ $bookerInitials }}</span>
+                                                <div class="cell-person__body">
+                                                    <div class="guest-name">{{ $reservation->booker_name }}</div>
+                                                    <div class="guest-meta">ID: {{ $reservation->id }}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>{{ $reservation->email }}</td>
                                         <td>{{ $reservation->number_of_guests }}</td>
                                         <td>
                                             <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }}">{{ $reservation->status }}</span>
                                         </td>
-                                        <td>{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : 'N/A' }}</td>
-                                        <td>{{ $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y h:i A') : 'N/A' }}</td>
-                                        <td>₱{{ number_format($reservation->amount_paid, 2) }}</td>
+                                        <td class="mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                        <td class="mono-cell">{{ $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                        <td class="num-cell">₱{{ number_format($reservation->amount_paid, 2) }}</td>
                                     </tr>
                                 @empty
                                     <tr>

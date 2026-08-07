@@ -301,9 +301,9 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     // Gentle entrance for dashboard content on initial load and SPA swaps.
-    // A single, quick fade-up of the whole content area — the old staggered
-    // per-element entrance felt excessive when switching pages. Inline styles
-    // are cleared once the entrance finishes so swaps stay clean.
+    // A single, quick fade-up of everything BELOW the header — the header bar
+    // itself stays perfectly still so it never looks like it "moves" when
+    // switching pages. Inline styles are cleared once the entrance finishes.
     let entranceTimer = null;
     function runContentEntrance() {
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -311,26 +311,36 @@ window.addEventListener('DOMContentLoaded', function () {
         const main = document.querySelector('main.dash-content');
         if (!main) return;
 
+        // Fade every visible direct child except the header (the app bar stays
+        // put). Fixed-position modals and hidden panels (offsetParent null) are
+        // excluded so the entrance never touches their inline styles.
+        const header = main.querySelector(':scope > .dash-header');
+        const targets = Array.from(main.children).filter((el) => el !== header && el.offsetParent !== null);
+        if (!targets.length) return;
+
         // Cancel any still-running entrance from a previous navigation so a
         // fast double-click can't leave a stale timer that snaps content visible.
         clearTimeout(entranceTimer);
 
-        main.style.opacity = '0';
-        main.style.transform = 'translateY(6px)';
-        main.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        const apply = (style, value) => targets.forEach((el) => { el.style[style] = value; });
+        apply('opacity', '0');
+        apply('transform', 'translateY(10px)');
+        apply('transition', 'opacity 0.25s ease-out, transform 0.25s ease-out');
 
         requestAnimationFrame(() => {
-            main.style.opacity = '1';
-            main.style.transform = 'none';
+            apply('opacity', '1');
+            apply('transform', 'none');
         });
 
-        // Also acts as the visibility fallback: clearing the inline opacity
-        // restores the stylesheet value, so content can never stay hidden.
+        // Clearing the inline styles restores the stylesheet values, so
+        // content can never stay hidden.
         entranceTimer = setTimeout(() => {
-            main.style.transition = '';
-            main.style.opacity = '';
-            main.style.transform = '';
-        }, 320);
+            targets.forEach((el) => {
+                el.style.transition = '';
+                el.style.opacity = '';
+                el.style.transform = '';
+            });
+        }, 380);
     }
 
     let navToken = 0;

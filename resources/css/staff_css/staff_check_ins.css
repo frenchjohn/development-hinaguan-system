@@ -1791,3 +1791,42 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Guest / Reservation / Scan tabs — active state is `.is-active`, toggled by
+   staff_check_ins.js (previously hard-coded inline green styles). */
+body.staff-portal #tabGuestBtn,
+body.staff-portal #tabReservationBtn {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    box-shadow: none;
+    transform: none;
+}
+
+body.staff-portal #tabGuestBtn:hover,
+body.staff-portal #tabReservationBtn:hover {
+    background: var(--green-soft);
+    color: var(--green-deep);
+    border-color: rgba(23, 138, 82, 0.4);
+}
+
+body.staff-portal #tabGuestBtn.is-active,
+body.staff-portal #tabReservationBtn.is-active {
+    background: var(--green);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 3px 0 var(--green-edge), 0 7px 16px rgba(23, 138, 82, 0.25);
+    transform: translateY(-1px);
+}
+
+body.staff-portal #tabGuestBtn.is-active:hover,
+body.staff-portal #tabReservationBtn.is-active:hover {
+    background: var(--green-hover);
+    color: #fff;
+}
+
+body.staff-portal #scanQrBtn {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--border);
+}

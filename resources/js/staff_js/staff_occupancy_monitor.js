@@ -94,11 +94,22 @@ window.AppPage['staff_occupancy_monitor'] = function () {
 
         // Check if any cards are visible
         const visibleCards = Array.from(occupancyCards).filter(card => card.style.display !== 'none');
-        const emptyState = document.querySelector('.occupancy-empty');
+        const grid = document.querySelector('.occupancy-grid');
+        let emptyState = document.querySelector('.occupancy-empty');
 
-        if (visibleCards.length === 0 && emptyState) {
-            emptyState.style.display = 'flex';
-            emptyState.querySelector('p').textContent = 'No amenities match your filters';
+        if (visibleCards.length === 0) {
+            // The @empty state only renders when there are no amenities at all;
+            // create one on the fly so filters that hide everything get feedback.
+            if (!emptyState && grid) {
+                emptyState = document.createElement('div');
+                emptyState.className = 'occupancy-empty';
+                emptyState.innerHTML = '<p></p>';
+                grid.appendChild(emptyState);
+            }
+            if (emptyState) {
+                emptyState.style.display = 'flex';
+                emptyState.querySelector('p').textContent = 'No amenities match your filters';
+            }
         } else if (emptyState) {
             emptyState.style.display = 'none';
         }
@@ -219,6 +230,22 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                 this.click();
             }
         });
+    });
+
+    // Count-up animation for the KPI values
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('.occupancy-stat__value[data-count]').forEach(el => {
+        const target = parseInt(el.dataset.count || '0', 10);
+        if (reduceMotion || target <= 0 || isNaN(target)) return;
+        const duration = 700;
+        const start = performance.now();
+        const tick = (now) => {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased);
+            if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
     });
 };
 
