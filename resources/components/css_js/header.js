@@ -79,4 +79,25 @@ document.addEventListener('DOMContentLoaded', () => {
             setWeatherOpen(false);
         }
     });
+
+    // ------------------------------------------------------------
+    // Live day + time on the weather pill. One shared interval so SPA
+    // page swaps (which re-render the header) never stack timers — the
+    // interval simply re-finds the fresh elements each tick.
+    // ------------------------------------------------------------
+    const updateWeatherClock = () => {
+        const dayEl = document.getElementById('weatherClockDay');
+        const timeEl = document.getElementById('weatherClockTime');
+        if (!dayEl && !timeEl) return;
+        const now = new Date();
+        const day = now.toLocaleDateString('en-US', { weekday: 'long' });
+        const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        if (dayEl && dayEl.textContent !== day) dayEl.textContent = day;
+        if (timeEl && timeEl.textContent !== time) timeEl.textContent = time;
+    };
+
+    if (!window.__weatherClockInterval) {
+        window.__weatherClockInterval = setInterval(updateWeatherClock, 1000);
+    }
+    updateWeatherClock();
 });

@@ -52,14 +52,21 @@
         @if ($weatherNow || $weatherForecast)
         <div class="dash-header__weather-wrap">
             <button type="button" class="dash-header__weather-btn" id="weatherBtn" aria-label="Weather forecast" aria-haspopup="true" aria-expanded="false" aria-controls="weatherDropdown">
-                @if (!empty($weatherNow['icon']))
-                    <img src="{{ $weatherNow['icon'] }}" alt="" class="dash-header__weather-icon">
-                @else
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="dash-header__weather-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                @endif
-                <span class="dash-header__weather-temp">{{ round($weatherNow['temp_c'] ?? 0) }}°</span>
-                <span class="dash-header__weather-cond">{{ $weatherNow['condition'] ?? '—' }}</span>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="dash-header__weather-chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                <span class="dash-header__weather-main">
+                    @if (!empty($weatherNow['icon']))
+                        <img src="{{ $weatherNow['icon'] }}" alt="" class="dash-header__weather-icon">
+                    @else
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="dash-header__weather-icon"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    @endif
+                    <span class="dash-header__weather-temp">{{ round($weatherNow['temp_c'] ?? 0) }}°</span>
+                    <span class="dash-header__weather-cond">{{ $weatherNow['condition'] ?? '—' }}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="dash-header__weather-chevron" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </span>
+                <span class="dash-header__weather-dayline">
+                    <span id="weatherClockDay">{{ now()->format('l') }}</span>
+                    <span class="dash-header__weather-dot" aria-hidden="true">·</span>
+                    <span id="weatherClockTime">{{ now()->format('g:i A') }}</span>
+                </span>
             </button>
 
             <div class="dash-header__weather-dropdown" id="weatherDropdown" aria-hidden="true">

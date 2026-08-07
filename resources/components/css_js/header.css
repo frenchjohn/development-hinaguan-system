@@ -393,19 +393,41 @@
 
 .dash-header__weather-btn {
     display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.32rem 0.8rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.12rem;
+    padding: 0.3rem 0.8rem;
     border: 1px solid var(--header-border);
-    border-radius: 9999px;
+    border-radius: 0.85rem;
     background: rgba(13, 44, 29, 0.04);
     color: var(--hp-text);
     font-family: var(--hp-font-body);
     font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
-    white-space: nowrap;
     transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.dash-header__weather-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+
+.dash-header__weather-dayline {
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--hp-text-muted);
+    white-space: nowrap;
+    text-align: left;
+}
+
+.dash-header__weather-dot {
+    opacity: 0.6;
+    margin: 0 0.15rem;
 }
 
 [data-theme="dark"] .dash-header__weather-btn {

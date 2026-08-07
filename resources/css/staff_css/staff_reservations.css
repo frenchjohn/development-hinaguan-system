@@ -33,74 +33,8 @@
     z-index: 1;
 }
 
-/* Entrance Animations — kept intentionally light: a quick fade with a tiny
-   lift. (The earlier 0.6s slide + staggered rows felt excessive when
-   switching pages.) */
-.guest-panel {
-    animation: fadeInUp 0.25s ease-out;
-}
-
-.guest-filter-toggle {
-    animation: fadeIn 0.2s ease-out 0.05s both;
-}
-
-.guest-filter-toggle--secondary:nth-child(2) {
-    animation: fadeIn 0.2s ease-out 0.1s both;
-}
-
-.guest-filter-toggle--secondary:nth-child(3) {
-    animation: fadeIn 0.2s ease-out 0.15s both;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-.guest-table-wrap {
-    animation: fadeInUp 0.25s ease-out 0.1s both;
-}
-
-.guest-row {
-    animation: fadeInRow 0.18s ease-out both;
-}
-
-.guest-row:nth-child(1) { animation-delay: 0.12s; }
-.guest-row:nth-child(2) { animation-delay: 0.16s; }
-.guest-row:nth-child(3) { animation-delay: 0.2s; }
-.guest-row:nth-child(4) { animation-delay: 0.24s; }
-.guest-row:nth-child(5) { animation-delay: 0.28s; }
-.guest-row:nth-child(6) { animation-delay: 0.32s; }
-.guest-row:nth-child(7) { animation-delay: 0.36s; }
-.guest-row:nth-child(8) { animation-delay: 0.4s; }
-.guest-row:nth-child(9) { animation-delay: 0.44s; }
-.guest-row:nth-child(10) { animation-delay: 0.48s; }
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeInRow {
-    from {
-        opacity: 0;
-        transform: translateX(-6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
+/* Page entrance is handled centrally by the SPA swap (single quick fade),
+   so this page behaves exactly like every other staff page when switching. */
 
 /* Staff Reservations Page - Complete Redesign */
 
