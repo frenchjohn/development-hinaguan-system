@@ -55,24 +55,29 @@ $slotCoveringChecks = function (string $date, string $slot): array {
             // Its daytime spills into the NEXT day.
             [$after, $daytimeTypes],
         ],
+        // Unknown/legacy pricing types report no conflicts (safe post migrate:fresh).
         default => [],
     };
 };
 
 // Returns true when the given amenity is already reserved/occupied for the
-// requested slot on the given start date.
-$isAmenitySlotTaken = function (string $amenityId, string $date, string $slot) use ($slotCoveringChecks): bool {
+// requested slot on the given start date. Pass $excludeReservationId to
+// ignore one reservation (e.g. the reservation being rescheduled itself).
+$isAmenitySlotTaken = function (string $amenityId, string $date, string $slot, ?int $excludeReservationId = null) use ($slotCoveringChecks): bool {
     foreach ($slotCoveringChecks($date, $slot) as [$checkDate, $types]) {
-        $exists = Reservation::query()
+        $query = Reservation::query()
             ->whereDate('reservation_date', $checkDate)
             ->whereNotIn('status', ['Cancelled', 'Checked Out'])
             ->whereHas('reservationAmenities', function ($query) use ($amenityId, $types): void {
                 $query->where('amenity_id', $amenityId)
                     ->whereIn('pricing_type', $types);
-            })
-            ->exists();
+            });
 
-        if ($exists) {
+        if ($excludeReservationId !== null) {
+            $query->whereKeyNot($excludeReservationId);
+        }
+
+        if ($query->exists()) {
             return true;
         }
     }
@@ -1087,7 +1092,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('verify-email-otp')->withoutMiddleware([VerifyCsrfToken::class]);
 });
 
-Route::prefix('staff')->name('staff.')->group(function () {
+Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken) {
     Route::get('/dashboard', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
@@ -2329,7 +2334,71 @@ Route::prefix('staff')->name('staff.')->group(function () {
         ]);
     })->name('reservations.checkout');
 
-    Route::post('/reservations/{reservation}/update', function (Request $request, Reservation $reservation) {
+    Route::get('/reservations/{reservation}/availability', function (Request $request, Reservation $reservation) use ($isAmenitySlotTaken) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $month = (int) $request->query('month', now()->month);
+        $year = (int) $request->query('year', now()->year);
+        $month = max(1, min(12, $month));
+
+        $combos = $reservation->reservationAmenities
+            ->filter(fn ($ra) => ! empty($ra->amenity_id))
+            ->map(fn ($ra) => [
+                'amenity_id' => $ra->amenity_id,
+                'pricing_type' => $ra->pricing_type,
+                'amenity_name' => $ra->amenity?->amenities_name,
+            ])
+            ->values();
+
+        $start = \Illuminate\Support\Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $numDays = $start->daysInMonth;
+        $today = now()->toDateString();
+        $currentDate = $reservation->reservation_date
+            ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString()
+            : null;
+
+        $availability = [];
+        for ($i = 0; $i < $numDays; $i++) {
+            $date = $start->copy()->addDays($i)->toDateString();
+
+            // The reservation's own current date is always selectable (a no-op move)
+            // and is never treated as past even if the booking is overdue.
+            if ($date === $currentDate) {
+                $available = true;
+                $isPast = false;
+            } else {
+                $available = true;
+                foreach ($combos as $combo) {
+                    if ($isAmenitySlotTaken($combo['amenity_id'], $date, $combo['pricing_type'], $reservation->id)) {
+                        $available = false;
+                        break;
+                    }
+                }
+                $isPast = $date < $today;
+            }
+
+            $availability[] = [
+                'date' => $date,
+                'available' => $available,
+                'is_past' => $isPast,
+            ];
+        }
+
+        return response()->json([
+            'reservation_id' => $reservation->id,
+            'month' => $month,
+            'year' => $year,
+            'current_date' => $currentDate,
+            'slot' => $combos->pluck('pricing_type')->unique()->values(),
+            'amenities' => $combos,
+            'availability' => $availability,
+        ]);
+    })->name('reservations.availability');
+
+    Route::post('/reservations/{reservation}/update', function (Request $request, Reservation $reservation) use ($isAmenitySlotTaken) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -2343,6 +2412,30 @@ Route::prefix('staff')->name('staff.')->group(function () {
             'number_of_guests' => 'required|integer|min:1',
             'status' => 'required|in:Pending,Confirmed,Checked In,Checked Out,Cancelled',
         ]);
+
+        // If the date is changing, make sure every reserved amenity is free on
+        // the new date for its slot (the reservation itself is excluded).
+        $currentDate = $reservation->reservation_date
+            ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString()
+            : null;
+        $newDate = \Illuminate\Support\Carbon::parse($validated['reservation_date'])->toDateString();
+
+        if ($newDate !== $currentDate) {
+            foreach ($reservation->reservationAmenities as $ra) {
+                if (empty($ra->amenity_id)) {
+                    continue;
+                }
+
+                if ($isAmenitySlotTaken($ra->amenity_id, $newDate, $ra->pricing_type, $reservation->id)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Cannot reschedule: ' . ($ra->amenity?->amenities_name ?? 'an amenity')
+                            . ' is already booked on ' . \Illuminate\Support\Carbon::parse($newDate)->format('F j, Y')
+                            . ' for ' . $ra->pricing_type . '. Please pick an available date.',
+                    ], 409);
+                }
+            }
+        }
 
         $reservation->update($validated);
 

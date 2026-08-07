@@ -853,6 +853,10 @@ window.AppPage['staff_reservations'] = function () {
         if (editForm) {
             editForm.hidden = true;
         }
+        // Make sure the reschedule calendar modal never outlives its parent.
+        if (typeof closeEditCalendarModal === 'function') {
+            closeEditCalendarModal();
+        }
     };
 
     const renderTableFromData = (data) => {
@@ -987,12 +991,6 @@ window.AppPage['staff_reservations'] = function () {
             submitButton.textContent = 'Save Changes';
         }
 
-        // Format date for date input (YYYY-MM-DD)
-        const formatDateForInput = (dateStr) => {
-            if (!dateStr) return '';
-            return dateStr.replace(/T.*$/, '').replace(/Z$/, '');
-        };
-
         // Populate form fields
         document.getElementById('editReservationId').value = reservation.id;
         document.getElementById('editBookerName').value = reservation.booker_name || '';
@@ -1001,6 +999,9 @@ window.AppPage['staff_reservations'] = function () {
         document.getElementById('editReservationDate').value = formatDateForInput(reservation.reservation_date);
         document.getElementById('editGuests').value = reservation.number_of_guests || '';
         document.getElementById('editStatus').value = reservation.status || 'Pending';
+
+        // Build the availability calendar for rescheduling
+        initEditCalendar(reservationId);
 
         // Hide body, show edit form
         modalBody.hidden = true;
@@ -1015,6 +1016,259 @@ window.AppPage['staff_reservations'] = function () {
             modalBody.hidden = false;
         }
     };
+
+    // ── Reschedule calendar ───────────────────────────────────────────────
+    // The edit form's date field is a small availability calendar: dates where
+    // any of the reservation's amenities are already booked for their slot are
+    // disabled, so staff can only reschedule to genuinely free dates.
+    let editCalState = {
+        reservationId: null,
+        month: null,
+        year: null,
+        selected: '',
+        currentDate: '',
+        availability: [],
+    };
+
+    const editCalGrid = document.getElementById('editCalGrid');
+    const editCalTitle = document.getElementById('editCalTitle');
+    const editCalSlotNote = document.getElementById('editSlotNote');
+    const editCalPrev = document.getElementById('editCalPrev');
+    const editCalNext = document.getElementById('editCalNext');
+    const editCalTrigger = document.getElementById('editCalTrigger');
+    const editCalTriggerValue = document.getElementById('editCalTriggerValue');
+    const editCalendarModal = document.getElementById('editCalendarModal');
+    const editCalModalCurrent = document.getElementById('editCalModalCurrent');
+    const editCalCloseButtons = document.querySelectorAll('[data-close-edit-calendar="true"]');
+    const editCalYear = document.getElementById('editCalYear');
+
+    // The calendar is browsable up to 5 years ahead of the current year.
+    const editCalMaxYear = new Date().getFullYear() + 5;
+
+    const todayISO = () => {
+        const now = new Date();
+        return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    };
+
+    const formatDateForInput = (dateStr) => (dateStr ? String(dateStr).replace(/T.*$/, '').replace(/Z$/, '') : '');
+
+    const formatDateLong = (dateStr) => {
+        const date = new Date(`${dateStr}T00:00:00`);
+        if (isNaN(date.getTime())) return dateStr || 'Select a date';
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+
+    const populateEditCalYear = () => {
+        if (!editCalYear) return;
+        const currentYear = new Date().getFullYear();
+        // If the reservation is from a previous year, include it so the
+        // initial month stays selectable too.
+        const fromYear = Math.min(currentYear, Number(editCalState.year) || currentYear);
+        editCalYear.innerHTML = '';
+        for (let year = fromYear; year <= editCalMaxYear; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            editCalYear.appendChild(option);
+        }
+        editCalYear.value = String(editCalState.year);
+    };
+
+    const syncEditCalYearSelect = () => {
+        if (editCalYear) editCalYear.value = String(editCalState.year);
+    };
+
+    const syncEditCalNextState = () => {
+        if (!editCalNext) return;
+        const atCap = editCalState.month === 12 && editCalState.year >= editCalMaxYear;
+        editCalNext.disabled = atCap;
+        editCalNext.classList.toggle('is-disabled', atCap);
+    };
+
+    const updateEditCalTrigger = () => {
+        if (editCalTriggerValue) {
+            editCalTriggerValue.textContent = editCalState.selected ? formatDateLong(editCalState.selected) : 'Select a date';
+        }
+    };
+
+    const closeEditCalendarModal = () => {
+        if (editCalendarModal) {
+            editCalendarModal.classList.remove('is-open');
+            editCalendarModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    const openEditCalendarModal = () => {
+        if (!editCalendarModal) return;
+        editCalendarModal.classList.add('is-open');
+        editCalendarModal.setAttribute('aria-hidden', 'false');
+        loadEditCalendar();
+    };
+
+    const initEditCalendar = (reservationId) => {
+        const reservation = reservationData?.[reservationId];
+        if (!reservation) return;
+
+        const current = formatDateForInput(reservation.reservation_date);
+        const parts = current ? current.split('-').map(Number) : null;
+
+        editCalState = {
+            reservationId,
+            month: parts ? parts[1] : new Date().getMonth() + 1,
+            year: parts ? parts[0] : new Date().getFullYear(),
+            selected: current,
+            currentDate: current,
+            availability: [],
+        };
+
+        populateEditCalYear();
+        updateEditCalTrigger();
+        syncEditCalNextState();
+
+        // Show the current date in the calendar modal header
+        if (editCalModalCurrent) {
+            editCalModalCurrent.textContent = current ? `Current: ${formatDateLong(current)}` : '';
+            editCalModalCurrent.hidden = !current;
+        }
+
+        // Show which slot(s) the availability check applies to
+        if (editCalSlotNote) {
+            const slots = (reservation.time_slots || []).length
+                ? reservation.time_slots
+                : (reservation.reservation_amenities || []).map((a) => a.pricing_type).filter(Boolean);
+            const uniqueSlots = [...new Set(slots)];
+            editCalSlotNote.textContent = uniqueSlots.length
+                ? `Availability shown for ${uniqueSlots.join(' · ')}`
+                : '';
+            editCalSlotNote.hidden = uniqueSlots.length === 0;
+        }
+
+        // The calendar lives in its own modal, opened from the date trigger.
+        closeEditCalendarModal();
+    };
+
+    const loadEditCalendar = async () => {
+        if (!editCalGrid || !editCalTitle || !editCalState.reservationId) return;
+
+        const { reservationId, month, year } = editCalState;
+        editCalGrid.classList.add('is-loading');
+        editCalTitle.textContent = new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+        syncEditCalYearSelect();
+        syncEditCalNextState();
+
+        try {
+            const url = new URL(`/staff/reservations/${reservationId}/availability`, window.location.origin);
+            url.searchParams.set('month', month);
+            url.searchParams.set('year', year);
+
+            const response = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('Availability request failed');
+
+            const payload = await response.json();
+            editCalState.availability = payload.availability || [];
+            renderEditCalendar();
+        } catch (error) {
+            editCalGrid.innerHTML = '<p class="edit-calendar__error">Unable to load availability. Please try again.</p>';
+        } finally {
+            editCalGrid.classList.remove('is-loading');
+        }
+    };
+
+    const renderEditCalendar = () => {
+        if (!editCalGrid) return;
+
+        const { month, year, availability, selected, currentDate } = editCalState;
+        const byDate = Object.fromEntries(availability.map((a) => [a.date, a]));
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const leading = new Date(year, month - 1, 1).getDay();
+        const today = todayISO();
+
+        editCalGrid.innerHTML = '';
+
+        for (let i = 0; i < leading; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'edit-calendar__day edit-calendar__day--empty';
+            editCalGrid.appendChild(empty);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const iso = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const entry = byDate[iso];
+            const available = entry ? entry.available : true;
+            const isPast = entry ? entry.is_past : iso < today;
+            const isSelected = iso === selected;
+            const isCurrent = iso === currentDate && iso !== today;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'edit-calendar__day';
+            btn.textContent = d;
+            btn.setAttribute('aria-label', `${iso}${available && !isPast ? ' available' : ' unavailable'}`);
+
+            if (isSelected) btn.classList.add('is-selected');
+            if (isCurrent) btn.classList.add('is-current');
+
+            if (!available || isPast) {
+                btn.classList.add('is-disabled');
+                btn.disabled = true;
+            } else {
+                btn.classList.add('is-available');
+                btn.addEventListener('click', () => {
+                    editCalState.selected = iso;
+                    const hidden = document.getElementById('editReservationDate');
+                    if (hidden) hidden.value = iso;
+                    updateEditCalTrigger();
+                    renderEditCalendar();
+                    // A date was picked — close the calendar modal.
+                    closeEditCalendarModal();
+                });
+            }
+
+            editCalGrid.appendChild(btn);
+        }
+    };
+
+    editCalTrigger?.addEventListener('click', () => {
+        openEditCalendarModal();
+    });
+
+    editCalCloseButtons.forEach((button) => {
+        button.addEventListener('click', closeEditCalendarModal);
+    });
+
+    // Close the calendar modal with Escape, like a standard dialog.
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && editCalendarModal && editCalendarModal.classList.contains('is-open')) {
+            closeEditCalendarModal();
+        }
+    });
+
+    editCalYear?.addEventListener('change', () => {
+        editCalState.year = Number(editCalYear.value) || editCalState.year;
+        loadEditCalendar();
+    });
+
+    editCalPrev?.addEventListener('click', () => {
+        editCalState.month -= 1;
+        if (editCalState.month < 1) {
+            editCalState.month = 12;
+            editCalState.year -= 1;
+        }
+        syncEditCalYearSelect();
+        loadEditCalendar();
+    });
+
+    editCalNext?.addEventListener('click', () => {
+        // Hard cap: the calendar covers up to 5 years ahead.
+        if (editCalState.month === 12 && editCalState.year >= editCalMaxYear) return;
+        editCalState.month += 1;
+        if (editCalState.month > 12) {
+            editCalState.month = 1;
+            editCalState.year += 1;
+        }
+        syncEditCalYearSelect();
+        loadEditCalendar();
+    });
 
     editReservationBtn?.addEventListener('click', () => {
         if (currentModalReservationId) {
