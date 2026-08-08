@@ -49,6 +49,89 @@ window.AppPage['staff_check_ins'] = function () {
     tabGuestBtn?.addEventListener('click', switchToGuest);
     tabReservationBtn?.addEventListener('click', switchToReservation);
 
+    // ── Checkout countdowns ──────────────────────────────────────────────
+    const CHECKOUT_NEAR_MS = 2 * 60 * 60 * 1000;   // 2 hours before checkout
+    const CHECKOUT_WARN_MS = 10 * 60 * 1000;       // 10 minutes before checkout
+
+    const formatTimeLeft = (ms) => {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
+    };
+
+    // Returns { visible, tone, left } for a checkout timestamp (ISO or empty).
+    const getCheckoutState = (iso) => {
+        if (!iso) return { visible: false, tone: '', left: 0 };
+        const target = new Date(iso).getTime();
+        if (Number.isNaN(target)) return { visible: false, tone: '', left: 0 };
+        const remaining = target - Date.now();
+        if (remaining <= 0) return { visible: true, tone: 'due', left: 0 };
+        const tone = remaining <= CHECKOUT_WARN_MS ? 'warn' : (remaining <= CHECKOUT_NEAR_MS ? 'near' : 'far');
+        return { visible: true, tone, left: remaining };
+    };
+
+    // Always-visible countdowns: reservation timer + per-amenity timers in the modal.
+    const renderCountdownEl = (el) => {
+        if (!el) return;
+        const state = getCheckoutState(el.dataset.checkoutAt);
+        if (!state.visible) {
+            el.textContent = '';
+            el.style.display = 'none';
+            el.removeAttribute('data-checkout-state');
+            return;
+        }
+        el.style.display = '';
+        el.textContent = state.tone === 'due'
+            ? 'Time to Checked Out'
+            : `${formatTimeLeft(state.left)} left before check out`;
+        el.setAttribute('data-checkout-state', state.tone);
+    };
+
+    const refreshCheckoutCountdowns = () => {
+        // Modal reservation timer + per-amenity timers
+        document.querySelectorAll('.resv-checkout-countdown, .resv-amenity-countdown').forEach(renderCountdownEl);
+        // Table pills: only appear within the final 2h window (compact text)
+        document.querySelectorAll('.table-checkout-countdown').forEach((el) => {
+            const state = getCheckoutState(el.dataset.checkoutAt);
+            if (!state.visible || state.tone === 'far') {
+                el.textContent = '';
+                el.style.display = 'none';
+                el.removeAttribute('data-checkout-state');
+                return;
+            }
+            el.style.display = '';
+            el.textContent = state.tone === 'due'
+                ? 'Time to Checked Out'
+                : `Checkout in ${formatTimeLeft(state.left)}`;
+            el.setAttribute('data-checkout-state', state.tone);
+        });
+    };
+
+    // Tick every 30s; tighten to 5s once any countdown enters the warning window.
+    // Stored on window (with a guard) so SPA re-inits don't stack duplicate timers.
+    let checkoutCadence = 30000;
+    if (window.__staffCheckInsCheckoutTicker) clearInterval(window.__staffCheckInsCheckoutTicker);
+    if (window.__staffCheckInsCheckoutAdaptTicker) clearInterval(window.__staffCheckInsCheckoutAdaptTicker);
+    const startCheckoutTicker = (ms) => {
+        if (window.__staffCheckInsCheckoutTicker) clearInterval(window.__staffCheckInsCheckoutTicker);
+        window.__staffCheckInsCheckoutTicker = setInterval(refreshCheckoutCountdowns, ms);
+        checkoutCadence = ms;
+    };
+    startCheckoutTicker(30000);
+    window.__staffCheckInsCheckoutAdaptTicker = setInterval(() => {
+        const hot = document.querySelector('.resv-checkout-countdown[data-checkout-state="warn"], .resv-checkout-countdown[data-checkout-state="due"], .resv-amenity-countdown[data-checkout-state="warn"], .resv-amenity-countdown[data-checkout-state="due"], .table-checkout-countdown[data-checkout-state="warn"], .table-checkout-countdown[data-checkout-state="due"]');
+        const desired = hot ? 5000 : 30000;
+        if (desired !== checkoutCadence) {
+            startCheckoutTicker(desired);
+        }
+    }, 5000);
+
+    refreshCheckoutCountdowns();
+
     // Reservation modal functions
     const openReservationModal = (reservationId) => {
         currentReservationId = reservationId;
@@ -60,7 +143,16 @@ window.AppPage['staff_check_ins'] = function () {
         const primaryGuest = reservation.reservation_guests.find(g => g.is_primary_guest);
         const companions = reservation.reservation_guests.filter(g => !g.is_primary_guest);
 
+        // Does this reservation cover multiple amenity time periods?
+        // (Daytime vs Daytime Aircon = same time; strip Aircon before comparing.)
+        const validAmenities = (reservation.reservation_amenities || []).filter(a => a.price > 0);
+        const uniquePricingTypes = [...new Set(validAmenities.map(a => String(a.pricing_type || 'N/A').replace(/\s*Aircon/gi, '').trim()))];
+        const differentTime = validAmenities.length > 1 && uniquePricingTypes.length > 1;
+
         let html = `
+            ${reservation.checkout_at ? `
+                <div class="resv-checkout-countdown" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>
+            ` : ''}
             <div style="margin-bottom: 1.5rem;">
                 <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Main Guest</h4>
                 <div style="padding: 1rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem;">
@@ -143,16 +235,41 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         if (reservation.reservation_amenities && reservation.reservation_amenities.length > 0) {
-            const validAmenities = reservation.reservation_amenities.filter(a => a.price > 0);
             if (validAmenities.length > 0) {
+                const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
+                const isCheckedIn = statusKey === 'checked_in';
+                // Different time periods (daytime vs nighttime, etc.) => per-amenity checkout
+                const showPerAmenityCheckout = isCheckedIn && differentTime;
+
                 html += `
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Amenities</h4>
-                        <ul style="margin-left: 1.5rem; color: #666;">
-                            ${validAmenities.map(a => `
-                                <li>${a.amenity_name || a.amenity_id || 'Unknown'} (${a.pricing_type || 'N/A'}) - ₱${parseFloat(a.price).toFixed(2)} x ${a.quantity || 1}</li>
-                            `).join('')}
-                        </ul>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <h4 style="margin: 0; font-weight: 600;">Amenities</h4>
+                            ${showPerAmenityCheckout ? '<span class="resv-diff-time-label">Different amenity time</span>' : ''}
+                        </div>
+                        <div class="resv-amenity-list">
+                            ${validAmenities.map(a => {
+                                const amenityStatus = a.status || 'Active';
+                                const isCompleted = amenityStatus === 'Completed';
+                                return `
+                                    <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
+                                        <div class="resv-amenity-item__info">
+                                            <div class="resv-amenity-item__name">${a.amenity_name || a.amenity_id || 'Unknown'}</div>
+                                            <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'} · ₱${parseFloat(a.price).toFixed(2)} x ${a.quantity || 1}</div>
+                                            ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
+                                        </div>
+                                        <div class="resv-amenity-item__actions">
+                                            ${isCompleted
+                                                ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
+                                                : (showPerAmenityCheckout
+                                                    ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
+                                                    : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
+                                            }
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
                 `;
             }
@@ -174,9 +291,11 @@ window.AppPage['staff_check_ins'] = function () {
                     <span>Reservation ID:</span>
                     <strong>#${reservation.id}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <span>Reservation Date:</span>
-                    <strong>${reservation.reservation_date || 'N/A'}</strong>
+                    <strong style="position: relative;">${reservation.reservation_date || 'N/A'}
+                        ${differentTime ? '<span class="resv-date-badge">Mixed Time</span>' : ''}
+                    </strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                     <span>Check-in:</span>
@@ -228,6 +347,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         reservationModalBody.innerHTML = html;
+        refreshCheckoutCountdowns();
         reservationModal.classList.add('is-open');
         reservationModal.setAttribute('aria-hidden', 'false');
     };
@@ -347,6 +467,52 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
+    // Per-amenity check out (delegated so it survives modal re-renders, and
+    // guarded so SPA re-inits don't stack duplicate listeners)
+    if (!window.__staffCheckInsAmenityCheckoutBound) {
+        window.__staffCheckInsAmenityCheckoutBound = true;
+        document.getElementById('reservationModalBody')?.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.resv-amenity-checkout-btn');
+            if (!btn) return;
+            e.stopPropagation();
+
+            const reservationAmenityId = btn.dataset.reservationAmenityId;
+            const reservationId = btn.dataset.reservationId;
+            if (!reservationAmenityId) return;
+
+            if (!confirm('Check out this amenity? The reservation stays active until all amenities are checked out.')) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Checking out...';
+
+            try {
+                const response = await fetch(`/staff/reservations/${reservationId}/amenities/${reservationAmenityId}/check-out`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Unable to check out this amenity.');
+                }
+
+                // Mark completed in local data and re-render the modal
+                const amenity = reservationData[reservationId]?.reservation_amenities?.find(a => String(a.id) === String(reservationAmenityId));
+                if (amenity) amenity.status = 'Completed';
+                openReservationModal(reservationId);
+            } catch (error) {
+                window.alert(error.message || 'Unable to check out this amenity.');
+                btn.disabled = false;
+                btn.textContent = 'Check Out';
+            }
+        });
+    }
+
     // Guest modal functionality
     const guestModal = document.getElementById('guestModal');
     const guestModalBody = document.getElementById('guestModalBody');
@@ -401,6 +567,7 @@ window.AppPage['staff_check_ins'] = function () {
             html += `
                 <div style="margin-bottom: 1.5rem;">
                     <h4 style="margin-bottom: 0.75rem; font-weight: 600;">Reservation Details</h4>
+                    ${reservation.checkout_at ? `<div class="resv-checkout-countdown resv-checkout-countdown--compact" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>` : ''}
                     <div style="padding: 1rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; border-left: 4px solid #c8a45d;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Reservation ID:</span>
@@ -473,6 +640,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         guestModalBody.innerHTML = html;
+        refreshCheckoutCountdowns();
         guestModal.classList.add('is-open');
         guestModal.setAttribute('aria-hidden', 'false');
     };

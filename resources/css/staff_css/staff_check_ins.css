@@ -1830,3 +1830,379 @@ body.staff-portal #scanQrBtn {
     color: var(--ink);
     border: 1px solid var(--border);
 }
+/* ── Amenity status / per-amenity checkout (reservation modal) ──────────── */
+
+.resv-amenity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.resv-amenity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.7rem;
+    background: var(--surface-2, #fff);
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.12));
+    transition: border-color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.resv-amenity-item:hover {
+    border-color: rgba(23, 138, 82, 0.35);
+}
+
+.resv-amenity-item--completed {
+    opacity: 0.7;
+    background: rgba(23, 138, 82, 0.06);
+}
+
+[data-theme="dark"] .resv-amenity-item {
+    background: #1a3d1e;
+    border-color: #2d5a32;
+}
+
+.resv-amenity-item__info {
+    min-width: 0;
+}
+
+.resv-amenity-item__name {
+    font-weight: 600;
+    color: var(--hp-text, #1b3a2c);
+    margin-bottom: 0.2rem;
+}
+
+.resv-amenity-item--completed .resv-amenity-item__name {
+    text-decoration: line-through;
+}
+
+.resv-amenity-item__meta {
+    font-size: 0.78rem;
+    color: var(--hp-text-muted, #666);
+}
+
+.resv-amenity-item__actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.resv-amenity-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.resv-amenity-status--active {
+    background: rgba(33, 150, 243, 0.12);
+    color: #1976d2;
+    border: 1px solid rgba(33, 150, 243, 0.35);
+}
+
+.resv-amenity-status--completed {
+    background: rgba(23, 138, 82, 0.12);
+    color: #178a52;
+    border: 1px solid rgba(23, 138, 82, 0.4);
+}
+
+[data-theme="dark"] .resv-amenity-status--completed {
+    background: rgba(76, 175, 80, 0.18);
+    color: #81c784;
+    border-color: rgba(76, 175, 80, 0.45);
+}
+
+.resv-amenity-checkout-btn {
+    padding: 0.5rem 0.95rem;
+    border-radius: 0.55rem;
+    border: 1px solid rgba(23, 138, 82, 0.45);
+    background: rgba(23, 138, 82, 0.1);
+    color: #178a52;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.resv-amenity-checkout-btn:hover:not(:disabled) {
+    background: #178a52;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(23, 138, 82, 0.3);
+    transform: translateY(-1px);
+}
+
+.resv-amenity-checkout-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.resv-diff-time-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 167, 38, 0.16);
+    color: #b26a00;
+    border: 1px solid rgba(255, 152, 0, 0.45);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .resv-diff-time-label {
+    background: rgba(255, 179, 71, 0.16);
+    color: #ffcc80;
+    border-color: rgba(255, 179, 71, 0.5);
+}
+
+/* ── Checkout countdowns (modal timer, per-amenity, table pill) ─────────── */
+
+.resv-checkout-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+    width: fit-content;
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.resv-checkout-countdown:empty {
+    display: none;
+}
+
+.resv-checkout-countdown[data-checkout-state="far"] {
+    background: rgba(23, 138, 82, 0.1);
+    color: #178a52;
+    border: 1px solid rgba(23, 138, 82, 0.35);
+}
+
+.resv-checkout-countdown[data-checkout-state="near"] {
+    background: rgba(33, 150, 243, 0.12);
+    color: #1976d2;
+    border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.resv-checkout-countdown[data-checkout-state="warn"] {
+    background: rgba(255, 167, 38, 0.16);
+    color: #e65100;
+    border: 1px solid rgba(255, 152, 0, 0.55);
+    animation: resv-checkout-glow 1.4s ease-in-out infinite;
+}
+
+.resv-checkout-countdown[data-checkout-state="due"] {
+    background: rgba(229, 57, 53, 0.16);
+    color: #c62828;
+    border: 1px solid rgba(229, 57, 53, 0.65);
+    animation: resv-checkout-pulse 1s ease-in-out infinite;
+}
+
+[data-theme="dark"] .resv-checkout-countdown[data-checkout-state="far"] {
+    background: rgba(76, 175, 80, 0.14);
+    color: #81c784;
+    border-color: rgba(76, 175, 80, 0.4);
+}
+
+[data-theme="dark"] .resv-checkout-countdown[data-checkout-state="near"] {
+    background: rgba(66, 165, 245, 0.16);
+    color: #82b1ff;
+    border-color: rgba(66, 165, 245, 0.4);
+}
+
+[data-theme="dark"] .resv-checkout-countdown[data-checkout-state="warn"] {
+    background: rgba(255, 179, 71, 0.18);
+    color: #ffcc80;
+    border-color: rgba(255, 179, 71, 0.55);
+}
+
+[data-theme="dark"] .resv-checkout-countdown[data-checkout-state="due"] {
+    background: rgba(239, 83, 80, 0.2);
+    color: #ff8a80;
+    border-color: rgba(239, 83, 80, 0.6);
+}
+
+/* Per-amenity time left (inside each amenity card in the modal) */
+.resv-amenity-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+    padding: 0.24rem 0.55rem;
+    border-radius: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.2;
+    width: fit-content;
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.resv-amenity-countdown:empty {
+    display: none;
+}
+
+.resv-amenity-countdown[data-checkout-state="far"] {
+    background: rgba(23, 138, 82, 0.08);
+    color: #178a52;
+    border: 1px solid rgba(23, 138, 82, 0.3);
+}
+
+.resv-amenity-countdown[data-checkout-state="near"] {
+    background: rgba(33, 150, 243, 0.1);
+    color: #1976d2;
+    border: 1px solid rgba(33, 150, 243, 0.35);
+}
+
+.resv-amenity-countdown[data-checkout-state="warn"] {
+    background: rgba(255, 167, 38, 0.16);
+    color: #e65100;
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    animation: resv-checkout-glow 1.4s ease-in-out infinite;
+}
+
+.resv-amenity-countdown[data-checkout-state="due"] {
+    background: rgba(229, 57, 53, 0.16);
+    color: #c62828;
+    border: 1px solid rgba(229, 57, 53, 0.6);
+    animation: resv-checkout-pulse 1s ease-in-out infinite;
+}
+
+/* Table pill — only shows within the final 2 hours */
+.table-checkout-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.45rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.table-checkout-countdown:empty {
+    display: none;
+}
+
+.table-checkout-countdown[data-checkout-state="near"] {
+    background: rgba(33, 150, 243, 0.12);
+    color: #1976d2;
+    border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.table-checkout-countdown[data-checkout-state="warn"] {
+    background: rgba(255, 167, 38, 0.16);
+    color: #e65100;
+    border: 1px solid rgba(255, 152, 0, 0.55);
+    animation: resv-checkout-glow 1.4s ease-in-out infinite;
+}
+
+.table-checkout-countdown[data-checkout-state="due"] {
+    background: rgba(229, 57, 53, 0.16);
+    color: #c62828;
+    border: 1px solid rgba(229, 57, 53, 0.65);
+    animation: resv-checkout-pulse 1s ease-in-out infinite;
+}
+
+[data-theme="dark"] .table-checkout-countdown[data-checkout-state="near"] {
+    background: rgba(66, 165, 245, 0.16);
+    color: #82b1ff;
+    border-color: rgba(66, 165, 245, 0.4);
+}
+
+[data-theme="dark"] .table-checkout-countdown[data-checkout-state="warn"] {
+    background: rgba(255, 179, 71, 0.18);
+    color: #ffcc80;
+    border-color: rgba(255, 179, 71, 0.55);
+}
+
+[data-theme="dark"] .table-checkout-countdown[data-checkout-state="due"] {
+    background: rgba(239, 83, 80, 0.2);
+    color: #ff8a80;
+    border-color: rgba(239, 83, 80, 0.6);
+}
+
+@keyframes resv-checkout-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); transform: scale(1); }
+    50% { box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.18); transform: scale(1.03); }
+}
+
+@keyframes resv-checkout-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.35); transform: scale(1); }
+    50% { box-shadow: 0 0 0 6px rgba(229, 57, 53, 0); transform: scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .resv-checkout-countdown[data-checkout-state="warn"],
+    .resv-checkout-countdown[data-checkout-state="due"],
+    .resv-amenity-countdown[data-checkout-state="warn"],
+    .resv-amenity-countdown[data-checkout-state="due"],
+    .table-checkout-countdown[data-checkout-state="warn"],
+    .table-checkout-countdown[data-checkout-state="due"] {
+        animation: none;
+    }
+}
+
+/* Compact timer (guest detail modal) */
+.resv-checkout-countdown--compact {
+    margin-bottom: 0.75rem;
+    font-size: 0.78rem;
+    padding: 0.45rem 0.8rem;
+}
+
+/* ── Mixed Time badge (multiple amenities with different time periods) ─── */
+
+.resv-date-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(255, 167, 38, 0.16);
+    color: #b26a00;
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+[data-theme="dark"] .resv-date-badge {
+    background: rgba(255, 179, 71, 0.16);
+    color: #ffcc80;
+    border-color: rgba(255, 179, 71, 0.5);
+}
+
+/* Overlay variant: floats over the top-right corner of the date value
+   (needs a position:relative parent — the modal date <strong> has one). */
+.resv-date-badge {
+    position: absolute;
+    top: -0.65rem;
+    right: -0.45rem;
+    transform: scale(0.92);
+}
+
+.resv-date-badge--row {
+    position: static;
+    transform: none;
+    margin-top: 0.35rem;
+}

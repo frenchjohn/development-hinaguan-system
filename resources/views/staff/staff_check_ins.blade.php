@@ -307,8 +307,7 @@
 						</div>
 					</div>
 
-					<div class="guest-table-wrap" id="reservationTableWrap">
-						<table class="guest-table">
+					<div class="guest-table-wrap" id="reservationTableWrap">                        <table class="guest-table">
 							<thead>
 								<tr>
 									<th>Reservation</th>
@@ -316,6 +315,7 @@
 									<th>Main Guest</th>
 									<th>Guests Count</th>
 									<th>Amenities</th>
+									<th>Time left</th>
 								</tr>
 							</thead>
 							<tbody id="reservationTableBody">
@@ -325,6 +325,12 @@
 										$guestInitials = $primaryGuest
 											? collect(explode(' ', trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?'
 											: '?';
+										// Mixed Time badge: multiple amenities spanning different time periods
+										$resvTimePeriods = $reservation->reservationAmenities
+											->map(fn ($ra) => str_replace([' Aircon', 'Aircon'], '', (string) $ra->pricing_type))
+											->filter()
+											->unique();
+										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
 									@endphp
 									<tr
 										class="reservation-row"
@@ -336,6 +342,9 @@
 										<td>
 											<div class="guest-name">Reservation #{{ $reservation->id }}</div>
 											<div class="guest-meta">{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</div>
+											@if ($isMixedTime)
+												<span class="resv-date-badge resv-date-badge--row">Mixed Time</span>
+											@endif
 										</td>
 										<td class="mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : '—' }}</td>
 										<td>
@@ -357,10 +366,13 @@
 											@endphp
 											{{ $amenityNames ?: '—' }}
 										</td>
+										<td>
+											<span class="table-checkout-countdown" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-checkout-state=""></span>
+										</td>
 									</tr>
 								@empty
 									<tr>
-										<td colspan="5" class="guest-empty">No active reservations found.</td>
+										<td colspan="6" class="guest-empty">No active reservations found.</td>
 									</tr>
 								@endforelse
 							</tbody>
@@ -759,16 +771,17 @@
 										<input type="email" name="check_in_primary_guest[email]" placeholder="Email address">
 									</label>
 								</div>
-							</div>
-
-							<div class="guest-form__section">
-								<div class="guest-form__section-header">
-									<h4 class="guest-form__section-title">Companions</h4>
-									<button type="button" class="guest-form__secondary" id="checkInAddCompanionBtn">+ Add Companion</button>
+							</div>								<div class="guest-form__section">
+									<div class="guest-form__section-header">
+										<h4 class="guest-form__section-title">Companions</h4>
+										<div style="display: flex; gap: 0.5rem;">
+											<button type="button" class="guest-form__secondary" id="checkInAddCompanionBtn">+ Add Single</button>
+											<button type="button" class="guest-form__secondary" id="checkInBulkCompanionBtn">+ Add Bulk</button>
+										</div>
+									</div>
+									<div id="checkInCompanionList" class="guest-companion-list"></div>
+									<div id="checkInCompanionHiddenFields"></div>
 								</div>
-								<div id="checkInCompanionList" class="guest-companion-list"></div>
-								<div id="checkInCompanionHiddenFields"></div>
-							</div>
 
 							<div class="guest-form__actions">
 								<button type="button" class="guest-form__secondary" data-close-check-in-modal="true">Cancel</button>
@@ -887,6 +900,80 @@
 							<div class="guest-form__actions">
 								<button type="button" class="guest-form__secondary" data-close-check-in-companion-modal="true">Cancel</button>
 								<button type="submit" class="guest-form__button">Add Companion</button>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				{{-- Check In Confirmation Modal --}}
+				<div class="guest-modal guest-modal--compact" id="checkInConfirmationModal" aria-hidden="true">
+					<div class="guest-modal__backdrop" data-close-check-in-confirmation="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
+						<button type="button" class="guest-modal__close" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
+						<h3 id="checkInConfirmationTitle" class="guest-modal__title">Check In Reservation</h3>
+						<div id="checkInConfirmationBody" class="guest-modal__body"></div>
+						<div class="guest-form__actions">
+							<button type="button" class="guest-form__secondary" data-close-check-in-confirmation="true">Cancel</button>
+							<button type="button" class="guest-form__button" id="confirmCheckInBtn">Yes, Check In</button>
+						</div>
+					</div>
+				</div>
+
+				{{-- Companion Groups Summary Modal --}}
+				<div class="guest-modal guest-modal--compact" id="companionSummaryModal" aria-hidden="true">
+					<div class="guest-modal__backdrop" data-close-companion-summary="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
+						<button type="button" class="guest-modal__close" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
+						<h3 id="companionSummaryTitle" class="guest-modal__title">Companion Groups Summary</h3>
+						<div id="companionSummaryBody" class="guest-modal__body"></div>
+						<div class="guest-form__actions">
+							<button type="button" class="guest-form__secondary" data-close-companion-summary="true">Cancel</button>
+							<button type="button" class="guest-form__button" id="proceedToCheckInBtn">Proceed to Check In</button>
+						</div>
+					</div>
+				</div>
+
+				{{-- Bulk Companion Modal --}}
+				<div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true">
+					<div class="guest-modal__backdrop" data-close-bulk-companion-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
+						<button type="button" class="guest-modal__close" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
+						<h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
+						<form id="bulkCompanionForm" class="guest-form" action="#">
+							<div class="guest-form__row guest-form__row--two">
+								<label class="guest-form__field">
+									<span>Gender</span>
+									<select name="gender" id="bulkCompanionGender">
+										<option value="Male">Male</option>
+										<option value="Female">Female</option>
+									</select>
+								</label>
+								<label class="guest-form__field">
+									<span>Nationality</span>
+									<select name="is_foreigner" id="bulkCompanionIsForeigner">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</label>
+							</div>
+							<div class="guest-form__row guest-form__row--two">
+								<label class="guest-form__field">
+									<span>Age Group</span>
+									<select name="age_group" id="bulkCompanionAgeGroup">
+										<option value="0-12">Kids (0-12)</option>
+										<option value="13-17">Teens (13-17)</option>
+										<option value="18-59">Adults (18-59)</option>
+										<option value="60+">Seniors (60+)</option>
+									</select>
+								</label>
+								<label class="guest-form__field">
+									<span>Quantity</span>
+									<input type="number" name="quantity" id="bulkCompanionQuantity" min="1" max="50" value="1" required>
+								</label>
+							</div>
+							<div class="guest-form__actions">
+								<button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button" id="generateCompanionsBtn">Generate Companions</button>
 							</div>
 						</form>
 					</div>

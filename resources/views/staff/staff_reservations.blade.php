@@ -202,7 +202,6 @@
                                     <th>Session</th>
                                     <th>Guests</th>
                                     <th>Status</th>
-                                    <th>Checkout</th>
                                     <th>Amount</th>
                                     <th>Actions</th>
                                 </tr>
@@ -263,13 +262,6 @@
                                         <td>
                                             <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }}">{{ $reservation->status }}</span>
                                         </td>
-                                        <td>
-                                            <span
-                                                class="resv-checkout-label"
-                                                data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}"
-                                                data-checkout-state=""
-                                            ></span>
-                                        </td>
                                         <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
                                         <td>
                                             <button type="button" class="resv-row-action" aria-label="View reservation details">
@@ -279,7 +271,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="guest-empty">No pending online reservations found.</td>
+                                        <td colspan="7" class="guest-empty">No pending online reservations found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

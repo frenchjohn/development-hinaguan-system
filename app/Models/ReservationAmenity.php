@@ -18,6 +18,7 @@ class ReservationAmenity extends Model
         'price_at_booking',
         'quantity',
         'remarks',
+        'status',
     ];
 
     public function amenity()
