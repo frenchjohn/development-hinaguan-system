@@ -85,6 +85,41 @@ $isAmenitySlotTaken = function (string $amenityId, string $date, string $slot, ?
     return false;
 };
 
+// Returns the checkout datetime (Carbon) for a reservation, given its start
+// date and its normalized slot names. Daytime ends at daytime_end (18:00) of
+// the date; Nighttime and DayToNight end at nighttime_end (06:00) of the NEXT
+// day; NightToDay ends at daytime_end (18:00) of the next day. When multiple
+// slots exist the LATEST checkout wins. Returns null when nothing matches.
+$reservationCheckoutAt = function (?string $date, array $slots): ?\Illuminate\Support\Carbon {
+    if (! $date) {
+        return null;
+    }
+
+    $settings = \App\Models\ParkSetting::first();
+    $dayEnd = \Illuminate\Support\Carbon::parse($settings->daytime_end ?? '18:00');
+    $nightEnd = \Illuminate\Support\Carbon::parse($settings->nighttime_end ?? '06:00');
+
+    $base = \Illuminate\Support\Carbon::parse($date);
+    $latest = null;
+
+    foreach ($slots as $slot) {
+        $baseSlot = str_replace([' Aircon', 'Aircon'], '', $slot);
+        $end = match (true) {
+            str_contains($baseSlot, 'DayToNight') => $base->copy()->addDay()->setTime($nightEnd->hour, $nightEnd->minute),
+            str_contains($baseSlot, 'NightToDay') => $base->copy()->addDay()->setTime($dayEnd->hour, $dayEnd->minute),
+            str_contains($baseSlot, 'Daytime') => $base->copy()->setTime($dayEnd->hour, $dayEnd->minute),
+            str_contains($baseSlot, 'Nighttime') => $base->copy()->addDay()->setTime($nightEnd->hour, $nightEnd->minute),
+            default => null,
+        };
+
+        if ($end && (! $latest || $end->gt($latest))) {
+            $latest = $end;
+        }
+    }
+
+    return $latest;
+};
+
 // Returns the ids of all amenities already occupied for the requested slot
 // on the given start date (used by the availability endpoints).
 $occupiedAmenityIdsForSlot = function (string $date, string $slot) use ($slotCoveringChecks): array {
@@ -1092,7 +1127,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('verify-email-otp')->withoutMiddleware([VerifyCsrfToken::class]);
 });
 
-Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken) {
+Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $reservationCheckoutAt) {
     Route::get('/dashboard', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
@@ -1215,7 +1250,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ));
     })->name('dashboard');
 
-    Route::get('/reservations', function (Request $request) {
+    Route::get('/reservations', function (Request $request) use ($reservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -1235,7 +1270,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $reservationData = $reservations->mapWithKeys(function ($reservation) {
+        $reservationData = $reservations->mapWithKeys(function ($reservation) use ($reservationCheckoutAt) {
             // Extract unique time slots from reservation amenities
             $timeSlots = $reservation->reservationAmenities
                 ->pluck('pricing_type')
@@ -1254,6 +1289,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 ->sort()
                 ->toArray();
 
+            $checkoutAt = $reservationCheckoutAt($reservation->reservation_date, $timeSlots);
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
@@ -1261,6 +1298,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $reservation->email,
                 'reservation_date' => $reservation->reservation_date,
                 'check_in' => $reservation->check_in,
+                'checkout_at' => $checkoutAt?->toIso8601String(),
                 'number_of_guests' => $reservation->number_of_guests,
                 'status' => $reservation->status,
                 'reservation_type' => $reservation->reservation_type,
@@ -2446,7 +2484,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.update');
 
-    Route::get('/reservations/refresh', function (Request $request) {
+    Route::get('/reservations/refresh', function (Request $request) use ($reservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -2466,7 +2504,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $reservationData = $reservations->mapWithKeys(function ($reservation) {
+        $reservationData = $reservations->mapWithKeys(function ($reservation) use ($reservationCheckoutAt) {
             // Extract unique time slots from reservation amenities
             $timeSlots = $reservation->reservationAmenities
                 ->pluck('pricing_type')
@@ -2483,6 +2521,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 ->sort()
                 ->toArray();
 
+            $checkoutAt = $reservationCheckoutAt($reservation->reservation_date, $timeSlots);
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
@@ -2490,6 +2530,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $reservation->email,
                 'reservation_date' => $reservation->reservation_date,
                 'check_in' => $reservation->check_in,
+                'checkout_at' => $checkoutAt?->toIso8601String(),
                 'number_of_guests' => $reservation->number_of_guests,
                 'status' => $reservation->status,
                 'reservation_type' => $reservation->reservation_type,

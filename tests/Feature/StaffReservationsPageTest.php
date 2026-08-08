@@ -93,6 +93,50 @@ class StaffReservationsPageTest extends TestCase
         });
     }
 
+    public function test_reservation_data_includes_computed_checkout_datetime_per_slot(): void
+    {
+        $this->staffSession();
+        $this->createAmenity('amenity-1');
+
+        // Daytime ends at 18:00 of the reservation date.
+        $daytime = $this->createReservation('2026-08-10');
+        ReservationAmenity::create([
+            'reservation_id' => $daytime->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'Daytime',
+            'price_at_booking' => 500,
+            'quantity' => 1,
+        ]);
+
+        // NightToDay covers night of the date + day of the NEXT day -> 18:00 next day.
+        $nightToDay = $this->createReservation('2026-08-11');
+        ReservationAmenity::create([
+            'reservation_id' => $nightToDay->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'NightToDay',
+            'price_at_booking' => 700,
+            'quantity' => 1,
+        ]);
+
+        // Nighttime ends at 06:00 of the next day.
+        $nighttime = $this->createReservation('2026-08-12');
+        ReservationAmenity::create([
+            'reservation_id' => $nighttime->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'Nighttime',
+            'price_at_booking' => 700,
+            'quantity' => 1,
+        ]);
+
+        $response = $this->get('/staff/reservations');
+        $response->assertOk();
+
+        $data = $response->viewData('reservationData');
+        $this->assertSame('2026-08-10T18:00:00+08:00', $data[$daytime->id]['checkout_at']);
+        $this->assertSame('2026-08-12T18:00:00+08:00', $data[$nightToDay->id]['checkout_at']);
+        $this->assertSame('2026-08-13T06:00:00+08:00', $data[$nighttime->id]['checkout_at']);
+    }
+
     public function test_reservation_availability_endpoint_disables_dates_where_the_amenity_is_booked(): void
     {
         $this->staffSession();

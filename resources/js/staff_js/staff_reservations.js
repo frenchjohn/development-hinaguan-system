@@ -75,6 +75,70 @@ window.AppPage['staff_reservations'] = function () {
         return `<div class="time-slot-labels">${slots.map(slot => `<span class="time-slot-label time-slot-label--${String(slot).toLowerCase().replace(/\s+/g, '')}">${escapeHtml(slot)}</span>`).join('')}</div>`;
     };
 
+    // ── Checkout countdown ────────────────────────────────────────────────
+    // Slot checkout times: Daytime ends 18:00 of the date; Nighttime and
+    // DayToNight end 06:00 of the NEXT day; NightToDay ends 18:00 of the next
+    // day. The server passes the computed checkout datetime as ISO 8601.
+    const CHECKOUT_NEAR_MS = 2 * 60 * 60 * 1000;   // 2 hours before checkout
+    const CHECKOUT_WARN_MS = 10 * 60 * 1000;       // 10 minutes before checkout
+
+    const formatCheckoutLeft = (ms) => {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        if (hours > 0) return `${hours}h ${minutes}m`;
+        if (minutes > 0) return `${minutes}m ${seconds}s`;
+        return `${seconds}s`;
+    };
+
+    // Returns the current label state for a checkout timestamp (ISO or empty).
+    const getCheckoutState = (iso) => {
+        if (!iso) return { visible: false };
+        const target = new Date(iso).getTime();
+        if (Number.isNaN(target)) return { visible: false };
+        const remaining = target - Date.now();
+        if (remaining > CHECKOUT_NEAR_MS) return { visible: false };
+        if (remaining <= 0) return { visible: true, tone: 'due', text: 'Time to Checked Out' };
+        if (remaining <= CHECKOUT_WARN_MS) return { visible: true, tone: 'warn', text: `Checkout in ${formatCheckoutLeft(remaining)}` };
+        return { visible: true, tone: 'near', text: `Checkout in ${formatCheckoutLeft(remaining)}` };
+    };
+
+    // (Re)renders every checkout label on the page — called on load, on row
+    // render and on a 30s interval so the countdown stays live.
+    const refreshCheckoutLabels = () => {
+        document.querySelectorAll('.resv-checkout-label').forEach((label) => {
+            const state = getCheckoutState(label.getAttribute('data-checkout-at'));
+            if (!state.visible) {
+                label.textContent = '';
+                label.removeAttribute('data-checkout-state');
+                return;
+            }
+            label.textContent = state.text;
+            label.setAttribute('data-checkout-state', state.tone);
+        });
+    };
+
+    // Tighten the interval to 5s once any label is within the warning window,
+    // otherwise a calm 30s cadence. Stored on window (with a guard) so SPA
+    // re-inits don't stack duplicate timers, mirroring the clock pattern below.
+    let checkoutCadence = 30000;
+    if (window.__resvCheckoutTicker) clearInterval(window.__resvCheckoutTicker);
+    if (window.__resvCheckoutAdaptTicker) clearInterval(window.__resvCheckoutAdaptTicker);
+    const startCheckoutTicker = (ms) => {
+        if (window.__resvCheckoutTicker) clearInterval(window.__resvCheckoutTicker);
+        window.__resvCheckoutTicker = setInterval(refreshCheckoutLabels, ms);
+        checkoutCadence = ms;
+    };
+    startCheckoutTicker(30000);
+    window.__resvCheckoutAdaptTicker = setInterval(() => {
+        const hot = document.querySelector('.resv-checkout-label[data-checkout-state="warn"], .resv-checkout-label[data-checkout-state="due"]');
+        const desired = hot ? 5000 : 30000;
+        if (desired !== checkoutCadence) {
+            startCheckoutTicker(desired);
+        }
+    }, 5000);
+
     // Shared 7-column row markup (used by server rows, refresh + fallback renders)
     const buildRowCells = (reservation) => {
         const formatDate = (dateStr) => {
@@ -98,6 +162,9 @@ window.AppPage['staff_reservations'] = function () {
                 <td>${escapeHtml(reservation.number_of_guests)}</td>
                 <td>
                     <span class="reservation-status reservation-status--${String(reservation.status || '').toLowerCase()}">${escapeHtml(reservation.status)}</span>
+                </td>
+                <td>
+                    <span class="resv-checkout-label" data-checkout-at="${escapeHtml(reservation.checkout_at || '')}" data-checkout-state=""></span>
                 </td>
                 <td>₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
                 <td>
@@ -1306,6 +1373,9 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="skeleton skeleton-text skeleton-text--short"></div>
                     </td>
                     <td>
+                        <div class="skeleton skeleton-text skeleton-text--short"></div>
+                    </td>
+                    <td>
                         <div class="skeleton resv-skeleton-action"></div>
                     </td>
                 `;
@@ -1700,6 +1770,8 @@ window.AppPage['staff_reservations'] = function () {
         if (resultsCount) {
             resultsCount.textContent = `Showing ${filteredRows.length} of ${rows.length} reservation${rows.length === 1 ? '' : 's'}`;
         }
+
+        refreshCheckoutLabels();
     };
 
     [searchInput, sortSelect, statusFilter, checkInFrom, checkInTo].forEach((control) => {
@@ -1771,7 +1843,7 @@ window.AppPage['staff_reservations'] = function () {
             window.alert('No reservations to export.');
             return;
         }
-        const header = ['Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Amount'];
+        const header = ['Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Checkout', 'Amount'];
         const body = visibleRows.map(row => {
             const cells = row.querySelectorAll('td');
             return [
@@ -1782,6 +1854,7 @@ window.AppPage['staff_reservations'] = function () {
                 cells[3]?.textContent.trim() || '',
                 cells[4]?.textContent.trim() || '',
                 cells[5]?.textContent.trim() || '',
+                cells[6]?.textContent.trim() || '',
             ];
         });
         const csv = [header, ...body]
@@ -1806,6 +1879,7 @@ window.AppPage['staff_reservations'] = function () {
     });
 
     applyFilters();
+    refreshCheckoutLabels();
 };
 
 document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_reservations']());
