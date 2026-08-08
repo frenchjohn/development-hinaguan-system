@@ -21,13 +21,17 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_settings.css',
-        'resources/css/staff_css/staff_theme.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_settings.js',
         'resources/js/staff_chatbot.js',
     ])
+    <style>
+        .dash-main::before {
+            background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
+        }
+    </style>
 </head>
 <body class="antialiased staff-portal">
     <div class="dash-layout">

@@ -19,11 +19,15 @@
         'resources/components/css_js/header.css',
         'resources/components/css_js/admin_sidemenu.css',
         'resources/css/admin_css/admin_amenitiesmanagement.css',
-        'resources/css/staff_css/staff_theme.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_amenitiesmanagement.js',
     ])
+    <style>
+        .dash-main::before {
+            background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
+        }
+    </style>
 </head>
 <body class="antialiased admin-portal">
     <div class="dash-layout">

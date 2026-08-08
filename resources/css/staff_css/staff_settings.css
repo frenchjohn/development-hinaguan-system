@@ -1,3 +1,42 @@
+
+:root {
+    --hp-green-dark: #14402b;
+    --hp-green-mid: #2e7d55;
+    --hp-green: #1c5c3c;
+    --hp-text: #1c2b22;
+    --hp-text-muted: #5c6b62;
+    --hp-gold: #8a7a4d;
+    --hp-cream: #f3f6f3;
+    --hp-font-ui: 'Montserrat', system-ui, -apple-system, sans-serif;
+    --hp-font-display: 'Poppins', 'Montserrat', sans-serif;
+    
+    --radius-xl: 16px;
+    --radius-lg: 14px;
+    
+    /* Glassmorphism tokens - Light Mode */
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-bg-hover: rgba(255, 255, 255, 0.5);
+    --glass-bg-strong: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-border-strong: rgba(255, 255, 255, 0.8);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --glass-blur: blur(24px);
+}
+
+[data-theme="dark"] {
+    --hp-text: #eaf0eb;
+    --hp-text-muted: #9baaa1;
+    --hp-green-dark: #152619;
+    
+    /* Glassmorphism tokens - Dark Mode */
+    --glass-bg: rgba(0, 0, 0, 0.35);
+    --glass-bg-hover: rgba(0, 0, 0, 0.45);
+    --glass-bg-strong: rgba(0, 0, 0, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-border-strong: rgba(255, 255, 255, 0.25);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
 :root {
     color-scheme: light;
 }
@@ -17,6 +56,80 @@ body {
 
 .dash-main {
     flex: 1;
+    position: relative;
+    z-index: 0;
+    background: transparent;
+}
+
+/* Frosted-glass forest backdrop — the translucent panels blur this layer */
+.dash-main::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    opacity: 1;
+}
+
+[data-theme="dark"] .dash-main::before {
+    filter: brightness(0.6) saturate(0.92);
+}
+
+/* Keep the edge-to-edge header in sync with this page's 2rem content gutters */
+body.staff-portal .dash-header {
+    margin-top: -2rem;
+    margin-left: -2rem;
+    margin-right: -2rem;
+    margin-bottom: 2rem;
+}
+
+/* Alerts & badges (shared portal component) */
+.alert {
+    padding: 0.85rem 1.1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    color: var(--ink);
+    box-shadow: var(--glass-shadow);
+}
+
+.alert--success {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+.alert--error {
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    border: 1px solid var(--glass-border);
+}
+
+.badge--enabled {
+    background: var(--green-soft);
+    color: var(--green-deep);
+}
+
+.badge--disabled {
+    background: var(--danger-soft);
+    color: var(--danger);
 }
 
 .dash-content {
@@ -25,11 +138,13 @@ body {
 
 .settings-panel {
     padding: 2rem;
-    background: #fff;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     border-radius: 1rem;
-    box-shadow: 0 18px 45px rgba(13, 44, 29, 0.08);
+    box-shadow: var(--glass-shadow);
     transition: background 0.3s ease, border-color 0.3s ease;
-    border: 1px solid rgba(13, 44, 29, 0.1);
+    border: 1px solid var(--glass-border);
 }
 
 [data-theme="dark"] .settings-panel {
@@ -78,11 +193,13 @@ body {
 
 .settings-form__field input {
     width: 100%;
-    border: 1px solid rgba(13, 44, 29, 0.1);
+    border: 1px solid var(--glass-border);
     border-radius: .75rem;
     padding: .8rem .9rem;
     font: inherit;
-    background: #fff;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     color: var(--hp-text);
     transition: background 0.3s ease, border-color 0.3s ease;
 }
@@ -131,7 +248,7 @@ body {
 .otp-card {
     margin-top: 1.5rem;
     padding: 1rem;
-    border: 1px solid rgba(13, 44, 29, 0.1);
+    border: 1px solid var(--glass-border);
     border-radius: 1rem;
     background: var(--hp-cream);
     transition: background 0.3s ease, border-color 0.3s ease;
@@ -152,11 +269,13 @@ body {
 .otp-form input {
     flex: 1;
     min-width: 220px;
-    border: 1px solid rgba(13, 44, 29, 0.1);
+    border: 1px solid var(--glass-border);
     border-radius: .75rem;
     padding: .8rem .9rem;
     font: inherit;
-    background: #fff;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     color: var(--hp-text);
     transition: background 0.3s ease, border-color 0.3s ease;
 }
@@ -177,7 +296,9 @@ body {
 }
 .modal.is-open { display: flex; }
 .modal__backdrop { position: absolute; inset: 0; background: rgba(13,44,29,.45); }
-.modal__panel { position: relative; width: min(520px, calc(100vw - 2rem)); background: #fff; border-radius: 1rem; padding: 1rem; box-shadow: 0 20px 60px rgba(13,44,29,.2); z-index: 1; transition: background 0.3s ease; }
+.modal__panel { position: relative; width: min(520px, calc(100vw - 2rem)); background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur); border-radius: 1rem; padding: 1rem; box-shadow: var(--glass-shadow); z-index: 1; transition: background 0.3s ease; }
 [data-theme="dark"] .modal__panel { background: rgba(30, 30, 30, 0.95); }
 .modal__header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; }
 .modal__close { border:0; background:transparent; font-size:1.2rem; cursor:pointer; color: var(--hp-text); }
@@ -346,7 +467,9 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: #fff;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     z-index: 9999;
     display: none;
     opacity: 0;

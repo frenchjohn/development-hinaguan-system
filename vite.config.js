@@ -42,7 +42,6 @@ export default defineConfig({
                 'resources/js/admin_js/admin_usermanagement.js',
 
                 // Staff pages
-                'resources/css/staff_css/staff_theme.css',
                 'resources/css/staff_css/staff_dashboard.css',
                 'resources/js/staff_js/staff_dashboard.js',
                 'resources/css/staff_css/staff_check_ins.css',

@@ -22,7 +22,6 @@
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/staff_css/staff_dashboard.css',
         'resources/css/staff_css/staff_reservations.css',
-        'resources/css/staff_css/staff_theme.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -31,7 +30,7 @@
     ])
     <style>
         .dash-main::before {
-            background-image: url('{{ asset('storage/design_images/background_image1.png') }}');
+            background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
         }
     </style>
 </head>
