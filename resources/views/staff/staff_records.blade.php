@@ -93,10 +93,13 @@
 
                 <!-- GUESTS TABLE SECTION -->
                 <section class="dash-panel guest-panel" data-tab-content="guests">
-                    <div class="dash-panel__head guest-panel__head">
+                    <div class="dash-panel__head guest-panel__head" style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-dark); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
                         <div>
-                            <h3 class="dash-panel__title">Checked-Out Guest Records</h3>
-                            <p class="dash-panel__subtitle">Guests who have completed their visit and checked out</p>
+                            <h3 class="dash-panel__title" style="margin: 0; font-size: 1.1rem; color: var(--hp-text);">Checked-Out Guest Records</h3>
+                            <p class="dash-panel__subtitle" style="margin: 0; font-size: 0.85rem; color: var(--hp-text-muted);">Guests who have completed their visit and checked out</p>
                         </div>
                     </div>
 
@@ -149,6 +152,7 @@
                                     <th>Gender</th>
                                     <th>Status</th>
                                     <th>Checked Out</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="guestTableBody">
@@ -185,10 +189,13 @@
                                             <span class="status-pill {{ $customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
                                         </td>
                                         <td class="mono-cell">{{ $guestEntry->checked_out_at ? \Carbon\Carbon::parse($guestEntry->checked_out_at)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                        <td style="text-align: right; color: #9ca3af;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="guest-empty">No checked-out guest records found.</td>
+                                        <td colspan="6" class="guest-empty">No checked-out guest records found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -198,10 +205,13 @@
 
                 <!-- RESERVATIONS TABLE SECTION -->
                 <section class="dash-panel guest-panel" data-tab-content="reservations" hidden style="margin-top: 2rem;">
-                    <div class="dash-panel__head guest-panel__head">
+                    <div class="dash-panel__head guest-panel__head" style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-dark); color: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                        </div>
                         <div>
-                            <h3 class="dash-panel__title">Completed Reservations</h3>
-                            <p class="dash-panel__subtitle">Records of reservations that have been checked out</p>
+                            <h3 class="dash-panel__title" style="margin: 0; font-size: 1.1rem; color: var(--hp-text);">Completed Reservations</h3>
+                            <p class="dash-panel__subtitle" style="margin: 0; font-size: 0.85rem; color: var(--hp-text-muted);">Records of reservations that have been checked out</p>
                         </div>
                     </div>
 
@@ -252,6 +262,7 @@
                                     <th>Check-In</th>
                                     <th>Check-Out</th>
                                     <th>Amount Paid</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="reservationTableBody">
@@ -273,6 +284,11 @@
                                                 $bookerInitials = collect(explode(' ', trim($reservation->booker_name ?? '')))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
                                             @endphp
                                             <div class="cell-person">
+                                                @if($reservation->reservationGuests->count() > 0)
+                                                    <button type="button" class="btn-expand-row" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Companions">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                                    </button>
+                                                @endif
                                                 <span class="cell-person__avatar">{{ $bookerInitials }}</span>
                                                 <div class="cell-person__body">
                                                     <div class="guest-name">{{ $reservation->booker_name }}</div>
@@ -288,10 +304,35 @@
                                         <td class="mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : 'N/A' }}</td>
                                         <td class="mono-cell">{{ $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y h:i A') : 'N/A' }}</td>
                                         <td class="num-cell">₱{{ number_format($reservation->amount_paid, 2) }}</td>
+                                        <td style="text-align: right; color: #9ca3af;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                        </td>
                                     </tr>
+
+                                    {{-- COMPANION ROWS --}}
+                                    @foreach ($reservation->reservationGuests as $guest)
+                                        @if(!$guest->is_primary_guest && $guest->customer)
+                                            <tr class="companion-row companion-of-{{ $reservation->id }}" style="display: none;">
+                                                <td colspan="2">
+                                                    <div class="cell-person cell-person--companion">
+                                                        <span class="cell-person__avatar" title="Companion">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
+                                                        </span>
+                                                        <div class="cell-person__body">
+                                                            <div class="guest-name">{{ trim(($guest->customer->first_name ?? '') . ' ' . ($guest->customer->middle_name ?? '') . ' ' . ($guest->customer->last_name ?? '')) }}</div>
+                                                            <div class="guest-meta">ID: {{ $guest->customer->id }}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ $guest->customer->age ?? 'N/A' }}</td>
+                                                <td><span class="status-pill {{ $guest->customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $guest->customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span></td>
+                                                <td colspan="4"></td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="guest-empty">No checked-out reservations found.</td>
+                                        <td colspan="8" class="guest-empty">No checked-out reservations found.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

@@ -629,6 +629,16 @@
 										$typePillClass = $reservationType === 'walk_in' ? 'status-pill--walk-in' : ($reservationType ? 'status-pill--online' : 'status-pill--checked-out');
 										
 										$isPrimary = $reservationEntry?->is_primary_guest ?? false;
+										$isStray = false;
+										
+										if (!$isPrimary && $reservationEntry?->reservation) {
+											$primaryGuest = $reservationEntry->reservation->reservationGuests->firstWhere('is_primary_guest', true);
+											if (!$primaryGuest || $primaryGuest->checked_out_at !== null) {
+												$isPrimary = true;
+												$isStray = true;
+											}
+										}
+										
 										$firstName = strtolower(trim($customer->first_name ?? ''));
 										$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
 										
@@ -647,7 +657,7 @@
 										
 										// Hierarchy variables
 										$companionCount = 0;
-										if ($isPrimary && $reservationEntry?->reservation) {
+										if ($isPrimary && $reservationEntry?->reservation && !$isStray) {
 											$companionCount = $reservationEntry->reservation->reservationGuests->where('is_primary_guest', false)->filter(function($g) { return !$g->checked_out_at; })->count();
 										}
 										
@@ -724,6 +734,9 @@
 															<small style='color:var(--hp-text-muted); display:block; font-weight:normal; margin-top:2px;'>{{ $customer->middle_name }}</small>
 														@else
 															{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}
+														@endif
+														@if($isStray)
+															<span style="font-size: 0.65rem; padding: 0.15rem 0.35rem; background-color: var(--warn, #f59e0b); color: #fff; border-radius: 4px; margin-left: 0.35rem; font-weight: 600; vertical-align: middle;">Stray</span>
 														@endif
 													</div>
 													<div class="guest-meta">ID: {{ $isBulk ? '-' : $customer->id }}</div>
@@ -809,55 +822,62 @@
 							</div>
 						</div>
 
-						<!-- Sidebar Summary Cards (Moved from top) -->
-						<div class="sidebar-summary-grid">
-							<!-- Card 1: Active Guests -->
-							<div class="top-stat-card card-theme-green">
-								<div class="top-stat-card__icon">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+						<!-- Sidebar Summary Cards (Unified Container) -->
+						<div class="sidebar-summary-container" style="background: var(--glass-bg); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); display: flex; flex-direction: column; margin-bottom: 1.5rem;">
+							<div class="sidebar-summary-grid" style="display: flex; flex-direction: column; gap: 1rem;">
+								<!-- Item 1: Active Guests -->
+								<div class="top-stat-card card-theme-green" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
+									<div class="top-stat-card__icon" style="background: transparent; color: #16a34a; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+									</div>
+									<div class="top-stat-card__body">
+										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Active Guests</span>
+										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $activeCustomers->count() }}</strong>
+										<div class="stat-trend trend-green" style="font-size: 0.75rem;">Currently inside</div>
+									</div>
 								</div>
-								<div class="top-stat-card__body">
-									<span>Active Guests</span>
-									<strong>{{ $activeCustomers->count() }}</strong>
-									<div class="stat-trend trend-green">Currently inside</div>
+								
+								<!-- Item 2: Checked In Today -->
+								<div class="top-stat-card card-theme-blue" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
+									<div class="top-stat-card__icon" style="background: transparent; color: #2563eb; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+									</div>
+									<div class="top-stat-card__body">
+										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Checked In Today</span>
+										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $todaysCheckins }}</strong>
+										<div class="stat-trend trend-green" style="font-size: 0.75rem;">Total check-ins</div>
+									</div>
 								</div>
-							</div>
-							<!-- Card 2: Checked In Today -->
-							<div class="top-stat-card card-theme-blue">
-								<div class="top-stat-card__icon">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+								
+								<!-- Item 3: Expected Check-outs -->
+								<div class="top-stat-card card-theme-orange" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
+									<div class="top-stat-card__icon" style="background: transparent; color: #ea580c; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+									</div>
+									<div class="top-stat-card__body">
+										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Expected Check-outs</span>
+										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $expectedCheckouts }}</strong>
+										<div class="stat-trend" style="font-size: 0.75rem;">Guests near/past time</div>
+									</div>
 								</div>
-								<div class="top-stat-card__body">
-									<span>Checked In Today</span>
-									<strong>{{ $todaysCheckins }}</strong>
-									<div class="stat-trend trend-green">Total check-ins</div>
-								</div>
-							</div>
-							<!-- Card 3: Expected Check-outs -->
-							<div class="top-stat-card card-theme-orange">
-								<div class="top-stat-card__icon">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-								</div>
-								<div class="top-stat-card__body">
-									<span>Expected Check-outs</span>
-									<strong>{{ $expectedCheckouts }}</strong>
-									<div class="stat-trend">Guests near/past time</div>
-								</div>
-							</div>
-							<!-- Card 4: Walk-ins Today -->
-							<div class="top-stat-card card-theme-purple">
-								<div class="top-stat-card__icon">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-								</div>
-								<div class="top-stat-card__body">
-									<span>Walk-Ins Today</span>
-									<strong>{{ $walkInsToday }}</strong>
-									<div class="stat-trend">Walk-in guests</div>
+								
+								<!-- Item 4: Walk-ins Today -->
+								<div class="top-stat-card card-theme-purple" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
+									<div class="top-stat-card__icon" style="background: transparent; color: #9333ea; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+									</div>
+									<div class="top-stat-card__body">
+										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Walk-Ins Today</span>
+										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $walkInsToday }}</strong>
+										<div class="stat-trend" style="font-size: 0.75rem;">Walk-in guests</div>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
+					</div>
 				</div>
+				</div> <!-- Closing #guestTableSection -->
 
 					{{-- RESERVATION TABLE --}}
 					<div id="reservationTableSection" class="tab-content-section" style="display: none;">
@@ -1001,14 +1021,12 @@
 							</tbody>
 						</table>
 					</div>
+						</section>
 					</div>
 				</main>
 			</div>
 		</div>
 	</div>
-
-	<!-- Modals (Direct children of body for SPA routing) -->
-	<div class="guest-modal" id="guestModal" aria-hidden="true">
 		<div class="guest-modal__backdrop" data-close-modal="true"></div>
 					<div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
 						<button type="button" class="guest-modal__close" data-close-modal="true" aria-label="Close details">&times;</button>
@@ -1567,42 +1585,85 @@
 					<div class="guest-modal__backdrop" data-close-bulk-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
 						<button type="button" class="guest-modal__close" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
-						<h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
-						<form id="bulkCompanionForm" class="guest-form" action="#">
-							<div class="guest-form__row guest-form__row--two">
-								<label class="guest-form__field">
-									<span>Gender</span>
-									<select name="gender" id="bulkCompanionGender">
-										<option value="Male">Male</option>
-										<option value="Female">Female</option>
-									</select>
-								</label>
-								<label class="guest-form__field">
-									<span>Nationality</span>
-									<select name="is_foreigner" id="bulkCompanionIsForeigner">
-										<option value="0" selected>Filipino</option>
-										<option value="1">Foreigner</option>
-									</select>
-								</label>
+						
+						<div class="guest-modal__header" style="text-align: center; border-bottom: none; padding-bottom: 0;">
+							<div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-mid); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(46, 125, 85, 0.2);">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;">
+									<path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+								</svg>
 							</div>
-							<div class="guest-form__row guest-form__row--two">
-								<label class="guest-form__field">
-									<span>Age Group</span>
-									<select name="age_group" id="bulkCompanionAgeGroup">
-										<option value="0-12">Kids (0-12)</option>
-										<option value="13-17">Teens (13-17)</option>
-										<option value="18-59">Adults (18-59)</option>
-										<option value="60+">Seniors (60+)</option>
-									</select>
-								</label>
-								<label class="guest-form__field">
-									<span>Quantity</span>
-									<input type="number" name="quantity" id="bulkCompanionQuantity" min="1" max="50" value="1" required>
-								</label>
+							<h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
+							<p class="guest-modal__subtitle" style="color: var(--hp-text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Quickly generate multiple companions of the same demographic profile.</p>
+						</div>
+
+						<form id="bulkCompanionForm" class="guest-form" action="#" style="margin-top: 1.5rem;">
+							<div class="bulk-panel" style="background: var(--glass-bg-hover); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
+								<div class="guest-form__row guest-form__row--two">
+									<!-- Gender -->
+									<div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+										<span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Gender</span>
+										<div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
+											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+												<input type="radio" name="gender" value="Male" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
+												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Male</span>
+											</label>
+											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+												<input type="radio" name="gender" value="Female" style="position: absolute; opacity: 0; width: 0; height: 0;">
+												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Female</span>
+											</label>
+										</div>
+									</div>
+									
+									<!-- Nationality -->
+									<div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+										<span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nationality</span>
+										<div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
+											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+												<input type="radio" name="is_foreigner" value="0" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
+												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Filipino</span>
+											</label>
+											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+												<input type="radio" name="is_foreigner" value="1" style="position: absolute; opacity: 0; width: 0; height: 0;">
+												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Foreigner</span>
+											</label>
+										</div>
+									</div>
+								</div>
+
+								<!-- Age Group -->
+								<div class="guest-form__row" style="margin-top: 1.25rem;">
+									<label class="guest-form__field">
+										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Age Group</span>
+										<select name="age_group" id="bulkCompanionAgeGroup" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--hp-text); font-family: var(--hp-font-ui); font-size: 0.95rem; cursor: pointer;">
+											<option value="0-12">Kids (0-12 years)</option>
+											<option value="13-17">Teens (13-17 years)</option>
+											<option value="18-59">Adults (18-59 years)</option>
+											<option value="60+">Seniors (60+ years)</option>
+										</select>
+									</label>
+								</div>
 							</div>
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button" id="generateCompanionsBtn">Generate Companions</button>
+
+							<!-- Quantity Stepper -->
+							<div class="bulk-quantity-panel" style="text-align: center;">
+								<span class="bulk-field__label" style="display: block; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Number of Companions</span>
+								<div class="bulk-stepper" style="display: inline-flex; align-items: center; background: var(--glass-bg); border: 1px solid var(--glass-border-strong); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--glass-shadow);">
+									<button type="button" class="bulk-stepper__btn" id="bulkBtnMinus" aria-label="Decrease quantity" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--hp-text); transition: background 0.2s;">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>
+									</button>
+									<input type="number" name="quantity" id="bulkCompanionQuantity" class="bulk-stepper__input" min="1" max="50" value="1" required style="width: 60px; height: 48px; text-align: center; border: none; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); background: transparent; font-size: 1.25rem; font-weight: 700; color: var(--hp-text); -moz-appearance: textfield;">
+									<button type="button" class="bulk-stepper__btn" id="bulkBtnPlus" aria-label="Increase quantity" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--hp-text); transition: background 0.2s;">
+										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+									</button>
+								</div>
+							</div>
+
+							<div class="guest-form__actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
+								<button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true" style="flex: 1; margin: 0;">Cancel</button>
+								<button type="submit" class="guest-form__button" id="generateCompanionsBtn" style="flex: 2; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--hp-green-mid); color: white;">
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 18px; height: 18px;"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+									Generate Companions
+								</button>
 							</div>
 						</form>
 					</div>
@@ -1611,28 +1672,53 @@
 				{{-- Bulk Group Manage Modal --}}
 				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true">
 					<div class="guest-modal__backdrop" data-close-bulk-manage-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
-						<button type="button" class="guest-modal__close" data-close-bulk-manage-modal="true" aria-label="Close form">&times;</button>
-						<h3 id="bulkGroupManageTitle" class="guest-modal__title">Manage Bulk Companions</h3>
-						<div class="guest-modal__body" style="text-align: center; margin-top: 1rem;">
-							<div style="font-size: 0.85rem; color: var(--hp-text-muted); margin-bottom: 1rem;">
-								Reservation <strong id="bulkManageResId" style="color: var(--hp-text-color);">#</strong>
+					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle" style="padding: 0;">
+						<button type="button" class="guest-modal__close" data-close-bulk-manage-modal="true" aria-label="Close form" style="position: absolute; right: 1rem; top: 1rem; z-index: 10;">&times;</button>
+						
+						<div class="guest-modal__header" style="text-align: center; border-bottom: none; padding: 2rem 2rem 1rem;">
+							<div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--hp-green-light), var(--hp-green-mid)); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(46, 125, 85, 0.3);">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px;">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+								</svg>
 							</div>
-							<div id="bulkManageDemographics"></div>
+							<h3 id="bulkGroupManageTitle" class="guest-modal__title" style="font-size: 1.25rem; font-weight: 700;">Manage Bulk Companions</h3>
+							<div style="font-size: 0.85rem; color: var(--hp-text-muted); margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+								<span>Reservation</span>
+								<span id="bulkManageResId" style="background: var(--glass-bg-hover); padding: 0.2rem 0.6rem; border-radius: 12px; border: 1px solid var(--glass-border); color: var(--hp-text-color); font-weight: 600;">#</span>
+							</div>
+						</div>
+
+						<div class="guest-modal__body" style="padding: 0 2rem 2rem; text-align: center;">
+							<div id="bulkManageDemographics" style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--hp-cream); padding: 0.75rem 1.25rem; border-radius: 20px; font-weight: 500; color: var(--hp-green-mid); border: 1px dashed rgba(46, 125, 85, 0.3); margin-bottom: 2rem;">
+								<!-- Rendered dynamically via JS -->
+							</div>
 							
-							<div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-bottom: 2rem;">
-								<button type="button" id="bulkManageBtnDecrease" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--hp-red); background: rgba(239, 68, 68, 0.1); color: var(--hp-red); font-size: 1.5rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">-</button>
+							<div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
 								
-								<div style="display: flex; flex-direction: column;">
-									<span id="bulkManageActiveCount" style="font-size: 2.5rem; font-weight: 800; line-height: 1; color: var(--hp-text-color);">0</span>
-									<span style="font-size: 0.75rem; color: var(--hp-text-muted); margin-top: 4px;">out of <span id="bulkManageTotalCount">0</span> inside</span>
+								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" style="width: 52px; height: 52px; border-radius: 50%; border: none; background: rgba(239, 68, 68, 0.1); color: var(--hp-red); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2) inset;">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 24px; height: 24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
+								</button>
+								
+								<div style="display: flex; flex-direction: column; align-items: center;">
+									<span id="bulkManageActiveCount" style="font-size: 3.5rem; font-weight: 800; line-height: 1; color: var(--hp-text-color); font-family: 'Montserrat', sans-serif;">0</span>
+									<div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: var(--hp-text-muted); margin-top: 0.5rem; background: var(--glass-bg-strong); padding: 0.25rem 0.75rem; border-radius: 12px;">
+										<span>out of</span>
+										<span id="bulkManageTotalCount" style="font-weight: 700; color: var(--hp-text-color);">0</span>
+										<span>inside</span>
+									</div>
 								</div>
 							</div>
 							
-							<p style="font-size: 0.8rem; color: var(--hp-text-muted);">Use <strong style="color:var(--hp-red);">-</strong> to check out a companion.</p>
+							<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(239, 68, 68, 0.05); color: var(--hp-red); padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.8rem; text-align: left; line-height: 1.4;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+								<span>Click the <strong>minus button</strong> to check out one companion from this group.</span>
+							</div>
 						</div>
 					</div>
 				</div>
+				</main>
+			</div>
+		</div>
 
 	<x-staff_chatbot />
 

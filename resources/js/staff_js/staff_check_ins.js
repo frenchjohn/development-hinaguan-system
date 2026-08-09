@@ -744,6 +744,7 @@ window.AppPage['staff_check_ins'] = function () {
 
             // Guest Table Expand
             if (tr.classList.contains('guest-row--primary')) {
+                tr.classList.toggle('is-expanded', isExpanded);
                 const resId = tr.getAttribute('data-reservation-id');
                 const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
                 companions.forEach(c => {
@@ -1393,6 +1394,26 @@ window.AppPage['staff_check_ins'] = function () {
         companionForm.reset();
         closeCompanionModal();
     });
+
+    // Bulk Stepper logic
+    const bulkBtnMinus = document.getElementById('bulkBtnMinus');
+    const bulkBtnPlus = document.getElementById('bulkBtnPlus');
+    const bulkQuantity = document.getElementById('bulkCompanionQuantity');
+
+    if (bulkBtnMinus && bulkBtnPlus && bulkQuantity) {
+        bulkBtnMinus.addEventListener('click', () => {
+            let val = parseInt(bulkQuantity.value, 10) || 1;
+            if (val > parseInt(bulkQuantity.min || 1, 10)) {
+                bulkQuantity.value = val - 1;
+            }
+        });
+        bulkBtnPlus.addEventListener('click', () => {
+            let val = parseInt(bulkQuantity.value, 10) || 1;
+            if (val < parseInt(bulkQuantity.max || 50, 10)) {
+                bulkQuantity.value = val + 1;
+            }
+        });
+    }
 
     // Bulk companion form submission
     bulkCompanionForm?.addEventListener('submit', (e) => {

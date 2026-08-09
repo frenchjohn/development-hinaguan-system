@@ -462,7 +462,8 @@ window.AppPage['staff_records'] = function () {
     };
 
     reservationTableRows.forEach((row) => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-expand-row')) return;
             const reservationId = row.getAttribute('data-reservation-id');
             openReservationModal(reservationId);
         });
@@ -501,6 +502,27 @@ window.AppPage['staff_records'] = function () {
         reservationFilterPanel.hidden = isExpanded;
         reservationFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
         reservationFilterToggle.querySelector('.guest-filter-toggle__icon').textContent = isExpanded ? '▾' : '▴';
+    });
+
+    // Expandable Row Logic
+    document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            const tr = expandBtn.closest('tr');
+            if (!tr) return;
+            
+            const isExpanded = expandBtn.classList.toggle('expanded');
+            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
+
+            if (tr.classList.contains('reservation-row')) {
+                const resId = tr.getAttribute('data-reservation-id');
+                const companions = document.querySelectorAll(`.companion-of-${resId}`);
+                companions.forEach(c => {
+                    c.style.display = isExpanded ? '' : 'none';
+                });
+            }
+        });
     });
 
     // Initialize

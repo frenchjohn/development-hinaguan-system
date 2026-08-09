@@ -924,6 +924,53 @@
     background: rgba(255, 255, 255, 0.04);
 }
 
+/* Companion Row Visual Hierarchy */
+.s-che-page .guest-table tr.is-expanded td {
+    border-bottom-color: transparent !important;
+}
+
+.s-che-page .guest-row--companion {
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.s-che-page [data-theme="dark"] .guest-row--companion {
+    background: rgba(255, 255, 255, 0.015);
+}
+
+/* Indent and L-shaped connector for companions */
+.s-che-page .guest-row--companion td:first-child {
+    padding-left: 2.75rem;
+    position: relative;
+}
+
+.s-che-page .guest-row--companion td:first-child::before {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    top: 0;
+    bottom: 50%;
+    width: 2px;
+    background-color: var(--glass-border-strong);
+}
+
+.s-che-page .guest-row--companion td:first-child::after {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    top: 50%;
+    width: 0.75rem;
+    height: 2px;
+    background-color: var(--glass-border-strong);
+}
+
+/* If it's the last companion in the group, we don't want the line to extend downwards */
+.s-che-page .guest-row--companion:last-child td:first-child::before,
+.s-che-page .guest-row--companion + tr:not(.guest-row--companion) td:first-child::before {
+    /* CSS cannot easily detect the 'last companion of a group' using standard selectors 
+       without a specific class, so this basic connector from top to 50% is safe for all */
+}
+
+
 /* Checkout Row Highlights */
 .s-che-page .row-checkout-due td {
     background-color: rgba(239, 68, 68, 0.08) !important;
@@ -1602,6 +1649,34 @@
     max-height: 400px;
     overflow-y: auto;
     padding: 0.5rem;
+}
+
+/* Bulk Modal Enhancements */
+.s-che-page .bulk-segment__btn input:checked + span {
+    background: var(--hp-green-mid);
+    color: white;
+    box-shadow: 0 2px 4px rgba(46, 125, 85, 0.2);
+}
+.s-che-page .bulk-segment__btn:hover input:not(:checked) + span {
+    background: var(--glass-bg-strong);
+}
+.s-che-page [data-theme="dark"] .bulk-segment__btn input:checked + span {
+    background: var(--green);
+}
+
+.s-che-page .bulk-stepper__btn:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+.s-che-page [data-theme="dark"] .bulk-stepper__btn:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+#bulkManageBtnDecrease:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    transform: scale(1.05);
+}
+#bulkManageBtnDecrease:active {
+    transform: scale(0.95);
 }
 
 .s-che-page .guest-amenity-option {
