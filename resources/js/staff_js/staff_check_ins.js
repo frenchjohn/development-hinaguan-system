@@ -6,7 +6,7 @@ window.AppPage['staff_check_ins'] = function () {
     const tabReservationBtn = document.getElementById('tabReservationBtn');
     const guestTableSection = document.getElementById('guestTableSection');
     const reservationTableSection = document.getElementById('reservationTableSection');
-    const reservationTableBody = document.getElementById('reservationTableBody');
+    const reservationTableBody = document.getElementById('checkInsReservationTableBody');
     const reservationModal = document.getElementById('reservationModal');
     const reservationModalBody = document.getElementById('reservationModalBody');
     const reservationCheckOutBtn = document.getElementById('reservationCheckOutBtn');
@@ -25,11 +25,9 @@ window.AppPage['staff_check_ins'] = function () {
     const dashboardSection = document.getElementById('dashboardSection');
     
     if (dashboardSection && guestTableSection && reservationTableSection) {
-        dashboardSection.style.display = 'none';
-        guestTableSection.style.display = '';
-        reservationTableSection.style.display = 'none';
-        document.querySelectorAll('.checkins-tab').forEach(btn => btn.classList.remove('is-active'));
-        document.querySelectorAll('.checkins-tab[data-tab-target="guest"]').forEach(btn => btn.classList.add('is-active'));
+        // HTML already has the correct initial display states:
+        // guest = visible, dashboard = hidden, reservation = hidden
+        // Just ensure the active tab class is set correctly
     }
 
     // Tab switching
@@ -94,20 +92,30 @@ window.AppPage['staff_check_ins'] = function () {
     const refreshCheckoutCountdowns = () => {
         // Modal reservation timer + per-amenity timers
         document.querySelectorAll('.resv-checkout-countdown, .resv-amenity-countdown').forEach(renderCountdownEl);
-        // Table Pills: Separate Time Left and Status columns
+        // Table Pills: Merged Time Left and Status column
         document.querySelectorAll('.table-time-left').forEach((el) => {
             const state = getCheckoutState(el.dataset.checkoutAt);
+            const statusStr = el.dataset.status || '';
             const tr = el.closest('tr');
             
+            const isCheckedOut = statusStr === 'checked_out' || statusStr === 'checkedout' || statusStr === 'checked-out';
+            
+            if (isCheckedOut) {
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(107, 114, 128, 0.1); color: #6b7280;">Checked Out</span>`;
+                if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                return;
+            }
+
             if (!state.visible) {
-                el.innerHTML = '—';
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(22, 163, 74, 0.1); color: #16a34a;">Checked In</span>`;
+                if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
                 return;
             }
             
             const clockIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 0.9rem; height: 0.9rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
             
             if (state.tone === 'due') {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.2rem 0.5rem; border-radius:999px; font-size:0.75rem; font-weight:600; background: rgba(239, 68, 68, 0.1); color: #ef4444;">${clockIcon} 0m left</span>`;
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(239, 68, 68, 0.1); color: #ef4444;">Time to checkout</span>`;
             } else {
                 let colorClass = '#16a34a'; // green
                 let bgClass = 'rgba(22, 163, 74, 0.1)';
@@ -115,7 +123,7 @@ window.AppPage['staff_check_ins'] = function () {
                     colorClass = '#ea580c'; // orange
                     bgClass = 'rgba(234, 88, 12, 0.1)';
                 }
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.2rem 0.5rem; border-radius:999px; font-size:0.75rem; font-weight:600; background: ${bgClass}; color: ${colorClass};">${clockIcon} ${formatTimeLeft(state.left)} left</span>`;
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: ${bgClass}; color: ${colorClass};">${clockIcon} ${formatTimeLeft(state.left)} left</span>`;
             }
             
             if (tr) {
@@ -128,19 +136,6 @@ window.AppPage['staff_check_ins'] = function () {
                 } else {
                     tr.classList.remove('row-checkout-due', 'row-checkout-near');
                 }
-            }
-        });
-        
-        document.querySelectorAll('.table-status-pill').forEach((el) => {
-            const state = getCheckoutState(el.dataset.checkoutAt);
-            const statusStr = el.dataset.status || '';
-            
-            if (statusStr === 'checked_out') {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(107, 114, 128, 0.1); color: #6b7280;">Checked Out</span>`;
-            } else if (state.tone === 'due') {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(239, 68, 68, 0.1); color: #ef4444;">Checkout Time!</span>`;
-            } else {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(22, 163, 74, 0.1); color: #16a34a;">Checked In</span>`;
             }
         });
     };
@@ -174,8 +169,9 @@ window.AppPage['staff_check_ins'] = function () {
         if (!reservation) return;
 
         // Build modal content
-        const primaryGuest = reservation.reservation_guests.find(g => g.is_primary_guest);
-        const companions = reservation.reservation_guests.filter(g => !g.is_primary_guest);
+        const guestsList = reservation.reservation_guests || [];
+        const primaryGuest = guestsList.find(g => g.is_primary_guest);
+        const companions = guestsList.filter(g => !g.is_primary_guest);
 
         // Does this reservation cover multiple amenity time periods?
         // (Daytime vs Daytime Aircon = same time; strip Aircon before comparing.)
@@ -184,26 +180,55 @@ window.AppPage['staff_check_ins'] = function () {
         const differentTime = validAmenities.length > 1 && uniquePricingTypes.length > 1;
 
         let html = `
-            ${reservation.checkout_at ? `
-                <div class="resv-checkout-countdown" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>
-            ` : ''}
-            <div style="margin-bottom: 1.5rem;">
-                <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Main Guest</h4>
-                <div style="padding: 1rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem;">
-                    ${primaryGuest && primaryGuest.customer ? `
-                        <div><strong>${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</strong></div>
-                        <div style="font-size: 0.875rem; color: #666;">Age: ${primaryGuest.customer.age || 'N/A'} | Gender: ${primaryGuest.customer.gender || 'N/A'} | Status: ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
-                        <div style="font-size: 0.875rem; color: #666;">Phone: ${primaryGuest.customer.phone || 'N/A'} | Email: ${primaryGuest.customer.email || 'N/A'}</div>
-                    ` : '<div>No main guest assigned</div>'}
+            <div class="ci-design-box">
+                <div class="ci-col">
+                    <span class="ci-label">BOOKER</span>
+                    <div class="ci-value">${reservation.booker_name || 'N/A'}</div>
+                </div>
+                <div class="ci-col ci-border-left">
+                    <span class="ci-label">CONTACT</span>
+                    <div class="ci-value" style="font-weight: 500;">
+                        ${reservation.phone || 'N/A'}<br>
+                        ${reservation.email || 'N/A'}
+                    </div>
+                </div>
+                <div class="ci-col ci-border-left">
+                    <span class="ci-label">RESERVATION DATE</span>
+                    <div class="ci-value" style="display:flex;align-items:center;gap:4px;">
+                        ${reservation.reservation_date || 'N/A'}
+                        ${differentTime ? '<span class="resv-date-badge" style="margin-left:8px;">Mixed Time</span>' : ''}
+                    </div>
+                </div>
+                <div class="ci-col ci-border-left">
+                    <span class="ci-label">GUESTS</span>
+                    <div class="ci-value">${reservation.number_of_guests || (reservation.reservation_guests ? reservation.reservation_guests.length : 0)}</div>
+                </div>
+            </div>
+
+            <div class="ci-design-box" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div style="display:flex; gap: 2rem; flex-wrap: wrap;">
+                    <div class="ci-col">
+                        <span class="ci-label" style="text-transform: none;">Total Due:</span>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.total_amount || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    </div>
+                    <div class="ci-col ci-border-left">
+                        <span class="ci-label" style="text-transform: none;">Paid to Date:</span>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.amount_paid || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    </div>
+                    <div class="ci-col ci-border-left">
+                        <span class="ci-label" style="text-transform: none;">Balance Due:</span>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.remaining_balance || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="ci-pill ${reservation.payment_status?.toLowerCase() === 'paid' ? 'ci-pill-green' : 'ci-pill-orange'}">
+                        ${(reservation.payment_status || 'PENDING').toUpperCase()}
+                    </span>
                 </div>
             </div>
         `;
 
-        if (companions.length > 0) {
-            // DEBUG: Log all companions
-            console.log('All companions:', companions);
-
-            // Separate individual companions (with names) from bulk companions (generic names)
+        if (companions.length >= 0) {
             const individualCompanions = companions.filter(c =>
                 c.customer &&
                 c.customer.first_name &&
@@ -218,10 +243,6 @@ window.AppPage['staff_check_ins'] = function () {
                 c.customer.first_name.toLowerCase().includes('reservation')
             );
 
-            console.log('Individual companions:', individualCompanions);
-            console.log('Bulk companions:', bulkCompanions);
-
-            // Group bulk companions by gender, foreigner status, and age
             const bulkGroups = {};
             bulkCompanions.forEach(c => {
                 if (!c.customer) return;
@@ -235,144 +256,104 @@ window.AppPage['staff_check_ins'] = function () {
                 bulkGroups[key].count++;
             });
 
-            console.log('Bulk groups:', bulkGroups);
+            html += `
+                <div style="margin-top:1.5rem;">
+                    <h3 class="ci-section-title">GUESTS ON THIS RESERVATION</h3>
+                    <div class="ci-guest-grid">
+                        ${primaryGuest && primaryGuest.customer ? `
+                            <div class="ci-guest-card">
+                                <div class="ci-guest-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                </div>
+                                <div class="ci-guest-info">
+                                    <div class="ci-guest-role">PRIMARY GUEST</div>
+                                    <div class="ci-guest-name">${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</div>
+                                    <div class="ci-guest-meta">${primaryGuest.customer.age || 'N/A'} yrs - ${primaryGuest.customer.gender || 'N/A'} - ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
+                                </div>
+                            </div>
+                        ` : '<div class="ci-guest-card"><div class="ci-guest-info"><div class="ci-guest-name">No main guest assigned</div></div></div>'}
+            `;
 
-            html += `<div style="margin-bottom: 1.5rem;">`;
-
-            // Display individual companions
-            if (individualCompanions.length > 0) {
+            // Display individual companions exactly like bulk companions if requested, but user wanted BULK separated. I will group bulk companions into a single card!
+            if (Object.keys(bulkGroups).length > 0 || individualCompanions.length > 0) {
+                let bulkTotal = bulkCompanions.length + individualCompanions.length;
                 html += `
-                    <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Companions (${individualCompanions.length})</h4>
-                    ${individualCompanions.map(c => `
-                        <div style="padding: 0.75rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; margin-bottom: 0.5rem;">
-                            <div><strong>${c.customer.first_name} ${c.customer.middle_name || ''} ${c.customer.last_name}</strong></div>
-                            <div style="font-size: 0.875rem; color: #666;">Age: ${c.customer.age || 'N/A'} | Gender: ${c.customer.gender || 'N/A'} | Status: ${c.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
-                            <div style="font-size: 0.875rem; color: #666;">Phone: ${c.customer.phone || 'N/A'} | Email: ${c.customer.email || 'N/A'}</div>
+                    <div class="ci-guest-card" style="align-items: flex-start;">
+                        <div class="ci-guest-icon" style="margin-top: 0.2rem;">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                         </div>
-                    `).join('')}
+                        <div class="ci-guest-info" style="width: 100%;">
+                            <div class="ci-guest-role">COMPANIONS (${bulkTotal})</div>
+                            <div class="ci-guest-bulk-list">
+                `;
+                
+                let compIndex = 1;
+                individualCompanions.forEach(c => {
+                    html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${c.customer.first_name} ${c.customer.last_name} (${c.customer.age || 'N/A'} yrs - ${c.customer.gender || 'N/A'} - ${c.customer.is_foreigner ? 'Foreigner' : 'Filipino'})</div>`;
+                    compIndex++;
+                });
+
+                Object.values(bulkGroups).forEach(group => {
+                    for(let i=0; i<group.count; i++) {
+                        html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${group.age} yrs - ${group.gender} - ${group.status}</div>`;
+                        compIndex++;
+                    }
+                });
+
+                html += `
+                            </div>
+                        </div>
+                    </div>
                 `;
             }
 
-            // Display bulk companions as groups
-            if (Object.keys(bulkGroups).length > 0) {
-                html += `
-                    <h4 style="margin-bottom: 0.5rem; font-weight: 600;">Bulk Companions</h4>
-                    ${Object.values(bulkGroups).map(group => `
-                        <div style="padding: 0.75rem; background-color: var(--hp-cream, #f5f5f5); border-radius: 0.5rem; margin-bottom: 0.5rem;">
-                            <div><strong>${group.gender}/${group.status}/${group.age} = ${group.count}</strong></div>
-                        </div>
-                    `).join('')}
-                `;
-            }
-
-            html += `</div>`;
+            html += `
+                    </div>
+                </div>
+            `;
         }
 
         if (reservation.reservation_amenities && reservation.reservation_amenities.length > 0) {
             if (validAmenities.length > 0) {
                 const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
                 const isCheckedIn = statusKey === 'checked_in';
-                // Different time periods (daytime vs nighttime, etc.) => per-amenity checkout
                 const showPerAmenityCheckout = isCheckedIn && differentTime;
 
                 html += `
-                    <div style="margin-bottom: 1.5rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                            <h4 style="margin: 0; font-weight: 600;">Amenities</h4>
-                            ${showPerAmenityCheckout ? '<span class="resv-diff-time-label">Different amenity time</span>' : ''}
-                        </div>
-                        <div class="resv-amenity-list">
-                            ${validAmenities.map(a => {
-                                const amenityStatus = a.status || 'Active';
-                                const isCompleted = amenityStatus === 'Completed';
-                                return `
-                                    <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
-                                        <div class="resv-amenity-item__info">
-                                            <div class="resv-amenity-item__name">${a.amenity_name || a.amenity_id || 'Unknown'}</div>
-                                            <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'} · ₱${parseFloat(a.price).toFixed(2)} x ${a.quantity || 1}</div>
-                                            ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
-                                        </div>
-                                        <div class="resv-amenity-item__actions">
-                                            ${isCompleted
-                                                ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
-                                                : (showPerAmenityCheckout
-                                                    ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
-                                                    : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
-                                            }
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+                <div style="margin-top:0.75rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
+                        ${showPerAmenityCheckout ? '<span class="resv-diff-time-label">Different amenity time</span>' : ''}
                     </div>
+                    <div class="resv-amenity-list">
+                        ${validAmenities.map(a => {
+                            const amenityStatus = a.status || 'Active';
+                            const isCompleted = amenityStatus === 'Completed';
+                            return `
+                                <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
+                                    <div class="resv-amenity-item__info">
+                                        <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
+                                        <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
+                                        ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
+                                    </div>
+                                    <div class="resv-amenity-item__actions">
+                                        ${isCompleted
+                                            ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
+                                            : (showPerAmenityCheckout
+                                                ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
+                                                : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
+                                        }
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
                 `;
             }
         }
-
-        const totalAmount = reservation.reservation_amenities.reduce((sum, a) => sum + (parseFloat(a.price) * a.quantity), 0);
-
-        const mainGuestContact = primaryGuest?.customer ? {
-            phone: primaryGuest.customer.phone || reservation.phone || 'N/A',
-            email: primaryGuest.customer.email || reservation.email || 'N/A'
-        } : {
-            phone: reservation.phone || 'N/A',
-            email: reservation.email || 'N/A'
-        };
-
-        html += `
-            <div style="border-top: 1px solid #ddd; padding-top: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Reservation ID:</span>
-                    <strong>#${reservation.id}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                    <span>Reservation Date:</span>
-                    <strong style="position: relative;">${reservation.reservation_date || 'N/A'}
-                        ${differentTime ? '<span class="resv-date-badge">Mixed Time</span>' : ''}
-                    </strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Check-in:</span>
-                    <strong>${reservation.check_in || 'N/A'}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Check-out:</span>
-                    <strong>${reservation.check_out || 'Not yet'}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Reservation Type:</span>
-                    <strong>${reservation.reservation_type === 'walk_in' ? 'Walk-in' : 'Online'}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Number of Guests:</span>
-                    <strong>${reservation.number_of_guests || reservation.reservation_guests.length}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Contact (Phone):</span>
-                    <strong>${mainGuestContact.phone}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Contact (Email):</span>
-                    <strong>${mainGuestContact.email}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Total Amount:</span>
-                    <strong>₱${parseFloat(reservation.total_amount || totalAmount).toFixed(2)}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Amount Paid:</span>
-                    <strong>₱${parseFloat(reservation.amount_paid || 0).toFixed(2)}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Remaining Balance:</span>
-                    <strong>₱${parseFloat(reservation.remaining_balance || 0).toFixed(2)}</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                    <span>Payment Status:</span>
-                    <strong>${reservation.payment_status || 'Pending'}</strong>
-                </div>
-            </div>
-        `;
+        
+        html += `</div>`; // Close guest-card
 
         // Update modal status badge
         const statusBadge = document.getElementById('reservationModalStatus');
@@ -414,40 +395,6 @@ window.AppPage['staff_check_ins'] = function () {
             const reservationId = row.dataset.reservationId;
             openReservationModal(reservationId);
         });
-    });
-
-    // Reservation checkout
-    reservationCheckOutBtn?.addEventListener('click', async () => {
-        if (!currentReservationId) return;
-
-        if (!confirm('Check out all guests in this reservation?')) return;
-
-        const submitButton = reservationCheckOutBtn;
-        submitButton.disabled = true;
-        submitButton.textContent = 'Checking out...';
-
-        try {
-            const response = await fetch(`/staff/reservations/${currentReservationId}/check-out`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-
-            const payload = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(payload.message || 'Unable to check out this reservation.');
-            }
-
-            window.location.reload();
-        } catch (error) {
-            window.alert(error.message || 'Unable to check out this reservation.');
-            submitButton.disabled = false;
-            submitButton.textContent = 'Check Out';
-        }
     });
 
     // Modal close handlers
@@ -686,70 +633,202 @@ window.AppPage['staff_check_ins'] = function () {
         guestModal.setAttribute('aria-hidden', 'true');
     };
 
+    // Bulk Manage Modal logic
+    let currentBulkResId = null;
+    const bulkGroupManageModal = document.getElementById('bulkGroupManageModal');
+    const bulkManageResIdEl = document.getElementById('bulkManageResId');
+    const bulkManageActiveCountEl = document.getElementById('bulkManageActiveCount');
+    const bulkManageTotalCountEl = document.getElementById('bulkManageTotalCount');
+    const btnDecrease = document.getElementById('bulkManageBtnDecrease');
+    const btnIncrease = document.getElementById('bulkManageBtnIncrease');
+
+    const openBulkManageModal = (resId, active, total) => {
+        currentBulkResId = resId;
+        bulkManageResIdEl.textContent = resId;
+        bulkManageActiveCountEl.textContent = active;
+        bulkManageTotalCountEl.textContent = total;
+        
+        // Find reservation data to extract bulk companion demographics
+        const res = reservationData[resId];
+        let demoHtml = '';
+        if (res) {
+            const bulkGuest = res.reservation_guests.find(rg => {
+                const fn = (rg.customer?.first_name || '').toLowerCase();
+                return fn.startsWith('bulk') || fn.includes('companion');
+            });
+            if (bulkGuest && bulkGuest.customer) {
+                const c = bulkGuest.customer;
+                let ageGroup = c.age || 'N/A';
+                if (!isNaN(ageGroup) && ageGroup !== 'N/A') {
+                    const age = parseInt(ageGroup);
+                    if (age <= 12) ageGroup = 'Kids (0-12)';
+                    else if (age <= 17) ageGroup = 'Teens (13-17)';
+                    else if (age <= 59) ageGroup = 'Adults (18-59)';
+                    else ageGroup = 'Seniors (60+)';
+                }
+                const gender = c.gender || 'N/A';
+                const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                demoHtml = `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${gender} &bull; ${ageGroup} &bull; ${nationality}</div>`;
+            }
+        }
+        
+        const demoEl = document.getElementById('bulkManageDemographics');
+        if (demoEl) {
+            demoEl.innerHTML = demoHtml;
+        }
+
+        bulkGroupManageModal.classList.add('is-open');
+        bulkGroupManageModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeBulkManageModal = () => {
+        currentBulkResId = null;
+        bulkGroupManageModal.classList.remove('is-open');
+        bulkGroupManageModal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.querySelectorAll('[data-close-bulk-manage-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeBulkManageModal);
+    });
+    
+    btnDecrease?.addEventListener('click', async () => {
+        if (!currentBulkResId) return;
+        const res = reservationData[currentBulkResId];
+        if (!res) return;
+        const activeGuest = res.reservation_guests.find(rg => {
+            const fn = (rg.customer?.first_name || '').toLowerCase();
+            return (fn.startsWith('bulk') || fn.includes('companion')) && !rg.checked_out_at;
+        });
+        if (!activeGuest) {
+            alert('All bulk companions are already checked out.');
+            return;
+        }
+        
+        if (!confirm('Are you sure you want to check out 1 companion from this bulk group?')) {
+            return;
+        }
+        
+        btnDecrease.disabled = true;
+        try {
+            const response = await fetch(`/staff/reservation-guests/${activeGuest.id}/check-out`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (response.ok) window.location.reload();
+            else { alert('Error checking out companion.'); btnDecrease.disabled = false; }
+        } catch(err) { btnDecrease.disabled = false; console.error(err); }
+    });
+
     guestRows.forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('.btn-expand-row')) return;
+            if (row.dataset.bulkGroup === 'true') {
+                openBulkManageModal(row.dataset.reservationId, row.dataset.bulkActive, row.dataset.bulkTotal);
+                return;
+            }
             const customerId = row.dataset.customerId;
             openGuestModal(customerId);
         });
     });
 
     // Expandable Row Logic
-    document.addEventListener('click', (e) => {
-        const expandBtn = e.target.closest('.btn-expand-row');
-        if (!expandBtn) return;
-        
-        e.stopPropagation();
-        const tr = expandBtn.closest('tr');
-        if (!tr) return;
-        
-        const isExpanded = expandBtn.classList.toggle('expanded');
-        expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
-
-        // Guest Table Expand
-        if (tr.classList.contains('guest-row--primary')) {
-            const resId = tr.getAttribute('data-reservation-id');
-            const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
-            companions.forEach(c => {
-                c.style.display = isExpanded ? '' : 'none';
-            });
-        }
-        
-        // Reservation Table Expand
-        if (tr.classList.contains('reservation-row')) {
-            const resId = tr.getAttribute('data-reservation-id');
-            let nestedRow = tr.nextElementSibling;
+    document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             
-            if (isExpanded) {
-                if (!nestedRow || !nestedRow.classList.contains('reservation-nested-row')) {
-                     // Generate it!
-                     const reservation = reservationData[resId];
-                     if (!reservation) return;
-                     
-                     let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
-                     reservation.reservation_guests.forEach(g => {
-                         if (!g.customer) return;
-                         const pill = g.is_primary_guest 
-                            ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
-                            : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
-                         guestsHtml += `<div style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500;">
-                            ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
-                            <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
-                         </div>`;
-                     });
-                     guestsHtml += `</div>`;
-                     
-                     nestedRow = document.createElement('tr');
-                     nestedRow.className = 'reservation-nested-row';
-                     nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
-                     tr.insertAdjacentElement('afterend', nestedRow);
-                }
-                nestedRow.style.display = '';
-            } else {
-                if (nestedRow && nestedRow.classList.contains('reservation-nested-row')) {
-                    nestedRow.style.display = 'none';
+            const tr = expandBtn.closest('tr');
+            if (!tr) return;
+            
+            const isExpanded = expandBtn.classList.toggle('expanded');
+            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
+
+            // Guest Table Expand
+            if (tr.classList.contains('guest-row--primary')) {
+                const resId = tr.getAttribute('data-reservation-id');
+                const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
+                companions.forEach(c => {
+                    c.style.display = isExpanded ? '' : 'none';
+                });
+            }
+            
+            // Reservation Table Expand
+            if (tr.classList.contains('reservation-row')) {
+                const resId = tr.getAttribute('data-reservation-id');
+                let nestedRow = tr.nextElementSibling;
+                
+                if (isExpanded) {
+                    if (!nestedRow || !nestedRow.classList.contains('reservation-nested-row')) {
+                         // Generate it!
+                         const reservation = reservationData[resId];
+                         if (!reservation) return;
+                         
+                         let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
+                         let bulkGuests = [];
+                         let normalGuests = [];
+                         
+                         reservation.reservation_guests.forEach(g => {
+                             if (!g.customer) return;
+                             const fn = (g.customer.first_name || '').toLowerCase();
+                             if (fn.startsWith('bulk') || fn.includes('companion')) {
+                                 bulkGuests.push(g);
+                             } else {
+                                 normalGuests.push(g);
+                             }
+                         });
+                         
+                         normalGuests.forEach(g => {
+                             if (g.checked_out_at) return;
+                             const pill = g.is_primary_guest 
+                                ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
+                                : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
+                             guestsHtml += `<div style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0;">
+                                ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
+                                <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
+                             </div>`;
+                         });
+                         
+                         if (bulkGuests.length > 0) {
+                             const activeBulk = bulkGuests.filter(g => !g.checked_out_at).length;
+                             const sampleCust = bulkGuests[0].customer;
+                             let ageGroup = sampleCust.age || 'N/A';
+                             if (!isNaN(ageGroup) && ageGroup !== 'N/A') {
+                                 const age = parseInt(ageGroup);
+                                 if (age <= 12) ageGroup = 'Kids';
+                                 else if (age <= 17) ageGroup = 'Teens';
+                                 else if (age <= 59) ageGroup = 'Adults';
+                                 else ageGroup = 'Seniors';
+                             }
+                             const gender = sampleCust.gender || 'N/A';
+                             const nationality = sampleCust.is_foreigner ? 'Foreigner' : 'Filipino';
+
+                             guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${bulkGuests.length}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
+                                Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #6b7280; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${bulkGuests.length} Checked In</span>
+                                <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${gender} • ${ageGroup} • ${nationality}</span>
+                             </div>`;
+                         }
+                         guestsHtml += `</div>`;
+                         
+                         nestedRow = document.createElement('tr');
+                         nestedRow.className = 'reservation-nested-row';
+                         nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
+                         tr.insertAdjacentElement('afterend', nestedRow);
+                    }
+                    nestedRow.style.display = '';
+                } else {
+                    if (nestedRow && nestedRow.classList.contains('reservation-nested-row')) {
+                        nestedRow.style.display = 'none';
+                    }
                 }
             }
+        });
+    });
+
+    // Delegated click for dynamic elements
+    document.addEventListener('click', (e) => {
+        const bulkTrigger = e.target.closest('.bulk-group-row-trigger');
+        if (bulkTrigger) {
+            openBulkManageModal(bulkTrigger.dataset.resId, bulkTrigger.dataset.bulkActive, bulkTrigger.dataset.bulkTotal);
+            return;
         }
     });
 
@@ -1407,11 +1486,16 @@ window.AppPage['staff_check_ins'] = function () {
             row.style.display = show ? '' : 'none';
         });
         
-        // Update results count
+        // Update results count and empty state
         const visibleRows = Array.from(guestRows).filter(row => row.style.display !== 'none');
         const resultsCount = document.getElementById('guestResultsCount');
         if (resultsCount) {
             resultsCount.textContent = `Showing ${visibleRows.length} active guests`;
+        }
+        
+        const emptyRow = document.getElementById('guestEmptyRow');
+        if (emptyRow) {
+            emptyRow.style.display = visibleRows.length === 0 ? '' : 'none';
         }
     };
 

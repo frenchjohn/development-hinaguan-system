@@ -396,6 +396,9 @@ window.addEventListener('DOMContentLoaded', function () {
 
             // Swap content
             main.innerHTML = newMain.innerHTML;
+            
+            // Swap body classes (for CSS scoping like .s-das-page, which fixes modals)
+            document.body.className = doc.body.className;
 
             // Update title
             const title = doc.querySelector('title');

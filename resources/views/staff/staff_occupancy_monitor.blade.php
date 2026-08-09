@@ -28,7 +28,7 @@
         'resources/js/staff_chatbot.js',
     ])
 </head>
-<body class="antialiased staff-portal">
+<body class="antialiased staff-portal s-occ-page">
     <div class="dash-layout">
         <x-staff_sidemenu active="occupancy-monitor" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 

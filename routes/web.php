@@ -2793,6 +2793,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservation-guests.checkout');
 
+    Route::post('/reservation-guests/{reservationGuest}/undo-checkout', function (ReservationGuest $reservationGuest) {
+        $reservationGuest->update(['checked_out_at' => null]);
+        
+        $reservation = $reservationGuest->reservation;
+        if ($reservation && strtolower(str_replace(' ', '_', $reservation->status ?? '')) === 'checked_out') {
+            // Revert reservation status to Checked In if it was automatically checked out
+            $reservation->update([
+                'check_out' => null,
+                'status' => 'Checked In',
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+        ]);
+    })->name('reservation-guests.undo-checkout');
+
     Route::get('/settings', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {

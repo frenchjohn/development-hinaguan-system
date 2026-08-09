@@ -1,5 +1,5 @@
 
-:root {
+.s-occ-page {
     --hp-green-dark: #14402b;
     --hp-green-mid: #2e7d55;
     --hp-green: #1c5c3c;
@@ -23,7 +23,7 @@
     --glass-blur: none;
 }
 
-[data-theme="dark"] {
+.s-occ-page [data-theme="dark"] {
     --hp-text: #eaf0eb;
     --hp-text-muted: #9baaa1;
     --hp-green-dark: #152619;
@@ -40,7 +40,7 @@
 /* Occupancy Monitor */
 
 /* Animated Background */
-.dash-main {
+.s-occ-page .dash-main {
     position: relative;
     z-index: 0;
     background: transparent;
@@ -48,7 +48,7 @@
 }
 
 /* Frosted-glass forest backdrop — the translucent panels blur this layer */
-.dash-main::before {
+.s-occ-page .dash-main::before {
     content: '';
     position: fixed;
     inset: 0;
@@ -63,7 +63,7 @@
         linear-gradient(160deg, #eef4ef 0%, #e7efe9 55%, #dfe9e2 100%);
 }
 
-[data-theme="dark"] .dash-main::before {
+.s-occ-page [data-theme="dark"] .dash-main::before {
     background:
         radial-gradient(48rem 36rem at 12% -10%, rgba(46, 92, 62, 0.42), transparent 60%),
         radial-gradient(42rem 34rem at 102% 12%, rgba(34, 74, 50, 0.36), transparent 62%),
@@ -72,7 +72,7 @@
 }
 
 /* Keep the edge-to-edge header in sync with this page's 1rem content gutters */
-body.staff-portal .dash-header {
+.s-occ-page .dash-header {
     margin-top: -1rem;
     margin-left: -1rem;
     margin-right: -1rem;
@@ -80,7 +80,7 @@ body.staff-portal .dash-header {
 }
 
 /* Buttons (shared portal component) */
-.btn {
+.s-occ-page .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -99,37 +99,37 @@ body.staff-portal .dash-header {
     transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.btn:hover {
+.s-occ-page .btn:hover {
     background: var(--glass-bg-hover);
     border-color: var(--glass-border-strong);
     transform: translateY(-1px);
 }
 
-.btn:active {
+.s-occ-page .btn:active {
     transform: translateY(0) scale(0.98);
 }
 
-.btn--primary {
+.s-occ-page .btn--primary {
     background: var(--green);
     color: #fff;
     border-color: transparent;
     box-shadow: 0 6px 16px rgba(23, 138, 82, 0.22);
 }
 
-.btn--primary:hover {
+.s-occ-page .btn--primary:hover {
     background: var(--green-deep);
     box-shadow: 0 8px 20px rgba(15, 92, 56, 0.28);
 }
 
-[data-theme="dark"] .btn--primary {
+.s-occ-page [data-theme="dark"] .btn--primary {
     background: #2e9e6a;
 }
 
-[data-theme="dark"] .btn--primary:hover {
+.s-occ-page [data-theme="dark"] .btn--primary:hover {
     background: #178a52;
 }
 
-.btn--secondary {
+.s-occ-page .btn--secondary {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -137,12 +137,12 @@ body.staff-portal .dash-header {
     color: var(--ink);
 }
 
-.btn--secondary:hover {
+.s-occ-page .btn--secondary:hover {
     background: var(--glass-bg-hover);
     border-color: var(--glass-border-strong);
 }
 
-.btn__plus {
+.s-occ-page .btn__plus {
     margin-left: -0.25rem;
     font-size: 1.1rem;
     font-weight: 700;
@@ -150,7 +150,7 @@ body.staff-portal .dash-header {
 }
 
 /* Alerts & badges (shared portal component) */
-.alert {
+.s-occ-page .alert {
     padding: 0.85rem 1.1rem;
     border-radius: var(--radius-md);
     font-size: 0.85rem;
@@ -164,17 +164,17 @@ body.staff-portal .dash-header {
     box-shadow: var(--glass-shadow);
 }
 
-.alert--success {
+.s-occ-page .alert--success {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-.alert--error {
+.s-occ-page .alert--error {
     background: var(--danger-soft);
     color: var(--danger);
 }
 
-.badge {
+.s-occ-page .badge {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -185,19 +185,19 @@ body.staff-portal .dash-header {
     border: 1px solid var(--glass-border);
 }
 
-.badge--enabled {
+.s-occ-page .badge--enabled {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-.badge--disabled {
+.s-occ-page .badge--disabled {
     background: var(--danger-soft);
     color: var(--danger);
 }
 
 
 
-.dash-content {
+.s-occ-page .dash-content {
     position: relative;
     z-index: 1;
     padding: 1rem;
@@ -206,41 +206,41 @@ body.staff-portal .dash-header {
     background: transparent;
 }
 
-.occupancy-monitor {
+.s-occ-page .occupancy-monitor {
     padding: 0;
 }
 
-.occupancy-monitor__header {
+.s-occ-page .occupancy-monitor__header {
     margin-bottom: 1rem;
 }
 
-.occupancy-monitor__title {
+.s-occ-page .occupancy-monitor__title {
     font-family: var(--hp-font-display);
     font-size: 1.75rem;
     color: var(--hp-text);
     margin: 0 0 0.5rem 0;
 }
 
-[data-theme="dark"] .occupancy-monitor__title {
+.s-occ-page [data-theme="dark"] .occupancy-monitor__title {
     color: #c8e6c8;
 }
 
-.occupancy-monitor__subtitle {
+.s-occ-page .occupancy-monitor__subtitle {
     color: var(--hp-text-muted);
     font-size: 0.95rem;
     margin: 0;
 }
 
-[data-theme="dark"] .occupancy-monitor__subtitle {
+.s-occ-page [data-theme="dark"] .occupancy-monitor__subtitle {
     color: #81c784;
 }
 
 /* Filter Toggle */
-.occupancy-monitor__filter-toggle {
+.s-occ-page .occupancy-monitor__filter-toggle {
     margin-bottom: 1rem;
 }
 
-.filter-toggle-btn {
+.s-occ-page .filter-toggle-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -257,29 +257,29 @@ body.staff-portal .dash-header {
     transition: all 0.2s ease;
 }
 
-[data-theme="dark"] .filter-toggle-btn {
+.s-occ-page [data-theme="dark"] .filter-toggle-btn {
     background: var(--glass-bg);
     border-color: var(--border-strong);
     color: #c8e6c8;
 }
 
-.filter-toggle-btn:hover {
+.s-occ-page .filter-toggle-btn:hover {
     background: var(--surface-2);
     border-color: #d1d5db;
 }
 
-[data-theme="dark"] .filter-toggle-btn:hover {
+.s-occ-page [data-theme="dark"] .filter-toggle-btn:hover {
     background: #2d5a32;
     border-color: #4a8a52;
 }
 
-.filter-toggle-btn svg {
+.s-occ-page .filter-toggle-btn svg {
     width: 1.25rem;
     height: 1.25rem;
 }
 
 /* Filter Panel */
-.occupancy-monitor__filter-panel {
+.s-occ-page .occupancy-monitor__filter-panel {
     display: none;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
@@ -290,36 +290,36 @@ body.staff-portal .dash-header {
     margin-bottom: 1.5rem;
 }
 
-[data-theme="dark"] .occupancy-monitor__filter-panel {
+.s-occ-page [data-theme="dark"] .occupancy-monitor__filter-panel {
     background: var(--glass-bg);
     border-color: var(--border-strong);
 }
 
-.occupancy-monitor__filter-panel.is-open {
+.s-occ-page .occupancy-monitor__filter-panel.is-open {
     display: block;
 }
 
-.filter-panel__row {
+.s-occ-page .filter-panel__row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
     margin-bottom: 1rem;
 }
 
-.filter-panel__field {
+.s-occ-page .filter-panel__field {
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
 }
 
-.filter-panel__field label {
+.s-occ-page .filter-panel__field label {
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--hp-text);
 }
 
-.filter-panel__field input,
-.filter-panel__field select {
+.s-occ-page .filter-panel__field input,
+.s-occ-page .filter-panel__field select {
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--glass-border);
     border-radius: 0.375rem;
@@ -331,31 +331,31 @@ body.staff-portal .dash-header {
     transition: border-color 0.2s ease;
 }
 
-[data-theme="dark"] .filter-panel__field input,
-[data-theme="dark"] .filter-panel__field select {
+.s-occ-page [data-theme="dark"] .filter-panel__field input,
+.s-occ-page [data-theme="dark"] .filter-panel__field select {
     background: #0d2812;
     border-color: var(--border-strong);
     color: #c8e6c8;
 }
 
-.filter-panel__field input:focus,
-.filter-panel__field select:focus {
+.s-occ-page .filter-panel__field input:focus,
+.s-occ-page .filter-panel__field select:focus {
     outline: none;
     border-color: var(--hp-green);
 }
 
-[data-theme="dark"] .filter-panel__field input:focus,
-[data-theme="dark"] .filter-panel__field select:focus {
+.s-occ-page [data-theme="dark"] .filter-panel__field input:focus,
+.s-occ-page [data-theme="dark"] .filter-panel__field select:focus {
     border-color: var(--hp-green);
 }
 
-.filter-panel__actions {
+.s-occ-page .filter-panel__actions {
     display: flex;
     justify-content: flex-end;
     gap: 0.5rem;
 }
 
-.filter-panel__secondary {
+.s-occ-page .filter-panel__secondary {
     padding: 0.5rem 1rem;
     background: transparent;
     border: 1px solid var(--glass-border);
@@ -367,37 +367,37 @@ body.staff-portal .dash-header {
     transition: all 0.2s ease;
 }
 
-[data-theme="dark"] .filter-panel__secondary {
+.s-occ-page [data-theme="dark"] .filter-panel__secondary {
     border-color: var(--border-strong);
     color: #c8e6c8;
 }
 
-.filter-panel__secondary:hover {
+.s-occ-page .filter-panel__secondary:hover {
     background: var(--surface-2);
     border-color: #d1d5db;
 }
 
-[data-theme="dark"] .filter-panel__secondary:hover {
+.s-occ-page [data-theme="dark"] .filter-panel__secondary:hover {
     background: #2d5a32;
     border-color: #4a8a52;
 }
 
 /* Occupancy Grid */
-.occupancy-grid {
+.s-occ-page .occupancy-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
 }
 
 @media (max-width: 768px) {
-    .occupancy-grid {
+    .s-occ-page .occupancy-grid {
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: 1rem;
     }
 }
 
 @media (max-width: 480px) {
-    .occupancy-grid {
+    .s-occ-page .occupancy-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -407,7 +407,7 @@ body.staff-portal .dash-header {
    ============================================================ */
 
 /* ---- KPI stat strip ---- */
-body.staff-portal .occupancy-stats {
+.s-occ-page .occupancy-stats {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.85rem;
@@ -415,18 +415,18 @@ body.staff-portal .occupancy-stats {
 }
 
 @media (max-width: 1100px) {
-    body.staff-portal .occupancy-stats {
+    .s-occ-page .occupancy-stats {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (max-width: 640px) {
-    body.staff-portal .occupancy-stats {
+    .s-occ-page .occupancy-stats {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-body.staff-portal .occupancy-stat {
+.s-occ-page .occupancy-stat {
     display: flex;
     align-items: center;
     gap: 0.8rem;
@@ -440,13 +440,13 @@ body.staff-portal .occupancy-stat {
     transform-origin: center bottom;
 }
 
-body.staff-portal .occupancy-stat:hover {
+.s-occ-page .occupancy-stat:hover {
     transform: perspective(950px) translateY(-2px) rotateX(2deg);
     box-shadow: var(--shadow-sm);
     border-color: var(--border-strong);
 }
 
-body.staff-portal .occupancy-stat__icon {
+.s-occ-page .occupancy-stat__icon {
     width: 2.5rem;
     height: 2.5rem;
     flex-shrink: 0;
@@ -458,31 +458,31 @@ body.staff-portal .occupancy-stat__icon {
     color: var(--green-deep);
 }
 
-body.staff-portal .occupancy-stat__icon svg {
+.s-occ-page .occupancy-stat__icon svg {
     width: 1.25rem;
     height: 1.25rem;
 }
 
-body.staff-portal .occupancy-stat--occupied .occupancy-stat__icon {
+.s-occ-page .occupancy-stat--occupied .occupancy-stat__icon {
     background: var(--danger-soft);
     color: var(--danger);
 }
 
-body.staff-portal .occupancy-stat--reserved .occupancy-stat__icon {
+.s-occ-page .occupancy-stat--reserved .occupancy-stat__icon {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .occupancy-stat--available .occupancy-stat__icon {
+.s-occ-page .occupancy-stat--available .occupancy-stat__icon {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .occupancy-stat__body {
+.s-occ-page .occupancy-stat__body {
     min-width: 0;
 }
 
-body.staff-portal .occupancy-stat__value {
+.s-occ-page .occupancy-stat__value {
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.45rem;
@@ -492,7 +492,7 @@ body.staff-portal .occupancy-stat__value {
     font-variant-numeric: tabular-nums;
 }
 
-body.staff-portal .occupancy-stat__label {
+.s-occ-page .occupancy-stat__label {
     margin: 0.12rem 0 0;
     font-size: 0.68rem;
     font-weight: 700;
@@ -501,7 +501,7 @@ body.staff-portal .occupancy-stat__label {
     color: var(--ink-muted);
 }
 
-body.staff-portal .occupancy-stat__hint {
+.s-occ-page .occupancy-stat__hint {
     margin: 0.12rem 0 0;
     font-size: 0.7rem;
     color: var(--ink-faint);
@@ -511,11 +511,11 @@ body.staff-portal .occupancy-stat__hint {
 }
 
 /* Occupancy rate ring */
-body.staff-portal .occupancy-stat--rate {
+.s-occ-page .occupancy-stat--rate {
     background: linear-gradient(135deg, var(--green-tint) 0%, var(--surface) 60%);
 }
 
-body.staff-portal .occupancy-rate-ring {
+.s-occ-page .occupancy-rate-ring {
     width: 3.1rem;
     height: 3.1rem;
     flex-shrink: 0;
@@ -527,7 +527,7 @@ body.staff-portal .occupancy-rate-ring {
     box-shadow: inset 0 1px 2px rgba(23, 42, 32, 0.08);
 }
 
-body.staff-portal .occupancy-rate-ring span {
+.s-occ-page .occupancy-rate-ring span {
     width: 2.15rem;
     height: 2.15rem;
     border-radius: 50%;
@@ -541,7 +541,7 @@ body.staff-portal .occupancy-rate-ring span {
 }
 
 /* ---- Legend strip ---- */
-body.staff-portal .occupancy-legend {
+.s-occ-page .occupancy-legend {
     display: flex;
     align-items: center;
     gap: 1.1rem;
@@ -556,7 +556,7 @@ body.staff-portal .occupancy-legend {
     color: var(--ink-muted);
 }
 
-body.staff-portal .occupancy-legend__live {
+.s-occ-page .occupancy-legend__live {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -564,7 +564,7 @@ body.staff-portal .occupancy-legend__live {
     color: var(--green-deep);
 }
 
-body.staff-portal .occupancy-legend__pulse {
+.s-occ-page .occupancy-legend__pulse {
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
@@ -579,51 +579,51 @@ body.staff-portal .occupancy-legend__pulse {
     100% { box-shadow: var(--glass-shadow); }
 }
 
-body.staff-portal .occupancy-legend__item {
+.s-occ-page .occupancy-legend__item {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
     font-weight: 600;
 }
 
-body.staff-portal .occupancy-legend__dot {
+.s-occ-page .occupancy-legend__dot {
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 50%;
 }
 
-body.staff-portal .occupancy-legend__dot--occupied { background: var(--danger); }
-body.staff-portal .occupancy-legend__dot--reserved { background: var(--warn); }
-body.staff-portal .occupancy-legend__dot--available { background: var(--green); }
+.s-occ-page .occupancy-legend__dot--occupied { background: var(--danger); }
+.s-occ-page .occupancy-legend__dot--reserved { background: var(--warn); }
+.s-occ-page .occupancy-legend__dot--available { background: var(--green); }
 
-body.staff-portal .occupancy-legend__hint {
+.s-occ-page .occupancy-legend__hint {
     margin-left: auto;
     color: var(--ink-faint);
     font-style: italic;
 }
 
 /* ---- Amenity cards ---- */
-body.staff-portal .occupancy-card__content {
+.s-occ-page .occupancy-card__content {
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
     padding: 0.95rem 1.05rem 0.85rem;
 }
 
-body.staff-portal .occupancy-card__head {
+.s-occ-page .occupancy-card__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 0.6rem;
 }
 
-body.staff-portal .occupancy-card__name {
+.s-occ-page .occupancy-card__name {
     margin: 0;
     font-size: 1rem;
     line-height: 1.3;
 }
 
-body.staff-portal .occupancy-card__rate {
+.s-occ-page .occupancy-card__rate {
     flex-shrink: 0;
     font-size: 0.8rem;
     font-weight: 700;
@@ -631,20 +631,20 @@ body.staff-portal .occupancy-card__rate {
     white-space: nowrap;
 }
 
-body.staff-portal .occupancy-card__rate small {
+.s-occ-page .occupancy-card__rate small {
     font-size: 0.62rem;
     font-weight: 600;
     color: var(--ink-faint);
 }
 
 /* Slot chips */
-body.staff-portal .occupancy-card__slots {
+.s-occ-page .occupancy-card__slots {
     display: flex;
     gap: 0.45rem;
     flex-wrap: wrap;
 }
 
-body.staff-portal .slot-chip {
+.s-occ-page .slot-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -657,34 +657,34 @@ body.staff-portal .slot-chip {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-body.staff-portal .slot-chip__dot {
+.s-occ-page .slot-chip__dot {
     width: 0.42rem;
     height: 0.42rem;
     border-radius: 50%;
 }
 
-body.staff-portal .slot-chip.is-free {
+.s-occ-page .slot-chip.is-free {
     background: var(--green-soft);
     border-color: rgba(23, 138, 82, 0.28);
     color: var(--green-deep);
 }
 
-body.staff-portal .slot-chip.is-free .slot-chip__dot {
+.s-occ-page .slot-chip.is-free .slot-chip__dot {
     background: var(--green);
 }
 
-body.staff-portal .slot-chip.is-taken {
+.s-occ-page .slot-chip.is-taken {
     background: var(--danger-soft);
     border-color: rgba(207, 75, 71, 0.25);
     color: var(--danger);
 }
 
-body.staff-portal .slot-chip.is-taken .slot-chip__dot {
+.s-occ-page .slot-chip.is-taken .slot-chip__dot {
     background: var(--danger);
 }
 
 /* Meta row */
-body.staff-portal .occupancy-card__meta {
+.s-occ-page .occupancy-card__meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -696,26 +696,26 @@ body.staff-portal .occupancy-card__meta {
     padding-top: 0.6rem;
 }
 
-body.staff-portal .occupancy-card__capacity {
+.s-occ-page .occupancy-card__capacity {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
     font-weight: 600;
 }
 
-body.staff-portal .occupancy-card__capacity svg {
+.s-occ-page .occupancy-card__capacity svg {
     width: 0.9rem;
     height: 0.9rem;
     color: var(--ink-faint);
 }
 
-body.staff-portal .occupancy-card__night-rate {
+.s-occ-page .occupancy-card__night-rate {
     color: var(--ink-faint);
     font-weight: 600;
 }
 
 /* Footer CTA */
-body.staff-portal .occupancy-card__footer {
+.s-occ-page .occupancy-card__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -727,17 +727,17 @@ body.staff-portal .occupancy-card__footer {
     transition: opacity 0.2s ease;
 }
 
-body.staff-portal .occupancy-card__footer svg {
+.s-occ-page .occupancy-card__footer svg {
     width: 0.85rem;
     height: 0.85rem;
 }
 
-body.staff-portal .occupancy-card:hover .occupancy-card__footer {
+.s-occ-page .occupancy-card:hover .occupancy-card__footer {
     opacity: 1;
 }
 
 /* Status badge pinned on the image */
-body.staff-portal .occupancy-card__badge {
+.s-occ-page .occupancy-card__badge {
     position: absolute;
     top: 0.7rem;
     left: 0.7rem;
@@ -756,26 +756,26 @@ body.staff-portal .occupancy-card__badge {
     backdrop-filter: blur(4px);
 }
 
-body.staff-portal .occupancy-card__badge-dot {
+.s-occ-page .occupancy-card__badge-dot {
     width: 0.4rem;
     height: 0.4rem;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.9);
 }
 
-body.staff-portal .occupancy-card__badge--available { background: rgba(23, 138, 82, 0.92); }
-body.staff-portal .occupancy-card__badge--occupied { background: rgba(207, 75, 71, 0.92); }
-body.staff-portal .occupancy-card__badge--reserved { background: rgba(168, 122, 21, 0.92); }
+.s-occ-page .occupancy-card__badge--available { background: rgba(23, 138, 82, 0.92); }
+.s-occ-page .occupancy-card__badge--occupied { background: rgba(207, 75, 71, 0.92); }
+.s-occ-page .occupancy-card__badge--reserved { background: rgba(168, 122, 21, 0.92); }
 
 /* Compact status overlays inside the image */
-body.staff-portal .occupancy-card__status-overlay {
+.s-occ-page .occupancy-card__status-overlay {
     padding: 0.5rem 0.7rem;
     font-size: 0.68rem;
     display: grid;
     gap: 0.25rem;
 }
 
-body.staff-portal .occupancy-card__status-item {
+.s-occ-page .occupancy-card__status-item {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -783,18 +783,18 @@ body.staff-portal .occupancy-card__status-item {
     margin: 0;
 }
 
-body.staff-portal .occupancy-card__status-slot {
+.s-occ-page .occupancy-card__status-slot {
     padding: 0.1rem 0.4rem;
     font-size: 0.62rem;
 }
 
 /* Filter toggle sits flush with the legend */
-body.staff-portal .occupancy-monitor__filter-toggle {
+.s-occ-page .occupancy-monitor__filter-toggle {
     margin-bottom: 0.75rem;
 }
 
 /* Empty state polish */
-body.staff-portal .occupancy-empty {
+.s-occ-page .occupancy-empty {
     grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
@@ -809,28 +809,28 @@ body.staff-portal .occupancy-empty {
     font-size: 0.9rem;
 }
 
-body.staff-portal .occupancy-empty svg {
+.s-occ-page .occupancy-empty svg {
     width: 2.4rem;
     height: 2.4rem;
     opacity: 0.5;
 }
 
-body.staff-portal .occupancy-empty p {
+.s-occ-page .occupancy-empty p {
     margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    body.staff-portal .occupancy-stat:hover {
+    .s-occ-page .occupancy-stat:hover {
         transform: none;
     }
 
-    body.staff-portal .occupancy-legend__pulse {
+    .s-occ-page .occupancy-legend__pulse {
         animation: none;
     }
 }
 
 /* Occupancy Card */
-.occupancy-card {
+.s-occ-page .occupancy-card {
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
@@ -842,22 +842,22 @@ body.staff-portal .occupancy-empty p {
     position: relative;
 }
 
-[data-theme="dark"] .occupancy-card {
+.s-occ-page [data-theme="dark"] .occupancy-card {
     background: var(--glass-bg);
     box-shadow: var(--glass-shadow);
 }
 
-.occupancy-card:hover {
+.s-occ-page .occupancy-card:hover {
     transform: translateY(-4px);
     box-shadow: var(--glass-shadow);
 }
 
-[data-theme="dark"] .occupancy-card:hover {
+.s-occ-page [data-theme="dark"] .occupancy-card:hover {
     box-shadow: var(--glass-shadow);
 }
 
 /* Occupancy Card Image */
-.occupancy-card__image {
+.s-occ-page .occupancy-card__image {
     position: relative;
     width: 100%;
     aspect-ratio: 4/3;
@@ -865,18 +865,18 @@ body.staff-portal .occupancy-empty p {
     background: var(--hp-cream);
 }
 
-.occupancy-card__image img {
+.s-occ-page .occupancy-card__image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
 }
 
-.occupancy-card:hover .occupancy-card__image img {
+.s-occ-page .occupancy-card:hover .occupancy-card__image img {
     transform: scale(1.05);
 }
 
-.occupancy-card__placeholder {
+.s-occ-page .occupancy-card__placeholder {
     width: 100%;
     height: 100%;
     display: flex;
@@ -885,24 +885,24 @@ body.staff-portal .occupancy-empty p {
     color: var(--hp-text-muted);
 }
 
-.occupancy-card__placeholder svg {
+.s-occ-page .occupancy-card__placeholder svg {
     width: 3rem;
     height: 3rem;
 }
 
-.occupancy-card__overlay {
+.s-occ-page .occupancy-card__overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(to top, rgba(13, 44, 29, 0.7) 0%, transparent 50%);
     pointer-events: none;
 }
 
-[data-theme="dark"] .occupancy-card__overlay {
+.s-occ-page [data-theme="dark"] .occupancy-card__overlay {
     background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
 }
 
 /* Occupancy Card Status Overlay */
-.occupancy-card__status-overlay {
+.s-occ-page .occupancy-card__status-overlay {
     position: absolute;
     left: 0;
     right: 0;
@@ -911,19 +911,19 @@ body.staff-portal .occupancy-empty p {
     z-index: 10;
 }
 
-.occupancy-card__status-overlay--occupied {
+.s-occ-page .occupancy-card__status-overlay--occupied {
     bottom: 0;
     background: rgba(220, 38, 38, 0.9);
     border-top: 2px solid #dc2626;
     backdrop-filter: blur(4px);
 }
 
-[data-theme="dark"] .occupancy-card__status-overlay--occupied {
+.s-occ-page [data-theme="dark"] .occupancy-card__status-overlay--occupied {
     background: rgba(220, 38, 38, 0.85);
     border-top-color: #f87171;
 }
 
-.occupancy-card__status-overlay--reserved {
+.s-occ-page .occupancy-card__status-overlay--reserved {
     bottom: auto;
     top: 0;
     background: rgba(200, 164, 93, 0.9);
@@ -931,12 +931,12 @@ body.staff-portal .occupancy-empty p {
     backdrop-filter: blur(4px);
 }
 
-[data-theme="dark"] .occupancy-card__status-overlay--reserved {
+.s-occ-page [data-theme="dark"] .occupancy-card__status-overlay--reserved {
     background: rgba(200, 164, 93, 0.85);
     border-bottom-color: #fbbf24;
 }
 
-.occupancy-card__status-item {
+.s-occ-page .occupancy-card__status-item {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -944,23 +944,23 @@ body.staff-portal .occupancy-empty p {
     margin-bottom: 0.35rem;
 }
 
-.occupancy-card__status-item:last-child {
+.s-occ-page .occupancy-card__status-item:last-child {
     margin-bottom: 0;
 }
 
-.occupancy-card__status-label {
+.s-occ-page .occupancy-card__status-label {
     font-weight: 700;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.occupancy-card__status-id {
+.s-occ-page .occupancy-card__status-id {
     font-weight: 700;
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.occupancy-card__status-slot {
+.s-occ-page .occupancy-card__status-slot {
     padding: 0.15rem 0.5rem;
     border-radius: 999px;
     font-size: 0.7rem;
@@ -973,7 +973,7 @@ body.staff-portal .occupancy-empty p {
 }
 
 /* Occupancy Card Content */
-.occupancy-card__content {
+.s-occ-page .occupancy-card__content {
     padding: 1rem;
     position: relative;
     background: var(--glass-bg);
@@ -982,11 +982,11 @@ body.staff-portal .occupancy-empty p {
     transition: background 0.3s ease;
 }
 
-[data-theme="dark"] .occupancy-card__content {
+.s-occ-page [data-theme="dark"] .occupancy-card__content {
     background: var(--glass-bg);
 }
 
-.occupancy-card__name {
+.s-occ-page .occupancy-card__name {
     font-family: var(--hp-font-display);
     font-size: 1.1rem;
     font-weight: 600;
@@ -995,11 +995,11 @@ body.staff-portal .occupancy-empty p {
     line-height: 1.3;
 }
 
-[data-theme="dark"] .occupancy-card__name {
+.s-occ-page [data-theme="dark"] .occupancy-card__name {
     color: #c8e6c8;
 }
 
-.occupancy-card__capacity {
+.s-occ-page .occupancy-card__capacity {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1007,7 +1007,7 @@ body.staff-portal .occupancy-empty p {
 }
 
 /* Occupancy Empty State */
-.occupancy-empty {
+.s-occ-page .occupancy-empty {
     grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
@@ -1018,27 +1018,27 @@ body.staff-portal .occupancy-empty p {
     text-align: center;
 }
 
-.occupancy-empty svg {
+.s-occ-page .occupancy-empty svg {
     width: 4rem;
     height: 4rem;
     margin-bottom: 1rem;
     opacity: 0.5;
 }
 
-.occupancy-empty p {
+.s-occ-page .occupancy-empty p {
     font-size: 1rem;
     margin: 0;
 }
 
 /* Skeleton Loading */
-.skeleton {
+.s-occ-page .skeleton {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s infinite;
     border-radius: 4px;
 }
 
-[data-theme="dark"] .skeleton {
+.s-occ-page [data-theme="dark"] .skeleton {
     background: linear-gradient(90deg, #001a11 25%, #002d1f 50%, #001a11 75%);
     background-size: 200% 100%;
 }
@@ -1052,48 +1052,48 @@ body.staff-portal .occupancy-empty p {
     }
 }
 
-.skeleton--text {
+.s-occ-page .skeleton--text {
     height: 1em;
     margin-bottom: 0.5em;
 }
 
-.skeleton--title {
+.s-occ-page .skeleton--title {
     height: 1.5em;
     margin-bottom: 0.75em;
     width: 60%;
 }
 
-.skeleton--card {
+.s-occ-page .skeleton--card {
     height: 100%;
     min-height: 120px;
 }
 
-.skeleton--stat-value {
+.s-occ-page .skeleton--stat-value {
     height: 2.5em;
     width: 40%;
     margin-bottom: 0.5em;
 }
 
-.skeleton--stat-label {
+.s-occ-page .skeleton--stat-label {
     height: 0.75em;
     width: 70%;
 }
 
-.skeleton--table-row {
+.s-occ-page .skeleton--table-row {
     height: 3em;
     margin-bottom: 0.5em;
 }
 
-.skeleton--panel {
+.s-occ-page .skeleton--panel {
     min-height: 200px;
 }
 
 /* Page transition overlay */
-.dash-main {
+.s-occ-page .dash-main {
     position: relative;
 }
 
-.page-transition-overlay {
+.s-occ-page .page-transition-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -1108,63 +1108,63 @@ body.staff-portal .occupancy-empty p {
     transition: opacity 0.3s ease;
 }
 
-[data-theme="dark"] .page-transition-overlay {
+.s-occ-page [data-theme="dark"] .page-transition-overlay {
     background: #001a11;
 }
 
-.page-transition-overlay.is-active {
+.s-occ-page .page-transition-overlay.is-active {
     display: block;
     opacity: 1;
 }
 
-.page-transition-overlay.is-exiting {
+.s-occ-page .page-transition-overlay.is-exiting {
     opacity: 0;
 }
 
-.page-transition-skeleton {
+.s-occ-page .page-transition-skeleton {
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
 }
 
-.page-transition-skeleton__header {
+.s-occ-page .page-transition-skeleton__header {
     height: 3rem;
     margin-bottom: 2rem;
 }
 
-.page-transition-skeleton__stats {
+.s-occ-page .page-transition-skeleton__stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
     margin-bottom: 2rem;
 }
 
-.page-transition-skeleton__stat {
+.s-occ-page .page-transition-skeleton__stat {
     height: 120px;
 }
 
-.page-transition-skeleton__grid {
+.s-occ-page .page-transition-skeleton__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
 }
 
-.page-transition-skeleton__panel {
+.s-occ-page .page-transition-skeleton__panel {
     height: 300px;
 }
 
 @media (max-width: 992px) {
-    .page-transition-skeleton__grid {
+    .s-occ-page .page-transition-skeleton__grid {
         grid-template-columns: 1fr;
     }
 
-    .page-transition-skeleton__stats {
+    .s-occ-page .page-transition-skeleton__stats {
         grid-template-columns: 1fr;
     }
 }
 
 /* Amenity Detail Modal Styles */
-.modal {
+.s-occ-page .modal {
     position: fixed;
     inset: 0;
     z-index: 1000;
@@ -1177,19 +1177,19 @@ body.staff-portal .occupancy-empty p {
     transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 
-.modal.is-open {
+.s-occ-page .modal.is-open {
     opacity: 1;
     visibility: visible;
 }
 
-.modal__backdrop {
+.s-occ-page .modal__backdrop {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
 }
 
-.modal__panel.amenity-detail-panel {
+.s-occ-page .modal__panel.amenity-detail-panel {
     position: relative;
     z-index: 1;
     width: 100%;
@@ -1205,12 +1205,12 @@ body.staff-portal .occupancy-empty p {
     max-height: 90vh;
 }
 
-[data-theme="dark"] .modal__panel.amenity-detail-panel {
+.s-occ-page [data-theme="dark"] .modal__panel.amenity-detail-panel {
     background: var(--glass-bg);
     color: #c8e6c8;
 }
 
-.modal__header {
+.s-occ-page .modal__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1218,22 +1218,22 @@ body.staff-portal .occupancy-empty p {
     border-bottom: 1px solid #e5e7eb;
 }
 
-[data-theme="dark"] .modal__header {
+.s-occ-page [data-theme="dark"] .modal__header {
     border-bottom-color: var(--border-strong);
 }
 
-.modal__header h3 {
+.s-occ-page .modal__header h3 {
     margin: 0;
     font-family: var(--hp-font-display);
     font-size: 1.25rem;
     color: var(--hp-green-dark);
 }
 
-[data-theme="dark"] .modal__header h3 {
+.s-occ-page [data-theme="dark"] .modal__header h3 {
     color: #c8e6c8;
 }
 
-.modal__close {
+.s-occ-page .modal__close {
     background: none;
     border: none;
     font-size: 1.5rem;
@@ -1242,7 +1242,7 @@ body.staff-portal .occupancy-empty p {
     cursor: pointer;
 }
 
-.modal__body.amenity-detail-body {
+.s-occ-page .modal__body.amenity-detail-body {
     padding: 1.5rem;
     overflow-y: auto;
     display: flex;
@@ -1250,7 +1250,7 @@ body.staff-portal .occupancy-empty p {
     gap: 1.25rem;
 }
 
-.amenity-detail-img-wrap {
+.s-occ-page .amenity-detail-img-wrap {
     width: 100%;
     height: 200px;
     border-radius: 0.75rem;
@@ -1258,13 +1258,13 @@ body.staff-portal .occupancy-empty p {
     background: var(--surface-2);
 }
 
-.amenity-detail-img-wrap img {
+.s-occ-page .amenity-detail-img-wrap img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.amenity-detail-placeholder {
+.s-occ-page .amenity-detail-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
@@ -1273,14 +1273,14 @@ body.staff-portal .occupancy-empty p {
     color: var(--hp-text-muted);
 }
 
-.amenity-detail-desc {
+.s-occ-page .amenity-detail-desc {
     margin: 0;
     font-size: 0.95rem;
     line-height: 1.5;
     color: var(--hp-text-muted);
 }
 
-.amenity-detail-grid {
+.s-occ-page .amenity-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
@@ -1289,17 +1289,17 @@ body.staff-portal .occupancy-empty p {
     border-radius: 0.75rem;
 }
 
-[data-theme="dark"] .amenity-detail-grid {
+.s-occ-page [data-theme="dark"] .amenity-detail-grid {
     background: #0d2812;
 }
 
-.detail-item {
+.s-occ-page .detail-item {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.detail-label {
+.s-occ-page .detail-label {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -1307,65 +1307,65 @@ body.staff-portal .occupancy-empty p {
     color: var(--hp-text-muted);
 }
 
-.detail-val {
+.s-occ-page .detail-val {
     font-size: 1rem;
     font-weight: 700;
     color: var(--hp-green-dark);
 }
 
-[data-theme="dark"] .detail-val {
+.s-occ-page [data-theme="dark"] .detail-val {
     color: #81c784;
 }
 
-.amenity-detail-status-section h4 {
+.s-occ-page .amenity-detail-status-section h4 {
     margin: 0 0 0.75rem 0;
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--hp-text);
 }
 
-[data-theme="dark"] .amenity-detail-status-section h4 {
+.s-occ-page [data-theme="dark"] .amenity-detail-status-section h4 {
     color: #c8e6c8;
 }
 
-.status-list {
+.s-occ-page .status-list {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.status-badge {
+.s-occ-page .status-badge {
     padding: 0.6rem 0.85rem;
     border-radius: 0.5rem;
     font-size: 0.85rem;
 }
 
-.status-badge--occupied {
+.s-occ-page .status-badge--occupied {
     background: #fee2e2;
     color: #991b1b;
     border: 1px solid var(--glass-border);
 }
 
-.status-badge--reserved {
+.s-occ-page .status-badge--reserved {
     background: #fef3c7;
     color: #92400e;
     border: 1px solid var(--glass-border);
 }
 
-.status-empty {
+.s-occ-page .status-empty {
     margin: 0;
     font-size: 0.85rem;
     color: var(--hp-green);
     font-weight: 600;
 }
 
-.modal__footer {
+.s-occ-page .modal__footer {
     padding: 1rem 1.5rem;
     border-top: 1px solid #e5e7eb;
     display: flex;
     justify-content: flex-end;
 }
 
-[data-theme="dark"] .modal__footer {
+.s-occ-page [data-theme="dark"] .modal__footer {
     border-top-color: var(--border-strong);
 }

@@ -28,7 +28,7 @@
         'resources/js/staff_chatbot.js',
     ])
 </head>
-<body class="antialiased staff-portal">
+<body class="antialiased staff-portal s-set-page">
     <div class="dash-layout">
         <x-staff_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
         <div class="dash-main">
