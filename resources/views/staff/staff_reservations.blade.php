@@ -272,6 +272,11 @@
                         </table>
                     </div>
 
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals (Direct children of body) -->
                 <div class="guest-modal" id="reservationModal" aria-hidden="true">
                     <div class="guest-modal__backdrop" data-close-reservation-modal="true"></div>
                     <div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
@@ -616,49 +621,94 @@
                     <div class="guest-modal__backdrop" data-close-bulk-companion-modal="true"></div>
                     <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
                         <button type="button" class="guest-modal__close" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
-                        <h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
-                        <form id="bulkCompanionForm" class="guest-form" action="#">
-                            <div class="guest-form__row guest-form__row--two">
-                                <label class="guest-form__field">
-                                    <span>Gender</span>
-                                    <select name="gender" id="bulkCompanionGender">
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Nationality</span>
-                                    <select name="is_foreigner" id="bulkCompanionIsForeigner">
-                                        <option value="0" selected>Filipino</option>
-                                        <option value="1">Foreigner</option>
-                                    </select>
-                                </label>
+                        
+                        <div class="guest-modal__header" style="text-align: center; border-bottom: none; padding-bottom: 0;">
+                            <div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-mid); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(46, 125, 85, 0.2);">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;">
+                                    <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+                                </svg>
                             </div>
-                            <div class="guest-form__row guest-form__row--two">
-                                <label class="guest-form__field">
-                                    <span>Age Group</span>
-                                    <select name="age_group" id="bulkCompanionAgeGroup">
-                                        <option value="0-12">Kids (0-12)</option>
-                                        <option value="13-17">Teens (13-17)</option>
-                                        <option value="18-59">Adults (18-59)</option>
-                                        <option value="60+">Seniors (60+)</option>
-                                    </select>
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Quantity</span>
-                                    <input type="number" name="quantity" id="bulkCompanionQuantity" min="1" max="50" value="1" required>
-                                </label>
+                            <h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
+                            <p class="guest-modal__subtitle" style="color: var(--hp-text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Quickly generate multiple companions of the same profile.</p>
+                        </div>
+
+                        <form id="bulkCompanionForm" class="guest-form" action="#" style="margin-top: 1.5rem;">
+                            <div class="bulk-panel" style="background: var(--glass-bg-hover); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
+                                <div class="guest-form__row guest-form__row--two">
+                                    <!-- Gender -->
+                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Gender</span>
+                                        <div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
+                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="gender" value="Male" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Male</span>
+                                            </label>
+                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="gender" value="Female" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Female</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Nationality -->
+                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nationality</span>
+                                        <div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
+                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="is_foreigner" value="0" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Filipino</span>
+                                            </label>
+                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="is_foreigner" value="1" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Foreigner</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="guest-form__row guest-form__row--two" style="margin-top: 1.25rem;">
+                                    <!-- Age Group -->
+                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Age Group</span>
+                                        <div class="bulk-segment" style="display: flex; flex-wrap: wrap; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
+                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="age_group" value="0-12" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">Kids</span>
+                                            </label>
+                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="age_group" value="13-17" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-bottom: 1px solid var(--glass-border);">Teens</span>
+                                            </label>
+                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="age_group" value="18-59" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-right: 1px solid var(--glass-border);">Adults</span>
+                                            </label>
+                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
+                                                <input type="radio" name="age_group" value="60+" style="position: absolute; opacity: 0; width: 0; height: 0;">
+                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500;">Seniors</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quantity -->
+                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Quantity</span>
+                                        <div class="bulk-qty-wrap" style="display: flex; align-items: center; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); padding: 0.5rem; height: 100%;">
+                                            <button type="button" id="bulkCompanionBtnMinus" style="width: 36px; height: 36px; border-radius: var(--radius-md); border: none; background: rgba(0,0,0,0.05); color: var(--hp-text); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">−</button>
+                                            <input type="number" name="quantity" id="bulkCompanionQuantity" value="1" min="1" max="50" style="flex: 1; text-align: center; border: none; background: transparent; font-size: 1.5rem; font-weight: 600; font-family: var(--hp-font-display); color: var(--hp-green-dark); margin: 0 10px; width: 100%; appearance: textfield;">
+                                            <button type="button" id="bulkCompanionBtnPlus" style="width: 36px; height: 36px; border-radius: var(--radius-md); border: none; background: rgba(0,0,0,0.05); color: var(--hp-text); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">+</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            
                             <div class="guest-form__actions">
                                 <button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true">Cancel</button>
-                                <button type="submit" class="guest-form__button" id="generateCompanionsBtn">Generate Companions</button>
+                                <button type="submit" class="guest-form__button" id="generateCompanionsBtn">Generate</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            </main>
-        </div>
-    </div>
 
     <x-staff_chatbot />
 

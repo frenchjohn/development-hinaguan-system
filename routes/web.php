@@ -1528,6 +1528,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'status' => $reservation->status,
                 'payment_status' => $reservation->payment_status,
                 'total_amount' => $reservation->total_amount,
+                'number_of_guests' => $reservation->number_of_guests,
+                'reservation_guests' => $reservation->reservationGuests->map(function ($guest) {
+                    $c = $guest->customer;
+                    return [
+                        'id' => $guest->id,
+                        'is_primary_guest' => (bool)$guest->is_primary_guest,
+                        'checked_out_at' => $guest->checked_out_at,
+                        'customer' => [
+                            'first_name' => $c?->first_name,
+                            'middle_name' => $c?->middle_name,
+                            'last_name' => $c?->last_name,
+                            'gender' => $c?->gender,
+                            'is_foreigner' => $c?->is_foreigner,
+                            'age' => $c?->age,
+                            'customer_type' => $c?->customer_type
+                        ]
+                    ];
+                })
             ];
         });
 
@@ -1612,7 +1630,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->get();
 
         $activeReservations = Reservation::whereNotNull('check_in')
-            ->whereNull('check_out')
+            ->where(function ($query) {
+                $query->whereNull('check_out')
+                      ->orWhereHas('reservationGuests', function ($q) {
+                          $q->whereNull('checked_out_at');
+                      });
+            })
             ->with(['reservationGuests' => function ($query) {
                 $query->with('customer');
             }, 'reservationAmenities.amenity'])

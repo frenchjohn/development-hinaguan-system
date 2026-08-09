@@ -242,6 +242,149 @@ window.AppPage['staff_reports'] = function () {
         }
     };
 
+    const renderTable = (filteredRows) => {
+        const tbody = document.getElementById('reportsReservationTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (filteredRows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">No reservations found matching the filters.</td></tr>';
+            return;
+        }
+
+        filteredRows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'reservation-row';
+            tr.dataset.reservationId = row.id;
+
+            const checkInDate = new Date(row.check_in || row.reservation_date);
+            const dateStr = checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            const guests = row.reservation_guests || [];
+            const primaryGuest = guests.find(g => g.is_primary_guest);
+            const primaryCustomer = primaryGuest ? primaryGuest.customer : null;
+            
+            let guestInitials = '?';
+            if (primaryCustomer) {
+                guestInitials = (primaryCustomer.first_name?.[0] || '') + (primaryCustomer.last_name?.[0] || '');
+                if (!guestInitials) guestInitials = '?';
+            } else if (row.customer_name) {
+                guestInitials = row.customer_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+            }
+
+            const formatVal = (v) => v || '-';
+            const guestCount = row.number_of_guests || 0;
+            const remainingGuests = guests.filter(g => !g.checked_out_at).length;
+
+            tr.innerHTML = `
+                <td>
+                    <span class="font-medium text-dark">#${row.id}</span>
+                </td>
+                <td>
+                    <div class="guest-info">
+                        <div class="guest-avatar">${guestInitials}</div>
+                        <div>
+                            <div class="guest-name">${row.customer_name || 'Walk-in'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div style="font-weight: 500;">${dateStr}</div>
+                </td>
+                <td>
+                    <span class="guest-name" style="font-size: 0.85rem;">${row.amenities || 'None'}</span>
+                </td>
+                <td>
+                    <div class="guest-count-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+                        </svg>
+                        ${remainingGuests} / ${guestCount}
+                    </div>
+                </td>
+                <td>
+                    <span class="status-pill status-${(row.status || '').toLowerCase().replace(' ', '-')}">${row.status || ''}</span>
+                    <div style="font-size: 0.75rem; margin-top: 0.25rem; color: var(--hp-text-muted);">
+                        ${row.payment_status}
+                    </div>
+                </td>
+                <td style="text-align: right;">
+                    <button class="expand-btn" aria-label="Expand details">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+
+            let guestsHtml = '';
+            guests.forEach(guest => {
+                const c = guest.customer || {};
+                const name = trimString(`${c.first_name || ''} ${c.middle_name || ''} ${c.last_name || ''}`) || 'Walk-in Guest';
+                const demo = [c.gender, c.age ? c.age + ' yrs' : null, c.is_foreigner ? 'Foreigner' : 'Filipino'].filter(Boolean).join(' &bull; ');
+                guestsHtml += `
+                    <tr>
+                        <td>
+                            <div class="guest-info">
+                                <div class="guest-avatar" style="width:28px;height:28px;font-size:0.7rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;margin:auto;"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd"/></svg>
+                                </div>
+                                <div>
+                                    <div class="guest-name" style="font-size:0.85rem;">${name}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span style="font-size:0.8rem;color:var(--hp-text-muted);">${demo || '-'}</span></td>
+                        <td></td><td></td><td></td><td></td>
+                        <td style="text-align:right;">
+                            <span class="status-pill status-${guest.checked_out_at ? 'checked-out' : 'active'}" style="transform:scale(0.85);transform-origin:right center;">
+                                ${guest.checked_out_at ? 'Checked Out' : 'Active'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (!guestsHtml) {
+                guestsHtml = `<tr><td colspan="7" style="text-align:center;padding:1rem;color:var(--hp-text-muted);">No guests found.</td></tr>`;
+            }
+
+            const expandTr = document.createElement('tr');
+            expandTr.className = 'reservation-details-row';
+            expandTr.innerHTML = `
+                <td colspan="7">
+                    <div class="reservation-details-content">
+                        <table class="guest-table" style="background:transparent;box-shadow:none;border:none;">
+                            <tbody style="background:transparent;">
+                                ${guestsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+            tbody.appendChild(expandTr);
+
+            // Toggle Expand
+            tr.addEventListener('click', (e) => {
+                if(e.target.closest('button') && !e.target.closest('.expand-btn')) return;
+                const isExpanded = tr.classList.contains('is-expanded');
+                if (isExpanded) {
+                    tr.classList.remove('is-expanded');
+                    expandTr.classList.remove('is-visible');
+                } else {
+                    tr.classList.add('is-expanded');
+                    expandTr.classList.add('is-visible');
+                }
+            });
+        });
+    };
+
+    const trimString = (str) => {
+        return String(str || '').replace(/\s+/g, ' ').trim();
+    };
+
     const applyFilters = () => {
         let visibleCount = 0;
         let visibleRevenue = 0;
@@ -264,6 +407,7 @@ window.AppPage['staff_reports'] = function () {
 
         renderTopAmenities(filteredRows);
         renderPeakDays(filteredRows);
+        renderTable(filteredRows);
     };
 
     [customerFilter, amenityFilter, statusFilter, dateFrom, dateTo].forEach((input) => {

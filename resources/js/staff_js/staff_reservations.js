@@ -26,6 +26,28 @@ window.AppPage['staff_reservations'] = function () {
     const checkInPrimaryIsForeigner = document.getElementById('checkInPrimaryIsForeigner');
     const checkInCompanionIsForeigner = document.getElementById('checkInCompanionIsForeigner');
     const bulkCompanionModal = document.getElementById('bulkCompanionModal');
+    const bulkCompanionBtnMinus = document.getElementById('bulkCompanionBtnMinus');
+    const bulkCompanionBtnPlus = document.getElementById('bulkCompanionBtnPlus');
+    const bulkQuantityInput = document.getElementById('bulkCompanionQuantity');
+
+    if (bulkCompanionBtnMinus && bulkQuantityInput) {
+        bulkCompanionBtnMinus.addEventListener('click', () => {
+            let val = parseInt(bulkQuantityInput.value, 10) || 1;
+            if (val > 1) {
+                bulkQuantityInput.value = val - 1;
+            }
+        });
+    }
+
+    if (bulkCompanionBtnPlus && bulkQuantityInput) {
+        bulkCompanionBtnPlus.addEventListener('click', () => {
+            let val = parseInt(bulkQuantityInput.value, 10) || 1;
+            if (val < parseInt(bulkQuantityInput.max || 50, 10)) {
+                bulkQuantityInput.value = val + 1;
+            }
+        });
+    }
+
     const bulkCompanionForm = document.getElementById('bulkCompanionForm');
     const bulkCompanionCloseButtons = document.querySelectorAll('[data-close-bulk-companion-modal="true"]');
     const companionSummaryModal = document.getElementById('companionSummaryModal');

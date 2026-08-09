@@ -875,8 +875,6 @@
 							</div>
 						</div>
 					</div>
-					</div>
-				</div>
 				</div> <!-- Closing #guestTableSection -->
 
 					{{-- RESERVATION TABLE --}}
@@ -1023,10 +1021,12 @@
 					</div>
 						</section>
 					</div>
-				</main>
-			</div>
+				</div>
+			</main>
 		</div>
 	</div>
+	<!-- Modals (Direct children of body) -->
+	<div class="guest-modal" id="guestModal" aria-hidden="true">
 		<div class="guest-modal__backdrop" data-close-modal="true"></div>
 					<div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
 						<button type="button" class="guest-modal__close" data-close-modal="true" aria-label="Close details">&times;</button>
@@ -1715,10 +1715,8 @@
 							</div>
 						</div>
 					</div>
+					</div>
 				</div>
-				</main>
-			</div>
-		</div>
 
 	<x-staff_chatbot />
 
