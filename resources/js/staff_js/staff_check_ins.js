@@ -21,36 +21,36 @@ window.AppPage['staff_check_ins'] = function () {
     let currentReservationId = null;
     let companionCount = 0;
 
-    // Initialize: show reservation table by default
-    if (guestTableSection && reservationTableSection) {
-        guestTableSection.style.display = 'none';
-        reservationTableSection.style.display = '';
-        if (tabGuestBtn && tabReservationBtn) {
-            tabGuestBtn.classList.remove('is-active');
-            tabReservationBtn.classList.add('is-active');
-        }
+    // Initialize: show dashboard table by default
+    const dashboardSection = document.getElementById('dashboardSection');
+    
+    if (dashboardSection && guestTableSection && reservationTableSection) {
+        dashboardSection.style.display = 'none';
+        guestTableSection.style.display = '';
+        reservationTableSection.style.display = 'none';
+        document.querySelectorAll('.checkins-tab').forEach(btn => btn.classList.remove('is-active'));
+        document.querySelectorAll('.checkins-tab[data-tab-target="guest"]').forEach(btn => btn.classList.add('is-active'));
     }
 
     // Tab switching
-    const switchToGuest = () => {
-        guestTableSection.style.display = '';
-        reservationTableSection.style.display = 'none';
-        tabGuestBtn.classList.add('is-active');
-        tabReservationBtn.classList.remove('is-active');
+    const switchTab = (target) => {
+        if(dashboardSection) dashboardSection.style.display = target === 'dashboard' ? '' : 'none';
+        if(guestTableSection) guestTableSection.style.display = target === 'guest' ? '' : 'none';
+        if(reservationTableSection) reservationTableSection.style.display = target === 'reservation' ? '' : 'none';
+        
+        document.querySelectorAll('.checkins-tab').forEach(btn => btn.classList.remove('is-active'));
+        document.querySelectorAll(`.checkins-tab[data-tab-target="${target}"]`).forEach(btn => btn.classList.add('is-active'));
     };
 
-    const switchToReservation = () => {
-        guestTableSection.style.display = 'none';
-        reservationTableSection.style.display = '';
-        tabGuestBtn.classList.remove('is-active');
-        tabReservationBtn.classList.add('is-active');
-    };
-
-    tabGuestBtn?.addEventListener('click', switchToGuest);
-    tabReservationBtn?.addEventListener('click', switchToReservation);
+    document.querySelectorAll('.checkins-tab[data-tab-target]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const target = e.currentTarget.getAttribute('data-tab-target');
+            switchTab(target);
+        });
+    });
 
     // ── Checkout countdowns ──────────────────────────────────────────────
-    const CHECKOUT_NEAR_MS = 2 * 60 * 60 * 1000;   // 2 hours before checkout
+    const CHECKOUT_NEAR_MS = 60 * 60 * 1000;       // 1 hour before checkout
     const CHECKOUT_WARN_MS = 10 * 60 * 1000;       // 10 minutes before checkout
 
     const formatTimeLeft = (ms) => {
@@ -94,20 +94,54 @@ window.AppPage['staff_check_ins'] = function () {
     const refreshCheckoutCountdowns = () => {
         // Modal reservation timer + per-amenity timers
         document.querySelectorAll('.resv-checkout-countdown, .resv-amenity-countdown').forEach(renderCountdownEl);
-        // Table pills: only appear within the final 2h window (compact text)
-        document.querySelectorAll('.table-checkout-countdown').forEach((el) => {
+        // Table Pills: Separate Time Left and Status columns
+        document.querySelectorAll('.table-time-left').forEach((el) => {
             const state = getCheckoutState(el.dataset.checkoutAt);
-            if (!state.visible || state.tone === 'far') {
-                el.textContent = '';
-                el.style.display = 'none';
-                el.removeAttribute('data-checkout-state');
+            const tr = el.closest('tr');
+            
+            if (!state.visible) {
+                el.innerHTML = '—';
                 return;
             }
-            el.style.display = '';
-            el.textContent = state.tone === 'due'
-                ? 'Time to Checked Out'
-                : `Checkout in ${formatTimeLeft(state.left)}`;
-            el.setAttribute('data-checkout-state', state.tone);
+            
+            const clockIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 0.9rem; height: 0.9rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+            
+            if (state.tone === 'due') {
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.2rem 0.5rem; border-radius:999px; font-size:0.75rem; font-weight:600; background: rgba(239, 68, 68, 0.1); color: #ef4444;">${clockIcon} 0m left</span>`;
+            } else {
+                let colorClass = '#16a34a'; // green
+                let bgClass = 'rgba(22, 163, 74, 0.1)';
+                if (state.tone === 'warn' || state.tone === 'near') {
+                    colorClass = '#ea580c'; // orange
+                    bgClass = 'rgba(234, 88, 12, 0.1)';
+                }
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.2rem 0.5rem; border-radius:999px; font-size:0.75rem; font-weight:600; background: ${bgClass}; color: ${colorClass};">${clockIcon} ${formatTimeLeft(state.left)} left</span>`;
+            }
+            
+            if (tr) {
+                if (state.tone === 'due') {
+                    tr.classList.add('row-checkout-due');
+                    tr.classList.remove('row-checkout-near');
+                } else if (state.tone === 'warn' || state.tone === 'near') {
+                    tr.classList.add('row-checkout-near');
+                    tr.classList.remove('row-checkout-due');
+                } else {
+                    tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                }
+            }
+        });
+        
+        document.querySelectorAll('.table-status-pill').forEach((el) => {
+            const state = getCheckoutState(el.dataset.checkoutAt);
+            const statusStr = el.dataset.status || '';
+            
+            if (statusStr === 'checked_out') {
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(107, 114, 128, 0.1); color: #6b7280;">Checked Out</span>`;
+            } else if (state.tone === 'due') {
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(239, 68, 68, 0.1); color: #ef4444;">Checkout Time!</span>`;
+            } else {
+                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(22, 163, 74, 0.1); color: #16a34a;">Checked In</span>`;
+            }
         });
     };
 
@@ -375,7 +409,8 @@ window.AppPage['staff_check_ins'] = function () {
     // Reservation row click handlers
     const reservationRows = reservationTableBody?.querySelectorAll('.reservation-row') ?? [];
     reservationRows.forEach(row => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-expand-row')) return;
             const reservationId = row.dataset.reservationId;
             openReservationModal(reservationId);
         });
@@ -652,10 +687,70 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     guestRows.forEach(row => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-expand-row')) return;
             const customerId = row.dataset.customerId;
             openGuestModal(customerId);
         });
+    });
+
+    // Expandable Row Logic
+    document.addEventListener('click', (e) => {
+        const expandBtn = e.target.closest('.btn-expand-row');
+        if (!expandBtn) return;
+        
+        e.stopPropagation();
+        const tr = expandBtn.closest('tr');
+        if (!tr) return;
+        
+        const isExpanded = expandBtn.classList.toggle('expanded');
+        expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
+
+        // Guest Table Expand
+        if (tr.classList.contains('guest-row--primary')) {
+            const resId = tr.getAttribute('data-reservation-id');
+            const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
+            companions.forEach(c => {
+                c.style.display = isExpanded ? '' : 'none';
+            });
+        }
+        
+        // Reservation Table Expand
+        if (tr.classList.contains('reservation-row')) {
+            const resId = tr.getAttribute('data-reservation-id');
+            let nestedRow = tr.nextElementSibling;
+            
+            if (isExpanded) {
+                if (!nestedRow || !nestedRow.classList.contains('reservation-nested-row')) {
+                     // Generate it!
+                     const reservation = reservationData[resId];
+                     if (!reservation) return;
+                     
+                     let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
+                     reservation.reservation_guests.forEach(g => {
+                         if (!g.customer) return;
+                         const pill = g.is_primary_guest 
+                            ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
+                            : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
+                         guestsHtml += `<div style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500;">
+                            ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
+                            <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
+                         </div>`;
+                     });
+                     guestsHtml += `</div>`;
+                     
+                     nestedRow = document.createElement('tr');
+                     nestedRow.className = 'reservation-nested-row';
+                     nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
+                     tr.insertAdjacentElement('afterend', nestedRow);
+                }
+                nestedRow.style.display = '';
+            } else {
+                if (nestedRow && nestedRow.classList.contains('reservation-nested-row')) {
+                    nestedRow.style.display = 'none';
+                }
+            }
+        }
     });
 
     guestModalCloseButtons.forEach(button => {
@@ -1277,24 +1372,39 @@ window.AppPage['staff_check_ins'] = function () {
         guestFilterPanel.hidden = isExpanded;
     });
 
-    // Reservation filter functionality
-    guestReservationSelect?.addEventListener('change', () => {
-        const selectedReservationId = guestReservationSelect.value;
+    // Unified Guest Table Filter Function
+    const guestSearchInput = document.getElementById('guestSearchInput');
+    const guestRoleSelect = document.getElementById('guestRoleSelect');
+    
+    const applyGuestFilters = () => {
+        const searchTerm = (guestSearchInput?.value || '').toLowerCase();
+        const selectedRole = guestRoleSelect?.value || 'all';
+        const selectedReservationId = guestReservationSelect?.value || '';
+        
         const guestRows = document.querySelectorAll('#guestTableBody .guest-row');
         
         guestRows.forEach(row => {
-            if (selectedReservationId === '') {
-                // Show all guests when "All Reservations" is selected
-                row.style.display = '';
-            } else {
-                // Check if this guest belongs to the selected reservation
-                const rowReservationId = row.dataset.reservationId;
-                if (rowReservationId === selectedReservationId) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            let show = true;
+            
+            // Search filter
+            if (searchTerm) {
+                const searchableText = row.getAttribute('data-search') || '';
+                if (!searchableText.includes(searchTerm)) show = false;
             }
+            
+            // Role filter
+            if (selectedRole !== 'all') {
+                const isPrimary = row.getAttribute('data-is-primary') === 'true';
+                if (selectedRole === 'primary' && !isPrimary) show = false;
+                if (selectedRole === 'companion' && isPrimary) show = false;
+            }
+            
+            // Reservation filter
+            if (selectedReservationId) {
+                if (row.getAttribute('data-reservation-id') !== selectedReservationId) show = false;
+            }
+            
+            row.style.display = show ? '' : 'none';
         });
         
         // Update results count
@@ -1303,7 +1413,11 @@ window.AppPage['staff_check_ins'] = function () {
         if (resultsCount) {
             resultsCount.textContent = `Showing ${visibleRows.length} active guests`;
         }
-    });
+    };
+
+    guestSearchInput?.addEventListener('input', applyGuestFilters);
+    guestRoleSelect?.addEventListener('change', applyGuestFilters);
+    guestReservationSelect?.addEventListener('change', applyGuestFilters);
 
     // Scan QR modal
     const scanQrBtn = document.getElementById('scanQrBtn');

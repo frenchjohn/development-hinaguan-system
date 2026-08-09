@@ -27,11 +27,6 @@
         'resources/js/staff_js/staff_occupancy_monitor.js',
         'resources/js/staff_chatbot.js',
     ])
-    <style>
-        .dash-main::before {
-            background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
-        }
-    </style>
 </head>
 <body class="antialiased staff-portal">
     <div class="dash-layout">

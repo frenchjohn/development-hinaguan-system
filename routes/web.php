@@ -1139,7 +1139,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $amenityCheckoutAt, $reservationCheckoutAt) {
-    Route::get('/dashboard', function (Request $request) {
+    Route::get('/dashboard', function (Request $request) use ($reservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -1245,6 +1245,38 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('reservation_date')
             ->get(['booker_name', 'number_of_guests', 'status', 'reservation_date']);
 
+        // Calculate due checkouts for dashboard alert
+        $dashboardGuestsDue = 0;
+        $dashboardResDue = 0;
+        
+        $activeReservationsDashboard = Reservation::query()
+            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+            ->whereNotNull('check_in')
+            ->where('status', 'Checked In')
+            ->get();
+            
+        foreach ($activeReservationsDashboard as $res) {
+            $timeSlots = $res->reservationAmenities
+                ->pluck('pricing_type')
+                ->map(function ($pricingType) {
+                    $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
+                    if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
+                    if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
+                    if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
+                    if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
+                    return $baseSlot;
+                })
+                ->unique()
+                ->values()
+                ->all();
+
+            $coAt = $reservationCheckoutAt($res->check_in, $timeSlots);
+            if ($coAt && \Carbon\Carbon::parse($coAt)->isPast()) {
+                $dashboardResDue++;
+                $dashboardGuestsDue += $res->reservationGuests->whereNull('checked_out_at')->count();
+            }
+        }
+
         return view('staff.staff_dashboard', compact(
             'todayCheckIns',
             'pendingReservationsCount',
@@ -1257,7 +1289,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'statusBreakdown',
             'topAmenities',
             'topAmenityMax',
-            'todayArrivals'
+            'todayArrivals',
+            'dashboardGuestsDue',
+            'dashboardResDue'
         ));
     })->name('dashboard');
 

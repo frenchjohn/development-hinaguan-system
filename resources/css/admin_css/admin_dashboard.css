@@ -121,21 +121,24 @@
 
 .dash-stat-card {
     padding: 1.5rem;
-    background: #fff;
-    border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 20px rgba(13, 44, 29, 0.06);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--glass-shadow);
     transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
 
 [data-theme="dark"] .dash-stat-card {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
 }
 
 .dash-stat-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 28px rgba(13, 44, 29, 0.12);
+    background: var(--glass-bg-hover);
+    box-shadow: var(--glass-shadow);
 }
 
 .dash-stat-card__icon {
@@ -182,29 +185,31 @@
 }
 
 .dash-panel {
-    background: #fff;
-    border: 1px solid rgba(13, 44, 29, 0.1);
-    border-radius: 0.75rem;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(13, 44, 29, 0.06);
+    box-shadow: var(--glass-shadow);
     transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 [data-theme="dark"] .dash-panel {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
 }
 
 .dash-panel__head {
     padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid rgba(13, 44, 29, 0.08);
-    background: var(--hp-cream);
+    border-bottom: 1px solid var(--glass-border);
+    background: transparent;
     transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 [data-theme="dark"] .dash-panel__head {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    background: transparent;
+    border-bottom-color: var(--glass-border);
 }
 
 .dash-panel__title {
@@ -227,9 +232,17 @@
     align-items: center;
     padding: 0.95rem 1rem;
     border-radius: 0.85rem;
-    border: 1px solid rgba(13, 44, 29, 0.1);
-    background: var(--hp-cream);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
 }
+
+[data-theme="dark"] .dash-summary-item {
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+}
+
 
 .dash-summary-item span {
     color: var(--hp-text-muted);
@@ -439,14 +452,21 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    opacity: 1;
+    /* Pure color backdrop — soft green wash with faint radial glows so the
+       frosted panels still have subtle depth to blur. */
+    background:
+        radial-gradient(60rem 42rem at 8% -8%, rgba(140, 190, 150, 0.5), transparent 60%),
+        radial-gradient(52rem 40rem at 105% 18%, rgba(108, 168, 124, 0.42), transparent 62%),
+        radial-gradient(46rem 38rem at 55% 118%, rgba(196, 216, 178, 0.55), transparent 60%),
+        linear-gradient(158deg, #e9f3ea 0%, #dce9dd 48%, #cfe0d2 100%);
 }
 
 [data-theme="dark"] .dash-main::before {
-    filter: brightness(0.6) saturate(0.92);
+    background:
+        radial-gradient(60rem 42rem at 8% -8%, rgba(52, 96, 66, 0.55), transparent 60%),
+        radial-gradient(52rem 40rem at 105% 18%, rgba(38, 78, 52, 0.5), transparent 62%),
+        radial-gradient(46rem 38rem at 55% 118%, rgba(26, 56, 38, 0.6), transparent 60%),
+        linear-gradient(158deg, #10241a 0%, #0c1e14 48%, #08170f 100%);
 }
 
 /* ------------------------------------------------------------

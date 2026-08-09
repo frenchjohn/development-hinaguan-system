@@ -30,11 +30,6 @@
 		'resources/js/staff_js/staff_reservations.js',
 		'resources/js/staff_chatbot.js',
 	])
-	<style>
-		.dash-main::before {
-			background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
-		}
-	</style>
 </head>
 <body class="antialiased staff-portal">
 	<div class="dash-layout">
@@ -47,89 +42,494 @@
 					title="Check Ins"
 					subtitle="Active check-ins and walk-ins"
 				/>
-				<div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-					<button type="button" class="guest-panel__button" id="tabGuestBtn">Guest</button>
-					<button type="button" class="guest-panel__button is-active" id="tabReservationBtn">Reservation</button>
-					<button type="button" class="guest-panel__button guest-panel__button--primary" data-open-add-guest-modal="true">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-						</svg>
-						Add Guest
-					</button>
-					<button type="button" class="guest-panel__button" id="scanQrBtn">
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.25rem; height: 1.25rem;">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-							<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-						</svg>
-					</button>
-				</div>
-
 				@if (session('success'))
 					<div class="guest-alert">{{ session('success') }}</div>
 				@endif
 
-					{{-- GUEST TABLE --}}
-					<div id="guestTableSection">
-						@php
-							$activeCustomers = collect($customers ?? collect())->filter(function ($customer) {
-								return $customer->reservationGuests->filter(function ($guest) {
-									$reservation = $guest->reservation ?? null;
-									if (! $reservation) {
-										return false;
-									}
-									// Skip if guest is individually checked out
-									if ($guest->checked_out_at) {
-										return false;
-									}
-									// Only show guests who have been checked in
-									if (! $reservation->check_in) {
-										return false;
-									}
-									$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
-									return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
-								})->isNotEmpty();
-							});
+					@php
+						// 1. Calculate Active Customers
+						$activeCustomers = collect($customers ?? collect())->filter(function ($customer) {
+							return $customer->reservationGuests->filter(function ($guest) {
+								$reservation = $guest->reservation ?? null;
+								if (! $reservation) return false;
+								if ($guest->checked_out_at) return false;
+								if (! $reservation->check_in) return false;
+								$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
+								return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
+							})->isNotEmpty();
+						});
 
-							// Calculate guest summary counts
-							$guestSummaryFemale = $activeCustomers->filter(function ($customer) {
-								return strtolower((string) ($customer->gender ?? '')) === 'female';
-							})->count();
+						// 2. Guest Demographics & Detailed Crosses
+						$guestSummaryFemale = 0;
+						$guestSummaryMale = 0;
+						$guestSummaryForeign = 0;
+						$guestSummaryFilipino = 0;
+						
+						$demoMaleFil = 0; $demoMaleFor = 0;
+						$demoFemFil = 0; $demoFemFor = 0;
+						
+						// Age Groups (Kids: 0-12, Teen: 13-17, Adult: 18-59, Senior: 60+)
+						$ageKids = 0; $ageTeen = 0; $ageAdult = 0; $ageSenior = 0;
+						$ageFilKids = 0; $ageForKids = 0;
+						$ageFilTeen = 0; $ageForTeen = 0;
+						$ageFilAdult = 0; $ageForAdult = 0;
+						$ageFilSenior = 0; $ageForSenior = 0;
+						
+						// Roles
+						$activeMainGuests = 0;
+						$activeSingleCompanions = 0;
+						$activeBulkCompanions = 0;
 
-							$guestSummaryMale = $activeCustomers->filter(function ($customer) {
-								return strtolower((string) ($customer->gender ?? '')) === 'male';
-							})->count();
+						// 3. Guest Checkout Due
+						$guestSummaryCheckoutDue = 0;
+						$guestSummaryNearCheckout = 0;
+						$dueMainGuests = 0;
+						$dueSingleCompanions = 0;
+						$dueBulkCompanions = 0;
 
-							$guestSummaryForeign = $activeCustomers->filter(function ($customer) {
-								return (bool) ($customer->is_foreigner ?? false);
-							})->count();
+						foreach ($activeCustomers as $customer) {
+							$resEntry = $customer->reservationGuests->filter(function ($guest) {
+								return $guest->reservation && !$guest->checked_out_at;
+							})->first();
+							$resId = $resEntry?->reservation?->id;
+							$coAt = $reservationData[$resId]['checkout_at'] ?? null;
+							
+							$isPrimary = $resEntry?->is_primary_guest ?? false;
+							$firstName = strtolower(trim($customer->first_name ?? ''));
+							$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
+							$isForeign = (bool)($customer->is_foreigner ?? false);
+							$gender = strtolower($customer->gender ?? '');
+							
+							// Roles Count
+							if ($isPrimary) $activeMainGuests++;
+							elseif ($isBulk) $activeBulkCompanions++;
+							else $activeSingleCompanions++;
+							
+							// Demographics
+							if ($gender === 'male') {
+								$guestSummaryMale++;
+								if ($isForeign) $demoMaleFor++; else $demoMaleFil++;
+							} elseif ($gender === 'female') {
+								$guestSummaryFemale++;
+								if ($isForeign) $demoFemFor++; else $demoFemFil++;
+							}
+							
+							if ($isForeign) $guestSummaryForeign++; else $guestSummaryFilipino++;
+							
+							// Age Groups
+							$age = is_numeric($customer->age) ? (int)$customer->age : null;
+							if ($age !== null) {
+								if ($age <= 12) {
+									$ageKids++;
+									if ($isForeign) $ageForKids++; else $ageFilKids++;
+								} elseif ($age <= 17) {
+									$ageTeen++;
+									if ($isForeign) $ageForTeen++; else $ageFilTeen++;
+								} elseif ($age <= 59) {
+									$ageAdult++;
+									if ($isForeign) $ageForAdult++; else $ageFilAdult++;
+								} else {
+									$ageSenior++;
+									if ($isForeign) $ageForSenior++; else $ageFilSenior++;
+								}
+							}
 
-							$guestSummaryFilipino = $activeCustomers->filter(function ($customer) {
-								return ! (bool) ($customer->is_foreigner ?? false);
-							})->count();
-						@endphp
+							// Due
+							if ($coAt) {
+								$coCarbon = \Carbon\Carbon::parse($coAt);
+								if ($coCarbon->isPast()) {
+									$guestSummaryCheckoutDue++;
+									if ($isPrimary) $dueMainGuests++;
+									elseif ($isBulk) $dueBulkCompanions++;
+									else $dueSingleCompanions++;
+								} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
+									$guestSummaryNearCheckout++;
+								}
+							}
+						}
 
-						<div class="guest-summary">
-							<div class="guest-summary-card">
-								<span>Total active guests</span>
-								<strong id="guestSummaryTotal">{{ $activeCustomers->count() }}</strong>
-							</div>
-							<div class="guest-summary-card">
-								<span>Female</span>
-								<strong id="guestSummaryFemale">{{ $guestSummaryFemale }}</strong>
-							</div>
-						<div class="guest-summary-card">
-							<span>Male</span>
-							<strong id="guestSummaryMale">{{ $guestSummaryMale }}</strong>
+						// 4. Reservations & Revenue
+						$resSummaryCheckoutDue = 0;
+						$resSummaryNearCheckout = 0;
+						foreach ($activeReservations ?? [] as $res) {
+							$coAt = $reservationData[$res->id]['checkout_at'] ?? null;
+							if ($coAt) {
+								$coCarbon = \Carbon\Carbon::parse($coAt);
+								if ($coCarbon->isPast()) {
+									$resSummaryCheckoutDue++;
+								} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
+									$resSummaryNearCheckout++;
+								}
+							}
+						}
+						
+						$totalActiveRes = count($activeReservations ?? []);
+						$totalAmount = collect($activeReservations ?? [])->sum('total_amount');
+						
+						// 5. Top Mini-Stats
+						$todaysCheckins = collect($activeReservations ?? [])
+							->filter(fn($r) => \Carbon\Carbon::parse($r->check_in)->isToday())
+							->count();
+						$walkInsToday = collect($activeReservations ?? [])
+							->filter(fn($r) => $r->reservation_type === 'walk_in' && \Carbon\Carbon::parse($r->check_in)->isToday())
+							->count();
+						$expectedCheckouts = $guestSummaryCheckoutDue + $guestSummaryNearCheckout;
+					@endphp
+
+					<!-- MASTER TABS (Image Design) -->
+					<div class="checkins-tabs-container">
+						<div class="checkins-tabs" role="tablist">
+							<button type="button" class="checkins-tab is-active" data-tab-target="guest" role="tab" aria-selected="true">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.1rem; height: 1.1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+								Guests
+							</button>
+							<button type="button" class="checkins-tab" data-tab-target="reservation" role="tab" aria-selected="false">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.1rem; height: 1.1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+								Reservations
+							</button>
 						</div>
-						<div class="guest-summary-card">
-							<span>Foreign</span>
-							<strong id="guestSummaryForeign">{{ $guestSummaryForeign }}</strong>
+						<button type="button" class="checkins-tab checkins-dashboard-btn" data-tab-target="dashboard" role="tab" aria-selected="false">
+							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+							Analytics Dashboard
+						</button>
+					</div>
+
+					<!-- ALWAYS VISIBLE 4 STAT CARDS -->
+					<div class="dashboard-top-row checkins-top-stats">
+						<!-- Card 1: Active Guests -->
+						<div class="top-stat-card">
+							<div class="top-stat-card__icon" style="background: rgba(34,197,94,0.1); color: #22c55e;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+							</div>
+							<div class="top-stat-card__body">
+								<span>Active Guests</span>
+								<strong>{{ $activeCustomers->count() }}</strong>
+								<div class="stat-trend trend-up">Currently inside</div>
+							</div>
 						</div>
-						<div class="guest-summary-card">
-							<span>Filipino</span>
-							<strong id="guestSummaryFilipino">{{ $guestSummaryFilipino }}</strong>
+						<!-- Card 2: Checked In Today -->
+						<div class="top-stat-card">
+							<div class="top-stat-card__icon" style="background: rgba(59,130,246,0.1); color: #3b82f6;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+							</div>
+							<div class="top-stat-card__body">
+								<span>Checked In Today</span>
+								<strong>{{ $todaysCheckins }}</strong>
+								<div class="stat-trend trend-up">Total check-ins</div>
+							</div>
+						</div>
+						<!-- Card 3: Expected Check-outs -->
+						<div class="top-stat-card">
+							<div class="top-stat-card__icon" style="background: rgba(249,115,22,0.1); color: #f97316;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+							</div>
+							<div class="top-stat-card__body">
+								<span>Expected Check-outs</span>
+								<strong>{{ $expectedCheckouts }}</strong>
+								<div class="stat-trend" style="color:var(--hp-text-muted);">Guests near/past time</div>
+							</div>
+						</div>
+						<!-- Card 4: Walk-ins Today -->
+						<div class="top-stat-card">
+							<div class="top-stat-card__icon" style="background: rgba(168,85,247,0.1); color: #a855f7;">
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+							</div>
+							<div class="top-stat-card__body">
+								<span>Walk-Ins Today</span>
+								<strong>{{ $walkInsToday }}</strong>
+								<div class="stat-trend" style="color:var(--hp-text-muted);">Walk-in guests</div>
+							</div>
 						</div>
 					</div>
+
+					<div id="dashboardSection" class="tab-content-section" style="display: none;">
+						<div class="premium-dashboard">
+						<!-- Widget 1: Overview -->
+						<div class="premium-widget">
+							<div class="premium-widget__header">
+								<div class="widget-icon widget-icon--green">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+								</div>
+								<h4>OVERVIEW</h4>
+							</div>
+							<div class="premium-widget__grid cols-3" style="margin-bottom: 1.2rem;">
+								<div class="premium-stat">
+									<span>ACTIVE GUESTS</span>
+									<strong>{{ $activeCustomers->count() }}</strong>
+									<div class="stat-trend trend-up">▲ 12% vs yesterday</div>
+								</div>
+								<div class="premium-stat">
+									<span>RESERVATIONS</span>
+									<strong>{{ $totalActiveRes }}</strong>
+									<div class="stat-trend trend-up">▲ 25% vs yesterday</div>
+								</div>
+								<div class="premium-stat">
+									<span>TOTAL AMOUNT</span>
+									<strong class="text-gradient-green">₱{{ number_format($totalAmount, 0) }}</strong>
+									<div class="stat-trend trend-up">▲ 8% vs yesterday</div>
+								</div>
+							</div>
+							<!-- Role breakdown -->
+							<div class="premium-widget__grid cols-3" style="padding-top: 1rem; border-top: 1px dashed rgba(0,0,0,0.08);">
+								<div class="premium-stat">
+									<span>MAIN GUESTS</span>
+									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeMainGuests }}</strong>
+								</div>
+								<div class="premium-stat">
+									<span>SINGLE COMP.</span>
+									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeSingleCompanions }}</strong>
+								</div>
+								<div class="premium-stat">
+									<span>BULK COMP.</span>
+									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeBulkCompanions }}</strong>
+								</div>
+							</div>
+							
+							<div class="revenue-this-month" style="margin-top: 1.5rem; padding: 0.8rem 1rem; background: rgba(34,197,94,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
+								<div>
+									<div style="font-size: 0.75rem; font-weight: 500; color: #166534; margin-bottom: 0.2rem;">Revenue this month</div>
+									<strong style="font-size: 1.25rem; color: #15803d;">₱98,450</strong>
+								</div>
+								<div class="stat-trend trend-up" style="font-size: 0.75rem;">▲ 15% vs last month</div>
+							</div>
+						</div>
+
+						<!-- Widget 2: Demographics -->
+						<div class="premium-widget">
+							<div class="premium-widget__header">
+								<div class="widget-icon widget-icon--blue">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+								</div>
+								<h4>DEMOGRAPHICS</h4>
+							</div>
+							@php
+								$totalGuests = $activeCustomers->count() ?: 1; // prevent div by zero
+								$pctMale = round(($guestSummaryMale / $totalGuests) * 100);
+								$pctFem = round(($guestSummaryFemale / $totalGuests) * 100);
+								$pctFor = round(($guestSummaryForeign / $totalGuests) * 100);
+								$pctFil = round(($guestSummaryFilipino / $totalGuests) * 100);
+								
+								$degMale = $pctMale * 3.6;
+								$degFem = $degMale + ($pctFem * 3.6);
+								$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
+							@endphp
+							<div class="premium-widget__grid cols-4">
+								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
+									<span>MALE</span>
+									<strong>{{ $guestSummaryMale }}</strong>
+									<div class="stat-trend trend-blue">{{ $pctMale }}%</div>
+								</div>
+								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFemFil }}&#xa;Foreigner: {{ $demoFemFor }}">
+									<span>FEMALE</span>
+									<strong>{{ $guestSummaryFemale }}</strong>
+									<div class="stat-trend trend-blue">{{ $pctFem }}%</div>
+								</div>
+								<div class="premium-stat">
+									<span>FOREIGNER</span>
+									<strong>{{ $guestSummaryForeign }}</strong>
+									<div class="stat-trend trend-blue">{{ $pctFor }}%</div>
+								</div>
+								<div class="premium-stat">
+									<span>FILIPINO</span>
+									<strong>{{ $guestSummaryFilipino }}</strong>
+									<div class="stat-trend trend-blue">{{ $pctFil }}%</div>
+								</div>
+							</div>
+							
+							<!-- Donut Chart Area -->
+							<div class="demographics-chart-area" style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 2rem; padding: 1rem 0;">
+								<div class="donut-chart-container" style="position: relative; width: 120px; height: 120px;">
+									<div class="donut-chart" style="width: 100%; height: 100%; border-radius: 50%; background: conic-gradient({{ $conicGradient }}); transition: all 0.5s ease;"></div>
+									<div class="donut-chart-inner" style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: var(--hp-bg); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+										<strong style="font-size: 1.25rem; line-height: 1; color: var(--hp-text-color);">{{ $totalGuests }}</strong>
+										<span style="font-size: 0.65rem; color: var(--hp-text-muted);">Total</span>
+									</div>
+								</div>
+								<div class="donut-legend" style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.8rem; color: var(--hp-text-color); min-width: 120px;">
+									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>Male</span> <span>{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
+									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899;"></span>Female</span> <span>{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
+									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span>Foreigner</span> <span>{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
+									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6;"></span>Filipino</span> <span>{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Widget 4: Age Groups -->
+						<div class="premium-widget">
+							<div class="premium-widget__header">
+								<div class="widget-icon widget-icon--blue">
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+								</div>
+								<h4>AGE GROUPS</h4>
+							</div>
+							@php
+								$pctKids = $totalGuests > 0 ? round(($ageKids / $totalGuests) * 100) : 0;
+								$pctTeen = $totalGuests > 0 ? round(($ageTeen / $totalGuests) * 100) : 0;
+								$pctAdult = $totalGuests > 0 ? round(($ageAdult / $totalGuests) * 100) : 0;
+								$pctSenior = $totalGuests > 0 ? round(($ageSenior / $totalGuests) * 100) : 0;
+							@endphp
+							<div class="premium-widget__grid cols-4">
+								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilKids }}&#xa;Foreigner: {{ $ageForKids }}">
+									<span>KIDS</span>
+									<strong>{{ $ageKids }}</strong>
+									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctKids }}%</div>
+								</div>
+								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilTeen }}&#xa;Foreigner: {{ $ageForTeen }}">
+									<span>TEENS</span>
+									<strong>{{ $ageTeen }}</strong>
+									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctTeen }}%</div>
+								</div>
+								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilAdult }}&#xa;Foreigner: {{ $ageForAdult }}">
+									<span>ADULTS</span>
+									<strong>{{ $ageAdult }}</strong>
+									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctAdult }}%</div>
+								</div>
+								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilSenior }}&#xa;Foreigner: {{ $ageForSenior }}">
+									<span>SENIORS</span>
+									<strong>{{ $ageSenior }}</strong>
+									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctSenior }}%</div>
+								</div>
+							</div>
+
+							<!-- Progress Bars Area -->
+							<div class="age-progress-area" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+								<!-- Kids -->
+								<div class="progress-row">
+									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+										<span>Kids (0 - 12 yrs)</span>
+										<span>{{ $pctKids }}%</span>
+									</div>
+									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+										<div style="width: {{ $pctKids }}%; height: 100%; background: #22c55e; border-radius: 4px;"></div>
+									</div>
+								</div>
+								<!-- Teens -->
+								<div class="progress-row">
+									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+										<span>Teens (13 - 17 yrs)</span>
+										<span>{{ $pctTeen }}%</span>
+									</div>
+									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+										<div style="width: {{ $pctTeen }}%; height: 100%; background: #3b82f6; border-radius: 4px;"></div>
+									</div>
+								</div>
+								<!-- Adults -->
+								<div class="progress-row">
+									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+										<span>Adults (18 - 59 yrs)</span>
+										<span>{{ $pctAdult }}%</span>
+									</div>
+									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+										<div style="width: {{ $pctAdult }}%; height: 100%; background: #a855f7; border-radius: 4px;"></div>
+									</div>
+								</div>
+								<!-- Seniors -->
+								<div class="progress-row">
+									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+										<span>Seniors (60+ yrs)</span>
+										<span>{{ $pctSenior }}%</span>
+									</div>
+									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
+										<div style="width: {{ $pctSenior }}%; height: 100%; background: #f59e0b; border-radius: 4px;"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Widget 3: Checkout Alerts -->
+						<div class="premium-widget premium-widget--alert" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem;">
+							<div style="flex: 1; min-width: 300px;">
+								<div class="premium-widget__header">
+									<div class="widget-icon widget-icon--orange">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+									</div>
+									<h4>CHECKOUT ALERTS</h4>
+								</div>
+								<div class="premium-widget__grid cols-4" style="margin-top: 1.5rem; gap: 1rem;">
+									<div class="premium-stat stat-due" style="background: none; padding: 0; box-shadow: none;">
+										<span style="font-size: 0.75rem;">TOTAL DUE</span>
+										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $guestSummaryCheckoutDue }}</strong>
+										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+										<strong style="font-size: 1.2rem; color: #f97316;">{{ $resSummaryCheckoutDue }}</strong>
+										<div style="font-size: 0.75rem; color: var(--hp-text-muted);">Reservations due</div>
+									</div>
+									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
+										<span style="font-size: 0.75rem;">MAIN DUE</span>
+										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueMainGuests }}</strong>
+										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									</div>
+									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
+										<span style="font-size: 0.75rem;">SINGLE COMP.</span>
+										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueSingleCompanions }}</strong>
+										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									</div>
+									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
+										<span style="font-size: 0.75rem;">BULK COMP.</span>
+										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueBulkCompanions }}</strong>
+										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									</div>
+								</div>
+							</div>
+							
+							<div class="upcoming-checkouts-panel" style="flex: 1; min-width: 300px; padding-left: 2rem; border-left: 1px dashed rgba(0,0,0,0.08);">
+								<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+									<h4 style="font-size: 0.85rem; font-weight: 600; color: var(--hp-text-color);">Upcoming Check-outs</h4>
+									<a href="#" style="font-size: 0.8rem; color: #f97316; font-weight: 500; display: flex; align-items: center; gap: 0.3rem;">
+										View all alerts <span style="font-size:1.1rem;">&rarr;</span>
+									</a>
+								</div>
+								
+								<div class="upcoming-checkouts-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
+									@foreach (collect($activeReservations ?? [])->take(3) as $res)
+										@php
+											$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+											$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
+											$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+										@endphp
+										<div class="upcoming-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(34,197,94,0.05); border-radius: 8px;">
+											<div style="display: flex; align-items: center; gap: 1rem;">
+												<div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(34,197,94,0.1); display: flex; align-items: center; justify-content: center; color: #22c55e;">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+												</div>
+												<div>
+													<div style="font-weight: 600; font-size: 0.9rem; color: var(--hp-text-color);">{{ $amenityNames ?: 'Entrance' }}</div>
+													<div style="font-size: 0.75rem; color: var(--hp-text-muted);">Reserved by {{ $guestName }}</div>
+												</div>
+											</div>
+											<div class="time-left-pill" style="padding: 0.3rem 0.8rem; border-radius: 999px; background: rgba(249,115,22,0.1); color: #c2410c; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+												<span class="table-time-left" data-checkout-at="{{ $reservationData[$res->id]['checkout_at'] ?? '' }}"></span>
+											</div>
+										</div>
+									@endforeach
+								</div>
+							</div>
+						</div>
+					</div>
+					</div>
+
+					{{-- GUEST TABLE --}}
+					<div id="guestTableSection" class="tab-content-section" style="display: none;">
+						<section class="dash-panel guest-panel">
+							<div class="dash-panel__head guest-panel__head table-header-flex">
+								<div class="table-header-left">
+									<h2 class="dash-panel__title" style="margin-right: 1.5rem;">Guest Data View</h2>
+								</div>
+								<div class="checkins-actions">
+									<button type="button" class="btn-premium" data-open-add-guest-modal="true">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+										</svg>
+										Add Guest
+									</button>
+									<button type="button" class="btn-icon" id="scanQrBtn" aria-label="Scan QR Code">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+										</svg>
+									</button>
+								</div>
+							</div>
 
 					<div class="guest-filter-shell">
 						<button type="button" class="guest-filter-toggle" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
@@ -149,6 +549,14 @@
 									<option value="age-asc">Age (Low-High)</option>
 									<option value="age-desc">Age (High-Low)</option>
 									<option value="reservation-asc">Reservation Type</option>
+								</select>
+							</label>
+							<label class="guest-toolbar__field">
+								<span>Show Guests</span>
+								<select id="guestRoleSelect">
+									<option value="all">All Guests</option>
+									<option value="primary">Main Guests Only</option>
+									<option value="companion">Companions Only</option>
 								</select>
 							</label>
 							<label class="guest-toolbar__field">
@@ -196,11 +604,12 @@
 						<table class="guest-table">
 							<thead>
 								<tr>
-									<th>Name</th>
-									<th>Age</th>
-									<th>Gender</th>
+									<th>Guest</th>
+									<th>Age / Gender</th>
+									<th>Nationality</th>
+									<th>Time left</th>
 									<th>Status</th>
-									<th>Reservation Type</th>
+									<th></th>
 								</tr>
 							</thead>
 							<tbody id="guestTableBody">
@@ -209,9 +618,7 @@
 										$hasActiveReservation = $customer->reservationGuests->filter(function ($guest) {
 											$reservation = $guest->reservation ?? null;
 											if (! $reservation) return false;
-											// Skip if guest is individually checked out
 											if ($guest->checked_out_at) return false;
-											// Skip if reservation is checked out
 											$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
 											return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
 										})->isNotEmpty();
@@ -231,13 +638,36 @@
 										})->first();
 										$reservationType = $reservationEntry?->reservation?->reservation_type;
 										$reservationTypeLabel = $reservationType === 'walk_in' ? 'walk-in' : ($reservationType ?? 'N/A');
-										$guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
 										$typePillClass = $reservationType === 'walk_in' ? 'status-pill--walk-in' : ($reservationType ? 'status-pill--online' : 'status-pill--checked-out');
+										
+										$isPrimary = $reservationEntry?->is_primary_guest ?? false;
+										$firstName = strtolower(trim($customer->first_name ?? ''));
+										$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
+										
+										$checkoutAtStr = $reservationData[$reservationEntry?->reservation?->id]['checkout_at'] ?? null;
+										$checkoutDue = false;
+										$checkoutNear = false;
+										if ($checkoutAtStr) {
+											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
+											if ($coCarbon->isPast()) {
+												$checkoutDue = true;
+											} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
+												$checkoutNear = true;
+											}
+										}
+										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
+										
+										// Hierarchy variables
+										$companionCount = 0;
+										if ($isPrimary && $reservationEntry?->reservation) {
+											$companionCount = $reservationEntry->reservation->reservationGuests->where('is_primary_guest', false)->filter(function($g) { return !$g->checked_out_at; })->count();
+										}
 									@endphp
 									<tr
-										class="guest-row"
+										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }}"
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
+										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"
 										data-age="{{ $customer->age ?? 'N/A' }}"
 										data-gender="{{ strtolower((string) ($customer->gender ?? 'N/A')) }}"
 											data-check-in="{{ $reservationEntry?->reservation?->check_in ?? '' }}"
@@ -255,66 +685,98 @@
 									>
 										<td>
 											<div class="cell-person">
-												<span class="cell-person__avatar">{{ $guestInitials }}</span>
+												<span class="cell-person__avatar {{ $isPrimary ? 'cell-person__avatar--star' : '' }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
+													@if($isPrimary)
+														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+													@elseif($isBulk)
+														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+													@else
+														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
+													@endif
+												</span>
+												@if($isPrimary && $companionCount > 0)
+													<button type="button" class="btn-expand-row" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions" style="margin-right: 0.5rem; background: none; border: none; cursor: pointer; color: var(--hp-text-muted);">
+														<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+													</button>
+												@endif
 												<div class="cell-person__body">
 													<div class="guest-name">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
-													<div class="guest-meta">Customer ID: {{ $customer->id }}</div>
+													<div class="guest-meta">ID: {{ $customer->id }}</div>
 												</div>
 											</div>
 										</td>
-										<td>{{ $customer->age ?? 'N/A' }}</td>
-										<td>{{ $customer->gender ?? 'N/A' }}</td>
+										<td>
+											@php
+												$displayAge = $customer->age ?? 'N/A';
+												if ($isBulk && is_numeric($displayAge)) {
+													if ($displayAge <= 12) $displayAge = 'Kids';
+													elseif ($displayAge <= 17) $displayAge = 'Teens';
+													elseif ($displayAge <= 59) $displayAge = 'Adults';
+													else $displayAge = 'Seniors';
+												}
+											@endphp
+											<div class="guest-name">{{ $displayAge }}</div>
+											<div class="guest-meta">{{ $customer->gender ?? 'N/A' }}</div>
+										</td>
 										<td>
 											<span class="status-pill {{ $customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
 										</td>
 										<td>
-											<span class="status-pill {{ $typePillClass }}">{{ ucfirst($reservationTypeLabel) }}</span>
+											<span class="table-time-left" data-checkout-at="{{ $checkoutAtStr }}"></span>
+										</td>
+										<td>
+											<span class="table-status-pill" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
+										</td>
+										<td style="text-align: right; color: #9ca3af;">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@empty
 									<tr>
-										<td colspan="5" class="guest-empty">No active check-ins found.</td>
+										<td colspan="6" class="guest-empty">No active check-ins found.</td>
 									</tr>
 								@endforelse
 							</tbody>
 						</table>
 					</div>
-					</div>
-				</section>
-
-				{{-- RESERVATION TABLE --}}
-				<section class="dash-panel guest-panel" id="reservationTableSection">
-					<div class="dash-panel__head guest-panel__head">
-						<div>
-							<h3 class="dash-panel__title">Active Reservations</h3>
-							<p class="dash-panel__subtitle">Reservations checked in but not yet checked out</p>
-						</div>
+						</section>
 					</div>
 
-					<div class="guest-summary">
-						<div class="guest-summary-card">
-							<span>Total active reservations</span>
-							<strong id="reservationSummaryTotal">{{ count($activeReservations ?? []) }}</strong>
-						</div>
-						<div class="guest-summary-card">
-							<span>Total amount</span>
-							<strong id="reservationSummaryTotalAmount">₱{{ number_format(collect($activeReservations ?? [])->sum('total_amount'), 2) }}</strong>
-						</div>
-						<div class="guest-summary-card">
-							<span>Total guests</span>
-							<strong id="reservationSummaryTotalGuests">{{ collect($activeReservations ?? [])->sum('number_of_guests') }}</strong>
-						</div>
-					</div>
+					{{-- RESERVATION TABLE --}}
+					<div id="reservationTableSection" class="tab-content-section" style="display: none;">
+						<section class="dash-panel guest-panel">
+							<div class="dash-panel__head guest-panel__head table-header-flex">
+								<div class="table-header-left">
+									<h2 class="dash-panel__title" style="margin-right: 1.5rem;">Reservation Data View</h2>
+								</div>
+								<div class="checkins-actions">
+									<button type="button" class="btn-premium" data-open-add-guest-modal="true">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+										</svg>
+										Add Guest
+									</button>
+									<button type="button" class="btn-icon" aria-label="Scan QR Code">
+										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+										</svg>
+									</button>
+								</div>
+							</div>
 
-					<div class="guest-table-wrap" id="reservationTableWrap">                        <table class="guest-table">
+					<div class="guest-table-wrap" id="reservationTableWrap" style="margin-top: 1rem;">
+						<table class="guest-table">
 							<thead>
 								<tr>
 									<th>Reservation</th>
-									<th>Check-in</th>
 									<th>Main Guest</th>
-									<th>Guests Count</th>
+									<th>Check-in & Time</th>
 									<th>Amenities</th>
+									<th>Guests</th>
 									<th>Time left</th>
+									<th>Status</th>
+									<th></th>
 								</tr>
 							</thead>
 							<tbody id="reservationTableBody">
@@ -330,26 +792,52 @@
 											->filter()
 											->unique();
 										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
+										
+										$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
+										$checkoutDue = false;
+										$checkoutNear = false;
+										if ($checkoutAtStr) {
+											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
+											if ($coCarbon->isPast()) {
+												$checkoutDue = true;
+											} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
+												$checkoutNear = true;
+											}
+										}
+										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
+										
+										$totalResGuests = $reservation->reservationGuests->count();
+										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
 									@endphp
 									<tr
-										class="reservation-row"
+										class="reservation-row {{ $highlightClass }}"
 										data-reservation-id="{{ $reservation->id }}"
 										tabindex="0"
 										role="button"
 										aria-label="View reservation {{ $reservation->id }}"
 									>
 										<td>
-											<div class="guest-name">Reservation #{{ $reservation->id }}</div>
-											<div class="guest-meta">{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</div>
-											@if ($isMixedTime)
-												<span class="resv-date-badge resv-date-badge--row">Mixed Time</span>
-											@endif
+											<div style="display: flex; align-items: center;">
+												<button type="button" class="btn-expand-row" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details" style="margin-right: 0.5rem; background: none; border: none; cursor: pointer; color: var(--hp-text-muted);">
+													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+												</button>
+												<div>
+													<div class="guest-name">#{{ $reservation->id }}</div>
+													<div class="guest-meta">
+														{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}
+														@if ($isMixedTime)
+															<span class="status-pill status-pill--pending" style="margin-left:4px;">Mixed Time</span>
+														@endif
+													</div>
+												</div>
+											</div>
 										</td>
-										<td class="mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : '—' }}</td>
 										<td>
 											@if ($primaryGuest)
 												<div class="cell-person">
-													<span class="cell-person__avatar">{{ $guestInitials }}</span>
+													<span class="cell-person__avatar cell-person__avatar--star" title="Main Guest">
+														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+													</span>
 													<div class="cell-person__body">
 														<div class="guest-name">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
 													</div>
@@ -358,26 +846,41 @@
 												<div class="guest-name">—</div>
 											@endif
 										</td>
-										<td>{{ $reservation->number_of_guests }}</td>
+										<td>
+											<div class="guest-name mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
+											<div class="guest-meta mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
+										</td>
 										<td>
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
-											{{ $amenityNames ?: '—' }}
+											<span class="guest-meta">{{ $amenityNames ?: 'None' }}</span>
 										</td>
 										<td>
-											<span class="table-checkout-countdown" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-checkout-state=""></span>
+											<div class="guest-name">{{ $totalResGuests }} Total</div>
+											<div class="guest-meta">{{ $remainingResGuests }} Remaining</div>
+										</td>
+										<td>
+											<span class="table-time-left" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}"></span>
+										</td>
+										<td>
+											<span class="table-status-pill" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+										</td>
+										<td style="text-align: right; color: #9ca3af;">
+											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@empty
 									<tr>
-										<td colspan="6" class="guest-empty">No active reservations found.</td>
+										<td colspan="8" class="guest-empty">No active reservations found.</td>
 									</tr>
 								@endforelse
 							</tbody>
 						</table>
 					</div>
-				</section>
+						</section>
+					</div>
+				</main>
 				<div class="guest-modal" id="guestModal" aria-hidden="true">
 					<div class="guest-modal__backdrop" data-close-modal="true"></div>
 					<div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">

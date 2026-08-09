@@ -373,14 +373,21 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    opacity: 1;
+    /* Pure color backdrop — soft green wash with faint radial glows so the
+       frosted panels still have subtle depth to blur. */
+    background:
+        radial-gradient(60rem 42rem at 8% -8%, rgba(140, 190, 150, 0.5), transparent 60%),
+        radial-gradient(52rem 40rem at 105% 18%, rgba(108, 168, 124, 0.42), transparent 62%),
+        radial-gradient(46rem 38rem at 55% 118%, rgba(196, 216, 178, 0.55), transparent 60%),
+        linear-gradient(158deg, #e9f3ea 0%, #dce9dd 48%, #cfe0d2 100%);
 }
 
 [data-theme="dark"] .dash-main::before {
-    filter: brightness(0.6) saturate(0.92);
+    background:
+        radial-gradient(60rem 42rem at 8% -8%, rgba(52, 96, 66, 0.55), transparent 60%),
+        radial-gradient(52rem 40rem at 105% 18%, rgba(38, 78, 52, 0.5), transparent 62%),
+        radial-gradient(46rem 38rem at 55% 118%, rgba(26, 56, 38, 0.6), transparent 60%),
+        linear-gradient(158deg, #10241a 0%, #0c1e14 48%, #08170f 100%);
 }
 
 /* Shared portal components (glass) — scoped to the admin portal */

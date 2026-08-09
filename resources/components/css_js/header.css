@@ -30,7 +30,7 @@
     --glass-border: rgba(255, 255, 255, 0.5);
     --glass-border-strong: rgba(255, 255, 255, 0.8);
     --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-    --glass-blur: blur(24px);
+    --glass-blur: blur(6px);
 
     /* Shared portal tokens — Light Mode */
     --ink: #0d2c1d;
@@ -958,4 +958,189 @@
         right: -2.5rem;
         width: 18rem;
     }
+}
+
+/* ============================================================
+   STAFF PORTAL — Clean Solid Header
+   Staff pages (body.staff-portal) trade the frosted glass app
+   bar for a crisp solid bar with a wider sidebar. Admin pages
+   keep the base glass design above untouched.
+   ============================================================ */
+body.staff-portal {
+    --dash-sidebar-w: 10rem;
+    --dash-header-h: 4.1rem;
+    --staff-header-bg: #ffffff;
+    --staff-header-border: #e4ebe6;
+    --staff-header-shadow: 0 1px 2px rgba(16, 44, 31, 0.04), 0 10px 24px -16px rgba(16, 44, 31, 0.18);
+}
+
+[data-theme="dark"] body.staff-portal {
+    --staff-header-bg: #0e1c14;
+    --staff-header-border: #24332b;
+    --staff-header-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 28px -16px rgba(0, 0, 0, 0.5);
+}
+
+body.staff-portal .dash-header {
+    background: var(--staff-header-bg);
+    border-bottom: 1px solid var(--staff-header-border);
+    border-top: none;
+    box-shadow: var(--staff-header-shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+body.staff-portal .dash-header__title {
+    font-family: var(--font-display, 'Poppins', 'Montserrat', sans-serif);
+    font-size: 1.08rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* Ghost icon toggle */
+body.staff-portal .dash-header__toggle {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink);
+    backdrop-filter: none;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__toggle {
+    background: transparent;
+    border-color: var(--border);
+    color: #fff;
+}
+
+body.staff-portal .dash-header__toggle:hover {
+    background: var(--green-soft);
+    border-color: transparent;
+    color: var(--green);
+}
+
+/* Live status pill */
+body.staff-portal .dash-header__status-badge {
+    background: var(--green-soft);
+    border: 1px solid transparent;
+    color: var(--green-deep);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__status-badge {
+    background: rgba(60, 172, 119, 0.14);
+    color: #8fd0ab;
+}
+
+/* Weather chip */
+body.staff-portal .dash-header__weather-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    backdrop-filter: none;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__weather-btn {
+    background: #101d15;
+    border-color: var(--border);
+    color: #fff;
+}
+
+body.staff-portal .dash-header__weather-btn:hover,
+body.staff-portal .dash-header__weather-btn.is-active {
+    background: var(--green-soft);
+    border-color: var(--border-strong);
+    color: var(--green);
+}
+
+/* Notification bell */
+body.staff-portal .dash-header__notif-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    backdrop-filter: none;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__notif-btn {
+    background: #101d15;
+    border-color: var(--border);
+    color: #fff;
+}
+
+body.staff-portal .dash-header__notif-btn:hover,
+body.staff-portal .dash-header__notif-btn.is-active {
+    background: var(--green-soft);
+    border-color: var(--border-strong);
+    color: var(--green);
+}
+
+/* Dropdown surfaces — solid, no blur */
+body.staff-portal .dash-header__notif-dropdown,
+body.staff-portal .dash-header__weather-dropdown {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: none;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__notif-dropdown,
+[data-theme="dark"] body.staff-portal .dash-header__weather-dropdown {
+    background: #101d15;
+    border-color: var(--border);
+    box-shadow: var(--shadow-lg);
+}
+
+body.staff-portal .dash-header__notif-header,
+body.staff-portal .dash-header__weather-head {
+    background: transparent;
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__notif-header,
+[data-theme="dark"] body.staff-portal .dash-header__weather-head {
+    border-bottom-color: var(--border);
+}
+
+body.staff-portal .dash-header__notif-item {
+    border-bottom-color: var(--border);
+}
+
+body.staff-portal .dash-header__notif-item:hover {
+    background: var(--green-tint);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__notif-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.staff-portal .dash-header__weather-tab {
+    border-color: var(--border);
+    color: var(--ink-muted);
+}
+
+body.staff-portal .dash-header__weather-tab.is-active {
+    background: var(--green-soft);
+    border-color: var(--border-strong);
+    color: var(--green-deep);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__weather-tab.is-active {
+    color: #a2dcc0;
+}
+
+body.staff-portal .dash-header__weather-hour {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__weather-hour {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+body.staff-portal .dash-header__weather-now {
+    border-bottom-color: var(--border);
+}
+
+body.staff-portal .dash-header__weather-close:hover {
+    background: var(--green-tint);
+}
+
+[data-theme="dark"] body.staff-portal .dash-header__weather-close:hover {
+    background: rgba(255, 255, 255, 0.08);
 }

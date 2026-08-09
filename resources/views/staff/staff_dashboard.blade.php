@@ -27,13 +27,8 @@
         'resources/js/staff_js/staff_dashboard.js',
         'resources/js/staff_chatbot.js',
     ])
-    <style>
-        .dash-main::before {
-            background-image: url('{{ asset('storage/design_images/background_image3.png') }}');
-        }
-    </style>
 </head>
-<body class="antialiased staff-portal">
+<body class="antialiased staff-portal page-staff-dashboard">
     <div class="dash-layout">
         <x-staff_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
@@ -70,130 +65,165 @@
 
                 @php
                     $hour = (int) now()->format('G');
-                    $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+                    $greeting = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Good Evening');
+
+                    $weatherService = app(\App\Services\WeatherService::class);
+                    $weatherForecast = $weatherService->getMultiDayForecast(3);
+                    $weatherNow = $weatherForecast['now'] ?? null;
                 @endphp
 
-                <section class="dash-greeting">
-                    <div class="dash-greeting__brand">
-                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park" class="dash-greeting__logo">
-                        <div>
-                            <p class="dash-greeting__eyebrow">Hinaguan Nature Park · Staff Portal</p>
-                            <h2 class="dash-greeting__title">{{ $greeting }}, {{ session('auth_user.name') ?? 'Staff' }}</h2>
-                        </div>
+                {{-- ===== GREETING BANNER ===== --}}
+                <section class="sd-greeting-banner">
+                    <div class="sd-greeting-banner__left">
+                        <h2 class="sd-greeting-banner__title">{{ $greeting }}, {{ session('auth_user.name') ?? 'Staff User' }}!</h2>
+                        <p class="sd-greeting-banner__subtitle">Welcome to the Hinaguan Nature Park Portal</p>
                     </div>
-                    <div class="dash-greeting__meta">
-                        <span class="dash-greeting__live"><span class="dash-greeting__live-dot"></span> Live</span>
-                        <p class="dash-greeting__date">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</p>
+                    <div class="sd-greeting-banner__right">
+                        <div class="sd-greeting-banner__datetime">
+                            <span class="sd-greeting-banner__date">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
+                            <span class="sd-greeting-banner__time" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
+                        </div>
+                        @if ($weatherNow)
+                        <div class="sd-greeting-banner__weather">
+                            @if (!empty($weatherNow['icon']))
+                                <img src="{{ $weatherNow['icon'] }}" alt="" class="sd-greeting-banner__weather-icon">
+                            @else
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="sd-greeting-banner__weather-icon-svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            @endif
+                            <div class="sd-greeting-banner__weather-info">
+                                <span class="sd-greeting-banner__weather-temp">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
+                                <span class="sd-greeting-banner__weather-cond">{{ $weatherNow['condition'] ?? '—' }}</span>
+                            </div>
+                        </div>
+                        @endif
+                        <div class="sd-greeting-banner__park-status">
+                            <span class="sd-greeting-banner__park-badge">PARK<br>OPEN</span>
+                        </div>
                     </div>
                 </section>
 
-                <div class="dash-stats">
-                    <article class="dash-stat-card">
-                        <div class="dash-stat-card__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        <div class="dash-stat-card__body">
-                            <p class="dash-stat-card__label">Today's Check-ins</p>
-                            <p class="dash-stat-card__value">{{ $todayCheckIns }}</p>
-                            <p class="dash-stat-card__hint">Reservations marked as checked in today</p>
-                        </div>
-                    </article>
-                    <article class="dash-stat-card">
-                        <div class="dash-stat-card__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div class="dash-stat-card__body">
-                            <p class="dash-stat-card__label">Pending Reservations</p>
-                            <p class="dash-stat-card__value">{{ $pendingReservationsCount }}</p>
-                            <p class="dash-stat-card__hint">Online reservations awaiting action</p>
-                        </div>
-                    </article>
-                    <article class="dash-stat-card">
-                        <div class="dash-stat-card__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                            </svg>
-                        </div>
-                        <div class="dash-stat-card__body">
-                            <p class="dash-stat-card__label">Guests On-site</p>
-                            <p class="dash-stat-card__value">{{ $guestsOnSiteCount }}</p>
-                            <p class="dash-stat-card__hint">Guests still active and not checked out</p>
-                        </div>
-                    </article>
-                    <article class="dash-stat-card dash-stat-card--accent">
-                        <div class="dash-stat-card__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <div class="dash-stat-card__body">
-                            <p class="dash-stat-card__label">Today's Revenue</p>
-                            <p class="dash-stat-card__value">₱{{ number_format($todayRevenue) }}</p>
-                            <p class="dash-stat-card__hint">Collected from today's check-ins</p>
-                        </div>
-                    </article>
+                {{-- ===== CHECKOUT ALERTS BANNER ===== --}}
+                @if (($dashboardGuestsDue ?? 0) > 0 || ($dashboardResDue ?? 0) > 0)
+                <div class="sd-alert-banner">
+                    <div class="sd-alert-banner__icon sd-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div class="sd-alert-banner__content">
+                        <strong>ATTENTION REQUIRED</strong>
+                        <span>There are <strong>{{ $dashboardResDue }} reservations</strong> ({{ $dashboardGuestsDue }} guests) currently overdue for checkout.</span>
+                    </div>
+                    <a href="{{ route('staff.checkins') }}" class="sd-alert-banner__btn">Resolve Check-outs &rarr;</a>
                 </div>
+                @endif
 
-                <div class="dash-charts">
-                    <section class="dash-panel dash-chart">
-                        <div class="dash-panel__head">
-                            <h3 class="dash-panel__title">Bookings &amp; Revenue — Last 7 Days</h3>
-                            <div class="dash-chart__legend">
-                                <span class="dash-legend__item"><i class="dash-legend__swatch dash-legend__swatch--count"></i>Reservations</span>
-                                <span class="dash-legend__item"><i class="dash-legend__swatch dash-legend__swatch--revenue"></i>Revenue (₱)</span>
+                {{-- ===== MAIN DASHBOARD GRID: Stats | Chart | Donut ===== --}}
+                <div class="sd-dashboard-grid">
+                    {{-- LEFT: Stat Cards --}}
+                    <div class="sd-stats-col">
+                        <article class="sd-stat-card">
+                            <div class="sd-stat-card__icon sd-stat-card__icon--checkins">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
+                            <div class="sd-stat-card__body">
+                                <p class="sd-stat-card__label">Today's Check-ins</p>
+                                <p class="sd-stat-card__value">{{ $todayCheckIns }}</p>
+                                <p class="sd-stat-card__hint">Reservations marked as checked in today</p>
+                            </div>
+                        </article>
+                        <article class="sd-stat-card">
+                            <div class="sd-stat-card__icon sd-stat-card__icon--pending">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="sd-stat-card__body">
+                                <p class="sd-stat-card__label">Pending Reservations</p>
+                                <p class="sd-stat-card__value">{{ $pendingReservationsCount }}</p>
+                            </div>
+                        </article>
+                        <article class="sd-stat-card">
+                            <div class="sd-stat-card__icon sd-stat-card__icon--guests">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div class="sd-stat-card__body">
+                                <p class="sd-stat-card__label">Guests On-Site</p>
+                                <p class="sd-stat-card__value">{{ $guestsOnSiteCount }}</p>
+                            </div>
+                        </article>
+                        <article class="sd-stat-card">
+                            <div class="sd-stat-card__icon sd-stat-card__icon--revenue">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="sd-stat-card__body">
+                                <p class="sd-stat-card__label">Today's Revenue</p>
+                                <p class="sd-stat-card__value">₱{{ number_format($todayRevenue) }}</p>
+                            </div>
+                        </article>
+                    </div>
+
+                    {{-- CENTER: Area Chart --}}
+                    <section class="sd-chart-panel">
+                        <div class="sd-chart-panel__head">
+                            <h3 class="sd-chart-panel__title">Bookings & Revenue – Last 7 Days</h3>
+                            <div class="sd-chart-panel__legend">
+                                <span class="sd-legend-item">
+                                    <i class="sd-legend-swatch sd-legend-swatch--bookings"></i>Bookings
+                                </span>
+                                <span class="sd-legend-item">
+                                    <i class="sd-legend-swatch sd-legend-swatch--revenue"></i>Revenue
+                                </span>
                             </div>
                         </div>
-                        <div class="dash-barchart">
-                            @for ($i = 0; $i < 7; $i++)
-                                <div class="dash-barchart__col">
-                                    <div class="dash-barchart__bars">
-                                        <div class="dash-barchart__bar dash-barchart__bar--count"
-                                             style="--val: {{ round($weekReservationCounts[$i] / $barMax * 100) }}%"
-                                             title="{{ $weekReservationCounts[$i] }} reservation(s)"></div>
-                                        <div class="dash-barchart__bar dash-barchart__bar--revenue"
-                                             style="--val: {{ round($weekRevenue[$i] / $revenueMax * 100) }}%"
-                                             title="₱{{ number_format($weekRevenue[$i]) }} collected"></div>
-                                    </div>
-                                    <span class="dash-barchart__value">{{ $weekReservationCounts[$i] }}</span>
-                                    <span class="dash-barchart__label">{{ $weekDays[$i] }}</span>
-                                </div>
-                            @endfor
+                        <div class="sd-area-chart" id="sdAreaChart">
+                            {{-- Chart rendered by JS using the data below --}}
+                            <canvas id="sdAreaChartCanvas"></canvas>
                         </div>
+                        {{-- Pass data to JS --}}
+                        <script>
+                            window.__sdChartData = {
+                                labels: @json($weekDays),
+                                bookings: @json($weekReservationCounts),
+                            };
+                            window.__sdChartData_revenueRaw = @json($weekRevenue);
+                        </script>
                     </section>
 
-                    <section class="dash-panel dash-chart">
-                        <div class="dash-panel__head">
-                            <h3 class="dash-panel__title">Reservation Status</h3>
+                    {{-- RIGHT: Donut Chart --}}
+                    <section class="sd-donut-panel">
+                        <div class="sd-donut-panel__head">
+                            <h3 class="sd-donut-panel__title">Reservation Status</h3>
                         </div>
-                        @if ($donutTotal > 0)
-                            <div class="dash-donut-wrap">
-                                <div class="dash-donut" style="{{ $donutStyle }}">
-                                    <div class="dash-donut__hole">
-                                        <span class="dash-donut__total">{{ $donutTotal }}</span>
-                                        <small>total</small>
+                        <div class="sd-donut-panel__body">
+                            @if ($donutTotal > 0)
+                                <div class="sd-donut-ring" style="{{ $donutStyle }}">
+                                    <div class="sd-donut-ring__hole">
+                                        <span class="sd-donut-ring__total">{{ $donutTotal }}</span>
+                                        <small>Total</small>
                                     </div>
                                 </div>
-                                <ul class="dash-donut__legend">
+                                <ul class="sd-donut-legend">
                                     @foreach ($statusBreakdown as $status => $count)
                                         <li>
                                             <i style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
                                             {{ $status }}
-                                            <strong>{{ $count }}</strong>
                                         </li>
                                     @endforeach
                                 </ul>
-                            </div>
-                        @else
-                            <p class="dash-chart__empty">No reservations recorded yet.</p>
-                        @endif
+                            @else
+                                <p class="sd-chart-empty">No reservations recorded yet.</p>
+                            @endif
+                        </div>
                     </section>
                 </div>
 
-                <div class="dash-grid-3">
+                {{-- ===== BOTTOM ROW: Amenities | Arrivals | Activity ===== --}}
+                <div class="sd-bottom-grid">
                     <section class="dash-panel dash-chart">
                         <div class="dash-panel__head">
                             <h3 class="dash-panel__title">Most Booked Amenities</h3>
