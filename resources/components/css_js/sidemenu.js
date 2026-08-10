@@ -376,6 +376,11 @@ window.addEventListener('DOMContentLoaded', function () {
             let newMain = doc ? doc.querySelector('main.dash-content') : null;
 
             if (!newMain) {
+                // Give the click's fetch the single-threaded server: pause the
+                // warm-up queue while this navigation's page is loading, and
+                // show a slim progress bar so the wait isn't a dead screen.
+                prepare.paused = true;
+                showNavBar();
                 const response = await fetch(url, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' },
                     __skipBusy: true,
@@ -409,7 +414,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
             // Swap content
             main.innerHTML = newMain.innerHTML;
-            
+            finishNavBar();
+
             // Swap body classes (for CSS scoping like .s-das-page, which fixes modals)
             document.body.className = doc.body.className;
 
@@ -453,6 +459,9 @@ window.addEventListener('DOMContentLoaded', function () {
             if (servedFromCache) {
                 setTimeout(() => preloadPage(targetPath, true), 400);
             }
+
+            // Resume (or kick off) the warm-up queue for the remaining pages.
+            startPrepare();
         } catch (err) {
             console.warn('[instant-nav] failed, falling back to full navigation', err);
             window.location.href = url;
@@ -562,14 +571,162 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     // Preload the hovered page immediately so the next click is already cached.
+    // [data-page-transition] covers the Tailwind staff sidebar links (they carry
+    // that attribute but not the classic .dash-sidebar__link class).
     document.addEventListener('mouseover', (e) => {
-        const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href]');
+        const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href], [data-page-transition][href]');
         if (!anchor || anchor.dataset.preloaded) return;
         anchor.dataset.preloaded = '1';
         const href = anchor.getAttribute('href');
         if (!isDashboardHref(href)) return;
         preloadPage(href);
     });
+
+    // ------------------------------------------------------------
+    // Warm-up preload — "Preparing pages…"
+    // After a full page load, fetch every sidebar page in the
+    // background (one at a time, with a pause between requests) so
+    // the FIRST click on each page is a pure DOM swap — you never
+    // need to visit a page once to make it instant. A sequential
+    // queue with gaps never floods the single-threaded PHP dev
+    // server the way a parallel storm did. A small pill in the
+    // corner shows progress while the pages are being prepared.
+    // ------------------------------------------------------------
+    const PREPARE_DELAY_MS = 1500; // wait for the page to settle first
+    const PREPARE_GAP_MS = 500;    // gap between background requests
+
+    const prepare = {
+        active: false, // a warm-up run is in progress
+        paused: false, // temporarily halted (a real navigation is loading)
+        urls: [],
+    };
+
+    function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+    function prepareToast() {
+        let toast = document.getElementById('spaPrepareToast');
+        if (toast) return toast;
+        toast = document.createElement('div');
+        toast.id = 'spaPrepareToast';
+        toast.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.88);color:#fff;font:600 12px/1.4 Poppins,system-ui,sans-serif;padding:8px 14px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,0.28);opacity:0;transition:opacity .3s ease;pointer-events:none;';
+        const spin = document.createElement('span');
+        spin.style.cssText = 'width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;animation:spaPrepareSpin .7s linear infinite;';
+        const label = document.createElement('span');
+        label.id = 'spaPrepareLabel';
+        toast.appendChild(spin);
+        toast.appendChild(label);
+        document.body.appendChild(toast);
+        if (!document.getElementById('spaPrepareKeyframes')) {
+            const style = document.createElement('style');
+            style.id = 'spaPrepareKeyframes';
+            style.textContent = '@keyframes spaPrepareSpin { to { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+        return toast;
+    }
+
+    function showPrepareToast() {
+        prepareToast().style.opacity = '1';
+    }
+
+    function updatePrepareToast() {
+        const done = prepare.urls.filter((p) => pageCache.has(p)).length;
+        const label = document.getElementById('spaPrepareLabel');
+        if (label) label.textContent = 'Preparing pages… ' + done + '/' + prepare.urls.length;
+    }
+
+    function hidePrepareToast() {
+        const toast = document.getElementById('spaPrepareToast');
+        if (toast) toast.style.opacity = '0';
+    }
+
+    // Every dashboard URL reachable from the current sidebar (staff + admin).
+    function sidebarPageUrls() {
+        const paths = [];
+        document.querySelectorAll('a[href]').forEach((a) => {
+            const href = a.getAttribute('href');
+            if (!isDashboardHref(href)) return;
+            let url;
+            try { url = new URL(href, window.location.origin); } catch (e) { return; }
+            if (url.origin !== window.location.origin) return;
+            if (!paths.includes(url.pathname)) paths.push(url.pathname);
+        });
+        return paths;
+    }
+
+    function startPrepare() {
+        if (prepare.active) {
+            // A navigation just finished — unpause and let the queue continue.
+            prepare.paused = false;
+            return;
+        }
+        const currentPath = new URL(window.location.href).pathname;
+        const urls = sidebarPageUrls().filter((p) => p !== currentPath);
+        if (!urls.length) return;
+        prepare.urls = urls;
+        // Everything is already cached (e.g. right after a navigation) — stay silent.
+        if (urls.every((p) => pageCache.has(p))) return;
+        prepare.active = true;
+        prepare.paused = false;
+        showPrepareToast();
+        updatePrepareToast();
+        runPrepare();
+    }
+
+    async function runPrepare() {
+        const tried = new Set();
+        while (prepare.active) {
+            if (prepare.paused) {
+                await sleep(200);
+                continue;
+            }
+            const next = prepare.urls.find((p) => !pageCache.has(p) && !tried.has(p));
+            if (!next) break; // all pages prepared (or every attempt failed — best effort)
+            tried.add(next);
+            await preloadPage(next);
+            updatePrepareToast();
+            await sleep(PREPARE_GAP_MS);
+        }
+        prepare.active = false;
+        hidePrepareToast();
+    }
+
+    // ------------------------------------------------------------
+    // Slim progress bar for the rare click that still misses the
+    // cache (e.g. you click within the first seconds after a refresh,
+    // before warm-up finishes). Turns a "dead" 1-3s wait into
+    // visible feedback.
+    // ------------------------------------------------------------
+    function navBar() {
+        let bar = document.getElementById('spaNavBar');
+        if (bar) return bar;
+        bar = document.createElement('div');
+        bar.id = 'spaNavBar';
+        bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0;opacity:0;background:linear-gradient(90deg,#6E9F54,#4ade80);box-shadow:0 0 8px rgba(110,159,84,0.6);z-index:9999;transition:width .25s ease,opacity .3s ease;pointer-events:none;';
+        document.body.appendChild(bar);
+        return bar;
+    }
+
+    function showNavBar() {
+        const bar = navBar();
+        bar.style.opacity = '1';
+        bar.style.width = '0%';
+        requestAnimationFrame(() => { bar.style.width = '70%'; });
+    }
+
+    function finishNavBar() {
+        const bar = document.getElementById('spaNavBar');
+        if (!bar) return;
+        bar.style.width = '100%';
+        setTimeout(() => {
+            bar.style.opacity = '0';
+            bar.style.width = '0%';
+        }, 300);
+    }
+
+    // Warm up every sidebar page shortly after the page settles so the
+    // first click on each one is already instant.
+    setTimeout(startPrepare, PREPARE_DELAY_MS);
 
     // Initial content entrance (full page loads)
     runContentEntrance();
