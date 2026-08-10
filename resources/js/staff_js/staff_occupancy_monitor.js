@@ -188,7 +188,8 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                 occupied.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'status-badge status-badge--occupied';
-                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${item.time_slot})`;
+                    const guestCount = Number(item.guest_count ?? 0);
+                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${item.time_slot}) &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {

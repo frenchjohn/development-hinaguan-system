@@ -1429,7 +1429,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->whereNotIn('status', ['Cancelled', 'Checked Out'])
             ->with(['reservationAmenities' => function ($query) {
                 $query->with('amenity');
-            }])
+            }, 'reservationGuests'])
             ->get();
 
         // Build occupancy data for each amenity
@@ -1454,6 +1454,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'reservation_id' => $reservation->id,
                             'time_slot' => $timeSlot,
                             'status' => $reservation->status,
+                            // Headcount of guests (main + companions) still inside
+                            'guest_count' => $reservation->reservationGuests->whereNull('checked_out_at')->count(),
                         ];
 
                         if ($reservation->status === 'Checked In') {
@@ -1490,6 +1492,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $inUseCount = $occupiedCount + $reservedCount;
         $occupancyRate = $totalAmenities > 0 ? (int) round($inUseCount / $totalAmenities * 100) : 0;
 
+        // Visitors: checked-in guests (main + companions, still inside) whose
+        // reservation availed no amenity at all.
+        $visitorCount = $reservations
+            ->filter(fn ($res) => $res->reservationAmenities->isEmpty())
+            ->sum(fn ($res) => $res->reservationGuests->whereNull('checked_out_at')->count());
+
         return view('staff.staff_occupancy_monitor', compact(
             'amenities',
             'occupancyData',
@@ -1499,7 +1507,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'availableCount',
             'occupiedReservations',
             'inUseCount',
-            'occupancyRate'
+            'occupancyRate',
+            'visitorCount'
         ));
     })->name('occupancy-monitor');
 
@@ -1946,6 +1955,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'age_group' => $bulkAgeGroupLabel($customer->age),
                 'gender' => $customer->gender ?? 'N/A',
                 'nationality' => $customer->is_foreigner ? 'Foreigner' : 'Filipino',
+                'status' => $first->reservation?->status ?? 'Checked Out',
                 'count' => count($members),
                 'checked_out_at' => $toDateTimeString($sorted->first()?->checked_out_at),
                 'members' => $sorted->map(fn ($m) => [
@@ -1989,6 +1999,38 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $completedReservationsCount = $checkedOutReservations->count();
         $completedRevenue = (float) $checkedOutReservations->sum('amount_paid');
         $uniqueGuestsCount = $checkedOutGuests->pluck('customer_id')->unique()->filter()->count();
+
+        // ── Quick Insights (records dashboard panel) ────────────────────────
+        // Average length of stay in nights across completed stays.
+        $stayLengths = [];
+        foreach ($checkedOutReservations as $res) {
+            if ($res->check_in && $res->check_out) {
+                $hours = \Carbon\Carbon::parse($res->check_out)->diffInHours(\Carbon\Carbon::parse($res->check_in));
+                if ($hours > 0) {
+                    $stayLengths[] = $hours / 24;
+                }
+            }
+        }
+        $avgLengthOfStay = count($stayLengths) > 0 ? round(array_sum($stayLengths) / count($stayLengths), 1) : 0;
+
+        // Returning guests: customers who appear in 2+ checked-out reservations.
+        $reservationCustomerCounts = [];
+        foreach ($checkedOutGuests as $rg) {
+            if (! $rg->customer_id) continue;
+            $reservationCustomerCounts[$rg->customer_id] = ($reservationCustomerCounts[$rg->customer_id] ?? 0) + 1;
+        }
+        $returningGuests = count(array_filter($reservationCustomerCounts, fn ($count) => $count >= 2));
+        $returningGuestsPct = $uniqueGuestsCount > 0 ? (int) round($returningGuests / $uniqueGuestsCount * 100) : 0;
+
+        // Revenue per day (from check-out dates) for the mini revenue chart.
+        $revenueByDate = [];
+        foreach ($checkedOutReservations as $res) {
+            $date = $res->check_out ? \Carbon\Carbon::parse($res->check_out)->toDateString() : ($res->created_at ? \Carbon\Carbon::parse($res->created_at)->toDateString() : null);
+            if (! $date) continue;
+            $revenueByDate[$date] = ($revenueByDate[$date] ?? 0) + (float) $res->amount_paid;
+        }
+        ksort($revenueByDate);
+        $revenueSeries = array_values($revenueByDate);
 
         $guestData = $checkedOutGuests->mapWithKeys(function ($guest) {
             return [$guest->customer_id => [
@@ -2087,7 +2129,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'guestRecordsCount',
             'completedReservationsCount',
             'completedRevenue',
-            'uniqueGuestsCount'
+            'uniqueGuestsCount',
+            'avgLengthOfStay',
+            'returningGuests',
+            'returningGuestsPct',
+            'revenueSeries'
         ));
     })->name('records');
 

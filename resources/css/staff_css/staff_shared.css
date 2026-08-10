@@ -864,6 +864,61 @@ body.staff-portal .users-table-wrap , body.admin-portal .users-table-wrap {
     box-shadow: var(--shadow-xs);
     /* auto (not hidden) so tall tables inside max-height wrappers scroll */
     overflow: auto;
+    /* Inset the table so rows/hover states don't stick to the container edges */
+    padding: 0.5rem 1rem;
+}
+
+/* Records page: keep the tables wide enough that names, dates and pills never
+   cramp/wrap, regardless of the 992px responsive override below. */
+body.staff-portal #guestTableWrap .guest-table,
+body.admin-portal #guestTableWrap .guest-table {
+    min-width: 1080px;
+}
+body.staff-portal #reservationTableWrap .guest-table,
+body.admin-portal #reservationTableWrap .guest-table {
+    min-width: 960px;
+}
+
+/* Records page: table container with margin and padding */
+body.staff-portal .guest-panel .guest-table-wrap,
+body.admin-portal .guest-panel .guest-table-wrap {
+    background: transparent;
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: none;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+/* Tinted header + sort arrows */
+body.staff-portal .guest-panel .guest-table thead th,
+body.admin-portal .guest-panel .guest-table thead th {
+    background: var(--surface-2);
+    cursor: default;
+}
+body.staff-portal .guest-panel .guest-table thead th.sortable,
+body.admin-portal .guest-panel .guest-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+body.staff-portal .guest-panel .guest-table thead th.sortable::after,
+body.admin-portal .guest-panel .guest-table thead th.sortable::after {
+    content: '\2195';
+    margin-left: 0.35rem;
+    font-size: 0.62rem;
+    opacity: 0.45;
+}
+body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after,
+body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after {
+    content: '\2191';
+    opacity: 1;
+    color: var(--green);
+}
+body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after,
+body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after {
+    content: '\2193';
+    opacity: 1;
+    color: var(--green);
 }
 
 body.staff-portal .guest-table, body.admin-portal .guest-table,
@@ -2412,7 +2467,9 @@ td.mono-cell {
 
 /* Guest Panel */
 .guest-panel {
-    padding: 0 1.5rem 1.5rem;
+    padding: 1.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .guest-panel .dash-panel__head {
@@ -5939,11 +5996,12 @@ td.mono-cell {
 }
 
 .guest-panel {
-    padding: 1.5rem;
+    padding: 1.75rem;
+    margin: 1.5rem 0;
     background: #ffffff;
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 [data-theme="dark"] .guest-panel {
@@ -6199,6 +6257,11 @@ td.mono-cell {
 .guest-row.is-hidden,
 .reservation-row.is-hidden {
     display: none;
+}
+
+/* Pagination/filter hiding must beat the expand toggle's inline display style. */
+.companion-row.is-hidden {
+    display: none !important;
 }
 
 .guest-table-wrap {
@@ -13129,17 +13192,17 @@ td.mono-cell {
     .reports-kpi-row { grid-template-columns: 1fr; }
 }
 
-/* Avatar role colors — easy to tell main guest (gold), single companion
-   (green) and bulk companion (teal) apart at a glance. */
+/* Avatar role colors — easy to tell main guest (ochre), single companion
+   (deep green) and bulk companion (teal) apart at a glance. */
 body.staff-portal .cell-person__avatar--main,
 body.admin-portal .cell-person__avatar--main {
-    background: linear-gradient(135deg, #d9a93a 0%, #b8860b 100%);
+    background: #c2921d;
 }
 body.staff-portal .cell-person__avatar--companion,
 body.admin-portal .cell-person__avatar--companion {
-    background: linear-gradient(135deg, #178a52 0%, #0e5c37 100%);
+    background: #0b381a;
 }
 body.staff-portal .cell-person__avatar--bulk,
 body.admin-portal .cell-person__avatar--bulk {
-    background: linear-gradient(135deg, #0e7490 0%, #155e75 100%);
+    background: #0e7490;
 }

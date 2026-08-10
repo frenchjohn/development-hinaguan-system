@@ -77,6 +77,8 @@ window.AppPage['staff_records'] = function () {
     const guestFilterPanel = document.getElementById('guestFilterPanel');
     const guestTableBody = document.getElementById('guestTableBody');
     const guestTableRows = Array.from(guestTableBody?.querySelectorAll('.guest-row') ?? []);
+    const guestPageNumbers = document.getElementById('guestPageNumbers');
+    const guestPageInput = document.getElementById('guestPageInput');
 
     const openGuestModal = (customerId) => {
         const customerData = guestData?.[customerId] ?? null;
@@ -264,6 +266,87 @@ window.AppPage['staff_records'] = function () {
         guestModal.setAttribute('aria-hidden', 'false');
     };
 
+    // ---- Pagination helpers ----
+    const renderPageNumberButtons = (container, current, total, onSelect) => {
+        if (!container) return;
+        container.innerHTML = '';
+        if (total <= 1) return;
+
+        const buildBtn = (page) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = page;
+            btn.className = page === current
+                ? 'cursor-pointer rounded-lg bg-hp-green px-2.5 py-1.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-hp-green-dark'
+                : 'cursor-pointer rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-sm font-semibold text-hp-text transition-colors duration-200 hover:bg-glass-hover';
+            btn.addEventListener('click', () => onSelect(page));
+            return btn;
+        };
+
+        const pages = [];
+        for (let i = 1; i <= total; i++) {
+            if (total <= 7 || i === 1 || i === total || Math.abs(i - current) <= 1) pages.push(i);
+            else if (pages[pages.length - 1] !== -1) pages.push(-1);
+        }
+        pages.forEach((p) => {
+            if (p === -1) {
+                const span = document.createElement('span');
+                span.className = 'px-1 text-sm text-hp-text-muted';
+                span.textContent = '…';
+                container.appendChild(span);
+            } else {
+                container.appendChild(buildBtn(p));
+            }
+        });
+    };
+
+    // ---- Guest pagination state ----
+    const guestTableBodyEl = document.getElementById('guestTableBody');
+    let guestPage = 1;
+    let guestFilteredRows = [];
+
+    const renderGuestPagination = () => {
+        const perPage = Number(guestPerPage?.value || 10);
+        const total = guestFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        guestPage = Math.min(Math.max(1, guestPage), totalPages);
+
+        guestTableRows.forEach((row) => row.classList.add('is-hidden'));
+        const start = (guestPage - 1) * perPage;
+        const slice = guestFilteredRows.slice(start, start + perPage);
+        slice.forEach((row) => row.classList.remove('is-hidden'));
+
+        // Empty-state row when filters match nothing
+        let emptyRow = document.getElementById('guestTableEmptyRow');
+        if (total === 0) {
+            if (!emptyRow && guestTableBodyEl) {
+                emptyRow = document.createElement('tr');
+                emptyRow.id = 'guestTableEmptyRow';
+                emptyRow.innerHTML = '<td colspan="9" class="guest-empty px-4 py-8 text-center text-hp-text-muted">No records match your filters.</td>';
+                guestTableBodyEl.appendChild(emptyRow);
+            }
+            if (emptyRow) emptyRow.style.display = '';
+        } else if (emptyRow) {
+            emptyRow.style.display = 'none';
+        }
+
+        if (guestResultsCount) {
+            guestResultsCount.textContent = total === 0
+                ? 'Showing 0 of 0 results'
+                : `Showing ${start + 1} to ${start + slice.length} of ${total} results`;
+        }
+        renderPageNumberButtons(guestPageNumbers, guestPage, totalPages, (page) => {
+            guestPage = page;
+            renderGuestPagination();
+        });
+        if (guestPrevPage) guestPrevPage.disabled = guestPage <= 1;
+        if (guestNextPage) guestNextPage.disabled = guestPage >= totalPages;
+        if (guestPageInput) {
+            guestPageInput.value = guestPage;
+            guestPageInput.max = totalPages;
+        }
+    };
+
     const applyGuestFilters = () => {
         const query = searchInput?.value.trim().toLowerCase() ?? '';
         const sortValue = sortSelect?.value ?? 'checkout-desc';
@@ -283,18 +366,50 @@ window.AppPage['staff_records'] = function () {
         filteredRows.sort((left, right) => {
             const leftName = (left.getAttribute('data-search') || '').toLowerCase();
             const rightName = (right.getAttribute('data-search') || '').toLowerCase();
+            const leftCustomerId = Number(left.getAttribute('data-customer-id') || 0);
+            const rightCustomerId = Number(right.getAttribute('data-customer-id') || 0);
+            const leftResId = Number(left.getAttribute('data-reservation-id') || 0);
+            const rightResId = Number(right.getAttribute('data-reservation-id') || 0);
             const leftAge = Number(left.getAttribute('data-age-value') || 999999);
             const rightAge = Number(right.getAttribute('data-age-value') || 999999);
+            const leftGender = (left.getAttribute('data-gender') || '').toLowerCase();
+            const rightGender = (right.getAttribute('data-gender') || '').toLowerCase();
+            const leftNationality = (left.getAttribute('data-nationality') || '').toLowerCase();
+            const rightNationality = (right.getAttribute('data-nationality') || '').toLowerCase();
+            const leftStatus = (left.getAttribute('data-status') || '').toLowerCase();
+            const rightStatus = (right.getAttribute('data-status') || '').toLowerCase();
             const leftCheckOut = left.getAttribute('data-checked-out') || '';
             const rightCheckOut = right.getAttribute('data-checked-out') || '';
 
             switch (sortValue) {
                 case 'name-desc':
                     return rightName.localeCompare(leftName);
+                case 'customer-id-asc':
+                    return leftCustomerId - rightCustomerId;
+                case 'customer-id-desc':
+                    return rightCustomerId - leftCustomerId;
+                case 'reservation-asc':
+                    return leftResId - rightResId;
+                case 'reservation-desc':
+                    return rightResId - leftResId;
                 case 'age-asc':
                     return leftAge - rightAge;
                 case 'age-desc':
                     return rightAge - leftAge;
+                case 'gender-asc':
+                    return leftGender.localeCompare(rightGender);
+                case 'gender-desc':
+                    return rightGender.localeCompare(leftGender);
+                case 'nationality-asc':
+                    return leftNationality.localeCompare(rightNationality);
+                case 'nationality-desc':
+                    return rightNationality.localeCompare(leftNationality);
+                case 'status-asc':
+                    return leftStatus.localeCompare(rightStatus);
+                case 'status-desc':
+                    return rightStatus.localeCompare(leftStatus);
+                case 'checkout-asc':
+                    return leftCheckOut.localeCompare(rightCheckOut);
                 case 'checkout-desc':
                     return rightCheckOut.localeCompare(leftCheckOut);
                 case 'name-asc':
@@ -303,18 +418,57 @@ window.AppPage['staff_records'] = function () {
             }
         });
 
-        guestTableRows.forEach((row) => {
-            row.classList.add('is-hidden');
-        });
-
-        filteredRows.forEach((row) => {
-            row.classList.remove('is-hidden');
-        });
-
-        if (guestResultsCount) {
-            guestResultsCount.textContent = `Showing ${filteredRows.length} records`;
-        }
+        guestFilteredRows = filteredRows;
+        guestPage = 1;
+        renderGuestPagination();
+        updateGuestSortIndicators();
     };
+
+    // Sort arrows on the table headers (kept in sync with the filter-panel sort select)
+    const updateGuestSortIndicators = () => {
+        const sortValue = sortSelect?.value ?? 'checkout-desc';
+        const map = {
+            name: ['name-asc', 'name-desc'],
+            'customer-id': ['customer-id-asc', 'customer-id-desc'],
+            reservation: ['reservation-asc', 'reservation-desc'],
+            age: ['age-asc', 'age-desc'],
+            gender: ['gender-asc', 'gender-desc'],
+            nationality: ['nationality-asc', 'nationality-desc'],
+            status: ['status-asc', 'status-desc'],
+            'checked-out': ['checkout-asc', 'checkout-desc']
+        };
+        document.querySelectorAll('#guestTableWrap thead th.sortable').forEach((th) => {
+            th.classList.remove('is-sorted-asc', 'is-sorted-desc');
+            const pair = map[th.dataset.sort];
+            if (pair && pair.includes(sortValue)) {
+                th.classList.add(sortValue.endsWith('-asc') ? 'is-sorted-asc' : 'is-sorted-desc');
+            }
+        });
+    };
+
+    const guestHeaderSortMap = {
+        name: 'name',
+        'customer-id': 'customer-id',
+        reservation: 'reservation',
+        age: 'age',
+        gender: 'gender',
+        nationality: 'nationality',
+        status: 'status',
+        'checked-out': 'checkout'
+    };
+    document.querySelectorAll('#guestTableWrap thead th.sortable').forEach((th) => {
+        th.addEventListener('click', () => {
+            if (!sortSelect) return;
+            const key = guestHeaderSortMap[th.dataset.sort];
+            if (!key) return;
+            const current = sortSelect.value;
+            const dir = current === `${key}-asc` ? 'desc' : 'asc';
+            sortSelect.value = `${key}-${dir}`;
+            applyGuestFilters();
+        });
+    });
+
+
 
     guestTableRows.forEach((row) => {
         row.addEventListener('click', () => {
@@ -362,6 +516,30 @@ window.AppPage['staff_records'] = function () {
         guestFilterToggle.querySelector('.guest-filter-toggle__icon').textContent = isExpanded ? '▾' : '▴';
     });
 
+    // Guest pagination controls
+    const guestGoPageBtn = document.getElementById('guestGoPage');
+    const guestPerPageSel = document.getElementById('guestPerPage');
+    const guestPrevPageBtn = document.getElementById('guestPrevPage');
+    const guestNextPageBtn = document.getElementById('guestNextPage');
+
+    guestPrevPageBtn?.addEventListener('click', () => {
+        if (guestPage > 1) { guestPage--; renderGuestPagination(); }
+    });
+    guestNextPageBtn?.addEventListener('click', () => {
+        if (guestPage < Math.ceil(guestFilteredRows.length / Number(guestPerPageSel?.value || 10))) { guestPage++; renderGuestPagination(); }
+    });
+    guestGoPageBtn?.addEventListener('click', () => {
+        const page = parseInt(guestPageInput?.value, 10);
+        if (!isNaN(page) && page >= 1) { guestPage = page; renderGuestPagination(); }
+    });
+    guestPageInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); guestGoPageBtn?.click(); }
+    });
+    guestPerPageSel?.addEventListener('change', () => {
+        guestPage = 1;
+        renderGuestPagination();
+    });
+
     // ========================
     // RESERVATION TABLE LOGIC
     // ========================
@@ -380,6 +558,8 @@ window.AppPage['staff_records'] = function () {
     const reservationFilterPanel = document.getElementById('reservationFilterPanel');
     const reservationTableBody = document.getElementById('reservationTableBody');
     const reservationTableRows = Array.from(reservationTableBody?.querySelectorAll('.reservation-row') ?? []);
+    const reservationPageNumbers = document.getElementById('reservationPageNumbers');
+    const reservationPageInput = document.getElementById('reservationPageInput');
 
     const openReservationModal = (reservationId) => {
         const reservation = reservationData[reservationId];
@@ -524,6 +704,66 @@ window.AppPage['staff_records'] = function () {
         reservationModal.setAttribute('aria-hidden', 'false');
     };
 
+    // ---- Reservation pagination state ----
+    const reservationTableBodyEl = document.getElementById('reservationTableBody');
+    let reservationPage = 1;
+    let reservationFilteredRows = [];
+
+    const renderReservationPagination = () => {
+        const perPage = Number(reservationPerPage?.value || 10);
+        const total = reservationFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        reservationPage = Math.min(Math.max(1, reservationPage), totalPages);
+
+        reservationTableRows.forEach((row) => row.classList.add('is-hidden'));
+        const start = (reservationPage - 1) * perPage;
+        const slice = reservationFilteredRows.slice(start, start + perPage);
+        slice.forEach((row) => row.classList.remove('is-hidden'));
+
+        // Hide companion rows whose parent reservation is off-page / filtered out
+        // (collapsed state is still governed by the expand button's inline style).
+        const visibleIds = new Set(slice.map((row) => row.getAttribute('data-reservation-id')));
+        document.querySelectorAll('.companion-row').forEach((row) => {
+            const match = /companion-of-(\d+)/.exec(row.className);
+            if (!match) return;
+            if (visibleIds.has(match[1])) {
+                row.classList.remove('is-hidden');
+            } else {
+                row.classList.add('is-hidden');
+            }
+        });
+
+        // Empty-state row when filters match nothing
+        let emptyRow = document.getElementById('reservationTableEmptyRow');
+        if (total === 0) {
+            if (!emptyRow && reservationTableBodyEl) {
+                emptyRow = document.createElement('tr');
+                emptyRow.id = 'reservationTableEmptyRow';
+                emptyRow.innerHTML = '<td colspan="8" class="guest-empty px-4 py-8 text-center text-hp-text-muted">No reservations match your filters.</td>';
+                reservationTableBodyEl.appendChild(emptyRow);
+            }
+            if (emptyRow) emptyRow.style.display = '';
+        } else if (emptyRow) {
+            emptyRow.style.display = 'none';
+        }
+
+        if (reservationResultsCount) {
+            reservationResultsCount.textContent = total === 0
+                ? 'Showing 0 of 0 reservations'
+                : `Showing ${start + 1}-${start + slice.length} of ${total} reservations`;
+        }
+        renderPageNumberButtons(reservationPageNumbers, reservationPage, totalPages, (page) => {
+            reservationPage = page;
+            renderReservationPagination();
+        });
+        if (reservationPrevPage) reservationPrevPage.disabled = reservationPage <= 1;
+        if (reservationNextPage) reservationNextPage.disabled = reservationPage >= totalPages;
+        if (reservationPageInput) {
+            reservationPageInput.value = reservationPage;
+            reservationPageInput.max = totalPages;
+        }
+    };
+
     const applyReservationFilters = () => {
         const query = reservationSearchInput?.value.trim().toLowerCase() ?? '';
         const sortValue = reservationSortSelect?.value ?? 'date-desc';
@@ -563,17 +803,9 @@ window.AppPage['staff_records'] = function () {
             }
         });
 
-        reservationTableRows.forEach((row) => {
-            row.classList.add('is-hidden');
-        });
-
-        filteredRows.forEach((row) => {
-            row.classList.remove('is-hidden');
-        });
-
-        if (reservationResultsCount) {
-            reservationResultsCount.textContent = `Showing ${filteredRows.length} reservations`;
-        }
+        reservationFilteredRows = filteredRows;
+        reservationPage = 1;
+        renderReservationPagination();
     };
 
     reservationTableRows.forEach((row) => {
@@ -617,6 +849,30 @@ window.AppPage['staff_records'] = function () {
         reservationFilterPanel.hidden = isExpanded;
         reservationFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
         reservationFilterToggle.querySelector('.guest-filter-toggle__icon').textContent = isExpanded ? '▾' : '▴';
+    });
+
+    // Reservation pagination controls
+    const reservationGoPageBtn = document.getElementById('reservationGoPage');
+    const reservationPerPageSel = document.getElementById('reservationPerPage');
+    const reservationPrevPageBtn = document.getElementById('reservationPrevPage');
+    const reservationNextPageBtn = document.getElementById('reservationNextPage');
+
+    reservationPrevPageBtn?.addEventListener('click', () => {
+        if (reservationPage > 1) { reservationPage--; renderReservationPagination(); }
+    });
+    reservationNextPageBtn?.addEventListener('click', () => {
+        if (reservationPage < Math.ceil(reservationFilteredRows.length / Number(reservationPerPageSel?.value || 10))) { reservationPage++; renderReservationPagination(); }
+    });
+    reservationGoPageBtn?.addEventListener('click', () => {
+        const page = parseInt(reservationPageInput?.value, 10);
+        if (!isNaN(page) && page >= 1) { reservationPage = page; renderReservationPagination(); }
+    });
+    reservationPageInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); reservationGoPageBtn?.click(); }
+    });
+    reservationPerPageSel?.addEventListener('change', () => {
+        reservationPage = 1;
+        renderReservationPagination();
     });
 
     // Expandable Row Logic

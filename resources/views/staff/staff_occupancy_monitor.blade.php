@@ -41,7 +41,7 @@
                 />
 
                 {{-- Live status strip --}}
-                <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-5">
+                <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3">
                     <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
@@ -79,13 +79,23 @@
                             <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Available Now</p>
                         </div>
                     </article>
-                    <article class="col-span-2 flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-gradient-to-br from-[#e7f3ec]/60 to-transparent p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 md:col-span-1 dark:from-[#1a3324]/40">
+                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-gradient-to-br from-[#e7f3ec]/60 to-transparent p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 dark:from-[#1a3324]/40">
                         <div class="occupancy-rate-ring relative grid h-[3.1rem] w-[3.1rem] shrink-0 place-items-center rounded-full shadow-[inset_0_1px_2px_rgba(23,42,32,0.08)]" style="background: conic-gradient(var(--hp-green) calc(var(--pct) * 1%), var(--glass-border) 0); --pct: {{ $occupancyRate }}">
                             <span class="grid h-[2.15rem] w-[2.15rem] place-items-center rounded-full bg-glass text-[0.68rem] font-bold text-hp-green shadow-[inset_0_1px_2px_rgba(23,42,32,0.06)]">{{ $occupancyRate }}%</span>
                         </div>
                         <div class="min-w-0">
                             <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Occupancy Rate</p>
                             <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">{{ $inUseCount }} of {{ $totalAmenities }} in use</p>
+                        </div>
+                    </article>
+                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#f1eafd] text-[#7c3aed] dark:bg-[#2b2142] dark:text-[#b79df0]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="occupancy-stat__value m-0 font-display text-[1.45rem] font-bold leading-[1.1] text-hp-text tabular-nums" data-count="{{ $visitorCount }}">{{ $visitorCount }}</p>
+                            <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Visitors</p>
+                            <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">Guests inside with no amenity</p>
                         </div>
                     </article>
                 </div>
@@ -239,6 +249,7 @@
                                                 <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Occupied by:</span>
                                                 <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $occupied['reservation_id'] }}</span>
                                                 <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['time_slot'] }}</span>
+                                                <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['guest_count'] ?? 0 }} guest{{ ($occupied['guest_count'] ?? 0) == 1 ? '' : 's' }} inside</span>
                                             </div>
                                         @endforeach
                                     </div>
