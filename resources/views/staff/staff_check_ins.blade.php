@@ -752,7 +752,7 @@
 									@endphp
 									<tr
 										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
-										@if (! $isPrimary && ! $isBulk) style="display: none;" @endif
+										@if (! $isPrimary) style="display: none;" @endif
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
 										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"

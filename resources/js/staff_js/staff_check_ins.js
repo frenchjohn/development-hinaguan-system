@@ -246,6 +246,30 @@ window.AppPage['staff_check_ins'] = function () {
                 </div>
             </div>
 
+            ${(() => {
+                // Highlight the reservation's time period(s): the amenity
+                // pricing types when amenities were availed (each one shown,
+                // so mixed periods are visible), otherwise the entrance fee's
+                // stored time period.
+                const periods = [];
+                if (validAmenities.length > 0) {
+                    validAmenities.forEach(a => {
+                        const t = String(a.pricing_type || 'N/A');
+                        if (!periods.includes(t)) periods.push(t);
+                    });
+                } else if (reservation.entrance_fee && reservation.entrance_fee.pricing_type) {
+                    periods.push(reservation.entrance_fee.pricing_type);
+                }
+                if (!periods.length) return '';
+                return `
+                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: rgba(194,146,29,0.10); border: 1px solid rgba(194,146,29,0.35); border-radius: 0.6rem; padding: 0.55rem 1rem;">
+                    <span style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #a1760f;">Time Period:</span>
+                    ${periods.map(t => `<span style="background: var(--hp-gold); color: #fff; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;">${t}</span>`).join('')}
+                    ${differentTime ? '<span style="font-size: 0.75rem; font-weight: 600; color: #a1760f;">Mixed time periods</span>' : ''}
+                </div>
+                `;
+            })()}
+
             ${reservation.entrance_fee ? `
                 <div class="ci-design-box" style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 1rem;">
                     <div style="display:flex; gap: 1.5rem; flex-wrap: wrap;">
@@ -315,34 +339,30 @@ window.AppPage['staff_check_ins'] = function () {
                         ` : '<div class="ci-guest-card"><div class="ci-guest-info"><div class="ci-guest-name">No main guest assigned</div></div></div>'}
             `;
 
-            // Display individual companions exactly like bulk companions if requested, but user wanted BULK separated. I will group bulk companions into a single card!
-            if (Object.keys(bulkGroups).length > 0 || individualCompanions.length > 0) {
-                let bulkTotal = bulkCompanions.length + individualCompanions.length;
+            // Compact companion summary — just the counts so the card stays
+            // short (details live in the guest table / reservation dropdown).
+            if (bulkCompanions.length > 0 || individualCompanions.length > 0) {
+                const totalCompanions = bulkCompanions.length + individualCompanions.length;
+                const singleCount = individualCompanions.length;
+                const bulkCount = bulkCompanions.length;
+                let summaryLines = '';
+                if (singleCount > 0) {
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single companions: <strong>${singleCount}</strong></div>`;
+                }
+                if (bulkCount > 0) {
+                    const groupSummary = Object.values(bulkGroups)
+                        .map(g => `${g.gender} · ${ageGroupLabel(g.age)} ×${g.count}`)
+                        .join(' · ');
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companions: <strong>${bulkCount}</strong>${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">(${groupSummary})</span>` : ''}</div>`;
+                }
                 html += `
                     <div class="ci-guest-card" style="align-items: flex-start;">
                         <div class="ci-guest-icon" style="margin-top: 0.2rem;">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                         </div>
                         <div class="ci-guest-info" style="width: 100%;">
-                            <div class="ci-guest-role">COMPANIONS (${bulkTotal})</div>
-                            <div class="ci-guest-bulk-list">
-                `;
-                
-                let compIndex = 1;
-                individualCompanions.forEach(c => {
-                    html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${c.customer.first_name} ${c.customer.last_name} (${c.customer.age || 'N/A'} yrs - ${c.customer.gender || 'N/A'} - ${c.customer.is_foreigner ? 'Foreigner' : 'Filipino'})</div>`;
-                    compIndex++;
-                });
-
-                Object.values(bulkGroups).forEach(group => {
-                    for(let i=0; i<group.count; i++) {
-                        html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${ageGroupLabel(group.age)} - ${group.gender} - ${group.status}</div>`;
-                        compIndex++;
-                    }
-                });
-
-                html += `
-                            </div>
+                            <div class="ci-guest-role">COMPANIONS (${totalCompanions})</div>
+                            ${summaryLines}
                         </div>
                     </div>
                 `;
@@ -851,12 +871,12 @@ window.AppPage['staff_check_ins'] = function () {
             if (!tr) return;
             
             const isExpanded = expandBtn.classList.toggle('expanded');
-            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';                // Guest Table Expand — toggle only single companions (bulk
-                // groups have their own row and must not be hidden here).
+            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';                // Guest Table Expand — toggle every companion under the main
+                // guest together (single AND bulk groups).
                 if (tr.classList.contains('guest-row--primary')) {
                     tr.classList.toggle('is-expanded', isExpanded);
                     const resId = tr.getAttribute('data-reservation-id');
-                    const companions = document.querySelectorAll(`.guest-row--companion:not(.guest-row--bulk-group)[data-reservation-id="${resId}"]`);
+                    const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
                     companions.forEach(c => {
                         c.style.display = isExpanded ? '' : 'none';
                     });
