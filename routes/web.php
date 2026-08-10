@@ -1609,7 +1609,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ));
     })->name('reports');
 
-    Route::get('/check-ins', function (Request $request) use ($amenityCheckoutAt, $reservationCheckoutAt) {
+    Route::get('/check-ins', function (Request $request) use ($amenityCheckoutAt, $reservationCheckoutAt, $isAmenitySlotTaken) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -1620,7 +1620,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation' => function ($reservationQuery) {
                     $reservationQuery->with(['reservationAmenities' => function ($amenityQuery) {
                         $amenityQuery->with('amenity');
-                    }, 'reservationGuests.customer']);
+                    }, 'entranceFee', 'reservationGuests.customer']);
                 },
                 'customer',
             ]);
@@ -1638,30 +1638,34 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             })
             ->with(['reservationGuests' => function ($query) {
                 $query->with('customer');
-            }, 'reservationAmenities.amenity'])
+            }, 'reservationAmenities.amenity', 'entranceFee'])
             ->orderBy('check_in', 'desc')
             ->get();
+
+        // Time slots that drive the checkout timer. With amenities the amenity
+        // rows win; without them the entrance fee's time period is used.
+        $reservationTimeSlots = function ($reservation) {
+            $slots = $reservation->reservationAmenities
+                ->map(fn ($ra) => str_replace([' Aircon', 'Aircon'], '', (string) $ra->pricing_type))
+                ->unique()
+                ->values()
+                ->toArray();
+
+            if (empty($slots) && $reservation->entranceFee?->pricing_type) {
+                $slots = [$reservation->entranceFee->pricing_type];
+            }
+
+            return $slots;
+        };
 
 
         // NOTE: number_of_guests is kept in sync inside the check-in POST
         // handler (a GET request must never mutate data).
-        $reservationData = $activeReservations->mapWithKeys(function ($reservation) use ($amenityCheckoutAt, $reservationCheckoutAt) {
+        $reservationData = $activeReservations->mapWithKeys(function ($reservation) use ($amenityCheckoutAt, $reservationCheckoutAt, $reservationTimeSlots) {
             $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
             $primaryCustomer = $primaryGuest?->customer;
 
-            $timeSlots = $reservation->reservationAmenities
-                ->pluck('pricing_type')
-                ->map(function ($pricingType) {
-                    $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
-                    if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
-                    if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
-                    if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
-                    if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
-                    return $baseSlot;
-                })
-                ->unique()
-                ->values()
-                ->toArray();
+            $timeSlots = $reservationTimeSlots($reservation);
 
             // Once a guest is on-site, the stay starts at check-in — anchor the
             // checkout countdown to the actual check-in, not the (possibly
@@ -1717,6 +1721,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'checkout_at' => $amenityCheckoutAt($stayDate, $amenity->pricing_type)?->toIso8601String(),
                     ];
                 })->values(),
+                'entrance_fee' => $reservation->entranceFee ? [
+                    'pricing_type' => $reservation->entranceFee->pricing_type,
+                    'total_amount' => (float) $reservation->entranceFee->total_amount,
+                    'pool_fee' => (float) $reservation->entranceFee->pool_fee,
+                    'adult_count' => $reservation->entranceFee->adult_count,
+                    'child_count' => $reservation->entranceFee->child_count,
+                ] : null,
             ]];
         });
 
@@ -1724,7 +1735,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('amenities_name')
             ->get();
 
-        $guestData = $customers->mapWithKeys(function ($customer) use ($amenityCheckoutAt, $reservationCheckoutAt) {
+        // Amenities with NO reservation today are the only ones the walk-in
+        // picker may offer.
+        $today = now()->toDateString();
+        $availableAmenityIds = $amenities
+            ->filter(fn ($amenity) => ! $isAmenitySlotTaken($amenity->id, $today, 'Daytime') && ! $isAmenitySlotTaken($amenity->id, $today, 'Nighttime'))
+            ->pluck('id')
+            ->all();
+
+        // Current session (daytime vs nighttime) limits the pickable periods.
+        $settings = \App\Models\ParkSetting::first();
+        $daytimeStart = $settings ? strtotime((string) ($settings->daytime_start ?? '06:00')) : strtotime('06:00');
+        $daytimeEnd = $settings ? strtotime((string) ($settings->daytime_end ?? '18:00')) : strtotime('18:00');
+        $nowSeconds = strtotime(now()->format('H:i'));
+        $currentPeriod = ($nowSeconds >= $daytimeStart && $nowSeconds < $daytimeEnd) ? 'daytime' : 'nighttime';
+
+        $guestData = $customers->mapWithKeys(function ($customer) use ($amenityCheckoutAt, $reservationCheckoutAt, $reservationTimeSlots) {
             return [$customer->id => [
                 'id' => $customer->id,
                 'first_name' => $customer->first_name,
@@ -1735,7 +1761,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'is_foreigner' => (bool) $customer->is_foreigner,
                 'phone' => $customer->phone,
                 'email' => $customer->email,
-                'reservation_guests' => $customer->reservationGuests->map(function ($reservationGuest) use ($reservationCheckoutAt) {
+                'reservation_guests' => $customer->reservationGuests->map(function ($reservationGuest) use ($reservationCheckoutAt, $reservationTimeSlots) {
                     return [
                         'id' => $reservationGuest->id,
                         'checked_out_at' => $reservationGuest->checked_out_at,
@@ -1749,11 +1775,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'reservation_date' => $reservationGuest->reservation->reservation_date,
                             'checkout_at' => $reservationCheckoutAt(
                                 $reservationGuest->reservation->check_in ?? $reservationGuest->reservation->reservation_date,
-                                $reservationGuest->reservation->reservationAmenities
-                                    ->map(fn ($ra) => str_replace([' Aircon', 'Aircon'], '', (string) $ra->pricing_type))
-                                    ->unique()
-                                    ->values()
-                                    ->toArray()
+                                $reservationTimeSlots($reservationGuest->reservation)
                             )?->toIso8601String(),
                             'reservation_amenities' => $reservationGuest->reservation->reservationAmenities->map(function ($reservationAmenity) {
                                 return [
@@ -1778,7 +1800,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
-        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData'));
+        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'currentPeriod'));
     })->name('checkins');
 
     Route::get('/check-ins/lookup', function (Request $request) {
@@ -1979,7 +2001,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ));
     })->name('records');
 
-    Route::post('/check-ins/guests', function (Request $request) {
+    Route::post('/check-ins/guests', function (Request $request) use ($isAmenitySlotTaken) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -1989,6 +2011,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'guest_mode' => ['required', 'in:with_primary,visitors_only'],
             'reservation_type' => ['required', 'in:walk_in,online'],
             'check_in' => ['nullable', 'date'],
+            'time_period' => ['nullable', 'in:daytime,nighttime,daytonight,nighttoday'],
+            // Checkboxes send "on" — Laravel's boolean rule rejects it
+            'include_pool' => ['nullable', 'in:on,1,true,0,false'],
             'primary_guest' => ['nullable', 'array'],
             'primary_guest.first_name' => ['nullable', 'string', 'max:255'],
             'primary_guest.middle_name' => ['nullable', 'string', 'max:255'],
@@ -1999,24 +2024,116 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
             'companions' => ['nullable', 'array'],
-            'companions.*.first_name' => ['required_with:companions.*.last_name', 'string', 'max:255'],
+            // Bulk companions submit empty names (they only carry an age group),
+            // so names must be nullable — but stay required when the other name
+            // IS present for individually-added companions.
+            'companions.*.first_name' => ['nullable', 'required_with:companions.*.last_name', 'string', 'max:255'],
             'companions.*.middle_name' => ['nullable', 'string', 'max:255'],
-            'companions.*.last_name' => ['required_with:companions.*.first_name', 'string', 'max:255'],
+            'companions.*.last_name' => ['nullable', 'required_with:companions.*.first_name', 'string', 'max:255'],
             'companions.*.age' => ['nullable', 'integer', 'min:0'],
+            'companions.*.age_group' => ['nullable', 'string', 'max:255'],
             'companions.*.gender' => ['nullable', 'in:Male,Female'],
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
             'selected_amenities' => ['nullable', 'array'],
             'selected_amenities.*.amenity_id' => ['required_with:selected_amenities.*.pricing_type', 'string'],
-            'selected_amenities.*.pricing_type' => ['required_with:selected_amenities.*.amenity_id', 'in:Daytime,Nighttime,Daytime Aircon,Nighttime Aircon'],
+            'selected_amenities.*.pricing_type' => ['required_with:selected_amenities.*.amenity_id', 'in:Daytime,Nighttime,Daytime Aircon,Nighttime Aircon,DayToNight,NightToDay,DayToNight Aircon,NightToDay Aircon'],
             'selected_amenities.*.price_at_booking' => ['required_with:selected_amenities.*.amenity_id', 'numeric'],
             'total_amount' => ['required', 'numeric', 'min:0'],
         ]);
 
+        $selectedAmenities = $data['selected_amenities'] ?? [];
+        $hasAmenities = count($selectedAmenities) > 0;
+
+        // Reject any selected amenity whose slot is already taken today.
+        foreach ($selectedAmenities as $selectedAmenity) {
+            if ($isAmenitySlotTaken($selectedAmenity['amenity_id'], now()->toDateString(), $selectedAmenity['pricing_type'])) {
+                return back()->withErrors(['selected_amenities' => 'One of the selected amenities is no longer available for the chosen time period.'])->withInput();
+            }
+        }
+
         $primaryGuestCount = ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) ? 1 : 0;
         $companionCount = count($data['companions'] ?? []);
         $guestCount = $primaryGuestCount + $companionCount;
+
+        // Adult/child counts from guest ages (12 and below = child).
+        $adultCount = 0;
+        $childCount = 0;
+        if ($primaryGuestCount) {
+            $primaryAge = (int) ($data['primary_guest']['age'] ?? 99);
+            if ($primaryAge <= 12) {
+                $childCount++;
+            } else {
+                $adultCount++;
+            }
+        }
+        foreach ($data['companions'] ?? [] as $companionData) {
+            // Bulk companions send an age_group (0-12, 13-17, 18-59, 60+) instead of an age
+            if (($companionData['age_group'] ?? null) === '0-12') {
+                $childCount++;
+            } else {
+                $companionAge = (int) ($companionData['age'] ?? 99);
+                if ($companionAge <= 12) {
+                    $childCount++;
+                } else {
+                    $adultCount++;
+                }
+            }
+        }
+
+        // Effective period for entrance pricing: with amenities it follows the
+        // first selected amenity's period; otherwise the chosen time_period.
+        $amenityPeriodToEntrance = [
+            'Daytime' => 'daytime',
+            'Daytime Aircon' => 'daytime',
+            'Nighttime' => 'nighttime',
+            'Nighttime Aircon' => 'nighttime',
+            'DayToNight' => 'daytonight',
+            'DayToNight Aircon' => 'daytonight',
+            'NightToDay' => 'daytonight',
+            'NightToDay Aircon' => 'daytonight',
+        ];
+        $effectivePeriod = $data['time_period'] ?? 'daytime';
+        if ($hasAmenities) {
+            $firstPricingType = $selectedAmenities[0]['pricing_type'] ?? 'Daytime';
+            $effectivePeriod = $amenityPeriodToEntrance[$firstPricingType] ?? 'daytime';
+        }
+
+        $settings = \App\Models\ParkSetting::first();
+        $dayAdult = (float) ($settings->daytime_adult_entrance_fee ?? 0);
+        $dayChild = (float) ($settings->daytime_child_entrance_fee ?? 0);
+        $nightAdult = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+        $nightChild = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+
+        if ($effectivePeriod === 'nighttime') {
+            $adultRate = $nightAdult;
+            $childRate = $nightChild;
+        } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+            $adultRate = $dayAdult + $nightAdult;
+            $childRate = $dayChild + $nightChild;
+        } else {
+            $adultRate = $dayAdult;
+            $childRate = $dayChild;
+        }
+
+        $entranceTotal = ($adultCount * $adultRate) + ($childCount * $childRate);
+
+        $poolFee = 0;
+        if (! empty($data['include_pool'])) {
+            $dayPool = (float) ($settings->day_pool_fee ?? 0);
+            $nightPool = (float) ($settings->night_pool_fee ?? 0);
+            if ($effectivePeriod === 'nighttime') {
+                $poolFee = $nightPool;
+            } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+                $poolFee = $dayPool + $nightPool;
+            } else {
+                $poolFee = $dayPool;
+            }
+        }
+
+        $amenityTotal = array_sum(array_map(fn ($a) => (float) ($a['price_at_booking'] ?? 0), $selectedAmenities));
+        $grandTotal = round($entranceTotal + $poolFee + $amenityTotal, 2);
 
         $reservation = Reservation::create([
             'booker_name' => trim(($data['primary_guest']['first_name'] ?? '') . ' ' . ($data['primary_guest']['last_name'] ?? '')),
@@ -2027,10 +2144,29 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'number_of_guests' => $guestCount > 0 ? $guestCount : 1,
             'reservation_type' => $data['reservation_type'],
             'status' => 'Checked In',
-            'total_amount' => $data['total_amount'],
-            'amount_paid' => 0,
-            'remaining_balance' => $data['total_amount'],
-            'payment_status' => 'Partially Paid',
+            'total_amount' => $grandTotal,
+            'amount_paid' => $grandTotal,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        // Entrance fee, separated from amenity fees. pricing_type is only
+        // stored when no amenity was availed — with amenities the checkout
+        // timer references the amenity rows' pricing_type instead.
+        $entrancePricingType = $hasAmenities ? null : match ($data['time_period'] ?? 'daytime') {
+            'nighttime' => 'Nighttime',
+            'daytonight' => 'DayToNight',
+            'nighttoday' => 'NightToDay',
+            default => 'Daytime',
+        };
+
+        \App\Models\ReservationEntranceFee::create([
+            'reservation_id' => $reservation->id,
+            'pricing_type' => $entrancePricingType,
+            'total_amount' => round($entranceTotal + $poolFee, 2),
+            'pool_fee' => round($poolFee, 2),
+            'adult_count' => $adultCount,
+            'child_count' => $childCount,
         ]);
 
         $primaryCustomer = null;
@@ -2079,30 +2215,56 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             $companionIsForeigner = (bool) ($companionData['is_foreigner'] ?? false);
 
-            $companionCustomer = Customer::firstOrCreate(
-                [
-                    'first_name' => $companionFirstName,
-                    'last_name' => $companionLastName,
-                    'email' => $companionEmail,
-                    'phone' => $companionPhone,
-                ],
-                [
+            // Bulk companions (and any companion without contact details) must
+            // get a fresh customer row each time — firstOrCreate would collapse
+            // them into ONE customer and the second reservation_guests insert
+            // would violate the (reservation_id, customer_id) unique key.
+            if (empty($companionEmail) && empty($companionPhone)) {
+                // Bulk companions send an age_group (0-12, 13-17, 18-59, 60+)
+                // instead of an exact age — store a representative midpoint.
+                $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
+                $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
+                $companionCustomer = Customer::create([
                     'first_name' => $companionFirstName,
                     'middle_name' => $companionData['middle_name'] ?? null,
                     'last_name' => $companionLastName,
-                    'age' => $companionData['age'] ?? null,
+                    'age' => $companionAge,
                     'gender' => $companionData['gender'] ?? 'Male',
                     'is_foreigner' => $companionIsForeigner,
                     'phone' => $companionPhone,
                     'email' => $companionEmail,
-                ]
-            );
+                ]);
+            } else {
+                // Companions with email/phone: reuse the existing customer.
+                $companionCustomer = Customer::firstOrCreate(
+                    [
+                        'first_name' => $companionFirstName,
+                        'last_name' => $companionLastName,
+                        'email' => $companionEmail,
+                        'phone' => $companionPhone,
+                    ],
+                    [
+                        'first_name' => $companionFirstName,
+                        'middle_name' => $companionData['middle_name'] ?? null,
+                        'last_name' => $companionLastName,
+                        'age' => $companionData['age'] ?? null,
+                        'gender' => $companionData['gender'] ?? 'Male',
+                        'is_foreigner' => $companionIsForeigner,
+                        'phone' => $companionPhone,
+                        'email' => $companionEmail,
+                    ]
+                );
+            }
 
-            ReservationGuest::create([
-                'reservation_id' => $reservation->id,
-                'customer_id' => $companionCustomer->id,
-                'is_primary_guest' => false,
-            ]);
+            // Guard against the (reservation_id, customer_id) unique key — two
+            // companions can resolve to the same customer (e.g. same email).
+            if (! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
+                ReservationGuest::create([
+                    'reservation_id' => $reservation->id,
+                    'customer_id' => $companionCustomer->id,
+                    'is_primary_guest' => false,
+                ]);
+            }
         }
 
         foreach ($data['selected_amenities'] ?? [] as $selectedAmenity) {
@@ -2129,7 +2291,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'guest_mode' => ['required', 'in:visitors_only'],
             'age_type' => ['required', 'in:adult,child'],
             'time_type' => ['required', 'in:daytime,nighttime,daytonight,nighttoday'],
-            'include_pool' => ['required', 'boolean'],
+            // Checkboxes send "on" — Laravel's boolean rule rejects it
+            'include_pool' => ['required', 'in:on,1,true,0,false'],
             'total_amount' => ['required', 'numeric'],
             'companions' => ['nullable', 'array'],
             'companions.*.first_name' => ['nullable', 'string', 'max:255'],
@@ -2142,6 +2305,59 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.email' => ['nullable', 'email', 'max:255'],
         ]);
 
+        // Entrance fee based on the main guest's age type + time period.
+        $timeTypeToPricing = [
+            'daytime' => 'Daytime',
+            'nighttime' => 'Nighttime',
+            'daytonight' => 'DayToNight',
+            'nighttoday' => 'NightToDay',
+        ];
+        $pricingType = $timeTypeToPricing[$data['time_type']] ?? 'Daytime';
+
+        $settings = \App\Models\ParkSetting::first();
+        $isChild = $data['age_type'] === 'child';
+        $combined = in_array($data['time_type'], ['daytonight', 'nighttoday'], true);
+        if ($data['time_type'] === 'nighttime') {
+            $adultRate = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+        } elseif ($combined) {
+            $adultRate = (float) ($settings->daytime_adult_entrance_fee ?? 0) + (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0) + (float) ($settings->nighttime_child_entrance_fee ?? 0);
+        } else {
+            $adultRate = (float) ($settings->daytime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0);
+        }
+
+        $mainGuestFee = $isChild ? $childRate : $adultRate;
+        $companionEntrance = 0;
+        $childCount = $isChild ? 1 : 0;
+        $adultCount = $isChild ? 0 : 1;
+        foreach ($data['companions'] ?? [] as $companionData) {
+            $compAge = (int) ($companionData['age'] ?? 99);
+            if ($compAge <= 12) {
+                $companionEntrance += $childRate;
+                $childCount++;
+            } else {
+                $companionEntrance += $adultRate;
+                $adultCount++;
+            }
+        }
+
+        $poolFee = 0;
+        if (! empty($data['include_pool'])) {
+            $dayPool = (float) ($settings->day_pool_fee ?? 0);
+            $nightPool = (float) ($settings->night_pool_fee ?? 0);
+            if ($data['time_type'] === 'nighttime') {
+                $poolFee = $nightPool;
+            } elseif ($combined) {
+                $poolFee = $dayPool + $nightPool;
+            } else {
+                $poolFee = $dayPool;
+            }
+        }
+
+        $entranceTotal = round($mainGuestFee + $companionEntrance + $poolFee, 2);
+
         // Create a reservation for visit-only (without amenities)
         $reservation = Reservation::create([
             'booker_name' => 'Visit Only Guest',
@@ -2152,28 +2368,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'number_of_guests' => 1 + count($data['companions'] ?? []),
             'reservation_type' => 'walk_in',
             'status' => 'Checked In',
-            'total_amount' => $data['total_amount'],
-            'amount_paid' => 0,
-            'remaining_balance' => $data['total_amount'],
-            'payment_status' => 'Partially Paid',
+            'total_amount' => $entranceTotal,
+            'amount_paid' => $entranceTotal,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
         ]);
 
-        // Create reservation amenity record for entrance fee (reservation_id can be null as per user request)
-        $timeTypeToPricing = [
-            'daytime' => 'Daytime',
-            'nighttime' => 'Nighttime',
-            'daytonight' => 'DayToNight',
-            'nighttoday' => 'NightToDay',
-        ];
-        $pricingType = $timeTypeToPricing[$data['time_type']] ?? 'Daytime';
-
-        ReservationAmenity::create([
-            'reservation_id' => null, // null as requested
-            'amenity_id' => null, // null for entrance fee
+        // Entrance fee lives in its own table — never a fake amenity row.
+        \App\Models\ReservationEntranceFee::create([
+            'reservation_id' => $reservation->id,
             'pricing_type' => $pricingType,
-            'price_at_booking' => $data['total_amount'],
-            'quantity' => 1,
-            'remarks' => 'Visit Only - ' . ucfirst($data['age_type']) . ' - ' . $pricingType . ($data['include_pool'] ? ' with Pool' : ''),
+            'total_amount' => $entranceTotal,
+            'pool_fee' => $poolFee,
+            'adult_count' => $adultCount,
+            'child_count' => $childCount,
         ]);
 
         // Create main guest record
@@ -2242,9 +2450,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
             'companions' => ['nullable', 'array'],
-            'companions.*.first_name' => ['required_with:companions.*.last_name', 'string', 'max:255'],
+            // Bulk companions submit empty names (they only carry an age group),
+            // so names must be nullable — but stay required when the other name
+            // IS present for individually-added companions.
+            'companions.*.first_name' => ['nullable', 'required_with:companions.*.last_name', 'string', 'max:255'],
             'companions.*.middle_name' => ['nullable', 'string', 'max:255'],
-            'companions.*.last_name' => ['required_with:companions.*.first_name', 'string', 'max:255'],
+            'companions.*.last_name' => ['nullable', 'required_with:companions.*.first_name', 'string', 'max:255'],
             'companions.*.age' => ['nullable', 'string', 'max:255'],
             'companions.*.gender' => ['nullable', 'in:Male,Female'],
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
@@ -2356,11 +2567,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 );
             }
 
-            ReservationGuest::create([
-                'reservation_id' => $reservation->id,
-                'customer_id' => $companionCustomer->id,
-                'is_primary_guest' => false,
-            ]);
+            // Guard against the (reservation_id, customer_id) unique key — two
+            // companions can resolve to the same customer (e.g. same email).
+            if (! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
+                ReservationGuest::create([
+                    'reservation_id' => $reservation->id,
+                    'customer_id' => $companionCustomer->id,
+                    'is_primary_guest' => false,
+                ]);
+            }
         }
 
         // Update reservation with check-in date and status

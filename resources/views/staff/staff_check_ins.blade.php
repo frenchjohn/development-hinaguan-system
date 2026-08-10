@@ -429,18 +429,21 @@
 
 								<div class="upcoming-checkouts-list flex flex-col gap-3">
 									@foreach (collect($activeReservations ?? [])->take(3) as $res)
-										@php
-											$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
-											$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
-											$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
-										@endphp
+						@php
+							$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+							$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
+							$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+							$entranceLabel = $res->entranceFee
+								? 'Entrance' . ($res->entranceFee->pricing_type ? ' · ' . $res->entranceFee->pricing_type : '')
+								: '';
+						@endphp
 										<div class="upcoming-item flex items-center justify-between rounded-lg bg-[rgba(34,197,94,0.05)] p-3">
 											<div class="flex items-center gap-4">
 												<div class="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e]">
 													<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
 												</div>
 												<div>
-													<div class="text-sm font-semibold text-hp-text">{{ $amenityNames ?: 'Entrance' }}</div>
+													<div class="text-sm font-semibold text-hp-text">{{ $amenityNames ?: ($entranceLabel ?: 'Entrance') }}</div>
 													<div class="text-xs text-hp-text-muted">Reserved by {{ $guestName }}</div>
 												</div>
 											</div>
@@ -492,7 +495,8 @@
 							}
 							$totalGuests = max(1, count($activeCustomers ?? []));
 						@endphp
-						<div class="checkins-main-column">
+						<div class="checkins-main-column min-w-0">
+
 							<section class="checkins-card rounded-2xl border border-glass-border bg-glass shadow-glass">
 							<div class="checkins-card-header mb-5 flex items-center justify-between gap-4 border-b border-glass-border px-5 pb-5 pt-4">
 								<div class="table-header-left flex items-center">
@@ -781,8 +785,51 @@
 					</div>
 
 					<div class="checkins-sidebar">
+						<!-- Sidebar Summary Cards (Individual Pastel Cards Container) -->
+						<div class="sidebar-summary-cards mb-6 flex flex-col gap-3 rounded-2xl border border-glass-border bg-glass p-3 shadow-glass">
+							<!-- Item 1: Active Guests -->
+							<div class="top-stat-card flex items-center rounded-2xl border border-[#e1f2e6] bg-[#f2f9f5] p-3.5 transition-all hover:shadow-sm dark:border-[#284a34] dark:bg-[#183323]/50">
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-[#16a34a] dark:bg-[#1f472d] dark:text-[#4ade80]">
+									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+								</div>
+								<div class="mx-4 h-7 w-[1px] bg-[#bbf7d0] dark:bg-[#28573a]"></div>
+								<strong class="text-3xl font-extrabold text-[#15803d] dark:text-[#4ade80] min-w-[28px]">{{ $activeCustomers->count() }}</strong>
+								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Active Guests</span>
+							</div>
+
+							<!-- Item 2: Checked In Today -->
+							<div class="top-stat-card flex items-center rounded-2xl border border-[#e0ecfc] bg-[#f0f6ff] p-3.5 transition-all hover:shadow-sm dark:border-[#223d61] dark:bg-[#16273d]/50">
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#dbeafe] text-[#2563eb] dark:bg-[#1e385b] dark:text-[#60a5fa]">
+									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+								</div>
+								<div class="mx-4 h-7 w-[1px] bg-[#bfdbfe] dark:bg-[#2a4873]"></div>
+								<strong class="text-3xl font-extrabold text-[#1d4ed8] dark:text-[#60a5fa] min-w-[28px]">{{ $todaysCheckins }}</strong>
+								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Checked In Today</span>
+							</div>
+
+							<!-- Item 3: Expected Check-outs -->
+							<div class="top-stat-card flex items-center rounded-2xl border border-[#fde8d7] bg-[#fff8f2] p-3.5 transition-all hover:shadow-sm dark:border-[#52321e] dark:bg-[#382216]/50">
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ffedd5] text-[#ea580c] dark:bg-[#522e1b] dark:text-[#fb923c]">
+									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+								</div>
+								<div class="mx-4 h-7 w-[1px] bg-[#fed7aa] dark:bg-[#6b3b20]"></div>
+								<strong class="text-3xl font-extrabold text-[#c2410c] dark:text-[#fb923c] min-w-[28px]">{{ $expectedCheckouts }}</strong>
+								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Expected Check-outs</span>
+							</div>
+
+							<!-- Item 4: Walk-ins Today -->
+							<div class="top-stat-card flex items-center rounded-2xl border border-[#f3e8ff] bg-[#faf5ff] p-3.5 transition-all hover:shadow-sm dark:border-[#432057] dark:bg-[#2d1638]/50">
+								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3e8ff] text-[#9333ea] dark:bg-[#431e57] dark:text-[#c084fc]">
+									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+								</div>
+								<div class="mx-4 h-7 w-[1px] bg-[#e9d5ff] dark:bg-[#562670]"></div>
+								<strong class="text-3xl font-extrabold text-[#7e22ce] dark:text-[#c084fc] min-w-[28px]">{{ $walkInsToday }}</strong>
+								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Walk-Ins Today</span>
+							</div>
+						</div>
+
 						<!-- Demographics Card -->
-						<div class="checkins-card sidebar-data-card rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+						<div class="checkins-card sidebar-data-card rounded-2xl border border-glass-border bg-glass p-5 shadow-glass mb-6">
 							<h4 class="sidebar-data-title m-0 mb-4 font-display text-base font-bold text-hp-text">Guest Demographics</h4>
 							<div class="sidebar-data-list flex flex-col gap-3">
 								<div class="sidebar-data-item">
@@ -812,59 +859,6 @@
 										<span class="data-value font-bold text-hp-text">{{ $metrics['seniors'] }}</span>
 									</div>
 									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['seniors'] / $totalGuests) * 100 }}%"></div></div>
-								</div>
-							</div>
-						</div>
-
-						<!-- Sidebar Summary Cards (Unified Container) -->
-						<div class="sidebar-summary-container mb-6 flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-							<div class="sidebar-summary-grid flex flex-col gap-4">
-								<!-- Item 1: Active Guests -->
-								<div class="top-stat-card card-theme-green flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
-									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#16a34a]">
-										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-									</div>
-									<div class="top-stat-card__body">
-										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Active Guests</span>
-										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $activeCustomers->count() }}</strong>
-										<div class="stat-trend trend-green text-xs font-semibold text-[#16a34a]">Currently inside</div>
-									</div>
-								</div>
-
-								<!-- Item 2: Checked In Today -->
-								<div class="top-stat-card card-theme-blue flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
-									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#2563eb]">
-										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-									</div>
-									<div class="top-stat-card__body">
-										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Checked In Today</span>
-										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $todaysCheckins }}</strong>
-										<div class="stat-trend trend-green text-xs font-semibold text-[#16a34a]">Total check-ins</div>
-									</div>
-								</div>
-
-								<!-- Item 3: Expected Check-outs -->
-								<div class="top-stat-card card-theme-orange flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
-									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#ea580c]">
-										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-									</div>
-									<div class="top-stat-card__body">
-										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Expected Check-outs</span>
-										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $expectedCheckouts }}</strong>
-										<div class="stat-trend text-xs font-semibold text-hp-text-muted">Guests near/past time</div>
-									</div>
-								</div>
-
-								<!-- Item 4: Walk-ins Today -->
-								<div class="top-stat-card card-theme-purple flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
-									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#9333ea]">
-										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-									</div>
-									<div class="top-stat-card__body">
-										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Walk-Ins Today</span>
-										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $walkInsToday }}</strong>
-										<div class="stat-trend text-xs font-semibold text-hp-text-muted">Walk-in guests</div>
-									</div>
 								</div>
 							</div>
 						</div>
@@ -1045,6 +1039,22 @@
 						</div>
 						<form id="addGuestForm" class="guest-form grid gap-4" action="{{ route('staff.checkins.guests.store') }}" method="POST">
 							@csrf
+							<input type="hidden" name="guest_mode" value="with_primary">
+
+							@if ($errors->any())
+								<div class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+									<ul class="m-0 list-disc pl-5">
+										@foreach ($errors->all() as $error)
+											<li>{{ $error }}</li>
+										@endforeach
+									</ul>
+								</div>
+							@endif
+							@if (session('success'))
+								<div class="rounded-xl border border-hp-green/30 bg-hp-green/10 px-4 py-3 text-sm font-semibold text-hp-green-dark dark:border-hp-green/20 dark:text-[#4ade80]">
+									{{ session('success') }}
+								</div>
+							@endif
 
 							<div class="guest-form__grid grid grid-cols-1 gap-4 lg:grid-cols-2">
 								<div class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
@@ -1061,7 +1071,7 @@
 									<input type="hidden" name="check_in" id="check_in">
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="time_period">Time Period</label>
-										<select name="time_period" id="time_period" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" disabled>
+										<select name="time_period" id="time_period" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="daytime">Daytime</option>
 											<option value="nighttime">Nighttime</option>
 											<option value="daytonight">Day to Night</option>
@@ -1145,7 +1155,7 @@
 										</div>
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_is_foreigner">Nationality</label>
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primaryGuestIsForeigner">Nationality</label>
 										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="0" selected>Filipino</option>
 											<option value="1">Foreigner</option>
@@ -1196,42 +1206,56 @@
 					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-amenity-modal="true" aria-label="Close amenity selection">&times;</button>
-						<h3 id="amenityModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Choose Amenities</h3>
-						<div class="guest-form__amenities mt-6 flex flex-col gap-3" id="amenitiesContainer">
-							@forelse ($amenities ?? collect() as $amenity)
-								<label class="guest-amenity-option flex cursor-pointer items-center gap-3 rounded-xl border border-glass-border bg-glass p-4 transition-all duration-200 has-[:checked]:border-hp-green">
-									<input type="checkbox" class="amenity-checkbox h-4 w-4 accent-hp-green" value="{{ $amenity->id }}" data-amenity-id="{{ $amenity->id }}" data-amenity-name="{{ $amenity->amenities_name }}">
-									<span class="guest-amenity-option__body flex flex-1 flex-col">
-										<strong class="text-sm text-hp-text">{{ $amenity->amenities_name }}</strong>
-										<small class="text-xs text-hp-text-muted">Choose a pricing option</small>
-									</span>
-									<select class="guest-amenity-option__select rounded-lg border border-glass-border bg-glass px-2.5 py-2 text-xs text-hp-text focus:border-hp-green focus:outline-none disabled:opacity-60" disabled>
-										@if ($amenity->daytime_price !== null)
-											<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
-										@endif
-										@if ($amenity->nighttime_price !== null)
-											<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
-										@endif
-										@if ($amenity->daytime_price !== null && $amenity->nighttime_price !== null)
-											<option value="DayToNight" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Day to Night — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
-											<option value="NightToDay" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Night to Day — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
-										@endif
-										@if ($amenity->daytime_aircon_price !== null)
-											<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
-										@endif
-										@if ($amenity->nighttime_aircon_price !== null)
-											<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
-										@endif
-										@if ($amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
-											<option value="DayToNight Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Day to Night Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
-											<option value="NightToDay Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Night to Day Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
-										@endif
-									</select>
-								</label>
-							@empty
-								<p class="guest-empty px-4 py-8 text-center text-hp-text-muted">No active amenities are available yet.</p>
-							@endforelse
-						</div>
+						<h3 id="amenityModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Choose Amenities</h3>							<div class="guest-form__amenities mt-6 flex flex-col gap-3" id="amenitiesContainer">
+								@php
+									// Only amenities free today can be picked, and only periods
+									// valid for the current session are offered.
+									$availableAmenities = collect($amenities ?? [])->whereIn('id', $availableAmenityIds ?? []);
+									$allowedPeriods = ($currentPeriod ?? 'daytime') === 'nighttime'
+										? ['Nighttime', 'NightToDay']
+										: ['Daytime', 'Nighttime', 'DayToNight'];
+									$allowedAirconPeriods = ($currentPeriod ?? 'daytime') === 'nighttime'
+										? ['Nighttime Aircon', 'NightToDay Aircon']
+										: ['Daytime Aircon', 'Nighttime Aircon', 'DayToNight Aircon'];
+								@endphp
+								@forelse ($availableAmenities as $amenity)
+									<label class="guest-amenity-option flex cursor-pointer items-center gap-3 rounded-xl border border-glass-border bg-glass p-4 transition-all duration-200 has-[:checked]:border-hp-green">
+										<input type="checkbox" class="amenity-checkbox h-4 w-4 accent-hp-green" value="{{ $amenity->id }}" data-amenity-id="{{ $amenity->id }}" data-amenity-name="{{ $amenity->amenities_name }}">
+										<span class="guest-amenity-option__body flex flex-1 flex-col">
+											<strong class="text-sm text-hp-text">{{ $amenity->amenities_name }}</strong>
+											<small class="text-xs text-hp-text-muted">Choose a pricing option</small>
+										</span>
+										<select class="guest-amenity-option__select rounded-lg border border-glass-border bg-glass px-2.5 py-2 text-xs text-hp-text focus:border-hp-green focus:outline-none disabled:opacity-60" disabled>
+											@if (in_array('Daytime', $allowedPeriods) && $amenity->daytime_price !== null)
+												<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
+											@endif
+											@if (in_array('Nighttime', $allowedPeriods) && $amenity->nighttime_price !== null)
+												<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
+											@endif
+											@if (in_array('DayToNight', $allowedPeriods) && $amenity->daytime_price !== null && $amenity->nighttime_price !== null)
+												<option value="DayToNight" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Day to Night — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+											@endif
+											@if (in_array('NightToDay', $allowedPeriods) && $amenity->daytime_price !== null && $amenity->nighttime_price !== null)
+												<option value="NightToDay" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Night to Day — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+											@endif
+											@if (in_array('Daytime Aircon', $allowedAirconPeriods) && $amenity->daytime_aircon_price !== null)
+												<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
+											@endif
+											@if (in_array('Nighttime Aircon', $allowedAirconPeriods) && $amenity->nighttime_aircon_price !== null)
+												<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
+											@endif
+											@if (in_array('DayToNight Aircon', $allowedAirconPeriods) && $amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
+												<option value="DayToNight Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Day to Night Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+											@endif
+											@if (in_array('NightToDay Aircon', $allowedAirconPeriods) && $amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
+												<option value="NightToDay Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Night to Day Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+											@endif
+										</select>
+									</label>
+								@empty
+									<p class="guest-empty px-4 py-8 text-center text-hp-text-muted">All amenities are fully booked today.</p>
+								@endforelse
+							</div>
 					</div>
 				</div>
 
@@ -1242,9 +1266,9 @@
 						<div class="guest-modal__header mb-4 flex items-center gap-3">
 							<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
 						</div>
-						<div class="guest-form__tabs mb-4 flex gap-1 rounded-xl border border-glass-border bg-glass p-1">
-							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 guest-form__tab--active:bg-hp-green-dark guest-form__tab--active:text-white" data-companion-tab="single">Single</button>
-							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 guest-form__tab--active:bg-hp-green-dark guest-form__tab--active:text-white" data-companion-tab="bulk">Bulk</button>
+						<div class="guest-form__tabs mb-4 flex gap-2 rounded-xl border border-glass-border bg-glass p-1.5">
+							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-hp-green px-4 py-2.5 text-sm font-bold text-white transition-all duration-200" data-companion-tab="single">Single Companion</button>
+							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" data-companion-tab="bulk">Bulk Companions</button>
 						</div>
 
 						<!-- Single Companion Form -->
@@ -1282,7 +1306,7 @@
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_is_foreigner">Nationality</label>
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companionIsForeigner">Nationality</label>
 									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
@@ -1304,7 +1328,7 @@
 						</form>
 
 						<!-- Bulk Companion Form -->
-						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content hidden grid gap-4" data-companion-content="bulk">
+						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content gap-4" data-companion-content="bulk" style="display: none;">
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_gender">Gender</label>
@@ -1340,6 +1364,58 @@
 								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Bulk Companions</button>
 							</div>
 						</form>
+					</div>
+				</div>
+
+				<!-- Payment Confirmation Modal -->
+				<div class="guest-modal fixed inset-0 z-[1050] hidden items-center justify-center is-open:flex" id="paymentConfirmModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.65)]" data-close-payment-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[540px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="paymentConfirmTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-payment-modal="true" aria-label="Close modal">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-glass-border pb-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-hp-green/10 text-hp-green">
+								<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+								</svg>
+							</div>
+							<div>
+								<h3 id="paymentConfirmTitle" class="guest-modal__title m-0 font-display text-xl font-bold text-hp-text">Payment Confirmation</h3>
+								<p class="m-0 text-xs text-hp-text-muted">Confirm walk-in payment to complete check-in</p>
+							</div>
+						</div>
+
+						<div class="guest-modal__body grid gap-3">
+							<div class="rounded-xl border border-glass-border bg-hp-cream/60 p-4 dark:bg-white/5 grid gap-2 text-sm text-hp-text">
+								<div class="flex justify-between">
+									<span class="text-hp-text-muted">Primary Guest:</span>
+									<strong id="payConfirmGuestName" class="font-bold text-hp-text">-</strong>
+								</div>
+								<div class="flex justify-between">
+									<span class="text-hp-text-muted">Reservation Type:</span>
+									<span class="rounded bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green">Walk-in</span>
+								</div>
+								<div class="flex justify-between border-t border-glass-border pt-2">
+									<span class="text-hp-text-muted">Total Entrance & Pool:</span>
+									<span id="payConfirmEntranceTotal" class="font-semibold">₱0.00</span>
+								</div>
+								<div class="flex justify-between">
+									<span class="text-hp-text-muted">Selected Amenities:</span>
+									<span id="payConfirmAmenitiesTotal" class="font-semibold">₱0.00</span>
+								</div>
+							</div>
+
+							<!-- Big Payment Box -->
+							<div class="rounded-xl border border-hp-green/30 bg-hp-green/10 p-4 text-center">
+								<span class="block text-xs font-bold uppercase tracking-wider text-hp-green">Total Amount Paid</span>
+								<strong id="payConfirmGrandTotal" class="block font-display text-3xl font-extrabold text-hp-green-dark dark:text-[#4ade80] mt-1">₱0.00</strong>
+								<span class="mt-1.5 inline-block rounded-full bg-hp-green px-3 py-1 text-[0.7rem] font-bold uppercase tracking-wider text-white">Status: Full Payment (Paid)</span>
+							</div>
+						</div>
+
+						<div class="guest-form__actions mt-6 flex justify-end gap-3">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" id="cancelPaymentBtn">Cancel Check-in</button>
+							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-hp-green-dark shadow-lg shadow-hp-green/20" id="confirmPaymentBtn">Confirm & Pay</button>
+						</div>
 					</div>
 				</div>
 

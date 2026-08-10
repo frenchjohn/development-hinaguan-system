@@ -138,35 +138,58 @@
 
 /* Active sidebar link — applied server-side on full loads and toggled by
    sidemenu.js (updateActiveLink) after SPA navigation. ID-scoped so it always
-   beats the Tailwind utilities on the same element. */
+   beats the Tailwind utilities on the same element.
+   New premium design: green glass pill + gold left notch + glowing icon chip. */
 #dashSidebar .nav-link.is-active {
-    background: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, rgba(110, 159, 84, 0.38) 0%, rgba(110, 159, 84, 0.14) 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+        0 6px 20px rgba(0, 0, 0, 0.22),
+        0 0 26px rgba(110, 159, 84, 0.22);
+    scale: 1.03;
 }
 html[data-theme="dark"] #dashSidebar .nav-link.is-active {
-    background: rgba(255, 255, 255, 0.10);
+    background: linear-gradient(135deg, rgba(110, 159, 84, 0.34) 0%, rgba(110, 159, 84, 0.12) 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.10),
+        0 6px 20px rgba(0, 0, 0, 0.45),
+        0 0 26px rgba(110, 159, 84, 0.16);
 }
+
+/* Gold accent notch that grows in on the left edge */
 #dashSidebar .nav-link.is-active::before {
     content: "";
     position: absolute;
-    inset: 0;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    pointer-events: none;
+    left: 5px;
+    top: 50%;
+    translate: 0 -50%;
+    width: 4px;
+    height: 0;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #eed08b 0%, #c8a45d 100%);
+    box-shadow: 0 0 10px rgba(200, 164, 93, 0.85), 0 0 22px rgba(200, 164, 93, 0.35);
+    animation: dashActiveNotch 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
-html[data-theme="dark"] #dashSidebar .nav-link.is-active::before {
-    border-color: #1b3525;
+@keyframes dashActiveNotch {
+    from { height: 0; opacity: 0; }
+    to { height: 52%; opacity: 1; }
 }
+
+/* Icon sits in a frosted chip with a soft glow */
 #dashSidebar .nav-link.is-active .nav-icon {
     opacity: 1;
-    scale: 1.1;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    background: rgba(255, 255, 255, 0.20);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 2px 10px rgba(0, 0, 0, 0.18);
+    scale: 1.08;
 }
 #dashSidebar .nav-link.is-active svg {
+    stroke: #fff;
     stroke-width: 2;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 }
 #dashSidebar .nav-link.is-active .nav-label {
     color: #fff;
     font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 </style>

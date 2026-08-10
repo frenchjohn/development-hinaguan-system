@@ -927,10 +927,8 @@ window.AppPage['staff_check_ins'] = function () {
         addGuestModal.setAttribute('aria-hidden', 'false');
         // Load park settings
         loadParkSettings();
-        // Set default time period if no amenities selected
-        if (selectedAmenities.length === 0) {
-            setDefaultTimePeriod();
-        }
+        // Rebuild time period options for the current session
+        updateTimePeriodOptions();
     };
 
     const closeAddGuestModal = () => {
@@ -958,7 +956,7 @@ window.AppPage['staff_check_ins'] = function () {
                 console.log('Loaded park settings:', data);
                 parkSettings = { ...parkSettings, ...data };
                 // Update fee display with loaded settings
-                updateFeeDisplay();
+                updateTimePeriodOptions();
             } else {
                 console.error('Failed to load park settings. Status:', response.status);
             }
@@ -967,29 +965,51 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
-    // Set default time period based on current time
-    const setDefaultTimePeriod = () => {
+    // Current session (daytime vs nighttime) based on park settings
+    const getCurrentSession = () => {
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes();
-        
+
         const daytimeStart = parseTime(parkSettings.daytime_start);
         const daytimeEnd = parseTime(parkSettings.daytime_end);
-        const nighttimeStart = parseTime(parkSettings.nighttime_start);
-        const nighttimeEnd = parseTime(parkSettings.nighttime_end);
-        
-        let defaultPeriod = 'daytime';
-        
-        if (currentTime >= daytimeStart && currentTime < daytimeEnd) {
-            defaultPeriod = 'daytime';
-        } else if (currentTime >= nighttimeStart || currentTime < nighttimeEnd) {
-            defaultPeriod = 'nighttime';
-        } else {
-            defaultPeriod = 'daytonight';
+
+        return currentTime >= daytimeStart && currentTime < daytimeEnd ? 'daytime' : 'nighttime';
+    };
+
+    // Effective period for entrance pricing: with amenities the first selected
+    // amenity's period wins; otherwise the time period select drives it.
+    const getEffectiveTimeType = () => {
+        if (selectedAmenities.length > 0) {
+            const pricingType = selectedAmenities[0].pricing_type || 'Daytime';
+            if (pricingType.includes('NightToDay') || pricingType.includes('DayToNight')) return 'daytonight';
+            if (pricingType.includes('Nighttime')) return 'nighttime';
+            return 'daytime';
         }
-        
-        if (timePeriod) {
-            timePeriod.value = defaultPeriod;
-        }
+        return timePeriod?.value || 'daytime';
+    };
+
+    // Rebuild the time period select with only periods valid for the current
+    // session. Daytime session → Daytime/Nighttime/DayToNight (no NightToDay
+    // since it's not night yet); Nighttime session → Nighttime/NightToDay only.
+    const updateTimePeriodOptions = () => {
+        if (!timePeriod) return;
+
+        const session = getCurrentSession();
+        const options = session === 'nighttime'
+            ? [['nighttime', 'Nighttime'], ['nighttoday', 'Night to Day']]
+            : [['daytime', 'Daytime'], ['nighttime', 'Nighttime'], ['daytonight', 'Day to Night']];
+
+        const previous = timePeriod.value;
+        timePeriod.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+        timePeriod.value = options.some(([value]) => value === previous)
+            ? previous
+            : (session === 'nighttime' ? 'nighttime' : 'daytime');
+
+        // The time period only matters when no amenity is availed — with
+        // amenities the amenity rows carry the period instead.
+        timePeriod.disabled = selectedAmenities.length > 0;
+
+        updateFeeDisplay();
     };
 
     // Parse time string to minutes
@@ -1000,19 +1020,25 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Update primary guest required status based on amenities
     const updatePrimaryGuestRequirement = () => {
-        // Primary guest is always required now
         const primaryGuestInputs = primaryGuestSection?.querySelectorAll('input');
-        
+
         if (primaryGuestInputs) {
             primaryGuestInputs.forEach(input => {
-                input.setAttribute('required', 'required');
+                // Only first + last name are truly required. Forcing required on
+                // middle name/phone/email silently blocks the first submit with
+                // a native tooltip and the payment modal never opens.
+                if (input.id === 'primary_first_name' || input.id === 'primary_last_name') {
+                    input.setAttribute('required', 'required');
+                } else {
+                    input.removeAttribute('required');
+                }
             });
         }
     };
 
     // Update fee display based on time period
     const updateFeeDisplay = () => {
-        const timeType = timePeriod?.value || 'daytime';
+        const timeType = getEffectiveTimeType();
         
         let adultFee = 0;
         let childFee = 0;
@@ -1049,22 +1075,27 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
-    // Calculate entrance fee based on companions
+    // Calculate entrance fee based on main guest, companions, and age types
     const calculateEntranceFee = () => {
-        const timeType = timePeriod?.value || 'daytime';
+        const timeType = getEffectiveTimeType();
         const includePoolChecked = includePool?.checked || false;
         
-        // Calculate fee per person based on companions' age types
         let totalFee = 0;
         
-        // Add main guest fee (default to adult for main guest)
+        // Add main guest fee (check age if primary_age input has value)
+        const primaryAgeInput = document.getElementById('primary_age');
+        let primaryAgeVal = primaryAgeInput ? parseInt(primaryAgeInput.value) : null;
+        let mainGuestAgeType = (primaryAgeVal !== null && !isNaN(primaryAgeVal) && primaryAgeVal <= 12) ? 'child' : 'adult';
+        
         let mainGuestFee = 0;
         if (timeType === 'daytime') {
-            mainGuestFee = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
+            mainGuestFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0);
         } else if (timeType === 'nighttime') {
-            mainGuestFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
+            mainGuestFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
         } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-            mainGuestFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
+            const daytimeFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0);
+            const nighttimeFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
+            mainGuestFee = daytimeFee + nighttimeFee;
         }
         
         // Add pool fee for main guest if checked
@@ -1083,7 +1114,14 @@ window.AppPage['staff_check_ins'] = function () {
         // Calculate fees for companions
         companions.forEach(companion => {
             let companionFee = 0;
-            const ageType = companion.age_type || 'adult';
+            let ageType = companion.age_type;
+            if (companion.age !== null && companion.age !== undefined && companion.age !== '') {
+                const compAge = parseInt(companion.age);
+                if (!isNaN(compAge)) {
+                    ageType = compAge <= 12 ? 'child' : 'adult';
+                }
+            }
+            if (!ageType) ageType = 'adult';
             
             if (timeType === 'daytime') {
                 companionFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
@@ -1138,9 +1176,7 @@ window.AppPage['staff_check_ins'] = function () {
             totalFee += groupFee * group.quantity;
         });
         
-        console.log('Total Fee Calculated:', totalFee);
-        
-        // Update total display
+        // Update total entrance fee display
         if (totalEntranceFee) {
             totalEntranceFee.textContent = `₱${totalFee.toFixed(2)}`;
         }
@@ -1148,26 +1184,118 @@ window.AppPage['staff_check_ins'] = function () {
         return totalFee;
     };
 
+    // Calculate Combined Grand Total (Entrance Fees + Amenities)
+    const updateGrandTotal = () => {
+        const entranceFeeTotal = calculateEntranceFee();
+        const amenitiesTotal = selectedAmenities.reduce((sum, a) => sum + (parseFloat(a.price_at_booking) || 0), 0);
+        const grandTotal = entranceFeeTotal + amenitiesTotal;
+        
+        if (reservationTotal) {
+            reservationTotal.textContent = `₱${grandTotal.toFixed(2)}`;
+        }
+        if (totalAmountInput) {
+            totalAmountInput.value = grandTotal;
+        }
+        return { entranceFeeTotal, amenitiesTotal, grandTotal };
+    };
+
     // Listen for fee calculation changes
     timePeriod?.addEventListener('change', () => {
         updateFeeDisplay();
-        calculateEntranceFee();
+        updateGrandTotal();
     });
-    includePool?.addEventListener('change', calculateEntranceFee);
+    includePool?.addEventListener('change', () => {
+        updateGrandTotal();
+    });
+    
+    // Listen for primary age input changes to update entrance fee dynamically
+    const primaryAgeInput = document.getElementById('primary_age');
+    primaryAgeInput?.addEventListener('input', () => {
+        updateGrandTotal();
+    });
+    primaryAgeInput?.addEventListener('change', () => {
+        updateGrandTotal();
+    });
 
-    // Auto-fill check-in time on form submit
+    // Payment Confirmation Modal elements
+    const paymentConfirmModal = document.getElementById('paymentConfirmModal');
+    const payConfirmGuestName = document.getElementById('payConfirmGuestName');
+    const payConfirmEntranceTotal = document.getElementById('payConfirmEntranceTotal');
+    const payConfirmAmenitiesTotal = document.getElementById('payConfirmAmenitiesTotal');
+    const payConfirmGrandTotal = document.getElementById('payConfirmGrandTotal');
+    const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    const closePaymentButtons = document.querySelectorAll('[data-close-payment-modal="true"]');
+
+    let isPaymentConfirmed = false;
+
+    // Add Guest Form Submit Handler with Payment Confirmation
     const addGuestForm = document.getElementById('addGuestForm');
     addGuestForm?.addEventListener('submit', (e) => {
-        const checkInInput = document.getElementById('check_in');
-        if (checkInInput) {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            checkInInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        if (!isPaymentConfirmed) {
+            e.preventDefault();
+
+            try {
+                const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim();
+                const primaryLastName = document.getElementById('primary_last_name')?.value?.trim();
+
+                if (!primaryFirstName || !primaryLastName) {
+                    alert('Please fill in the Primary Guest First Name and Last Name.');
+                    return;
+                }
+
+                // Fill check_in hidden input
+                const checkInInput = document.getElementById('check_in');
+                if (checkInInput) {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    checkInInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+                }
+
+                // Update Grand Total
+                const { entranceFeeTotal, amenitiesTotal, grandTotal } = updateGrandTotal();
+
+                if (!Number.isFinite(grandTotal)) {
+                    alert('Unable to calculate the total amount. Please check the guest details and try again.');
+                    return;
+                }
+
+                // Populate Payment Confirmation Modal
+                if (payConfirmGuestName) payConfirmGuestName.textContent = `${primaryFirstName} ${primaryLastName}`;
+                if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${entranceFeeTotal.toFixed(2)}`;
+                if (payConfirmAmenitiesTotal) payConfirmAmenitiesTotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+                if (payConfirmGrandTotal) payConfirmGrandTotal.textContent = `₱${grandTotal.toFixed(2)}`;
+
+                // Open Payment Modal
+                if (paymentConfirmModal) {
+                    paymentConfirmModal.classList.add('is-open');
+                    paymentConfirmModal.setAttribute('aria-hidden', 'false');
+                }
+            } catch (error) {
+                console.error('Add Guest submit error:', error);
+                alert('Something went wrong while preparing the payment confirmation: ' + (error && error.message ? error.message : error));
+            }
         }
+    });
+
+    const closePaymentModal = () => {
+        if (paymentConfirmModal) {
+            paymentConfirmModal.classList.remove('is-open');
+            paymentConfirmModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    cancelPaymentBtn?.addEventListener('click', closePaymentModal);
+    closePaymentButtons.forEach(btn => btn.addEventListener('click', closePaymentModal));
+
+    confirmPaymentBtn?.addEventListener('click', () => {
+        isPaymentConfirmed = true;
+        closePaymentModal();
+        addGuestForm?.submit();
     });
 
     // Amenity modal
@@ -1200,10 +1328,25 @@ window.AppPage['staff_check_ins'] = function () {
         if (e.target.classList.contains('amenity-checkbox')) {
             const amenityId = e.target.dataset.amenityId;
             const amenityName = e.target.dataset.amenityName;
-            const pricingType = e.target.dataset.pricingType || 'standard';
-            const price = parseFloat(e.target.dataset.price) || 0;
+            
+            // Find selected option pricing
+            const parentLabel = e.target.closest('label');
+            const selectEl = parentLabel?.querySelector('.guest-amenity-option__select');
+            let pricingType = 'Daytime';
+            let price = 0;
+
+            if (selectEl) {
+                selectEl.disabled = !e.target.checked;
+                const opt = selectEl.options[selectEl.selectedIndex];
+                if (opt) {
+                    pricingType = opt.value;
+                    price = parseFloat(opt.dataset.price) || 0;
+                }
+            }
 
             if (e.target.checked) {
+                // Remove existing if any
+                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
                 selectedAmenities.push({
                     amenity_id: amenityId,
                     amenity_name: amenityName,
@@ -1216,33 +1359,59 @@ window.AppPage['staff_check_ins'] = function () {
 
             renderSelectedAmenities();
             updatePrimaryGuestRequirement();
-            calculateEntranceFee();
+            updateGrandTotal();
+        } else if (e.target.classList.contains('guest-amenity-option__select')) {
+            const parentLabel = e.target.closest('label');
+            const checkbox = parentLabel?.querySelector('.amenity-checkbox');
+            if (checkbox && checkbox.checked) {
+                const amenityId = checkbox.dataset.amenityId;
+                const amenityName = checkbox.dataset.amenityName;
+                const opt = e.target.options[e.target.selectedIndex];
+                const pricingType = opt ? opt.value : 'Daytime';
+                const price = opt ? (parseFloat(opt.dataset.price) || 0) : 0;
+
+                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
+                selectedAmenities.push({
+                    amenity_id: amenityId,
+                    amenity_name: amenityName,
+                    pricing_type: pricingType,
+                    price_at_booking: price,
+                });
+
+                renderSelectedAmenities();
+                updatePrimaryGuestRequirement();
+                updateGrandTotal();
+            }
         }
     });
 
     const renderSelectedAmenities = () => {
         if (!selectedAmenitiesContainer) return;
 
+        // Re-evaluate time period availability now that the amenity set changed
+        updateTimePeriodOptions();
         selectedAmenitiesContainer.innerHTML = '';
 
-        selectedAmenities.forEach(amenity => {
+        selectedAmenities.forEach((amenity, index) => {
             const pill = document.createElement('div');
-            pill.className = 'guest-amenity-pill';
+            pill.className = 'guest-amenity-pill flex items-center justify-between rounded-lg border border-glass-border bg-glass px-3 py-2 text-sm text-hp-text';
             pill.innerHTML = `
-                <span>${amenity.amenity_name} — ${amenity.pricing_type} · ₱${amenity.price_at_booking.toFixed(2)}</span>
-                <button type="button" class="guest-amenity-pill__remove" data-amenity-id="${amenity.amenity_id}">&times;</button>
+                <span><strong>${amenity.amenity_name}</strong> — ${amenity.pricing_type} · ₱${amenity.price_at_booking.toFixed(2)}</span>
+                <button type="button" class="guest-amenity-pill__remove text-hp-text-muted hover:text-red-500 font-bold ml-2" data-amenity-id="${amenity.amenity_id}">&times;</button>
             `;
             selectedAmenitiesContainer.appendChild(pill);
+
+            // Hidden inputs so the form submits the selected amenities
+            const hidden = document.createElement('div');
+            hidden.innerHTML = `
+                <input type="hidden" name="selected_amenities[${index}][amenity_id]" value="${amenity.amenity_id}">
+                <input type="hidden" name="selected_amenities[${index}][pricing_type]" value="${amenity.pricing_type}">
+                <input type="hidden" name="selected_amenities[${index}][price_at_booking]" value="${amenity.price_at_booking}">
+            `;
+            selectedAmenitiesContainer.appendChild(hidden);
         });
 
-        // Update total
-        const total = selectedAmenities.reduce((sum, a) => sum + a.price_at_booking, 0);
-        if (reservationTotal) {
-            reservationTotal.textContent = `₱${total.toFixed(2)}`;
-        }
-        if (totalAmountInput) {
-            totalAmountInput.value = total;
-        }
+        updateGrandTotal();
     };
 
     // Remove amenity from selected list
@@ -1259,7 +1428,7 @@ window.AppPage['staff_check_ins'] = function () {
 
             renderSelectedAmenities();
             updatePrimaryGuestRequirement();
-            calculateEntranceFee();
+            updateGrandTotal();
         }
     });
 
@@ -1271,8 +1440,17 @@ window.AppPage['staff_check_ins'] = function () {
     const bulkCompanionForm = document.getElementById('bulkCompanionForm');
     const companionList = document.getElementById('companionList');
     const companionHiddenFields = document.getElementById('companionHiddenFields');
-    const companionIsForeigner = document.getElementById('companionIsForeigner');
+    const companionAgeInput = document.getElementById('companion_age');
+    const companionAgeTypeSelect = document.getElementById('companion_age_type');
     
+    // Companion age auto-type listener
+    companionAgeInput?.addEventListener('input', () => {
+        const age = parseInt(companionAgeInput.value);
+        if (!isNaN(age) && companionAgeTypeSelect) {
+            companionAgeTypeSelect.value = age <= 12 ? 'child' : 'adult';
+        }
+    });
+
     let companions = [];
     let bulkCompanionGroups = [];
 
@@ -1294,7 +1472,7 @@ window.AppPage['staff_check_ins'] = function () {
         button.addEventListener('click', closeCompanionModal);
     });
 
-    // Tab switching for companion modal
+    // Tab switching for companion modal (Single vs Bulk)
     const companionTabs = document.querySelectorAll('[data-companion-tab]');
     const companionTabContents = document.querySelectorAll('[data-companion-content]');
 
@@ -1302,15 +1480,25 @@ window.AppPage['staff_check_ins'] = function () {
         tab.addEventListener('click', () => {
             const tabType = tab.dataset.companionTab;
             
-            // Update tabs
-            companionTabs.forEach(t => t.classList.remove('guest-form__tab--active'));
-            tab.classList.add('guest-form__tab--active');
+            // Update tab button styles
+            companionTabs.forEach(t => {
+                if (t.dataset.companionTab === tabType) {
+                    t.classList.add('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
+                    t.classList.remove('bg-transparent', 'text-hp-text', 'font-semibold');
+                } else {
+                    t.classList.remove('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
+                    t.classList.add('bg-transparent', 'text-hp-text', 'font-semibold');
+                }
+            });
             
-            // Update content
+            // Update form section visibility
             companionTabContents.forEach(content => {
-                content.classList.remove('guest-form--tab-content--active');
                 if (content.dataset.companionContent === tabType) {
                     content.classList.add('guest-form--tab-content--active');
+                    content.style.display = 'grid';
+                } else {
+                    content.classList.remove('guest-form--tab-content--active');
+                    content.style.display = 'none';
                 }
             });
         });
@@ -1396,7 +1584,7 @@ window.AppPage['staff_check_ins'] = function () {
         
         companions.push(companionData);
         renderCompanions();
-        calculateEntranceFee();
+        updateGrandTotal();
         companionForm.reset();
         closeCompanionModal();
     });
@@ -1430,9 +1618,9 @@ window.AppPage['staff_check_ins'] = function () {
         // Map age_group to age_type for pricing
         const ageGroup = bulkData.age_group || '18-59';
         let ageType = 'adult';
-        if (ageGroup === '0-12' || ageGroup === '13-17') {
+        if (ageGroup === '0-12') {
             ageType = 'child';
-        } else if (ageGroup === '18-59' || ageGroup === '60+') {
+        } else {
             ageType = 'adult';
         }
         
@@ -1445,7 +1633,7 @@ window.AppPage['staff_check_ins'] = function () {
         });
         
         renderCompanions();
-        calculateEntranceFee();
+        updateGrandTotal();
         bulkCompanionForm.reset();
         closeCompanionModal();
     });
@@ -1463,7 +1651,7 @@ window.AppPage['staff_check_ins'] = function () {
             }
             
             renderCompanions();
-            calculateEntranceFee();
+            updateGrandTotal();
         }
     });
 
