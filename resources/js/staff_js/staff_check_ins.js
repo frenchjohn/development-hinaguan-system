@@ -21,6 +21,11 @@ window.AppPage['staff_check_ins'] = function () {
     let currentReservationId = null;
     let companionCount = 0;
 
+    // Reservation id captured when the user clicks "Check Out" on the details
+    // modal. Confirming must still work even if the details modal was closed in
+    // the meantime (closing it clears currentReservationId).
+    let pendingCheckOutReservationId = null;
+
     // Initialize: show dashboard table by default
     const dashboardSection = document.getElementById('dashboardSection');
     
@@ -409,19 +414,20 @@ window.AppPage['staff_check_ins'] = function () {
     // Reservation checkout - open confirmation modal
     reservationCheckOutBtn?.addEventListener('click', () => {
         if (!currentReservationId) return;
+        pendingCheckOutReservationId = currentReservationId;
         openCheckOutConfirmModal();
     });
 
     // Confirm checkout - actually perform the action
     confirmCheckOutBtn?.addEventListener('click', async () => {
-        if (!currentReservationId) return;
+        if (!pendingCheckOutReservationId) return;
 
         const submitButton = confirmCheckOutBtn;
         submitButton.disabled = true;
         submitButton.textContent = 'Checking out...';
 
         try {
-            const response = await fetch(`/staff/reservations/${currentReservationId}/check-out`, {
+            const response = await fetch(`/staff/reservations/${pendingCheckOutReservationId}/check-out`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

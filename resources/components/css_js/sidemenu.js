@@ -14,8 +14,6 @@ window.AppBusy = {
 
 // Sidemenu toggle functionality and instant navigation
 window.addEventListener('DOMContentLoaded', function () {
-    const sidebarToggle = document.querySelector('[data-dash-sidebar-toggle]');
-    const sidebarOverlay = document.querySelector('.dash-sidebar__overlay');
     const dashLayout = document.querySelector('.dash-layout');
     const userToggle = document.querySelector('[data-dash-user-toggle]');
     const themeToggle = document.querySelector('[data-theme-toggle]');
@@ -42,11 +40,6 @@ window.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    if (!sidebarToggle) {
-        console.error('Sidemenu: toggle button not found');
-        return;
-    }
-
     function toggleSidebar(e) {
         if (e) e.preventDefault();
 
@@ -59,6 +52,7 @@ window.addEventListener('DOMContentLoaded', function () {
             // Desktop: toggle sidebar-collapsed class
             dashLayout.classList.toggle('sidebar-collapsed');
         }
+        syncOverlay();
     }
 
     function closeSidebar() {
@@ -69,13 +63,30 @@ window.addEventListener('DOMContentLoaded', function () {
         } else {
             dashLayout.classList.remove('sidebar-collapsed');
         }
+        syncOverlay();
     }
 
-    sidebarToggle.addEventListener('click', toggleSidebar);
-
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', closeSidebar);
+    // Show/hide the mobile backdrop that sits behind the open sidebar. The
+    // Tailwind sidebar uses [data-sidebar-overlay] (toggled via .is-open),
+    // the classic theme uses .dash-sidebar__overlay (CSS-driven) — handle both.
+    function syncOverlay() {
+        const overlay = document.querySelector('.dash-sidebar__overlay, [data-sidebar-overlay]');
+        if (!overlay) return;
+        const open = dashLayout.classList.contains('sidebar-open');
+        overlay.classList.toggle('is-open', open);
+        overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
     }
+
+    // Sidebar toggle + overlay clicks are delegated at the document level so
+    // they keep working after SPA page swaps re-render the header (and its
+    // toggle button), and so no other script can fight this handler.
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-dash-sidebar-toggle]')) {
+            toggleSidebar(e);
+        } else if (e.target.closest('.dash-sidebar__overlay, [data-sidebar-overlay]')) {
+            closeSidebar();
+        }
+    });
 
     // Close sidebar on escape key (mobile only)
     document.addEventListener('keydown', (e) => {
@@ -291,7 +302,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
     function updateActiveLink(url) {
         const targetPath = new URL(url, window.location.origin).pathname;
-        document.querySelectorAll('.dash-sidebar__link').forEach(link => {
+        // Staff sidebar links use .nav-link (Tailwind), admin uses .dash-sidebar__link.
+        document.querySelectorAll('.dash-sidebar__link, #dashSidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             if (!href) return;
             let linkPath = href;
@@ -360,6 +372,7 @@ window.addEventListener('DOMContentLoaded', function () {
             // Serve from the warm cache first (populated by preload below) so a
             // click is a pure DOM swap with zero network wait.
             let doc = pageCache.get(targetPath) || null;
+            const servedFromCache = !!doc;
             let newMain = doc ? doc.querySelector('main.dash-content') : null;
 
             if (!newMain) {
@@ -432,10 +445,14 @@ window.addEventListener('DOMContentLoaded', function () {
             // Gentle entrance for the swapped content
             runContentEntrance();
 
-            // Refresh ALL dashboard pages in the background so every cached page
-            // stays current with the latest data (check-ins, reservations, etc.)
-            // and revisits remain instant. Non-blocking.
-            setTimeout(() => refreshAllCachedPages(), 400);
+            // If this page was served from cache, refresh just that one page in
+            // the background so the cached copy is current for the next visit.
+            // (Refreshing ALL cached pages after every navigation floods the
+            // single-threaded PHP dev server and makes real clicks queue behind
+            // background fetches.)
+            if (servedFromCache) {
+                setTimeout(() => preloadPage(targetPath, true), 400);
+            }
         } catch (err) {
             console.warn('[instant-nav] failed, falling back to full navigation', err);
             window.location.href = url;
@@ -503,8 +520,10 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // ------------------------------------------------------------
     // Background preloading — this is what makes clicks feel instant.
-    // Every dashboard page is fetched (and its JS/CSS bundles loaded)
-    // in the background, so clicking a sidebar item is a pure DOM swap.
+    // The hovered page is fetched (and its JS/CSS bundles loaded) ahead of
+    // time, so clicking a sidebar item is a pure DOM swap. Only the hovered
+    // page is preloaded: bulk-preloading every dashboard page at once floods
+    // the single-threaded PHP dev server and real clicks queue behind it.
     // ------------------------------------------------------------
 
     // Fetch + cache a page's HTML and load its JS/CSS bundles ahead of time.
@@ -542,40 +561,6 @@ window.addEventListener('DOMContentLoaded', function () {
         return href && (href.includes('/staff/') || href.includes('/admin/'));
     }
 
-    // Force-refresh every page currently in the cache so cached data never
-    // goes stale after in-app actions (check-ins, edits, etc.).
-    // Runs sequentially for the same reason as preloadAllPages (weather
-    // lookups per render + single-threaded PHP dev server).
-    async function refreshAllCachedPages() {
-        const paths = Array.from(pageCache.keys());
-        for (const path of paths) {
-            // If the session expired the refresh will fail to find a
-            // dashboard page — clear the cache so the next click does a
-            // real navigation and hits the login redirect.
-            const ok = await preloadPage(path, true);
-            if (ok === false) pageCache.delete(path);
-            await new Promise((resolve) => setTimeout(resolve, 120));
-        }
-    }
-
-    // Preload every sidebar destination shortly after the page loads.
-    // Runs SEQUENTIALLY (one page at a time) rather than firing all pages in
-    // parallel: each dashboard page render also performs weather API lookups
-    // (see header.blade.php), and on the single-threaded PHP dev server a
-    // parallel flood of 7 requests stalls the server entirely.
-    async function preloadAllPages() {
-        const links = Array.from(document.querySelectorAll('.dash-sidebar__link[href], .dash-sidebar__profile-item[href]'));
-        const hrefs = links
-            .map((link) => link.getAttribute('href'))
-            .filter(isDashboardHref);
-
-        for (const href of hrefs) {
-            await preloadPage(href);
-            // Small gap between preloads so the server can breathe.
-            await new Promise((resolve) => setTimeout(resolve, 120));
-        }
-    }
-
     // Preload the hovered page immediately so the next click is already cached.
     document.addEventListener('mouseover', (e) => {
         const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href]');
@@ -585,13 +570,6 @@ window.addEventListener('DOMContentLoaded', function () {
         if (!isDashboardHref(href)) return;
         preloadPage(href);
     });
-
-    // Kick off preloading after the page settles.
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => preloadAllPages(), { timeout: 2000 });
-    } else {
-        setTimeout(preloadAllPages, 800);
-    }
 
     // Initial content entrance (full page loads)
     runContentEntrance();

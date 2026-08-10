@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -18,11 +17,10 @@
 	<link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
 	@vite([
 		'resources/css/app.css',
+		'resources/css/staff_css/staff_shared.css',
 		'resources/css/homepage.css',
 		'resources/components/css_js/header.css',
 		'resources/components/css_js/staff_sidemenu.css',
-		'resources/css/staff_css/staff_dashboard.css',
-		'resources/css/staff_css/staff_check_ins.css',
 		'resources/css/chatbot.css',
 		'resources/components/css_js/header.js',
 		'resources/components/css_js/sidemenu.js',
@@ -31,19 +29,19 @@
 		'resources/js/staff_chatbot.js',
 	])
 </head>
-<body class="antialiased staff-portal s-che-page">
+<body class="antialiased staff-portal">
 	<div class="dash-layout">
 		<x-staff_sidemenu active="checkins" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
 		<div class="dash-main">
 
-			<main class="dash-content">
+			<main class="dash-content p-6">
 				<x-header
 					title="Check Ins"
 					subtitle="Active check-ins and walk-ins"
 				/>
 				@if (session('success'))
-					<div class="guest-alert">{{ session('success') }}</div>
+					<div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green">{{ session('success') }}</div>
 				@endif
 
 					@php
@@ -64,17 +62,17 @@
 						$guestSummaryMale = 0;
 						$guestSummaryForeign = 0;
 						$guestSummaryFilipino = 0;
-						
+
 						$demoMaleFil = 0; $demoMaleFor = 0;
 						$demoFemFil = 0; $demoFemFor = 0;
-						
+
 						// Age Groups (Kids: 0-12, Teen: 13-17, Adult: 18-59, Senior: 60+)
 						$ageKids = 0; $ageTeen = 0; $ageAdult = 0; $ageSenior = 0;
 						$ageFilKids = 0; $ageForKids = 0;
 						$ageFilTeen = 0; $ageForTeen = 0;
 						$ageFilAdult = 0; $ageForAdult = 0;
 						$ageFilSenior = 0; $ageForSenior = 0;
-						
+
 						// Roles
 						$activeMainGuests = 0;
 						$activeSingleCompanions = 0;
@@ -93,18 +91,18 @@
 							})->first();
 							$resId = $resEntry?->reservation?->id;
 							$coAt = $reservationData[$resId]['checkout_at'] ?? null;
-							
+
 							$isPrimary = $resEntry?->is_primary_guest ?? false;
 							$firstName = strtolower(trim($customer->first_name ?? ''));
 							$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
 							$isForeign = (bool)($customer->is_foreigner ?? false);
 							$gender = strtolower($customer->gender ?? '');
-							
+
 							// Roles Count
 							if ($isPrimary) $activeMainGuests++;
 							elseif ($isBulk) $activeBulkCompanions++;
 							else $activeSingleCompanions++;
-							
+
 							// Demographics
 							if ($gender === 'male') {
 								$guestSummaryMale++;
@@ -113,9 +111,9 @@
 								$guestSummaryFemale++;
 								if ($isForeign) $demoFemFor++; else $demoFemFil++;
 							}
-							
+
 							if ($isForeign) $guestSummaryForeign++; else $guestSummaryFilipino++;
-							
+
 							// Age Groups
 							$age = is_numeric($customer->age) ? (int)$customer->age : null;
 							if ($age !== null) {
@@ -162,10 +160,10 @@
 								}
 							}
 						}
-						
+
 						$totalActiveRes = count($activeReservations ?? []);
 						$totalAmount = collect($activeReservations ?? [])->sum('total_amount');
-						
+
 						// 5. Top Mini-Stats
 						$todaysCheckins = collect($activeReservations ?? [])
 							->filter(fn($r) => \Carbon\Carbon::parse($r->check_in)->isToday())
@@ -177,19 +175,19 @@
 					@endphp
 
 					<!-- MASTER TABS (Image Design) -->
-					<div class="checkins-tabs-container">
-						<div class="checkins-tabs" role="tablist">
-							<button type="button" class="checkins-tab is-active" data-tab-target="guest" role="tab" aria-selected="true">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.1rem; height: 1.1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+					<div class="checkins-tabs-container mb-5">
+						<div class="checkins-tabs flex items-center gap-1 rounded-2xl border border-glass-border bg-glass p-1.5 shadow-glass" role="tablist">
+							<button type="button" class="checkins-tab is-active flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white dark:text-[#c8e6c8]" data-tab-target="guest" role="tab" aria-selected="true">
+								<svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
 								Guests
 							</button>
-							<button type="button" class="checkins-tab" data-tab-target="reservation" role="tab" aria-selected="false">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.1rem; height: 1.1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+							<button type="button" class="checkins-tab flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white dark:text-[#c8e6c8]" data-tab-target="reservation" role="tab" aria-selected="false">
+								<svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
 								Reservations
 							</button>
 						</div>
-						<button type="button" class="checkins-tab checkins-dashboard-btn" data-tab-target="dashboard" role="tab" aria-selected="false">
-							<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+						<button type="button" class="checkins-tab checkins-dashboard-btn mt-2 flex cursor-pointer items-center gap-2 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white hover:border-hp-green-mid dark:text-[#c8e6c8]" data-tab-target="dashboard" role="tab" aria-selected="false">
+							<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
 							Analytics Dashboard
 						</button>
 					</div>
@@ -197,64 +195,64 @@
 
 
 					<div id="dashboardSection" class="tab-content-section" style="display: none;">
-						<div class="premium-dashboard">
+						<div class="premium-dashboard grid grid-cols-1 gap-6 xl:grid-cols-2">
 						<!-- Widget 1: Overview -->
-						<div class="premium-widget">
-							<div class="premium-widget__header">
-								<div class="widget-icon widget-icon--green">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+							<div class="premium-widget__header mb-4 flex items-center gap-3">
+								<div class="widget-icon widget-icon--green flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
 								</div>
-								<h4>OVERVIEW</h4>
+								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">OVERVIEW</h4>
 							</div>
-							<div class="premium-widget__grid cols-3" style="margin-bottom: 1.2rem;">
+							<div class="premium-widget__grid cols-3 mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<div class="premium-stat">
-									<span>ACTIVE GUESTS</span>
-									<strong>{{ $activeCustomers->count() }}</strong>
-									<div class="stat-trend trend-up">▲ 12% vs yesterday</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ACTIVE GUESTS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $activeCustomers->count() }}</strong>
+									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 12% vs yesterday</div>
 								</div>
 								<div class="premium-stat">
-									<span>RESERVATIONS</span>
-									<strong>{{ $totalActiveRes }}</strong>
-									<div class="stat-trend trend-up">▲ 25% vs yesterday</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">RESERVATIONS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $totalActiveRes }}</strong>
+									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 25% vs yesterday</div>
 								</div>
 								<div class="premium-stat">
-									<span>TOTAL AMOUNT</span>
-									<strong class="text-gradient-green">₱{{ number_format($totalAmount, 0) }}</strong>
-									<div class="stat-trend trend-up">▲ 8% vs yesterday</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL AMOUNT</span>
+									<strong class="text-gradient-green block bg-gradient-to-r from-[#16a34a] to-[#0e5c37] bg-clip-text font-display text-2xl font-bold text-transparent">₱{{ number_format($totalAmount, 0) }}</strong>
+									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 8% vs yesterday</div>
 								</div>
 							</div>
 							<!-- Role breakdown -->
-							<div class="premium-widget__grid cols-3" style="padding-top: 1rem; border-top: 1px dashed rgba(0,0,0,0.08);">
+							<div class="premium-widget__grid cols-3 grid grid-cols-1 gap-4 border-t border-dashed border-black/10 pt-4 sm:grid-cols-3 dark:border-white/10">
 								<div class="premium-stat">
-									<span>MAIN GUESTS</span>
-									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeMainGuests }}</strong>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MAIN GUESTS</span>
+									<strong class="block text-xl text-hp-text-muted">{{ $activeMainGuests }}</strong>
 								</div>
 								<div class="premium-stat">
-									<span>SINGLE COMP.</span>
-									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeSingleCompanions }}</strong>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">SINGLE COMP.</span>
+									<strong class="block text-xl text-hp-text-muted">{{ $activeSingleCompanions }}</strong>
 								</div>
 								<div class="premium-stat">
-									<span>BULK COMP.</span>
-									<strong style="font-size: 1.25rem; color: var(--hp-text-muted);">{{ $activeBulkCompanions }}</strong>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">BULK COMP.</span>
+									<strong class="block text-xl text-hp-text-muted">{{ $activeBulkCompanions }}</strong>
 								</div>
 							</div>
-							
-							<div class="revenue-this-month" style="margin-top: 1.5rem; padding: 0.8rem 1rem; background: rgba(34,197,94,0.05); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-end;">
+
+							<div class="revenue-this-month mt-6 flex items-end justify-between rounded-lg bg-[rgba(34,197,94,0.05)] px-4 py-3">
 								<div>
-									<div style="font-size: 0.75rem; font-weight: 500; color: #166534; margin-bottom: 0.2rem;">Revenue this month</div>
-									<strong style="font-size: 1.25rem; color: #15803d;">₱98,450</strong>
+									<div class="mb-0.5 text-xs font-medium text-[#166534]">Revenue this month</div>
+									<strong class="text-xl text-[#15803d]">₱98,450</strong>
 								</div>
-								<div class="stat-trend trend-up" style="font-size: 0.75rem;">▲ 15% vs last month</div>
+								<div class="stat-trend trend-up text-xs font-semibold text-[#16a34a]">▲ 15% vs last month</div>
 							</div>
 						</div>
 
 						<!-- Widget 2: Demographics -->
-						<div class="premium-widget">
-							<div class="premium-widget__header">
-								<div class="widget-icon widget-icon--blue">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+							<div class="premium-widget__header mb-4 flex items-center gap-3">
+								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
+									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
 								</div>
-								<h4>DEMOGRAPHICS</h4>
+								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">DEMOGRAPHICS</h4>
 							</div>
 							@php
 								$totalGuests = $activeCustomers->count() ?: 1; // prevent div by zero
@@ -262,59 +260,59 @@
 								$pctFem = round(($guestSummaryFemale / $totalGuests) * 100);
 								$pctFor = round(($guestSummaryForeign / $totalGuests) * 100);
 								$pctFil = round(($guestSummaryFilipino / $totalGuests) * 100);
-								
+
 								$degMale = $pctMale * 3.6;
 								$degFem = $degMale + ($pctFem * 3.6);
 								$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
 							@endphp
-							<div class="premium-widget__grid cols-4">
+							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
-									<span>MALE</span>
-									<strong>{{ $guestSummaryMale }}</strong>
-									<div class="stat-trend trend-blue">{{ $pctMale }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MALE</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryMale }}</strong>
+									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctMale }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFemFil }}&#xa;Foreigner: {{ $demoFemFor }}">
-									<span>FEMALE</span>
-									<strong>{{ $guestSummaryFemale }}</strong>
-									<div class="stat-trend trend-blue">{{ $pctFem }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FEMALE</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFemale }}</strong>
+									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFem }}%</div>
 								</div>
 								<div class="premium-stat">
-									<span>FOREIGNER</span>
-									<strong>{{ $guestSummaryForeign }}</strong>
-									<div class="stat-trend trend-blue">{{ $pctFor }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FOREIGNER</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryForeign }}</strong>
+									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFor }}%</div>
 								</div>
 								<div class="premium-stat">
-									<span>FILIPINO</span>
-									<strong>{{ $guestSummaryFilipino }}</strong>
-									<div class="stat-trend trend-blue">{{ $pctFil }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FILIPINO</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFilipino }}</strong>
+									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFil }}%</div>
 								</div>
 							</div>
-							
+
 							<!-- Donut Chart Area -->
-							<div class="demographics-chart-area" style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 2rem; padding: 1rem 0;">
-								<div class="donut-chart-container" style="position: relative; width: 120px; height: 120px;">
-									<div class="donut-chart" style="width: 100%; height: 100%; border-radius: 50%; background: conic-gradient({{ $conicGradient }}); transition: all 0.5s ease;"></div>
-									<div class="donut-chart-inner" style="position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px; background: var(--hp-bg); border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-										<strong style="font-size: 1.25rem; line-height: 1; color: var(--hp-text-color);">{{ $totalGuests }}</strong>
-										<span style="font-size: 0.65rem; color: var(--hp-text-muted);">Total</span>
+							<div class="demographics-chart-area mt-6 flex items-center justify-center gap-8 px-2 py-4">
+								<div class="donut-chart-container relative h-[120px] w-[120px]">
+									<div class="donut-chart h-full w-full rounded-full transition-all duration-500" style="background: conic-gradient({{ $conicGradient }});"></div>
+									<div class="donut-chart-inner absolute left-5 right-5 top-5 bottom-5 flex flex-col items-center justify-center rounded-full bg-glass shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+										<strong class="text-xl leading-none text-hp-text">{{ $totalGuests }}</strong>
+										<span class="text-[0.65rem] text-hp-text-muted">Total</span>
 									</div>
 								</div>
-								<div class="donut-legend" style="display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.8rem; color: var(--hp-text-color); min-width: 120px;">
-									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>Male</span> <span>{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
-									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ec4899;"></span>Female</span> <span>{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
-									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;"></span>Foreigner</span> <span>{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
-									<div class="legend-item" style="display: flex; justify-content: space-between;"><span style="display: flex; align-items: center; gap: 0.5rem;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6;"></span>Filipino</span> <span>{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
+								<div class="donut-legend flex min-w-[120px] flex-col gap-2.5 text-[0.8rem] text-hp-text">
+									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#22c55e]"></span>Male</span> <span>{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
+									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#ec4899]"></span>Female</span> <span>{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
+									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#f59e0b]"></span>Foreigner</span> <span>{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
+									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#8b5cf6]"></span>Filipino</span> <span>{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
 								</div>
 							</div>
 						</div>
 
 						<!-- Widget 4: Age Groups -->
-						<div class="premium-widget">
-							<div class="premium-widget__header">
-								<div class="widget-icon widget-icon--blue">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+							<div class="premium-widget__header mb-4 flex items-center gap-3">
+								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
+									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
 								</div>
-								<h4>AGE GROUPS</h4>
+								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">AGE GROUPS</h4>
 							</div>
 							@php
 								$pctKids = $totalGuests > 0 ? round(($ageKids / $totalGuests) * 100) : 0;
@@ -322,136 +320,132 @@
 								$pctAdult = $totalGuests > 0 ? round(($ageAdult / $totalGuests) * 100) : 0;
 								$pctSenior = $totalGuests > 0 ? round(($ageSenior / $totalGuests) * 100) : 0;
 							@endphp
-							<div class="premium-widget__grid cols-4">
+							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilKids }}&#xa;Foreigner: {{ $ageForKids }}">
-									<span>KIDS</span>
-									<strong>{{ $ageKids }}</strong>
-									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctKids }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageKids }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctKids }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilTeen }}&#xa;Foreigner: {{ $ageForTeen }}">
-									<span>TEENS</span>
-									<strong>{{ $ageTeen }}</strong>
-									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctTeen }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TEENS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageTeen }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctTeen }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilAdult }}&#xa;Foreigner: {{ $ageForAdult }}">
-									<span>ADULTS</span>
-									<strong>{{ $ageAdult }}</strong>
-									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctAdult }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ADULTS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageAdult }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctAdult }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilSenior }}&#xa;Foreigner: {{ $ageForSenior }}">
-									<span>SENIORS</span>
-									<strong>{{ $ageSenior }}</strong>
-									<div class="stat-trend" style="color:var(--hp-text-muted);">{{ $pctSenior }}%</div>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">SENIORS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageSenior }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctSenior }}%</div>
 								</div>
 							</div>
 
 							<!-- Progress Bars Area -->
-							<div class="age-progress-area" style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
-								<!-- Kids -->
+							<div class="age-progress-area mt-6 flex flex-col gap-4">
 								<div class="progress-row">
-									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
 										<span>Kids (0 - 12 yrs)</span>
 										<span>{{ $pctKids }}%</span>
 									</div>
-									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
-										<div style="width: {{ $pctKids }}%; height: 100%; background: #22c55e; border-radius: 4px;"></div>
+									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
+										<div class="h-full rounded bg-[#22c55e]" style="width: {{ $pctKids }}%;"></div>
 									</div>
 								</div>
-								<!-- Teens -->
 								<div class="progress-row">
-									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
 										<span>Teens (13 - 17 yrs)</span>
 										<span>{{ $pctTeen }}%</span>
 									</div>
-									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
-										<div style="width: {{ $pctTeen }}%; height: 100%; background: #3b82f6; border-radius: 4px;"></div>
+									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
+										<div class="h-full rounded bg-[#3b82f6]" style="width: {{ $pctTeen }}%;"></div>
 									</div>
 								</div>
-								<!-- Adults -->
 								<div class="progress-row">
-									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
 										<span>Adults (18 - 59 yrs)</span>
 										<span>{{ $pctAdult }}%</span>
 									</div>
-									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
-										<div style="width: {{ $pctAdult }}%; height: 100%; background: #a855f7; border-radius: 4px;"></div>
+									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
+										<div class="h-full rounded bg-[#a855f7]" style="width: {{ $pctAdult }}%;"></div>
 									</div>
 								</div>
-								<!-- Seniors -->
 								<div class="progress-row">
-									<div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 0.3rem;">
+									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
 										<span>Seniors (60+ yrs)</span>
 										<span>{{ $pctSenior }}%</span>
 									</div>
-									<div style="width: 100%; height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow: hidden;">
-										<div style="width: {{ $pctSenior }}%; height: 100%; background: #f59e0b; border-radius: 4px;"></div>
+									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
+										<div class="h-full rounded bg-[#f59e0b]" style="width: {{ $pctSenior }}%;"></div>
 									</div>
 								</div>
 							</div>
 						</div>
 
 						<!-- Widget 3: Checkout Alerts -->
-						<div class="premium-widget premium-widget--alert" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2rem;">
-							<div style="flex: 1; min-width: 300px;">
-								<div class="premium-widget__header">
-									<div class="widget-icon widget-icon--orange">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+						<div class="premium-widget premium-widget--alert flex flex-wrap gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass xl:col-span-2">
+							<div class="min-w-[300px] flex-1">
+								<div class="premium-widget__header mb-4 flex items-center gap-3">
+									<div class="widget-icon widget-icon--orange flex h-9 w-9 items-center justify-center rounded-lg bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
 									</div>
-									<h4>CHECKOUT ALERTS</h4>
+									<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">CHECKOUT ALERTS</h4>
 								</div>
-								<div class="premium-widget__grid cols-4" style="margin-top: 1.5rem; gap: 1rem;">
-									<div class="premium-stat stat-due" style="background: none; padding: 0; box-shadow: none;">
-										<span style="font-size: 0.75rem;">TOTAL DUE</span>
-										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $guestSummaryCheckoutDue }}</strong>
-										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
-										<strong style="font-size: 1.2rem; color: #f97316;">{{ $resSummaryCheckoutDue }}</strong>
-										<div style="font-size: 0.75rem; color: var(--hp-text-muted);">Reservations due</div>
+								<div class="premium-widget__grid cols-4 mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+									<div class="premium-stat stat-due bg-transparent p-0 shadow-none">
+										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL DUE</span>
+										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $guestSummaryCheckoutDue }}</strong>
+										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
+										<strong class="block text-xl font-bold text-[#f97316]">{{ $resSummaryCheckoutDue }}</strong>
+										<div class="text-xs text-hp-text-muted">Reservations due</div>
 									</div>
-									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
-										<span style="font-size: 0.75rem;">MAIN DUE</span>
-										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueMainGuests }}</strong>
-										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
+										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">MAIN DUE</span>
+										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueMainGuests }}</strong>
+										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
-									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
-										<span style="font-size: 0.75rem;">SINGLE COMP.</span>
-										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueSingleCompanions }}</strong>
-										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
+										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">SINGLE COMP.</span>
+										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueSingleCompanions }}</strong>
+										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
-									<div class="premium-stat stat-due-sub" style="background: none; padding: 0; border: none; box-shadow: none;">
-										<span style="font-size: 0.75rem;">BULK COMP.</span>
-										<strong style="color: #ef4444; font-size: 1.8rem;">{{ $dueBulkCompanions }}</strong>
-										<div style="font-size: 0.75rem; color: var(--hp-text-muted); margin-bottom: 1.5rem;">Guests</div>
+									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
+										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">BULK COMP.</span>
+										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueBulkCompanions }}</strong>
+										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
 								</div>
 							</div>
-							
-							<div class="upcoming-checkouts-panel" style="flex: 1; min-width: 300px; padding-left: 2rem; border-left: 1px dashed rgba(0,0,0,0.08);">
-								<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-									<h4 style="font-size: 0.85rem; font-weight: 600; color: var(--hp-text-color);">Upcoming Check-outs</h4>
-									<a href="#" style="font-size: 0.8rem; color: #f97316; font-weight: 500; display: flex; align-items: center; gap: 0.3rem;">
-										View all alerts <span style="font-size:1.1rem;">&rarr;</span>
+
+							<div class="upcoming-checkouts-panel min-w-[300px] flex-1 border-l border-dashed border-black/10 pl-8 dark:border-white/10">
+								<div class="mb-6 flex items-center justify-between">
+									<h4 class="m-0 text-sm font-semibold text-hp-text">Upcoming Check-outs</h4>
+									<a href="#" class="flex items-center gap-1 text-[0.8rem] font-medium text-[#f97316] no-underline">
+										View all alerts <span class="text-[1.1rem]">&rarr;</span>
 									</a>
 								</div>
-								
-								<div class="upcoming-checkouts-list" style="display: flex; flex-direction: column; gap: 0.8rem;">
+
+								<div class="upcoming-checkouts-list flex flex-col gap-3">
 									@foreach (collect($activeReservations ?? [])->take(3) as $res)
 										@php
 											$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
 											$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
 											$amenityNames = $res->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 										@endphp
-										<div class="upcoming-item" style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: rgba(34,197,94,0.05); border-radius: 8px;">
-											<div style="display: flex; align-items: center; gap: 1rem;">
-												<div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(34,197,94,0.1); display: flex; align-items: center; justify-content: center; color: #22c55e;">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+										<div class="upcoming-item flex items-center justify-between rounded-lg bg-[rgba(34,197,94,0.05)] p-3">
+											<div class="flex items-center gap-4">
+												<div class="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e]">
+													<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
 												</div>
 												<div>
-													<div style="font-weight: 600; font-size: 0.9rem; color: var(--hp-text-color);">{{ $amenityNames ?: 'Entrance' }}</div>
-													<div style="font-size: 0.75rem; color: var(--hp-text-muted);">Reserved by {{ $guestName }}</div>
+													<div class="text-sm font-semibold text-hp-text">{{ $amenityNames ?: 'Entrance' }}</div>
+													<div class="text-xs text-hp-text-muted">Reserved by {{ $guestName }}</div>
 												</div>
 											</div>
-											<div class="time-left-pill" style="padding: 0.3rem 0.8rem; border-radius: 999px; background: rgba(249,115,22,0.1); color: #c2410c; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
-												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+											<div class="time-left-pill flex items-center gap-1.5 rounded-full bg-[rgba(249,115,22,0.1)] px-3 py-1 text-xs font-semibold text-[#c2410c]">
+												<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 												<span class="table-time-left" data-checkout-at="{{ $reservationData[$res->id]['checkout_at'] ?? '' }}"></span>
 											</div>
 										</div>
@@ -470,7 +464,7 @@
 								'main' => 0, 'companions' => 0,
 								'filipino' => 0, 'foreigner' => 0,
 							];
-							
+
 							foreach ($activeCustomers ?? [] as $customer) {
 								$age = $customer->age;
 								if (is_numeric($age)) {
@@ -479,17 +473,17 @@
 									elseif ($age <= 59) $metrics['adults']++;
 									else $metrics['seniors']++;
 								}
-								
+
 								$hasPrimary = $customer->reservationGuests->where('is_primary_guest', true)->filter(function($g) {
 									return $g->reservation && !$g->checked_out_at && strtolower(str_replace(' ', '_', $g->reservation->status ?? '')) !== 'checked_out';
 								})->isNotEmpty();
-								
+
 								if ($hasPrimary) {
 									$metrics['main']++;
 								} else {
 									$metrics['companions']++;
 								}
-								
+
 								if ($customer->is_foreigner) {
 									$metrics['foreigner']++;
 								} else {
@@ -499,20 +493,20 @@
 							$totalGuests = max(1, count($activeCustomers ?? []));
 						@endphp
 						<div class="checkins-main-column">
-							<section class="checkins-card">
-							<div class="checkins-card-header">
-								<div class="table-header-left">
-									<h2 class="checkins-title" style="margin-right: 1.5rem;">Guest Data View</h2>
+							<section class="checkins-card rounded-2xl border border-glass-border bg-glass shadow-glass">
+							<div class="checkins-card-header mb-5 flex items-center justify-between gap-4 border-b border-glass-border px-5 pb-5 pt-4">
+								<div class="table-header-left flex items-center">
+									<h2 class="checkins-title m-0 mr-6 font-display text-xl font-bold text-hp-text">Guest Data View</h2>
 								</div>
-								<div class="checkins-actions">
-									<button type="button" class="ci-btn-primary" data-open-add-guest-modal="true">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<div class="checkins-actions flex items-center gap-2">
+									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
+										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
 										Add Guest
 									</button>
-									<button type="button" class="ci-btn-icon" id="scanQrBtn" aria-label="Scan QR Code">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="scanQrBtn" aria-label="Scan QR Code">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
 										</svg>
@@ -520,19 +514,19 @@
 								</div>
 							</div>
 
-					<div class="guest-filter-shell">
-						<button type="button" class="guest-filter-toggle" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
+					<div class="guest-filter-shell mb-3 grid gap-3">
+						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
 							<span>Filters</span>
-							<span class="guest-filter-toggle__icon">▾</span>
+							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
-						<div class="guest-toolbar guest-toolbar--collapsed" id="guestFilterPanel" hidden>
-							<label class="guest-toolbar__field guest-toolbar__field--search">
+						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-3 dark:bg-glass" id="guestFilterPanel" hidden>
+							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-3">
 								<span>Search</span>
-								<input type="search" id="guestSearchInput" placeholder="Search by name, ID, gender">
+								<input type="search" id="guestSearchInput" placeholder="Search by name, ID, gender" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 							</label>
-							<label class="guest-toolbar__field">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Sort by</span>
-								<select id="guestSortSelect">
+								<select id="guestSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 									<option value="name-asc">Name (A-Z)</option>
 									<option value="name-desc">Name (Z-A)</option>
 									<option value="age-asc">Age (Low-High)</option>
@@ -540,25 +534,25 @@
 									<option value="reservation-asc">Reservation Type</option>
 								</select>
 							</label>
-							<label class="guest-toolbar__field">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Show Guests</span>
-								<select id="guestRoleSelect">
+								<select id="guestRoleSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 									<option value="all">All Guests</option>
 									<option value="primary">Main Guests Only</option>
 									<option value="companion">Companions Only</option>
 								</select>
 							</label>
-							<label class="guest-toolbar__field">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in from</span>
-								<input type="date" id="guestCheckInFrom">
+								<input type="date" id="guestCheckInFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 							</label>
-							<label class="guest-toolbar__field">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in to</span>
-								<input type="date" id="guestCheckInTo">
+								<input type="date" id="guestCheckInTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 							</label>
-							<label class="guest-toolbar__field">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Reservation ID</span>
-								<select id="guestReservationSelect">
+								<select id="guestReservationSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
 									<option value="">All Reservations</option>
 									@php
 										$filteredReservations = collect($reservations ?? collect())->filter(function ($reservation) {
@@ -571,8 +565,8 @@
 											$primaryGuest = $reservation->reservationGuests->first(function ($guest) {
 												return $guest->is_primary_guest && $guest->customer;
 											});
-											$primaryGuestName = $primaryGuest?->customer ? 
-												trim(($primaryGuest->customer->first_name ?? '') . ' ' . ($primaryGuest->customer->last_name ?? '')) : 
+											$primaryGuestName = $primaryGuest?->customer ?
+												trim(($primaryGuest->customer->first_name ?? '') . ' ' . ($primaryGuest->customer->last_name ?? '')) :
 												$reservation->booker_name ?? 'Unknown';
 										@endphp
 										<option value="{{ $reservation->id }}">#{{ $reservation->id }} - {{ $primaryGuestName }}</option>
@@ -581,16 +575,16 @@
 									@endforelse
 								</select>
 							</label>
-							<button type="button" class="guest-toolbar__clear" id="guestFiltersClear">Clear</button>
+							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="guestFiltersClear">Clear</button>
 						</div>
 					</div>
 
-					<div class="guest-toolbar__meta">
+					<div class="guest-toolbar__meta mb-3.5 text-sm text-hp-text-muted">
 						<span id="guestResultsCount">Showing {{ $activeCustomers->count() }} active guests</span>
 					</div>
 
-					<div class="guest-table-wrap" id="guestTableWrap">
-						<table class="guest-table">
+					<div class="guest-table-wrap max-h-[440px] overflow-auto px-5 pb-5" id="guestTableWrap">
+						<table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
 							<thead>
 								<tr>
 									<th>Guest</th>
@@ -627,10 +621,10 @@
 										$reservationType = $reservationEntry?->reservation?->reservation_type;
 										$reservationTypeLabel = $reservationType === 'walk_in' ? 'walk-in' : ($reservationType ?? 'N/A');
 										$typePillClass = $reservationType === 'walk_in' ? 'status-pill--walk-in' : ($reservationType ? 'status-pill--online' : 'status-pill--checked-out');
-										
+
 										$isPrimary = $reservationEntry?->is_primary_guest ?? false;
 										$isStray = false;
-										
+
 										if (!$isPrimary && $reservationEntry?->reservation) {
 											$primaryGuest = $reservationEntry->reservation->reservationGuests->firstWhere('is_primary_guest', true);
 											if (!$primaryGuest || $primaryGuest->checked_out_at !== null) {
@@ -638,10 +632,10 @@
 												$isStray = true;
 											}
 										}
-										
+
 										$firstName = strtolower(trim($customer->first_name ?? ''));
 										$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
-										
+
 										$checkoutAtStr = $reservationData[$reservationEntry?->reservation?->id]['checkout_at'] ?? null;
 										$checkoutDue = false;
 										$checkoutNear = false;
@@ -654,13 +648,13 @@
 											}
 										}
 										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
-										
+
 										// Hierarchy variables
 										$companionCount = 0;
 										if ($isPrimary && $reservationEntry?->reservation && !$isStray) {
 											$companionCount = $reservationEntry->reservation->reservationGuests->where('is_primary_guest', false)->filter(function($g) { return !$g->checked_out_at; })->count();
 										}
-										
+
 										// Group Bulk Companions
 										$totalBulk = 0;
 										$activeBulk = 0;
@@ -671,7 +665,7 @@
 												continue;
 											}
 											$processedBulkResIds[] = $resId;
-											
+
 											$allBulkForRes = $reservationEntry->reservation->reservationGuests->filter(function($rg) {
 												$fn = strtolower(trim($rg->customer?->first_name ?? ''));
 												return str_starts_with($fn, 'bulk') || str_contains($fn, 'companion');
@@ -679,7 +673,7 @@
 											$totalBulk = $allBulkForRes->count();
 											$activeBulk = $allBulkForRes->whereNull('checked_out_at')->count();
 											if ($activeBulk === 0) continue;
-											
+
 											$customer->first_name = "Bulk Companions (#$resId)";
 											$customer->last_name = "";
 											$customer->middle_name = "$activeBulk/$totalBulk Checked In";
@@ -689,7 +683,7 @@
 										}
 									@endphp
 									<tr
-										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }}"
+										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
 										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"
@@ -705,41 +699,41 @@
 											data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
 											data-is-foreign="{{ (bool) ($customer->is_foreigner ?? false) ? 'true' : 'false' }}"
 											data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner === null ? '-' : ($customer->is_foreigner ? 'Foreigner' : 'Filipino')) . ' ' . $reservationTypeLabel)) }}"
-										data-is-foreigner="{{ $customer->is_foreigner === null ? '-' : ($customer->is_foreigner ? 'Foreigner' : 'Filipino') }}"
-										data-reservation-type="{{ $reservationTypeLabel }}"
-										tabindex="0"
-										role="button"
-										aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
+											data-is-foreigner="{{ $customer->is_foreigner === null ? '-' : ($customer->is_foreigner ? 'Foreigner' : 'Filipino') }}"
+											data-reservation-type="{{ $reservationTypeLabel }}"
+											tabindex="0"
+											role="button"
+											aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
 									>
 										<td>
-											<div class="cell-person">
-												<span class="cell-person__avatar {{ $isPrimary ? 'cell-person__avatar--star' : '' }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
+											<div class="cell-person flex min-w-0 items-center gap-3">
+												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isPrimary ? 'cell-person__avatar--star' : '' }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
 													@if($isPrimary)
-														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
 													@elseif($isBulk)
-														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
 													@else
-														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
+														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
 													@endif
 												</span>
 												@if($isPrimary && $companionCount > 0)
-													<button type="button" class="btn-expand-row" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
-														<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+													<button type="button" class="btn-expand-row flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
+														<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 													</button>
 												@endif
-												<div class="cell-person__body">
-													<div class="guest-name">
+												<div class="cell-person__body min-w-0">
+													<div class="guest-name font-semibold text-hp-text">
 														@if($isBulk)
 															{{ $customer->first_name }}
-															<small style='color:var(--hp-text-muted); display:block; font-weight:normal; margin-top:2px;'>{{ $customer->middle_name }}</small>
+															<small class="mt-0.5 block font-normal text-hp-text-muted">{{ $customer->middle_name }}</small>
 														@else
 															{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}
 														@endif
 														@if($isStray)
-															<span style="font-size: 0.65rem; padding: 0.15rem 0.35rem; background-color: var(--warn, #f59e0b); color: #fff; border-radius: 4px; margin-left: 0.35rem; font-weight: 600; vertical-align: middle;">Stray</span>
+															<span class="ml-1.5 rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.65rem] font-semibold text-white">Stray</span>
 														@endif
 													</div>
-													<div class="guest-meta">ID: {{ $isBulk ? '-' : $customer->id }}</div>
+													<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">ID: {{ $isBulk ? '-' : $customer->id }}</div>
 												</div>
 											</div>
 										</td>
@@ -753,30 +747,30 @@
 													else $displayAge = 'Seniors';
 												}
 											@endphp
-											<div class="guest-name">{{ $displayAge }}</div>
-											<div class="guest-meta">{{ $customer->gender ?? 'N/A' }}</div>
+											<div class="guest-name font-semibold text-hp-text">{{ $displayAge }}</div>
+											<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $customer->gender ?? 'N/A' }}</div>
 										</td>
 										<td>
-											<span class="status-pill {{ $customer->is_foreigner ? 'status-pill--confirmed' : 'status-pill--checked-out' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
+											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
 										</td>
 										<td>
-											<span class="table-time-left" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
+											<span class="table-time-left text-xs font-semibold text-hp-text-muted" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
 										</td>
-										<td style="text-align: right; color: #9ca3af;">
-											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+										<td class="text-right text-[#9ca3af]">
+											<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@endforeach
 									<tr id="guestEmptyRow" style="display: {{ ($activeCustomers ?? collect())->isEmpty() ? '' : 'none' }};">
-										<td colspan="5" style="border: none;">
-											<div class="empty-state-wrapper">
-												<div class="empty-state-icon">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<td colspan="5" class="border-0">
+											<div class="empty-state-wrapper flex flex-col items-center justify-center gap-1 py-12 text-center">
+												<div class="empty-state-icon mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ec] text-[#1c5c3c]">
+													<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 														<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
 													</svg>
 												</div>
-												<h4 class="empty-state-title">No active guests</h4>
-												<p class="empty-state-desc">There are no guests currently checked in to the park.</p>
+												<h4 class="m-0 text-base font-bold text-hp-text">No active guests</h4>
+												<p class="m-0 text-sm text-hp-text-muted">There are no guests currently checked in to the park.</p>
 											</div>
 										</td>
 									</tr>
@@ -785,91 +779,91 @@
 					</div>
 						</section>
 					</div>
-					
+
 					<div class="checkins-sidebar">
 						<!-- Demographics Card -->
-						<div class="checkins-card sidebar-data-card">
-							<h4 class="sidebar-data-title">Guest Demographics</h4>
-							<div class="sidebar-data-list">
+						<div class="checkins-card sidebar-data-card rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+							<h4 class="sidebar-data-title m-0 mb-4 font-display text-base font-bold text-hp-text">Guest Demographics</h4>
+							<div class="sidebar-data-list flex flex-col gap-3">
 								<div class="sidebar-data-item">
-									<div class="data-item-top">
-										<span class="data-label">Kids (0-12)</span>
-										<span class="data-value">{{ $metrics['kids'] }}</span>
+									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
+										<span class="data-label font-semibold text-hp-text-muted">Kids (0-12)</span>
+										<span class="data-value font-bold text-hp-text">{{ $metrics['kids'] }}</span>
 									</div>
-									<div class="data-progress-bg"><div class="data-progress-fill" style="width: {{ ($metrics['kids'] / $totalGuests) * 100 }}%"></div></div>
+									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['kids'] / $totalGuests) * 100 }}%"></div></div>
 								</div>
 								<div class="sidebar-data-item">
-									<div class="data-item-top">
-										<span class="data-label">Teens (13-17)</span>
-										<span class="data-value">{{ $metrics['teens'] }}</span>
+									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
+										<span class="data-label font-semibold text-hp-text-muted">Teens (13-17)</span>
+										<span class="data-value font-bold text-hp-text">{{ $metrics['teens'] }}</span>
 									</div>
-									<div class="data-progress-bg"><div class="data-progress-fill" style="width: {{ ($metrics['teens'] / $totalGuests) * 100 }}%"></div></div>
+									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['teens'] / $totalGuests) * 100 }}%"></div></div>
 								</div>
 								<div class="sidebar-data-item">
-									<div class="data-item-top">
-										<span class="data-label">Adults (18-59)</span>
-										<span class="data-value">{{ $metrics['adults'] }}</span>
+									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
+										<span class="data-label font-semibold text-hp-text-muted">Adults (18-59)</span>
+										<span class="data-value font-bold text-hp-text">{{ $metrics['adults'] }}</span>
 									</div>
-									<div class="data-progress-bg"><div class="data-progress-fill" style="width: {{ ($metrics['adults'] / $totalGuests) * 100 }}%"></div></div>
+									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['adults'] / $totalGuests) * 100 }}%"></div></div>
 								</div>
 								<div class="sidebar-data-item">
-									<div class="data-item-top">
-										<span class="data-label">Seniors (60+)</span>
-										<span class="data-value">{{ $metrics['seniors'] }}</span>
+									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
+										<span class="data-label font-semibold text-hp-text-muted">Seniors (60+)</span>
+										<span class="data-value font-bold text-hp-text">{{ $metrics['seniors'] }}</span>
 									</div>
-									<div class="data-progress-bg"><div class="data-progress-fill" style="width: {{ ($metrics['seniors'] / $totalGuests) * 100 }}%"></div></div>
+									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['seniors'] / $totalGuests) * 100 }}%"></div></div>
 								</div>
 							</div>
 						</div>
 
 						<!-- Sidebar Summary Cards (Unified Container) -->
-						<div class="sidebar-summary-container" style="background: var(--glass-bg); border-radius: var(--radius-lg); padding: 1.5rem; border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow); display: flex; flex-direction: column; margin-bottom: 1.5rem;">
-							<div class="sidebar-summary-grid" style="display: flex; flex-direction: column; gap: 1rem;">
+						<div class="sidebar-summary-container mb-6 flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+							<div class="sidebar-summary-grid flex flex-col gap-4">
 								<!-- Item 1: Active Guests -->
-								<div class="top-stat-card card-theme-green" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
-									<div class="top-stat-card__icon" style="background: transparent; color: #16a34a; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+								<div class="top-stat-card card-theme-green flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
+									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#16a34a]">
+										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
 									</div>
 									<div class="top-stat-card__body">
-										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Active Guests</span>
-										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $activeCustomers->count() }}</strong>
-										<div class="stat-trend trend-green" style="font-size: 0.75rem;">Currently inside</div>
+										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Active Guests</span>
+										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $activeCustomers->count() }}</strong>
+										<div class="stat-trend trend-green text-xs font-semibold text-[#16a34a]">Currently inside</div>
 									</div>
 								</div>
-								
+
 								<!-- Item 2: Checked In Today -->
-								<div class="top-stat-card card-theme-blue" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
-									<div class="top-stat-card__icon" style="background: transparent; color: #2563eb; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+								<div class="top-stat-card card-theme-blue flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
+									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#2563eb]">
+										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
 									</div>
 									<div class="top-stat-card__body">
-										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Checked In Today</span>
-										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $todaysCheckins }}</strong>
-										<div class="stat-trend trend-green" style="font-size: 0.75rem;">Total check-ins</div>
+										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Checked In Today</span>
+										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $todaysCheckins }}</strong>
+										<div class="stat-trend trend-green text-xs font-semibold text-[#16a34a]">Total check-ins</div>
 									</div>
 								</div>
-								
+
 								<!-- Item 3: Expected Check-outs -->
-								<div class="top-stat-card card-theme-orange" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
-									<div class="top-stat-card__icon" style="background: transparent; color: #ea580c; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+								<div class="top-stat-card card-theme-orange flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
+									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#ea580c]">
+										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 									</div>
 									<div class="top-stat-card__body">
-										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Expected Check-outs</span>
-										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $expectedCheckouts }}</strong>
-										<div class="stat-trend" style="font-size: 0.75rem;">Guests near/past time</div>
+										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Expected Check-outs</span>
+										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $expectedCheckouts }}</strong>
+										<div class="stat-trend text-xs font-semibold text-hp-text-muted">Guests near/past time</div>
 									</div>
 								</div>
-								
+
 								<!-- Item 4: Walk-ins Today -->
-								<div class="top-stat-card card-theme-purple" style="background: var(--glass-bg-hover); padding: 1rem; border-radius: var(--radius-md); box-shadow: none; min-height: auto; border: 1px solid var(--glass-border-strong);">
-									<div class="top-stat-card__icon" style="background: transparent; color: #9333ea; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin-right: 0.5rem;">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+								<div class="top-stat-card card-theme-purple flex items-center rounded-xl border border-glass-border-strong bg-glass-hover p-4">
+									<div class="top-stat-card__icon mr-2 flex h-10 w-10 items-center justify-center bg-transparent text-[#9333ea]">
+										<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
 									</div>
 									<div class="top-stat-card__body">
-										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted);">Walk-Ins Today</span>
-										<strong style="font-size: 1.5rem; line-height: 1.2;">{{ $walkInsToday }}</strong>
-										<div class="stat-trend" style="font-size: 0.75rem;">Walk-in guests</div>
+										<span class="block text-[0.8rem] font-semibold text-hp-text-muted">Walk-Ins Today</span>
+										<strong class="block text-2xl leading-[1.2] text-hp-text dark:text-[#c8e6c8]">{{ $walkInsToday }}</strong>
+										<div class="stat-trend text-xs font-semibold text-hp-text-muted">Walk-in guests</div>
 									</div>
 								</div>
 							</div>
@@ -879,20 +873,20 @@
 
 					{{-- RESERVATION TABLE --}}
 					<div id="reservationTableSection" class="tab-content-section" style="display: none;">
-						<section class="checkins-card">
-							<div class="checkins-card-header">
-								<div class="table-header-left">
-									<h2 class="checkins-title" style="margin-right: 1.5rem;">Reservation Data View</h2>
+						<section class="checkins-card rounded-2xl border border-glass-border bg-glass shadow-glass">
+							<div class="checkins-card-header mb-5 flex items-center justify-between gap-4 border-b border-glass-border px-5 pb-5 pt-4">
+								<div class="table-header-left flex items-center">
+									<h2 class="checkins-title m-0 mr-6 font-display text-xl font-bold text-hp-text">Reservation Data View</h2>
 								</div>
-								<div class="checkins-actions">
-									<button type="button" class="ci-btn-primary" data-open-add-guest-modal="true">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<div class="checkins-actions flex items-center gap-2">
+									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
+										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
 										Add Guest
 									</button>
-									<button type="button" class="ci-btn-icon" aria-label="Scan QR Code">
-										<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" aria-label="Scan QR Code">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
 										</svg>
@@ -900,8 +894,8 @@
 								</div>
 							</div>
 
-					<div class="guest-table-wrap" id="reservationTableWrap" style="margin-top: 1rem;">
-						<table class="guest-table">
+					<div class="guest-table-wrap max-h-[440px] overflow-auto px-5 pb-5" id="reservationTableWrap">
+						<table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
 							<thead>
 								<tr>
 									<th>Reservation</th>
@@ -926,7 +920,7 @@
 											->filter()
 											->unique();
 										$isMixedTime = $reservation->reservationAmenities->count() > 1 && $resvTimePeriods->count() > 1;
-										
+
 										$checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
 										$checkoutDue = false;
 										$checkoutNear = false;
@@ -939,28 +933,28 @@
 											}
 										}
 										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
-										
+
 										$totalResGuests = $reservation->reservationGuests->count();
 										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
 									@endphp
 									<tr
-										class="reservation-row {{ $highlightClass }}"
+										class="reservation-row {{ $highlightClass }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
 										data-reservation-id="{{ $reservation->id }}"
 										tabindex="0"
 										role="button"
 										aria-label="View reservation {{ $reservation->id }}"
 									>
 										<td>
-											<div style="display: flex; align-items: center;">
-												<button type="button" class="btn-expand-row" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+											<div class="flex items-center">
+												<button type="button" class="btn-expand-row flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
+													<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 												</button>
 												<div>
-													<div class="guest-name">#{{ $reservation->id }}</div>
-													<div class="guest-meta">
+													<div class="guest-name font-semibold text-hp-text">#{{ $reservation->id }}</div>
+													<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">
 														{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}
 														@if ($isMixedTime)
-															<span class="status-pill status-pill--pending" style="margin-left:4px;">Mixed Time</span>
+															<span class="status-pill status-pill--pending ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">Mixed Time</span>
 														@endif
 													</div>
 												</div>
@@ -968,50 +962,50 @@
 										</td>
 										<td>
 											@if ($primaryGuest)
-												<div class="cell-person">
-													<span class="cell-person__avatar cell-person__avatar--star" title="Main Guest">
-														<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+												<div class="cell-person flex min-w-0 items-center gap-3">
+													<span class="cell-person__avatar cell-person__avatar--star flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]" title="Main Guest">
+														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
 													</span>
-													<div class="cell-person__body">
-														<div class="guest-name">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
+													<div class="cell-person__body min-w-0">
+														<div class="guest-name font-semibold text-hp-text">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
 													</div>
 												</div>
 											@else
-												<div class="guest-name">—</div>
+												<div class="guest-name font-semibold text-hp-text">—</div>
 											@endif
 										</td>
 										<td>
-											<div class="guest-name mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
-											<div class="guest-meta mono-cell">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
+											<div class="guest-name mono-cell whitespace-nowrap text-[0.8rem] font-semibold text-hp-text">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
+											<div class="guest-meta mono-cell mt-0.5 whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
 										</td>
 										<td>
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
-											<span class="guest-meta">{{ $amenityNames ?: 'None' }}</span>
+											<span class="guest-meta text-[0.84rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
 										</td>
 										<td>
-											<div class="guest-name">{{ $totalResGuests }} Total</div>
-											<div class="guest-meta">{{ $remainingResGuests }} Remaining</div>
+											<div class="guest-name font-semibold text-hp-text">{{ $totalResGuests }} Total</div>
+											<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
 										</td>
 										<td>
-											<span class="table-time-left" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+											<span class="table-time-left text-xs font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
 										</td>
-										<td style="text-align: right; color: #9ca3af;">
-											<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.2rem; height: 1.2rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+										<td class="text-right text-[#9ca3af]">
+											<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@empty
 									<tr>
-										<td colspan="7" style="border: none;">
-											<div class="empty-state-wrapper">
-												<div class="empty-state-icon">
-													<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+										<td colspan="7" class="border-0">
+											<div class="empty-state-wrapper flex flex-col items-center justify-center gap-1 py-12 text-center">
+												<div class="empty-state-icon mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ec] text-[#1c5c3c]">
+													<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 														<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
 													</svg>
 												</div>
-												<h4 class="empty-state-title">No active reservations</h4>
-												<p class="empty-state-desc">There are no checked-in reservations right now.</p>
+												<h4 class="m-0 text-base font-bold text-hp-text">No active reservations</h4>
+												<p class="m-0 text-sm text-hp-text-muted">There are no checked-in reservations right now.</p>
 											</div>
 										</td>
 									</tr>
@@ -1026,615 +1020,614 @@
 		</div>
 	</div>
 	<!-- Modals (Direct children of body) -->
-	<div class="guest-modal" id="guestModal" aria-hidden="true">
-		<div class="guest-modal__backdrop" data-close-modal="true"></div>
-					<div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
-						<button type="button" class="guest-modal__close" data-close-modal="true" aria-label="Close details">&times;</button>
-						<div class="guest-modal__header">
-							<h3 id="guestModalTitle" class="guest-modal__title">Guest Details</h3>
-							<span id="guestModalRole" class="guest-modal__role-badge"></span>
+	<div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="guestModal" aria-hidden="true">
+		<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-modal="true" aria-label="Close details">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3">
+							<h3 id="guestModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Guest Details</h3>
+							<span id="guestModalRole" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em]"></span>
 						</div>
-						<div id="guestModalBody" class="guest-modal__body"></div>
-						<div class="guest-form__actions" id="guestModalActions">
-							<button type="button" class="guest-form__button--secondary" data-close-modal="true">Close</button>
-							<button type="button" class="guest-form__button" id="guestCheckOutBtn">Check Out</button>
+						<div id="guestModalBody" class="guest-modal__body grid gap-4"></div>
+						<div class="guest-form__actions mt-6 flex justify-end gap-3" id="guestModalActions">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-modal="true">Close</button>
+							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="guestCheckOutBtn">Check Out</button>
 						</div>
 					</div>
 				</div>
 
-				<div class="guest-modal guest-modal--add" id="addGuestModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-add-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
-						<button type="button" class="guest-modal__close" data-close-add-modal="true" aria-label="Close add guest form">&times;</button>
-						<div class="guest-modal__header">
-							<h3 id="addGuestModalTitle" class="guest-modal__title">Add Guest Reservation</h3>
+				<div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="addGuestModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-add-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-modal="true" aria-label="Close add guest form">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+							<h3 id="addGuestModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Guest Reservation</h3>
 						</div>
-						<form id="addGuestForm" class="guest-form" action="{{ route('staff.checkins.guests.store') }}" method="POST">
+						<form id="addGuestForm" class="guest-form grid gap-4" action="{{ route('staff.checkins.guests.store') }}" method="POST">
 							@csrf
-							
-							<div class="guest-form__grid">
-								<div class="guest-form__section guest-form__section--compact">
-									<div class="guest-form__section-header">
-										<h4 class="guest-form__section-title">Reservation Details</h4>
+
+							<div class="guest-form__grid grid grid-cols-1 gap-4 lg:grid-cols-2">
+								<div class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+									<div class="guest-form__section-header mb-2">
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Reservation Details</h4>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="reservation_type">Reservation type</label>
-										<select name="reservation_type" id="reservation_type" class="guest-form__select">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="reservation_type">Reservation type</label>
+										<select name="reservation_type" id="reservation_type" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="walk_in" selected>Walk-in</option>
 											<option value="online">Online</option>
 										</select>
 									</div>
 									<input type="hidden" name="check_in" id="check_in">
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="time_period">Time Period</label>
-										<select name="time_period" id="time_period" class="guest-form__select" disabled>
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="time_period">Time Period</label>
+										<select name="time_period" id="time_period" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" disabled>
 											<option value="daytime">Daytime</option>
 											<option value="nighttime">Nighttime</option>
 											<option value="daytonight">Day to Night</option>
 											<option value="nighttoday">Night to Day</option>
 										</select>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__checkbox-wrapper">
-											<input type="checkbox" name="include_pool" id="include_pool">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
+											<input type="checkbox" name="include_pool" id="include_pool" class="h-4 w-4 accent-hp-green">
 											<span>Include Pool Access</span>
 										</label>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label">Additional Options</label>
-										<div class="guest-form__actions-inline">
-											<button type="button" class="guest-form__action-btn" id="addCompanionBtn">
-												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text">Additional Options</label>
+										<div class="guest-form__actions-inline flex flex-wrap gap-2">
+											<button type="button" class="guest-form__action-btn inline-flex cursor-pointer items-center rounded-lg border border-glass-border bg-glass px-3 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="addCompanionBtn">
+												<svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
 												</svg>
 												Add Companion
 											</button>
-											<button type="button" class="guest-form__action-btn" id="chooseAmenitiesBtn">
-												<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem; margin-right: 0.4rem;">
+											<button type="button" class="guest-form__action-btn inline-flex cursor-pointer items-center rounded-lg border border-glass-border bg-glass px-3 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="chooseAmenitiesBtn">
+												<svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 													<path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
 												</svg>
 												Choose Amenities
 											</button>
 										</div>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label">Entrance Fees</label>
-										<div class="guest-form__fees-list">
-											<div class="guest-form__fee-item">
+									<div class="guest-form__field-group grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text">Entrance Fees</label>
+										<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
+											<div class="guest-form__fee-item flex justify-between">
 												<span>Adult Entrance Fee:</span>
-												<strong id="adultEntranceFee">₱0.00</strong>
+												<strong class="text-hp-text" id="adultEntranceFee">₱0.00</strong>
 											</div>
-											<div class="guest-form__fee-item">
+											<div class="guest-form__fee-item flex justify-between">
 												<span>Child Entrance Fee:</span>
-												<strong id="childEntranceFee">₱0.00</strong>
+												<strong class="text-hp-text" id="childEntranceFee">₱0.00</strong>
 											</div>
-											<div class="guest-form__fee-item">
+											<div class="guest-form__fee-item flex justify-between">
 												<span>Pool Fee:</span>
-												<strong id="poolFee">₱0.00</strong>
+												<strong class="text-hp-text" id="poolFee">₱0.00</strong>
 											</div>
-											<div class="guest-form__fee-item guest-form__fee-item--total">
+											<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
 												<span>Total (All Guests):</span>
-												<strong id="totalEntranceFee">₱0.00</strong>
+												<strong class="text-hp-green" id="totalEntranceFee">₱0.00</strong>
 											</div>
 										</div>
 									</div>
 								</div>
 
-								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact">
-									<div class="guest-form__section-header">
-										<h4 class="guest-form__section-title">Primary Guest</h4>
+								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+									<div class="guest-form__section-header mb-2">
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Primary Guest</h4>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="primary_first_name">First name</label>
-										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_first_name">First name</label>
+										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="primary_middle_name">Middle name</label>
-										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_middle_name">Middle name</label>
+										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="primary_last_name">Last name</label>
-										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_last_name">Last name</label>
+										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</div>
-									<div class="guest-form__row guest-form__row--two">
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="primary_age">Age</label>
-											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age" class="guest-form__input">
+									<div class="guest-form__row guest-form__row--two mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+										<div class="guest-form__field-group grid gap-1.5">
+											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_age">Age</label>
+											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="primary_gender">Gender</label>
-											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select">
+										<div class="guest-form__field-group grid gap-1.5">
+											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_gender">Gender</label>
+											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 												<option value="">Select gender</option>
 												<option value="Male">Male</option>
 												<option value="Female">Female</option>
 											</select>
 										</div>
 									</div>
-									<div class="guest-form__field-group">
-										<label class="guest-form__label" for="primary_is_foreigner">Nationality</label>
-										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select">
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_is_foreigner">Nationality</label>
+										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="0" selected>Filipino</option>
 											<option value="1">Foreigner</option>
 										</select>
 									</div>
-									<div class="guest-form__row guest-form__row--two">
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="primary_phone">Phone</label>
-											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input">
+									<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+										<div class="guest-form__field-group grid gap-1.5">
+											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_phone">Phone</label>
+											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										</div>
-										<div class="guest-form__field-group">
-											<label class="guest-form__label" for="primary_email">Email</label>
-											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input">
+										<div class="guest-form__field-group grid gap-1.5">
+											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_email">Email</label>
+											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										</div>
 									</div>
 								</div>
 							</div>
 
-							<div class="guest-form__section">
-								<div class="guest-form__section-header">
-									<h4 class="guest-form__section-title">Companions</h4>
+							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+								<div class="guest-form__section-header mb-2">
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Companions</h4>
 								</div>
-								<div id="companionList" class="guest-companion-list"></div>
+								<div id="companionList" class="guest-companion-list grid gap-2"></div>
 								<div id="companionHiddenFields"></div>
 							</div>
 
-							<div class="guest-form__section" id="amenitySection">
-								<div class="guest-form__section-header">
-									<h4 class="guest-form__section-title">Amenities</h4>
+							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
+								<div class="guest-form__section-header mb-2">
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Amenities</h4>
 								</div>
 								<div id="selectedAmenitiesContainer"></div>
-								<div class="guest-form__summary">
+								<div class="guest-form__summary mt-3 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text">
 									<span>Total</span>
-									<strong id="reservationTotal">₱0.00</strong>
+									<strong class="text-hp-green" id="reservationTotal">₱0.00</strong>
 								</div>
 								<input type="hidden" name="total_amount" id="totalAmountInput" value="0">
 							</div>
 
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__button--secondary" data-close-add-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Check In</button>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-add-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Check In</button>
 							</div>
 						</form>
 					</div>
 				</div>
 
-				<div class="guest-modal guest-modal--compact" id="amenityModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-amenity-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
-						<button type="button" class="guest-modal__close" data-close-amenity-modal="true" aria-label="Close amenity selection">&times;</button>
-						<h3 id="amenityModalTitle" class="guest-modal__title">Choose Amenities</h3>
-						<div class="guest-form__amenities" id="amenitiesContainer">
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="amenityModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-amenity-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-amenity-modal="true" aria-label="Close amenity selection">&times;</button>
+						<h3 id="amenityModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Choose Amenities</h3>
+						<div class="guest-form__amenities mt-6 flex flex-col gap-3" id="amenitiesContainer">
 							@forelse ($amenities ?? collect() as $amenity)
-								<label class="guest-amenity-option">
-									<input type="checkbox" class="amenity-checkbox" value="{{ $amenity->id }}" data-amenity-id="{{ $amenity->id }}" data-amenity-name="{{ $amenity->amenities_name }}">
-									<span class="guest-amenity-option__body">
-										<strong>{{ $amenity->amenities_name }}</strong>
-										<small>Choose a pricing option</small>
-									</span>										<select class="guest-amenity-option__select" disabled>
-											@if ($amenity->daytime_price !== null)
-												<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
-											@endif
-											@if ($amenity->nighttime_price !== null)
-												<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
-											@endif
-											@if ($amenity->daytime_price !== null && $amenity->nighttime_price !== null)
-												<option value="DayToNight" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Day to Night — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
-												<option value="NightToDay" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Night to Day — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
-											@endif
-											@if ($amenity->daytime_aircon_price !== null)
-												<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
-											@endif
-											@if ($amenity->nighttime_aircon_price !== null)
-												<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
-											@endif
-											@if ($amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
-												<option value="DayToNight Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Day to Night Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
-												<option value="NightToDay Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Night to Day Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
-											@endif
-										</select>
+								<label class="guest-amenity-option flex cursor-pointer items-center gap-3 rounded-xl border border-glass-border bg-glass p-4 transition-all duration-200 has-[:checked]:border-hp-green">
+									<input type="checkbox" class="amenity-checkbox h-4 w-4 accent-hp-green" value="{{ $amenity->id }}" data-amenity-id="{{ $amenity->id }}" data-amenity-name="{{ $amenity->amenities_name }}">
+									<span class="guest-amenity-option__body flex flex-1 flex-col">
+										<strong class="text-sm text-hp-text">{{ $amenity->amenities_name }}</strong>
+										<small class="text-xs text-hp-text-muted">Choose a pricing option</small>
+									</span>
+									<select class="guest-amenity-option__select rounded-lg border border-glass-border bg-glass px-2.5 py-2 text-xs text-hp-text focus:border-hp-green focus:outline-none disabled:opacity-60" disabled>
+										@if ($amenity->daytime_price !== null)
+											<option value="Daytime" data-price="{{ $amenity->daytime_price }}">Daytime — ₱{{ number_format($amenity->daytime_price, 2) }}</option>
+										@endif
+										@if ($amenity->nighttime_price !== null)
+											<option value="Nighttime" data-price="{{ $amenity->nighttime_price }}">Nighttime — ₱{{ number_format($amenity->nighttime_price, 2) }}</option>
+										@endif
+										@if ($amenity->daytime_price !== null && $amenity->nighttime_price !== null)
+											<option value="DayToNight" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Day to Night — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+											<option value="NightToDay" data-price="{{ $amenity->daytime_price + $amenity->nighttime_price }}">Night to Day — ₱{{ number_format($amenity->daytime_price + $amenity->nighttime_price, 2) }}</option>
+										@endif
+										@if ($amenity->daytime_aircon_price !== null)
+											<option value="Daytime Aircon" data-price="{{ $amenity->daytime_aircon_price }}">Daytime Aircon — ₱{{ number_format($amenity->daytime_aircon_price, 2) }}</option>
+										@endif
+										@if ($amenity->nighttime_aircon_price !== null)
+											<option value="Nighttime Aircon" data-price="{{ $amenity->nighttime_aircon_price }}">Nighttime Aircon — ₱{{ number_format($amenity->nighttime_aircon_price, 2) }}</option>
+										@endif
+										@if ($amenity->daytime_aircon_price !== null && $amenity->nighttime_aircon_price !== null)
+											<option value="DayToNight Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Day to Night Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+											<option value="NightToDay Aircon" data-price="{{ $amenity->daytime_aircon_price + $amenity->nighttime_aircon_price }}">Night to Day Aircon — ₱{{ number_format($amenity->daytime_aircon_price + $amenity->nighttime_aircon_price, 2) }}</option>
+										@endif
+									</select>
 								</label>
 							@empty
-								<p class="guest-empty">No active amenities are available yet.</p>
+								<p class="guest-empty px-4 py-8 text-center text-hp-text-muted">No active amenities are available yet.</p>
 							@endforelse
 						</div>
 					</div>
 				</div>
 
-				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
-						<button type="button" class="guest-modal__close" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
-						<div class="guest-modal__header">
-							<h3 id="companionModalTitle" class="guest-modal__title">Add Companion</h3>
+				<div class="guest-modal guest-modal--wide fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="companionModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-companion-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3">
+							<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
 						</div>
-						<div class="guest-form__tabs">
-							<button type="button" class="guest-form__tab guest-form__tab--active" data-companion-tab="single">Single</button>
-							<button type="button" class="guest-form__tab" data-companion-tab="bulk">Bulk</button>
+						<div class="guest-form__tabs mb-4 flex gap-1 rounded-xl border border-glass-border bg-glass p-1">
+							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 guest-form__tab--active:bg-hp-green-dark guest-form__tab--active:text-white" data-companion-tab="single">Single</button>
+							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 guest-form__tab--active:bg-hp-green-dark guest-form__tab--active:text-white" data-companion-tab="bulk">Bulk</button>
 						</div>
-						
+
 						<!-- Single Companion Form -->
-						<form id="companionForm" class="guest-form guest-form--tab-content guest-form--tab-content--active" data-companion-content="single">
-							<div class="guest-form__grid">
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_first_name">First name</label>
-									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input">
+						<form id="companionForm" class="guest-form guest-form--tab-content guest-form--tab-content--active grid gap-4" data-companion-content="single">
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_first_name">First name</label>
+									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_middle_name">Middle name</label>
-									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_middle_name">Middle name</label>
+									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_last_name">Last name</label>
-									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_last_name">Last name</label>
+									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_age">Age</label>
-									<input type="number" name="age" id="companion_age" min="0" placeholder="Age" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_age">Age</label>
+									<input type="number" name="age" id="companion_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_age_type">Age Type</label>
-									<select name="age_type" id="companion_age_type" class="guest-form__select">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_age_type">Age Type</label>
+									<select name="age_type" id="companion_age_type" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="adult">Adult</option>
 										<option value="child">Child</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_gender">Gender</label>
-									<select name="gender" id="companion_gender" class="guest-form__select">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_gender">Gender</label>
+									<select name="gender" id="companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_phone">Phone</label>
-									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_phone">Phone</label>
+									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="companion_email">Email</label>
-									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
+									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
 							</div>
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__button--secondary" data-close-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Add Companion</button>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
 							</div>
 						</form>
 
 						<!-- Bulk Companion Form -->
-						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content" data-companion-content="bulk">
-							<div class="guest-form__grid">
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_gender">Gender</label>
-									<select name="gender" id="bulk_companion_gender" class="guest-form__select">
+						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content hidden grid gap-4" data-companion-content="bulk">
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_gender">Gender</label>
+									<select name="gender" id="bulk_companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_age_group">Age Group</label>
-									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_age_group">Age Group</label>
+									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="0-12">Kids (0-12)</option>
 										<option value="13-17">Teens (13-17)</option>
 										<option value="18-59">Adults (18-59)</option>
 										<option value="60+">Seniors (60+)</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
-								<div class="guest-form__field-group">
-									<label class="guest-form__label" for="bulk_companion_quantity">Quantity</label>
-									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity</label>
+									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
 							</div>
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__button--secondary" data-close-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Add Bulk Companions</button>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Bulk Companions</button>
 							</div>
 						</form>
 					</div>
 				</div>
 
 				{{-- Check In Modal (used when scanning a reservation) --}}
-				<div class="guest-modal guest-modal--add" id="checkInModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-check-in-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
-						<button type="button" class="guest-modal__close" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
-						<h3 id="checkInModalTitle" class="guest-modal__title">Check In Reservation</h3>
-						<form id="checkInForm" class="guest-form" action="#">
-							<div class="guest-form__group">
-								<label class="guest-form__label">Guest mode</label>
-								<div class="guest-form__chips">
-									<label class="guest-form__chip">
-										<input type="radio" name="check_in_guest_mode" value="with_primary" checked>
+				<div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
+						<h3 id="checkInModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
+						<form id="checkInForm" class="guest-form mt-6 grid gap-4" action="#">
+							<div class="guest-form__group grid gap-2">
+								<label class="guest-form__label text-sm font-semibold text-hp-text">Guest mode</label>
+								<div class="guest-form__chips flex flex-wrap gap-2">
+									<label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
+										<input type="radio" name="check_in_guest_mode" value="with_primary" checked class="sr-only">
 										<span>With primary guest</span>
 									</label>
-									<label class="guest-form__chip">
-										<input type="radio" name="check_in_guest_mode" value="visitors_only">
+									<label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
+										<input type="radio" name="check_in_guest_mode" value="visitors_only" class="sr-only">
 										<span>Visitors only</span>
 									</label>
 								</div>
 							</div>
 
-							<div id="checkInPrimaryGuestSection" class="guest-form__section">
-								<div class="guest-form__section-header">
-									<h4 class="guest-form__section-title">Primary guest</h4>
+							<div id="checkInPrimaryGuestSection" class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+								<div class="guest-form__section-header mb-1">
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Primary guest</h4>
 								</div>
-								<div class="guest-form__row guest-form__row--three">
-									<label class="guest-form__field">
-										<span>First name</span>
-										<input type="text" name="check_in_primary_guest[first_name]" placeholder="First name">
+								<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">First name</span>
+										<input type="text" name="check_in_primary_guest[first_name]" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
-									<label class="guest-form__field">
-										<span>Middle name</span>
-										<input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Middle name</span>
+										<input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
-									<label class="guest-form__field">
-										<span>Last name</span>
-										<input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Last name</span>
+										<input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
 								</div>
-								<div class="guest-form__row guest-form__row--three">
-									<label class="guest-form__field">
-										<span>Age</span>
-										<input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age">
+								<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Age</span>
+										<input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
-									<label class="guest-form__field">
-										<span>Gender</span>
-										<select name="check_in_primary_guest[gender]">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Gender</span>
+										<select name="check_in_primary_guest[gender]" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="">Select gender</option>
 											<option value="Male">Male</option>
 											<option value="Female">Female</option>
 										</select>
 									</label>
-									<label class="guest-form__field">
-										<span>Nationality</span>
-										<select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Nationality</span>
+										<select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 											<option value="0" selected>Filipino</option>
 											<option value="1">Foreigner</option>
 										</select>
 									</label>
 								</div>
-								<div class="guest-form__row guest-form__row--two">
-									<label class="guest-form__field">
-										<span>Phone</span>
-										<input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number">
+								<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Phone</span>
+										<input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
-									<label class="guest-form__field">
-										<span>Email</span>
-										<input type="email" name="check_in_primary_guest[email]" placeholder="Email address">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-sm font-semibold text-hp-text">Email</span>
+										<input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 									</label>
 								</div>
-							</div>								<div class="guest-form__section">
-									<div class="guest-form__section-header">
-										<h4 class="guest-form__section-title">Companions</h4>
-										<div style="display: flex; gap: 0.5rem;">
-											<button type="button" class="guest-form__secondary" id="checkInAddCompanionBtn">+ Add Single</button>
-											<button type="button" class="guest-form__secondary" id="checkInBulkCompanionBtn">+ Add Bulk</button>
-										</div>
+							</div>
+							<div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+								<div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Companions</h4>
+									<div class="flex gap-2">
+										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInAddCompanionBtn">+ Add Single</button>
+										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInBulkCompanionBtn">+ Add Bulk</button>
 									</div>
-									<div id="checkInCompanionList" class="guest-companion-list"></div>
-									<div id="checkInCompanionHiddenFields"></div>
 								</div>
+								<div id="checkInCompanionList" class="guest-companion-list grid gap-2"></div>
+								<div id="checkInCompanionHiddenFields"></div>
+							</div>
 
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__secondary" data-close-check-in-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Check In</button>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Check In</button>
 							</div>
 						</form>
 					</div>
 				</div>
 
 				{{-- Check Out Confirmation Modal --}}
-				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-check-out-confirm="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
-						<button type="button" class="guest-modal__close" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
-						<h3 id="checkOutConfirmTitle" class="guest-modal__title">Confirm Check Out</h3>
-						<p style="margin-bottom: 1.5rem; color: #666;">Are you sure you want to check out this reservation? This action cannot be undone.</p>
-						<div class="guest-form__actions">
-							<button type="button" class="guest-form__button--secondary" data-close-check-out-confirm="true">Cancel</button>
-							<button type="button" class="guest-form__button" id="confirmCheckOutBtn">Yes, Check Out</button>
+				<div class="guest-modal fixed inset-0 hidden items-center justify-center is-open:flex" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1100;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-out-confirm="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
+						<h3 id="checkOutConfirmTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Confirm Check Out</h3>
+						<p class="mb-6 text-[#666]">Are you sure you want to check out this reservation? This action cannot be undone.</p>
+						<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-out-confirm="true">Cancel</button>
+							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmCheckOutBtn">Yes, Check Out</button>
 						</div>
 					</div>
 				</div>
 
 				{{-- Reservation Detail Modal --}}
-				<div class="guest-modal" id="reservationModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-reservation-modal="true"></div>
-					<div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-						<button type="button" class="guest-modal__close" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
-						<div class="guest-modal__header">
-							<h3 id="reservationModalTitle" class="guest-modal__title">Reservation Details</h3>
-							<span id="reservationModalStatus" class="guest-modal__role-badge"></span>
-							<button type="button" class="guest-form__button guest-form__button--small" id="reservationCheckOutBtn" style="margin-left: auto;">Check Out</button>
+				<div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-reservation-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+							<h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
+							<span id="reservationModalStatus" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em]"></span>
+							<button type="button" class="guest-form__button guest-form__button--small ml-auto cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="reservationCheckOutBtn">Check Out</button>
 						</div>
-						<div id="reservationModalBody" class="guest-modal__body"></div>
-						<div class="guest-form__actions" id="reservationModalActions">
-							<button type="button" class="guest-form__button--secondary" data-close-reservation-modal="true">Close</button>
+						<div id="reservationModalBody" class="guest-modal__body grid gap-4"></div>
+						<div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3" id="reservationModalActions">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true">Close</button>
 						</div>
 					</div>
 				</div>
 
 				{{-- Scan QR Modal --}}
-				<div class="guest-modal guest-modal--add" id="scanQrModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-scan-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle" style="display: flex; flex-direction: row; background: var(--hp-cream);">
-						<button type="button" class="guest-modal__close" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
-						<div style="flex: 1; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
-							<h3 id="scanQrModalTitle" class="guest-modal__title" style="color: var(--hp-text); margin-bottom: 1.5rem;">Scan Reservation QR</h3>
-							<p class="scan-modal__hint" style="color: var(--hp-text); margin-bottom: 1.5rem; line-height: 1.6;">Allow camera access and hold the reservation QR code in front of the lens.</p>
-							<label class="guest-form__field" style="margin-bottom: 1rem;">
-								<span style="color: var(--hp-text); font-weight: 600; display: block; margin-bottom: 0.5rem;">Camera</span>
-								<select id="qrCameraSelect" style="width:100%; padding:0.75rem 0.85rem; border:1px solid var(--hp-green-dark); border-radius:0.75rem; background:#fff; color: #000;"></select>
+				<div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="scanQrModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-scan-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[900px] max-h-[min(84vh,760px)] flex-row overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
+						<div class="flex flex-1 flex-col justify-center p-6">
+							<h3 id="scanQrModalTitle" class="guest-modal__title m-0 mb-6 font-display text-xl text-hp-text">Scan Reservation QR</h3>
+							<p class="scan-modal__hint mb-6 text-sm leading-relaxed text-hp-text">Allow camera access and hold the reservation QR code in front of the lens.</p>
+							<label class="guest-form__field mb-4 grid gap-1.5">
+								<span class="mb-1 block text-sm font-semibold text-hp-text">Camera</span>
+								<select id="qrCameraSelect" class="w-full rounded-xl border border-hp-green-dark bg-white px-3.5 py-3 text-black"></select>
 							</label>
-							<div class="scan-modal__status" id="qrScannerStatus" style="color: var(--hp-text); margin-bottom: 1.5rem; font-weight: 500;">Ready to scan</div>
-							<div class="guest-form__actions" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: auto;">
-								<button type="button" class="guest-form__button" id="stopQrBtn" style="background-color: var(--hp-green-dark); color: white; border: none; padding: 0.75rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">Stop Scanner</button>
+							<div class="scan-modal__status mb-6 rounded-lg bg-[rgba(26,58,31,0.1)] px-3 py-2 text-sm font-semibold text-hp-green" id="qrScannerStatus">Ready to scan</div>
+							<div class="guest-form__actions mt-auto flex flex-col gap-3">
+								<button type="button" class="guest-form__button cursor-pointer rounded-lg border-0 bg-hp-green-dark px-4 py-3 font-medium text-white" id="stopQrBtn">Stop Scanner</button>
 							</div>
 						</div>
-						<div style="flex: 1; padding: 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05);">
-							<div id="qrScanner" class="scan-modal__scanner" style="width: 100%; max-width: 400px; height: 300px; background: #000; border-radius: 0.75rem; overflow: hidden;"></div>
+						<div class="flex flex-1 items-center justify-center bg-black/5 p-6 dark:bg-black/20">
+							<div id="qrScanner" class="scan-modal__scanner h-[300px] w-full max-w-[400px] overflow-hidden rounded-xl bg-black"></div>
 						</div>
 					</div>
 				</div>
 
 				{{-- Companion modal used by check-in flow --}}
-				<div class="guest-modal guest-modal--compact" id="checkInCompanionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-check-in-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
-						<button type="button" class="guest-modal__close" data-close-check-in-companion-modal="true" aria-label="Close companion form">&times;</button>
-						<h3 id="checkInCompanionModalTitle" class="guest-modal__title">Add Companion</h3>
-						<form id="checkInCompanionForm" class="guest-form" action="#">
-							<div class="guest-form__row guest-form__row--three">
-								<label class="guest-form__field">
-									<span>First name</span>
-									<input type="text" name="first_name" placeholder="First name">
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInCompanionModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-companion-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-companion-modal="true" aria-label="Close companion form">&times;</button>
+						<h3 id="checkInCompanionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
+						<form id="checkInCompanionForm" class="guest-form mt-6 grid gap-4" action="#">
+							<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">First name</span>
+									<input type="text" name="first_name" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
-								<label class="guest-form__field">
-									<span>Middle name</span>
-									<input type="text" name="middle_name" placeholder="Middle name">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Middle name</span>
+									<input type="text" name="middle_name" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
-								<label class="guest-form__field">
-									<span>Last name</span>
-									<input type="text" name="last_name" placeholder="Last name">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Last name</span>
+									<input type="text" name="last_name" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
 							</div>
-							<div class="guest-form__row guest-form__row--three">
-								<label class="guest-form__field">
-									<span>Age</span>
-									<input type="number" name="age" min="0" placeholder="Age">
+							<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Age</span>
+									<input type="number" name="age" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
-								<label class="guest-form__field">
-									<span>Gender</span>
-									<select name="gender">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Gender</span>
+									<select name="gender" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
 									</select>
 								</label>
-								<label class="guest-form__field">
-									<span>Nationality</span>
-									<select name="is_foreigner" id="checkInCompanionIsForeigner">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Nationality</span>
+									<select name="is_foreigner" id="checkInCompanionIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</label>
 							</div>
-							<div class="guest-form__row guest-form__row--two">
-								<label class="guest-form__field">
-									<span>Phone</span>
-									<input type="text" name="phone" placeholder="Phone number">
+							<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Phone</span>
+									<input type="text" name="phone" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
-								<label class="guest-form__field">
-									<span>Email</span>
-									<input type="email" name="email" placeholder="Email address">
+								<label class="guest-form__field grid gap-1.5">
+									<span class="text-sm font-semibold text-hp-text">Email</span>
+									<input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</label>
 							</div>
-							<div class="guest-form__actions">
-								<button type="button" class="guest-form__secondary" data-close-check-in-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button">Add Companion</button>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
 							</div>
 						</form>
 					</div>
 				</div>
 
 				{{-- Check In Confirmation Modal --}}
-				<div class="guest-modal guest-modal--compact" id="checkInConfirmationModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-check-in-confirmation="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
-						<button type="button" class="guest-modal__close" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
-						<h3 id="checkInConfirmationTitle" class="guest-modal__title">Check In Reservation</h3>
-						<div id="checkInConfirmationBody" class="guest-modal__body"></div>
-						<div class="guest-form__actions">
-							<button type="button" class="guest-form__secondary" data-close-check-in-confirmation="true">Cancel</button>
-							<button type="button" class="guest-form__button" id="confirmCheckInBtn">Yes, Check In</button>
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInConfirmationModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-confirmation="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
+						<h3 id="checkInConfirmationTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
+						<div id="checkInConfirmationBody" class="guest-modal__body mt-6 grid gap-4"></div>
+						<div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3">
+							<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-confirmation="true">Cancel</button>
+							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmCheckInBtn">Yes, Check In</button>
 						</div>
 					</div>
 				</div>
 
 				{{-- Companion Groups Summary Modal --}}
-				<div class="guest-modal guest-modal--compact" id="companionSummaryModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-companion-summary="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
-						<button type="button" class="guest-modal__close" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
-						<h3 id="companionSummaryTitle" class="guest-modal__title">Companion Groups Summary</h3>
-						<div id="companionSummaryBody" class="guest-modal__body"></div>
-						<div class="guest-form__actions">
-							<button type="button" class="guest-form__secondary" data-close-companion-summary="true">Cancel</button>
-							<button type="button" class="guest-form__button" id="proceedToCheckInBtn">Proceed to Check In</button>
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="companionSummaryModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-companion-summary="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
+						<h3 id="companionSummaryTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Companion Groups Summary</h3>
+						<div id="companionSummaryBody" class="guest-modal__body mt-6 grid gap-4"></div>
+						<div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3">
+							<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-summary="true">Cancel</button>
+							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="proceedToCheckInBtn">Proceed to Check In</button>
 						</div>
 					</div>
 				</div>
 
 				{{-- Bulk Companion Modal --}}
-				<div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-bulk-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
-						<button type="button" class="guest-modal__close" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
-						
-						<div class="guest-modal__header" style="text-align: center; border-bottom: none; padding-bottom: 0;">
-							<div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-mid); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(46, 125, 85, 0.2);">
-								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;">
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="bulkCompanionModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-bulk-companion-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
+
+						<div class="guest-modal__header mb-4 flex flex-col items-center gap-1 border-b-0 pb-0 text-center">
+							<div class="guest-modal__icon-wrap mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-hp-green-mid text-white shadow-[0_4px_12px_rgba(46,125,85,0.2)]">
+								<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
 									<path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
 								</svg>
 							</div>
-							<h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
-							<p class="guest-modal__subtitle" style="color: var(--hp-text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Quickly generate multiple companions of the same demographic profile.</p>
+							<h3 id="bulkCompanionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companions in Bulk</h3>
+							<p class="guest-modal__subtitle mt-1 text-sm text-hp-text-muted">Quickly generate multiple companions of the same demographic profile.</p>
 						</div>
 
-						<form id="bulkCompanionForm" class="guest-form" action="#" style="margin-top: 1.5rem;">
-							<div class="bulk-panel" style="background: var(--glass-bg-hover); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
-								<div class="guest-form__row guest-form__row--two">
-									<!-- Gender -->
-									<div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-										<span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Gender</span>
-										<div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
-											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-												<input type="radio" name="gender" value="Male" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
-												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Male</span>
+						<form id="bulkCompanionForm" class="guest-form mt-6 grid gap-4" action="#">
+							<div class="bulk-panel mb-6 rounded-2xl border border-glass-border bg-glass-hover p-5">
+								<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+									<div class="bulk-field flex flex-col gap-2">
+										<span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Gender</span>
+										<div class="bulk-segment flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+											<label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+												<input type="radio" name="gender" value="Male" checked class="absolute h-0 w-0 opacity-0">
+												<span class="block border-r border-glass-border px-2 py-2.5 text-sm font-medium transition-all duration-200">Male</span>
 											</label>
-											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-												<input type="radio" name="gender" value="Female" style="position: absolute; opacity: 0; width: 0; height: 0;">
-												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Female</span>
+											<label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+												<input type="radio" name="gender" value="Female" class="absolute h-0 w-0 opacity-0">
+												<span class="block px-2 py-2.5 text-sm font-medium transition-all duration-200">Female</span>
 											</label>
 										</div>
 									</div>
-									
-									<!-- Nationality -->
-									<div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-										<span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nationality</span>
-										<div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
-											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-												<input type="radio" name="is_foreigner" value="0" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
-												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Filipino</span>
+
+									<div class="bulk-field flex flex-col gap-2">
+										<span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Nationality</span>
+										<div class="bulk-segment flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+											<label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+												<input type="radio" name="is_foreigner" value="0" checked class="absolute h-0 w-0 opacity-0">
+												<span class="block border-r border-glass-border px-2 py-2.5 text-sm font-medium transition-all duration-200">Filipino</span>
 											</label>
-											<label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-												<input type="radio" name="is_foreigner" value="1" style="position: absolute; opacity: 0; width: 0; height: 0;">
-												<span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Foreigner</span>
+											<label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+												<input type="radio" name="is_foreigner" value="1" class="absolute h-0 w-0 opacity-0">
+												<span class="block px-2 py-2.5 text-sm font-medium transition-all duration-200">Foreigner</span>
 											</label>
 										</div>
 									</div>
 								</div>
 
-								<!-- Age Group -->
-								<div class="guest-form__row" style="margin-top: 1.25rem;">
-									<label class="guest-form__field">
-										<span style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Age Group</span>
-										<select name="age_group" id="bulkCompanionAgeGroup" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border); background: var(--glass-bg); color: var(--hp-text); font-family: var(--hp-font-ui); font-size: 0.95rem; cursor: pointer;">
+								<div class="guest-form__row mt-5 grid gap-4">
+									<label class="guest-form__field grid gap-1.5">
+										<span class="text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Age Group</span>
+										<select name="age_group" id="bulkCompanionAgeGroup" class="w-full cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-3 text-sm text-hp-text">
 											<option value="0-12">Kids (0-12 years)</option>
 											<option value="13-17">Teens (13-17 years)</option>
 											<option value="18-59">Adults (18-59 years)</option>
@@ -1645,23 +1638,23 @@
 							</div>
 
 							<!-- Quantity Stepper -->
-							<div class="bulk-quantity-panel" style="text-align: center;">
-								<span class="bulk-field__label" style="display: block; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Number of Companions</span>
-								<div class="bulk-stepper" style="display: inline-flex; align-items: center; background: var(--glass-bg); border: 1px solid var(--glass-border-strong); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--glass-shadow);">
-									<button type="button" class="bulk-stepper__btn" id="bulkBtnMinus" aria-label="Decrease quantity" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--hp-text); transition: background 0.2s;">
-										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>
+							<div class="bulk-quantity-panel text-center">
+								<span class="bulk-field__label mb-3 block text-[0.85rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Number of Companions</span>
+								<div class="bulk-stepper inline-flex items-center overflow-hidden rounded-2xl border border-glass-border-strong bg-glass shadow-glass">
+									<button type="button" class="bulk-stepper__btn flex h-12 w-12 cursor-pointer items-center justify-center border-0 bg-transparent text-hp-text transition-colors duration-200 hover:bg-glass-hover" id="bulkBtnMinus" aria-label="Decrease quantity">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75A.75.75 0 013 10z" clip-rule="evenodd" /></svg>
 									</button>
-									<input type="number" name="quantity" id="bulkCompanionQuantity" class="bulk-stepper__input" min="1" max="50" value="1" required style="width: 60px; height: 48px; text-align: center; border: none; border-left: 1px solid var(--glass-border); border-right: 1px solid var(--glass-border); background: transparent; font-size: 1.25rem; font-weight: 700; color: var(--hp-text); -moz-appearance: textfield;">
-									<button type="button" class="bulk-stepper__btn" id="bulkBtnPlus" aria-label="Increase quantity" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--hp-text); transition: background 0.2s;">
-										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+									<input type="number" name="quantity" id="bulkCompanionQuantity" class="bulk-stepper__input h-12 w-[60px] border-x border-glass-border bg-transparent text-center text-xl font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" min="1" max="50" value="1" required>
+									<button type="button" class="bulk-stepper__btn flex h-12 w-12 cursor-pointer items-center justify-center border-0 bg-transparent text-hp-text transition-colors duration-200 hover:bg-glass-hover" id="bulkBtnPlus" aria-label="Increase quantity">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
 									</button>
 								</div>
 							</div>
 
-							<div class="guest-form__actions" style="margin-top: 2rem; display: flex; gap: 1rem;">
-								<button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true" style="flex: 1; margin: 0;">Cancel</button>
-								<button type="submit" class="guest-form__button" id="generateCompanionsBtn" style="flex: 2; margin: 0; display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--hp-green-mid); color: white;">
-									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width: 18px; height: 18px;"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
+							<div class="guest-form__actions mt-8 flex gap-4">
+								<button type="button" class="guest-form__secondary flex-1 cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-bulk-companion-modal="true">Cancel</button>
+								<button type="submit" class="guest-form__button flex flex-[2] cursor-pointer items-center justify-center gap-2 rounded-xl border-0 bg-hp-green-mid px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="generateCompanionsBtn">
+									<svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" clip-rule="evenodd" /></svg>
 									Generate Companions
 								</button>
 							</div>
@@ -1670,51 +1663,49 @@
 				</div>
 
 				{{-- Bulk Group Manage Modal --}}
-				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true">
-					<div class="guest-modal__backdrop" data-close-bulk-manage-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle" style="padding: 0;">
-						<button type="button" class="guest-modal__close" data-close-bulk-manage-modal="true" aria-label="Close form" style="position: absolute; right: 1rem; top: 1rem; z-index: 10;">&times;</button>
-						
-						<div class="guest-modal__header" style="text-align: center; border-bottom: none; padding: 2rem 2rem 1rem;">
-							<div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--hp-green-light), var(--hp-green-mid)); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(46, 125, 85, 0.3);">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 28px; height: 28px;">
+				<div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="bulkGroupManageModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-bulk-manage-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-manage-modal="true" aria-label="Close form">&times;</button>
+
+						<div class="guest-modal__header flex flex-col items-center gap-1 border-b-0 p-8 pb-4 text-center">
+							<div class="guest-modal__icon-wrap mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#6e9f54] to-[#2e7d55] text-white shadow-[0_4px_15px_rgba(46,125,85,0.3)]">
+								<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
 								</svg>
 							</div>
-							<h3 id="bulkGroupManageTitle" class="guest-modal__title" style="font-size: 1.25rem; font-weight: 700;">Manage Bulk Companions</h3>
-							<div style="font-size: 0.85rem; color: var(--hp-text-muted); margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+							<h3 id="bulkGroupManageTitle" class="guest-modal__title m-0 text-xl font-bold text-hp-text">Manage Bulk Companions</h3>
+							<div class="mt-2 flex items-center justify-center gap-2 text-sm text-hp-text-muted">
 								<span>Reservation</span>
-								<span id="bulkManageResId" style="background: var(--glass-bg-hover); padding: 0.2rem 0.6rem; border-radius: 12px; border: 1px solid var(--glass-border); color: var(--hp-text-color); font-weight: 600;">#</span>
+								<span id="bulkManageResId" class="rounded-xl border border-glass-border bg-glass-hover px-2.5 py-1 font-semibold text-hp-text">#</span>
 							</div>
 						</div>
 
-						<div class="guest-modal__body" style="padding: 0 2rem 2rem; text-align: center;">
-							<div id="bulkManageDemographics" style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--hp-cream); padding: 0.75rem 1.25rem; border-radius: 20px; font-weight: 500; color: var(--hp-green-mid); border: 1px dashed rgba(46, 125, 85, 0.3); margin-bottom: 2rem;">
+						<div class="guest-modal__body p-8 pt-0 text-center">
+							<div id="bulkManageDemographics" class="mb-8 inline-flex items-center gap-2 rounded-full border border-dashed border-[rgba(46,125,85,0.3)] bg-hp-cream px-5 py-3 font-medium text-hp-green-mid dark:bg-white/5">
 								<!-- Rendered dynamically via JS -->
 							</div>
-							
-							<div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-								
-								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" style="width: 52px; height: 52px; border-radius: 50%; border: none; background: rgba(239, 68, 68, 0.1); color: var(--hp-red); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2) inset;">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 24px; height: 24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
+
+							<div class="mb-6 flex items-center justify-center gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:bg-glass">
+								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full border-0 bg-[rgba(239,68,68,0.1)] text-[#ef4444] shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)] transition-all duration-200 hover:bg-[rgba(239,68,68,0.2)]">
+									<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
 								</button>
-								
-								<div style="display: flex; flex-direction: column; align-items: center;">
-									<span id="bulkManageActiveCount" style="font-size: 3.5rem; font-weight: 800; line-height: 1; color: var(--hp-text-color); font-family: 'Montserrat', sans-serif;">0</span>
-									<div style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; color: var(--hp-text-muted); margin-top: 0.5rem; background: var(--glass-bg-strong); padding: 0.25rem 0.75rem; border-radius: 12px;">
+
+								<div class="flex flex-col items-center">
+									<span id="bulkManageActiveCount" class="font-['Montserrat',sans-serif] text-[3.5rem] font-extrabold leading-none text-hp-text">0</span>
+									<div class="mt-2 flex items-center gap-1 rounded-xl bg-glass-strong px-3 py-1 text-[0.8rem] text-hp-text-muted">
 										<span>out of</span>
-										<span id="bulkManageTotalCount" style="font-weight: 700; color: var(--hp-text-color);">0</span>
+										<span id="bulkManageTotalCount" class="font-bold text-hp-text">0</span>
 										<span>inside</span>
 									</div>
 								</div>
 							</div>
-							
-							<div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: rgba(239, 68, 68, 0.05); color: var(--hp-red); padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.8rem; text-align: left; line-height: 1.4;">
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+
+							<div class="flex items-center justify-center gap-2 rounded-xl bg-[rgba(239,68,68,0.05)] p-3 text-left text-[0.8rem] leading-[1.4] text-[#ef4444]">
+								<svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 								<span>Click the <strong>minus button</strong> to check out one companion from this group.</span>
 							</div>
 						</div>
-					</div>
 					</div>
 				</div>
 

@@ -17,11 +17,10 @@
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
+        'resources/css/staff_css/staff_shared.css',
         'resources/css/homepage.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
-        'resources/css/staff_css/staff_dashboard.css',
-        'resources/css/staff_css/staff_reservations.css',
         'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
@@ -29,13 +28,13 @@
         'resources/js/staff_chatbot.js',
     ])
 </head>
-<body class="antialiased staff-portal s-res-page">
+<body class="antialiased staff-portal">
     <div class="dash-layout">
         <x-staff_sidemenu active="reservations" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
 
-            <main class="dash-content">
+            <main class="dash-content p-6">
                 @php
                     $parkSettings = \App\Models\ParkSetting::first();
                     $currentHour = now()->format('H:i');
@@ -58,105 +57,105 @@
                     subtitle="Manage online reservations and walk-in check-ins"
                 />
 
-                <div class="resv-metrics" data-park-settings="{{ json_encode(['daytime_start' => $daytimeStart, 'daytime_end' => $daytimeEnd, 'nighttime_start' => $nighttimeStart, 'nighttime_end' => $nighttimeEnd]) }}">
-                    <article class="resv-metric">
-                        <span class="resv-metric__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <div class="resv-metrics mb-4 flex flex-wrap gap-3" data-park-settings="{{ json_encode(['daytime_start' => $daytimeStart, 'daytime_end' => $daytimeEnd, 'nighttime_start' => $nighttimeStart, 'nighttime_end' => $nighttimeEnd]) }}">
+                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
+                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
+                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </span>
-                        <div class="resv-metric__body">
-                            <p class="resv-metric__label">Date</p>
-                            <p class="resv-metric__value" id="resvDate">{{ now()->format('F j, Y') }}</p>
+                        <div class="resv-metric__body flex flex-col gap-0.5">
+                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Date</p>
+                            <p class="resv-metric__value m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="resvDate">{{ now()->format('F j, Y') }}</p>
                         </div>
                     </article>
-                    <article class="resv-metric">
-                        <span class="resv-metric__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
+                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
+                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="resv-metric__body">
-                            <p class="resv-metric__label">Time</p>
-                            <p class="resv-metric__value" id="resvTime">{{ now()->format('g:i A') }}</p>
+                        <div class="resv-metric__body flex flex-col gap-0.5">
+                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Time</p>
+                            <p class="resv-metric__value m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="resvTime">{{ now()->format('g:i A') }}</p>
                         </div>
                     </article>
-                    <article class="resv-metric">
-                        <span class="resv-metric__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
+                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
+                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                         </span>
-                        <div class="resv-metric__body">
-                            <p class="resv-metric__label">Session</p>
-                            <span class="resv-metric__badge resv-metric__badge--{{ strtolower($timePeriod) }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
+                        <div class="resv-metric__body flex flex-col gap-0.5">
+                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Session</p>
+                            <span class="resv-metric__badge resv-metric__badge--{{ strtolower($timePeriod) }} inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] {{ $timePeriod === 'Daytime' ? 'border border-glass-border bg-[rgba(255,152,0,0.15)] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d] dark:border-[rgba(255,152,0,0.4)]' : 'border border-glass-border bg-[rgba(103,58,183,0.15)] text-[#4527a0] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8] dark:border-[rgba(103,58,183,0.4)]' }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
                         </div>
                     </article>
                 </div>
 
-                <div class="resv-stats">
-                    <article class="resv-stat resv-stat--orange">
-                        <span class="resv-stat__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="resv-stats mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <article class="resv-stat resv-stat--orange flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
+                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(255,152,0,0.15)] text-[#f57c00]">
+                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body">
-                            <p class="resv-stat__value">{{ $pendingCount }}</p>
-                            <p class="resv-stat__label">Pending Reservations</p>
+                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
+                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $pendingCount }}</p>
+                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Pending Reservations</p>
                         </div>
                     </article>
-                    <article class="resv-stat resv-stat--green">
-                        <span class="resv-stat__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <article class="resv-stat resv-stat--green flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
+                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,92,60,0.12)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
+                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body">
-                            <p class="resv-stat__value">{{ $todayCheckIns }}</p>
-                            <p class="resv-stat__label">Today's Check-ins</p>
+                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
+                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $todayCheckIns }}</p>
+                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Today's Check-ins</p>
                         </div>
                     </article>
-                    <article class="resv-stat resv-stat--blue">
-                        <span class="resv-stat__icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <article class="resv-stat resv-stat--blue flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
+                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(25,118,210,0.12)] text-[#1565c0] dark:bg-[rgba(100,181,246,0.15)] dark:text-[#64b5f6]">
+                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body">
-                            <p class="resv-stat__value">{{ $expectedGuests }}</p>
-                            <p class="resv-stat__label">Expected Guests</p>
+                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
+                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $expectedGuests }}</p>
+                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Expected Guests</p>
                         </div>
                     </article>
                 </div>
 
                 @if (session('success'))
-                    <div class="guest-alert">{{ session('success') }}</div>
+                    <div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green">{{ session('success') }}</div>
                 @endif
 
-                <div class="resv-toolbar">
-                    <div class="resv-toolbar__left">
-                        <button type="button" class="guest-filter-toggle" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 1rem; height: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
+                <div class="resv-toolbar mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="resv-toolbar__left flex flex-wrap items-center gap-2">
+                        <button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
                             <span>Filters</span>
-                            <span class="guest-filter-toggle__icon">▾</span>
+                            <span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
                         </button>
-                        <div class="resv-search">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                            <input type="search" id="reservationSearchInput" placeholder="Search reservations...">
+                        <div class="resv-search flex items-center gap-2 rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2.5 transition-all duration-200 focus-within:border-hp-green focus-within:shadow-glass dark:border-glass-border">
+                            <svg class="h-4 w-4 shrink-0 text-hp-text-muted dark:text-[#81c784]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                            <input type="search" id="reservationSearchInput" placeholder="Search reservations..." class="w-[220px] border-0 bg-transparent p-0 text-sm text-hp-text outline-none placeholder:text-hp-text-muted dark:text-[#c8e6c8]">
                         </div>
                     </div>
-                    <div class="resv-toolbar__right">
-                        <button type="button" class="resv-tool-btn" id="refreshTableBtn">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="refreshTableBtn">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             Refresh
                         </button>
-                        <button type="button" class="resv-tool-btn" id="scanQrBtn" title="Scan reservation QR">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="scanQrBtn" title="Scan reservation QR">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </button>
-                        <button type="button" class="resv-tool-btn" id="exportCsvBtn">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="exportCsvBtn">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                             Export
                         </button>
-                        <button type="button" class="resv-tool-btn resv-tool-btn--primary" id="addWalkInBtn">
-                            <span class="resv-tool-btn__plus">+</span>
+                        <button type="button" class="resv-tool-btn resv-tool-btn--primary inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-hp-green bg-hp-green px-3.5 py-2 text-sm font-semibold text-white transition-all duration-150 hover:border-hp-green-dark hover:bg-hp-green-dark active:scale-95 dark:border-[#2e7d55] dark:bg-[#2e7d55] dark:hover:border-[#1c5c3c] dark:hover:bg-[#1c5c3c]" id="addWalkInBtn">
+                            <span class="resv-tool-btn__plus text-[1.1rem] font-bold leading-none">+</span>
                             Add Walk-in
                         </button>
                     </div>
                 </div>
 
-                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel" id="reservationFilterPanel" hidden>
-                    <label class="guest-toolbar__field">
+                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3 grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-glass" id="reservationFilterPanel" hidden>
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
                         <span>Sort by</span>
-                        <select id="reservationSortSelect">
+                        <select id="reservationSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
                             <option value="date-asc">Reservation date (soonest)</option>
                             <option value="date-desc">Reservation date (latest)</option>
                             <option value="name-asc">Booker (A-Z)</option>
@@ -164,551 +163,547 @@
                             <option value="amount-desc">Amount (High-Low)</option>
                         </select>
                     </label>
-                    <label class="guest-toolbar__field">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
                         <span>Status</span>
-                        <select id="reservationStatusFilter">
+                        <select id="reservationStatusFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
                             <option value="all">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                         </select>
                     </label>
-                    <label class="guest-toolbar__field">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
                         <span>Reservation date from</span>
-                        <input type="date" id="reservationDateFrom">
+                        <input type="date" id="reservationDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
                     </label>
-                    <label class="guest-toolbar__field">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
                         <span>Reservation date to</span>
-                        <input type="date" id="reservationDateTo">
+                        <input type="date" id="reservationDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
                     </label>
-                    <button type="button" class="guest-toolbar__clear" id="reservationFiltersClear">Clear</button>
+                    <button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="reservationFiltersClear">Clear</button>
                 </div>
 
-                    <div class="guest-toolbar__meta">
-                        <span id="reservationResultsCount">Showing {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
-                    </div>
+                <div class="guest-toolbar__meta mb-3.5 text-sm text-hp-text-muted">
+                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
+                </div>
 
-                    <div class="guest-table-wrap" id="reservationTableWrap">
-                        <table class="guest-table">
-                            <thead>
-                                <tr>
-                                    <th>Booker</th>
-                                    <th>Reservation date</th>
-                                    <th>Session</th>
-                                    <th>Guests</th>
-                                    <th>Status</th>
-                                    <th>Amount</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reservationTableBody">
-                                @forelse ($reservations as $reservation)
-                                    @php
-                                        $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
-                                        $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
-                                        $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
-                                            ->filter()
-                                            ->take(2)
-                                            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
-                                            ->implode('') ?: '?';
-                                    @endphp
-                                    <tr
-                                        class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }}"
-                                        data-reservation-id="{{ $reservation->id }}"
-                                        data-booker-name="{{ e($reservation->booker_name) }}"
-                                        data-email="{{ e($reservation->email) }}"
-                                        data-phone="{{ e($reservation->phone) }}"
-                                        data-reservation-date="{{ $reservation->reservation_date }}"
-                                        data-status="{{ strtolower($reservation->status) }}"
-                                        data-guests="{{ $reservation->number_of_guests }}"
-                                        data-total-amount="{{ (float) $reservation->total_amount }}"
-                                        data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? ''))) }}"
-                                        tabindex="0"
-                                        role="button"
-                                        aria-label="View reservation details for {{ e($reservation->booker_name) }}"
-                                    >
-                                        <td>
-                                            <div class="resv-booker">
-                                                <span class="resv-avatar">{{ $initials }}</span>
-                                                <div class="resv-booker__info">
-                                                    <div class="guest-name">
-                                                        {{ $reservation->booker_name }}
-                                                        @if ($isToday)
-                                                            <span class="today-reservation-badge">TODAY</span>
-                                                        @endif
-                                                    </div>
-                                                    <div class="guest-meta">{{ $reservation->email }}</div>
+                <div class="guest-table-wrap max-h-[440px] overflow-auto rounded-2xl border border-glass-border bg-glass shadow-glass" id="reservationTableWrap">
+                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
+                        <thead>
+                            <tr>
+                                <th>Booker</th>
+                                <th>Reservation date</th>
+                                <th>Session</th>
+                                <th>Guests</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservationTableBody">
+                            @forelse ($reservations as $reservation)
+                                @php
+                                    $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
+                                    $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
+                                    $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
+                                        ->filter()
+                                        ->take(2)
+                                        ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+                                        ->implode('') ?: '?';
+                                @endphp
+                                <tr
+                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+                                    data-reservation-id="{{ $reservation->id }}"
+                                    data-booker-name="{{ e($reservation->booker_name) }}"
+                                    data-email="{{ e($reservation->email) }}"
+                                    data-phone="{{ e($reservation->phone) }}"
+                                    data-reservation-date="{{ $reservation->reservation_date }}"
+                                    data-status="{{ strtolower($reservation->status) }}"
+                                    data-guests="{{ $reservation->number_of_guests }}"
+                                    data-total-amount="{{ (float) $reservation->total_amount }}"
+                                    data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? ''))) }}"
+                                    tabindex="0"
+                                    role="button"
+                                    aria-label="View reservation details for {{ e($reservation->booker_name) }}"
+                                >
+                                    <td>
+                                        <div class="resv-booker flex items-center gap-3">
+                                            <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-br from-hp-green to-hp-green-mid text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:from-[#2e7d55] dark:to-[#1c5c3c]">{{ $initials }}</span>
+                                            <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
+                                                <div class="guest-name font-semibold text-hp-text">
+                                                    {{ $reservation->booker_name }}
+                                                    @if ($isToday)
+                                                        <span class="today-reservation-badge ml-2 inline-block rounded-xl bg-[#ff9800] px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.05em] text-white dark:bg-[#ffb74d]">TODAY</span>
+                                                    @endif
                                                 </div>
+                                                <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $reservation->email }}</div>
                                             </div>
-                                        </td>
-                                        <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>
-                                        <td>
-                                            @if (!empty($timeSlots))
-                                                <div class="time-slot-labels">
-                                                    @foreach ($timeSlots as $slot)
-                                                        <span class="time-slot-label time-slot-label--{{ strtolower(str_replace(' ', '', $slot)) }}">{{ $slot }}</span>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                <span class="text-muted">—</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $reservation->number_of_guests }}</td>
-                                        <td>
-                                            <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }}">{{ $reservation->status }}</span>
-                                        </td>
-                                        <td>₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                        <td>
-                                            <button type="button" class="resv-row-action" aria-label="View reservation details">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="guest-empty">No pending online reservations found.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>
+                                    <td>
+                                        @if (!empty($timeSlots))
+                                            <div class="time-slot-labels flex flex-wrap gap-1.5">
+                                                @foreach ($timeSlots as $slot)
+                                                    <span class="time-slot-label time-slot-label--{{ strtolower(str_replace(' ', '', $slot)) }} inline-flex items-center rounded-full px-2.5 py-1 text-[0.75rem] font-bold capitalize tracking-[0.02em] {{ str_contains(strtolower($slot), 'night') ? 'border border-glass-border bg-[rgba(103,58,183,0.15)] text-[#673ab7] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#9575cd] dark:border-[rgba(103,58,183,0.4)]' : 'border border-glass-border bg-[rgba(255,152,0,0.15)] text-[#ff9800] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d] dark:border-[rgba(255,152,0,0.4)]' }}">{{ $slot }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-hp-text-muted">—</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">{{ $reservation->number_of_guests }}</td>
+                                    <td class="text-center">
+                                        <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }} inline-flex items-center justify-center rounded-[0.4rem] px-3 py-1.5 text-[0.8rem] font-bold capitalize {{ $reservation->status === 'Pending' ? 'bg-[#fff3cd] text-[#856404] dark:bg-glass dark:text-[#ffd54f]' : 'bg-[#d4edda] text-[#155724] dark:bg-glass dark:text-[#81c784]' }}">{{ $reservation->status }}</span>
+                                    </td>
+                                    <td class="text-right">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                    <td>
+                                        <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-transparent text-hp-text-muted transition-all duration-150 hover:border-hp-green hover:bg-hp-green hover:text-white dark:border-glass-border dark:text-[#81c784]" aria-label="View reservation details">
+                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="guest-empty px-4 py-8 text-center text-hp-text-muted">No pending online reservations found.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
 
             </main>
         </div>
     </div>
 
     <!-- Modals (Direct children of body) -->
-                <div class="guest-modal" id="reservationModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-reservation-modal="true"></div>
-                    <div class="guest-modal__content" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-                        <button type="button" class="guest-modal__close" data-close-reservation-modal="true" aria-label="Close reservation details">&times;</button>
-                        <div class="guest-modal__header">
-                            <h3 id="reservationModalTitle" class="guest-modal__title">Reservation Details</h3>
-                            <div class="guest-modal__header-actions">
-                                <span id="reservationModalStatus" class="guest-modal__role-badge"></span>
-                                <button type="button" class="guest-modal__edit-btn" id="editReservationBtn" data-edit-reservation="true">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                    </svg>
-                                    Edit
-                                </button>
-                            </div>
-                        </div>
-                        <div id="reservationModalBody" class="guest-modal__body"></div>
-                        <div id="reservationModalEditForm" class="guest-modal__edit-form" hidden>
-                            <form id="editReservationForm" class="guest-form">
-                                <input type="hidden" name="reservation_id" id="editReservationId">
-                                <div class="guest-form__row guest-form__row--two">
-                                    <label class="guest-form__field">
-                                        <span>Booker Name</span>
-                                        <input type="text" name="booker_name" id="editBookerName" required>
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Email</span>
-                                        <input type="email" name="email" id="editEmail" required>
-                                    </label>
-                                </div>
-                                <div class="guest-form__row">
-                                    <label class="guest-form__field">
-                                        <span>Phone</span>
-                                        <input type="text" name="phone" id="editPhone" required>
-                                    </label>
-                                </div>
-                                <div class="guest-form__field edit-calendar">
-                                    <span class="edit-calendar__label">Reservation Date</span>
-                                    <!-- Hidden field mirrors the calendar selection; the server re-validates on save. -->
-                                    <input type="hidden" name="reservation_date" id="editReservationDate">
+    <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-reservation-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-modal="true" aria-label="Close reservation details">&times;</button>
+            <div class="guest-modal__header mb-6 flex items-center justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                <h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
+                <div class="guest-modal__header-actions flex items-center gap-3">
+                    <span id="reservationModalStatus" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em]"></span>
+                    <button type="button" class="guest-modal__edit-btn inline-flex cursor-pointer items-center gap-2 rounded-[0.65rem] border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-[rgba(26,58,31,0.1)] dark:border-white/15 dark:bg-white/5" id="editReservationBtn" data-edit-reservation="true">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                        </svg>
+                        Edit
+                    </button>
+                </div>
+            </div>
+            <div id="reservationModalBody" class="guest-modal__body grid gap-5"></div>
+            <div id="reservationModalEditForm" class="guest-modal__edit-form border-t border-[rgba(13,44,29,0.1)] pt-6 dark:border-white/10" hidden>
+                <form id="editReservationForm" class="guest-form grid gap-4">
+                    <input type="hidden" name="reservation_id" id="editReservationId">
+                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Booker Name</span>
+                            <input type="text" name="booker_name" id="editBookerName" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Email</span>
+                            <input type="email" name="email" id="editEmail" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                    </div>
+                    <div class="guest-form__row grid gap-4">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Phone</span>
+                            <input type="text" name="phone" id="editPhone" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                    </div>
+                    <div class="guest-form__field edit-calendar grid gap-1.5">
+                        <span class="edit-calendar__label text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#81c784]">Reservation Date</span>
+                        <!-- Hidden field mirrors the calendar selection; the server re-validates on save. -->
+                        <input type="hidden" name="reservation_date" id="editReservationDate">
 
-                                    <button type="button" class="edit-calendar__trigger" id="editCalTrigger" aria-haspopup="dialog">
-                                        <svg class="edit-calendar__trigger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        <span class="edit-calendar__trigger-value" id="editCalTriggerValue">&mdash;</span>
-                                        <svg class="edit-calendar__trigger-chevron" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                    </button>
-                                </div>
-                                <div class="guest-form__row guest-form__row--two">
-                                    <label class="guest-form__field">
-                                        <span>Number of Guests</span>
-                                        <input type="number" name="number_of_guests" id="editGuests" min="1" required>
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Status</span>
-                                        <select name="status" id="editStatus">
-                                            <option value="Pending">Pending</option>
-                                            <option value="Confirmed">Confirmed</option>
-                                            <option value="Checked In">Checked In</option>
-                                            <option value="Checked Out">Checked Out</option>
-                                            <option value="Cancelled">Cancelled</option>
-                                        </select>
-                                    </label>
-                                </div>
-                                <div class="guest-form__actions">
-                                    <button type="button" class="guest-form__secondary" id="cancelEditBtn">Cancel</button>
-                                    <button type="submit" class="guest-form__button">Save Changes</button>
-                                </div>
-                            </form>
-                        </div>
+                        <button type="button" class="edit-calendar__trigger flex w-full cursor-pointer items-center gap-2.5 rounded-[0.7rem] border border-glass-border bg-glass px-3.5 py-3 text-left text-sm font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:shadow-glass focus-visible:border-hp-green focus-visible:shadow-glass focus-visible:outline-none dark:border-white/12 dark:bg-white/5 dark:text-[#c8e6c8] dark:hover:border-[#81c784]" id="editCalTrigger" aria-haspopup="dialog">
+                            <svg class="edit-calendar__trigger-icon h-[1.05rem] w-[1.05rem] shrink-0 text-[#8a7a4d] dark:text-[#c8a45d]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <span class="edit-calendar__trigger-value min-w-0 flex-1 truncate" id="editCalTriggerValue">&mdash;</span>
+                            <svg class="edit-calendar__trigger-chevron h-4 w-4 shrink-0 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                    </div>
+                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Number of Guests</span>
+                            <input type="number" name="number_of_guests" id="editGuests" min="1" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Status</span>
+                            <select name="status" id="editStatus" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                                <option value="Pending">Pending</option>
+                                <option value="Confirmed">Confirmed</option>
+                                <option value="Checked In">Checked In</option>
+                                <option value="Checked Out">Checked Out</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="guest-form__actions flex flex-wrap justify-end gap-3">
+                        <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="cancelEditBtn">Cancel</button>
+                        <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="editCalendarModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-edit-calendar="true"></div>
+        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[430px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-4 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-edit-calendar="true" aria-label="Close calendar">&times;</button>
+            <div class="guest-modal__header mb-2.5 flex items-center justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
+                <h3 id="editCalendarModalTitle" class="guest-modal__title m-0 font-display text-base text-hp-text">Choose a New Date</h3>
+                <span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-glass-border bg-[rgba(200,164,93,0.12)] px-3 py-1 text-[0.82rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editCalModalCurrent"></span>
+            </div>
+            <div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+                <p class="edit-calendar__slot-note m-0 rounded-lg border border-glass-border bg-[rgba(200,164,93,0.12)] px-2.5 py-1.5 text-[0.82rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editSlotNote" hidden></p>
+
+                <div class="edit-calendar__head mt-0.5 flex items-center justify-between gap-2">
+                    <button type="button" class="edit-calendar__nav inline-flex h-[1.8rem] w-[1.8rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-[#8a7a4d] hover:bg-[rgba(200,164,93,0.15)] hover:text-[#8a7a4d] dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
+                    <div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
+                        <div class="edit-calendar__title text-[0.88rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="editCalTitle">&mdash;</div>
+                        <select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-[0.82rem] font-semibold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalYear" aria-label="Select year"></select>
+                    </div>
+                    <button type="button" class="edit-calendar__nav inline-flex h-[1.8rem] w-[1.8rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-[#8a7a4d] hover:bg-[rgba(200,164,93,0.15)] hover:text-[#8a7a4d] dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalNext" aria-label="Next month">&rsaquo;</button>
+                </div>
+
+                <div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-[0.28rem]">
+                    <span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+                </div>
+
+                <div class="edit-calendar__grid relative grid min-h-12 grid-cols-7 gap-[0.28rem] transition-opacity duration-250" id="editCalGrid"></div>
+
+                <p class="edit-calendar__hint mt-2 flex flex-wrap items-center gap-1.5 text-[0.72rem] text-hp-text-muted">
+                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-hp-green-mid"></span> Open
+                    &nbsp;&middot;&nbsp;
+                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[rgba(13,44,29,0.25)] dark:bg-white/25"></span> Unavailable (amenity already booked)
+                    &nbsp;&middot;&nbsp;
+                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[rgba(200,164,93,0.7)]"></span> Past
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="confirmModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-confirm-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--confirm relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+            <div class="guest-modal__confirm-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(239,68,68,0.1)] text-[#ef4444] dark:bg-[rgba(239,68,68,0.2)]">
+                <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h3 id="confirmModalTitle" class="guest-modal__title guest-modal__title--confirm m-0 mb-3 font-display text-xl text-hp-text">Confirm Action</h3>
+            <p id="confirmModalMessage" class="guest-modal__message mb-8 text-[0.95rem] leading-relaxed text-hp-text-muted">Are you sure you want to proceed?</p>
+            <div class="guest-modal__actions flex justify-center gap-3">
+                <button type="button" class="guest-form__secondary min-w-[100px] cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="confirmModalCancel">No</button>
+                <button type="button" class="guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmModalConfirm">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--success fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="successModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-success-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--success relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
+            <div class="guest-modal__success-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e] dark:bg-[rgba(34,197,94,0.2)]">
+                <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 id="successModalTitle" class="guest-modal__title guest-modal__title--success m-0 mb-3 font-display text-xl text-[#22c55e]">Success</h3>
+            <p id="successModalMessage" class="guest-modal__message mb-8 text-[0.95rem] leading-relaxed text-hp-text-muted">Operation completed successfully!</p>
+            <div class="guest-modal__actions flex justify-center gap-3">
+                <button type="button" class="guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="successModalClose">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
+            <h3 id="checkInModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
+            <form id="checkInForm" class="guest-form mt-6 grid gap-4" action="#">
+                <div class="guest-form__group grid gap-2">
+                    <label class="guest-form__label text-sm font-semibold text-hp-text">Guest mode</label>
+                    <div class="guest-form__chips flex flex-wrap gap-2">
+                        <label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
+                            <input type="radio" name="check_in_guest_mode" value="with_primary" checked class="sr-only">
+                            <span>With primary guest</span>
+                        </label>
+                        <label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
+                            <input type="radio" name="check_in_guest_mode" value="visitors_only" class="sr-only">
+                            <span>Visitors only</span>
+                        </label>
                     </div>
                 </div>
 
-                <div class="guest-modal guest-modal--calendar" id="editCalendarModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-edit-calendar="true"></div>
-                    <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
-                        <button type="button" class="guest-modal__close" data-close-edit-calendar="true" aria-label="Close calendar">&times;</button>
-                        <div class="guest-modal__header">
-                            <h3 id="editCalendarModalTitle" class="guest-modal__title">Choose a New Date</h3>
-                            <span class="edit-calendar__modal-date" id="editCalModalCurrent"></span>
-                        </div>
-                        <div class="edit-calendar edit-calendar--modal">
-                            <p class="edit-calendar__slot-note" id="editSlotNote" hidden></p>
-
-                            <div class="edit-calendar__head">
-                                <button type="button" class="edit-calendar__nav" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
-                                <div class="edit-calendar__title-wrap">
-                                    <div class="edit-calendar__title" id="editCalTitle">&mdash;</div>
-                                    <select class="edit-calendar__year" id="editCalYear" aria-label="Select year"></select>
-                                </div>
-                                <button type="button" class="edit-calendar__nav" id="editCalNext" aria-label="Next month">&rsaquo;</button>
-                            </div>
-
-                            <div class="edit-calendar__weekdays">
-                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                            </div>
-
-                            <div class="edit-calendar__grid" id="editCalGrid"></div>
-
-                            <p class="edit-calendar__hint">
-                                <span class="edit-calendar__dot edit-calendar__dot--free"></span> Open
-                                &nbsp;&middot;&nbsp;
-                                <span class="edit-calendar__dot edit-calendar__dot--taken"></span> Unavailable (amenity already booked)
-                                &nbsp;&middot;&nbsp;
-                                <span class="edit-calendar__dot edit-calendar__dot--past"></span> Past
-                            </p>
-                        </div>
+                <div id="checkInPrimaryGuestSection" class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-1 flex items-center justify-between">
+                        <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Primary guest</h4>
+                    </div>
+                    <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">First name</span>
+                            <input type="text" name="check_in_primary_guest[first_name]" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Middle name</span>
+                            <input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Last name</span>
+                            <input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                    </div>
+                    <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Age</span>
+                            <input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Gender</span>
+                            <select name="check_in_primary_guest[gender]" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Nationality</span>
+                            <select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                                <option value="0" selected>Filipino</option>
+                                <option value="1">Foreigner</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Phone</span>
+                            <input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Email</span>
+                            <input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        </label>
                     </div>
                 </div>
 
-                <div class="guest-modal guest-modal--confirm" id="confirmModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-confirm-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--confirm" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-                        <div class="guest-modal__confirm-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                            </svg>
-                        </div>
-                        <h3 id="confirmModalTitle" class="guest-modal__title guest-modal__title--confirm">Confirm Action</h3>
-                        <p id="confirmModalMessage" class="guest-modal__message">Are you sure you want to proceed?</p>
-                        <div class="guest-modal__actions">
-                            <button type="button" class="guest-form__secondary" id="confirmModalCancel">No</button>
-                            <button type="button" class="guest-form__button" id="confirmModalConfirm">Yes</button>
+                <div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
+                        <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Companions</h4>
+                        <div class="flex gap-2">
+                            <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInAddCompanionBtn">+ Add Single</button>
+                            <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInBulkCompanionBtn">+ Add Bulk</button>
                         </div>
                     </div>
+                    <div id="checkInCompanionList" class="guest-companion-list grid gap-2"></div>
+                    <div id="checkInCompanionHiddenFields"></div>
                 </div>
 
-                <div class="guest-modal guest-modal--success" id="successModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-success-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--success" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
-                        <div class="guest-modal__success-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 id="successModalTitle" class="guest-modal__title guest-modal__title--success">Success</h3>
-                        <p id="successModalMessage" class="guest-modal__message">Operation completed successfully!</p>
-                        <div class="guest-modal__actions">
-                            <button type="button" class="guest-form__button" id="successModalClose">OK</button>
-                        </div>
-                    </div>
+                <div class="guest-form__actions flex flex-wrap justify-end gap-3">
+                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-modal="true">Cancel</button>
+                    <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Check In</button>
                 </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="guest-modal guest-modal--add" id="checkInModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-check-in-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
-                        <button type="button" class="guest-modal__close" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
-                        <h3 id="checkInModalTitle" class="guest-modal__title">Check In Reservation</h3>
-                        <form id="checkInForm" class="guest-form" action="#">
-                            <div class="guest-form__group">
-                                <label class="guest-form__label">Guest mode</label>
-                                <div class="guest-form__chips">
-                                    <label class="guest-form__chip">
-                                        <input type="radio" name="check_in_guest_mode" value="with_primary" checked>
-                                        <span>With primary guest</span>
-                                    </label>
-                                    <label class="guest-form__chip">
-                                        <input type="radio" name="check_in_guest_mode" value="visitors_only">
-                                        <span>Visitors only</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div id="checkInPrimaryGuestSection" class="guest-form__section">
-                                <div class="guest-form__section-header">
-                                    <h4 class="guest-form__section-title">Primary guest</h4>
-                                </div>
-                                <div class="guest-form__row guest-form__row--three">
-                                    <label class="guest-form__field">
-                                        <span>First name</span>
-                                        <input type="text" name="check_in_primary_guest[first_name]" placeholder="First name">
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Middle name</span>
-                                        <input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name">
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Last name</span>
-                                        <input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name">
-                                    </label>
-                                </div>
-                                <div class="guest-form__row guest-form__row--three">
-                                    <label class="guest-form__field">
-                                        <span>Age</span>
-                                        <input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age">
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Gender</span>
-                                        <select name="check_in_primary_guest[gender]">
-                                            <option value="">Select gender</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                        </select>
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Nationality</span>
-                                        <select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner">
-                                            <option value="0" selected>Filipino</option>
-                                            <option value="1">Foreigner</option>
-                                        </select>
-                                    </label>
-                                </div>
-                                <div class="guest-form__row guest-form__row--two">
-                                    <label class="guest-form__field">
-                                        <span>Phone</span>
-                                        <input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number">
-                                    </label>
-                                    <label class="guest-form__field">
-                                        <span>Email</span>
-                                        <input type="email" name="check_in_primary_guest[email]" placeholder="Email address">
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="guest-form__section">
-                                <div class="guest-form__section-header">
-                                    <h4 class="guest-form__section-title">Companions</h4>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <button type="button" class="guest-form__secondary" id="checkInAddCompanionBtn">+ Add Single</button>
-                                        <button type="button" class="guest-form__secondary" id="checkInBulkCompanionBtn">+ Add Bulk</button>
-                                    </div>
-                                </div>
-                                <div id="checkInCompanionList" class="guest-companion-list"></div>
-                                <div id="checkInCompanionHiddenFields"></div>
-                            </div>
-
-                            <div class="guest-form__actions">
-                                <button type="button" class="guest-form__secondary" data-close-check-in-modal="true">Cancel</button>
-                                <button type="submit" class="guest-form__button">Check In</button>
-                            </div>
-                        </form>
-                    </div>
+    <div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="scanQrModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-scan-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[900px] max-h-[min(84vh,760px)] flex-row overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
+            <div class="flex flex-1 flex-col justify-center p-6">
+                <h3 id="scanQrModalTitle" class="guest-modal__title m-0 mb-6 font-display text-xl text-hp-text">Scan Reservation QR</h3>
+                <p class="scan-modal__hint mb-6 text-sm leading-relaxed text-hp-text">Allow camera access and hold the reservation QR code in front of the lens.</p>
+                <label class="guest-form__field mb-4 grid gap-1.5">
+                    <span class="mb-1 block text-sm font-semibold text-hp-text">Camera</span>
+                    <select id="qrCameraSelect" class="w-full rounded-xl border border-hp-green-dark bg-white px-3.5 py-3 text-black"></select>
+                </label>
+                <div class="scan-modal__status mb-6 rounded-lg bg-[rgba(26,58,31,0.1)] px-3 py-2 text-sm font-semibold text-hp-green" id="qrScannerStatus">Ready to scan</div>
+                <div class="guest-form__actions mt-auto flex flex-col gap-3">
+                    <button type="button" class="guest-form__button cursor-pointer rounded-lg border-0 bg-hp-green-dark px-4 py-3 font-medium text-white" id="stopQrBtn">Stop Scanner</button>
                 </div>
+            </div>
+            <div class="flex flex-1 items-center justify-center bg-black/5 p-6 dark:bg-black/20">
+                <div id="qrScanner" class="scan-modal__scanner h-[300px] w-full max-w-[400px] overflow-hidden rounded-xl bg-black"></div>
+            </div>
+        </div>
+    </div>
 
-                <div class="guest-modal guest-modal--add" id="scanQrModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-scan-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--wide" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle" style="display: flex; flex-direction: row; background: var(--hp-cream);">
-                        <button type="button" class="guest-modal__close" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
-                        <div style="flex: 1; padding: 1.5rem; display: flex; flex-direction: column; justify-content: center;">
-                            <h3 id="scanQrModalTitle" class="guest-modal__title" style="color: var(--hp-text); margin-bottom: 1.5rem;">Scan Reservation QR</h3>
-                            <p class="scan-modal__hint" style="color: var(--hp-text); margin-bottom: 1.5rem; line-height: 1.6;">Allow camera access and hold the reservation QR code in front of the lens.</p>
-                            <label class="guest-form__field" style="margin-bottom: 1rem;">
-                                <span style="color: var(--hp-text); font-weight: 600; display: block; margin-bottom: 0.5rem;">Camera</span>
-                                <select id="qrCameraSelect" style="width:100%; padding:0.75rem 0.85rem; border:1px solid var(--hp-green-dark); border-radius:0.75rem; background:#fff; color: #000;"></select>
-                            </label>
-                            <div class="scan-modal__status" id="qrScannerStatus" style="color: var(--hp-text); margin-bottom: 1.5rem; font-weight: 500;">Ready to scan</div>
-                            <div class="guest-form__actions" style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: auto;">
-                                <button type="button" class="guest-form__button" id="stopQrBtn" style="background-color: var(--hp-green-dark); color: white; border: none; padding: 0.75rem 1rem; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">Stop Scanner</button>
-                            </div>
-                        </div>
-                        <div style="flex: 1; padding: 1.5rem; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05);">
-                            <div id="qrScanner" class="scan-modal__scanner" style="width: 100%; max-width: 400px; height: 300px; background: #000; border-radius: 0.75rem; overflow: hidden;"></div>
-                        </div>
-                    </div>
+    <div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInCompanionModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-companion-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-companion-modal="true" aria-label="Close companion form">&times;</button>
+            <h3 id="checkInCompanionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
+            <form id="checkInCompanionForm" class="guest-form mt-6 grid gap-4" action="#">
+                <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">First name</span>
+                        <input type="text" name="first_name" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Middle name</span>
+                        <input type="text" name="middle_name" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Last name</span>
+                        <input type="text" name="last_name" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
                 </div>
+                <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Age</span>
+                        <input type="number" name="age" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Gender</span>
+                        <select name="gender" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                            <option value="">Select gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </label>
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Nationality</span>
+                        <select name="is_foreigner" id="checkInCompanionIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                            <option value="0" selected>Filipino</option>
+                            <option value="1">Foreigner</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Phone</span>
+                        <input type="text" name="phone" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
+                    <label class="guest-form__field grid gap-1.5">
+                        <span class="text-sm font-semibold text-hp-text">Email</span>
+                        <input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    </label>
+                </div>
+                <div class="guest-form__actions flex flex-wrap justify-end gap-3">
+                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-companion-modal="true">Cancel</button>
+                    <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                <div class="guest-modal guest-modal--compact" id="checkInCompanionModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-check-in-companion-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
-                        <button type="button" class="guest-modal__close" data-close-check-in-companion-modal="true" aria-label="Close companion form">&times;</button>
-                        <h3 id="checkInCompanionModalTitle" class="guest-modal__title">Add Companion</h3>
-                        <form id="checkInCompanionForm" class="guest-form" action="#">
-                            <div class="guest-form__row guest-form__row--three">
-                                <label class="guest-form__field">
-                                    <span>First name</span>
-                                    <input type="text" name="first_name" placeholder="First name">
+    <div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInConfirmationModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-confirmation="true"></div>
+        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
+            <h3 id="checkInConfirmationTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
+            <div id="checkInConfirmationBody" class="guest-modal__body mt-6 grid gap-5"></div>
+            <div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3">
+                <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-confirmation="true">Cancel</button>
+                <button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmCheckInBtn">Yes, Check In</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="companionSummaryModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-companion-summary="true"></div>
+        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
+            <h3 id="companionSummaryTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Companion Groups Summary</h3>
+            <div id="companionSummaryBody" class="guest-modal__body mt-6 grid gap-5"></div>
+            <div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3">
+                <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-summary="true">Cancel</button>
+                <button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="proceedToCheckInBtn">Proceed to Check In</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="guest-modal guest-modal--compact fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="bulkCompanionModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-bulk-companion-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
+
+            <div class="guest-modal__header mb-4 flex flex-col items-center gap-1 border-b-0 pb-0 text-center">
+                <div class="guest-modal__icon-wrap mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-hp-green-mid text-white shadow-[0_4px_12px_rgba(46,125,85,0.2)]">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
+                    </svg>
+                </div>
+                <h3 id="bulkCompanionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companions in Bulk</h3>
+                <p class="guest-modal__subtitle mt-1 text-sm text-hp-text-muted">Quickly generate multiple companions of the same profile.</p>
+            </div>
+
+            <form id="bulkCompanionForm" class="guest-form mt-6 grid gap-4" action="#">
+                <div class="bulk-panel mb-6 rounded-2xl border border-glass-border bg-glass-hover p-5">
+                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="bulk-field flex flex-col gap-2">
+                            <span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Gender</span>
+                            <div class="bulk-segment flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+                                <label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+                                    <input type="radio" name="gender" value="Male" checked class="absolute h-0 w-0 opacity-0">
+                                    <span class="block border-r border-glass-border px-2 py-2.5 text-sm font-medium transition-all duration-200">Male</span>
                                 </label>
-                                <label class="guest-form__field">
-                                    <span>Middle name</span>
-                                    <input type="text" name="middle_name" placeholder="Middle name">
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Last name</span>
-                                    <input type="text" name="last_name" placeholder="Last name">
+                                <label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+                                    <input type="radio" name="gender" value="Female" class="absolute h-0 w-0 opacity-0">
+                                    <span class="block px-2 py-2.5 text-sm font-medium transition-all duration-200">Female</span>
                                 </label>
                             </div>
-                            <div class="guest-form__row guest-form__row--three">
-                                <label class="guest-form__field">
-                                    <span>Age</span>
-                                    <input type="number" name="age" min="0" placeholder="Age">
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Gender</span>
-                                    <select name="gender">
-                                        <option value="">Select gender</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Nationality</span>
-                                    <select name="is_foreigner" id="checkInCompanionIsForeigner">
-                                        <option value="0" selected>Filipino</option>
-                                        <option value="1">Foreigner</option>
-                                    </select>
-                                </label>
-                            </div>
-                            <div class="guest-form__row guest-form__row--two">
-                                <label class="guest-form__field">
-                                    <span>Phone</span>
-                                    <input type="text" name="phone" placeholder="Phone number">
-                                </label>
-                                <label class="guest-form__field">
-                                    <span>Email</span>
-                                    <input type="email" name="email" placeholder="Email address">
-                                </label>
-                            </div>
-                            <div class="guest-form__actions">
-                                <button type="button" class="guest-form__secondary" data-close-check-in-companion-modal="true">Cancel</button>
-                                <button type="submit" class="guest-form__button">Add Companion</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        </div>
 
-                <div class="guest-modal guest-modal--compact" id="checkInConfirmationModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-check-in-confirmation="true"></div>
-                    <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
-                        <button type="button" class="guest-modal__close" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
-                        <h3 id="checkInConfirmationTitle" class="guest-modal__title">Check In Reservation</h3>
-                        <div id="checkInConfirmationBody" class="guest-modal__body"></div>
-                        <div class="guest-form__actions">
-                            <button type="button" class="guest-form__secondary" data-close-check-in-confirmation="true">Cancel</button>
-                            <button type="button" class="guest-form__button" id="confirmCheckInBtn">Yes, Check In</button>
+                        <div class="bulk-field flex flex-col gap-2">
+                            <span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Nationality</span>
+                            <div class="bulk-segment flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+                                <label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+                                    <input type="radio" name="is_foreigner" value="0" checked class="absolute h-0 w-0 opacity-0">
+                                    <span class="block border-r border-glass-border px-2 py-2.5 text-sm font-medium transition-all duration-200">Filipino</span>
+                                </label>
+                                <label class="bulk-segment__btn relative flex-1 cursor-pointer text-center">
+                                    <input type="radio" name="is_foreigner" value="1" class="absolute h-0 w-0 opacity-0">
+                                    <span class="block px-2 py-2.5 text-sm font-medium transition-all duration-200">Foreigner</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guest-form__row guest-form__row--two mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="bulk-field flex flex-col gap-2">
+                            <span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Age Group</span>
+                            <div class="bulk-segment flex flex-wrap overflow-hidden rounded-xl border border-glass-border bg-glass">
+                                <label class="bulk-segment__btn relative flex-[1_1_50%] cursor-pointer text-center">
+                                    <input type="radio" name="age_group" value="0-12" class="absolute h-0 w-0 opacity-0">
+                                    <span class="block border-b border-r border-glass-border px-2 py-2.5 text-[0.8rem] font-medium transition-all duration-200">Kids</span>
+                                </label>
+                                <label class="bulk-segment__btn relative flex-[1_1_50%] cursor-pointer text-center">
+                                    <input type="radio" name="age_group" value="13-17" class="absolute h-0 w-0 opacity-0">
+                                    <span class="block border-b border-glass-border px-2 py-2.5 text-[0.8rem] font-medium transition-all duration-200">Teens</span>
+                                </label>
+                                <label class="bulk-segment__btn relative flex-[1_1_50%] cursor-pointer text-center">
+                                    <input type="radio" name="age_group" value="18-59" checked class="absolute h-0 w-0 opacity-0">
+                                    <span class="block border-r border-glass-border px-2 py-2.5 text-[0.8rem] font-medium transition-all duration-200">Adults</span>
+                                </label>
+                                <label class="bulk-segment__btn relative flex-[1_1_50%] cursor-pointer text-center">
+                                    <input type="radio" name="age_group" value="60+" class="absolute h-0 w-0 opacity-0">
+                                    <span class="block px-2 py-2.5 text-[0.8rem] font-medium transition-all duration-200">Seniors</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="bulk-field flex flex-col gap-2">
+                            <span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Quantity</span>
+                            <div class="bulk-qty-wrap flex h-full items-center rounded-xl border border-glass-border bg-glass p-2">
+                                <button type="button" id="bulkCompanionBtnMinus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-0 bg-black/5 text-xl text-hp-text transition-colors duration-200 hover:bg-black/10">−</button>
+                                <input type="number" name="quantity" id="bulkCompanionQuantity" value="1" min="1" max="50" class="m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-2xl font-semibold text-hp-green-dark [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+                                <button type="button" id="bulkCompanionBtnPlus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-0 bg-black/5 text-xl text-hp-text transition-colors duration-200 hover:bg-black/10">+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="guest-modal guest-modal--compact" id="companionSummaryModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-companion-summary="true"></div>
-                    <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
-                        <button type="button" class="guest-modal__close" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
-                        <h3 id="companionSummaryTitle" class="guest-modal__title">Companion Groups Summary</h3>
-                        <div id="companionSummaryBody" class="guest-modal__body"></div>
-                        <div class="guest-form__actions">
-                            <button type="button" class="guest-form__secondary" data-close-companion-summary="true">Cancel</button>
-                            <button type="button" class="guest-form__button" id="proceedToCheckInBtn">Proceed to Check In</button>
-                        </div>
-                    </div>
+                <div class="guest-form__actions flex flex-wrap justify-end gap-3">
+                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-bulk-companion-modal="true">Cancel</button>
+                    <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="generateCompanionsBtn">Generate</button>
                 </div>
-
-                <div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop" data-close-bulk-companion-modal="true"></div>
-                    <div class="guest-modal__content guest-modal__content--compact" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
-                        <button type="button" class="guest-modal__close" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
-                        
-                        <div class="guest-modal__header" style="text-align: center; border-bottom: none; padding-bottom: 0;">
-                            <div class="guest-modal__icon-wrap" style="margin: 0 auto 1rem; width: 48px; height: 48px; border-radius: 50%; background: var(--hp-green-mid); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(46, 125, 85, 0.2);">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 24px; height: 24px;">
-                                    <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
-                                </svg>
-                            </div>
-                            <h3 id="bulkCompanionModalTitle" class="guest-modal__title">Add Companions in Bulk</h3>
-                            <p class="guest-modal__subtitle" style="color: var(--hp-text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Quickly generate multiple companions of the same profile.</p>
-                        </div>
-
-                        <form id="bulkCompanionForm" class="guest-form" action="#" style="margin-top: 1.5rem;">
-                            <div class="bulk-panel" style="background: var(--glass-bg-hover); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
-                                <div class="guest-form__row guest-form__row--two">
-                                    <!-- Gender -->
-                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Gender</span>
-                                        <div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
-                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="gender" value="Male" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Male</span>
-                                            </label>
-                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="gender" value="Female" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Female</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Nationality -->
-                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nationality</span>
-                                        <div class="bulk-segment" style="display: flex; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
-                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="is_foreigner" value="0" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; border-right: 1px solid var(--glass-border);">Filipino</span>
-                                            </label>
-                                            <label class="bulk-segment__btn" style="flex: 1; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="is_foreigner" value="1" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.85rem; font-weight: 500; transition: all 0.2s;">Foreigner</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="guest-form__row guest-form__row--two" style="margin-top: 1.25rem;">
-                                    <!-- Age Group -->
-                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Age Group</span>
-                                        <div class="bulk-segment" style="display: flex; flex-wrap: wrap; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); overflow: hidden;">
-                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="age_group" value="0-12" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-right: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border);">Kids</span>
-                                            </label>
-                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="age_group" value="13-17" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-bottom: 1px solid var(--glass-border);">Teens</span>
-                                            </label>
-                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="age_group" value="18-59" checked style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500; border-right: 1px solid var(--glass-border);">Adults</span>
-                                            </label>
-                                            <label class="bulk-segment__btn" style="flex: 1 1 50%; text-align: center; cursor: pointer; position: relative;">
-                                                <input type="radio" name="age_group" value="60+" style="position: absolute; opacity: 0; width: 0; height: 0;">
-                                                <span style="display: block; padding: 0.6rem; font-size: 0.8rem; font-weight: 500;">Seniors</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <!-- Quantity -->
-                                    <div class="bulk-field" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                        <span class="bulk-field__label" style="font-size: 0.8rem; font-weight: 600; color: var(--hp-text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Quantity</span>
-                                        <div class="bulk-qty-wrap" style="display: flex; align-items: center; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border); padding: 0.5rem; height: 100%;">
-                                            <button type="button" id="bulkCompanionBtnMinus" style="width: 36px; height: 36px; border-radius: var(--radius-md); border: none; background: rgba(0,0,0,0.05); color: var(--hp-text); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">−</button>
-                                            <input type="number" name="quantity" id="bulkCompanionQuantity" value="1" min="1" max="50" style="flex: 1; text-align: center; border: none; background: transparent; font-size: 1.5rem; font-weight: 600; font-family: var(--hp-font-display); color: var(--hp-green-dark); margin: 0 10px; width: 100%; appearance: textfield;">
-                                            <button type="button" id="bulkCompanionBtnPlus" style="width: 36px; height: 36px; border-radius: var(--radius-md); border: none; background: rgba(0,0,0,0.05); color: var(--hp-text); cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">+</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="guest-form__actions">
-                                <button type="button" class="guest-form__secondary" data-close-bulk-companion-modal="true">Cancel</button>
-                                <button type="submit" class="guest-form__button" id="generateCompanionsBtn">Generate</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            </form>
+        </div>
+    </div>
 
     <x-staff_chatbot />
 

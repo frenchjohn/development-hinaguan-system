@@ -1,11 +1,66 @@
 @import 'tailwindcss';
 
+/* Dark mode is driven by the data-theme attribute on <html> (set from
+   localStorage before first paint), not the .dark class Tailwind assumes. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+@layer base {
+    :root {
+        --hp-green-dark: #14402b;
+        --hp-green-mid: #2e7d55;
+        --hp-green: #1c5c3c;
+        --hp-text: #1c2b22;
+        --hp-text-muted: #5c6b62;
+        --hp-gold: #8a7a4d;
+        --hp-cream: #f3f6f3;
+        
+        --glass-bg: #ffffff;
+        --glass-bg-hover: #f3f8f5;
+        --glass-bg-strong: #ffffff;
+        --glass-border: #e4ebe6;
+        --glass-border-strong: #d3ded6;
+        --glass-shadow: 0 1px 2px rgba(16, 44, 31, 0.05), 0 10px 24px -14px rgba(16, 44, 31, 0.16);
+        --glass-blur: none;
+    }
+
+    [data-theme="dark"] {
+        --hp-text: #eaf0eb;
+        --hp-text-muted: #9baaa1;
+        --hp-green-dark: #152619;
+        
+        --glass-bg: #14211a;
+        --glass-bg-hover: #1a2a21;
+        --glass-bg-strong: #14211a;
+        --glass-border: #26362d;
+        --glass-border-strong: #35483d;
+        --glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 28px -14px rgba(0, 0, 0, 0.5);
+    }
+}
+
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-ui: 'Montserrat', system-ui, -apple-system, sans-serif;
+    --font-display: 'Poppins', 'Montserrat', sans-serif;
+
+    --color-hp-green-dark: var(--hp-green-dark);
+    --color-hp-green-mid: var(--hp-green-mid);
+    --color-hp-green: var(--hp-green);
+    --color-hp-text: var(--hp-text);
+    --color-hp-text-muted: var(--hp-text-muted);
+    --color-hp-gold: var(--hp-gold);
+    --color-hp-cream: var(--hp-cream);
+    
+    --color-glass: var(--glass-bg);
+    --color-glass-hover: var(--glass-bg-hover);
+    --color-glass-strong: var(--glass-bg-strong);
+    
+    --color-glass-border: var(--glass-border);
+    --color-glass-border-strong: var(--glass-border-strong);
+
+    --shadow-glass: var(--glass-shadow);
 }
