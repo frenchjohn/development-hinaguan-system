@@ -41,7 +41,7 @@
 					subtitle="Active check-ins and walk-ins"
 				/>
 				@if (session('success'))
-					<div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green">{{ session('success') }}</div>
+					<div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
 				@endif
 
 					@php
@@ -517,9 +517,8 @@
 									</button>
 								</div>
 							</div>
-
-					<div class="guest-filter-shell mb-3 grid gap-3">
-						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
+						<div class="guest-filter-shell mb-3 grid gap-3">
+							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
 							<span>Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
@@ -728,6 +727,7 @@
 									@endphp
 									<tr
 										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+										{{ (! $isPrimary && ! $isBulk) ? 'style="display: none;"' : '' }}
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
 										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"
@@ -751,7 +751,7 @@
 									>
 										<td>
 											<div class="cell-person flex min-w-0 items-center gap-3">
-												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isPrimary ? 'cell-person__avatar--star' : '' }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
+												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isPrimary ? 'cell-person__avatar--main' : ($isBulk ? 'cell-person__avatar--bulk' : 'cell-person__avatar--companion') }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
 													@if($isPrimary)
 														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
 													@elseif($isBulk)
@@ -934,6 +934,40 @@
 								</div>
 							</div>
 
+					<div class="guest-filter-shell mb-3 grid gap-3 px-5">
+						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
+							<span>Reservation Filters</span>
+							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
+						</button>
+						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-4 dark:bg-glass" id="resvFilterPanel" hidden>
+							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-4">
+								<span>Search</span>
+								<input type="search" id="resvSearchInput" placeholder="Search by reservation ID, main guest, booker, amenity..." class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+							</label>
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+								<span>Reservation Type</span>
+								<select id="resvTypeFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+									<option value="all">All Types</option>
+									<option value="walk_in">Walk-in</option>
+									<option value="online">Online</option>
+								</select>
+							</label>
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+								<span>Check-in from</span>
+								<input type="date" id="resvDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+							</label>
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+								<span>Check-in to</span>
+								<input type="date" id="resvDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+							</label>
+							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="resvFiltersClear">Clear</button>
+						</div>
+					</div>
+
+					<div class="guest-toolbar__meta mb-3.5 px-5 text-sm text-hp-text-muted">
+						<span id="resvResultsCount">Showing {{ $activeReservations->count() }} reservation{{ $activeReservations->count() === 1 ? '' : 's' }}</span>
+					</div>
+
 					<div class="guest-table-wrap max-h-[440px] overflow-auto px-5 pb-5" id="reservationTableWrap">
 						<table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
 							<thead>
@@ -951,6 +985,8 @@
 								@forelse ($activeReservations ?? collect() as $reservation)
 									@php
 										$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
+										$rowAmenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
+										$rowPrimaryName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : '';
 										$guestInitials = $primaryGuest
 											? collect(explode(' ', trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?'
 											: '?';
@@ -980,6 +1016,9 @@
 									<tr
 										class="reservation-row {{ $highlightClass }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
 										data-reservation-id="{{ $reservation->id }}"
+										data-reservation-type="{{ $reservation->reservation_type }}"
+										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
+										data-reservation-search="{{ strtolower(trim($reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
 										tabindex="0"
 										role="button"
 										aria-label="View reservation {{ $reservation->id }}"
@@ -1823,9 +1862,23 @@
 								</div>
 							</div>
 
+							{{-- Check out several companions at once --}}
+							<div class="mb-4 rounded-2xl border border-glass-border bg-glass p-4 dark:bg-glass">
+								<p class="mb-3 text-center text-[0.72rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Check out multiple at once</p>
+								<div class="flex items-center justify-center gap-2.5">
+									<button type="button" id="bulkManageQtyMinus" aria-label="Decrease quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">−</button>
+									<input type="number" id="bulkManageQtyInput" value="1" min="1" max="50" class="bulk-stepper__input h-11 w-16 border-x-0 border border-glass-border bg-transparent text-center text-lg font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label="Number of companions to check out">
+									<button type="button" id="bulkManageQtyPlus" aria-label="Increase quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">+</button>
+									<button type="button" id="bulkManageCheckOutBtn" class="ml-1 flex h-11 cursor-pointer items-center gap-2 rounded-xl border-0 bg-[#ef4444] px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#dc2626]">
+										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
+										Check Out
+									</button>
+								</div>
+							</div>
+
 							<div class="flex items-center justify-center gap-2 rounded-xl bg-[rgba(239,68,68,0.05)] p-3 text-left text-[0.8rem] leading-[1.4] text-[#ef4444]">
 								<svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-								<span>Click the <strong>minus button</strong> to check out one companion from this group.</span>
+								<span>Click the <strong>minus button</strong> to check out one, or set a quantity and press <strong>Check Out</strong> to check out several at once.</span>
 							</div>
 						</div>
 					</div>

@@ -1,3 +1,5 @@
+import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
+
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_check_ins'] = function () {
 
@@ -441,7 +443,7 @@ window.AppPage['staff_check_ins'] = function () {
             if (response.ok && data.success) {
                 closeCheckOutConfirmModal();
                 closeReservationModal();
-                alert('Reservation checked out successfully!');
+                queueToast(`Reservation #${pendingCheckOutReservationId} checked out successfully.`);
                 location.reload();
             } else {
                 throw new Error(data.message || 'Failed to check out reservation');
@@ -493,6 +495,7 @@ window.AppPage['staff_check_ins'] = function () {
                 const amenity = reservationData[reservationId]?.reservation_amenities?.find(a => String(a.id) === String(reservationAmenityId));
                 if (amenity) amenity.status = 'Completed';
                 openReservationModal(reservationId);
+                showToast('Amenity checked out successfully.');
             } catch (error) {
                 window.alert(error.message || 'Unable to check out this amenity.');
                 btn.disabled = false;
@@ -653,6 +656,13 @@ window.AppPage['staff_check_ins'] = function () {
         bulkManageResIdEl.textContent = resId;
         bulkManageActiveCountEl.textContent = active;
         bulkManageTotalCountEl.textContent = total;
+
+        // Reset the quantity stepper for the next use.
+        const qtyInput = document.getElementById('bulkManageQtyInput');
+        if (qtyInput) {
+            qtyInput.value = 1;
+            qtyInput.max = Math.max(active, 1);
+        }
         
         // Find reservation data to extract bulk companion demographics
         const res = reservationData[resId];
@@ -697,32 +707,76 @@ window.AppPage['staff_check_ins'] = function () {
         btn.addEventListener('click', closeBulkManageModal);
     });
     
-    btnDecrease?.addEventListener('click', async () => {
+    // Check out one or several bulk companions at once. Shared by the minus
+    // button (1x) and the quantity stepper + Check Out button (Nx). Shows a
+    // toast on success instead of silently reloading.
+    const bulkCheckOut = async (count) => {
         if (!currentBulkResId) return;
-        const res = reservationData[currentBulkResId];
-        if (!res) return;
-        const activeGuest = res.reservation_guests.find(rg => {
-            const fn = (rg.customer?.first_name || '').toLowerCase();
-            return (fn.startsWith('bulk') || fn.includes('companion')) && !rg.checked_out_at;
-        });
-        if (!activeGuest) {
-            alert('All bulk companions are already checked out.');
+        const activeCount = Number(bulkManageActiveCountEl?.textContent || 0);
+        if (activeCount === 0) {
+            showToast('All bulk companions are already checked out.', 'error');
             return;
         }
-        
-        if (!confirm('Are you sure you want to check out 1 companion from this bulk group?')) {
+
+        const qty = Math.min(Math.max(parseInt(count, 10) || 1, 1), activeCount);
+        if (!confirm(`Check out ${qty} companion${qty === 1 ? '' : 's'} from this bulk group?`)) {
             return;
         }
-        
-        btnDecrease.disabled = true;
+
+        const submitBtn = document.getElementById('bulkManageCheckOutBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Checking out...';
+        }
+
         try {
-            const response = await fetch(`/staff/reservation-guests/${activeGuest.id}/check-out`, {
+            const response = await fetch(`/staff/reservations/${currentBulkResId}/bulk-companions/check-out`, {
                 method: 'POST',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ count: qty }),
             });
-            if (response.ok) window.location.reload();
-            else { alert('Error checking out companion.'); btnDecrease.disabled = false; }
-        } catch(err) { btnDecrease.disabled = false; console.error(err); }
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.message || 'Unable to check out companions.');
+            }
+
+            const done = payload.checked_out ?? qty;
+            const remaining = payload.remaining ?? 0;
+            const message = remaining > 0
+                ? `${done} bulk companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
+                : `${done} bulk companion${done === 1 ? '' : 's'} checked out successfully.`;
+            queueToast(message);
+            window.location.reload();
+        } catch (err) {
+            console.error(err);
+            showToast(err.message || 'Unable to check out companions.', 'error');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Check Out';
+            }
+        }
+    };
+
+    btnDecrease?.addEventListener('click', () => bulkCheckOut(1));
+
+    const bulkManageQtyMinus = document.getElementById('bulkManageQtyMinus');
+    const bulkManageQtyPlus = document.getElementById('bulkManageQtyPlus');
+    const bulkManageQtyInput = document.getElementById('bulkManageQtyInput');
+    const bulkManageCheckOutBtn = document.getElementById('bulkManageCheckOutBtn');
+
+    bulkManageQtyMinus?.addEventListener('click', () => {
+        if (!bulkManageQtyInput) return;
+        const val = parseInt(bulkManageQtyInput.value, 10) || 1;
+        if (val > 1) bulkManageQtyInput.value = val - 1;
+    });
+    bulkManageQtyPlus?.addEventListener('click', () => {
+        if (!bulkManageQtyInput) return;
+        const val = parseInt(bulkManageQtyInput.value, 10) || 1;
+        const max = parseInt(bulkManageQtyInput.max || '50', 10) || 50;
+        if (val < max) bulkManageQtyInput.value = val + 1;
+    });
+    bulkManageCheckOutBtn?.addEventListener('click', () => {
+        bulkCheckOut(bulkManageQtyInput?.value || 1);
     });
 
     guestRows.forEach(row => {
@@ -788,7 +842,10 @@ window.AppPage['staff_check_ins'] = function () {
                              const pill = g.is_primary_guest 
                                 ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
                                 : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
-                             guestsHtml += `<div style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0;">
+                             // Clicking a guest (main or single companion) opens
+                             // the same detail modal as the guest table.
+                             guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0; cursor: pointer; border-radius: 6px; transition: background 0.15s ease;">
+                                <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: ${g.is_primary_guest ? 'var(--hp-gold)' : 'var(--hp-green)'};"></span>
                                 ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
                                 <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
                              </div>`;
@@ -809,7 +866,8 @@ window.AppPage['staff_check_ins'] = function () {
                              const nationality = sampleCust.is_foreigner ? 'Foreigner' : 'Filipino';
 
                              guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${bulkGuests.length}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
-                                Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #6b7280; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${bulkGuests.length} Checked In</span>
+                                <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: #0e7490;"></span>
+                                Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${bulkGuests.length} Checked In</span>
                                 <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${gender} • ${ageGroup} • ${nationality}</span>
                              </div>`;
                          }
@@ -836,6 +894,12 @@ window.AppPage['staff_check_ins'] = function () {
         if (bulkTrigger) {
             openBulkManageModal(bulkTrigger.dataset.resId, bulkTrigger.dataset.bulkActive, bulkTrigger.dataset.bulkTotal);
             return;
+        }
+        // Guest rows inside an expanded reservation: main guest + single
+        // companions open the same guest detail modal as the guest table.
+        const guestRow = e.target.closest('[data-guest-id]');
+        if (guestRow && guestRow.dataset.guestId && guestData[guestRow.dataset.guestId]) {
+            openGuestModal(guestRow.dataset.guestId);
         }
     });
 
@@ -886,6 +950,7 @@ window.AppPage['staff_check_ins'] = function () {
                 throw new Error(payload.message || 'Unable to check out this guest.');
             }
 
+            queueToast(`${customer.first_name || 'Guest'} checked out successfully.`);
             window.location.reload();
         } catch (error) {
             window.alert(error.message || 'Unable to check out this guest.');
@@ -1698,6 +1763,15 @@ window.AppPage['staff_check_ins'] = function () {
                 if (row.getAttribute('data-reservation-id') !== selectedReservationId) show = false;
             }
             
+            // Collapsed companions stay hidden until their primary is expanded
+            if (show && row.classList.contains('guest-row--companion')) {
+                const resId = row.getAttribute('data-reservation-id');
+                const primaryRow = resId
+                    ? document.querySelector(`.guest-row--primary[data-reservation-id="${resId}"]`)
+                    : null;
+                if (!primaryRow || !primaryRow.classList.contains('is-expanded')) show = false;
+            }
+            
             row.style.display = show ? '' : 'none';
         });
         
@@ -1717,6 +1791,78 @@ window.AppPage['staff_check_ins'] = function () {
     guestSearchInput?.addEventListener('input', applyGuestFilters);
     guestRoleSelect?.addEventListener('change', applyGuestFilters);
     guestReservationSelect?.addEventListener('change', applyGuestFilters);
+
+    // ── Reservation table filters (Reservation Data View tab) ──────────────
+    const resvFilterToggle = document.getElementById('resvFilterToggle');
+    const resvFilterPanel = document.getElementById('resvFilterPanel');
+    const resvSearchInput = document.getElementById('resvSearchInput');
+    const resvTypeFilter = document.getElementById('resvTypeFilter');
+    const resvDateFrom = document.getElementById('resvDateFrom');
+    const resvDateTo = document.getElementById('resvDateTo');
+    const resvFiltersClear = document.getElementById('resvFiltersClear');
+    const resvResultsCount = document.getElementById('resvResultsCount');
+
+    resvFilterToggle?.addEventListener('click', () => {
+        const isExpanded = resvFilterToggle.getAttribute('aria-expanded') === 'true';
+        resvFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
+        resvFilterPanel.hidden = isExpanded;
+        resvFilterPanel?.classList.toggle('guest-toolbar--collapsed', isExpanded);
+    });
+
+    const applyResvFilters = () => {
+        const searchTerm = (resvSearchInput?.value || '').toLowerCase();
+        const typeValue = resvTypeFilter?.value || 'all';
+        const fromValue = resvDateFrom?.value || '';
+        const toValue = resvDateTo?.value || '';
+
+        const resvRows = document.querySelectorAll('#checkInsReservationTableBody .reservation-row');
+        let visibleCount = 0;
+
+        resvRows.forEach((row) => {
+            let show = true;
+
+            if (searchTerm) {
+                const searchable = row.getAttribute('data-reservation-search') || '';
+                if (!searchable.includes(searchTerm)) show = false;
+            }
+
+            if (show && typeValue !== 'all') {
+                if ((row.getAttribute('data-reservation-type') || '') !== typeValue) show = false;
+            }
+
+            if (show && fromValue) {
+                const date = row.getAttribute('data-check-in-date') || '';
+                if (date && date < fromValue) show = false;
+            }
+
+            if (show && toValue) {
+                const date = row.getAttribute('data-check-in-date') || '';
+                if (date && date > toValue) show = false;
+            }
+
+            row.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        if (resvResultsCount) {
+            resvResultsCount.textContent = `Showing ${visibleCount} of ${resvRows.length} reservation${resvRows.length === 1 ? '' : 's'}`;
+        }
+    };
+
+    [resvSearchInput, resvTypeFilter, resvDateFrom, resvDateTo].forEach((control) => {
+        control?.addEventListener('input', applyResvFilters);
+        control?.addEventListener('change', applyResvFilters);
+    });
+
+    resvFiltersClear?.addEventListener('click', () => {
+        if (resvSearchInput) resvSearchInput.value = '';
+        if (resvTypeFilter) resvTypeFilter.value = 'all';
+        if (resvDateFrom) resvDateFrom.value = '';
+        if (resvDateTo) resvDateTo.value = '';
+        applyResvFilters();
+    });
+
+    applyResvFilters();
 
     // Scan QR modal
     const scanQrBtn = document.getElementById('scanQrBtn');
@@ -1812,6 +1958,11 @@ window.AppPage['staff_check_ins'] = function () {
             }
         });
     }
+
+    // Success toasts — show anything queued for after a reload and convert
+    // server-rendered flash banners (session('success')) into toasts.
+    convertFlashToToast();
+    showPendingToast();
 };
 
 document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_check_ins']());

@@ -91,14 +91,14 @@
                 </div>
 
                 <!-- GUESTS TABLE SECTION -->
-                <section class="guest-panel rounded-2xl border border-glass-border bg-glass p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]" data-tab-content="guests">
-                    <div class="mb-6 flex items-center gap-4 border-b border-glass-border pb-6">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-hp-green-dark text-white">
-                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                <section class="guest-panel rounded-2xl border border-glass-border bg-glass p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]" data-tab-content="guests">
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green-dark text-white">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         </div>
                         <div>
-                            <h3 class="m-0 text-lg text-hp-text">Checked-Out Guest Records</h3>
-                            <p class="m-0 text-sm text-hp-text-muted">Guests who have completed their visit and checked out</p>
+                            <h3 class="m-0 text-base text-hp-text">Checked-Out Guest Records</h3>
+                            <p class="m-0 text-[0.8rem] text-hp-text-muted">Guests who have completed their visit and checked out</p>
                         </div>
                     </div>
 
@@ -139,7 +139,7 @@
                     </div>
 
                     <div class="guest-toolbar__meta mb-3.5 text-sm text-hp-text-muted">
-                        <span id="guestResultsCount">Showing {{ $checkedOutGuests->count() }} records</span>
+                        <span id="guestResultsCount">Showing {{ $guestRows->count() }} records</span>
                     </div>
 
                     <div class="guest-table-wrap max-h-[440px] overflow-auto" id="guestTableWrap">
@@ -155,43 +155,84 @@
                                 </tr>
                             </thead>
                             <tbody id="guestTableBody">
-                                @forelse ($checkedOutGuests as $guestEntry)
-                                    @php
-                                        $customer = $guestEntry->customer;
-                                        $guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
-                                    @endphp
-                                    <tr
-                                        class="guest-row cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
-                                        data-customer-id="{{ $customer->id }}"
-                                        data-age="{{ $customer->age ?? 'N/A' }}"
-                                        data-gender="{{ $customer->gender ?? 'N/A' }}"
-                                        data-is-foreigner="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
-                                        data-checked-out="{{ $guestEntry->checked_out_at ?? '' }}"
-                                        data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
-                                        data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino'))) }}"
-                                        tabindex="0"
-                                        role="button"
-                                        aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
-                                    >
-                                        <td>
-                                            <div class="cell-person flex min-w-0 items-center gap-3">
-                                                <span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]">{{ $guestInitials }}</span>
-                                                <div class="cell-person__body min-w-0">
-                                                    <div class="guest-name font-semibold text-hp-text">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
-                                                    <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">Customer ID: {{ $customer->id }}</div>
+                                @forelse ($guestRows as $row)
+                                    @if (($row['type'] ?? '') === 'bulk')
+                                        @php $group = $row['group']; @endphp
+                                        <tr
+                                            class="guest-row guest-row--bulk-group cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+                                            data-bulk-group="true"
+                                            data-bulk-key="{{ $group['key'] }}"
+                                            data-age-value="999999"
+                                            data-checked-out="{{ $group['checked_out_at'] ?? '' }}"
+                                            data-search="{{ strtolower(trim(($group['name'] ?? '') . ' ' . $group['reservation_id'] . ' ' . $group['gender'] . ' ' . $group['age_group'] . ' ' . $group['nationality'] . ' ' . $group['count'] . ' bulk companion group')) }}"
+                                            tabindex="0"
+                                            role="button"
+                                            aria-label="View bulk companion group details"
+                                        >
+                                            <td>
+                                                <div class="cell-person flex min-w-0 items-center gap-3">
+                                                    <span class="cell-person__avatar cell-person__avatar--bulk flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6e9f54] to-[#2e7d55] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]" title="Bulk Companion Group">
+                                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+                                                    </span>
+                                                    <div class="cell-person__body min-w-0">
+                                                        <div class="guest-name font-semibold text-hp-text">
+                                                            {{ $group['name'] }}
+                                                            <span class="guest-companion-count ml-1.5 inline-flex items-center gap-1 rounded-full bg-hp-green/10 px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">{{ $group['count'] }}x</span>
+                                                            <span class="ml-1 inline-flex items-center rounded-full bg-[rgba(120,130,122,0.13)] px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-text-muted">Reservation #{{ $group['reservation_id'] }}</span>
+                                                        </div>
+                                                        <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">Bulk companion group</div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>{{ $customer->age ?? 'N/A' }}</td>
-                                        <td>{{ $customer->gender ?? 'N/A' }}</td>
-                                        <td>
-                                            <span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
-                                        </td>
-                                        <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $guestEntry->checked_out_at ? \Carbon\Carbon::parse($guestEntry->checked_out_at)->format('M d, Y h:i A') : 'N/A' }}</td>
-                                        <td class="text-right text-[#9ca3af]">
-                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
-                                        </td>
-                                    </tr>
+                                            </td>
+                                            <td>{{ $group['age_group'] }}</td>
+                                            <td>{{ $group['gender'] }}</td>
+                                            <td>
+                                                <span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $group['nationality'] === 'Foreigner' ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $group['nationality'] }}</span>
+                                            </td>
+                                            <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $group['checked_out_at'] ? \Carbon\Carbon::parse($group['checked_out_at'])->format('M d, Y h:i A') : 'N/A' }}</td>
+                                            <td class="text-right text-[#9ca3af]">
+                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                            </td>
+                                        </tr>
+                                    @else
+                                        @php
+                                            $guestEntry = $row['entry'];
+                                            $customer = $guestEntry->customer;
+                                            $guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
+                                        @endphp
+                                        <tr
+                                            class="guest-row cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+                                            data-customer-id="{{ $customer->id }}"
+                                            data-age="{{ $customer->age ?? 'N/A' }}"
+                                            data-gender="{{ $customer->gender ?? 'N/A' }}"
+                                            data-is-foreigner="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
+                                            data-checked-out="{{ $guestEntry->checked_out_at ?? '' }}"
+                                            data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
+                                            data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino'))) }}"
+                                            tabindex="0"
+                                            role="button"
+                                            aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
+                                        >
+                                            <td>
+                                                <div class="cell-person flex min-w-0 items-center gap-3">
+                                                    <span class="cell-person__avatar {{ $guestEntry->is_primary_guest ? 'cell-person__avatar--main' : 'cell-person__avatar--companion' }} flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]">{{ $guestInitials }}</span>
+                                                    <div class="cell-person__body min-w-0">
+                                                        <div class="guest-name font-semibold text-hp-text">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
+                                                        <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">Customer ID: {{ $customer->id }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ $customer->age ?? 'N/A' }}</td>
+                                            <td>{{ $customer->gender ?? 'N/A' }}</td>
+                                            <td>
+                                                <span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
+                                            </td>
+                                            <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $guestEntry->checked_out_at ? \Carbon\Carbon::parse($guestEntry->checked_out_at)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                            <td class="text-right text-[#9ca3af]">
+                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @empty
                                     <tr>
                                         <td colspan="6" class="guest-empty px-4 py-8 text-center text-hp-text-muted">No checked-out guest records found.</td>
@@ -203,14 +244,14 @@
                 </section>
 
                 <!-- RESERVATIONS TABLE SECTION -->
-                <section class="guest-panel mt-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)]" data-tab-content="reservations" hidden>
-                    <div class="mb-6 flex items-center gap-4 border-b border-glass-border pb-6">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-hp-green-dark text-white">
-                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                <section class="guest-panel mt-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]" data-tab-content="reservations" hidden>
+                    <div class="mb-4 flex items-center gap-2.5">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green-dark text-white">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
                         </div>
                         <div>
-                            <h3 class="m-0 text-lg text-hp-text">Completed Reservations</h3>
-                            <p class="m-0 text-sm text-hp-text-muted">Records of reservations that have been checked out</p>
+                            <h3 class="m-0 text-base text-hp-text">Completed Reservations</h3>
+                            <p class="m-0 text-[0.8rem] text-hp-text-muted">Records of reservations that have been checked out</p>
                         </div>
                     </div>
 
@@ -369,6 +410,7 @@
 
     <script>
         window.staffGuestData = @json($guestData ?? []);
+        window.staffBulkGroupData = @json($bulkGroupData ?? []);
         window.staffReservationData = @json($reservationData ?? []);
     </script>
 </body>

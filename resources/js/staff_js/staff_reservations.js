@@ -1,4 +1,5 @@
 import { Html5Qrcode } from 'html5-qrcode';
+import { queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_reservations'] = function () {
@@ -859,7 +860,7 @@ window.AppPage['staff_reservations'] = function () {
                                     if (!checkoutResponse.ok) {
                                         window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
                                     } else {
-                                        window.alert('Reservation checked out successfully!');
+                                        queueToast(`Reservation #${reservationId} checked out successfully.`);
                                         window.location.reload();
                                     }
                                 } catch (checkoutError) {
@@ -1733,10 +1734,8 @@ window.AppPage['staff_reservations'] = function () {
                         throw new Error(payload.message || 'Unable to check out this reservation.');
                     }
 
-                    showSuccessModal('Reservation checked out successfully!');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
+                    queueToast(`Reservation #${reservationId} checked out successfully.`);
+                    window.location.reload();
                 } catch (error) {
                     window.alert(error.message || 'Unable to check out this reservation.');
                 }
@@ -1824,6 +1823,7 @@ window.AppPage['staff_reservations'] = function () {
                 throw new Error(payload.message || 'Unable to check in this reservation.');
             }
 
+            queueToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
             window.location.reload();
         } catch (error) {
             window.alert(error.message || 'Unable to check in this reservation.');
@@ -2009,6 +2009,11 @@ window.AppPage['staff_reservations'] = function () {
     });
 
     applyFilters();
+
+    // Success toasts — show anything queued for after a reload and convert
+    // server-rendered flash banners (session('success')) into toasts.
+    convertFlashToToast();
+    showPendingToast();
 };
 
 document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_reservations']());

@@ -129,7 +129,7 @@
                 </div>
 
                 @if (session('success'))
-                    <div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green">{{ session('success') }}</div>
+                    <div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
                 @endif
 
                 <div class="resv-toolbar mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -441,10 +441,6 @@
                         <label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
                             <input type="radio" name="check_in_guest_mode" value="with_primary" checked class="sr-only">
                             <span>With primary guest</span>
-                        </label>
-                        <label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
-                            <input type="radio" name="check_in_guest_mode" value="visitors_only" class="sr-only">
-                            <span>Visitors only</span>
                         </label>
                     </div>
                 </div>

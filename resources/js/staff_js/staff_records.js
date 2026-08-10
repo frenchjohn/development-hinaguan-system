@@ -65,6 +65,7 @@ window.AppPage['staff_records'] = function () {
     const modalBody = document.getElementById('guestModalBody');
     const closeButtons = document.querySelectorAll('[data-close-modal="true"]');
     const guestData = window.staffGuestData || {};
+    const bulkGroupData = window.staffBulkGroupData || {};
 
     const searchInput = document.getElementById('guestSearchInput');
     const sortSelect = document.getElementById('guestSortSelect');
@@ -95,12 +96,15 @@ window.AppPage['staff_records'] = function () {
             const primaryGuest = reservationGuests.find((guest) => guest.is_primary_guest) ?? null;
             const companions = reservationGuests.filter((guest) => !guest.is_primary_guest);
             const primaryName = primaryGuest?.customer ? [primaryGuest.customer.first_name, primaryGuest.customer.last_name].filter(Boolean).join(' ').trim() : 'N/A';
+            const primaryEmail = primaryGuest?.customer?.email || '';
+            const primaryPhone = primaryGuest?.customer?.phone || '';
             const amenities = (reservation?.reservation_amenities || []).map((amenity) => amenity.amenity?.amenities_name).join(', ') || 'None';
 
             const primaryGuestMarkup = primaryGuest?.customer
                 ? `
                     <div class="guest-relationship-item guest-relationship-item--main">
                         <div class="guest-relationship-name">${escapeHtml(primaryName)}</div>
+                        ${(primaryEmail || primaryPhone) ? `<div class="guest-relationship-meta" style="margin-top:0.25rem;font-size:0.8rem;color:var(--hp-text-muted);">${primaryEmail ? `Email: ${escapeHtml(primaryEmail)}` : ''}${primaryEmail && primaryPhone ? ' · ' : ''}${primaryPhone ? `Phone: ${escapeHtml(primaryPhone)}` : ''}</div>` : ''}
                     </div>
                 `
                 : '';
@@ -157,9 +161,103 @@ window.AppPage['staff_records'] = function () {
                         <span class="guest-label">Status</span>
                         <div class="guest-value">${customerData.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                     </div>
+                    <div>
+                        <span class="guest-label">Email</span>
+                        <div class="guest-value" style="word-break:break-word;">${escapeHtml(customerData.email || 'N/A')}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Phone</span>
+                        <div class="guest-value">${escapeHtml(customerData.phone || 'N/A')}</div>
+                    </div>
                 </div>
             </div>
             ${reservationDetails || '<div class="guest-card"><p class="guest-empty">No reservation details available.</p></div>'}
+        `;
+
+        guestModal.classList.add('is-open');
+        guestModal.setAttribute('aria-hidden', 'false');
+    };
+
+    // Bulk companion group details: the merged row shows a summary of the
+    // group, then every checked-out member individually with its customer id,
+    // check-in and checked-out date-time.
+    const openBulkGroupModal = (groupKey) => {
+        const group = bulkGroupData[groupKey];
+
+        if (!group) {
+            modalBody.innerHTML = '<p class="guest-empty">No additional detail available.</p>';
+            guestModal.classList.add('is-open');
+            guestModal.setAttribute('aria-hidden', 'false');
+            return;
+        }
+
+        const members = group.members || [];
+
+        // Merge members that were checked out at the same exact time into one
+        // row ("Customer #14, #15, #16") — hovering the ids lists each one.
+        const checkoutBuckets = [];
+        members.forEach((member) => {
+            const key = member.checked_out_at || '';
+            let bucket = checkoutBuckets.find((b) => b.key === key);
+            if (!bucket) {
+                bucket = { key, members: [] };
+                checkoutBuckets.push(bucket);
+            }
+            bucket.members.push(member);
+        });
+
+        const membersHtml = checkoutBuckets.map((bucket) => {
+            const first = bucket.members[0];
+            const ids = bucket.members.map((m) => `#${m.customer_id}`).join(', ');
+            const tooltip = bucket.members.map((m) =>
+                `Customer #${m.customer_id} — Check-in: ${m.check_in ? formatDateTime(m.check_in) : 'N/A'} — Checked-out: ${m.checked_out_at ? formatDateTime(m.checked_out_at) : 'N/A'}`
+            ).join('\n');
+
+            return `
+                <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem 1.25rem;padding:0.6rem 0;border-bottom:1px solid rgba(0,0,0,0.08);">
+                    <span data-tooltip="${escapeHtml(tooltip)}" style="min-width:8.5rem;font-weight:600;color:var(--hp-text);">
+                        Customer ${escapeHtml(ids)}
+                        <span style="margin-left:0.35rem;font-size:0.7rem;font-weight:700;color:var(--hp-green);background:rgba(46,125,85,0.1);border-radius:999px;padding:0.1rem 0.5rem;">${bucket.members.length}x</span>
+                    </span>
+                    <span style="font-size:0.82rem;color:var(--hp-text-muted);">Check-in: ${escapeHtml(first.check_in ? formatDateTime(first.check_in) : 'N/A')}</span>
+                    <span style="font-size:0.82rem;color:var(--hp-text-muted);">Checked-out: ${escapeHtml(first.checked_out_at ? formatDateTime(first.checked_out_at) : 'N/A')}</span>
+                </div>
+            `;
+        }).join('') || '<p class="guest-empty">No checked-out members in this group.</p>';
+
+        modalBody.innerHTML = `
+            <div class="guest-card">
+                <div class="guest-card__grid" style="grid-template-columns:1fr 1fr;">
+                    <div>
+                        <span class="guest-label">Group</span>
+                        <div class="guest-value">${escapeHtml(group.name)}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Reservation</span>
+                        <div class="guest-value">#${escapeHtml(group.reservation_id)}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Age Group</span>
+                        <div class="guest-value">${escapeHtml(group.age_group)}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Gender</span>
+                        <div class="guest-value">${escapeHtml(group.gender)}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Nationality</span>
+                        <div class="guest-value">${escapeHtml(group.nationality)}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Quantity</span>
+                        <div class="guest-value">${escapeHtml(group.count)}x checked out</div>
+                    </div>
+                </div>
+            </div>
+            <div class="guest-card">
+                <h4 style="margin:0 0 0.5rem;font-weight:600;font-size:0.95rem;color:var(--hp-text);">Checked-Out Members (${members.length})</h4>
+                ${membersHtml}
+            </div>
         `;
 
         guestModal.classList.add('is-open');
@@ -220,6 +318,10 @@ window.AppPage['staff_records'] = function () {
 
     guestTableRows.forEach((row) => {
         row.addEventListener('click', () => {
+            if (row.dataset.bulkGroup === 'true') {
+                openBulkGroupModal(row.dataset.bulkKey);
+                return;
+            }
             const customerId = row.getAttribute('data-customer-id');
             openGuestModal(customerId);
         });
@@ -299,6 +401,7 @@ window.AppPage['staff_records'] = function () {
                     ${primaryGuest && primaryGuest.customer ? `
                         <div><strong>${escapeHtml(primaryGuest.customer.first_name)} ${escapeHtml(primaryGuest.customer.middle_name || '')} ${escapeHtml(primaryGuest.customer.last_name)}</strong></div>
                         <div style="font-size: 0.875rem; color: var(--hp-text-muted);">Age: ${escapeHtml(primaryGuest.customer.age || 'N/A')} | Gender: ${escapeHtml(primaryGuest.customer.gender || 'N/A')} | Status: ${escapeHtml(primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino')}</div>
+                        <div style="font-size: 0.875rem; color: var(--hp-text-muted); margin-top: 0.25rem;">Email: ${escapeHtml(primaryGuest.customer.email || 'N/A')} | Phone: ${escapeHtml(primaryGuest.customer.phone || 'N/A')}</div>
                         <div style="font-size: 0.875rem; color: var(--hp-text-muted); margin-top: 0.5rem;">Checked Out: ${escapeHtml(primaryGuest.checked_out_at ? formatDateTime(primaryGuest.checked_out_at) : 'Not yet')}</div>
                     ` : '<div style="color: var(--hp-text);">No main guest assigned</div>'}
                 </div>
@@ -321,10 +424,20 @@ window.AppPage['staff_records'] = function () {
                         age,
                         gender,
                         nationality,
-                        count: 0
+                        count: 0,
+                        emails: [],
+                        phones: []
                     };
                 }
                 companionGroups[key].count++;
+                if (c.customer.email) companionGroups[key].emails.push(c.customer.email);
+                if (c.customer.phone) companionGroups[key].phones.push(c.customer.phone);
+            });
+
+            // De-duplicate contact details per group.
+            Object.values(companionGroups).forEach((group) => {
+                group.emails = [...new Set(group.emails)];
+                group.phones = [...new Set(group.phones)];
             });
 
             const groupEntries = Object.entries(companionGroups);
@@ -337,6 +450,8 @@ window.AppPage['staff_records'] = function () {
                             <div style="padding: 0.75rem; background-color: var(--hp-cream); border-radius: 0.5rem; margin-bottom: 0.5rem;">
                                 <div><strong style="color: var(--hp-text);">Age: ${escapeHtml(group.age)}, Gender: ${escapeHtml(group.gender)}, Nationality: ${escapeHtml(group.nationality)}</strong></div>
                                 <div style="font-size: 0.875rem; color: var(--hp-text-muted);">Quantity: ${group.count}</div>
+                                ${group.emails.length ? `<div style="font-size: 0.875rem; color: var(--hp-text-muted); word-break: break-word;">Emails: ${group.emails.map((e) => escapeHtml(e)).join(', ')}</div>` : ''}
+                                ${group.phones.length ? `<div style="font-size: 0.875rem; color: var(--hp-text-muted);">Phones: ${group.phones.map((p) => escapeHtml(p)).join(', ')}</div>` : ''}
                             </div>
                         `).join('')}
                     </div>

@@ -1886,6 +1886,88 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('checked_out_at', 'desc')
             ->get();
 
+        // ── Bulk companion grouping ──────────────────────────────────────────
+        // Bulk companions are stored as one customer row each, but the records
+        // page shows them merged by their bulk group (same reservation + name +
+        // age + gender + nationality). A group's quantity grows as more members
+        // check out: a 2x record becomes 3x once the last one leaves.
+        $isBulkCompanionName = function (?string $name): bool {
+            $name = strtolower(trim((string) $name));
+            return str_starts_with($name, 'bulk') || str_contains($name, 'companion');
+        };
+
+        // Bulk companions are stored with a midpoint age (6/15/30/65); map it
+        // back to the age group the staff picked at check-in.
+        $bulkAgeGroupLabel = function ($age): string {
+            if ($age === null || $age === '') return 'N/A';
+            if (! is_numeric($age)) return (string) $age;
+            $age = (int) $age;
+            if ($age <= 12) return '0-12';
+            if ($age <= 17) return '13-17';
+            if ($age <= 59) return '18-59';
+            return '60+';
+        };
+
+        $bulkGroupMembers = [];
+        $regularGuestEntries = collect();
+
+        foreach ($checkedOutGuests as $rg) {
+            $customer = $rg->customer;
+            if ($customer && $isBulkCompanionName($customer->first_name)) {
+                $groupKey = implode('|', [
+                    (string) $rg->reservation_id,
+                    strtolower(trim((string) $customer->first_name)),
+                    (string) ($customer->age ?? ''),
+                    strtolower((string) ($customer->gender ?? 'N/A')),
+                    $customer->is_foreigner ? 'Foreigner' : 'Filipino',
+                ]);
+                $bulkGroupMembers[$groupKey][] = $rg;
+            } else {
+                $regularGuestEntries->push($rg);
+            }
+        }
+
+        // Normalize a raw datetime (the model returns strings, not Carbon)
+        // into an ISO-ish string for sorting and JSON.
+        $toDateTimeString = function ($value): ?string {
+            if ($value === null || $value === '') return null;
+            return \Carbon\Carbon::parse($value)->toDateTimeString();
+        };
+
+        $bulkGroups = collect($bulkGroupMembers)->map(function (array $members, string $key) use ($bulkAgeGroupLabel, $toDateTimeString) {
+            $first = $members[0];
+            $customer = $first->customer;
+            $sorted = collect($members)->sortByDesc(fn ($m) => $m->checked_out_at)->values();
+
+            return [
+                'key' => $key,
+                'reservation_id' => $first->reservation_id,
+                'name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')) ?: 'Bulk Companions',
+                'age_group' => $bulkAgeGroupLabel($customer->age),
+                'gender' => $customer->gender ?? 'N/A',
+                'nationality' => $customer->is_foreigner ? 'Foreigner' : 'Filipino',
+                'count' => count($members),
+                'checked_out_at' => $toDateTimeString($sorted->first()?->checked_out_at),
+                'members' => $sorted->map(fn ($m) => [
+                    'customer_id' => $m->customer_id,
+                    'check_in' => $toDateTimeString($m->reservation?->check_in),
+                    'checked_out_at' => $toDateTimeString($m->checked_out_at),
+                ])->all(),
+            ];
+        })->values();
+
+        // Table rows: regular guest entries + one merged row per bulk group,
+        // ordered by most recent check-out.
+        $guestRows = $regularGuestEntries
+            ->map(fn ($rg) => ['type' => 'guest', 'entry' => $rg])
+            ->concat($bulkGroups->map(fn ($group) => ['type' => 'bulk', 'group' => $group]))
+            ->sortByDesc(fn ($row) => $row['type'] === 'bulk'
+                ? (string) ($row['group']['checked_out_at'] ?? '')
+                : ($row['entry']->checked_out_at ? $toDateTimeString($row['entry']->checked_out_at) : ''))
+            ->values();
+
+        $bulkGroupData = $bulkGroups->mapWithKeys(fn ($group) => [$group['key'] => $group]);
+
         // Get all checked-out reservations (reservations that are completed/checked out)
         $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->where(function ($query) {
@@ -1917,6 +1999,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'age' => $guest->customer->age,
                 'gender' => $guest->customer->gender,
                 'is_foreigner' => (bool) $guest->customer->is_foreigner,
+                'email' => $guest->customer->email,
+                'phone' => $guest->customer->phone,
                 'checked_out_at' => $guest->checked_out_at,
                 'reservation_guests' => [[
                     'reservation' => $guest->reservation ? [
@@ -1937,6 +2021,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                                 'customer' => $rg->customer ? [
                                     'first_name' => $rg->customer->first_name,
                                     'last_name' => $rg->customer->last_name,
+                                    'email' => $rg->customer->email,
+                                    'phone' => $rg->customer->phone,
                                 ] : null,
                             ];
                         })->toArray(),
@@ -1972,6 +2058,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'age' => $guest->customer->age,
                             'gender' => $guest->customer->gender,
                             'is_foreigner' => (bool) $guest->customer->is_foreigner,
+                            'email' => $guest->customer->email,
+                            'phone' => $guest->customer->phone,
                         ] : null,
                     ];
                 })->toArray(),
@@ -1990,6 +2078,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         return view('staff.staff_records', compact(
             'checkedOutGuests',
+            'guestRows',
+            'bulkGroupData',
             'checkedOutReservations',
             'guestData',
             'reservationData',
@@ -3175,6 +3265,76 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'success' => true,
         ]);
     })->name('reservation-guests.undo-checkout');
+
+    Route::post('/reservations/{reservation}/bulk-companions/check-out', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $data = $request->validate([
+            'count' => ['required', 'integer', 'min:1', 'max:500'],
+        ]);
+
+        // Bulk companions are detected by their generated name (they carry no
+        // contact details, so each gets its own customer row named "Companion").
+        $isBulkName = function ($name): bool {
+            $name = strtolower(trim((string) $name));
+            return str_starts_with($name, 'bulk') || str_contains($name, 'companion');
+        };
+
+        // Active bulk companions (still inside), oldest first so the earliest
+        // check-ins leave first. The primary guest is never part of a bulk
+        // group, even if their name happens to contain "companion".
+        $activeBulk = $reservation->reservationGuests()
+            ->whereNull('checked_out_at')
+            ->where('is_primary_guest', false)
+            ->get()
+            ->filter(fn ($rg) => $rg->customer && $isBulkName($rg->customer->first_name))
+            ->sortBy('id')
+            ->values();
+
+        $requested = (int) $data['count'];
+        $toCheckOut = $activeBulk->take(max(1, min($requested, $activeBulk->count())));
+
+        if ($toCheckOut->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'checked_out' => 0,
+                'requested' => $requested,
+                'remaining' => 0,
+                'message' => 'All bulk companions are already checked out.',
+            ]);
+        }
+
+        $now = now();
+        $checkedOut = 0;
+        foreach ($toCheckOut as $rg) {
+            $rg->update(['checked_out_at' => $now]);
+            $checkedOut++;
+        }
+
+        // If every guest in the reservation is now out, close the reservation
+        // (mirrors the single-guest checkout route).
+        $totalGuests = $reservation->reservationGuests()->count();
+        $outGuests = ReservationGuest::where('reservation_id', $reservation->id)
+            ->whereNotNull('checked_out_at')
+            ->count();
+        if ($totalGuests > 0 && $outGuests >= $totalGuests) {
+            $reservation->update([
+                'check_out' => now()->toDateTimeString(),
+                'status' => 'Checked Out',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'checked_out' => $checkedOut,
+            'requested' => $requested,
+            'remaining' => $activeBulk->count() - $checkedOut,
+            'message' => "$checkedOut bulk companion(s) checked out successfully.",
+        ]);
+    })->name('reservations.bulk-companions.checkout');
 
     Route::get('/settings', function (Request $request) {
         $user = $request->session()->get('auth_user');
