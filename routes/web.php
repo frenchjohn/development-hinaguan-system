@@ -2461,6 +2461,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
+            // Checkboxes send "on" — Laravel's boolean rule rejects it
+            'include_pool' => ['nullable', 'in:on,1,true,0,false'],
         ]);
 
         // Delete existing reservation guests to replace them
@@ -2578,10 +2580,134 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        // Update reservation with check-in date and status
+        // ── Entrance fee (mirrors the walk-in Add Guest computation) ────────
+        // Adult/child counts from guest ages (12 and below = child).
+        $adultCount = 0;
+        $childCount = 0;
+        if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
+            $primaryAge = (int) ($data['primary_guest']['age'] ?? 99);
+            if ($primaryAge <= 12) {
+                $childCount++;
+            } else {
+                $adultCount++;
+            }
+        }
+        foreach ($data['companions'] ?? [] as $companionData) {
+            // Bulk companions may send an age_group (0-12, 13-17, 18-59, 60+)
+            // instead of an exact age.
+            if (($companionData['age_group'] ?? null) === '0-12') {
+                $childCount++;
+            } else {
+                $companionAge = (int) ($companionData['age'] ?? 99);
+                if ($companionAge <= 12) {
+                    $childCount++;
+                } else {
+                    $adultCount++;
+                }
+            }
+        }
+
+        // The entrance period follows the reservation's first amenity (its
+        // pricing_type drives the checkout timer too); without amenities it
+        // falls back to the current park session.
+        $amenityPeriodToEntrance = [
+            'Daytime' => 'daytime',
+            'Daytime Aircon' => 'daytime',
+            'Nighttime' => 'nighttime',
+            'Nighttime Aircon' => 'nighttime',
+            'DayToNight' => 'daytonight',
+            'DayToNight Aircon' => 'daytonight',
+            'NightToDay' => 'daytonight',
+            'NightToDay Aircon' => 'daytonight',
+        ];
+        $hasAmenities = $reservation->reservationAmenities()->exists();
+        $firstAmenityPricingType = $reservation->reservationAmenities()->first()?->pricing_type;
+        $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? null;
+
+        if (! $effectivePeriod) {
+            $settingsForSession = \App\Models\ParkSetting::first();
+            $currentHour = now()->format('H:i');
+            $nighttimeStart = $settingsForSession?->nighttime_start ?? '17:00';
+            $nighttimeEnd = $settingsForSession?->nighttime_end ?? '06:00';
+            $effectivePeriod = 'daytime';
+            if ($nighttimeStart && $nighttimeEnd) {
+                if ($nighttimeStart <= $nighttimeEnd) {
+                    if ($currentHour >= $nighttimeStart && $currentHour <= $nighttimeEnd) $effectivePeriod = 'nighttime';
+                } else {
+                    if ($currentHour >= $nighttimeStart || $currentHour <= $nighttimeEnd) $effectivePeriod = 'nighttime';
+                }
+            }
+        }
+
+        $settings = \App\Models\ParkSetting::first();
+        $dayAdult = (float) ($settings->daytime_adult_entrance_fee ?? 0);
+        $dayChild = (float) ($settings->daytime_child_entrance_fee ?? 0);
+        $nightAdult = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+        $nightChild = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+
+        if ($effectivePeriod === 'nighttime') {
+            $adultRate = $nightAdult;
+            $childRate = $nightChild;
+        } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+            $adultRate = $dayAdult + $nightAdult;
+            $childRate = $dayChild + $nightChild;
+        } else {
+            $adultRate = $dayAdult;
+            $childRate = $dayChild;
+        }
+
+        $entranceTotal = ($adultCount * $adultRate) + ($childCount * $childRate);
+
+        // Pool access is a one-time fee for the reservation (matches the
+        // walk-in flow).
+        $poolFee = 0;
+        if (! empty($data['include_pool'])) {
+            $dayPool = (float) ($settings->day_pool_fee ?? 0);
+            $nightPool = (float) ($settings->night_pool_fee ?? 0);
+            if ($effectivePeriod === 'nighttime') {
+                $poolFee = $nightPool;
+            } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+                $poolFee = $dayPool + $nightPool;
+            } else {
+                $poolFee = $dayPool;
+            }
+        }
+
+        $grandTotal = round($entranceTotal + $poolFee, 2);
+
+        // Entrance fee, separated from amenity fees. pricing_type stays null
+        // when the reservation has amenities (the checkout timer references
+        // the amenity rows' pricing_type instead).
+        $entrancePricingType = $hasAmenities ? null : match ($effectivePeriod) {
+            'nighttime' => 'Nighttime',
+            'daytonight' => 'DayToNight',
+            'nighttoday' => 'NightToDay',
+            default => 'Daytime',
+        };
+
+        \App\Models\ReservationEntranceFee::updateOrCreate(
+            ['reservation_id' => $reservation->id],
+            [
+                'pricing_type' => $entrancePricingType,
+                'total_amount' => $grandTotal,
+                'pool_fee' => round($poolFee, 2),
+                'adult_count' => $adultCount,
+                'child_count' => $childCount,
+            ]
+        );
+
+        // Update reservation with check-in date and status. The entrance fee
+        // collected at the counter pays off the remaining balance, so the
+        // reservation becomes fully PAID.
+        $oldTotal = (float) $reservation->total_amount;
+        $oldPaid = (float) $reservation->amount_paid;
         $reservation->update([
             'check_in' => now()->toDateTimeString(),
             'status' => 'Checked In',
+            'total_amount' => round($oldTotal + $grandTotal, 2),
+            'amount_paid' => round($oldPaid + $grandTotal, 2),
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
         ]);
 
         // Keep number_of_guests in sync with the actual guest list
@@ -2595,6 +2721,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'success' => true,
             'check_in' => $reservation->check_in,
             'status' => $reservation->status,
+            'payment_status' => $reservation->payment_status,
+            'entrance_fee' => $grandTotal,
         ]);
     })->name('reservations.check-in');
 

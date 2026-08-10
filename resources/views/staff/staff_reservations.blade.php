@@ -57,7 +57,18 @@
                     subtitle="Manage online reservations and walk-in check-ins"
                 />
 
-                <div class="resv-metrics mb-4 flex flex-wrap gap-3" data-park-settings="{{ json_encode(['daytime_start' => $daytimeStart, 'daytime_end' => $daytimeEnd, 'nighttime_start' => $nighttimeStart, 'nighttime_end' => $nighttimeEnd]) }}">
+                <div class="resv-metrics mb-4 flex flex-wrap gap-3" data-park-settings="{{ json_encode([
+                    'daytime_start' => $daytimeStart,
+                    'daytime_end' => $daytimeEnd,
+                    'nighttime_start' => $nighttimeStart,
+                    'nighttime_end' => $nighttimeEnd,
+                    'daytime_adult_entrance_fee' => $parkSettings->daytime_adult_entrance_fee ?? 0,
+                    'daytime_child_entrance_fee' => $parkSettings->daytime_child_entrance_fee ?? 0,
+                    'nighttime_adult_entrance_fee' => $parkSettings->nighttime_adult_entrance_fee ?? 0,
+                    'nighttime_child_entrance_fee' => $parkSettings->nighttime_child_entrance_fee ?? 0,
+                    'day_pool_fee' => $parkSettings->day_pool_fee ?? 0,
+                    'night_pool_fee' => $parkSettings->night_pool_fee ?? 0,
+                ]) }}">
                     <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
                         <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
                             <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -499,6 +510,45 @@
                     </div>
                     <div id="checkInCompanionList" class="guest-companion-list grid gap-2"></div>
                     <div id="checkInCompanionHiddenFields"></div>
+                </div>
+
+                <div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
+                        <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Entrance Fee</h4>
+                        <span id="checkInEffectivePeriodBadge" class="inline-flex items-center rounded-full border border-glass-border bg-[rgba(255,152,0,0.15)] px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">—</span>
+                    </div>
+                    <label class="guest-form__field inline-flex w-fit cursor-pointer items-center gap-2.5">
+                        <input type="checkbox" name="check_in_include_pool" id="checkInIncludePool" class="h-4 w-4 cursor-pointer accent-hp-green">
+                        <span class="text-sm font-semibold text-hp-text">Include Pool Access</span>
+                    </label>
+                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Adults</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="checkInAdultSummary">0 × ₱0.00</p>
+                        </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Children</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="checkInChildSummary">0 × ₱0.00</p>
+                        </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Pool</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="checkInPoolSummary">₱0.00</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hp-green/30 bg-[rgba(26,58,31,0.08)] px-3.5 py-2.5 dark:bg-[rgba(129,199,132,0.08)]">
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Entrance subtotal</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-hp-green" id="checkInEntranceTotal">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Reservation balance</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-[#e65100]" id="checkInReservationBalance">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Total to pay</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-hp-text dark:text-[#c8e6c8]" id="checkInGrandTotal">₱0.00</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="guest-form__actions flex flex-wrap justify-end gap-3">

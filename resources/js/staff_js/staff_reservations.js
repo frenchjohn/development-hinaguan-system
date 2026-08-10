@@ -232,6 +232,8 @@ window.AppPage['staff_reservations'] = function () {
                 checkInCompanionHiddenFields.appendChild(field);
             });
         });
+
+        updateCheckInFeeSummary();
     };
 
     const openCheckInCompanionModal = () => {
@@ -315,7 +317,39 @@ window.AppPage['staff_reservations'] = function () {
         
         const isToday = reservationDate === today;
         
+        const { adultCount, childCount, adultRate, childRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
+        const balance = Number(currentReservationData?.remaining_balance || 0);
+        const poolChecked = document.getElementById('checkInIncludePool')?.checked || false;
+        const grandTotal = total + balance;
+        
         let html = '<p>Are you sure you want to check in this reservation now?</p>';
+
+        html += `
+            <div style="margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; overflow: hidden;">
+                <div style="padding: 0.65rem 0.9rem; background: #f8fafc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Payment Summary</div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; color: #334155;">
+                    <span style="font-size: 0.85rem;">Entrance fee</span>
+                    <strong style="font-size: 0.85rem;">₱${entranceTotal.toFixed(2)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #94a3b8; font-size: 0.8rem;">
+                    <span>${adultCount} adult${adultCount === 1 ? '' : 's'} × ₱${adultRate.toFixed(2)} + ${childCount} child${childCount === 1 ? '' : 'ren'} × ₱${childRate.toFixed(2)}</span>
+                    <span>₱${entranceTotal.toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
+                    <span style="font-size: 0.85rem;">Pool access</span>
+                    <strong style="font-size: 0.85rem;">${poolChecked ? `₱${poolTotal.toFixed(2)}` : 'Not included'}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
+                    <span style="font-size: 0.85rem;">Remaining reservation balance</span>
+                    <strong style="font-size: 0.85rem;">₱${balance.toFixed(2)}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border-top: 1px solid #e2e8f0;">
+                    <strong style="font-size: 0.95rem;">Total to pay</strong>
+                    <strong style="font-size: 0.95rem; color: #16a34a;">₱${grandTotal.toFixed(2)}</strong>
+                </div>
+            </div>
+            <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation is partially paid. Paying this total settles the remaining balance and marks the reservation as <strong>Paid</strong>.</p>
+        `;
         
         if (!isToday && reservationDate) {
             html += `
@@ -368,6 +402,129 @@ window.AppPage['staff_reservations'] = function () {
             checkInConfirmationModal.classList.remove('is-open');
             checkInConfirmationModal.setAttribute('aria-hidden', 'true');
         }
+    };
+
+    // ── Entrance fee computation for online reservation check-in ──────────
+    // Mirrors the server-side logic on the check-ins page: adult = over 12,
+    // child = 12 and below. The entrance period follows the reservation's
+    // first amenity (amenities carry their own pricing_type) and falls back
+    // to the current park session when there are no amenities. Pool access is
+    // a one-time fee per reservation, matching the server computation.
+    let checkInParkSettings = {
+        daytime_adult_entrance_fee: 0,
+        daytime_child_entrance_fee: 0,
+        nighttime_adult_entrance_fee: 0,
+        nighttime_child_entrance_fee: 0,
+        day_pool_fee: 0,
+        night_pool_fee: 0,
+        daytime_start: '06:00',
+        daytime_end: '18:00',
+        nighttime_start: '18:00',
+        nighttime_end: '06:00',
+    };
+    try {
+        const raw = JSON.parse(document.querySelector('.resv-metrics')?.dataset.parkSettings || '{}');
+        checkInParkSettings = { ...checkInParkSettings, ...raw };
+    } catch (e) { /* ignore */ }
+
+    const parseCheckInTime = (timeStr) => {
+        const [hours, minutes] = String(timeStr || '').split(':').map(Number);
+        return (hours || 0) * 60 + (minutes || 0);
+    };
+
+    const getCurrentCheckInSession = () => {
+        const now = new Date();
+        const current = now.getHours() * 60 + now.getMinutes();
+        const start = parseCheckInTime(checkInParkSettings.daytime_start);
+        const end = parseCheckInTime(checkInParkSettings.daytime_end);
+        return current >= start && current < end ? 'daytime' : 'nighttime';
+    };
+
+    const getCheckInEffectivePeriod = () => {
+        const reservation = currentReservationData;
+        const firstAmenity = (reservation?.reservation_amenities || [])[0];
+        const pricingType = firstAmenity?.pricing_type || '';
+        if (pricingType.includes('NightToDay') || pricingType.includes('DayToNight')) return 'daytonight';
+        if (pricingType.includes('Nighttime')) return 'nighttime';
+        if (pricingType.includes('Daytime')) return 'daytime';
+        return getCurrentCheckInSession();
+    };
+
+    const getCheckInPeriodLabel = (period) => {
+        const labels = { daytime: 'Daytime', nighttime: 'Nighttime', daytonight: 'Day to Night', nighttoday: 'Night to Day' };
+        return labels[period] || period;
+    };
+
+    const computeCheckInEntrance = () => {
+        const period = getCheckInEffectivePeriod();
+        const ps = checkInParkSettings;
+
+        let adultRate = 0;
+        let childRate = 0;
+        let poolRate = 0;
+        if (period === 'nighttime') {
+            adultRate = Number(ps.nighttime_adult_entrance_fee) || 0;
+            childRate = Number(ps.nighttime_child_entrance_fee) || 0;
+            poolRate = Number(ps.night_pool_fee) || 0;
+        } else if (period === 'daytonight' || period === 'nighttoday') {
+            adultRate = (Number(ps.daytime_adult_entrance_fee) || 0) + (Number(ps.nighttime_adult_entrance_fee) || 0);
+            childRate = (Number(ps.daytime_child_entrance_fee) || 0) + (Number(ps.nighttime_child_entrance_fee) || 0);
+            poolRate = (Number(ps.day_pool_fee) || 0) + (Number(ps.night_pool_fee) || 0);
+        } else {
+            adultRate = Number(ps.daytime_adult_entrance_fee) || 0;
+            childRate = Number(ps.daytime_child_entrance_fee) || 0;
+            poolRate = Number(ps.day_pool_fee) || 0;
+        }
+
+        let adultCount = 0;
+        let childCount = 0;
+        const guestMode = checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value;
+        if (guestMode === 'with_primary') {
+            const primaryAge = parseInt(checkInForm?.querySelector('input[name="check_in_primary_guest[age]"]')?.value, 10);
+            if (!isNaN(primaryAge) && primaryAge <= 12) childCount += 1;
+            else adultCount += 1;
+        }
+        getAllCheckInCompanions().forEach((companion) => {
+            const companionAge = parseInt(companion.age, 10);
+            if (!isNaN(companionAge) && companionAge <= 12) childCount += 1;
+            else adultCount += 1;
+        });
+
+        const entranceTotal = adultCount * adultRate + childCount * childRate;
+        const poolChecked = document.getElementById('checkInIncludePool')?.checked || false;
+        const poolTotal = poolChecked ? poolRate : 0;
+
+        return {
+            period,
+            adultCount,
+            childCount,
+            adultRate,
+            childRate,
+            poolTotal,
+            entranceTotal,
+            total: entranceTotal + poolTotal,
+        };
+    };
+
+    const updateCheckInFeeSummary = () => {
+        const { period, adultCount, childCount, adultRate, childRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
+        const balance = Number(currentReservationData?.remaining_balance || 0);
+
+        const badge = document.getElementById('checkInEffectivePeriodBadge');
+        if (badge) badge.textContent = getCheckInPeriodLabel(period);
+
+        const adultEl = document.getElementById('checkInAdultSummary');
+        if (adultEl) adultEl.textContent = `${adultCount} × ₱${adultRate.toFixed(2)}`;
+        const childEl = document.getElementById('checkInChildSummary');
+        if (childEl) childEl.textContent = `${childCount} × ₱${childRate.toFixed(2)}`;
+        const poolEl = document.getElementById('checkInPoolSummary');
+        if (poolEl) poolEl.textContent = `₱${poolTotal.toFixed(2)}`;
+        const entranceEl = document.getElementById('checkInEntranceTotal');
+        if (entranceEl) entranceEl.textContent = `₱${entranceTotal.toFixed(2)}`;
+        const balanceEl = document.getElementById('checkInReservationBalance');
+        if (balanceEl) balanceEl.textContent = `₱${balance.toFixed(2)}`;
+        const grandEl = document.getElementById('checkInGrandTotal');
+        if (grandEl) grandEl.textContent = `₱${(total + balance).toFixed(2)}`;
     };
 
     const getAgeFromGroup = (ageGroup) => {
@@ -435,6 +592,7 @@ window.AppPage['staff_reservations'] = function () {
         if (primarySection) {
             primarySection.style.display = guestMode === 'with_primary' ? 'block' : 'none';
         }
+        updateCheckInFeeSummary();
     };
 
     checkInForm?.addEventListener('change', (e) => {
@@ -442,6 +600,16 @@ window.AppPage['staff_reservations'] = function () {
             toggleCheckInPrimaryGuestSection();
         }
     });
+
+    // Live entrance-fee totals as the staff edits the primary guest's age or
+    // toggles pool access.
+    checkInForm?.addEventListener('input', (e) => {
+        if (e.target.name === 'check_in_primary_guest[age]') {
+            updateCheckInFeeSummary();
+        }
+    });
+
+    document.getElementById('checkInIncludePool')?.addEventListener('change', updateCheckInFeeSummary);
 
     checkInAddCompanionBtn?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -568,6 +736,7 @@ window.AppPage['staff_reservations'] = function () {
         checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]').checked = true;
         toggleCheckInPrimaryGuestSection();
         renderCheckInCompanions();
+        updateCheckInFeeSummary();
         if (checkInModal) {
             checkInModal.classList.add('is-open');
             checkInModal.setAttribute('aria-hidden', 'false');
@@ -1646,6 +1815,7 @@ window.AppPage['staff_reservations'] = function () {
                     primary_guest: primaryGuest,
                     primary_guest_id: primaryGuestToUpdate?.customer_id || null,
                     companions: getAllCheckInCompanions(),
+                    include_pool: formData.get('check_in_include_pool') || '0',
                 }),
             });
 
