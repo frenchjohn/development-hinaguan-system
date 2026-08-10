@@ -17,8 +17,7 @@
     @vite([
         'resources/css/app.css',
         'resources/components/css_js/header.css',
-        'resources/components/css_js/admin_sidemenu.css',
-        'resources/css/admin_css/admin_usermanagement.css',
+        'resources/css/admin_css/admin_shared.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_usermanagement.js',
@@ -30,46 +29,46 @@
 
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
-            <main class="dash-content">
+            <main class="dash-content p-6">
                 <x-header
                     title="User Management"
                     subtitle="Manage staff accounts and access"
                 />
-                <section class="users-head">
+                <section class="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <p class="users-head__eyebrow">Manage Staff Accounts</p>
-                        <h2 class="users-head__title">All staff users</h2>
-                        <p class="users-head__text">Create, edit, ban, or remove staff accounts from the system.</p>
+                        <p class="m-0 mb-[0.3rem] text-[0.8rem] font-bold uppercase tracking-[0.16em] text-[var(--hp-gold-dark)]">Manage Staff Accounts</p>
+                        <h2 class="m-0 text-[1.5rem] font-bold text-[var(--hp-text)]">All staff users</h2>
+                        <p class="m-0 mt-[0.35rem] text-[var(--hp-text-muted)]">Create, edit, ban, or remove staff accounts from the system.</p>
                     </div>
                     <button type="button" class="btn btn--primary" data-open-user-modal>New Staff Account</button>
                 </section>
 
-                <div class="users-stats">
-                    <article class="users-stat">
-                        <span class="users-stat__icon users-stat__icon--total">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                <div class="mb-5 grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]">
+                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </span>
-                        <div class="users-stat__body">
-                            <p class="users-stat__value">{{ $totalStaff }}</p>
-                            <p class="users-stat__label">Total Staff Accounts</p>
+                        <div>
+                            <p class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $totalStaff }}</p>
+                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Total Staff Accounts</p>
                         </div>
                     </article>
-                    <article class="users-stat">
-                        <span class="users-stat__icon users-stat__icon--active">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]">
+                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green-deep)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="users-stat__body">
-                            <p class="users-stat__value">{{ $activeStaff }}</p>
-                            <p class="users-stat__label">Active Accounts</p>
+                        <div>
+                            <p class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $activeStaff }}</p>
+                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Active Accounts</p>
                         </div>
                     </article>
-                    <article class="users-stat">
-                        <span class="users-stat__icon users-stat__icon--banned">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]">
+                        <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--danger-soft)] text-[var(--danger)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.25rem] w-[1.25rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                         </span>
-                        <div class="users-stat__body">
-                            <p class="users-stat__value">{{ $bannedStaff }}</p>
-                            <p class="users-stat__label">Banned Accounts</p>
+                        <div>
+                            <p class="m-0 font-display text-[1.45rem] font-bold leading-none text-[var(--ink)]">{{ $bannedStaff }}</p>
+                            <p class="m-0 mt-[0.3rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Banned Accounts</p>
                         </div>
                     </article>
                 </div>
@@ -90,12 +89,12 @@
                 @endif
 
                 <section class="users-table-wrap">
-                    <div class="users-toolbar">
-                        <div class="users-toolbar__search">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-                            <input id="userSearch" type="search" placeholder="Search by name or email..." autocomplete="off">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--surface)] px-[1.1rem] py-[0.9rem]">
+                        <div class="relative min-w-[14rem] max-w-[24rem] flex-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-[0.8rem] top-1/2 h-[0.95rem] w-[0.95rem] -translate-y-1/2 text-[var(--ink-faint)]"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+                            <input id="userSearch" type="search" placeholder="Search by name or email..." autocomplete="off" class="w-full rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] py-[0.55rem] pl-[2.2rem] pr-[0.9rem] text-[0.84rem] text-[var(--ink)] outline-none transition-all duration-200 focus:border-[var(--green)] focus:bg-[var(--surface)] focus:shadow-[0_0_0_3px_rgba(23,138,82,0.12)]">
                         </div>
-                        <span class="users-toolbar__count" id="userCountText">{{ $totalStaff }} staff account(s)</span>
+                        <span class="whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.28rem] text-[0.76rem] font-semibold text-[var(--ink-muted)]" id="userCountText">{{ $totalStaff }} staff account(s)</span>
                     </div>
                     <table class="users-table">
                         <thead>

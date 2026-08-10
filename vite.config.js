@@ -26,19 +26,14 @@ export default defineConfig({
                 'resources/components/css_js/header.js',
                 'resources/components/css_js/sidemenu.css',
                 'resources/components/css_js/sidemenu.js',
-                'resources/components/css_js/admin_sidemenu.css',
                 'resources/components/css_js/staff_sidemenu.css',
 
                 // Admin pages
-                'resources/css/admin_css/admin_dashboard.css',
+                'resources/css/admin_css/admin_shared.css',
                 'resources/js/admin_js/admin_dashboard.js',
-                'resources/css/admin_css/admin_amenitiesmanagement.css',
                 'resources/js/admin_js/admin_amenitiesmanagement.js',
-                'resources/css/admin_css/admin_reports.css',
                 'resources/js/admin_js/admin_reports.js',
-                'resources/css/admin_css/admin_settings.css',
                 'resources/js/admin_js/admin_settings.js',
-                'resources/css/admin_css/admin_usermanagement.css',
                 'resources/js/admin_js/admin_usermanagement.js',
 
                 // Staff pages

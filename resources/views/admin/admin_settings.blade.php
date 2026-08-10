@@ -17,8 +17,7 @@
     @vite([
         'resources/css/app.css',
         'resources/components/css_js/header.css',
-        'resources/components/css_js/admin_sidemenu.css',
-        'resources/css/admin_css/admin_settings.css',
+        'resources/css/admin_css/admin_shared.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_settings.js',
@@ -29,28 +28,28 @@
         <x-admin_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
-            <main class="dash-content">
+            <main class="dash-content p-6">
                 <x-header title="Settings" subtitle="Manage park settings and security" />
                 <div class="admin-settings">
                     <!-- Horizontal Card Menu -->
                     <div class="admin-settings__menu" id="settingsMenu">
-                        <div class="admin-settings__menu-card" data-target="park-settings">
-                            <div class="admin-settings__menu-card__icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <div class="group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="park-settings">
+                            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-8 w-8">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                                 </svg>
                             </div>
-                            <h3 class="admin-settings__menu-card__title">Park Settings</h3>
-                            <p class="admin-settings__menu-card__text">Manage park configuration, hours, and fees</p>
+                            <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Settings</h3>
+                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park configuration, hours, and fees</p>
                         </div>
-                        <div class="admin-settings__menu-card" data-target="security">
-                            <div class="admin-settings__menu-card__icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <div class="group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="security">
+                            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-8 w-8">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                                 </svg>
                             </div>
-                            <h3 class="admin-settings__menu-card__title">Security</h3>
-                            <p class="admin-settings__menu-card__text">Update password and email settings</p>
+                            <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Security</h3>
+                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Update password and email settings</p>
                         </div>
                     </div>
 
@@ -64,17 +63,17 @@
 
                     <!-- Park Settings Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-settings">
-                        <button type="button" class="admin-settings__back-btn" id="backToMenu">
-                            <svg class="admin-settings__back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenu">
+                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             Back to Settings
                         </button>
-                        <section class="dash-panel admin-settings__card">
-                            <div class="admin-settings__card-header">
+                        <section class="dash-panel p-8">
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4">
                                 <div>
-                                    <h2 class="admin-settings__card-title">Park Configuration</h2>
-                                    <p class="admin-settings__card-text">Manage park information, operating hours, and fees.</p>
+                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Configuration</h2>
+                                    <p class="admin-settings__card-text m-0 mb-4 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Manage park information, operating hours, and fees.</p>
                                 </div>
                                 <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="editParkSettingsBtn">
                                     <svg class="admin-settings__btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -163,25 +162,25 @@
 
                     <!-- Security Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="security">
-                        <button type="button" class="admin-settings__back-btn" id="backToMenuFromSecurity">
-                            <svg class="admin-settings__back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromSecurity">
+                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             Back to Settings
                         </button>
                         
-                        <div class="admin-settings__security-grid">
+                        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
                             <!-- Change Password Section -->
-                            <section class="dash-panel admin-settings__card admin-settings__security-card">
-                                <div class="admin-settings__security-card__header">
-                                    <div class="admin-settings__security-card__icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <section class="dash-panel p-8">
+                                <div class="mb-6 flex items-center gap-4">
+                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-7 w-7">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                                         </svg>
                                     </div>
                                     <div>
-                                        <h2 class="admin-settings__card-title">Password</h2>
-                                        <p class="admin-settings__card-text">Update your account password</p>
+                                        <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Password</h2>
+                                        <p class="admin-settings__card-text m-0 text-[0.875rem] text-[var(--hp-text-muted)]">Update your account password</p>
                                     </div>
                                 </div>
                                 <form id="changePasswordForm" class="admin-settings__form admin-settings__form--hidden">
@@ -228,16 +227,16 @@
                             </section>
 
                             <!-- Change Email Section -->
-                            <section class="dash-panel admin-settings__card admin-settings__security-card">
-                                <div class="admin-settings__security-card__header">
-                                    <div class="admin-settings__security-card__icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <section class="dash-panel p-8">
+                                <div class="mb-6 flex items-center gap-4">
+                                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-7 w-7">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                                         </svg>
                                     </div>
                                     <div>
-                                        <h2 class="admin-settings__card-title">Email</h2>
-                                        <p class="admin-settings__card-text">Update your email address</p>
+                                        <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Email</h2>
+                                        <p class="admin-settings__card-text m-0 text-[0.875rem] text-[var(--hp-text-muted)]">Update your email address</p>
                                     </div>
                                 </div>
                                 <div class="admin-settings__email-display">
