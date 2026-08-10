@@ -862,7 +862,8 @@ body.staff-portal .users-table-wrap , body.admin-portal .users-table-wrap {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xs);
-    overflow: hidden;
+    /* auto (not hidden) so tall tables inside max-height wrappers scroll */
+    overflow: auto;
 }
 
 body.staff-portal .guest-table, body.admin-portal .guest-table,
@@ -3092,50 +3093,68 @@ td.mono-cell {
     background: rgba(255, 255, 255, 0.04);
 }
 
-/* Companion Row Visual Hierarchy */
+/* Companion Row Visual Hierarchy — nested under their primary guest */
 .guest-table tr.is-expanded td {
     border-bottom-color: transparent !important;
 }
 
 .guest-row--companion {
-    background: rgba(0, 0, 0, 0.015);
+    background: rgba(23, 138, 82, 0.05);
 }
 
 [data-theme="dark"] .guest-row--companion {
-    background: rgba(255, 255, 255, 0.015);
+    background: rgba(110, 159, 84, 0.09);
 }
 
-/* Indent and L-shaped connector for companions */
-.guest-row--companion td:first-child {
-    padding-left: 2.75rem;
+.guest-row--companion:hover,
+.guest-row--companion:hover td {
+    background: rgba(23, 138, 82, 0.09) !important;
+}
+
+[data-theme="dark"] .guest-row--companion:hover td {
+    background: rgba(110, 159, 84, 0.14) !important;
+}
+
+/* Deeper indent so companions clearly sit under the main guest.
+   NOTE: needs body.staff-portal prefix to out-specify the
+   `body.staff-portal .guest-table tbody td` padding rule above. */
+body.staff-portal .guest-row--companion td:first-child,
+body.admin-portal .guest-row--companion td:first-child {
+    padding-left: 3.5rem;
     position: relative;
 }
 
+/* Tree trunk: a continuous vertical line down the companion group */
 .guest-row--companion td:first-child::before {
     content: '';
     position: absolute;
-    left: 1.25rem;
+    left: 1.5rem;
     top: 0;
-    bottom: 50%;
+    bottom: 0;
     width: 2px;
-    background-color: var(--glass-border-strong);
+    background-color: rgba(23, 138, 82, 0.45);
 }
 
+/* Branch: horizontal connector from the trunk into each companion row */
 .guest-row--companion td:first-child::after {
     content: '';
     position: absolute;
-    left: 1.25rem;
+    left: 1.5rem;
     top: 50%;
-    width: 0.75rem;
+    width: 1rem;
     height: 2px;
-    background-color: var(--glass-border-strong);
+    background-color: rgba(23, 138, 82, 0.45);
 }
 
-/* If it's the last companion in the group, we don't want the line to extend downwards */
-.guest-row--companion:last-child td:first-child::before,
-.guest-row--companion + tr:not(.guest-row--companion) td:first-child::before {
-    /* CSS cannot easily detect the 'last companion of a group' using standard selectors 
-       without a specific class, so this basic connector from top to 50% is safe for all */
+[data-theme="dark"] .guest-row--companion td:first-child::before,
+[data-theme="dark"] .guest-row--companion td:first-child::after {
+    background-color: rgba(110, 159, 84, 0.55);
+}
+
+/* Last companion of a group: the trunk stops at the branch instead of running on */
+.guest-row--companion:has(+ tr:not(.guest-row--companion)) td:first-child::before,
+.guest-row--companion:last-child td:first-child::before {
+    bottom: 50%;
 }
 
 

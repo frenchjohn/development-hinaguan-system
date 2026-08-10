@@ -599,7 +599,47 @@
 								</tr>
 							</thead>
 							<tbody id="guestTableBody">
-								@foreach ($customers ?? collect() as $customer)
+								@php
+									// Order rows so each primary guest is immediately followed by
+									// their companions (grouped by active reservation) instead of
+									// being scattered alphabetically across the table.
+									$customersById = collect($customers ?? collect())->keyBy('id');
+									$guestOrderKeys = [];
+									foreach ($customers ?? collect() as $orderCustomer) {
+										$orderEntry = $orderCustomer->reservationGuests
+											->filter(fn ($g) => $g->reservation && ! $g->checked_out_at)
+											->first(fn ($g) => $g->reservation && $g->reservation->reservation_type === 'walk_in')
+											?? $orderCustomer->reservationGuests
+												->filter(fn ($g) => $g->reservation && ! $g->checked_out_at)
+												->first();
+										$orderRes = $orderEntry?->reservation;
+										$resKey = $orderRes
+											? ($orderRes->check_in?->timestamp ?? $orderRes->reservation_date?->timestamp ?? 0)
+											: PHP_INT_MAX;
+										$guestOrderKeys[$orderCustomer->id] = [
+											$resKey,
+											($orderEntry?->is_primary_guest ?? false) ? 0 : 1,
+											strtolower(trim(($orderCustomer->last_name ?? '') . ' ' . ($orderCustomer->first_name ?? ''))),
+										];
+									}
+									$orderedCustomerIds = collect($customers ?? collect())
+										->sortBy(function ($c) use ($guestOrderKeys) {
+											$k = $guestOrderKeys[$c->id] ?? [PHP_INT_MAX, 1, ''];
+											// Fixed-width string key: reservation check-in, then primary
+											// (0) before companions (1), then name. (Multi-closure sortBy
+											// silently no-ops here, so use one string key.)
+											return sprintf('%020d|%d|%s', $k[0], $k[1], $k[2]);
+										})
+										->pluck('id')
+										->all();
+								@endphp
+								@foreach ($orderedCustomerIds as $orderedCustomerId)
+									@php
+										$customer = $customersById[$orderedCustomerId] ?? null;
+									@endphp
+									@if (! $customer)
+										@continue
+									@endif
 									@php
 										$hasActiveReservation = $customer->reservationGuests->filter(function ($guest) {
 											$reservation = $guest->reservation ?? null;
@@ -735,6 +775,12 @@
 														@endif
 														@if($isStray)
 															<span class="ml-1.5 rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.65rem] font-semibold text-white">Stray</span>
+														@endif
+														@if ($isPrimary && $companionCount > 0 && ! $isStray)
+															<span class="guest-companion-count ml-1.5 inline-flex items-center gap-1 rounded-full bg-hp-green/10 px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">
+																<svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+																{{ $companionCount }} companion{{ $companionCount === 1 ? '' : 's' }}
+															</span>
 														@endif
 													</div>
 													<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">ID: {{ $isBulk ? '-' : $customer->id }}</div>
