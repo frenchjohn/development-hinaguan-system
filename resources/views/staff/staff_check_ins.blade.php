@@ -696,44 +696,73 @@
 										$companionCount = 0;
 										if ($isPrimary && $reservationEntry?->reservation && !$isStray) {
 											$companionCount = $reservationEntry->reservation->reservationGuests->where('is_primary_guest', false)->filter(function($g) { return !$g->checked_out_at; })->count();
-										}
-
-										// Group Bulk Companions
+										}										// Group Bulk Companions — ONE row per group. Two bulk groups are
+										// only merged when they share the reservation id, gender, age
+										// group AND nationality (a "Kids" group is never merged into a
+										// "Seniors" group).
 										$totalBulk = 0;
 										$activeBulk = 0;
+										$bulkGender = '';
+										$bulkAgeGroup = '';
+										$bulkNationality = '';
 										if ($isBulk) {
-											static $processedBulkResIds = [];
+											static $processedBulkGroupKeys = [];
 											$resId = $reservationEntry?->reservation?->id;
-											if (!$resId || in_array($resId, $processedBulkResIds)) {
+											$bulkReservation = $reservationEntry?->reservation;
+											if (! $resId || ! $bulkReservation) {
 												continue;
 											}
-											$processedBulkResIds[] = $resId;
 
-											$allBulkForRes = $reservationEntry->reservation->reservationGuests->filter(function($rg) {
-												$fn = strtolower(trim($rg->customer?->first_name ?? ''));
-												return str_starts_with($fn, 'bulk') || str_contains($fn, 'companion');
+											// Age group from the stored representative midpoint age
+											// (0-12→6, 13-17→15, 18-59→30, 60+→65).
+											$bulkAgeNum = (int) ($customer->age ?? 99);
+											$bulkAgeGroup = $bulkAgeNum <= 12 ? '0-12' : ($bulkAgeNum <= 17 ? '13-17' : ($bulkAgeNum <= 59 ? '18-59' : '60+'));
+											$bulkGender = $customer->gender ?? 'Unknown';
+											$bulkNationality = (bool) ($customer->is_foreigner ?? false) ? 'Foreigner' : 'Filipino';
+											$bulkGroupKey = $resId . '|' . $bulkGender . '|' . $bulkAgeGroup . '|' . $bulkNationality;
+
+											if (in_array($bulkGroupKey, $processedBulkGroupKeys)) {
+												continue;
+											}
+											$processedBulkGroupKeys[] = $bulkGroupKey;
+
+											$groupBulk = $bulkReservation->reservationGuests->filter(function ($rg) use ($bulkGender, $bulkAgeGroup, $bulkNationality) {
+												$c = $rg->customer;
+												if (! $c) return false;
+												$fn = strtolower(trim($c->first_name ?? ''));
+												if (! (str_starts_with($fn, 'bulk') || str_contains($fn, 'companion'))) return false;
+												$ageNum = (int) ($c->age ?? 99);
+												$ageGroup = $ageNum <= 12 ? '0-12' : ($ageNum <= 17 ? '13-17' : ($ageNum <= 59 ? '18-59' : '60+'));
+												$gender = $c->gender ?? 'Unknown';
+												$nationality = (bool) ($c->is_foreigner ?? false) ? 'Foreigner' : 'Filipino';
+												return $gender === $bulkGender && $ageGroup === $bulkAgeGroup && $nationality === $bulkNationality;
 											});
-											$totalBulk = $allBulkForRes->count();
-											$activeBulk = $allBulkForRes->whereNull('checked_out_at')->count();
+
+											$totalBulk = $groupBulk->count();
+											$activeBulk = $groupBulk->whereNull('checked_out_at')->count();
 											if ($activeBulk === 0) continue;
 
 											$customer->first_name = "Bulk Companions (#$resId)";
 											$customer->last_name = "";
 											$customer->middle_name = "$activeBulk/$totalBulk Checked In";
-											$customer->age = "-";
-											$customer->gender = "-";
-											$customer->is_foreigner = null;
+											$customer->age = $bulkAgeGroup;
+											$customer->gender = $bulkGender;
+											$customer->is_foreigner = $bulkNationality === 'Foreigner' ? true : false;
 										}
 									@endphp
 									<tr
 										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
-										{{ (! $isPrimary && ! $isBulk) ? 'style="display: none;"' : '' }}
+										@if (! $isPrimary && ! $isBulk) style="display: none;" @endif
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
 										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"
 										data-bulk-group="{{ $isBulk ? 'true' : 'false' }}"
 										data-bulk-total="{{ $totalBulk }}"
 										data-bulk-active="{{ $activeBulk }}"
+										data-bulk-demo="{{ $isBulk ? ($bulkGender . ' · ' . $bulkAgeGroup . ' · ' . $bulkNationality) : '' }}"
+										data-bulk-gender="{{ $isBulk ? $bulkGender : '' }}"
+										data-bulk-age-group="{{ $isBulk ? $bulkAgeGroup : '' }}"
+										data-bulk-nationality="{{ $isBulk ? $bulkNationality : '' }}"
 										data-age="{{ $customer->age ?? 'N/A' }}"
 										data-gender="{{ strtolower((string) ($customer->gender ?? 'N/A')) }}"
 											data-check-in="{{ $reservationEntry?->reservation?->check_in ?? '' }}"
@@ -751,10 +780,10 @@
 									>
 										<td>
 											<div class="cell-person flex min-w-0 items-center gap-3">
-												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isPrimary ? 'cell-person__avatar--main' : ($isBulk ? 'cell-person__avatar--bulk' : 'cell-person__avatar--companion') }}" title="{{ $isPrimary ? 'Main Guest' : ($isBulk ? 'Bulk Companion' : 'Single Companion') }}">
-													@if($isPrimary)
-														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
-													@elseif($isBulk)
+												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
+													@if($isBulk)
+														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+													@elseif($isPrimary)
 														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
 													@else
 														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
@@ -1617,12 +1646,116 @@
 						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
 							<h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
 							<span id="reservationModalStatus" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em]"></span>
-							<button type="button" class="guest-form__button guest-form__button--small ml-auto cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="reservationCheckOutBtn">Check Out</button>
+							<button type="button" class="guest-form__button--secondary guest-form__button--small ml-auto hidden cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="reservationAddCompanionBtn">Add Companion</button>
+							<button type="button" class="guest-form__button guest-form__button--small cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="reservationCheckOutBtn">Check Out</button>
 						</div>
 						<div id="reservationModalBody" class="guest-modal__body grid gap-4"></div>
 						<div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3" id="reservationModalActions">
 							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true">Close</button>
 						</div>
+					</div>
+				</div>
+
+				{{-- Add Companion to Active Reservation Modal --}}
+				<div class="guest-modal guest-modal--wide fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationAddCompanionModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-reservation-add-companion="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-3">
+							<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
+							<span id="reservationAddCompanionFor" class="guest-modal__role-badge inline-flex items-center rounded-full bg-hp-green/10 px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-green"></span>
+						</div>
+						<div class="guest-form__tabs mb-4 flex gap-2 rounded-xl border border-glass-border bg-glass p-1.5">
+							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-hp-green px-4 py-2.5 text-sm font-bold text-white transition-all duration-200" data-res-add-tab="single">Single Companion</button>
+							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" data-res-add-tab="bulk">Bulk Companions</button>
+						</div>
+
+						<!-- Single Companion Form -->
+						<form id="reservationAddSingleForm" class="guest-form guest-form--tab-content guest-form--tab-content--active grid gap-4" data-res-add-content="single">
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_first_name">First name</label>
+									<input type="text" name="first_name" id="resadd_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_middle_name">Middle name</label>
+									<input type="text" name="middle_name" id="resadd_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_last_name">Last name</label>
+									<input type="text" name="last_name" id="resadd_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_age">Age</label>
+									<input type="number" name="age" id="resadd_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_gender">Gender</label>
+									<select name="gender" id="resadd_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<option value="">Select gender</option>
+										<option value="Male">Male</option>
+										<option value="Female">Female</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="resadd_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_phone">Phone</label>
+									<input type="text" name="phone" id="resadd_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_email">Email</label>
+									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+							</div>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
+							</div>
+						</form>
+
+						<!-- Bulk Companion Form -->
+						<form id="reservationAddBulkForm" class="guest-form guest-form--tab-content gap-4" data-res-add-content="bulk" style="display: none;">
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_gender">Gender</label>
+									<select name="gender" id="resadd_bulk_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<option value="">Select gender</option>
+										<option value="Male">Male</option>
+										<option value="Female">Female</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_age_group">Age Group</label>
+									<select name="age_group" id="resadd_bulk_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<option value="0-12">Kids (0-12)</option>
+										<option value="13-17">Teens (13-17)</option>
+										<option value="18-59">Adults (18-59)</option>
+										<option value="60+">Seniors (60+)</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_is_foreigner">Nationality</label>
+									<select name="is_foreigner" id="resadd_bulk_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Quantity</label>
+									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+							</div>
+							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Bulk Companions</button>
+							</div>
+						</form>
 					</div>
 				</div>
 

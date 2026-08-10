@@ -12,6 +12,7 @@ window.AppPage['staff_check_ins'] = function () {
     const reservationModal = document.getElementById('reservationModal');
     const reservationModalBody = document.getElementById('reservationModalBody');
     const reservationCheckOutBtn = document.getElementById('reservationCheckOutBtn');
+    const reservationAddCompanionBtn = document.getElementById('reservationAddCompanionBtn');
     const reservationCloseButtons = document.querySelectorAll('[data-close-reservation-modal="true"]');
     const checkOutConfirmModal = document.getElementById('checkOutConfirmModal');
     const confirmCheckOutBtn = document.getElementById('confirmCheckOutBtn');
@@ -19,6 +20,17 @@ window.AppPage['staff_check_ins'] = function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const reservationData = window.staffReservationData || {};
     const guestData = window.staffGuestData || {};
+
+    // Bulk companions store a representative midpoint age (0-12→6, 13-17→15,
+    // 18-59→30, 60+→65). Display the actual age group instead of the midpoint.
+    const ageGroupLabel = (age) => {
+        const n = parseInt(age, 10);
+        if (isNaN(n)) return age || 'N/A';
+        if (n <= 12) return '0-12';
+        if (n <= 17) return '13-17';
+        if (n <= 59) return '18-59';
+        return '60+';
+    };
 
     let currentReservationId = null;
     let companionCount = 0;
@@ -236,14 +248,17 @@ window.AppPage['staff_check_ins'] = function () {
         `;
 
         if (companions.length >= 0) {
-            const individualCompanions = companions.filter(c =>
+            // Only guests still inside count — checked-out companions (and
+            // fully checked-out bulk groups) must not appear as empty entries.
+            const activeCompanions = companions.filter(c => !c.checked_out_at);
+            const individualCompanions = activeCompanions.filter(c =>
                 c.customer &&
                 c.customer.first_name &&
                 !c.customer.first_name.toLowerCase().includes('companion') &&
                 !c.customer.first_name.toLowerCase().includes('reservation')
             );
 
-            const bulkCompanions = companions.filter(c =>
+            const bulkCompanions = activeCompanions.filter(c =>
                 !c.customer ||
                 !c.customer.first_name ||
                 c.customer.first_name.toLowerCase().includes('companion') ||
@@ -302,7 +317,7 @@ window.AppPage['staff_check_ins'] = function () {
 
                 Object.values(bulkGroups).forEach(group => {
                     for(let i=0; i<group.count; i++) {
-                        html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${group.age} yrs - ${group.gender} - ${group.status}</div>`;
+                        html += `<div class="ci-guest-meta" style="color: #333;">Companion ${compIndex}: ${ageGroupLabel(group.age)} - ${group.gender} - ${group.status}</div>`;
                         compIndex++;
                     }
                 });
@@ -366,6 +381,13 @@ window.AppPage['staff_check_ins'] = function () {
         const statusBadge = document.getElementById('reservationModalStatus');
         if (statusBadge) {
             statusBadge.textContent = reservation.status || 'Active';
+        }
+
+        // Only checked-in reservations can accept new companions mid-stay.
+        if (reservationAddCompanionBtn) {
+            const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
+            const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active';
+            reservationAddCompanionBtn.classList.toggle('hidden', !isCheckedIn);
         }
 
         reservationModalBody.innerHTML = html;
@@ -644,6 +666,10 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Bulk Manage Modal logic
     let currentBulkResId = null;
+    // Which bulk GROUP the manage modal is scoped to (empty = whole reservation).
+    let currentBulkGender = '';
+    let currentBulkAgeGroup = '';
+    let currentBulkIsForeigner = null;
     const bulkGroupManageModal = document.getElementById('bulkGroupManageModal');
     const bulkManageResIdEl = document.getElementById('bulkManageResId');
     const bulkManageActiveCountEl = document.getElementById('bulkManageActiveCount');
@@ -651,8 +677,11 @@ window.AppPage['staff_check_ins'] = function () {
     const btnDecrease = document.getElementById('bulkManageBtnDecrease');
     const btnIncrease = document.getElementById('bulkManageBtnIncrease');
 
-    const openBulkManageModal = (resId, active, total) => {
+    const openBulkManageModal = (resId, active, total, demoText = '', bulkGender = '', bulkAgeGroup = '', bulkNationality = '') => {
         currentBulkResId = resId;
+        currentBulkGender = bulkGender || '';
+        currentBulkAgeGroup = bulkAgeGroup || '';
+        currentBulkIsForeigner = bulkNationality === 'Foreigner' ? true : (bulkNationality ? false : null);
         bulkManageResIdEl.textContent = resId;
         bulkManageActiveCountEl.textContent = active;
         bulkManageTotalCountEl.textContent = total;
@@ -663,31 +692,29 @@ window.AppPage['staff_check_ins'] = function () {
             qtyInput.value = 1;
             qtyInput.max = Math.max(active, 1);
         }
-        
-        // Find reservation data to extract bulk companion demographics
-        const res = reservationData[resId];
-        let demoHtml = '';
-        if (res) {
-            const bulkGuest = res.reservation_guests.find(rg => {
-                const fn = (rg.customer?.first_name || '').toLowerCase();
-                return fn.startsWith('bulk') || fn.includes('companion');
-            });
-            if (bulkGuest && bulkGuest.customer) {
-                const c = bulkGuest.customer;
-                let ageGroup = c.age || 'N/A';
-                if (!isNaN(ageGroup) && ageGroup !== 'N/A') {
-                    const age = parseInt(ageGroup);
-                    if (age <= 12) ageGroup = 'Kids (0-12)';
-                    else if (age <= 17) ageGroup = 'Teens (13-17)';
-                    else if (age <= 59) ageGroup = 'Adults (18-59)';
-                    else ageGroup = 'Seniors (60+)';
+
+        // The row/dropdown trigger already knows this group's demographics —
+        // use them directly (falling back to the reservation's first bulk
+        // guest when no group was specified).
+        let demoHtml = demoText
+            ? `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${demoText}</div>`
+            : '';
+        if (!demoHtml) {
+            const res = reservationData[resId];
+            if (res) {
+                const bulkGuest = res.reservation_guests.find(rg => {
+                    const fn = (rg.customer?.first_name || '').toLowerCase();
+                    return fn.startsWith('bulk') || fn.includes('companion');
+                });
+                if (bulkGuest && bulkGuest.customer) {
+                    const c = bulkGuest.customer;
+                    const gender = c.gender || 'N/A';
+                    const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                    demoHtml = `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${gender} &bull; ${ageGroupLabel(c.age)} &bull; ${nationality}</div>`;
                 }
-                const gender = c.gender || 'N/A';
-                const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
-                demoHtml = `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${gender} &bull; ${ageGroup} &bull; ${nationality}</div>`;
             }
         }
-        
+
         const demoEl = document.getElementById('bulkManageDemographics');
         if (demoEl) {
             demoEl.innerHTML = demoHtml;
@@ -733,7 +760,12 @@ window.AppPage['staff_check_ins'] = function () {
             const response = await fetch(`/staff/reservations/${currentBulkResId}/bulk-companions/check-out`, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-                body: JSON.stringify({ count: qty }),
+                body: JSON.stringify({
+                    count: qty,
+                    gender: currentBulkGender || null,
+                    age_group: currentBulkAgeGroup || null,
+                    is_foreigner: currentBulkIsForeigner,
+                }),
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -783,7 +815,7 @@ window.AppPage['staff_check_ins'] = function () {
         row.addEventListener('click', (e) => {
             if (e.target.closest('.btn-expand-row')) return;
             if (row.dataset.bulkGroup === 'true') {
-                openBulkManageModal(row.dataset.reservationId, row.dataset.bulkActive, row.dataset.bulkTotal);
+                openBulkManageModal(row.dataset.reservationId, row.dataset.bulkActive, row.dataset.bulkTotal, row.dataset.bulkDemo, row.dataset.bulkGender, row.dataset.bulkAgeGroup, row.dataset.bulkNationality);
                 return;
             }
             const customerId = row.dataset.customerId;
@@ -800,17 +832,16 @@ window.AppPage['staff_check_ins'] = function () {
             if (!tr) return;
             
             const isExpanded = expandBtn.classList.toggle('expanded');
-            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
-
-            // Guest Table Expand
-            if (tr.classList.contains('guest-row--primary')) {
-                tr.classList.toggle('is-expanded', isExpanded);
-                const resId = tr.getAttribute('data-reservation-id');
-                const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
-                companions.forEach(c => {
-                    c.style.display = isExpanded ? '' : 'none';
-                });
-            }
+            expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';                // Guest Table Expand — toggle only single companions (bulk
+                // groups have their own row and must not be hidden here).
+                if (tr.classList.contains('guest-row--primary')) {
+                    tr.classList.toggle('is-expanded', isExpanded);
+                    const resId = tr.getAttribute('data-reservation-id');
+                    const companions = document.querySelectorAll(`.guest-row--companion:not(.guest-row--bulk-group)[data-reservation-id="${resId}"]`);
+                    companions.forEach(c => {
+                        c.style.display = isExpanded ? '' : 'none';
+                    });
+                }
             
             // Reservation Table Expand
             if (tr.classList.contains('reservation-row')) {
@@ -852,24 +883,34 @@ window.AppPage['staff_check_ins'] = function () {
                          });
                          
                          if (bulkGuests.length > 0) {
-                             const activeBulk = bulkGuests.filter(g => !g.checked_out_at).length;
-                             const sampleCust = bulkGuests[0].customer;
-                             let ageGroup = sampleCust.age || 'N/A';
-                             if (!isNaN(ageGroup) && ageGroup !== 'N/A') {
-                                 const age = parseInt(ageGroup);
-                                 if (age <= 12) ageGroup = 'Kids';
-                                 else if (age <= 17) ageGroup = 'Teens';
-                                 else if (age <= 59) ageGroup = 'Adults';
-                                 else ageGroup = 'Seniors';
-                             }
-                             const gender = sampleCust.gender || 'N/A';
-                             const nationality = sampleCust.is_foreigner ? 'Foreigner' : 'Filipino';
+                             // ONE trigger per bulk group (same reservation,
+                             // gender, age group and nationality) — groups are
+                             // never merged together.
+                             const bulkGroupMap = {};
+                             bulkGuests.forEach(g => {
+                                 const c = g.customer || {};
+                                 const gender = c.gender || 'Unknown';
+                                 const ageGroup = ageGroupLabel(c.age);
+                                 const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                                 const key = `${gender}|${ageGroup}|${nationality}`;
+                                 if (!bulkGroupMap[key]) {
+                                     bulkGroupMap[key] = { gender, ageGroup, nationality, members: [] };
+                                 }
+                                 bulkGroupMap[key].members.push(g);
+                             });
 
-                             guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${bulkGuests.length}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
-                                <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: #0e7490;"></span>
-                                Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${bulkGuests.length} Checked In</span>
-                                <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${gender} • ${ageGroup} • ${nationality}</span>
-                             </div>`;
+                             Object.values(bulkGroupMap).forEach(group => {
+                                 const activeBulk = group.members.filter(g => !g.checked_out_at).length;
+                                 // Fully checked-out groups disappear from the
+                                 // dropdown — never show an empty group.
+                                 if (activeBulk === 0) return;
+                                 const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
+                                 guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${group.members.length}" data-bulk-demo="${demo}" data-bulk-gender="${group.gender}" data-bulk-age-group="${group.ageGroup}" data-bulk-nationality="${group.nationality}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
+                                    <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: #0e7490;"></span>
+                                    Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${group.members.length} Checked In</span>
+                                    <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${demo}</span>
+                                 </div>`;
+                             });
                          }
                          guestsHtml += `</div>`;
                          
@@ -892,7 +933,7 @@ window.AppPage['staff_check_ins'] = function () {
     document.addEventListener('click', (e) => {
         const bulkTrigger = e.target.closest('.bulk-group-row-trigger');
         if (bulkTrigger) {
-            openBulkManageModal(bulkTrigger.dataset.resId, bulkTrigger.dataset.bulkActive, bulkTrigger.dataset.bulkTotal);
+            openBulkManageModal(bulkTrigger.dataset.resId, bulkTrigger.dataset.bulkActive, bulkTrigger.dataset.bulkTotal, bulkTrigger.dataset.bulkDemo, bulkTrigger.dataset.bulkGender, bulkTrigger.dataset.bulkAgeGroup, bulkTrigger.dataset.bulkNationality);
             return;
         }
         // Guest rows inside an expanded reservation: main guest + single
@@ -1940,6 +1981,130 @@ window.AppPage['staff_check_ins'] = function () {
         closeCheckInCompanionModal();
     });
 
+    // ── Add companion(s) to a checked-in reservation (reservation modal) ────
+    const resAddCompanionModal = document.getElementById('reservationAddCompanionModal');
+    const resAddCompanionFor = document.getElementById('reservationAddCompanionFor');
+    const resAddCloseButtons = document.querySelectorAll('[data-close-reservation-add-companion="true"]');
+    const resAddSingleForm = document.getElementById('reservationAddSingleForm');
+    const resAddBulkForm = document.getElementById('reservationAddBulkForm');
+    const resAddTabs = document.querySelectorAll('[data-res-add-tab]');
+    const resAddContents = document.querySelectorAll('[data-res-add-content]');
+
+    const openResAddCompanionModal = () => {
+        if (resAddCompanionFor && currentReservationId) {
+            resAddCompanionFor.textContent = `Reservation #${currentReservationId}`;
+        }
+        resAddCompanionModal.classList.add('is-open');
+        resAddCompanionModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeResAddCompanionModal = () => {
+        resAddCompanionModal.classList.remove('is-open');
+        resAddCompanionModal.setAttribute('aria-hidden', 'true');
+        resAddSingleForm?.reset();
+        resAddBulkForm?.reset();
+    };
+
+    reservationAddCompanionBtn?.addEventListener('click', openResAddCompanionModal);
+    resAddCloseButtons.forEach(button => button.addEventListener('click', closeResAddCompanionModal));
+
+    resAddTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabType = tab.dataset.resAddTab;
+            resAddTabs.forEach(t => {
+                if (t.dataset.resAddTab === tabType) {
+                    t.classList.add('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
+                    t.classList.remove('bg-transparent', 'text-hp-text', 'font-semibold');
+                } else {
+                    t.classList.remove('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
+                    t.classList.add('bg-transparent', 'text-hp-text', 'font-semibold');
+                }
+            });
+            resAddContents.forEach(content => {
+                const active = content.dataset.resAddContent === tabType;
+                content.classList.toggle('guest-form--tab-content--active', active);
+                content.style.display = active ? 'grid' : 'none';
+            });
+        });
+    });
+
+    const postCompanionsToReservation = async (companions, submitButton, originalText) => {
+        if (!currentReservationId || !companions.length) return;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Adding...';
+        try {
+            const response = await fetch(`/staff/reservations/${currentReservationId}/add-companion`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ companions }),
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const firstError = payload.errors ? Object.values(payload.errors)[0]?.[0] : null;
+                throw new Error(payload.message || firstError || 'Unable to add companion.');
+            }
+            queueToast(`${payload.added || companions.length} companion${(payload.added || companions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.`);
+            // Remember which reservation was just updated so the reloaded page
+            // can auto-open its detail modal — the user sees the addition
+            // immediately instead of hunting for it.
+            try {
+                sessionStorage.setItem('hpJustAddedCompanionRes', String(currentReservationId));
+            } catch (e) { /* storage unavailable — modal just won't auto-open */ }
+            window.location.reload();
+        } catch (error) {
+            showToast(error.message || 'Unable to add companion.', 'error');
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        }
+    };
+
+    resAddSingleForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(resAddSingleForm);
+        const firstName = (formData.get('first_name') || '').trim();
+        const lastName = (formData.get('last_name') || '').trim();
+        if (!firstName || !lastName) {
+            showToast('First name and last name are required.', 'error');
+            return;
+        }
+        const submitButton = e.submitter || resAddSingleForm.querySelector('[type="submit"]');
+        postCompanionsToReservation([{
+            first_name: firstName,
+            middle_name: formData.get('middle_name'),
+            last_name: lastName,
+            age: formData.get('age'),
+            gender: formData.get('gender'),
+            is_foreigner: formData.get('is_foreigner') === '1',
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+        }], submitButton, 'Add Companion');
+    });
+
+    resAddBulkForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(resAddBulkForm);
+        const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
+        const companions = [];
+        for (let i = 0; i < quantity; i++) {
+            companions.push({
+                first_name: '',
+                last_name: '',
+                age_group: formData.get('age_group'),
+                gender: formData.get('gender'),
+                is_foreigner: formData.get('is_foreigner') === '1',
+                phone: '',
+                email: '',
+            });
+        }
+        const submitButton = e.submitter || resAddBulkForm.querySelector('[type="submit"]');
+        postCompanionsToReservation(companions, submitButton, 'Add Bulk Companions');
+    });
+
     // Primary guest nationality handling
     const primaryGuestForm = document.getElementById('primaryGuestForm');
     if (primaryGuestForm) {
@@ -1957,6 +2122,19 @@ window.AppPage['staff_check_ins'] = function () {
                 e.target.closest('.guest-companion-pill').remove();
             }
         });
+    }
+
+    // If a companion was just added, auto-open that reservation's detail
+    // modal so the addition is immediately visible under its reservation.
+    const justAddedRes = (() => {
+        try {
+            const v = sessionStorage.getItem('hpJustAddedCompanionRes');
+            if (v) sessionStorage.removeItem('hpJustAddedCompanionRes');
+            return v;
+        } catch (e) { return null; }
+    })();
+    if (justAddedRes && reservationData[justAddedRes]) {
+        setTimeout(() => openReservationModal(justAddedRes), 450);
     }
 
     // Success toasts — show anything queued for after a reload and convert
