@@ -1713,6 +1713,35 @@
 									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
 								</div>
 							</div>
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
+										<input type="checkbox" name="pool_access" id="resadd_pool_access" class="h-4 w-4 accent-hp-green">
+										<span>Include Pool Access</span>
+									</label>
+								</div>
+							</div>
+							<div class="guest-form__field-group grid gap-1.5">
+								<label class="guest-form__label text-sm font-semibold text-hp-text">Fees (auto-computed)</label>
+								<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Adult Entrance (<span id="resaddAdultCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddAdultFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Child Entrance (<span id="resaddChildCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddChildFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Pool Fee (<span id="resaddPoolCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddPoolFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
+										<span>Total:</span>
+										<strong class="text-hp-green" id="resaddTotalFee">₱0.00</strong>
+									</div>
+								</div>
+							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
 								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
 								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
@@ -1749,6 +1778,33 @@
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Quantity</label>
 									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
+										<input type="checkbox" name="pool_access" id="resadd_bulk_pool_access" class="h-4 w-4 accent-hp-green">
+										<span id="resaddBulkPoolLabel">Include Pool Access (all 1)</span>
+									</label>
+								</div>
+							</div>
+							<div class="guest-form__field-group grid gap-1.5">
+								<label class="guest-form__label text-sm font-semibold text-hp-text">Fees (auto-computed)</label>
+								<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Adult Entrance (<span id="resaddBulkAdultCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddBulkAdultFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Child Entrance (<span id="resaddBulkChildCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddBulkChildFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between">
+										<span>Pool Fee (<span id="resaddBulkPoolCount">0</span>):</span>
+										<strong class="text-hp-text" id="resaddBulkPoolFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
+										<span>Total:</span>
+										<strong class="text-hp-green" id="resaddBulkTotalFee">₱0.00</strong>
+									</div>
 								</div>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">

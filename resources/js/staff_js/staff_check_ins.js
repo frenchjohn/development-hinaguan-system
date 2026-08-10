@@ -245,6 +245,25 @@ window.AppPage['staff_check_ins'] = function () {
                     </span>
                 </div>
             </div>
+
+            ${reservation.entrance_fee ? `
+                <div class="ci-design-box" style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 1rem;">
+                    <div style="display:flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <div class="ci-col">
+                            <span class="ci-label" style="text-transform: none;">Entrance Fee:</span>
+                            <div class="ci-value" style="font-weight: 600;">₱${(parseFloat(reservation.entrance_fee.total_amount || 0) - parseFloat(reservation.entrance_fee.pool_fee || 0)).toFixed(2)} <span style="font-weight: 400; font-size: 0.78rem;">(${reservation.entrance_fee.adult_count || 0} adult${(reservation.entrance_fee.adult_count || 0) === 1 ? '' : 's'} · ${reservation.entrance_fee.child_count || 0} child${(reservation.entrance_fee.child_count || 0) === 1 ? '' : 'ren'})</span></div>
+                        </div>
+                        <div class="ci-col ci-border-left">
+                            <span class="ci-label" style="text-transform: none;">Pool Fee:</span>
+                            <div class="ci-value" style="font-weight: 600;">₱${parseFloat(reservation.entrance_fee.pool_fee || 0).toFixed(2)}</div>
+                        </div>
+                        <div class="ci-col ci-border-left">
+                            <span class="ci-label" style="text-transform: none;">Entrance + Pool:</span>
+                            <div class="ci-value" style="font-weight: 700;">₱${parseFloat(reservation.entrance_fee.total_amount || 0).toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
         `;
 
         if (companions.length >= 0) {
@@ -1990,10 +2009,105 @@ window.AppPage['staff_check_ins'] = function () {
     const resAddTabs = document.querySelectorAll('[data-res-add-tab]');
     const resAddContents = document.querySelectorAll('[data-res-add-content]');
 
+    // --- Live fee summary for the reservation add-companion modal ---
+    // Mirror the backend: 12 and below = child; the pricing period comes from
+    // the reservation's stored entrance pricing_type (no amenity) or its first
+    // amenity's pricing_type (with amenities).
+    const resAddEffectivePeriod = () => {
+        const res = reservationData[currentReservationId];
+        if (!res) return 'daytime';
+        const efPeriodMap = { Nighttime: 'nighttime', DayToNight: 'daytonight', NightToDay: 'daytonight' };
+        if (res.entrance_fee && efPeriodMap[res.entrance_fee.pricing_type]) {
+            return efPeriodMap[res.entrance_fee.pricing_type];
+        }
+        const amenityPeriodMap = {
+            'Daytime': 'daytime', 'Daytime Aircon': 'daytime',
+            'Nighttime': 'nighttime', 'Nighttime Aircon': 'nighttime',
+            'DayToNight': 'daytonight', 'DayToNight Aircon': 'daytonight',
+            'NightToDay': 'daytonight', 'NightToDay Aircon': 'daytonight',
+        };
+        const firstAmenity = (res.reservation_amenities || []).find(a => parseFloat(a.price) > 0);
+        return amenityPeriodMap[firstAmenity?.pricing_type] || 'daytime';
+    };
+
+    const resAddRates = () => {
+        const p = parkSettings || {};
+        const period = resAddEffectivePeriod();
+        const dayAdult = parseFloat(p.daytime_adult_entrance_fee) || 0;
+        const dayChild = parseFloat(p.daytime_child_entrance_fee) || 0;
+        const nightAdult = parseFloat(p.nighttime_adult_entrance_fee) || 0;
+        const nightChild = parseFloat(p.nighttime_child_entrance_fee) || 0;
+        const dayPool = parseFloat(p.day_pool_fee) || 0;
+        const nightPool = parseFloat(p.night_pool_fee) || 0;
+        if (period === 'nighttime') return { adult: nightAdult, child: nightChild, pool: nightPool };
+        if (period === 'daytonight' || period === 'nighttoday') return { adult: dayAdult + nightAdult, child: dayChild + nightChild, pool: dayPool + nightPool };
+        return { adult: dayAdult, child: dayChild, pool: dayPool };
+    };
+
+    const money = (n) => `₱${(parseFloat(n) || 0).toFixed(2)}`;
+
+    const resAddUpdateSingleFees = () => {
+        const ageVal = parseInt(resAddSingleForm?.querySelector('[name="age"]')?.value, 10);
+        const rates = resAddRates();
+        const hasAge = !Number.isNaN(ageVal);
+        const isChild = hasAge && ageVal <= 12;
+        const adultCount = hasAge && !isChild ? 1 : 0;
+        const childCount = hasAge && isChild ? 1 : 0;
+        const poolOn = resAddSingleForm?.querySelector('[name="pool_access"]')?.checked;
+        const adultFee = adultCount * rates.adult;
+        const childFee = childCount * rates.child;
+        const poolFee = poolOn ? rates.pool : 0;
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        set('resaddAdultCount', adultCount);
+        set('resaddAdultFee', money(adultFee));
+        set('resaddChildCount', childCount);
+        set('resaddChildFee', money(childFee));
+        set('resaddPoolCount', poolOn ? 1 : 0);
+        set('resaddPoolFee', money(poolFee));
+        set('resaddTotalFee', money(adultFee + childFee + poolFee));
+    };
+
+    const resAddUpdateBulkFees = () => {
+        const qty = Math.min(Math.max(parseInt(resAddBulkForm?.querySelector('[name="quantity"]')?.value, 10) || 1, 1), 500);
+        const ageGroup = resAddBulkForm?.querySelector('[name="age_group"]')?.value || '18-59';
+        const rates = resAddRates();
+        const isChild = ageGroup === '0-12';
+        const adultCount = isChild ? 0 : qty;
+        const childCount = isChild ? qty : 0;
+        const poolOn = resAddBulkForm?.querySelector('[name="pool_access"]')?.checked;
+        const poolCount = poolOn ? qty : 0;
+        const adultFee = adultCount * rates.adult;
+        const childFee = childCount * rates.child;
+        const poolFee = poolCount * rates.pool;
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        set('resaddBulkAdultCount', adultCount);
+        set('resaddBulkAdultFee', money(adultFee));
+        set('resaddBulkChildCount', childCount);
+        set('resaddBulkChildFee', money(childFee));
+        set('resaddBulkPoolCount', poolCount);
+        set('resaddBulkPoolFee', money(poolFee));
+        set('resaddBulkTotalFee', money(adultFee + childFee + poolFee));
+        const poolLabel = document.getElementById('resaddBulkPoolLabel');
+        if (poolLabel) poolLabel.textContent = `Include Pool Access (all ${qty})`;
+    };
+
+    const resAddBindFeeWatchers = () => {
+        const singleAge = resAddSingleForm?.querySelector('[name="age"]');
+        singleAge?.addEventListener('input', resAddUpdateSingleFees);
+        resAddSingleForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateSingleFees);
+        resAddBulkForm?.querySelector('[name="age_group"]')?.addEventListener('change', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateBulkFees);
+    };
+
     const openResAddCompanionModal = () => {
         if (resAddCompanionFor && currentReservationId) {
             resAddCompanionFor.textContent = `Reservation #${currentReservationId}`;
         }
+        loadParkSettings().then(() => {
+            resAddUpdateSingleFees();
+            resAddUpdateBulkFees();
+        });
         resAddCompanionModal.classList.add('is-open');
         resAddCompanionModal.setAttribute('aria-hidden', 'false');
     };
@@ -2027,6 +2141,8 @@ window.AppPage['staff_check_ins'] = function () {
             });
         });
     });
+
+    resAddBindFeeWatchers();
 
     const postCompanionsToReservation = async (companions, submitButton, originalText) => {
         if (!currentReservationId || !companions.length) return;
@@ -2082,6 +2198,7 @@ window.AppPage['staff_check_ins'] = function () {
             is_foreigner: formData.get('is_foreigner') === '1',
             phone: formData.get('phone'),
             email: formData.get('email'),
+            pool_access: formData.get('pool_access') === 'on',
         }], submitButton, 'Add Companion');
     });
 
@@ -2089,6 +2206,7 @@ window.AppPage['staff_check_ins'] = function () {
         e.preventDefault();
         const formData = new FormData(resAddBulkForm);
         const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
+        const poolOn = formData.get('pool_access') === 'on';
         const companions = [];
         for (let i = 0; i < quantity; i++) {
             companions.push({
@@ -2099,6 +2217,7 @@ window.AppPage['staff_check_ins'] = function () {
                 is_foreigner: formData.get('is_foreigner') === '1',
                 phone: '',
                 email: '',
+                pool_access: poolOn,
             });
         }
         const submitButton = e.submitter || resAddBulkForm.querySelector('[type="submit"]');

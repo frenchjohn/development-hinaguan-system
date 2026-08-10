@@ -2883,6 +2883,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
+            'companions.*.pool_access' => ['nullable', 'boolean'],
         ]);
 
         $statusKey = strtolower((string) $reservation->status);
@@ -2890,10 +2891,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return response()->json(['message' => 'Only checked-in reservations can accept new companions.'], 422);
         }
 
-        // Adult/child counts from the new companions (12 and below = child).
+        // Adult/child counts from the new companions (12 and below = child),
+        // plus how many of them get pool access.
         $adultCount = 0;
         $childCount = 0;
+        $poolCount = 0;
         foreach ($data['companions'] ?? [] as $companionData) {
+            if (! empty($companionData['pool_access'])) {
+                $poolCount++;
+            }
             if (($companionData['age_group'] ?? null) === '0-12') {
                 $childCount++;
             } else {
@@ -2949,6 +2955,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $newEntranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
+
+        // Pool fee: charged per companion that ticks pool access, priced by
+        // the same effective period as the entrance fee.
+        $dayPool = (float) ($settings->day_pool_fee ?? 0);
+        $nightPool = (float) ($settings->night_pool_fee ?? 0);
+        if ($effectivePeriod === 'nighttime') {
+            $poolRate = $nightPool;
+        } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+            $poolRate = $dayPool + $nightPool;
+        } else {
+            $poolRate = $dayPool;
+        }
+        $newPoolTotal = round($poolCount * $poolRate, 2);
+
+        $newCompanionTotal = round($newEntranceTotal + $newPoolTotal, 2);
 
         // Create customers + reservation guests (checked-in: no checked_out_at).
         foreach ($data['companions'] ?? [] as $companionData) {
@@ -3009,11 +3030,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $actualGuestCount = $reservation->reservationGuests()->count();
 
-        // Entrance fee record: keep adult/child counts + total in sync. Pool is
-        // a one-time reservation fee, so it is not re-charged for late guests.
+        // Entrance fee record: keep adult/child counts + pool + total in sync
+        // with every companion added (entrance AND pool are re-charged here).
         if ($entranceFee) {
             $entranceFee->update([
-                'total_amount' => round((float) $entranceFee->total_amount + $newEntranceTotal, 2),
+                'total_amount' => round((float) $entranceFee->total_amount + $newCompanionTotal, 2),
+                'pool_fee' => round((float) $entranceFee->pool_fee + $newPoolTotal, 2),
                 'adult_count' => ((int) $entranceFee->adult_count) + $adultCount,
                 'child_count' => ((int) $entranceFee->child_count) + $childCount,
             ]);
@@ -3021,8 +3043,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             \App\Models\ReservationEntranceFee::create([
                 'reservation_id' => $reservation->id,
                 'pricing_type' => null,
-                'total_amount' => $newEntranceTotal,
-                'pool_fee' => 0,
+                'total_amount' => $newCompanionTotal,
+                'pool_fee' => $newPoolTotal,
                 'adult_count' => $adultCount,
                 'child_count' => $childCount,
             ]);
@@ -3030,16 +3052,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         // Reservation totals: paid reservations (walk-ins) are settled at the
         // counter; partially-paid ones (online) add to the remaining balance.
-        $newTotal = round((float) $reservation->total_amount + $newEntranceTotal, 2);
+        $newTotal = round((float) $reservation->total_amount + $newCompanionTotal, 2);
         $updates = [
             'total_amount' => $newTotal,
             'number_of_guests' => $actualGuestCount,
         ];
         if (strtolower((string) $reservation->payment_status) === 'paid') {
-            $updates['amount_paid'] = round((float) $reservation->amount_paid + $newEntranceTotal, 2);
+            $updates['amount_paid'] = round((float) $reservation->amount_paid + $newCompanionTotal, 2);
             $updates['remaining_balance'] = 0;
         } else {
-            $updates['remaining_balance'] = round((float) $reservation->remaining_balance + $newEntranceTotal, 2);
+            $updates['remaining_balance'] = round((float) $reservation->remaining_balance + $newCompanionTotal, 2);
         }
         $reservation->update($updates);
 
@@ -3047,6 +3069,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'success' => true,
             'added' => count($data['companions'] ?? []),
             'entrance_fee' => $newEntranceTotal,
+            'pool_fee' => $newPoolTotal,
             'number_of_guests' => $actualGuestCount,
         ]);
     })->name('reservations.add-companion');
