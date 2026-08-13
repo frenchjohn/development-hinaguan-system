@@ -54,17 +54,23 @@ class PayMongoService
      * @param  array  $allowedMethods  e.g. ['gcash', 'card']
      * @return array{id: string, client_key: string, status: string, amount: int, currency: string}
      */
-    public function createPaymentIntent(int $amountCentavos, string $description, array $allowedMethods = ['gcash', 'card'], ?string $statementDescriptor = null): array
+    public function createPaymentIntent(int $amountCentavos, string $description, array $allowedMethods = ['gcash', 'card'], ?string $statementDescriptor = null, array $metadata = []): array
     {
+        $attributes = [
+            'amount' => $amountCentavos,
+            'currency' => 'PHP',
+            'payment_method_allowed' => $allowedMethods,
+            'description' => $description,
+            'statement_descriptor' => $statementDescriptor ?? config('paymongo.statement_descriptor', 'HINAGUAN NATURE PARK'),
+        ];
+
+        if (! empty($metadata)) {
+            $attributes['metadata'] = $metadata;
+        }
+
         $payload = [
             'data' => [
-                'attributes' => [
-                    'amount' => $amountCentavos,
-                    'currency' => 'PHP',
-                    'payment_method_allowed' => $allowedMethods,
-                    'description' => $description,
-                    'statement_descriptor' => $statementDescriptor ?? config('paymongo.statement_descriptor', 'HINAGUAN NATURE PARK'),
-                ],
+                'attributes' => $attributes,
             ],
         ];
 
@@ -82,6 +88,7 @@ class PayMongoService
             'status' => $attributes['status'] ?? 'awaiting_payment_method',
             'amount' => (int) ($attributes['amount'] ?? 0),
             'currency' => $attributes['currency'] ?? 'PHP',
+            'metadata' => $attributes['metadata'] ?? [],
         ];
     }
 
@@ -108,6 +115,7 @@ class PayMongoService
             'next_action' => $attributes['next_action'] ?? null,
             'last_payment_error' => $attributes['last_payment_error'] ?? null,
             'payments' => $attributes['payments'] ?? [],
+            'metadata' => $attributes['metadata'] ?? [],
         ];
     }
 

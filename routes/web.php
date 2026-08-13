@@ -68,6 +68,7 @@ $isAmenitySlotTaken = function (string $amenityId, string $date, string $slot, ?
         $query = Reservation::query()
             ->whereDate('reservation_date', $checkDate)
             ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->where('payment_status', '!=', 'Unpaid')
             ->whereHas('reservationAmenities', function ($query) use ($amenityId, $types): void {
                 $query->where('amenity_id', $amenityId)
                     ->whereIn('pricing_type', $types);
@@ -139,6 +140,7 @@ $occupiedAmenityIdsForSlot = function (string $date, string $slot) use ($slotCov
         $ids = Reservation::query()
             ->whereDate('reservation_date', $checkDate)
             ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->where('payment_status', '!=', 'Unpaid')
             ->whereHas('reservationAmenities', function ($query) use ($types): void {
                 $query->whereIn('pricing_type', $types);
             })
@@ -366,6 +368,75 @@ Route::get('/reservation', function (WeatherService $weather) {
 
 // ── PayMongo Reservation & Payment Endpoints ─────────────────────────────────
 
+$createReservationFromPayment = function (string $paymentIntentId, ?string $paymentMethod = null, ?array $intentDetails = null): ?Reservation {
+    $existing = Reservation::where('payment_intent_id', $paymentIntentId)->first();
+    if ($existing) {
+        return $existing;
+    }
+
+    $pending = Cache::get("pending_reservation_{$paymentIntentId}");
+
+    if (!$pending && $intentDetails && !empty($intentDetails['metadata'])) {
+        $meta = $intentDetails['metadata'];
+        if (!empty($meta['booker_name'])) {
+            $pending = [
+                'booker_name' => $meta['booker_name'] ?? 'Guest',
+                'phone' => $meta['phone'] ?? '',
+                'email' => $meta['email'] ?? '',
+                'number_of_guests' => (int) ($meta['number_of_guests'] ?? 1),
+                'reservation_date' => $meta['reservation_date'] ?? null,
+                'total_amount' => (float) ($meta['total_amount'] ?? 0),
+                'deposit_amount' => (float) ($meta['deposit_amount'] ?? 0),
+                'remaining_balance' => (float) ($meta['remaining_balance'] ?? 0),
+                'amenities' => !empty($meta['amenities_json']) ? json_decode($meta['amenities_json'], true) : [],
+                'slot' => $meta['slot'] ?? 'Daytime',
+            ];
+        }
+    }
+
+    if (!$pending) {
+        return null;
+    }
+
+    $reservation = Reservation::create([
+        'booker_name' => $pending['booker_name'],
+        'phone' => $pending['phone'],
+        'email' => $pending['email'],
+        'reservation_date' => $pending['reservation_date'] ? now()->parse($pending['reservation_date'])->toDateTimeString() : null,
+        'check_in' => null,
+        'number_of_guests' => $pending['number_of_guests'],
+        'status' => 'Pending',
+        'total_amount' => $pending['total_amount'],
+        'amount_paid' => $pending['deposit_amount'],
+        'remaining_balance' => $pending['remaining_balance'],
+        'payment_status' => 'Partially Paid',
+        'payment_intent_id' => $paymentIntentId,
+        'payment_method' => $paymentMethod,
+        'reservation_type' => 'online',
+    ]);
+
+    foreach ($pending['amenities'] as $amenity) {
+        ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => $amenity['amenity_id'],
+            'pricing_type' => $amenity['pricing_type'],
+            'price_at_booking' => $amenity['price_at_booking'],
+            'quantity' => 1,
+            'remarks' => 'Slot: ' . ($pending['slot'] ?? 'Daytime'),
+        ]);
+    }
+
+    try {
+        Mail::to($reservation->email)->send(new ReservationQrMail($reservation));
+    } catch (\Throwable $ex) {
+        report($ex);
+    }
+
+    Cache::forget("pending_reservation_{$paymentIntentId}");
+
+    return $reservation;
+};
+
 Route::post('/reservation/create-intent', function (Request $request, \App\Services\PayMongoService $payMongo) use ($isAmenitySlotTaken) {
     $data = $request->validate([
         'booker_name' => ['required', 'string', 'max:255'],
@@ -434,52 +505,51 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
     $depositAmount = round($totalAmount * ($depositPercentage / 100), 2);
     $remainingBalance = round($totalAmount - $depositAmount, 2);
 
-    $reservation = Reservation::create([
+    // Prepare pending payload
+    $pendingPayload = [
         'booker_name' => $data['booker_name'],
         'phone' => $data['phone'],
         'email' => $data['email'],
-        'reservation_date' => $reservationDate ? now()->parse($reservationDate)->toDateTimeString() : null,
-        'check_in' => null,
         'number_of_guests' => $data['number_of_guests'],
-        'status' => 'Pending',
+        'reservation_date' => $reservationDate,
+        'slot' => $data['slot'] ?? 'Daytime',
+        'amenities' => $amenities,
         'total_amount' => $totalAmount,
-        'amount_paid' => 0,
-        'remaining_balance' => $totalAmount,
-        'payment_status' => 'Unpaid',
-    ]);
-
-    foreach ($amenities as $amenity) {
-        ReservationAmenity::create([
-            'reservation_id' => $reservation->id,
-            'amenity_id' => $amenity['amenity_id'],
-            'pricing_type' => $amenity['pricing_type'],
-            'price_at_booking' => $amenity['price_at_booking'],
-            'quantity' => 1,
-            'remarks' => 'Slot: ' . ($data['slot'] ?? 'Daytime'),
-        ]);
-    }
+        'deposit_amount' => $depositAmount,
+        'remaining_balance' => $remainingBalance,
+    ];
 
     // Create PayMongo Payment Intent for deposit
     try {
         $depositCentavos = \App\Services\PayMongoService::toCentavos($depositAmount);
-        // PayMongo requires minimum 2000 centavos (₱20.00)
         if ($depositCentavos < 2000) {
             $depositCentavos = 2000;
         }
 
+        $metadata = [
+            'booker_name' => substr($data['booker_name'], 0, 40),
+            'phone' => substr($data['phone'], 0, 20),
+            'email' => substr($data['email'], 0, 40),
+            'number_of_guests' => (string) $data['number_of_guests'],
+            'reservation_date' => (string) $reservationDate,
+            'total_amount' => (string) $totalAmount,
+            'deposit_amount' => (string) $depositAmount,
+            'remaining_balance' => (string) $remainingBalance,
+            'amenities_json' => json_encode($amenities),
+        ];
+
         $intent = $payMongo->createPaymentIntent(
             $depositCentavos,
-            "Deposit for Reservation #{$reservation->id} - {$reservation->booker_name}",
-            ['gcash', 'paymaya', 'card', 'qrph']
+            "50% Deposit for Reservation - {$data['booker_name']}",
+            ['gcash', 'paymaya', 'card', 'qrph'],
+            null,
+            $metadata
         );
 
-        $reservation->update([
-            'payment_intent_id' => $intent['id'],
-        ]);
+        Cache::put("pending_reservation_{$intent['id']}", $pendingPayload, now()->addHours(2));
 
         return response()->json([
             'success' => true,
-            'reservation_id' => $reservation->id,
             'payment_intent_id' => $intent['id'],
             'client_key' => $intent['client_key'],
             'total_amount' => $totalAmount,
@@ -495,9 +565,8 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
     }
 })->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::post('/reservation/process-payment', function (Request $request, \App\Services\PayMongoService $payMongo) {
+Route::post('/reservation/process-payment', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
-        'reservation_id' => ['required', 'integer', 'exists:reservations,id'],
         'payment_intent_id' => ['required', 'string'],
         'client_key' => ['nullable', 'string'],
         'payment_method_type' => ['required', 'string', 'in:gcash,paymaya,card,qrph'],
@@ -507,13 +576,13 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
         'cvc' => ['required_if:payment_method_type,card', 'nullable', 'string'],
     ]);
 
-    $reservation = Reservation::findOrFail($data['reservation_id']);
+    $pending = Cache::get("pending_reservation_{$data['payment_intent_id']}");
 
     try {
         $billing = [
-            'name' => $reservation->booker_name,
-            'email' => $reservation->email,
-            'phone' => $reservation->phone,
+            'name' => $pending['booker_name'] ?? 'Guest',
+            'email' => $pending['email'] ?? 'guest@example.com',
+            'phone' => $pending['phone'] ?? '',
         ];
 
         $cardDetails = [];
@@ -538,29 +607,11 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
             $returnUrl
         );
 
-        $reservation->update([
-            'payment_method' => $data['payment_method_type'],
-        ]);
-
         $status = $attached['status'] ?? 'unknown';
 
-        // Check if payment completed immediately (e.g. test cards)
+        // If payment completed immediately (e.g. test cards)
         if ($status === 'succeeded') {
-            $depositPercentage = config('paymongo.deposit_percentage', 50);
-            $depositAmount = round($reservation->total_amount * ($depositPercentage / 100), 2);
-            $remaining = round($reservation->total_amount - $depositAmount, 2);
-
-            $reservation->update([
-                'payment_status' => 'Partially Paid',
-                'amount_paid' => $depositAmount,
-                'remaining_balance' => $remaining,
-            ]);
-
-            try {
-                Mail::to($reservation->email)->send(new ReservationQrMail($reservation));
-            } catch (\Throwable $ex) {
-                report($ex);
-            }
+            $createReservationFromPayment($data['payment_intent_id'], $data['payment_method_type'], $attached);
         }
 
         return response()->json([
@@ -578,40 +629,25 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
     }
 })->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::post('/reservation/check-payment-status', function (Request $request, \App\Services\PayMongoService $payMongo) {
+Route::post('/reservation/check-payment-status', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
-        'reservation_id' => ['required', 'integer', 'exists:reservations,id'],
         'payment_intent_id' => ['required', 'string'],
     ]);
-
-    $reservation = Reservation::findOrFail($data['reservation_id']);
 
     try {
         $intent = $payMongo->getPaymentIntent($data['payment_intent_id']);
         $status = $intent['status'] ?? 'unknown';
+        $reservation = null;
 
-        if ($status === 'succeeded' && $reservation->payment_status === 'Unpaid') {
-            $depositPercentage = config('paymongo.deposit_percentage', 50);
-            $depositAmount = round($reservation->total_amount * ($depositPercentage / 100), 2);
-            $remaining = round($reservation->total_amount - $depositAmount, 2);
-
-            $reservation->update([
-                'payment_status' => 'Partially Paid',
-                'amount_paid' => $depositAmount,
-                'remaining_balance' => $remaining,
-            ]);
-
-            try {
-                Mail::to($reservation->email)->send(new ReservationQrMail($reservation));
-            } catch (\Throwable $ex) {
-                report($ex);
-            }
+        if ($status === 'succeeded') {
+            $reservation = $createReservationFromPayment($data['payment_intent_id'], null, $intent);
         }
 
         return response()->json([
             'success' => true,
             'status' => $status,
-            'payment_status' => $reservation->payment_status,
+            'payment_status' => $reservation ? $reservation->payment_status : ($status === 'succeeded' ? 'Partially Paid' : 'Unpaid'),
+            'reservation_id' => $reservation?->id,
         ]);
     } catch (\Throwable $e) {
         return response()->json([
@@ -1305,6 +1341,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $pendingReservationsCount = Reservation::query()
             ->where('reservation_type', 'online')
+            ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
                 $query->where('status', 'Pending')
                     ->orWhere('status', 'Confirmed');
@@ -1455,6 +1492,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservations = Reservation::query()
             ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->where('reservation_type', 'online')
+            ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
                 $query->whereNull('check_in')
                     ->orWhere('check_in', '');
@@ -3476,6 +3514,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservations = Reservation::query()
             ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->where('reservation_type', 'online')
+            ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
                 $query->whereNull('check_in')
                     ->orWhere('check_in', '');

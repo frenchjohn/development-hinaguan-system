@@ -2791,7 +2791,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Start polling payment intent status
-    const startPaymentPolling = (reservationId, paymentIntentId) => {
+    const startPaymentPolling = (paymentIntentId) => {
+        const intentId = paymentIntentId || currentPaymentIntentId;
+        if (!intentId) return;
+
         if (paymentPollInterval) {
             clearInterval(paymentPollInterval);
         }
@@ -2805,13 +2808,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                     },
                     body: JSON.stringify({
-                        reservation_id: reservationId,
-                        payment_intent_id: paymentIntentId,
+                        payment_intent_id: intentId,
                     }),
                 });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    console.warn('Status check warning:', res.status, errData);
+                    return;
+                }
 
                 const data = await res.json();
                 if (data.success && (data.status === 'succeeded' || data.payment_status === 'Partially Paid')) {
@@ -2837,16 +2846,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Listen for postMessage from payment return page iframe/popup
     window.addEventListener('message', (event) => {
         if (event.data && event.data.source === 'hinaguan-paymongo') {
-            if (event.data.status === 'success' && currentReservationId && currentPaymentIntentId) {
-                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+            if (event.data.status === 'success' && currentPaymentIntentId) {
+                startPaymentPolling(currentPaymentIntentId);
             }
         }
     });
 
     // Process Payment Method Attachment (GCash, Maya, Card, QR Ph)
     const processPayMongoPayment = async (methodType, extraData = {}) => {
-        if (!currentReservationId || !currentPaymentIntentId) {
-            if (pmNotice) pmNotice.textContent = 'Missing reservation session. Please try again.';
+        if (!currentPaymentIntentId) {
+            if (pmNotice) pmNotice.textContent = 'Missing payment session. Please try again.';
             return;
         }
 
@@ -2855,7 +2864,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pmStatusText) pmStatusText.textContent = 'Processing payment details…';
 
         const payload = {
-            reservation_id: currentReservationId,
             payment_intent_id: currentPaymentIntentId,
             client_key: currentClientKey,
             payment_method_type: methodType,
@@ -2867,6 +2875,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
                 body: JSON.stringify(payload),
@@ -2899,9 +2908,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     pmIframeContainer.hidden = false;
                     pmAuthIframe.src = redirectUrl;
                 }
-                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+                startPaymentPolling(currentPaymentIntentId);
             } else {
-                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+                startPaymentPolling(currentPaymentIntentId);
             }
         } catch (error) {
             if (pmStatusBox) pmStatusBox.hidden = true;
@@ -3025,6 +3034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                 },
                 body: JSON.stringify(payload),
@@ -3339,54 +3349,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    const closeSuccessModal = () => {
-
-        if (successModal) {
-
-            successModal.classList.remove('is-open');
-
-            successModal.setAttribute('aria-hidden', 'true');
-
-            updateOverlayScrollLock();
-
-            // Refresh page after closing success modal
-
-            window.location.reload();
-
+    const handleSuccessConfirm = () => {
+        if (successConfirmBtn) {
+            successConfirmBtn.disabled = true;
+            successConfirmBtn.innerHTML = '<span class="rp-btn-spinner"></span> Refreshing page…';
         }
-
+        window.location.reload();
     };
 
-
-
     if (successConfirmBtn) {
-
-        successConfirmBtn.addEventListener('click', closeSuccessModal);
-
-    }
-
-
-
-    successCloseButtons.forEach(button => {
-
-        button.addEventListener('click', closeSuccessModal);
-
-    });
-
-
-
-    if (successModal) {
-
-        successModal.addEventListener('click', (event) => {
-
-            if (event.target === successModal) {
-
-                closeSuccessModal();
-
-            }
-
-        });
-
+        successConfirmBtn.addEventListener('click', handleSuccessConfirm);
     }
 
 });

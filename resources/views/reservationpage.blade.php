@@ -1510,15 +1510,15 @@
 
         <div class="rp-modal rp-modal--success" id="reservationSuccessModal" aria-hidden="true">
 
-            <div class="rp-modal__backdrop" data-close-success-modal></div>
+            <div class="rp-modal__backdrop"></div>
 
             <div class="rp-modal__panel rp-modal__panel--success">
 
                 <div class="rp-modal__success-icon">
 
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
 
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 
                     </svg>
 
@@ -1526,17 +1526,17 @@
 
                 <div class="rp-modal__success-content">
 
-                    <h2>Reservation Confirmed!</h2>
+                    <h2>Reservation Confirmed &amp; Deposit Paid!</h2>
 
                     <div class="rp-modal__success-details">
 
                         <p class="rp-modal__success-notice">
 
-                            <strong>Important:</strong> A QR code has been sent to your email address. Please bring this QR code on your reservation day and scan it at the check-in counter.
+                            <strong>QR Code Sent:</strong> We have sent your booking QR code to your email. Please present it at the park entrance on your visit date.
 
                         </p>
 
-                        <p class="rp-modal__success-sub">Your booking is confirmed and partially paid. The remaining balance can be settled upon check-in.</p>
+                        <p class="rp-modal__success-sub">Your 50% deposit has been processed. The remaining balance can be settled at check-in.</p>
 
                     </div>
 
