@@ -3067,3 +3067,252 @@ body:has(.rp-modal.is-open) .rp-footer {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ─────────────────────────── PayMongo Payment Gateway Modal ─────────────────────────── */
+
+.rp-modal__panel--payment {
+    max-width: 38rem;
+    padding: 1.75rem;
+}
+
+.rp-pay-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(200, 164, 93, 0.35);
+}
+
+.rp-pay-summary__item {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.rp-pay-summary__item span {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+.rp-pay-summary__item strong {
+    font-size: 1.15rem;
+    color: #fff;
+    font-family: var(--rp-font-display);
+}
+
+.rp-pay-summary__item--highlight strong {
+    color: var(--rp-gold);
+    font-size: 1.3rem;
+}
+
+.rp-pay-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.rp-pay-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 0.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(200, 164, 93, 0.25);
+    border-radius: 0.6rem;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    font-family: var(--rp-font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.rp-pay-tab:hover {
+    border-color: var(--rp-gold);
+    background: rgba(200, 164, 93, 0.1);
+    color: #fff;
+}
+
+.rp-pay-tab.is-active {
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.2), rgba(13, 44, 29, 0.6));
+    border-color: var(--rp-gold);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(200, 164, 93, 0.2);
+}
+
+.rp-pay-tab__badge {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: #005ce6;
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.rp-pay-tab__badge--maya {
+    background: #000;
+    color: #00d632;
+    border: 1px solid #00d632;
+}
+
+.rp-pay-tab__badge--card {
+    background: #2563eb;
+}
+
+.rp-pay-tab__badge--qr {
+    background: #7c3aed;
+}
+
+.rp-pay-panels {
+    margin-top: 1rem;
+}
+
+.rp-pay-info {
+    padding: 0.85rem 1rem;
+    border-radius: 0.6rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    margin-bottom: 1rem;
+}
+
+.rp-card-form {
+    display: grid;
+    gap: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.rp-card-form__field {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.rp-card-form__field label {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+}
+
+.rp-card-form__field input {
+    width: 100%;
+    min-height: 2.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(200, 164, 93, 0.35);
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.65rem 0.85rem;
+    color: #fff;
+    font-family: var(--rp-font-body);
+    font-size: 0.875rem;
+}
+
+.rp-card-form__field input:focus {
+    outline: none;
+    border-color: var(--rp-gold);
+    box-shadow: 0 0 0 3px rgba(200, 164, 93, 0.2);
+}
+
+.rp-card-form__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+.rp-iframe-box {
+    margin-top: 1rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid rgba(200, 164, 93, 0.4);
+    background: #000;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.rp-iframe-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    background: #0d2c1d;
+    font-size: 0.75rem;
+    color: var(--rp-gold);
+    font-weight: 600;
+    border-bottom: 1px solid rgba(200, 164, 93, 0.3);
+}
+
+.rp-iframe-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+    animation: rp-pulse 1.5s infinite;
+}
+
+@keyframes rp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.rp-iframe-box iframe {
+    width: 100%;
+    height: 480px;
+    border: none;
+    background: #fff;
+}
+
+.rp-qr-box {
+    text-align: center;
+    margin-top: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border-radius: 0.75rem;
+}
+
+.rp-qr-image {
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+    display: block;
+}
+
+.rp-qr-hint {
+    margin-top: 0.75rem;
+    color: #1a1a1a;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.rp-pay-status {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    margin-top: 1rem;
+    border-radius: 0.6rem;
+    background: rgba(200, 164, 93, 0.12);
+    border: 1px solid rgba(200, 164, 93, 0.35);
+}
+
+.rp-pay-status__spinner {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid rgba(200, 164, 93, 0.3);
+    border-top-color: var(--rp-gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+.rp-pay-status__text {
+    font-size: 0.8125rem;
+    color: var(--rp-gold);
+    font-weight: 600;
+}

@@ -2729,152 +2729,333 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    bookingForm.addEventListener('submit', async (event) => {
+    // ── PayMongo Payment Gateway State & Methods ─────────────────────────────
+    const paymongoPaymentModal = document.getElementById('paymongoPaymentModal');
+    const pmSummaryTotal = document.getElementById('pmSummaryTotal');
+    const pmSummaryDeposit = document.getElementById('pmSummaryDeposit');
+    const pmSummaryBalance = document.getElementById('pmSummaryBalance');
+    const pmNotice = document.getElementById('pmNotice');
+    const pmIframeContainer = document.getElementById('pmIframeContainer');
+    const pmAuthIframe = document.getElementById('pmAuthIframe');
+    const pmStatusBox = document.getElementById('pmStatusBox');
+    const pmStatusText = document.getElementById('pmStatusText');
+    const pmCloseButtons = document.querySelectorAll('[data-close-payment-modal]');
 
-        event.preventDefault();
+    let currentReservationId = null;
+    let currentPaymentIntentId = null;
+    let currentClientKey = null;
+    let paymentPollInterval = null;
 
+    const closePaymentModal = () => {
+        if (paymongoPaymentModal) {
+            paymongoPaymentModal.classList.remove('is-open');
+            paymongoPaymentModal.setAttribute('aria-hidden', 'true');
+            updateOverlayScrollLock();
+        }
+        if (paymentPollInterval) {
+            clearInterval(paymentPollInterval);
+            paymentPollInterval = null;
+        }
+        if (pmAuthIframe) {
+            pmAuthIframe.src = 'about:blank';
+        }
+        if (pmIframeContainer) {
+            pmIframeContainer.hidden = true;
+        }
+        if (pmStatusBox) {
+            pmStatusBox.hidden = true;
+        }
+    };
 
+    pmCloseButtons.forEach(btn => {
+        btn.addEventListener('click', closePaymentModal);
+    });
 
-        if (!activeAmenity || isSubmitting) {
+    // Tab switching in payment modal
+    const payTabs = document.querySelectorAll('[data-pm-tab]');
+    const payPanels = document.querySelectorAll('[data-pm-panel]');
 
-            if (!activeAmenity) {
+    payTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.pmTab;
 
-                bookingNotice.textContent = 'Please select an amenity first.';
+            payTabs.forEach(t => t.classList.toggle('is-active', t.dataset.pmTab === targetTab));
+            payPanels.forEach(p => {
+                const isActive = p.dataset.pmPanel === targetTab;
+                p.classList.toggle('is-active', isActive);
+                p.style.display = isActive ? 'block' : 'none';
+            });
 
-            }
+            if (pmNotice) pmNotice.textContent = '';
+        });
+    });
 
-            return;
-
+    // Start polling payment intent status
+    const startPaymentPolling = (reservationId, paymentIntentId) => {
+        if (paymentPollInterval) {
+            clearInterval(paymentPollInterval);
         }
 
+        if (pmStatusBox) pmStatusBox.hidden = false;
+        if (pmStatusText) pmStatusText.textContent = 'Waiting for payment authorization…';
 
+        paymentPollInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/reservation/check-payment-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        reservation_id: reservationId,
+                        payment_intent_id: paymentIntentId,
+                    }),
+                });
+
+                const data = await res.json();
+                if (data.success && (data.status === 'succeeded' || data.payment_status === 'Partially Paid')) {
+                    clearInterval(paymentPollInterval);
+                    paymentPollInterval = null;
+
+                    closePaymentModal();
+                    if (bookingForm) bookingForm.reset();
+
+                    const successModal = document.getElementById('reservationSuccessModal');
+                    if (successModal) {
+                        successModal.classList.add('is-open');
+                        successModal.setAttribute('aria-hidden', 'false');
+                        updateOverlayScrollLock();
+                    }
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+            }
+        }, 3000);
+    };
+
+    // Listen for postMessage from payment return page iframe/popup
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.source === 'hinaguan-paymongo') {
+            if (event.data.status === 'success' && currentReservationId && currentPaymentIntentId) {
+                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+            }
+        }
+    });
+
+    // Process Payment Method Attachment (GCash, Maya, Card, QR Ph)
+    const processPayMongoPayment = async (methodType, extraData = {}) => {
+        if (!currentReservationId || !currentPaymentIntentId) {
+            if (pmNotice) pmNotice.textContent = 'Missing reservation session. Please try again.';
+            return;
+        }
+
+        if (pmNotice) pmNotice.textContent = '';
+        if (pmStatusBox) pmStatusBox.hidden = false;
+        if (pmStatusText) pmStatusText.textContent = 'Processing payment details…';
+
+        const payload = {
+            reservation_id: currentReservationId,
+            payment_intent_id: currentPaymentIntentId,
+            client_key: currentClientKey,
+            payment_method_type: methodType,
+            ...extraData,
+        };
+
+        try {
+            const response = await fetch('/reservation/process-payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                if (pmStatusBox) pmStatusBox.hidden = true;
+                if (pmNotice) pmNotice.textContent = result.message || 'Payment processing failed.';
+                return;
+            }
+
+            if (result.status === 'succeeded') {
+                closePaymentModal();
+                if (bookingForm) bookingForm.reset();
+
+                const successModal = document.getElementById('reservationSuccessModal');
+                if (successModal) {
+                    successModal.classList.add('is-open');
+                    successModal.setAttribute('aria-hidden', 'false');
+                    updateOverlayScrollLock();
+                }
+                return;
+            }
+
+            if (result.next_action && result.next_action.redirect && result.next_action.redirect.url) {
+                const redirectUrl = result.next_action.redirect.url;
+                if (pmIframeContainer && pmAuthIframe) {
+                    pmIframeContainer.hidden = false;
+                    pmAuthIframe.src = redirectUrl;
+                }
+                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+            } else {
+                startPaymentPolling(currentReservationId, currentPaymentIntentId);
+            }
+        } catch (error) {
+            if (pmStatusBox) pmStatusBox.hidden = true;
+            if (pmNotice) pmNotice.textContent = 'Network error while contacting payment gateway.';
+        }
+    };
+
+    // Payment action button listeners
+    const pmPayGcashBtn = document.getElementById('pmPayGcashBtn');
+    if (pmPayGcashBtn) {
+        pmPayGcashBtn.addEventListener('click', () => processPayMongoPayment('gcash'));
+    }
+
+    const pmPayMayaBtn = document.getElementById('pmPayMayaBtn');
+    if (pmPayMayaBtn) {
+        pmPayMayaBtn.addEventListener('click', () => processPayMongoPayment('paymaya'));
+    }
+
+    const pmGenerateQrBtn = document.getElementById('pmGenerateQrBtn');
+    if (pmGenerateQrBtn) {
+        pmGenerateQrBtn.addEventListener('click', () => processPayMongoPayment('qrph'));
+    }
+
+    // Card Form submit listener
+    const pmCardForm = document.getElementById('pmCardForm');
+    if (pmCardForm) {
+        pmCardForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const cardNumber = document.getElementById('pmCardNumber')?.value.replace(/\s+/g, '') || '';
+            const cardExpiry = document.getElementById('pmCardExpiry')?.value || '';
+            const cvc = document.getElementById('pmCardCvc')?.value || '';
+
+            const [expMonthStr, expYearStr] = cardExpiry.split('/');
+            const expMonth = parseInt(expMonthStr, 10) || 0;
+            let expYear = parseInt(expYearStr, 10) || 0;
+            if (expYear < 100) expYear += 2000;
+
+            processPayMongoPayment('card', {
+                card_number: cardNumber,
+                exp_month: expMonth,
+                exp_year: expYear,
+                cvc: cvc,
+            });
+        });
+    }
+
+    // Auto format Card Expiry (MM/YY) and Card Number
+    const pmCardExpiryInput = document.getElementById('pmCardExpiry');
+    if (pmCardExpiryInput) {
+        pmCardExpiryInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length >= 2) {
+                val = val.substring(0, 2) + ' / ' + val.substring(2, 4);
+            }
+            e.target.value = val;
+        });
+    }
+
+    const pmCardNumberInput = document.getElementById('pmCardNumber');
+    if (pmCardNumberInput) {
+        pmCardNumberInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            val = val.match(/.{1,4}/g)?.join(' ') || val;
+            e.target.value = val.substring(0, 19);
+        });
+    }
+
+
+    bookingForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!activeAmenity || isSubmitting) {
+            if (!activeAmenity) {
+                bookingNotice.textContent = 'Please select an amenity first.';
+            }
+            return;
+        }
 
         const formData = new FormData(bookingForm);
 
-        
-
         // Build amenities array for multi-selection
-
         let amenitiesArray = [];
-
         if (multiSelectionEnabled && selectedCards.length > 0) {
-
             amenitiesArray = selectedCards.map(card => {
-
                 const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
                 const pricingTypeForCard = amenityPricingTypes[card.dataset.amenityId] || selectedSlot;
-
                 const price = getAmenityPrice(card, choice, pricingTypeForCard);
-
                 const pricingType = choice === 'with' ? `${pricingTypeForCard} Aircon` : pricingTypeForCard;
 
                 return {
-
                     amenity_id: card.dataset.amenityId,
-
                     pricing_type: pricingType,
-
                     price_at_booking: price,
-
                 };
-
             });
-
         } else {
-
-            // Single selection mode
-
             amenitiesArray = [{
-
                 amenity_id: activeAmenity.dataset.amenityId,
-
                 pricing_type: modalPriceLabel.textContent === 'Aircon package' ? `${selectedSlot} Aircon` : selectedSlot,
-
                 price_at_booking: Number(modalPriceValue.textContent.replace('₱', '').replace(',', '')),
-
             }];
-
         }
 
-
-
         const payload = {
-
             booker_name: formData.get('booker_name'),
-
             phone: formData.get('phone'),
-
             email: formData.get('email'),
-
             number_of_guests: Number(formData.get('number_of_guests')),
-
             reservation_date: dateInput.value,
-
             check_in: dateInput.value,
-
             check_out: dateInput.value,
-
             slot: selectedSlot,
-
             amenities: amenitiesArray,
-
         };
 
-
-
         setSubmittingState(true);
-
-        bookingNotice.textContent = 'Saving your reservation…';
-
-
+        bookingNotice.textContent = 'Preparing payment options…';
 
         try {
-
-            const response = await fetch('/reservation/prototype', {
-
+            const response = await fetch('/reservation/create-intent', {
                 method: 'POST',
-
                 headers: {
-
                     'Content-Type': 'application/json',
-
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-
                 },
-
                 body: JSON.stringify(payload),
-
             });
-
-
 
             const result = await response.json();
 
             if (response.ok && result.success) {
-
-                bookingNotice.textContent = 'Prototype reservation saved and marked partially paid.';
-
-                bookingForm.reset();
-
+                bookingNotice.textContent = '';
                 
+                currentReservationId = result.reservation_id;
+                currentPaymentIntentId = result.payment_intent_id;
+                currentClientKey = result.client_key;
 
-                // Show success modal
+                if (pmSummaryTotal) pmSummaryTotal.textContent = `₱${Number(result.total_amount).toFixed(2)}`;
+                if (pmSummaryDeposit) pmSummaryDeposit.textContent = `₱${Number(result.deposit_amount).toFixed(2)}`;
+                if (pmSummaryBalance) pmSummaryBalance.textContent = `₱${Number(result.remaining_balance).toFixed(2)}`;
 
-                const successModal = document.getElementById('reservationSuccessModal');
-
-                if (successModal) {
-
-                    successModal.classList.add('is-open');
-
-                    successModal.setAttribute('aria-hidden', 'false');
-
-                    updateOverlayScrollLock();
-
+                // Close amenity modal
+                if (modal) {
+                    modal.classList.remove('is-open');
+                    modal.setAttribute('aria-hidden', 'true');
                 }
 
+                // Open PayMongo Payment Modal
+                if (paymongoPaymentModal) {
+                    paymongoPaymentModal.classList.add('is-open');
+                    paymongoPaymentModal.setAttribute('aria-hidden', 'false');
+                    updateOverlayScrollLock();
+                }
             } else {
-
-                // Show error modal for duplicate reservations
                 if (response.status === 409) {
                     const errorModal = document.getElementById('reservationErrorModal');
                     if (errorModal) {
@@ -2887,21 +3068,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateOverlayScrollLock();
                     }
                 } else {
-                    bookingNotice.textContent = result.message || 'Reservation could not be saved.';
+                    bookingNotice.textContent = result.message || 'Reservation could not be initialized.';
                 }
-
             }
-
         } catch (error) {
-
-            bookingNotice.textContent = 'Reservation could not be saved.';
-
+            bookingNotice.textContent = 'Reservation could not be initialized. Please try again.';
         } finally {
-
             setSubmittingState(false);
-
         }
-
     });
 
 

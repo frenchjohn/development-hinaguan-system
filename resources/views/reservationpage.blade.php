@@ -961,13 +961,224 @@
 
                             </label>
 
-                            <button type="submit" class="rp-booking-form__button">Reserve prototype</button>
+                            <button type="submit" class="rp-booking-form__button">Proceed to Payment &rarr;</button>
 
                             <p class="rp-booking-form__message" id="bookingNotice"></p>
 
                         </form>
 
                     </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {{-- ── PayMongo Payment Modal ── --}}
+        <div class="rp-modal" id="paymongoPaymentModal" aria-hidden="true">
+
+            <div class="rp-modal__backdrop" data-close-payment-modal></div>
+
+            <div class="rp-modal__panel rp-modal__panel--payment rp-modal__panel--scroll">
+
+                <div class="rp-modal__header">
+
+                    <div>
+
+                        <p class="rp-modal__eyebrow">Step 2 of 2 &middot; Secure Payment Gateway</p>
+
+                        <h2>Pay Reservation Deposit</h2>
+
+                    </div>
+
+                    <button type="button" class="rp-modal__close" data-close-payment-modal>&times;</button>
+
+                </div>
+
+                <div class="rp-modal__content rp-modal__content--stacked">
+
+                    {{-- Summary Box --}}
+                    <div class="rp-pay-summary">
+
+                        <div class="rp-pay-summary__item">
+
+                            <span>Total Booking</span>
+
+                            <strong id="pmSummaryTotal">&#8369;0.00</strong>
+
+                        </div>
+
+                        <div class="rp-pay-summary__item rp-pay-summary__item--highlight">
+
+                            <span>50% Deposit Due Now</span>
+
+                            <strong id="pmSummaryDeposit">&#8369;0.00</strong>
+
+                        </div>
+
+                        <div class="rp-pay-summary__item">
+
+                            <span>Pay at Check-in</span>
+
+                            <strong id="pmSummaryBalance">&#8369;0.00</strong>
+
+                        </div>
+
+                    </div>
+
+                    {{-- Method Selector Tabs --}}
+                    <div class="rp-pay-tabs" role="tablist">
+
+                        <button type="button" class="rp-pay-tab is-active" data-pm-tab="gcash">
+
+                            <span class="rp-pay-tab__badge">GCash</span>
+
+                            <span>GCash E-Wallet</span>
+
+                        </button>
+
+                        <button type="button" class="rp-pay-tab" data-pm-tab="paymaya">
+
+                            <span class="rp-pay-tab__badge rp-pay-tab__badge--maya">Maya</span>
+
+                            <span>PayMaya / Maya</span>
+
+                        </button>
+
+                        <button type="button" class="rp-pay-tab" data-pm-tab="card">
+
+                            <span class="rp-pay-tab__badge rp-pay-tab__badge--card">Card</span>
+
+                            <span>Credit / Debit Card</span>
+
+                        </button>
+
+                        <button type="button" class="rp-pay-tab" data-pm-tab="qrph">
+
+                            <span class="rp-pay-tab__badge rp-pay-tab__badge--qr">QR</span>
+
+                            <span>QR Ph Scan</span>
+
+                        </button>
+
+                    </div>
+
+                    {{-- Tab Panels --}}
+                    <div class="rp-pay-panels">
+
+                        {{-- GCash & PayMaya Panel --}}
+                        <div class="rp-pay-panel is-active" id="pmPanelGcash" data-pm-panel="gcash">
+
+                            <div class="rp-pay-info">
+
+                                <p>Authenticate your payment securely via <strong>GCash</strong>. Click below to authorize your deposit directly in this window.</p>
+
+                            </div>
+
+                            <button type="button" class="rp-booking-form__button" id="pmPayGcashBtn">Pay Deposit with GCash &rarr;</button>
+
+                        </div>
+
+                        <div class="rp-pay-panel" id="pmPanelPaymaya" data-pm-panel="paymaya" style="display:none;">
+
+                            <div class="rp-pay-info">
+
+                                <p>Authenticate your payment securely via <strong>PayMaya / Maya</strong>. Click below to authorize your deposit directly in this window.</p>
+
+                            </div>
+
+                            <button type="button" class="rp-booking-form__button" id="pmPayMayaBtn">Pay Deposit with Maya &rarr;</button>
+
+                        </div>
+
+                        {{-- Card Panel --}}
+                        <div class="rp-pay-panel" id="pmPanelCard" data-pm-panel="card" style="display:none;">
+
+                            <form id="pmCardForm" class="rp-card-form">
+
+                                <div class="rp-card-form__field">
+
+                                    <label for="pmCardNumber">Card Number</label>
+
+                                    <input type="text" id="pmCardNumber" placeholder="4532 0000 0000 0000" maxlength="19" required>
+
+                                </div>
+
+                                <div class="rp-card-form__row">
+
+                                    <div class="rp-card-form__field">
+
+                                        <label for="pmCardExpiry">Expiry Date</label>
+
+                                        <input type="text" id="pmCardExpiry" placeholder="MM / YY" maxlength="5" required>
+
+                                    </div>
+
+                                    <div class="rp-card-form__field">
+
+                                        <label for="pmCardCvc">CVC / CVV</label>
+
+                                        <input type="text" id="pmCardCvc" placeholder="123" maxlength="4" required>
+
+                                    </div>
+
+                                </div>
+
+                                <button type="submit" class="rp-booking-form__button" id="pmPayCardBtn">Pay Deposit with Card &rarr;</button>
+
+                            </form>
+
+                        </div>
+
+                        {{-- QR Ph Panel --}}
+                        <div class="rp-pay-panel" id="pmPanelQrph" data-pm-panel="qrph" style="display:none;">
+
+                            <div class="rp-pay-info">
+
+                                <p>Generate a QR Ph code to scan using your banking or e-wallet app (GCash, Maya, BDO, BPI, etc.).</p>
+
+                            </div>
+
+                            <button type="button" class="rp-booking-form__button" id="pmGenerateQrBtn">Generate QR Ph Code &rarr;</button>
+
+                            <div class="rp-qr-box" id="pmQrContainer" hidden>
+
+                                <img src="" alt="QR Ph Code" id="pmQrImage" class="rp-qr-image">
+
+                                <p class="rp-qr-hint">Scan this QR code with any QR Ph supported mobile app to complete payment.</p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {{-- Embedded Sandbox Iframe Container --}}
+                    <div class="rp-iframe-box" id="pmIframeContainer" hidden>
+
+                        <div class="rp-iframe-header">
+
+                            <span class="rp-iframe-dot"></span>
+
+                            <span>PayMongo Payment Authorization (In-Website)</span>
+
+                        </div>
+
+                        <iframe id="pmAuthIframe" src="about:blank" title="PayMongo Authorization"></iframe>
+
+                    </div>
+
+                    {{-- Live Status Indicator --}}
+                    <div class="rp-pay-status" id="pmStatusBox" hidden>
+
+                        <div class="rp-pay-status__spinner"></div>
+
+                        <div class="rp-pay-status__text" id="pmStatusText">Waiting for payment confirmation…</div>
+
+                    </div>
+
+                    <p class="rp-booking-form__message" id="pmNotice"></p>
 
                 </div>
 

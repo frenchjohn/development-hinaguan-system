@@ -31,6 +31,8 @@ class Reservation extends Model
         'amount_paid',
         'remaining_balance',
         'payment_status',
+        'payment_intent_id',
+        'payment_method',
     ];
 
     protected $casts = [
