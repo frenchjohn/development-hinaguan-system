@@ -62,7 +62,10 @@ window.AppPage['staff_reservations'] = function () {
     let currentReservationData = null;
     let countdownTimer = null;
     const tableBody = document.getElementById('reservationTableBody');
-    const rows = Array.from(tableBody?.querySelectorAll('.reservation-row') ?? []);
+    let rows = Array.from(tableBody?.querySelectorAll('.reservation-row') ?? []);
+    const updateRowsReference = () => {
+        rows = Array.from(tableBody?.querySelectorAll('.reservation-row') ?? []);
+    };
     const searchInput = document.getElementById('reservationSearchInput');
     const sortSelect = document.getElementById('reservationSortSelect');
     const statusFilter = document.getElementById('reservationStatusFilter');
@@ -1104,6 +1107,9 @@ window.AppPage['staff_reservations'] = function () {
             resultsCount.textContent = `Showing ${Object.values(data).length} reservation${Object.values(data).length === 1 ? '' : 's'}`;
         }
 
+        // Update rows reference so applyFilters operates on fresh rows
+        updateRowsReference();
+
         // Re-apply current filters
         applyFilters();
     };
@@ -1581,6 +1587,9 @@ window.AppPage['staff_reservations'] = function () {
                 if (resultsCount) {
                     resultsCount.textContent = `Showing ${reservationsArray.length} reservation${reservationsArray.length === 1 ? '' : 's'}`;
                 }
+
+                // Update rows reference so applyFilters operates on fresh rows
+                updateRowsReference();
 
                 // Re-apply current filters
                 applyFilters();

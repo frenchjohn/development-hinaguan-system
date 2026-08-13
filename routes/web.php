@@ -398,6 +398,18 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
         return null;
     }
 
+    $extractedMethod = null;
+    if ($intentDetails && !empty($intentDetails['payments'])) {
+        $firstPayment = $intentDetails['payments'][0]['attributes'] ?? [];
+        $extractedMethod = $firstPayment['source']['type'] ?? $firstPayment['payment_method_type'] ?? null;
+    }
+
+    $finalPaymentMethod = $paymentMethod 
+        ?: ($pending['payment_method'] ?? null) 
+        ?: ($pending['payment_method_type'] ?? null) 
+        ?: $extractedMethod 
+        ?: 'gcash';
+
     $reservation = Reservation::create([
         'booker_name' => $pending['booker_name'],
         'phone' => $pending['phone'],
@@ -411,7 +423,7 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
         'remaining_balance' => $pending['remaining_balance'],
         'payment_status' => 'Partially Paid',
         'payment_intent_id' => $paymentIntentId,
-        'payment_method' => $paymentMethod,
+        'payment_method' => $finalPaymentMethod,
         'reservation_type' => 'online',
     ]);
 
@@ -577,6 +589,10 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
     ]);
 
     $pending = Cache::get("pending_reservation_{$data['payment_intent_id']}");
+    if ($pending) {
+        $pending['payment_method'] = $data['payment_method_type'];
+        Cache::put("pending_reservation_{$data['payment_intent_id']}", $pending, now()->addHours(2));
+    }
 
     try {
         $billing = [

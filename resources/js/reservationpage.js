@@ -2745,6 +2745,171 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPaymentIntentId = null;
     let currentClientKey = null;
     let paymentPollInterval = null;
+    let paymentCountdownInterval = null;
+
+    const stopPaymentTimer = () => {
+        if (paymentCountdownInterval) {
+            clearInterval(paymentCountdownInterval);
+            paymentCountdownInterval = null;
+        }
+        const timerBoxEl = document.getElementById('pmTimerBox');
+        if (timerBoxEl) timerBoxEl.hidden = true;
+    };
+
+    const startPaymentTimer = (durationSeconds = 600) => {
+        stopPaymentTimer();
+
+        let remaining = durationSeconds;
+        const countdownEl = document.getElementById('pmCountdown');
+        const timerBoxEl = document.getElementById('pmTimerBox');
+
+        if (timerBoxEl) {
+            timerBoxEl.hidden = false;
+            timerBoxEl.classList.remove('is-urgent');
+        }
+
+        const updateDisplay = () => {
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            if (countdownEl) countdownEl.textContent = formatted;
+
+            if (remaining <= 120 && timerBoxEl) {
+                timerBoxEl.classList.add('is-urgent');
+            }
+        };
+
+        updateDisplay();
+
+        paymentCountdownInterval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                stopPaymentTimer();
+                showPaymentFailedModal(
+                    'Payment Session Expired',
+                    'The 10-minute payment window has passed. The reservation was not created and no charge was made.'
+                );
+            } else {
+                updateDisplay();
+            }
+        }, 1000);
+    };
+
+    const showPaymentFailedModal = (title, message) => {
+        stopPaymentTimer();
+        if (paymentPollInterval) {
+            clearInterval(paymentPollInterval);
+            paymentPollInterval = null;
+        }
+
+        closePaymentModal();
+
+        const failedModal = document.getElementById('paymentFailedModal');
+        const titleEl = document.getElementById('paymentFailedTitle');
+        const messageEl = document.getElementById('paymentFailedMessage');
+
+        if (titleEl) titleEl.textContent = title || 'Payment Failed';
+        if (messageEl) messageEl.textContent = message || 'Payment could not be processed. Please try again.';
+
+        if (failedModal) {
+            failedModal.classList.add('is-open');
+            failedModal.setAttribute('aria-hidden', 'false');
+            updateOverlayScrollLock();
+        }
+    };
+
+    // Retry button listener
+    const paymentFailedRetryBtn = document.getElementById('paymentFailedRetryBtn');
+    if (paymentFailedRetryBtn) {
+        paymentFailedRetryBtn.addEventListener('click', () => {
+            const failedModal = document.getElementById('paymentFailedModal');
+            if (failedModal) {
+                failedModal.classList.remove('is-open');
+                failedModal.setAttribute('aria-hidden', 'true');
+                updateOverlayScrollLock();
+            }
+            if (pmAuthIframe) pmAuthIframe.src = 'about:blank';
+            if (pmIframeContainer) pmIframeContainer.hidden = true;
+            if (pmStatusBox) pmStatusBox.hidden = true;
+            if (bookingNotice) bookingNotice.textContent = '';
+        });
+    }
+
+    const closeFailedModalBackdrop = document.querySelector('[data-close-failed-modal]');
+    if (closeFailedModalBackdrop) {
+        closeFailedModalBackdrop.addEventListener('click', () => {
+            const failedModal = document.getElementById('paymentFailedModal');
+            if (failedModal) {
+                failedModal.classList.remove('is-open');
+                failedModal.setAttribute('aria-hidden', 'true');
+                updateOverlayScrollLock();
+            }
+        });
+    }
+
+    const pmStepSelect = document.getElementById('pmStepSelect');
+    const pmStepProcess = document.getElementById('pmStepProcess');
+    const pmStepEyebrow = document.getElementById('pmStepEyebrow');
+    const pmStepTitle = document.getElementById('pmStepTitle');
+    const pmProceedToStep3Btn = document.getElementById('pmProceedToStep3Btn');
+    const pmBackToStep2Btn = document.getElementById('pmBackToStep2Btn');
+
+    const goToStep2 = () => {
+        stopPaymentTimer();
+        if (paymentPollInterval) {
+            clearInterval(paymentPollInterval);
+            paymentPollInterval = null;
+        }
+        if (pmAuthIframe) pmAuthIframe.src = 'about:blank';
+        if (pmIframeContainer) pmIframeContainer.hidden = true;
+        if (pmStatusBox) pmStatusBox.hidden = true;
+        if (pmNotice) pmNotice.textContent = '';
+
+        if (pmStepSelect) pmStepSelect.hidden = false;
+        if (pmStepProcess) pmStepProcess.hidden = true;
+
+        if (pmStepEyebrow) pmStepEyebrow.textContent = 'Step 2 of 3 · Select Payment Method';
+        if (pmStepTitle) pmStepTitle.textContent = 'Choose Payment Option';
+    };
+
+    const goToStep3 = (method) => {
+        const selectedMethod = method || 'gcash';
+
+        if (pmStepSelect) pmStepSelect.hidden = true;
+        if (pmStepProcess) pmStepProcess.hidden = false;
+
+        if (pmStepEyebrow) pmStepEyebrow.textContent = 'Step 3 of 3 · Payment Authorization';
+        if (pmStepTitle) pmStepTitle.textContent = 'Complete Deposit Payment';
+
+        // Highlight selected tab & panel
+        payTabs.forEach(t => t.classList.toggle('is-active', t.dataset.pmTab === selectedMethod));
+        payPanels.forEach(p => {
+            const isActive = p.dataset.pmPanel === selectedMethod;
+            p.classList.toggle('is-active', isActive);
+            p.style.display = isActive ? 'block' : 'none';
+        });
+
+        if (selectedMethod === 'card') {
+            if (pmStatusBox) pmStatusBox.hidden = true;
+            stopPaymentTimer();
+        } else {
+            processPayMongoPayment(selectedMethod);
+        }
+    };
+
+    if (pmProceedToStep3Btn) {
+        pmProceedToStep3Btn.addEventListener('click', () => {
+            const activeTab = document.querySelector('[data-pm-tab].is-active');
+            const method = activeTab ? activeTab.dataset.pmTab : 'gcash';
+            goToStep3(method);
+        });
+    }
+
+    if (pmBackToStep2Btn) {
+        pmBackToStep2Btn.addEventListener('click', () => {
+            goToStep2();
+        });
+    }
 
     const closePaymentModal = () => {
         if (paymongoPaymentModal) {
@@ -2752,19 +2917,7 @@ document.addEventListener('DOMContentLoaded', () => {
             paymongoPaymentModal.setAttribute('aria-hidden', 'true');
             updateOverlayScrollLock();
         }
-        if (paymentPollInterval) {
-            clearInterval(paymentPollInterval);
-            paymentPollInterval = null;
-        }
-        if (pmAuthIframe) {
-            pmAuthIframe.src = 'about:blank';
-        }
-        if (pmIframeContainer) {
-            pmIframeContainer.hidden = true;
-        }
-        if (pmStatusBox) {
-            pmStatusBox.hidden = true;
-        }
+        goToStep2();
     };
 
     pmCloseButtons.forEach(btn => {
@@ -2801,6 +2954,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (pmStatusBox) pmStatusBox.hidden = false;
         if (pmStatusText) pmStatusText.textContent = 'Waiting for payment authorization…';
+        startPaymentTimer(600);
 
         paymentPollInterval = setInterval(async () => {
             try {
@@ -2823,18 +2977,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const data = await res.json();
-                if (data.success && (data.status === 'succeeded' || data.payment_status === 'Partially Paid')) {
-                    clearInterval(paymentPollInterval);
-                    paymentPollInterval = null;
+                if (data.success) {
+                    if (data.status === 'succeeded' || data.payment_status === 'Partially Paid') {
+                        stopPaymentTimer();
+                        clearInterval(paymentPollInterval);
+                        paymentPollInterval = null;
 
-                    closePaymentModal();
-                    if (bookingForm) bookingForm.reset();
+                        closePaymentModal();
+                        if (bookingForm) bookingForm.reset();
 
-                    const successModal = document.getElementById('reservationSuccessModal');
-                    if (successModal) {
-                        successModal.classList.add('is-open');
-                        successModal.setAttribute('aria-hidden', 'false');
-                        updateOverlayScrollLock();
+                        const successModal = document.getElementById('reservationSuccessModal');
+                        if (successModal) {
+                            successModal.classList.add('is-open');
+                            successModal.setAttribute('aria-hidden', 'false');
+                            updateOverlayScrollLock();
+                        }
+                    } else if (['failed', 'cancelled', 'expired'].includes(data.status)) {
+                        showPaymentFailedModal(
+                            data.status === 'expired' ? 'Payment Session Expired' : 'Payment Failed or Cancelled',
+                            data.message || `Payment status: ${data.status}. No reservation was created and no charge was made.`
+                        );
                     }
                 }
             } catch (err) {
@@ -3059,8 +3221,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     modal.setAttribute('aria-hidden', 'true');
                 }
 
-                // Open PayMongo Payment Modal
+                // Open PayMongo Payment Modal (Defaults to Step 2)
                 if (paymongoPaymentModal) {
+                    goToStep2();
                     paymongoPaymentModal.classList.add('is-open');
                     paymongoPaymentModal.setAttribute('aria-hidden', 'false');
                     updateOverlayScrollLock();
