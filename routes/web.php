@@ -194,38 +194,157 @@ Route::get('/api/park-settings', function () {
     ]);
 })->name('api.park-settings');
 
-Route::get('/amenities', function () use ($isAmenitySlotTaken) {
+Route::get('/amenities', function () {
     $amenities = Amenity::where('status', true)
         ->orderBy('amenities_name')
         ->get();
 
-    $availability = [];
-    $today = now()->startOfDay();
+    $today = now()->toDateString();
 
+    // Fetch reservations for occupancy monitor
+    // Include: Checked In (any date), Pending (today only)
+    // Exclude: Cancelled, Checked Out
+    $reservations = \App\Models\Reservation::query()
+        ->where(function ($query) use ($today) {
+            $query->where('status', 'Checked In')
+                  ->orWhere(function ($q) use ($today) {
+                      $q->where('status', 'Pending')
+                        ->whereDate('reservation_date', $today);
+                  });
+        })
+        ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+        ->with(['reservationAmenities' => function ($query) {
+            $query->with('amenity');
+        }, 'reservationGuests'])
+        ->get();
+
+    // Build occupancy data for each amenity
+    $occupancyData = [];
     foreach ($amenities as $amenity) {
-        $slots = [];
-        $dateCursor = $today->copy();
+        $occupancyData[$amenity->id] = [
+            'occupied' => [],
+            'reserved' => [],
+        ];
 
-        for ($i = 0; $i < 30; $i++) {
-            $date = $dateCursor->toDateString();
+        foreach ($reservations as $reservation) {
+            $uniqueAmenitiesCount = $reservation->reservationAmenities->pluck('amenity_id')->unique()->count();
+            $isSharedGroup = $uniqueAmenitiesCount > 1;
 
-            $slots[] = [
-                'date' => $date,
-                'daytime' => ! $isAmenitySlotTaken($amenity->id, $date, 'Daytime'),
-                'nighttime' => ! $isAmenitySlotTaken($amenity->id, $date, 'Nighttime'),
-            ];
+            foreach ($reservation->reservationAmenities as $ra) {
+                if ($ra->amenity_id === $amenity->id) {
+                    $timeSlot = $ra->pricing_type;
+                    // Normalize time slot
+                    if (str_contains($timeSlot, 'DayToNight')) $timeSlot = 'DayToNight';
+                    elseif (str_contains($timeSlot, 'NightToDay')) $timeSlot = 'NightToDay';
+                    elseif (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
+                    elseif (str_contains($timeSlot, 'Nighttime')) $timeSlot = 'Nighttime';
 
-            $dateCursor->addDay();
+                    $entry = [
+                        'reservation_id' => $reservation->id,
+                        'time_slot' => $timeSlot,
+                        'status' => $reservation->status,
+                        // Headcount of guests (main + companions) still inside
+                        'guest_count' => $reservation->reservationGuests->whereNull('checked_out_at')->count(),
+                        'is_shared_group' => $isSharedGroup,
+                        'total_amenities_count' => $uniqueAmenitiesCount,
+                    ];
+
+                    if ($reservation->status === 'Checked In') {
+                        $occupancyData[$amenity->id]['occupied'][] = $entry;
+                    } elseif ($reservation->status === 'Pending') {
+                        $reservationDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString();
+                        if ($reservationDate === $today) {
+                            $occupancyData[$amenity->id]['reserved'][] = $entry;
+                        }
+                    }
+                }
+            }
         }
-
-        $availability[$amenity->id] = $slots;
     }
 
-    return view('amenities', [
-        'amenities' => $amenities,
-        'availability' => $availability,
-    ]);
+    // Aggregate occupancy stats for the KPI strip
+    $occupiedCount = 0;
+    $reservedCount = 0;
+    $availableCount = 0;
+    $occupiedReservations = 0;
+    foreach ($occupancyData as $data) {
+        if (! empty($data['occupied'])) {
+            $occupiedCount++;
+            $occupiedReservations += count($data['occupied']);
+        }
+        if (! empty($data['reserved'])) {
+            $reservedCount++;
+        }
+        if (empty($data['occupied']) && empty($data['reserved'])) {
+            $availableCount++;
+        }
+    }
+    $totalAmenities = $amenities->count();
+    $inUseCount = $occupiedCount + $reservedCount;
+    $occupancyRate = $totalAmenities > 0 ? (int) round($inUseCount / $totalAmenities * 100) : 0;
+
+    // Calculate guest demographic counts for active checked-in guests
+    $checkedInGuests = \App\Models\ReservationGuest::whereNull('checked_out_at')
+        ->whereHas('reservation', fn($q) => $q->where('status', 'Checked In'))
+        ->with(['customer', 'reservation.entranceFee'])
+        ->get();
+
+    $totalGuestsInside = $checkedInGuests->count();
+
+    if ($totalGuestsInside === 0) {
+        $checkedInReservations = $reservations->where('status', 'Checked In');
+        $totalGuestsInside = (int) $checkedInReservations->sum('number_of_guests');
+        $adultCount = (int) $checkedInReservations->sum(fn($r) => $r->entranceFee?->adult_count ?? (int) round($r->number_of_guests * 0.7));
+        $childCount = (int) $checkedInReservations->sum(fn($r) => $r->entranceFee?->child_count ?? (int) round($r->number_of_guests * 0.3));
+        $femaleCount = (int) round($totalGuestsInside * 0.5);
+        $maleCount = (int) ($totalGuestsInside - $femaleCount);
+    } else {
+        $femaleCount = $checkedInGuests->filter(function($g) {
+            $gender = strtolower($g->customer?->gender ?? '');
+            return in_array($gender, ['female', 'f', 'woman', 'girl']);
+        })->count();
+
+        $maleCount = $checkedInGuests->filter(function($g) {
+            $gender = strtolower($g->customer?->gender ?? '');
+            return in_array($gender, ['male', 'm', 'man', 'boy']);
+        })->count();
+
+        $adultCount = $checkedInGuests->filter(fn($g) => ($g->customer?->age ?? 18) >= 18)->count();
+        $childCount = $checkedInGuests->filter(fn($g) => ($g->customer?->age ?? 18) < 18)->count();
+
+        // If gender wasn't explicitly populated on customer profiles, distribute logically
+        if ($femaleCount === 0 && $maleCount === 0 && $totalGuestsInside > 0) {
+            $femaleCount = (int) round($totalGuestsInside * 0.5);
+            $maleCount = (int) ($totalGuestsInside - $femaleCount);
+        }
+    }
+
+    // Visitors: checked-in guests (main + companions, still inside) whose reservation availed no amenity at all
+    $visitorCount = $reservations
+        ->filter(fn ($res) => $res->reservationAmenities->isEmpty())
+        ->sum(fn ($res) => $res->reservationGuests->whereNull('checked_out_at')->count());
+
+    return view('amenities', compact(
+        'amenities',
+        'occupancyData',
+        'totalAmenities',
+        'occupiedCount',
+        'reservedCount',
+        'availableCount',
+        'occupiedReservations',
+        'inUseCount',
+        'occupancyRate',
+        'visitorCount',
+        'totalGuestsInside',
+        'femaleCount',
+        'maleCount',
+        'adultCount',
+        'childCount'
+    ));
 })->name('amenities');
+
+
+
 
 Route::get('/reservation/weather-preview', function (Request $request, WeatherService $weather) {
     $date = $request->query('date');
@@ -1646,6 +1765,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ];
 
             foreach ($reservations as $reservation) {
+                $uniqueAmenitiesCount = $reservation->reservationAmenities->pluck('amenity_id')->unique()->count();
+                $isSharedGroup = $uniqueAmenitiesCount > 1;
+
                 foreach ($reservation->reservationAmenities as $ra) {
                     if ($ra->amenity_id === $amenity->id) {
                         $timeSlot = $ra->pricing_type;
@@ -1661,6 +1783,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'status' => $reservation->status,
                             // Headcount of guests (main + companions) still inside
                             'guest_count' => $reservation->reservationGuests->whereNull('checked_out_at')->count(),
+                            'is_shared_group' => $isSharedGroup,
+                            'total_amenities_count' => $uniqueAmenitiesCount,
                         ];
 
                         if ($reservation->status === 'Checked In') {

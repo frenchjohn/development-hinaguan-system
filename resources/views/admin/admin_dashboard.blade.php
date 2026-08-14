@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Dashboard — Hinaguan Nature Park</title>
     <script>
         // Prevent flash of wrong theme by setting theme immediately
@@ -13,11 +14,15 @@
     </script>
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|playfair-display:600,700" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
-        'resources/components/css_js/header.css',
+        'resources/css/staff_css/staff_shared.css',
         'resources/css/admin_css/admin_shared.css',
+        'resources/css/homepage.css',
+        'resources/components/css_js/header.css',
+        'resources/components/css_js/staff_sidemenu.css',
+        'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_dashboard.js',
@@ -28,15 +33,21 @@
         <x-admin_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
-            <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
                 <x-header
                     title="Admin Dashboard"
-                    subtitle="Overview of park operations and reservations"
+                    subtitle="Overview of park operations, reservations, revenue, and analytics"
+                    :showWelcome="true"
                 />
+
                 @php
                     $hour = (int) now()->format('G');
-                    $greeting = $hour < 12 ? 'Good morning' : ($hour < 18 ? 'Good afternoon' : 'Good evening');
+                    $greeting = $hour < 12 ? 'Good Morning' : ($hour < 18 ? 'Good Afternoon' : 'Good Evening');
+
+                    $weatherService = app(\App\Services\WeatherService::class);
+                    $weatherForecast = $weatherService->getMultiDayForecast(3);
+                    $weatherNow = $weatherForecast['now'] ?? null;
+
                     $donutColors = [
                         'Pending' => '#c8a45d',
                         'Confirmed' => '#4c9a5f',
@@ -57,172 +68,171 @@
                     $revenueMax = max(1, max($weekRevenue));
                 @endphp
 
-                {{-- ===== GREETING ===== --}}
-                <section class="flex flex-wrap items-center justify-between gap-5 px-[0.15rem] pb-[1.1rem] pt-[0.35rem]">
-                    <div class="flex items-center gap-[0.9rem]">
-                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park" class="h-[46px] w-[46px] shrink-0 rounded-[14px] border border-glass-border-strong bg-glass object-cover shadow-glass">
-                        <div>
-                            <p class="m-0 mb-[0.1rem] text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[var(--green)]">Hinaguan Nature Park · Admin Portal</p>
-                            <h2 class="m-0 font-display text-[clamp(1.15rem,1.9vw,1.5rem)] font-semibold leading-[1.2] text-[var(--ink)]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Admin' }}</h2>
-                            <p class="m-0 mt-[0.15rem] max-w-[46rem] text-[0.85rem] leading-[1.5] text-[var(--ink-muted)]">Here is a snapshot of Hinaguan Nature Park today — reservations, visitors, and revenue at a glance.</p>
-                        </div>
+                {{-- ===== GREETING BANNER ===== --}}
+                <section class="mb-6 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                    <div class="min-w-[200px] flex-1">
+                        <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#c8e6c8]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Admin User' }}!</h2>
+                        <p class="m-0 text-sm font-medium text-hp-text-muted">Welcome to Hinaguan Nature Park · Admin Portal Overview</p>
                     </div>
-                    <div class="shrink-0 text-right">
-                        <span class="inline-flex items-center gap-[0.45rem] rounded-full border border-glass-border bg-[var(--green-soft)] px-[0.8rem] py-[0.35rem] text-[0.72rem] font-bold text-[var(--green-deep)]">
-                            <span class="h-[7px] w-[7px] rounded-full bg-[var(--success)]" style="animation:spPulseSoft 2.2s ease-out infinite"></span> Live
-                        </span>
-                        <p class="m-0 mt-1 text-[0.82rem] font-medium text-[var(--ink-muted)]">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</p>
+                    <div class="flex flex-wrap items-center gap-6">
+                        <div class="flex flex-col items-end gap-0.5 max-[992px]:items-start">
+                            <span class="text-[0.8rem] font-medium text-hp-text-muted">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
+                            <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#c8e6c8]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
+                        </div>
+                        @if ($weatherNow)
+                        <div class="flex items-center gap-2">
+                            @if (!empty($weatherNow['icon']))
+                                <img src="{{ $weatherNow['icon'] }}" alt="" class="h-10 w-10 object-contain">
+                            @else
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-9 w-9 text-[#c8a45d]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            @endif
+                            <div class="flex flex-col items-center">
+                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
+                                <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? '—' }}</span>
+                            </div>
+                        </div>
+                        @endif
+                        <div class="shrink-0">
+                            <span class="flex h-[60px] w-[60px] items-center justify-center rounded-xl bg-hp-green text-center text-[0.7rem] font-extrabold uppercase leading-[1.3] tracking-[0.06em] text-white shadow-[0_4px_12px_rgba(28,92,60,0.35)] max-[768px]:h-[50px] max-[768px]:w-[50px] max-[768px]:text-[0.6rem] dark:bg-[#178a52] dark:shadow-[0_4px_12px_rgba(23,138,82,0.4)]">PARK<br>OPEN</span>
+                        </div>
                     </div>
                 </section>
 
                 {{-- ===== STAT CARDS ===== --}}
-                <div class="mb-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <article class="flex items-center gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Total Reservations</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $totalReservations }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">All reservations in the system</p>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Total Reservations</p>
+                            <p class="m-0 font-display text-2xl font-bold leading-tight text-hp-text">{{ $totalReservations }}</p>
+                            <p class="m-0 text-xs text-hp-text-muted">All time bookings</p>
+                        </div>
                     </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+
+                    <article class="flex items-center gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Total Guests</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $totalGuests }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Total visitors booked</p>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Total Guests</p>
+                            <p class="m-0 font-display text-2xl font-bold leading-tight text-hp-text">{{ $totalGuests }}</p>
+                            <p class="m-0 text-xs text-hp-text-muted">Total visitors booked</p>
+                        </div>
                     </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+
+                    <article class="flex items-center gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Today's Visitors</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $todayVisitors }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Guests expected to arrive today</p>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Monthly Revenue</p>
+                            <p class="m-0 font-display text-2xl font-bold leading-tight text-hp-text">₱{{ number_format($currentMonthRevenue, 2) }}</p>
+                            <p class="m-0 text-xs text-hp-text-muted">Collected this month</p>
+                        </div>
                     </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+
+                    <article class="flex items-center gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0e9f4] text-[#6d4b8e] dark:bg-[#2b1f33] dark:text-[#a889c4]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
                         </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Revenue (Month)</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">₱{{ number_format($currentMonthRevenue, 2) }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Collected this month</p>
-                    </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Today's Visitors</p>
+                            <p class="m-0 font-display text-2xl font-bold leading-tight text-hp-text">{{ $todayVisitors }}</p>
+                            <p class="m-0 text-xs text-hp-text-muted">Expected park arrivals</p>
                         </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Pending Reservations</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $pendingReservations }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Awaiting confirmation</p>
-                    </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--hp-gold)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Checked-in Guests</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $checkedInGuests }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Guests on site right now</p>
-                    </article>
-                    <article class="rounded-2xl border border-glass-border bg-glass p-6 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:bg-glass-hover">
-                        <div class="mb-4 h-9 w-9 text-[var(--danger)]">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-full w-full"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <p class="m-0 mb-2 text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-[var(--hp-text-muted)]">Cancelled Reservations</p>
-                        <p class="m-0 mb-2 font-display text-[2rem] font-bold leading-none text-[var(--hp-green-dark)]">{{ $cancelledReservations }}</p>
-                        <p class="m-0 text-[0.8125rem] leading-[1.5] text-[var(--hp-text-muted)]">Cancelled reservations</p>
                     </article>
                 </div>
 
-                {{-- ===== CHARTS ===== --}}
-                <div class="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-                    <section class="dash-panel">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-[0.98rem] font-semibold text-[var(--ink)]">Revenue — Last 7 Days</h3>
-                            <div class="flex items-center gap-1.5 text-[0.78rem] text-[var(--ink-muted)]">
-                                <span class="inline-flex items-center gap-1.5"><i class="inline-block h-2.5 w-2.5 rounded-full bg-[#7fa08e]"></i>Revenue (₱)</span>
+                {{-- ===== CHARTS SECTION ===== --}}
+                <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
+                    {{-- Revenue Trend Smooth Curve Canvas Chart --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue & Booking Trends</h3>
+                                <p class="m-0 text-xs text-hp-text-muted">Daily performance for the last 7 days</p>
+                            </div>
+                            <div class="flex items-center gap-4 text-xs font-semibold text-hp-text-muted">
+                                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#1c5c3c]"></span> Revenue Trend</span>
                             </div>
                         </div>
-                        <div class="dash-barchart">
-                            @for ($i = 0; $i < 7; $i++)
-                                <div class="dash-barchart__col">
-                                    <div class="dash-barchart__bars">
-                                        <div class="dash-barchart__bar dash-barchart__bar--revenue"
-                                             style="--val: {{ round($weekRevenue[$i] / $revenueMax * 100) }}%"
-                                             title="₱{{ number_format($weekRevenue[$i]) }} collected"></div>
-                                    </div>
-                                    <span class="dash-barchart__value">₱{{ number_format($weekRevenue[$i]) }}</span>
-                                    <span class="dash-barchart__label">{{ $weekDays[$i] }}</span>
-                                </div>
-                            @endfor
+                        <div class="relative min-h-[260px] w-full flex-1">
+                            <canvas id="sdAreaChartCanvas"></canvas>
                         </div>
                     </section>
 
-                    <section class="dash-panel">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-[0.98rem] font-semibold text-[var(--ink)]">Reservation Status</h3>
+                    {{-- Reservation Status Donut Chart --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="m-0 text-lg font-semibold text-hp-text">Reservation Status</h3>
+                            <span class="text-xs font-semibold text-hp-text-muted">{{ $donutTotal }} Total</span>
                         </div>
                         @if ($donutTotal > 0)
-                            <div class="dash-donut-wrap">
+                            <div class="dash-donut-wrap my-auto">
                                 <div class="dash-donut" style="{{ $donutStyle }}">
                                     <div class="dash-donut__hole">
-                                        <span class="dash-donut__total font-display text-[1.4rem] font-bold leading-none">{{ $donutTotal }}</span>
-                                        <small>total</small>
+                                        <span class="dash-donut__total font-display text-2xl font-bold leading-none text-hp-text">{{ $donutTotal }}</span>
+                                        <small class="text-xs uppercase text-hp-text-muted">Bookings</small>
                                     </div>
                                 </div>
                                 <ul class="dash-donut__legend">
                                     @foreach ($statusBreakdown as $status => $count)
                                         <li>
                                             <i style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
-                                            {{ $status }}
-                                            <strong>{{ $count }}</strong>
+                                            <span class="text-xs font-medium text-hp-text">{{ $status }}</span>
+                                            <strong class="text-xs font-bold text-hp-text">{{ $count }}</strong>
                                         </li>
                                     @endforeach
                                 </ul>
                             </div>
                         @else
-                            <p class="dash-chart__empty">No reservations recorded yet.</p>
+                            <p class="dash-chart__empty py-8 text-center text-sm text-hp-text-muted">No reservations recorded yet.</p>
                         @endif
                     </section>
                 </div>
 
                 {{-- ===== BOTTOM GRID ===== --}}
                 <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <section class="dash-panel">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-[0.98rem] font-semibold text-[var(--ink)]">Recent Reservations</h3>
-                            <a href="{{ route('admin.reports') }}" class="dash-panel__link">View reports</a>
+                    {{-- Recent Activity Table --}}
+                    <section class="dash-panel flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h3 class="m-0 text-lg font-semibold text-hp-text">Recent Activity</h3>
+                                <p class="m-0 text-xs text-hp-text-muted">Latest reservations created</p>
+                            </div>
+                            <a href="{{ route('admin.reports') }}" class="text-xs font-semibold text-hp-green-mid no-underline hover:underline">View All →</a>
                         </div>
-                        <div class="dash-table-wrap">
-                            <table class="dash-table">
+                        <div class="dash-table-wrap overflow-x-auto">
+                            <table class="dash-table w-full text-left text-sm">
                                 <thead>
-                                    <tr>
-                                        <th>Guest</th>
-                                        <th>Date</th>
-                                        <th>Amenity</th>
-                                        <th>Status</th>
+                                    <tr class="border-b border-glass-border text-xs uppercase tracking-wider text-hp-text-muted">
+                                        <th class="py-3 px-3">Guest</th>
+                                        <th class="py-3 px-3">Date</th>
+                                        <th class="py-3 px-3">Amenity</th>
+                                        <th class="py-3 px-3">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($recentReservations as $reservation)
                                         @php $initials = strtoupper(implode('', array_map(fn ($w) => $w[0] ?? '', array_slice(preg_split('/\s+/', trim($reservation->booker_name ?? '?')), 0, 2)))); @endphp
-                                        <tr>
-                                            <td>
-                                                <span class="cell-person">
-                                                    <span class="cell-person__avatar">{{ $initials ?: '?' }}</span>
-                                                    <span class="cell-person__name">{{ $reservation->booker_name }}</span>
+                                        <tr class="border-b border-glass-border/50 hover:bg-glass-hover">
+                                            <td class="py-3 px-3">
+                                                <span class="cell-person flex items-center gap-2">
+                                                    <span class="cell-person__avatar flex h-7 w-7 items-center justify-center rounded-full bg-[#1c5c3c] text-xs font-bold text-white">{{ $initials ?: '?' }}</span>
+                                                    <span class="cell-person__name font-medium text-hp-text">{{ $reservation->booker_name }}</span>
                                                 </span>
                                             </td>
-                                            <td class="mono-cell">{{ $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'TBD' }}</td>
-                                            <td>{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None' }}</td>
-                                            <td>
-                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }}">{{ $reservation->status }}</span>
+                                            <td class="mono-cell py-3 px-3 text-xs text-hp-text-muted">{{ $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'TBD' }}</td>
+                                            <td class="py-3 px-3 text-xs text-hp-text-muted">{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None' }}</td>
+                                            <td class="py-3 px-3">
+                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }} rounded-full px-2.5 py-1 text-[0.7rem] font-bold">{{ $reservation->status }}</span>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="dash-table-empty">No recent reservations yet.</td>
+                                            <td colspan="4" class="py-6 text-center text-sm text-hp-text-muted">No recent reservations yet.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -230,66 +240,58 @@
                         </div>
                     </section>
 
-                    <section class="dash-panel">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-[0.98rem] font-semibold text-[var(--ink)]">Key metrics</h3>
+                    {{-- Operations Summary & Quick Links --}}
+                    <section class="dash-panel flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4">
+                            <h3 class="m-0 text-lg font-semibold text-hp-text">Operational Key Metrics</h3>
+                            <p class="m-0 text-xs text-hp-text-muted">System metrics and management shortcuts</p>
                         </div>
-                        <div class="grid gap-3 p-4">
-                            <div class="flex items-center justify-between gap-4 rounded-[11px] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--border-strong)]">
-                                <span class="inline-flex items-center gap-2 text-[0.85rem] font-medium text-[var(--ink-muted)]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.05rem] w-[1.05rem] shrink-0 text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    Total guests checked in
-                                </span>
-                                <strong class="whitespace-nowrap text-[0.95rem] text-[var(--ink)]">{{ $checkedInGuests }}</strong>
+                        <div class="mb-6 grid gap-3">
+                            <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass-hover px-4 py-3">
+                                <span class="text-sm font-medium text-hp-text">Checked-in Guests Currently On-Site</span>
+                                <strong class="text-base font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $checkedInGuests }}</strong>
                             </div>
-                            <div class="flex items-center justify-between gap-4 rounded-[11px] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--border-strong)]">
-                                <span class="inline-flex items-center gap-2 text-[0.85rem] font-medium text-[var(--ink-muted)]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.05rem] w-[1.05rem] shrink-0 text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                                    Unique customers
-                                </span>
-                                <strong class="whitespace-nowrap text-[0.95rem] text-[var(--ink)]">{{ $uniqueCustomerCount }}</strong>
+                            <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass-hover px-4 py-3">
+                                <span class="text-sm font-medium text-hp-text">Pending Confirmations</span>
+                                <strong class="text-base font-bold text-[#c8a45d]">{{ $pendingReservations }}</strong>
                             </div>
-                            <div class="flex items-center justify-between gap-4 rounded-[11px] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3.5 transition-all duration-200 hover:-translate-y-px hover:border-[var(--border-strong)]">
-                                <span class="inline-flex items-center gap-2 text-[0.85rem] font-medium text-[var(--ink-muted)]">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[1.05rem] w-[1.05rem] shrink-0 text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    Top booked amenity
-                                </span>
-                                <strong class="whitespace-nowrap text-[0.95rem] text-[var(--ink)]">{{ $topAmenity['name'] ?? 'N/A' }} <small class="font-medium text-[0.8rem] text-[var(--ink-faint)]">({{ $topAmenity['count'] ?? 0 }})</small></strong>
+                            <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass-hover px-4 py-3">
+                                <span class="text-sm font-medium text-hp-text">Top Booked Amenity</span>
+                                <strong class="text-sm font-bold text-hp-text">{{ $topAmenity['name'] ?? 'N/A' }} ({{ $topAmenity['count'] ?? 0 }})</strong>
                             </div>
                         </div>
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-[0.98rem] font-semibold text-[var(--ink)]">Quick Actions</h3>
+
+                        <h4 class="mb-3 text-sm font-bold uppercase tracking-wider text-hp-text-muted">Quick Actions</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{{ route('admin.amenities') }}" class="flex items-center gap-2.5 rounded-xl border border-glass-border p-3 text-xs font-semibold text-hp-text no-underline transition-all hover:bg-glass-hover hover:border-hp-green-mid">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                Amenities
+                            </a>
+                            <a href="{{ route('admin.users') }}" class="flex items-center gap-2.5 rounded-xl border border-glass-border p-3 text-xs font-semibold text-hp-text no-underline transition-all hover:bg-glass-hover hover:border-hp-green-mid">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                Manage Users
+                            </a>
+                            <a href="{{ route('admin.reports') }}" class="flex items-center gap-2.5 rounded-xl border border-glass-border p-3 text-xs font-semibold text-hp-text no-underline transition-all hover:bg-glass-hover hover:border-hp-green-mid">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                Park Reports
+                            </a>
+                            <a href="{{ route('admin.settings') }}" class="flex items-center gap-2.5 rounded-xl border border-glass-border p-3 text-xs font-semibold text-hp-text no-underline transition-all hover:bg-glass-hover hover:border-hp-green-mid">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                Settings
+                            </a>
                         </div>
-                        <ul class="dash-quick-actions">
-                            <li>
-                                <a href="{{ route('reservation') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                                    New Reservation
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.amenities') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                    Manage Amenities
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.users') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    Manage Staff Users
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('admin.settings') }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                    System Settings
-                                </a>
-                            </li>
-                        </ul>
                     </section>
                 </div>
             </main>
         </div>
     </div>
+
+    <script>
+        window.__sdChartData = {
+            labels: @json($weekDays),
+            bookings: @json($weekRevenue),
+            revenue: @json($weekRevenue)
+        };
+    </script>
 </body>
 </html>

@@ -189,13 +189,15 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     const div = document.createElement('div');
                     div.className = 'status-badge status-badge--occupied';
                     const guestCount = Number(item.guest_count ?? 0);
-                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${item.time_slot}) &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
+                    const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
+                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${item.time_slot})${sharedTag} &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'status-badge status-badge--reserved';
-                    div.innerHTML = `<strong>Reserved Today</strong> (Reservation #${item.reservation_id} - ${item.time_slot})`;
+                    const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
+                    div.innerHTML = `<strong>Reserved Today</strong> (Reservation #${item.reservation_id} - ${item.time_slot})${sharedTag}`;
                     modalStatusList.appendChild(div);
                 });
             }

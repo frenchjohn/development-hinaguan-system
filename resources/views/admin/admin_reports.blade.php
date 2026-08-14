@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Reports — Hinaguan Nature Park</title>
     <script>
         // Prevent flash of wrong theme by setting theme immediately
@@ -13,331 +14,563 @@
     </script>
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|playfair-display:600,700" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @vite([
         'resources/css/app.css',
-        'resources/components/css_js/header.css',
+        'resources/css/staff_css/staff_shared.css',
         'resources/css/admin_css/admin_shared.css',
+        'resources/css/homepage.css',
+        'resources/components/css_js/header.css',
+        'resources/components/css_js/staff_sidemenu.css',
+        'resources/css/chatbot.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_reports.js',
     ])
+    <style>
+        /* Hide print elements strictly on screen view */
+        @media screen {
+            .print-only-header,
+            .print-summary-box,
+            .print-ledger-title {
+                display: none !important;
+            }
+        }
+
+        .print-logo {
+            max-width: 52px !important;
+            max-height: 52px !important;
+            width: 52px !important;
+            height: 52px !important;
+            object-fit: cover !important;
+        }
+
+        /* ===== PRINT SPECIFIC STYLES ===== */
+        @media print {
+            /* 1. Hide system UI chrome, sidebars, web headers, controls, and canvas charts */
+            aside,
+            header,
+            nav,
+            .dash-sidebar,
+            .sidebar-wrapper,
+            .header-container,
+            .dash-header-wrap,
+            #reportsFilters,
+            #exportCsvBtn,
+            #printReportsButton,
+            #resetFiltersBtn,
+            .preset-chip,
+            .web-only-section,
+            .web-only-charts,
+            .dash-header {
+                display: none !important;
+            }
+
+            /* 2. Reset Page Layout & Backgrounds for Pure White Paper */
+            @page {
+                size: A4 portrait;
+                margin: 15mm 15mm 15mm 15mm;
+            }
+
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 10pt !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .dash-layout, .dash-main, .dash-content {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            /* 3. Official Clean Print Header (No Colors) */
+            .print-only-header {
+                display: block !important;
+                margin-bottom: 20px !important;
+                border-bottom: 2px solid #000000 !important;
+                padding-bottom: 12px !important;
+            }
+
+            .print-header-top {
+                display: flex !important;
+                align-items: center !important;
+                gap: 16px !important;
+                margin-bottom: 12px !important;
+            }
+
+            .print-title {
+                font-size: 16pt !important;
+                font-weight: 700 !important;
+                margin: 0 !important;
+                letter-spacing: 0.5px !important;
+                color: #000000 !important;
+                text-transform: uppercase !important;
+            }
+
+            .print-subtitle {
+                font-size: 9.5pt !important;
+                color: #333333 !important;
+                margin: 2px 0 0 0 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+            }
+
+            .print-meta-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 6px 20px !important;
+                font-size: 9pt !important;
+                color: #000000 !important;
+                background: #ffffff !important;
+                padding: 8px 12px !important;
+                border: 1px solid #000000 !important;
+            }
+
+            /* 4. Clean Monochrome Summary Grid Table */
+            .print-summary-box {
+                display: table !important;
+                width: 100% !important;
+                margin-bottom: 20px !important;
+                border-collapse: collapse !important;
+            }
+
+            .print-summary-row {
+                display: table-row !important;
+            }
+
+            .print-summary-cell {
+                display: table-cell !important;
+                padding: 8px 10px !important;
+                border: 1px solid #000000 !important;
+                text-align: center !important;
+                width: 25% !important;
+                background: #ffffff !important;
+            }
+
+            .print-summary-val {
+                font-size: 13pt !important;
+                font-weight: bold !important;
+                display: block !important;
+                color: #000000 !important;
+            }
+
+            .print-summary-lbl {
+                font-size: 8pt !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+                color: #222222 !important;
+            }
+
+            /* 5. Clean Monochrome Ledger Table */
+            .print-ledger-section {
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .print-ledger-title {
+                font-size: 11pt !important;
+                font-weight: bold !important;
+                text-transform: uppercase !important;
+                margin-bottom: 8px !important;
+                color: #000000 !important;
+            }
+
+            .dash-table-wrap {
+                overflow: visible !important;
+            }
+
+            table.dash-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 6px !important;
+                font-size: 9pt !important;
+            }
+
+            table.dash-table th {
+                background-color: #f0f0f0 !important;
+                color: #000000 !important;
+                border: 1px solid #000000 !important;
+                padding: 6px 8px !important;
+                font-weight: bold !important;
+                text-transform: uppercase !important;
+                font-size: 8pt !important;
+                text-align: left !important;
+            }
+
+            table.dash-table td {
+                border: 1px solid #000000 !important;
+                padding: 6px 8px !important;
+                color: #000000 !important;
+                background: transparent !important;
+            }
+
+            table.dash-table tr {
+                page-break-inside: avoid !important;
+            }
+
+            .status-pill {
+                background: transparent !important;
+                color: #000000 !important;
+                border: none !important;
+                padding: 0 !important;
+                font-weight: bold !important;
+                font-size: 8.5pt !important;
+                text-transform: capitalize !important;
+            }
+
+            .mono-cell {
+                font-family: inherit !important;
+            }
+        }
+    </style>
 </head>
 <body class="antialiased admin-portal">
     <div class="dash-layout">
         <x-admin_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
-            <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <x-header
-                    title="Park Reports"
-                    subtitle="Reservation, revenue, and amenity analytics"
-                />
-                <section class="mb-4">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
+                <!-- PRINT ONLY OFFICIAL REPORT HEADER -->
+                <div class="print-only-header hidden print:block">
+                    <div class="print-header-top">
+                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park Logo" class="print-logo">
                         <div>
-                            <p class="mb-2 inline-flex rounded-full bg-[rgba(200,164,93,0.12)] px-3 py-[0.35rem] text-[0.75rem] font-bold uppercase tracking-[0.14em] text-[var(--hp-gold-dark)]">Reports</p>
-                            <h2 class="m-0 font-display text-[1.5rem] font-bold leading-[1.1] text-[var(--hp-text)]">Park performance overview</h2>
-                            <p class="m-0 mt-2 max-w-[45rem] text-[0.9rem] leading-[1.5] text-[var(--hp-text-muted)]">View reservation analytics, payment insights, amenity popularity, and filtered report output.</p>
+                            <h1 class="print-title">Hinaguan Nature Park</h1>
+                            <p class="print-subtitle">Official Reservation & Revenue Operational Report</p>
                         </div>
                     </div>
-                    <div class="mt-4 flex flex-wrap items-center gap-4">
-                        <button type="button" class="btn btn--ghost reports-print-button rounded-full border border-[rgba(13,44,29,0.1)] bg-white px-[1.35rem] py-[0.85rem] text-[var(--hp-text)] transition-all duration-200 hover:bg-[var(--hp-gold)] hover:text-[var(--hp-green-dark)] dark:border-white/10 dark:bg-white/5 dark:hover:bg-[rgba(200,164,93,0.2)]" id="printReportsButton">Print PDF</button>
+                    <div class="print-meta-grid">
+                        <div><strong>Date Generated:</strong> {{ now()->format('F d, Y - h:i A') }}</div>
+                        <div><strong>Filter Amenity:</strong> <span id="printAmenityLabel">All Amenities</span></div>
+                        <div><strong>Filter Status:</strong> <span id="printStatusLabel">All Statuses</span></div>
+                        <div><strong>Date Range:</strong> <span id="printDateRangeLabel">All Time</span></div>
                     </div>
-                </section>
+                </div>
 
-                <section class="reports-filters mb-4 rounded-[0.75rem] border border-[rgba(13,44,29,0.1)] bg-white p-[1.15rem_1.25rem_1.05rem] transition-colors duration-300 dark:border-white/10 dark:bg-white/5" id="reportsFilters">
-                    <div class="mb-4 flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-[0.9rem]">
-                        <div>
-                            <h3 class="m-0 mb-[0.2rem] font-display text-[0.98rem] font-semibold text-[var(--ink)]">Filter Report</h3>
-                            <p class="m-0 text-[0.78rem] text-[var(--ink-muted)]">Narrow the ledger by amenity, reservation status, or check-in range</p>
+                <div class="web-only-section">
+                    <x-header
+                        title="Admin Reports & Analytics"
+                        subtitle="Comprehensive analytics, revenue performance, and park operational ledger"
+                    />
+                </div>
+
+                @php
+                    $averageSpend = $totalReservations > 0 ? $revenue / $totalReservations : 0;
+                @endphp
+
+                <!-- PRINT ONLY SUMMARY METRICS TABLE -->
+                <div class="print-summary-box hidden print:table">
+                    <div class="print-summary-row">
+                        <div class="print-summary-cell">
+                            <span class="print-summary-val" id="printKpiRes">{{ $totalReservations }}</span>
+                            <span class="print-summary-lbl">Total Reservations</span>
                         </div>
-                        <div class="flex shrink-0 items-center gap-[0.6rem]">
-                            <span class="rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-[0.7rem] py-[0.28rem] text-[0.72rem] font-semibold text-[var(--ink-muted)]" id="activeFilterText">Showing all reservations</span>
-                            <button type="button" class="inline-flex items-center gap-[0.35rem] rounded-[var(--radius-sm)] border border-[var(--border-strong)] bg-[var(--surface-2)] px-[0.8rem] py-[0.35rem] text-[0.76rem] font-semibold text-[var(--ink)] transition-all duration-150 hover:border-[rgba(207,75,71,0.35)] hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] active:scale-[0.97]" id="resetFiltersBtn">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-[0.8rem] w-[0.8rem]"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <div class="print-summary-cell">
+                            <span class="print-summary-val" id="printKpiGuests">{{ $totalGuests }}</span>
+                            <span class="print-summary-lbl">Total Guests</span>
+                        </div>
+                        <div class="print-summary-cell">
+                            <span class="print-summary-val" id="printKpiRev">₱{{ number_format($revenue, 2) }}</span>
+                            <span class="print-summary-lbl">Total Revenue</span>
+                        </div>
+                        <div class="print-summary-cell">
+                            <span class="print-summary-val">₱{{ number_format($averageSpend, 2) }}</span>
+                            <span class="print-summary-lbl">Avg / Reservation</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ===== FILTER TOOLBAR ===== --}}
+                <section class="group is-open mb-6 overflow-hidden rounded-2xl border border-glass-border bg-glass p-6 shadow-glass transition-all duration-300" id="reportsFilters">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border pb-4" id="filterToggleBtn">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                <svg class="h-[22px] w-[22px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="m-0 text-lg font-semibold text-hp-text">Filter Operational Ledger</h3>
+                                <p class="m-0 text-sm text-hp-text-muted">Narrow reservations by amenity, status, payment status, or date range</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="exportCsvBtn">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export CSV
+                            </button>
+                            <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="printReportsButton">
+                                <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                                Print PDF
+                            </button>
+                            <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="resetFiltersBtn">
+                                <svg class="h-4 w-4 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                                 Reset
                             </button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 gap-[0.9rem] md:grid-cols-2 xl:grid-cols-4">
-                        <label class="reports-filter-group flex min-w-0 flex-col gap-[0.35rem]">
-                            <span class="flex items-center gap-[0.4rem] text-[0.68rem] font-bold uppercase tracking-[0.05em] text-[var(--ink-muted)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" class="h-[0.85rem] w-[0.85rem] text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z"/></svg>
-                                Amenity
-                            </span>
-                            <select id="amenityFilter" class="w-full rounded-lg border border-[rgba(13,44,29,0.1)] bg-white px-[0.8rem] py-[0.6rem] text-[0.85rem] text-[var(--hp-text)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                                <option value="all">All amenities</option>
-                                @foreach($amenityOptions as $amenityOption)
-                                    <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="reports-filter-group flex min-w-0 flex-col gap-[0.35rem]">
-                            <span class="flex items-center gap-[0.4rem] text-[0.68rem] font-bold uppercase tracking-[0.05em] text-[var(--ink-muted)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" class="h-[0.85rem] w-[0.85rem] text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Reservation Status
-                            </span>
-                            <select id="statusFilter" class="w-full rounded-lg border border-[rgba(13,44,29,0.1)] bg-white px-[0.8rem] py-[0.6rem] text-[0.85rem] text-[var(--hp-text)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                                <option value="all">All statuses</option>
-                                @foreach($statusOptions as $statusOption)
-                                    <option value="{{ $statusOption }}">{{ $statusOption }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label class="reports-filter-group flex min-w-0 flex-col gap-[0.35rem]">
-                            <span class="flex items-center gap-[0.4rem] text-[0.68rem] font-bold uppercase tracking-[0.05em] text-[var(--ink-muted)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" class="h-[0.85rem] w-[0.85rem] text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
-                                Check-in from
-                            </span>
-                            <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}" class="w-full rounded-lg border border-[rgba(13,44,29,0.1)] bg-white px-[0.8rem] py-[0.6rem] text-[0.85rem] text-[var(--hp-text)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                        </label>
-                        <label class="reports-filter-group flex min-w-0 flex-col gap-[0.35rem]">
-                            <span class="flex items-center gap-[0.4rem] text-[0.68rem] font-bold uppercase tracking-[0.05em] text-[var(--ink-muted)]">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" class="h-[0.85rem] w-[0.85rem] text-[var(--green)]"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
-                                Check-in to
-                            </span>
-                            <input id="dateTo" type="date" value="{{ $lastCheckInDate }}" class="w-full rounded-lg border border-[rgba(13,44,29,0.1)] bg-white px-[0.8rem] py-[0.6rem] text-[0.85rem] text-[var(--hp-text)] transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                        </label>
-                    </div>
-                    <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--border)] pt-[0.9rem]">
-                        <span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-[var(--ink-faint)]">Quick range:</span>
-                        <button type="button" class="preset-chip rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.3rem] text-[0.72rem] font-semibold text-[var(--ink-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[rgba(23,138,82,0.5)] hover:text-[var(--green-deep)]" data-preset="today">Today</button>
-                        <button type="button" class="preset-chip rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.3rem] text-[0.72rem] font-semibold text-[var(--ink-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[rgba(23,138,82,0.5)] hover:text-[var(--green-deep)]" data-preset="7d">Last 7 days</button>
-                        <button type="button" class="preset-chip rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.3rem] text-[0.72rem] font-semibold text-[var(--ink-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[rgba(23,138,82,0.5)] hover:text-[var(--green-deep)]" data-preset="30d">Last 30 days</button>
-                        <button type="button" class="preset-chip rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.3rem] text-[0.72rem] font-semibold text-[var(--ink-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[rgba(23,138,82,0.5)] hover:text-[var(--green-deep)]" data-preset="month">This month</button>
-                        <button type="button" class="preset-chip rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-[0.3rem] text-[0.72rem] font-semibold text-[var(--ink-muted)] transition-all duration-150 hover:-translate-y-px hover:border-[rgba(23,138,82,0.5)] hover:text-[var(--green-deep)]" data-preset="all">All time</button>
+
+                    <div class="pt-4">
+                        <div class="mb-5 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                            <label class="flex flex-col gap-2">
+                                <span class="text-xs font-semibold text-hp-text-muted">Amenity</span>
+                                <select id="amenityFilter" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
+                                    <option value="all">All amenities</option>
+                                    @foreach($amenityOptions as $amenityOption)
+                                        <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="flex flex-col gap-2">
+                                <span class="text-xs font-semibold text-hp-text-muted">Reservation Status</span>
+                                <select id="statusFilter" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
+                                    <option value="all">All statuses</option>
+                                    @foreach($statusOptions as $statusOption)
+                                        <option value="{{ $statusOption }}">{{ $statusOption }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <label class="flex flex-col gap-2">
+                                <span class="text-xs font-semibold text-hp-text-muted">Check-in Range</span>
+                                <div class="flex items-center gap-2">
+                                    <input id="dateFrom" type="date" value="" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
+                                    <span class="text-hp-text-muted">→</span>
+                                    <input id="dateTo" type="date" value="" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
+                                </div>
+                            </label>
+                            <label class="flex flex-col gap-2">
+                                <span class="text-xs font-semibold text-hp-text-muted">Active Filter Output</span>
+                                <div class="flex h-[38px] items-center rounded-xl border border-glass-border bg-glass-hover px-3 text-xs font-semibold text-hp-text-muted" id="activeFilterText">
+                                    Showing all reservations
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <span class="text-xs font-semibold text-hp-text-muted">Presets:</span>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="today">Today</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="7d">Last 7 days</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="30d">Last 30 days</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="month">This month</button>
+                            <button type="button" class="preset-chip is-active cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="all">All time</button>
+                        </div>
                     </div>
                 </section>
 
-                <section class="mb-4 flex gap-2">
-                    <button class="reports-tab rounded-full bg-[var(--hp-cream)] px-5 py-[0.6rem] text-[0.85rem] font-semibold text-[var(--hp-text-muted)] transition-all duration-200 hover:bg-[rgba(13,44,29,0.08)] hover:text-[var(--hp-text)] dark:bg-white/8 dark:hover:bg-white/12 reports-tab--active" data-tab="overview">Overview</button>
-                    <button class="reports-tab rounded-full bg-[var(--hp-cream)] px-5 py-[0.6rem] text-[0.85rem] font-semibold text-[var(--hp-text-muted)] transition-all duration-200 hover:bg-[rgba(13,44,29,0.08)] hover:text-[var(--hp-text)] dark:bg-white/8 dark:hover:bg-white/12" data-tab="amenities">Amenities</button>
-                    <button class="reports-tab rounded-full bg-[var(--hp-cream)] px-5 py-[0.6rem] text-[0.85rem] font-semibold text-[var(--hp-text-muted)] transition-all duration-200 hover:bg-[rgba(13,44,29,0.08)] hover:text-[var(--hp-text)] dark:bg-white/8 dark:hover:bg-white/12" data-tab="breakdown">Breakdown</button>
-                    <button class="reports-tab rounded-full bg-[var(--hp-cream)] px-5 py-[0.6rem] text-[0.85rem] font-semibold text-[var(--hp-text-muted)] transition-all duration-200 hover:bg-[rgba(13,44,29,0.08)] hover:text-[var(--hp-text)] dark:bg-white/8 dark:hover:bg-white/12" data-tab="ledger">Ledger</button>
-                    <button class="reports-tab rounded-full bg-[var(--hp-cream)] px-5 py-[0.6rem] text-[0.85rem] font-semibold text-[var(--hp-text-muted)] transition-all duration-200 hover:bg-[rgba(13,44,29,0.08)] hover:text-[var(--hp-text)] dark:bg-white/8 dark:hover:bg-white/12" data-tab="revenue">Revenue</button>
-                </section>
+                {{-- ===== KPI STAT CARDS (WEB ONLY) ===== --}}
+                <div class="web-only-section mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text" id="kpiReservations">{{ $totalReservations }}</h4>
+                            <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Reservations</p>
+                            <span class="text-xs text-hp-text-muted opacity-70">• Active in ledger</span>
+                        </div>
+                    </article>
 
-                <section class="reports-print-summary" id="reportsPrintSummary" aria-hidden="true">
-                    <div class="reports-print-summary__row">
-                        <strong>Amenity:</strong>
-                        <span id="printAmenityText">All amenities</span>
-                    </div>
-                    <div class="reports-print-summary__row">
-                        <strong>Status:</strong>
-                        <span id="printStatusText">All statuses</span>
-                    </div>
-                    <div class="reports-print-summary__row">
-                        <strong>Check-in range:</strong>
-                        <span id="printDateRangeText">{{ $firstCheckInDate }} - {{ $lastCheckInDate }}</span>
-                    </div>
-                </section>
+                    <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">{{ $totalGuests }}</h4>
+                            <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Guests</p>
+                            <span class="text-xs text-hp-text-muted opacity-70">• Booked visitor volume</span>
+                        </div>
+                    </article>
 
-                <div class="reports-tab-content reports-tab-content--active" id="tab-overview">
-                    <div class="mb-5 grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-3">
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Total Reservations</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $totalReservations }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Total guests</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $totalGuests }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Unique customers</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $customerCount }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Revenue collected</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">₱{{ number_format($revenue, 2) }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Checked-in guests</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $checkedInGuests }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(254,226,226,0.7)] bg-[rgba(254,226,226,0.7)] px-5 py-4 transition-colors duration-300">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Cancelled reservations</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $cancelledReservations }}</p>
-                        </article>
-                        <article class="rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-5 py-4 transition-colors duration-300 dark:border-white/10 dark:bg-white/5">
-                            <p class="reports-metric-card__label m-0 mb-2 text-[0.75rem] font-bold text-[var(--hp-text-muted)]">Top amenity</p>
-                            <p class="reports-metric-card__value m-0 text-[1.4rem] font-bold text-[var(--hp-text)]">{{ $mostBookedAmenity }}</p>
-                            <p class="reports-metric-card__meta m-0 mt-1 text-[0.8rem] text-[var(--hp-text-muted)]">{{ $mostBookedAmenityCount }} bookings</p>
-                        </article>
-                    </div>
+                    <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text" id="kpiRevenue">₱{{ number_format($revenue, 2) }}</h4>
+                            <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Revenue</p>
+                            <span class="text-xs text-hp-text-muted opacity-70">• Filtered gross revenue</span>
+                        </div>
+                    </article>
+
+                    <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0e9f4] text-[#6d4b8e] dark:bg-[#2b1f33] dark:text-[#a889c4]">
+                            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        </div>
+                        <div class="flex flex-col">
+                            <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">₱{{ number_format($averageSpend, 2) }}</h4>
+                            <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Avg / Reservation</p>
+                            <span class="text-xs text-hp-text-muted opacity-70">• Average booking amount</span>
+                        </div>
+                    </article>
                 </div>
 
-                <div class="reports-tab-content" id="tab-amenities">
-                    <section class="reports-panel">
-                        <div class="reports-panel__head">
-                            <h3 class="reports-panel__title">Top 5 Most Reserved Amenities</h3>
-                        </div>
-                        <div class="reports-panel__body">
-                            @if($amenityBreakdown->isEmpty())
-                                <p class="reports-empty text-center py-10 text-[var(--ink-faint)]">No amenity reservations have been recorded yet.</p>
-                            @else
-                                <div class="reports-table-wrap">
-                                    <table class="reports-table reports-table--compact">
-                                        <thead>
-                                            <tr>
-                                                <th>Amenity</th>
-                                                <th>Bookings</th>
-                                                <th>Revenue</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($amenityBreakdown->take(5) as $item)
-                                                <tr>
-                                                    <td>{{ $item['name'] }}</td>
-                                                    <td>{{ $item['count'] }}</td>
-                                                    <td>₱{{ number_format($item['revenue'], 2) }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                {{-- ===== CHARTS GRID (WEB ONLY) ===== --}}
+                <div class="web-only-charts web-only-section mb-6 grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
+                    {{-- Revenue Trend Area Chart --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-6 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                    <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                                 </div>
-                            @endif
+                                <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue Performance Trend</h3>
+                            </div>
+                        </div>
+                        <div class="relative min-h-[280px] w-full flex-1">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </section>
+
+                    {{-- Status Donut Chart --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-6 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
+                                    <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </div>
+                                <h3 class="m-0 text-lg font-semibold text-hp-text">Reservation Status</h3>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 flex-col items-center gap-6">
+                            <div class="relative h-[200px] w-[200px]">
+                                <canvas id="statusDonutChart"></canvas>
+                                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+                                    <span class="block text-[1.8rem] font-bold leading-none text-hp-text" id="donutTotalCount">{{ $totalReservations }}</span>
+                                    <span class="text-xs uppercase tracking-[0.5px] text-hp-text-muted">Total</span>
+                                </div>
+                            </div>
+                            <div class="flex w-full flex-col gap-2.5" id="donutLegendContainer">
+                                <!-- Populated dynamically by JS -->
+                            </div>
                         </div>
                     </section>
                 </div>
 
-                <div class="reports-tab-content" id="tab-breakdown">
-                    <div class="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                        <section class="reports-panel reports-panel--summary">
-                            <div class="reports-panel__head">
-                                <h3 class="reports-panel__title">Reservation Breakdown</h3>
-                            </div>
-                            <div class="reports-panel__body grid gap-2">
-                                @foreach($reservationTypeBreakdown as $item)
-                                    <div class="flex items-center justify-between rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-3 py-[0.6rem] text-[0.85rem]">
-                                        <span class="text-[var(--hp-text-muted)]">{{ $item['type'] }}</span>
-                                        <strong class="text-[var(--hp-text)]">{{ $item['count'] }}</strong>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
-                        <section class="reports-panel reports-panel--summary">
-                            <div class="reports-panel__head">
-                                <h3 class="reports-panel__title">Payment Status</h3>
-                            </div>
-                            <div class="reports-panel__body grid gap-2">
-                                @foreach($paymentStatusBreakdown as $item)
-                                    <div class="flex items-center justify-between rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-3 py-[0.6rem] text-[0.85rem]">
-                                        <span class="text-[var(--hp-text-muted)]">{{ $item['status'] }}</span>
-                                        <strong class="text-[var(--hp-text)]">{{ $item['count'] }}</strong>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </section>
-                        <section class="reports-panel reports-panel--summary">
-                            <div class="reports-panel__head">
-                                <h3 class="reports-panel__title">Booking peaks</h3>
-                            </div>
-                            <div class="reports-panel__body grid gap-2">
-                                <div class="flex items-center justify-between rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-3 py-[0.6rem] text-[0.85rem]">
-                                    <span class="text-[var(--hp-text-muted)]">Peak booking day</span>
-                                    <strong class="text-right text-[var(--hp-text)]">
-                                        @if($peakBookedDay)
-                                            {{ \Illuminate\Support\Carbon::parse($peakBookedDay)->format('M d, Y') }}
-                                            ({{ $peakBookedDayCount }} bookings)
-                                        @else
-                                            No data
-                                        @endif
-                                    </strong>
+                <div class="web-only-charts web-only-section mb-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+                    {{-- Top Amenities Breakdown --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                    <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                 </div>
-                                <div class="flex items-center justify-between rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-3 py-[0.6rem] text-[0.85rem]">
-                                    <span class="text-[var(--hp-text-muted)]">Peak booking month</span>
-                                    <strong class="text-right text-[var(--hp-text)]">
-                                        @if($peakBookedMonth)
-                                            {{ $peakBookedMonth }}
-                                            ({{ $peakBookedMonthCount }} bookings)
-                                        @else
-                                            No data
-                                        @endif
-                                    </strong>
+                                <div>
+                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Popular Amenities</h3>
+                                    <p class="m-0 text-xs text-hp-text-muted">Most reserved amenities</p>
                                 </div>
                             </div>
-                        </section>
-                    </div>
+                        </div>
+                        <div class="mb-4 flex justify-between border-b border-glass-border pb-2 text-xs font-semibold uppercase tracking-[0.5px] text-hp-text-muted">
+                            <span>Amenity Name</span>
+                            <span>Bookings</span>
+                        </div>
+                        <div class="flex flex-col gap-4" id="topAmenitiesContainer">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </section>
+
+                    {{-- Peak Days Breakdown --}}
+                    <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                    <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Peak Visitor Days</h3>
+                                    <p class="m-0 text-xs text-hp-text-muted">Distribution by day of week</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-1 items-end justify-between gap-2 pt-6 pb-2" id="peakDaysContainer">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </section>
                 </div>
 
-                <div class="reports-tab-content" id="tab-ledger">
-                    <section class="reports-panel reports-panel--wide">
-                        <div class="reports-panel__head">
-                            <h3 class="reports-panel__title">Reservation Ledger</h3>
-                            <span class="reports-panel__meta">Filtered result set</span>
+                {{-- ===== LEDGER TABLE ===== --}}
+                <section class="print-ledger-section rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                    <div class="web-only-section mb-4 flex items-center justify-between">
+                        <div>
+                            <h3 class="m-0 text-lg font-semibold text-hp-text">Detailed Reservation Ledger</h3>
+                            <p class="m-0 text-xs text-hp-text-muted">All active records in the selected view</p>
                         </div>
-                        <div class="reports-table-wrap">
-                            <table class="reports-table" id="reservationsTable">
-                                <thead>
-                                    <tr>
-                                        <th>Booker</th>
-                                        <th>Check-in</th>
-                                        <th>Guests</th>
-                                        <th>Amenities</th>
-                                        <th>Status</th>
-                                        <th>Payment</th>
-                                        <th>Total</th>
+                    </div>
+                    <div class="print-ledger-title hidden">Reservation Operational Records</div>
+                    <div class="dash-table-wrap overflow-x-auto">
+                        <table class="dash-table w-full text-left text-sm" id="reservationsTable">
+                            <thead>
+                                <tr class="border-b border-glass-border text-xs uppercase tracking-wider text-hp-text-muted">
+                                    <th class="py-3 px-3">Booker</th>
+                                    <th class="py-3 px-3">Amenity</th>
+                                    <th class="py-3 px-3">Check-in Date</th>
+                                    <th class="py-3 px-3">Guests</th>
+                                    <th class="py-3 px-3">Amount</th>
+                                    <th class="py-3 px-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($reservations as $r)
+                                    @php
+                                        $amenitiesStr = $r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None';
+                                        $checkInStr = $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : '';
+                                    @endphp
+                                    <tr class="border-b border-glass-border/50 hover:bg-glass-hover"
+                                        data-amenity="{{ strtolower($amenitiesStr) }}"
+                                        data-status="{{ strtolower($r->status) }}"
+                                        data-checkin="{{ $checkInStr }}">
+                                        <td class="py-3 px-3 font-medium text-hp-text">{{ $r->booker_name }}</td>
+                                        <td class="py-3 px-3 text-xs text-hp-text-muted">{{ $amenitiesStr }}</td>
+                                        <td class="mono-cell py-3 px-3 text-xs text-hp-text-muted">{{ $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('M d, Y') : 'N/A' }}</td>
+                                        <td class="py-3 px-3 text-xs text-hp-text">{{ $r->number_of_guests }}</td>
+                                        <td class="py-3 px-3 font-semibold text-hp-text">₱{{ number_format($r->amount_paid, 2) }}</td>
+                                        <td class="py-3 px-3">
+                                            <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $r->status)) }} rounded-full px-2.5 py-1 text-[0.7rem] font-bold">{{ $r->status }}</span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($reservations as $reservation)
-                                        @php $initials = strtoupper(implode('', array_map(fn ($w) => $w[0] ?? '', array_slice(preg_split('/\s+/', trim($reservation->booker_name ?? '?')), 0, 2)))); @endphp
-                                        <tr data-amenity="{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') }}" data-status="{{ $reservation->status }}" data-checkin="{{ $reservation->reservation_date }}">
-                                            <td>
-                                                <span class="cell-person">
-                                                    <span class="cell-person__avatar">{{ $initials ?: '?' }}</span>
-                                                    <span class="cell-person__name">{{ $reservation->booker_name }}</span>
-                                                </span>
-                                            </td>
-                                            <td class="mono-cell">{{ $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'TBD' }}</td>
-                                            <td>{{ $reservation->number_of_guests }}</td>
-                                            <td>{{ $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None' }}</td>
-                                            <td>
-                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }}">{{ $reservation->status }}</span>
-                                            </td>
-                                            <td>
-                                                <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->payment_status)) }}">{{ $reservation->payment_status }}</span>
-                                            </td>
-                                            <td class="num-cell">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="7" class="reports-table-empty">No reservations available.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
-
-                <div class="reports-tab-content" id="tab-revenue">
-                    <section class="reports-panel">
-                        <div class="reports-panel__head">
-                            <h3 class="reports-panel__title">Revenue Summary</h3>
-                        </div>
-                        <div class="reports-panel__body">
-                            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
-                                <div class="rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-4 py-[0.875rem]">
-                                    <p class="m-0 mb-[0.4rem] text-[0.8rem] text-[var(--hp-text-muted)]">Total revenue collected</p>
-                                    <strong class="block text-[1.1rem] text-[var(--hp-text)]">₱{{ number_format($revenue, 2) }}</strong>
-                                </div>
-                                <div class="rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-4 py-[0.875rem]">
-                                    <p class="m-0 mb-[0.4rem] text-[0.8rem] text-[var(--hp-text-muted)]">Pending reservations</p>
-                                    <strong class="block text-[1.1rem] text-[var(--hp-text)]">{{ $pendingReservations }}</strong>
-                                </div>
-                                <div class="rounded-lg border border-[rgba(13,44,29,0.1)] bg-[var(--hp-cream)] px-4 py-[0.875rem]">
-                                    <p class="m-0 mb-[0.4rem] text-[0.8rem] text-[var(--hp-text-muted)]">Cancelled reservations</p>
-                                    <strong class="block text-[1.1rem] text-[var(--hp-text)]">{{ $cancelledReservations }}</strong>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="py-6 text-center text-sm text-hp-text-muted">No reservations found.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
+
+    <script>
+        window.reportData = {
+            rawRows: [
+                @foreach($reservations as $r)
+                {
+                    id: {{ $r->id }},
+                    customer_name: @json($r->booker_name),
+                    amenities: @json($r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ')),
+                    status: @json($r->status),
+                    payment_status: @json($r->payment_status ?? 'Paid'),
+                    check_in: @json($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null),
+                    amount: {{ (float)$r->amount_paid }},
+                    guests: {{ (int)$r->number_of_guests }}
+                }@if(!$loop->last),@endif
+                @endforeach
+            ]
+        };
+    </script>
 </body>
 </html>

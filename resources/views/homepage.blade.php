@@ -86,15 +86,33 @@
                 <p class="hp-weather__label">Today's Weather</p>
                 <div class="hp-weather__main">
                     @if ($weather['icon'])
-                        <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="48" height="48">
+                        <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="44" height="44">
                     @endif
                     <div class="hp-weather__info">
                         <p class="hp-weather__temp">{{ round($weather['temp_c']) }}°C</p>
                         <p class="hp-weather__condition">{{ $weather['condition'] }}</p>
                     </div>
                 </div>
-                <p class="hp-weather__location">{{ $weather['location'] }}{{ $weather['region'] ? ', '.$weather['region'] : '' }}</p>
-                <p class="hp-weather__meta">Feels like {{ round($weather['feelslike_c']) }}°C · {{ $weather['humidity'] }}% humidity</p>
+                <p class="hp-weather__location">{{ $weather['location'] }}{{ !empty($weather['region']) ? ', '.$weather['region'] : '' }}</p>
+                <p class="hp-weather__meta">Feels like {{ round($weather['feelslike_c']) }}°C &middot; {{ $weather['humidity'] }}% humidity</p>
+
+                @if (!empty($weather['next_3_hours']))
+                    <div class="hp-weather__hourly mt-2 pt-2 border-t border-white/20">
+                        <p class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-gold mb-1.5">Next 3 Hours</p>
+                        <div class="grid grid-cols-3 gap-1.5 text-center">
+                            @foreach ($weather['next_3_hours'] as $hour)
+                                <div class="rounded-lg bg-white/10 p-1.5 backdrop-blur-sm flex flex-col items-center">
+                                    <span class="text-[0.65rem] font-semibold text-white/90">{{ $hour['time_label'] }}</span>
+                                    @if (!empty($hour['icon']))
+                                        <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="h-6 w-6 my-0.5">
+                                    @endif
+                                    <span class="text-[0.72rem] font-bold text-white">{{ round($hour['temp_c']) }}°C</span>
+                                    <span class="text-[0.58rem] text-[#6ab88c]">{{ $hour['chance_of_rain'] ?? 0 }}% rain</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </aside>
         @endif
 
@@ -107,16 +125,20 @@
                     owned by celebrity Brenda Mage.
                 </p>
 
-                <div class="hp-live-status" aria-live="polite">
+                <a href="{{ route('amenities') }}" class="hp-live-status group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg no-underline" aria-label="View amenities and real-time park occupancy">
                     <span class="hp-live-status__dot"></span>
                     <div class="hp-live-status__content">
-                        <p class="hp-live-status__label">Currently in the park</p>
+                        <p class="hp-live-status__label flex items-center gap-1 group-hover:text-hp-gold">
+                            Currently in the park
+                            <svg class="h-3.5 w-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/></svg>
+                        </p>
                         <p class="hp-live-status__count">
                             <span id="activeGuestCount" data-count="{{ $activeGuestCount ?? 0 }}">{{ $activeGuestCount ?? 0 }}</span>
                             <span class="hp-live-status__suffix">guests</span>
                         </p>
                     </div>
-                </div>
+                </a>
+
 
                 <div class="hp-hero__actions">
                     <a href="{{ route('reservation') }}" class="hp-btn hp-btn--hero">

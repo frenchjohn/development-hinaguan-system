@@ -133,38 +133,49 @@ class WeatherService
         }
 
         return Cache::remember(
-            'homepage_weather_'.md5($location),
-            now()->addMinutes(30),
+            'homepage_weather_v3_'.md5($location),
+            now()->addMinutes(15),
             function () use ($key, $location) {
-                $response = Http::timeout(8)->get('https://api.weatherapi.com/v1/current.json', [
-                    'key' => $key,
-                    'q' => $location,
-                ]);
-
-                if (! $response->successful()) {
+                $multiDay = $this->getMultiDayForecast(1);
+                if (! $multiDay) {
                     return null;
                 }
 
-                $data = $response->json();
-                $icon = $data['current']['condition']['icon'] ?? null;
+                $now = now();
+                $currentHour = (int) $now->format('G');
+                $hourly = $multiDay['days'][0]['hourly'] ?? [];
+                $next3Hours = [];
 
-                if ($icon && ! str_starts_with($icon, 'http')) {
-                    $icon = 'https:'.$icon;
+                foreach ($hourly as $h) {
+                    if ($h['hour'] > $currentHour && count($next3Hours) < 3) {
+                        $next3Hours[] = $h;
+                    }
+                }
+
+                // If late in the evening, fallback to remaining hours
+                if (count($next3Hours) < 3 && ! empty($hourly)) {
+                    foreach ($hourly as $h) {
+                        if (count($next3Hours) < 3 && ! in_array($h, $next3Hours, true)) {
+                            $next3Hours[] = $h;
+                        }
+                    }
                 }
 
                 return [
-                    'location' => $data['location']['name'] ?? $location,
-                    'region' => $data['location']['region'] ?? null,
-                    'temp_c' => $data['current']['temp_c'] ?? null,
-                    'feelslike_c' => $data['current']['feelslike_c'] ?? null,
-                    'humidity' => $data['current']['humidity'] ?? null,
-                    'wind_kph' => $data['current']['wind_kph'] ?? null,
-                    'condition' => $data['current']['condition']['text'] ?? null,
-                    'icon' => $icon,
+                    'location' => $multiDay['location'] ?? $location,
+                    'region' => null,
+                    'temp_c' => $multiDay['now']['temp_c'] ?? null,
+                    'feelslike_c' => $multiDay['now']['feelslike_c'] ?? null,
+                    'humidity' => $multiDay['now']['humidity'] ?? null,
+                    'wind_kph' => $multiDay['now']['wind_kph'] ?? null,
+                    'condition' => $multiDay['now']['condition'] ?? null,
+                    'icon' => $multiDay['now']['icon'] ?? null,
+                    'next_3_hours' => $next3Hours,
                 ];
             }
         );
     }
+
 
     public function getForecastForDate(string $date): ?array
     {
