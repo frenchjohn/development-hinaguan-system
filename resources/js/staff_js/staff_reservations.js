@@ -103,11 +103,18 @@ window.AppPage['staff_reservations'] = function () {
 
     // Shared row markup (used by server rows, refresh + fallback renders)
     const buildRowCells = (reservation) => {
-        const formatDate = (dateStr) => {
+        const formatDate = (dateStr, endDateStr, totalDays) => {
             if (!dateStr) return 'N/A';
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            const sFormatted = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            if (endDateStr && endDateStr !== dateStr) {
+                const endDate = new Date(endDateStr);
+                const eFormatted = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                const daysCount = totalDays || (Math.round((endDate - date) / (1000 * 60 * 60 * 24)) + 1);
+                return `<div><span style="font-weight:600;">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div></div>`;
+            }
+            return escapeHtml(sFormatted);
         };
         return `
                 <td>
@@ -119,7 +126,7 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
                     </div>
                 </td>
-                <td>${escapeHtml(formatDate(reservation.reservation_date))}</td>
+                <td>${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
                 <td>${renderTimeSlots(reservation)}</td>
                 <td>${escapeHtml(reservation.number_of_guests)}</td>
                 <td>
@@ -977,10 +984,65 @@ window.AppPage['staff_reservations'] = function () {
             editForm.hidden = true;
         }
 
-        // Format reservation date to remove timezone suffix
+        // Format reservation date to readable format (e.g. Aug 29, 2026)
         const formatDate = (dateStr) => {
             if (!dateStr) return 'N/A';
-            return dateStr.replace(/T.*$/, '').replace(/Z$/, '');
+            const cleanStr = String(dateStr).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+                const [y, m, d] = cleanStr.split('-').map(Number);
+                const dt = new Date(y, m - 1, d);
+                return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            }
+            const date = new Date(cleanStr);
+            if (isNaN(date.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        const formatStayDate = (sDate, eDate, totalDays, startSlot, endSlot) => {
+            if (!sDate) return 'N/A';
+            const sFormatted = formatDate(sDate);
+            const sSlot = startSlot ? ` (${startSlot})` : '';
+            const eSlot = endSlot ? ` (${endSlot})` : '';
+            if (eDate && eDate !== sDate) {
+                const eFormatted = formatDate(eDate);
+                const daysCount = totalDays || 'Multi-day';
+                return `${sFormatted}${sSlot} – ${eFormatted}${eSlot} (${daysCount} Days Stay)`;
+            }
+            return `${sFormatted}${sSlot}`;
+        };
+
+        const formatExpectedCheckout = (res) => {
+            if (!res) return { date: 'N/A', session: 'Daytime', time: '', fullText: 'N/A' };
+            
+            let session = res.end_slot || res.start_slot;
+            if (!session && res.reservation_amenities && res.reservation_amenities.length > 0) {
+                const lastAmenity = res.reservation_amenities[res.reservation_amenities.length - 1];
+                session = lastAmenity.end_slot || (lastAmenity.pricing_type && lastAmenity.pricing_type.toLowerCase().includes('night') ? 'Nighttime' : 'Daytime');
+            }
+            session = session ? (session.toLowerCase().includes('night') ? 'Nighttime' : 'Daytime') : 'Daytime';
+
+            let rawDate = res.end_date || res.reservation_date;
+            let formattedDate = 'N/A';
+            let formattedTime = session === 'Nighttime' ? '6:00 AM (Next Day)' : '6:00 PM';
+
+            if (res.checkout_at) {
+                const dt = new Date(res.checkout_at);
+                if (!isNaN(dt.getTime())) {
+                    formattedDate = dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    formattedTime = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                }
+            }
+
+            if (formattedDate === 'N/A' && rawDate) {
+                formattedDate = formatDate(rawDate);
+            }
+
+            return {
+                date: formattedDate,
+                session: session,
+                time: formattedTime,
+                fullText: `${formattedDate} · ${session}${formattedTime ? ` (${formattedTime})` : ''}`
+            };
         };
 
         const guests = (reservation.reservation_guests || []).map((guest) => {
@@ -996,9 +1058,21 @@ window.AppPage['staff_reservations'] = function () {
         }).join('');
 
         const amenities = (reservation.reservation_amenities || []).map((amenity) => {
-            const name = amenity.amenity?.amenities_name || 'Unknown amenity';
-            return `<li>${escapeHtml(name)} — ${escapeHtml(amenity.pricing_type)} · ₱${Number(amenity.price_at_booking || 0).toFixed(2)}</li>`;
+            const name = amenity.amenity?.amenities_name || amenity.amenity_name || 'Unknown amenity';
+            const sDate = amenity.start_date || reservation.reservation_date;
+            const eDate = amenity.end_date || reservation.end_date || sDate;
+            const sSlot = amenity.start_slot || reservation.start_slot || 'Daytime';
+            const eSlot = amenity.end_slot || reservation.end_slot || sSlot;
+            const hasRange = sDate && eDate && sDate !== eDate;
+            const scheduleBadge = hasRange 
+                ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(formatDate(sDate))} (${escapeHtml(sSlot)}) – ${escapeHtml(formatDate(eDate))} (${escapeHtml(eSlot)})</span>` 
+                : (sSlot ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(sSlot)}</span>` : '');
+            const slotCountBadge = (amenity.day_slots_count || amenity.night_slots_count) ? `<span style="font-size:0.75rem;color:#666;margin-left:4px;">(${amenity.day_slots_count || 0}D ${amenity.night_slots_count || 0}N)</span>` : '';
+
+            return `<li>${escapeHtml(name)} — ${escapeHtml(amenity.pricing_type)}${scheduleBadge}${slotCountBadge} · ₱${Number(amenity.price_at_booking || 0).toFixed(2)}</li>`;
         }).join('');
+
+        const expectedCheckout = formatExpectedCheckout(reservation);
 
         modalStatus.textContent = reservation.status;
         modalStatus.className = `guest-modal__role-badge reservation-status reservation-status--${String(reservation.status || '').toLowerCase()}`;
@@ -1014,8 +1088,12 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="guest-value">${escapeHtml(reservation.phone || 'N/A')}<br>${escapeHtml(reservation.email || 'N/A')}</div>
                     </div>
                     <div>
-                        <span class="guest-label">Reservation date</span>
-                        <div class="guest-value">${escapeHtml(formatDate(reservation.reservation_date))}</div>
+                        <span class="guest-label">Reservation Stay</span>
+                        <div class="guest-value">${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, reservation.start_slot, reservation.end_slot))}</div>
+                    </div>
+                    <div>
+                        <span class="guest-label">Expected Check-out</span>
+                        <div class="guest-value" style="font-weight: 600; color: #1a5c3c;">${escapeHtml(expectedCheckout.fullText)}</div>
                     </div>
                     <div>
                         <span class="guest-label">Guests</span>
@@ -1035,7 +1113,7 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="guest-relationship-list">${guests || '<div class="guest-relationship-item"><div class="guest-relationship-name">No guest details listed.</div></div>'}</div>
                 </div>
                 <div style="margin-top:0.75rem;">
-                    <span class="guest-label">Reserved Amenities</span>
+                    <span class="guest-label">Reserved Amenities & Schedules</span>
                     <ul class="guest-list">${amenities || '<li>No amenities listed.</li>'}</ul>
                 </div>
                 <div class="guest-form__actions" style="margin-top:0.75rem;">
@@ -1255,7 +1333,19 @@ window.AppPage['staff_reservations'] = function () {
         return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     };
 
-    const formatDateForInput = (dateStr) => (dateStr ? String(dateStr).replace(/T.*$/, '').replace(/Z$/, '') : '');
+    const formatDateForInput = (dateStr) => {
+        if (!dateStr) return '';
+        const cleanStr = String(dateStr).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+            return cleanStr;
+        }
+        const dt = new Date(cleanStr);
+        if (isNaN(dt.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        const d = String(dt.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
 
     const formatDateLong = (dateStr) => {
         const date = new Date(`${dateStr}T00:00:00`);

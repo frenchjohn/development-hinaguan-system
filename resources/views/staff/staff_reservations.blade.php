@@ -250,7 +250,16 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}</td>
+                                    <td>
+                                        @if ($reservation->end_date && $reservation->end_date !== $reservation->reservation_date)
+                                            <div>
+                                                <span class="font-semibold text-hp-text">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
+                                                <div class="text-[0.75rem] text-hp-text-muted">({{ $reservation->total_days ?? (\Carbon\Carbon::parse($reservation->reservation_date)->diffInDays(\Carbon\Carbon::parse($reservation->end_date)) + 1) }} Days Stay)</div>
+                                            </div>
+                                        @else
+                                            {{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}
+                                        @endif
+                                    </td>
                                     <td>
                                         @if (!empty($timeSlots))
                                             <div class="time-slot-labels flex flex-wrap gap-1.5">

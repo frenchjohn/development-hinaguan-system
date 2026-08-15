@@ -857,6 +857,8 @@
 
         {{-- ── Amenity detail / booking modal ── --}}
 
+        {{-- ── Amenity detail / booking modal ── --}}
+
         <div class="rp-modal" id="amenityModal" aria-hidden="true">
 
             <div class="rp-modal__backdrop" data-close-modal></div>
@@ -883,14 +885,23 @@
 
                         <div class="rp-modal__summary">
 
-                            <div class="rp-modal__meta">
+                            <div class="rp-modal__meta" id="modalMetaBlock">
 
-                                <div class="rp-modal__meta-item"><span>Date</span><strong id="modalDate"></strong></div>
+                                <div class="rp-modal__meta-item"><span>Stay Duration</span><strong id="modalDate"></strong></div>
 
-                                <div class="rp-modal__meta-item"><span>Type</span><strong id="modalSlot"></strong></div>
+                                <div class="rp-modal__meta-item"><span>Time Slots</span><strong id="modalSlot"></strong></div>
 
                                 <div class="rp-modal__meta-item"><span>Capacity</span><strong id="modalCapacity"></strong></div>
 
+                            </div>
+
+                            {{-- Multi-Amenity Selected Items Container --}}
+                            <div id="modalMultiAmenityContainer" class="rp-modal__multi-container" style="display: none;">
+                                <div class="rp-modal__section-header">
+                                    <h4 class="rp-modal__section-title">Selected Amenities & Schedules</h4>
+                                    <span class="rp-modal__section-hint">Click &ldquo;Edit Dates&rdquo; to customize stay</span>
+                                </div>
+                                <div id="modalMultiAmenityList" class="rp-selected-amenities-list"></div>
                             </div>
 
                             <div class="rp-modal__pricebox">
@@ -928,6 +939,16 @@
                             <input type="hidden" name="check_in" id="bookingCheckIn">
 
                             <input type="hidden" name="check_out" id="bookingCheckOut">
+
+                            <input type="hidden" name="reservation_date" id="bookingReservationDate">
+
+                            <input type="hidden" name="end_date" id="bookingEndDate">
+
+                            <input type="hidden" name="start_slot" id="bookingStartSlot">
+
+                            <input type="hidden" name="end_slot" id="bookingEndSlot">
+
+                            <input type="hidden" name="total_days" id="bookingTotalDays">
 
                             <label>
 
@@ -1274,6 +1295,15 @@
 
                 <div class="rp-modal__content rp-modal__content--stacked">
 
+                    {{-- Stay Mode Switch: Single Day vs Multi-Day --}}
+                    <div class="rp-mode-switch-wrap">
+                        <span class="rp-dp-slot__label">Booking Type</span>
+                        <div class="rp-mode-switch" role="group" aria-label="Stay Type">
+                            <button type="button" class="rp-mode-btn is-active" id="dpModeSingle" data-mode="single">Single Day</button>
+                            <button type="button" class="rp-mode-btn" id="dpModeRange" data-mode="range">Multi-Day Stay (Date Range)</button>
+                        </div>
+                    </div>
+
                     <div class="rp-dp-toolbar">
 
                         <div class="rp-dp-toolbar__field">
@@ -1328,9 +1358,10 @@
 
                     </div>
 
-                    <div class="rp-dp-slot" role="group" aria-label="Booking type">
+                    {{-- Single Day Slots View --}}
+                    <div class="rp-dp-slot" id="dpSingleSlotWrap" role="group" aria-label="Single Day slot">
 
-                        <span class="rp-dp-slot__label">Booking type</span>
+                        <span class="rp-dp-slot__label">Time Slot</span>
 
                         <div class="rp-dp-slot__buttons">
 
@@ -1370,7 +1401,55 @@
 
                     </div>
 
+                    {{-- Multi-Day Range Slots View --}}
+                    <div class="rp-range-slots-box" id="dpRangeSlotWrap" style="display: none;">
+                        <div class="rp-range-slot-group">
+                            <span class="rp-range-slot-label">Start Time Slot (Day 1)</span>
+                            <div class="rp-range-slot-toggle">
+                                <button type="button" class="rp-subslot-btn is-active" data-range-start-slot="Daytime">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                    Daytime (Morning)
+                                </button>
+                                <button type="button" class="rp-subslot-btn" data-range-start-slot="Nighttime">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                                    Nighttime (Evening)
+                                </button>
+                            </div>
+                        </div>
+                        <div class="rp-range-slot-group">
+                            <span class="rp-range-slot-label">End Time Slot (Last Day)</span>
+                            <div class="rp-range-slot-toggle">
+                                <button type="button" class="rp-subslot-btn is-active" data-range-end-slot="Daytime">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                    Daytime (Evening)
+                                </button>
+                                <button type="button" class="rp-subslot-btn" data-range-end-slot="Nighttime">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                                    Nighttime (Overnight)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Range Selection Summary Bar --}}
+                    <div class="rp-range-summary-bar" id="dpRangeSummaryBar" style="display: none;">
+                        <div class="rp-range-card">
+                            <span class="rp-range-card__label">Check-in</span>
+                            <strong id="dpRangeStartLabel">Select start date</strong>
+                        </div>
+                        <div class="rp-range-arrow">&rarr;</div>
+                        <div class="rp-range-card">
+                            <span class="rp-range-card__label">Check-out</span>
+                            <strong id="dpRangeEndLabel">Select end date</strong>
+                        </div>
+                        <div class="rp-range-badge" id="dpRangeDaysBadge">1 Day</div>
+                    </div>
+
                     <div class="rp-calendar" id="datePickerDays"></div>
+
+                    <div class="rp-dp-actions" id="dpRangeActions" style="display: none;">
+                        <button type="button" class="rp-booking-form__button" id="dpApplyRangeBtn">Apply Selected Dates &rarr;</button>
+                    </div>
 
                     <p class="rp-dp-hint"><span class="rp-dp-hint__dot" aria-hidden="true"></span> Highlighted dates are open &mdash; dimmed dates are past or fully booked.</p>
 
@@ -1406,9 +1485,15 @@
 
                 <div class="rp-modal__content rp-modal__content--stacked">
 
-                    <p class="rp-modal__hint rp-modal__hint--top">Select a date to continue booking this amenity.</p>
+                    <div class="rp-mode-switch-wrap">
+                        <div class="rp-mode-switch" role="group" aria-label="Availability stay mode">
+                            <button type="button" class="rp-mode-btn is-active" id="avModeSingle" data-av-mode="single">Single Day</button>
+                            <button type="button" class="rp-mode-btn" id="avModeRange" data-av-mode="range">Multi-Day Stay</button>
+                        </div>
+                    </div>
 
-                    <div class="rp-modal__slot-toggle" role="tablist" aria-label="Booking slot">
+                    {{-- Single Day Slots --}}
+                    <div class="rp-modal__slot-toggle" id="avSingleSlotToggle" role="tablist" aria-label="Booking slot">
 
                         <button type="button" class="rp-slot-btn is-active" data-slot-toggle="Daytime">Daytime</button>
 
@@ -1418,6 +1503,38 @@
 
                         <button type="button" class="rp-slot-btn" data-slot-toggle="NightToDay">Night to Day</button>
 
+                    </div>
+
+                    {{-- Multi-Day Range Slots --}}
+                    <div class="rp-range-slots-box" id="avRangeSlotWrap" style="display: none;">
+                        <div class="rp-range-slot-group">
+                            <span class="rp-range-slot-label">Start Time Slot (Day 1)</span>
+                            <div class="rp-range-slot-toggle">
+                                <button type="button" class="rp-subslot-btn is-active" data-av-start-slot="Daytime">Daytime (Morning)</button>
+                                <button type="button" class="rp-subslot-btn" data-av-start-slot="Nighttime">Nighttime (Evening)</button>
+                            </div>
+                        </div>
+                        <div class="rp-range-slot-group">
+                            <span class="rp-range-slot-label">End Time Slot (Last Day)</span>
+                            <div class="rp-range-slot-toggle">
+                                <button type="button" class="rp-subslot-btn is-active" data-av-end-slot="Daytime">Daytime (Evening)</button>
+                                <button type="button" class="rp-subslot-btn" data-av-end-slot="Nighttime">Nighttime (Overnight)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Availability Range Summary Bar --}}
+                    <div class="rp-range-summary-bar" id="avRangeSummaryBar" style="display: none;">
+                        <div class="rp-range-card">
+                            <span class="rp-range-card__label">Check-in</span>
+                            <strong id="avRangeStartLabel">Pick start date</strong>
+                        </div>
+                        <div class="rp-range-arrow">&rarr;</div>
+                        <div class="rp-range-card">
+                            <span class="rp-range-card__label">Check-out</span>
+                            <strong id="avRangeEndLabel">Pick end date</strong>
+                        </div>
+                        <div class="rp-range-badge" id="avRangeDaysBadge">1 Day</div>
                     </div>
 
                     <div class="rp-calendar__controls">
@@ -1460,6 +1577,10 @@
 
                     </div>
 
+                    <div class="rp-dp-actions" id="avRangeActions" style="display: none;">
+                        <button type="button" class="rp-booking-form__button" id="avApplyRangeBtn">Book Selected Date Range &rarr;</button>
+                    </div>
+
                     <p class="rp-modal__hint">Available dates are highlighted. Unavailable dates are dimmed.</p>
 
                 </div>
@@ -1470,8 +1591,78 @@
 
 
 
-        {{-- ── Multi aircon modal ── --}}
+        {{-- ── Edit Individual Amenity Schedule Modal ── --}}
+        <div class="rp-modal" id="editAmenityScheduleModal" aria-hidden="true" style="z-index: 130;">
+            <div class="rp-modal__backdrop" data-close-edit-schedule-modal></div>
+            <div class="rp-modal__panel rp-modal__panel--compact rp-modal__panel--scroll">
+                <div class="rp-modal__header">
+                    <div>
+                        <p class="rp-modal__eyebrow">Customize Amenity Stay</p>
+                        <h2 id="editScheduleAmenityName">Amenity Name</h2>
+                    </div>
+                    <button type="button" class="rp-modal__close" data-close-edit-schedule-modal>&times;</button>
+                </div>
+                <div class="rp-modal__content rp-modal__content--stacked">
+                    <input type="hidden" id="editScheduleAmenityId" value="">
+                    
+                    <div class="rp-schedule-edit-fields">
+                        <div class="rp-schedule-field-group">
+                            <label class="rp-schedule-label">Check-in Date &amp; Time Slot</label>
+                            <div class="rp-schedule-input-row">
+                                <input type="date" id="editScheduleStartDate" class="rp-schedule-date-input">
+                                <select id="editScheduleStartSlot" class="rp-schedule-slot-select">
+                                    <option value="Daytime">Daytime (Morning)</option>
+                                    <option value="Nighttime">Nighttime (Evening)</option>
+                                </select>
+                            </div>
+                        </div>
 
+                        <div class="rp-schedule-field-group">
+                            <label class="rp-schedule-label">Check-out Date &amp; Time Slot</label>
+                            <div class="rp-schedule-input-row">
+                                <input type="date" id="editScheduleEndDate" class="rp-schedule-date-input">
+                                <select id="editScheduleEndSlot" class="rp-schedule-slot-select">
+                                    <option value="Daytime">Daytime (Evening)</option>
+                                    <option value="Nighttime">Nighttime (Overnight)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="editScheduleAirconWrap" class="rp-schedule-aircon-box" style="display: none;">
+                            <label class="rp-schedule-aircon-label">
+                                <input type="checkbox" id="editScheduleAirconToggle" class="rp-schedule-checkbox">
+                                <span class="rp-schedule-aircon-text">
+                                    <strong>Air-conditioning Package</strong>
+                                    <small id="editScheduleAirconDiff">Include AC</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="rp-schedule-summary-box">
+                            <div class="rp-schedule-summary-row">
+                                <span class="rp-schedule-summary-label">Stay Duration:</span>
+                                <strong id="editScheduleDurationText">1 Day (1D 0N)</strong>
+                            </div>
+                            <div class="rp-schedule-summary-row">
+                                <span class="rp-schedule-summary-label">Rate calculation:</span>
+                                <span id="editScheduleMathText" class="rp-schedule-math">1 Daytime &times; &#8369;250</span>
+                            </div>
+                            <div class="rp-schedule-summary-total">
+                                <span>Total for this amenity:</span>
+                                <strong id="editScheduleTotalPrice">&#8369;250.00</strong>
+                            </div>
+                        </div>
+
+                        <div class="rp-schedule-modal-actions">
+                            <button type="button" class="rp-modal__btn rp-modal__btn--secondary" data-close-edit-schedule-modal>Cancel</button>
+                            <button type="button" class="rp-modal__btn rp-modal__btn--primary" id="saveScheduleBtn">Save Schedule</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Multi aircon modal ── --}}
         <div class="rp-modal" id="multiAirconModal" aria-hidden="true">
 
             <div class="rp-modal__backdrop" data-close-multi-aircon-modal></div>

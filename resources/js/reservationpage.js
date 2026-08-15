@@ -263,6 +263,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let selectedSlot = 'Daytime';
 
+    let stayMode = 'single'; // 'single' or 'range'
+
+    let mainStartDate = '';
+
+    let mainEndDate = '';
+
+    let mainStartSlot = 'Daytime';
+
+    let mainEndSlot = 'Daytime';
+
+    const amenityStayConfig = {};
+
     let activeAmenity = null;
 
     let pendingMultiAmenity = null;
@@ -287,9 +299,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let calendarSlot = 'Daytime';
 
+    let calendarStayMode = 'single';
+
+    let calendarRangeStart = null;
+
+    let calendarRangeEnd = null;
+
+    let calendarRangeStartSlot = 'Daytime';
+
+    let calendarRangeEndSlot = 'Daytime';
+
     let calendarSourceCard = null;
 
+    // Date range picker modal state
+    let dpStayMode = 'single';
+    let dpRangeStart = null;
+    let dpRangeEnd = null;
+    let dpRangeStartSlot = 'Daytime';
+    let dpRangeEndSlot = 'Daytime';
 
+    const calculateContinuousSlots = (startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDateStr) return { dayCount: 1, nightCount: 0, totalDays: 1 };
+        const start = new Date(startDateStr + 'T00:00:00');
+        const end = endDateStr ? new Date(endDateStr + 'T00:00:00') : new Date(startDateStr + 'T00:00:00');
+
+        let daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 0) daysDiff = 0;
+        const totalDays = daysDiff + 1;
+
+        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+
+        if (daysDiff === 0) {
+            if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
+                return { dayCount: 1, nightCount: 0, totalDays: 1 };
+            } else if (cleanStart === 'Nighttime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 0, nightCount: 1, totalDays: 1 };
+            } else if (cleanStart === 'Daytime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 1, nightCount: 1, totalDays: 1 };
+            } else {
+                return { dayCount: 1, nightCount: 1, totalDays: 2 };
+            }
+        }
+
+        let dayCount = 0;
+        let nightCount = 0;
+
+        for (let i = 0; i <= daysDiff; i++) {
+            if (i === 0) {
+                if (cleanStart === 'Daytime') {
+                    dayCount++;
+                    nightCount++;
+                } else {
+                    nightCount++;
+                }
+            } else if (i === daysDiff) {
+                if (cleanEnd === 'Daytime') {
+                    dayCount++;
+                } else {
+                    dayCount++;
+                    nightCount++;
+                }
+            } else {
+                dayCount++;
+                nightCount++;
+            }
+        }
+
+        return { dayCount, nightCount, totalDays };
+    };
+
+    const getAmenityContinuousPrice = (card, choice, startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        const isAircon = choice === 'with';
+        const { dayCount, nightCount } = calculateContinuousSlots(startDateStr, endDateStr, startSlot, endSlot);
+
+        const dayPrice = isAircon
+            ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0)
+            : Number(card.dataset.daytimePrice || 0);
+
+        const nightPrice = isAircon
+            ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0)
+            : Number(card.dataset.nighttimePrice || 0);
+
+        return (dayCount * dayPrice) + (nightCount * nightPrice);
+    };
 
     const getWeekday = (dateString) => {
 
@@ -298,8 +391,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return date.toLocaleDateString(undefined, { weekday: 'long' });
 
     };
-
-
 
     const updateReservationDay = () => {
 
@@ -517,8 +608,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
 
-
-
         const requestId = ++availabilityRequestId;
 
         setAvailabilityLoading(true);
@@ -535,17 +624,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
 
-
-
         try {
 
             const url = new URL('/reservation/availability', window.location.origin);
 
-            url.searchParams.set('date', dateInput.value);
+            const startD = mainStartDate || dateInput.value;
+            const endD = mainEndDate || mainStartDate || dateInput.value;
 
+            url.searchParams.set('start_date', startD);
+            url.searchParams.set('end_date', endD);
+            url.searchParams.set('start_slot', mainStartSlot || selectedSlot);
+            url.searchParams.set('end_slot', mainEndSlot || selectedSlot);
+            url.searchParams.set('date', startD);
             url.searchParams.set('slot', selectedSlot);
-
-
 
             const response = await fetch(url.toString(), {
 
@@ -553,15 +644,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             });
 
-
-
             if (!response.ok) {
 
                 throw new Error('Availability request failed');
 
             }
-
-
 
             const payload = await response.json();
 
@@ -581,8 +668,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         }
 
-
-
         if (requestId === availabilityRequestId) {
 
             applyFilters();
@@ -593,434 +678,479 @@ document.addEventListener('DOMContentLoaded', () => {
 
     };
 
-
-
     const openAvailabilityModal = async (card) => {
-
         if (!availabilityModal || !card) return;
 
         calendarSourceCard = card;
-
         calendarAmenityId = card.dataset.amenityId;
-
         calendarAmenityName = card.dataset.name || 'Amenity';
 
-        availabilityModalTitle.textContent = `${calendarAmenityName} availability`;
+        const isMulti = multiSelectionEnabled && selectedCards.length > 0;
+        const targetAmenityIds = isMulti
+            ? selectedCards.map(c => c.dataset.amenityId).join(',')
+            : calendarAmenityId;
+
+        availabilityModalTitle.textContent = isMulti
+            ? 'Selected amenities availability'
+            : `${calendarAmenityName} availability`;
 
         calendarSlot = 'Daytime';
+        calendarStayMode = 'single';
+        calendarRangeStart = null;
+        calendarRangeEnd = null;
+        calendarRangeStartSlot = 'Daytime';
+        calendarRangeEndSlot = 'Daytime';
+
+        // Reset mode tabs
+        const avModeSingle = document.getElementById('avModeSingle');
+        const avModeRange = document.getElementById('avModeRange');
+        if (avModeSingle) avModeSingle.classList.add('is-active');
+        if (avModeRange) avModeRange.classList.remove('is-active');
+
+        const avSingleSlotToggle = document.getElementById('avSingleSlotToggle');
+        const avRangeSlotWrap = document.getElementById('avRangeSlotWrap');
+        const avRangeSummaryBar = document.getElementById('avRangeSummaryBar');
+        const avRangeActions = document.getElementById('avRangeActions');
+
+        if (avSingleSlotToggle) avSingleSlotToggle.style.display = 'flex';
+        if (avRangeSlotWrap) avRangeSlotWrap.style.display = 'none';
+        if (avRangeSummaryBar) avRangeSummaryBar.style.display = 'none';
+        if (avRangeActions) avRangeActions.style.display = 'none';
 
         availabilitySlotButtons.forEach(button => {
-
             button.classList.toggle('is-active', button.dataset.slotToggle === calendarSlot);
-
         });
 
-        
-
         // Initialize month and year dropdowns
-
         const calendarMonthSelect = document.getElementById('calendarMonth');
-
         const calendarYearSelect = document.getElementById('calendarYear');
 
-        
+        const fetchCalendarData = async () => {
+            const selectedMonth = calendarMonthSelect ? calendarMonthSelect.value : new Date().getMonth();
+            const selectedYear = calendarYearSelect ? calendarYearSelect.value : new Date().getFullYear();
+
+            availabilityCalendar.classList.add('is-loading');
+
+            try {
+                const url = new URL('/reservation/availability/calendar', window.location.origin);
+                url.searchParams.set('amenity_ids', targetAmenityIds);
+                url.searchParams.set('slot', calendarSlot);
+                url.searchParams.set('month', selectedMonth);
+                url.searchParams.set('year', selectedYear);
+
+                const response = await fetch(url.toString(), {
+                    headers: { Accept: 'application/json' },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Calendar availability request failed');
+                }
+
+                const payload = await response.json();
+                calendarAvailability = payload.availability || [];
+                renderAvailabilityCalendar();
+            } catch (error) {
+                calendarAvailability = [];
+                renderAvailabilityCalendar();
+            } finally {
+                availabilityCalendar.classList.remove('is-loading');
+            }
+        };
 
         if (calendarMonthSelect && calendarYearSelect) {
-
-            // Set current month
-
             const today = new Date();
-
             calendarMonthSelect.value = today.getMonth();
-
-            
-
-            // Populate year dropdown (current year to 4 years ahead, total 5 years)
-
             const currentYear = today.getFullYear();
-
             calendarYearSelect.innerHTML = '';
 
             for (let year = currentYear; year <= currentYear + 4; year++) {
-
                 const option = document.createElement('option');
-
                 option.value = year;
-
                 option.textContent = year;
-
                 calendarYearSelect.appendChild(option);
-
             }
-
             calendarYearSelect.value = currentYear;
 
-            
-
-            // Add event listeners for dropdown changes
-
-            const fetchCalendarData = async () => {
-
-                const selectedMonth = calendarMonthSelect.value;
-
-                const selectedYear = calendarYearSelect.value;
-
-                
-
-                // Add loading state
-
-                availabilityCalendar.classList.add('is-loading');
-
-                
-
-                try {
-
-                    const url = new URL('/reservation/availability/calendar', window.location.origin);
-
-                    url.searchParams.set('amenity_id', calendarAmenityId);
-
-                    url.searchParams.set('slot', calendarSlot);
-
-                    url.searchParams.set('month', selectedMonth);
-
-                    url.searchParams.set('year', selectedYear);
-
-
-
-                    const response = await fetch(url.toString(), {
-
-                        headers: { Accept: 'application/json' },
-
-                    });
-
-
-
-                    if (!response.ok) {
-
-                        throw new Error('Calendar availability request failed');
-
-                    }
-
-
-
-                    const payload = await response.json();
-
-                    calendarAvailability = payload.availability || [];
-
-                    renderAvailabilityCalendar();
-
-                } catch (error) {
-
-                    calendarAvailability = [];
-
-                    renderAvailabilityCalendar();
-
-                } finally {
-
-                    // Remove loading state
-
-                    availabilityCalendar.classList.remove('is-loading');
-
-                }
-
-            };
-
-            
-
-            calendarMonthSelect.addEventListener('change', fetchCalendarData);
-
-            calendarYearSelect.addEventListener('change', fetchCalendarData);
-
+            calendarMonthSelect.onchange = fetchCalendarData;
+            calendarYearSelect.onchange = fetchCalendarData;
         }
 
-        
-
         calendarAvailability = [];
-
         renderAvailabilityCalendar();
 
         availabilityModal.classList.add('is-open');
-
         availabilityModal.setAttribute('aria-hidden', 'false');
-
         updateOverlayScrollLock();
 
+        fetchCalendarData();
+    };
 
+    // Mode toggles inside availability modal
+    const avModeSingle = document.getElementById('avModeSingle');
+    const avModeRange = document.getElementById('avModeRange');
+    const avSingleSlotToggle = document.getElementById('avSingleSlotToggle');
+    const avRangeSlotWrap = document.getElementById('avRangeSlotWrap');
+    const avRangeSummaryBar = document.getElementById('avRangeSummaryBar');
+    const avRangeActions = document.getElementById('avRangeActions');
+    const avRangeStartLabel = document.getElementById('avRangeStartLabel');
+    const avRangeEndLabel = document.getElementById('avRangeEndLabel');
+    const avRangeDaysBadge = document.getElementById('avRangeDaysBadge');
+    const avApplyRangeBtn = document.getElementById('avApplyRangeBtn');
 
-        try {
+    if (avModeSingle && avModeRange) {
+        avModeSingle.addEventListener('click', () => {
+            calendarStayMode = 'single';
+            avModeSingle.classList.add('is-active');
+            avModeRange.classList.remove('is-active');
+            if (avSingleSlotToggle) avSingleSlotToggle.style.display = 'flex';
+            if (avRangeSlotWrap) avRangeSlotWrap.style.display = 'none';
+            if (avRangeSummaryBar) avRangeSummaryBar.style.display = 'none';
+            if (avRangeActions) avRangeActions.style.display = 'none';
+            calendarRangeStart = null;
+            calendarRangeEnd = null;
+            renderAvailabilityCalendar();
+        });
 
-            const url = new URL('/reservation/availability/calendar', window.location.origin);
+        avModeRange.addEventListener('click', () => {
+            calendarStayMode = 'range';
+            avModeRange.classList.add('is-active');
+            avModeSingle.classList.remove('is-active');
+            if (avSingleSlotToggle) avSingleSlotToggle.style.display = 'none';
+            if (avRangeSlotWrap) avRangeSlotWrap.style.display = 'grid';
+            if (avRangeSummaryBar) avRangeSummaryBar.style.display = 'flex';
+            if (avRangeActions) avRangeActions.style.display = 'block';
+            calendarRangeStart = null;
+            calendarRangeEnd = null;
+            if (avRangeStartLabel) avRangeStartLabel.textContent = 'Pick start date';
+            if (avRangeEndLabel) avRangeEndLabel.textContent = 'Pick end date';
+            if (avRangeDaysBadge) avRangeDaysBadge.textContent = '1 Day';
+            renderAvailabilityCalendar();
+        });
+    }
 
-            url.searchParams.set('amenity_id', calendarAmenityId);
-
-            url.searchParams.set('slot', calendarSlot);
-
-
-
-            const response = await fetch(url.toString(), {
-
-                headers: { Accept: 'application/json' },
-
+    // Availability range slot toggles
+    document.querySelectorAll('[data-av-start-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            calendarRangeStartSlot = btn.dataset.avStartSlot;
+            document.querySelectorAll('[data-av-start-slot]').forEach(b => {
+                b.classList.toggle('is-active', b.dataset.avStartSlot === calendarRangeStartSlot);
             });
+            updateAvRangeDisplay();
+            renderAvailabilityCalendar();
+        });
+    });
 
+    document.querySelectorAll('[data-av-end-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            calendarRangeEndSlot = btn.dataset.avEndSlot;
+            document.querySelectorAll('[data-av-end-slot]').forEach(b => {
+                b.classList.toggle('is-active', b.dataset.avEndSlot === calendarRangeEndSlot);
+            });
+            updateAvRangeDisplay();
+            renderAvailabilityCalendar();
+        });
+    });
 
+    const updateAvRangeDisplay = () => {
+        if (!calendarRangeStart) return;
+        const startObj = new Date(calendarRangeStart + 'T00:00:00');
+        const endObj = calendarRangeEnd ? new Date(calendarRangeEnd + 'T00:00:00') : startObj;
+        const { dayCount, nightCount, totalDays } = calculateContinuousSlots(calendarRangeStart, calendarRangeEnd || calendarRangeStart, calendarRangeStartSlot, calendarRangeEndSlot);
 
-            if (!response.ok) {
+        if (avRangeStartLabel) {
+            avRangeStartLabel.textContent = `${startObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${calendarRangeStartSlot})`;
+        }
+        if (avRangeEndLabel) {
+            avRangeEndLabel.textContent = calendarRangeEnd
+                ? `${endObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${calendarRangeEndSlot})`
+                : 'Select end date';
+        }
+        if (avRangeDaysBadge) {
+            avRangeDaysBadge.textContent = `${totalDays} Day${totalDays > 1 ? 's' : ''} (${dayCount}D ${nightCount}N)`;
+        }
+    };
 
-                throw new Error('Calendar availability request failed');
+    if (avApplyRangeBtn) {
+        avApplyRangeBtn.addEventListener('click', () => {
+            if (!calendarRangeStart) return;
+            const targetCard = (multiSelectionEnabled && selectedCards.length > 0)
+                ? selectedCards[0]
+                : calendarSourceCard;
+            if (!targetCard) return;
 
+            const finalEnd = calendarRangeEnd || calendarRangeStart;
+            mainStartDate = calendarRangeStart;
+            mainEndDate = finalEnd;
+            mainStartSlot = calendarRangeStartSlot;
+            mainEndSlot = calendarRangeEndSlot;
+            stayMode = 'range';
+
+            if (multiSelectionEnabled && selectedCards.length > 0) {
+                selectedCards.forEach(c => {
+                    const aId = c.dataset.amenityId;
+                    amenityStayConfig[aId] = {
+                        ...(amenityStayConfig[aId] || {}),
+                        startDate: mainStartDate,
+                        endDate: mainEndDate,
+                        startSlot: mainStartSlot,
+                        endSlot: mainEndSlot,
+                        choice: amenityStayConfig[aId]?.choice || multiSelectionChoices[aId] || 'without'
+                    };
+                });
             }
 
+            if (dateInput) {
+                dateInput.value = mainStartDate;
+            }
+            if (reservationDateTrigger) {
+                const sObj = new Date(mainStartDate + 'T00:00:00');
+                const eObj = new Date(mainEndDate + 'T00:00:00');
+                reservationDateTrigger.textContent = `${sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+            }
 
-
-            const payload = await response.json();
-
-            calendarAvailability = payload.availability || [];
-
-            renderAvailabilityCalendar();
-
-        } catch (error) {
-
-            calendarAvailability = [];
-
-            renderAvailabilityCalendar();
-
-        }
-
-    };
-
-
+            closeAvailabilityModal();
+            refreshAvailability();
+            window.setTimeout(() => {
+                openModal(targetCard);
+            }, 100);
+        });
+    }
 
     const closeAvailabilityModal = () => {
-
         if (!availabilityModal) return;
-
         availabilityModal.classList.remove('is-open');
-
         availabilityModal.setAttribute('aria-hidden', 'true');
-
         updateOverlayScrollLock();
-
     };
 
+    const isRangeAvailable = (startDate, endDate, startSlot, endSlot, availList) => {
+        if (!availList || availList.length === 0) return true;
+        const startObj = new Date(startDate + 'T00:00:00');
+        const endObj = new Date(endDate + 'T00:00:00');
+        const daysDiff = Math.round((endObj - startObj) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 0) return false;
 
+        const cleanStartSlot = startSlot && startSlot.includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEndSlot = endSlot && endSlot.includes('Night') ? 'Nighttime' : 'Daytime';
+
+        for (let i = 0; i <= daysDiff; i++) {
+            const curDate = new Date(startObj);
+            curDate.setDate(curDate.getDate() + i);
+            const iso = curDate.getFullYear() + '-' +
+                String(curDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(curDate.getDate()).padStart(2, '0');
+
+            const entry = availList.find(e => e.date === iso);
+            if (!entry) continue;
+
+            if (daysDiff === 0) {
+                if (cleanStartSlot === 'Daytime' && cleanEndSlot === 'Daytime') {
+                    if (entry.daytime !== true) return false;
+                } else if (cleanStartSlot === 'Nighttime' && cleanEndSlot === 'Nighttime') {
+                    if (entry.nighttime !== true) return false;
+                } else if (cleanStartSlot === 'Daytime' && cleanEndSlot === 'Nighttime') {
+                    if (entry.daytime !== true || entry.nighttime !== true) return false;
+                } else {
+                    if (entry.nighttime !== true) return false;
+                }
+            } else if (i === 0) {
+                if (cleanStartSlot === 'Daytime') {
+                    if (entry.daytime !== true || entry.nighttime !== true) return false;
+                } else {
+                    if (entry.nighttime !== true) return false;
+                }
+            } else if (i === daysDiff) {
+                if (cleanEndSlot === 'Daytime') {
+                    if (entry.daytime !== true) return false;
+                } else {
+                    if (entry.daytime !== true || entry.nighttime !== true) return false;
+                }
+            } else {
+                if (entry.daytime !== true || entry.nighttime !== true) return false;
+            }
+        }
+        return true;
+    };
 
     const renderAvailabilityCalendar = () => {
-
         if (!availabilityCalendar || !calendarAmenityId) return;
-
-
 
         availabilityCalendar.innerHTML = '';
 
-
-
         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((weekday) => {
-
             const label = document.createElement('span');
-
             label.className = 'rp-calendar__weekday';
-
             label.textContent = weekday;
-
             availabilityCalendar.appendChild(label);
-
         });
 
-
-
-        // Get the selected month and year from dropdowns, or use current date
-
         const calendarMonthSelect = document.getElementById('calendarMonth');
-
         const calendarYearSelect = document.getElementById('calendarYear');
-
-        
 
         let selectedMonth, selectedYear;
 
-        
-
         if (calendarMonthSelect && calendarYearSelect && calendarMonthSelect.value !== '' && calendarYearSelect.value !== '') {
-
             selectedMonth = parseInt(calendarMonthSelect.value);
-
             selectedYear = parseInt(calendarYearSelect.value);
-
         } else {
-
-            // Default to current month/year
-
             const today = new Date();
-
             selectedMonth = today.getMonth();
-
             selectedYear = today.getFullYear();
-
         }
-
-
-
-        // Create date for the first day of the selected month
 
         const firstDate = new Date(selectedYear, selectedMonth, 1);
-
         const startOffset = firstDate.getDay();
-
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
-
-
-        // Add empty cells for days before the first day of the month
-
         for (let i = 0; i < startOffset; i += 1) {
-
             const spacer = document.createElement('span');
-
             spacer.className = 'rp-calendar__day rp-calendar__day--empty';
-
             spacer.setAttribute('aria-hidden', 'true');
-
             availabilityCalendar.appendChild(spacer);
-
         }
 
-
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const days = Array.from({ length: daysInMonth }, (_, index) => {
-
             const date = new Date(selectedYear, selectedMonth, index + 1);
-
-            // Use local date formatting to avoid timezone offset issues
-
             const isoDate = date.getFullYear() + '-' + 
-
                 String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-
                 String(date.getDate()).padStart(2, '0');
 
-            
-
-            // Determine the slot key to check in availability data
             let slotKey = calendarSlot.toLowerCase();
             let isAvailable = false;
 
             const entry = calendarAvailability.find((e) => e.date === isoDate);
 
             if (entry) {
-                if (slotKey === 'daytime') {
-                    isAvailable = entry.daytime === true;
-                } else if (slotKey === 'nighttime') {
-                    isAvailable = entry.nighttime === true;
-                } else if (slotKey === 'daytonight') {
-                    // Day to Night: both daytime and nighttime of the date must be free
-                    isAvailable = entry.daytonight === true;
-                } else if (slotKey === 'nighttoday') {
-                    // Night to Day: tonight plus tomorrow daytime must be free
-                    isAvailable = entry.nighttoday === true;
+                if (calendarStayMode === 'range') {
+                    if (!calendarRangeStart) {
+                        // Picking start date
+                        if (calendarRangeStartSlot === 'Nighttime') {
+                            isAvailable = entry.nighttime === true;
+                        } else {
+                            isAvailable = entry.daytime === true;
+                        }
+                    } else {
+                        // Picking end date
+                        if (isoDate < calendarRangeStart) {
+                            if (calendarRangeStartSlot === 'Nighttime') {
+                                isAvailable = entry.nighttime === true;
+                            } else {
+                                isAvailable = entry.daytime === true;
+                            }
+                        } else {
+                            isAvailable = isRangeAvailable(calendarRangeStart, isoDate, calendarRangeStartSlot, calendarRangeEndSlot, calendarAvailability);
+                        }
+                    }
+                } else {
+                    if (slotKey === 'daytime') {
+                        isAvailable = entry.daytime === true;
+                    } else if (slotKey === 'nighttime') {
+                        isAvailable = entry.nighttime === true;
+                    } else if (slotKey === 'daytonight') {
+                        isAvailable = entry.daytonight === true;
+                    } else if (slotKey === 'nighttoday') {
+                        isAvailable = entry.nighttoday === true;
+                    }
                 }
             }
 
-            // Disable past dates
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
             const isPast = date < today;
-            const isToday = date.getTime() === today.getTime();
-
             if (isPast) {
                 isAvailable = false;
             }
 
-            // Disable today for daytime-covering slots (handled by time-based logic below).
-            // Nighttime and Night to Day stay bookable today since they start at night.
-            if (isToday && (slotKey === 'daytime' || slotKey === 'daytonight')) {
-                // Time-based availability check
-                const currentHour = new Date().getHours();
+            const dayButton = document.createElement('button');
+            dayButton.type = 'button';
+            dayButton.className = `rp-calendar__day ${isAvailable ? 'is-available' : 'is-disabled'}`;
+            dayButton.disabled = !isAvailable;
+            dayButton.setAttribute('data-date', isoDate);
 
-                if (slotKey === 'daytime') {
-                    // Daytime available only 1am-4am on today
-                    isAvailable = isAvailable && (currentHour >= 1 && currentHour < 4);
-                } else {
-                    // Day to Night needs today's daytime (1am-4am window) AND tonight
-                    const daytimeAvailable = (currentHour >= 1 && currentHour < 4);
-                    isAvailable = isAvailable && daytimeAvailable;
+            // Range highlighting classes
+            if (calendarStayMode === 'range') {
+                if (calendarRangeStart === isoDate) {
+                    dayButton.classList.add('is-range-start');
+                }
+                if (calendarRangeEnd === isoDate) {
+                    dayButton.classList.add('is-range-end');
+                }
+                if (calendarRangeStart && calendarRangeEnd && isoDate > calendarRangeStart && isoDate < calendarRangeEnd) {
+                    dayButton.classList.add('is-in-range');
                 }
             }
 
-
-
-            const dayButton = document.createElement('button');
-
-            dayButton.type = 'button';
-
-            dayButton.className = `rp-calendar__day ${isAvailable ? 'is-available' : 'is-disabled'}`;
-
-            dayButton.disabled = !isAvailable;
-
             dayButton.innerHTML = `
-
                 <span class="rp-calendar__day-num">${date.getDate()}</span>
-
                 <span class="rp-calendar__day-month">${date.toLocaleDateString('en', { month: 'short' })}</span>
-
             `;
 
             dayButton.addEventListener('click', () => {
-
                 if (!isAvailable) return;
 
-                if (dateInput) {
+                if (calendarStayMode === 'single') {
+                    mainStartDate = isoDate;
+                    mainEndDate = isoDate;
+                    mainStartSlot = calendarSlot;
+                    mainEndSlot = calendarSlot;
+                    stayMode = 'single';
 
-                    dateInput.value = isoDate;
-
-                }
-
-                updateReservationDay();
-
-                
-
-                // Update the main selected slot to match the calendar slot
-
-                selectedSlot = calendarSlot;
-
-                slotButtons.forEach(button => {
-
-                    button.classList.toggle('is-active', button.dataset.slot === selectedSlot);
-
-                });
-
-                
-
-                closeAvailabilityModal();
-
-                
-
-                // Refresh availability after a short delay to ensure date is set
-
-                window.setTimeout(() => {
-
-                    refreshAvailability();
-
-                    
-
-                    if (calendarSourceCard) {
-
-                        openModal(calendarSourceCard);
-
+                    if (multiSelectionEnabled && selectedCards.length > 0) {
+                        selectedCards.forEach(c => {
+                            const aId = c.dataset.amenityId;
+                            amenityStayConfig[aId] = {
+                                ...(amenityStayConfig[aId] || {}),
+                                startDate: mainStartDate,
+                                endDate: mainEndDate,
+                                startSlot: mainStartSlot,
+                                endSlot: mainEndSlot,
+                                choice: amenityStayConfig[aId]?.choice || multiSelectionChoices[aId] || 'without'
+                            };
+                        });
                     }
 
-                }, 100);
+                    if (dateInput) dateInput.value = isoDate;
+                    updateReservationDay();
+                    selectedSlot = calendarSlot;
 
+                    slotButtons.forEach(button => {
+                        button.classList.toggle('is-active', button.dataset.slot === selectedSlot);
+                    });
+
+                    closeAvailabilityModal();
+
+                    window.setTimeout(() => {
+                        refreshAvailability();
+                        const targetCard = (multiSelectionEnabled && selectedCards.length > 0)
+                            ? selectedCards[0]
+                            : calendarSourceCard;
+                        if (targetCard) {
+                            openModal(targetCard);
+                        }
+                    }, 100);
+                } else {
+                    // Multi-day stay range pick
+                    if (!calendarRangeStart || (calendarRangeStart && calendarRangeEnd)) {
+                        calendarRangeStart = isoDate;
+                        calendarRangeEnd = null;
+                    } else if (calendarRangeStart && !calendarRangeEnd) {
+                        if (isoDate < calendarRangeStart) {
+                            calendarRangeStart = isoDate;
+                            calendarRangeEnd = null;
+                        } else {
+                            calendarRangeEnd = isoDate;
+                        }
+                    }
+                    updateAvRangeDisplay();
+                    renderAvailabilityCalendar();
+                }
             });
 
             return dayButton;
-
         });
 
-
-
         days.forEach((day) => availabilityCalendar.appendChild(day));
-
     };
 
 
@@ -1174,157 +1304,149 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         filterMin.disabled = false;
-
         filterMax.disabled = false;
-
         applyFilters();
-
     };
 
+    const getAmenityPrice = (card, choice, pricingType = selectedSlot, startDate = null, endDate = null, startSlot = null, endSlot = null) => {
+        const sDate = startDate || mainStartDate || dateInput.value;
+        const eDate = endDate || mainEndDate || sDate;
+        const sSlot = startSlot || mainStartSlot || pricingType || selectedSlot;
+        const eSlot = endSlot || mainEndSlot || pricingType || selectedSlot;
 
+        return getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+    };
+
+    const getSelectionTotal = () => {
+        return selectedCards.reduce((total, card) => {
+            const amenityId = card.dataset.amenityId;
+            const config = amenityStayConfig[amenityId] || {};
+            const choice = config.choice || multiSelectionChoices[amenityId] || 'without';
+            const sDate = config.startDate || mainStartDate || dateInput.value;
+            const eDate = config.endDate || mainEndDate || sDate;
+            const sSlot = config.startSlot || mainStartSlot || selectedSlot;
+            const eSlot = config.endSlot || mainEndSlot || selectedSlot;
+
+            return total + getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+        }, 0);
+    };
 
     const renderBookingSelection = (card, choice) => {
+        const modalMultiAmenityContainer = document.getElementById('modalMultiAmenityContainer');
+        const modalMultiAmenityList = document.getElementById('modalMultiAmenityList');
+        const modalMetaBlock = document.getElementById('modalMetaBlock');
 
-        let basePrice, airconPrice;
-
-        
-
-        if (selectedSlot === 'Nighttime') {
-
-            basePrice = Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.nighttimeAirconPrice);
-
-        } else if (selectedSlot === 'DayToNight' || selectedSlot === 'NightToDay') {
-
-            // For DayToNight / NightToDay, combine daytime and nighttime prices
-
-            basePrice = Number(card.dataset.daytimePrice) + Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice) + Number(card.dataset.nighttimeAirconPrice);
-
-        } else {
-
-            // Daytime (default)
-
-            basePrice = Number(card.dataset.daytimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice);
-
-        }
-
-        
-
-        const selectedPrice = choice === 'with' ? airconPrice : basePrice;
+        const sDate = mainStartDate || dateInput.value;
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
 
         const isAircon = choice === 'with';
 
-
-
         if (multiSelectionEnabled && selectedCards.length > 0) {
+            if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'block';
+            if (airconChoice) airconChoice.style.display = 'none';
+            if (modalDescription) modalDescription.innerHTML = '';
 
-            const total = getSelectionTotal();
+            // Render per-amenity summary cards with "Edit Dates" button
+            if (modalMultiAmenityList) {
+                modalMultiAmenityList.innerHTML = selectedCards.map(c => {
+                    const amenityId = c.dataset.amenityId;
+                    if (!amenityStayConfig[amenityId]) {
+                        amenityStayConfig[amenityId] = {
+                            startDate: sDate,
+                            endDate: eDate,
+                            startSlot: sSlot,
+                            endSlot: eSlot,
+                            choice: multiSelectionChoices[amenityId] || 'without'
+                        };
+                    }
+                    const cfg = amenityStayConfig[amenityId];
+                    const hasAc = c.dataset.hasAircon === '1';
+                    const itemChoice = cfg.choice === 'with';
 
-            const calculation = selectedCards.map(c => {
+                    const { dayCount, nightCount, totalDays } = calculateContinuousSlots(cfg.startDate, cfg.endDate, cfg.startSlot, cfg.endSlot);
+                    const itemPrice = getAmenityContinuousPrice(c, cfg.choice, cfg.startDate, cfg.endDate, cfg.startSlot, cfg.endSlot);
 
-                const choiceForCard = multiSelectionChoices[c.dataset.amenityId] || 'without';
+                    const sObj = new Date(cfg.startDate + 'T00:00:00');
+                    const eObj = new Date(cfg.endDate + 'T00:00:00');
+                    const sDateFormatted = sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const eDateFormatted = eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-                return getAmenityPrice(c, choiceForCard).toFixed(2);
+                    const dateRangeDisplay = (cfg.startDate === cfg.endDate)
+                        ? `${sDateFormatted} · 1 Day (${cfg.startSlot === cfg.endSlot ? cfg.startSlot : cfg.startSlot + ' → ' + cfg.endSlot})`
+                        : `${sDateFormatted} (${cfg.startSlot}) → ${eDateFormatted} (${cfg.endSlot}) · ${totalDays} Days (${dayCount}D ${nightCount}N)`;
 
+                    const packageBadge = hasAc
+                        ? (itemChoice ? '<span class="rp-item-badge rp-item-badge--ac">With Aircon</span>' : '<span class="rp-item-badge">Standard</span>')
+                        : '';
+
+                    return `
+                        <div class="rp-selected-amenity-card" data-amenity-id="${amenityId}">
+                            <div class="rp-selected-amenity-info">
+                                <div class="rp-selected-amenity-header">
+                                    <h4 class="rp-selected-amenity-title">${c.dataset.name}</h4>
+                                    ${packageBadge}
+                                </div>
+                                <div class="rp-selected-amenity-meta">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>${dateRangeDisplay}</span>
+                                </div>
+                            </div>
+                            <div class="rp-selected-amenity-actions">
+                                <span class="rp-selected-amenity-price" id="cfgPrice_${amenityId}">₱${itemPrice.toFixed(2)}</span>
+                                <button type="button" class="rp-edit-schedule-btn" data-edit-amenity-id="${amenityId}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                    </svg>
+                                    Edit Dates
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Attach click listeners to "Edit Dates" buttons
+                modalMultiAmenityList.querySelectorAll('[data-edit-amenity-id]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const amenityId = btn.dataset.editAmenityId;
+                        openEditAmenityScheduleModal(amenityId);
+                    });
+                });
+            }
+
+            const grandTotal = getSelectionTotal();
+            modalPriceLabel.textContent = 'Total for all amenities';
+            modalPriceValue.textContent = `₱${grandTotal.toFixed(2)}`;
+            modalPriceHint.textContent = selectedCards.map(c => {
+                const cCfg = amenityStayConfig[c.dataset.amenityId] || {};
+                const cPrice = getAmenityContinuousPrice(c, cCfg.choice || 'without', cCfg.startDate || sDate, cCfg.endDate || sDate, cCfg.startSlot || sSlot, cCfg.endSlot || eSlot);
+                return `${c.dataset.name}: ₱${cPrice.toFixed(2)}`;
             }).join(' + ');
 
-            modalPriceLabel.textContent = 'Total from selection';
-
-            modalPriceValue.textContent = `₱${total.toFixed(2)}`;
-
-            modalPriceHint.textContent = `${calculation} = ₱${total.toFixed(2)}`;
-
-            
-
-            // Build the descriptions list for all selected amenities
-
-            const descriptionsHtml = selectedCards.map(c => {
-
-                const desc = c.dataset.description || 'No additional details available.';
-
-                const choice = multiSelectionChoices[c.dataset.amenityId] || 'without';
-                const pricingType = amenityPricingTypes[c.dataset.amenityId] || selectedSlot;
-
-                // Build pricing type label with aircon suffix
-                let pricingTypeLabel = pricingType;
-                if (choice === 'with') {
-                    pricingTypeLabel = pricingType.includes('Aircon') ? pricingType : `${pricingType} Aircon`;
-                }
-
-                // Check availability for each pricing type
-                const daytimeAvailable = isAvailableForSlot(c, dateInput.value, 'Daytime');
-                const nighttimeAvailable = isAvailableForSlot(c, dateInput.value, 'Nighttime');
-                const dayToNightAvailable = daytimeAvailable && nighttimeAvailable;
-                // Night to Day starts tonight; its tomorrow-daytime leg is
-                // enforced server-side on submit.
-                const nightToDayAvailable = nighttimeAvailable;
-
-                return `<div class="rp-amenity-desc-item" data-amenity-id="${c.dataset.amenityId}">
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
-                        <strong>${c.dataset.name}</strong>
-                        <select class="rp-amenity-pricing-select" data-amenity-id="${c.dataset.amenityId}">
-                            <option value="Daytime" ${pricingType === 'Daytime' ? 'selected' : ''} ${!daytimeAvailable ? 'disabled' : ''}>Daytime</option>
-                            <option value="Nighttime" ${pricingType === 'Nighttime' ? 'selected' : ''} ${!nighttimeAvailable ? 'disabled' : ''}>Nighttime</option>
-                            <option value="DayToNight" ${pricingType === 'DayToNight' ? 'selected' : ''} ${!dayToNightAvailable ? 'disabled' : ''}>Day to Night</option>
-                            <option value="NightToDay" ${pricingType === 'NightToDay' ? 'selected' : ''} ${!nightToDayAvailable ? 'disabled' : ''}>Night to Day</option>
-                        </select>
-                    </div>
-                    <p>${desc}</p>
-                </div>`;
-
-            }).join('');
-
-            modalDescription.innerHTML = descriptionsHtml;
-
-            // Re-attach event listeners to the new dropdowns
-            modalDescription.querySelectorAll('.rp-amenity-pricing-select').forEach(select => {
-                select.addEventListener('change', (e) => {
-                    const amenityId = e.target.dataset.amenityId;
-                    const pricingType = e.target.value;
-                    amenityPricingTypes[amenityId] = pricingType;
-
-                    // Recalculate and update modal price display
-                    const total = getSelectionTotal();
-                    const calculation = selectedCards.map(c => {
-                        const choiceForCard = multiSelectionChoices[c.dataset.amenityId] || 'without';
-                        const pricingTypeForCard = amenityPricingTypes[c.dataset.amenityId] || selectedSlot;
-                        const price = getAmenityPrice(c, choiceForCard, pricingTypeForCard);
-                        return price.toFixed(2);
-                    }).join(' + ');
-
-                    const modalPriceLabelEl = document.getElementById('modalPriceLabel');
-                    const modalPriceValueEl = document.getElementById('modalPriceValue');
-                    const modalPriceHintEl = document.getElementById('modalPriceHint');
-
-                    if (modalPriceLabelEl) modalPriceLabelEl.textContent = 'Total from selection';
-                    if (modalPriceValueEl) modalPriceValueEl.textContent = `₱${total.toFixed(2)}`;
-                    if (modalPriceHintEl) modalPriceHintEl.textContent = `${calculation} = ₱${total.toFixed(2)}`;
-                });
-            });
-
         } else {
+            // Single Amenity Mode
+            if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'none';
+
+            const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+            const singlePrice = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+
+            const dayPrice = isAircon ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0) : Number(card.dataset.daytimePrice || 0);
+            const nightPrice = isAircon ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0) : Number(card.dataset.nighttimePrice || 0);
 
             modalPriceLabel.textContent = isAircon ? 'Aircon package' : 'Standard package';
+            modalPriceValue.textContent = `₱${singlePrice.toFixed(2)}`;
+            modalPriceHint.textContent = `${totalDays} Day${totalDays > 1 ? 's' : ''} Stay (${dayCount} Daytime${dayCount > 1 ? 's' : ''} × ₱${dayPrice.toFixed(2)} + ${nightCount} Nighttime${nightCount > 1 ? 's' : ''} × ₱${nightPrice.toFixed(2)}) = ₱${singlePrice.toFixed(2)}`;
 
-            modalPriceValue.textContent = `₱${selectedPrice.toFixed(2)}`;
-
-            modalPriceHint.textContent = isAircon
-
-                ? 'Air-conditioned pricing for this booking slot.'
-
-                : 'Standard pricing for this booking slot.';
-
-            // Handle sale display
             const salePercentage = parseFloat(card.dataset.salePercentage) || 0;
             if (salePercentage > 0) {
                 const originalPrice = isAircon
-                    ? (card.dataset.originalDaytimeAirconPrice || card.dataset.originalNighttimeAirconPrice || selectedPrice)
-                    : (card.dataset.originalDaytimePrice || card.dataset.originalNighttimePrice || selectedPrice);
+                    ? (card.dataset.originalDaytimeAirconPrice || card.dataset.originalNighttimeAirconPrice || singlePrice)
+                    : (card.dataset.originalDaytimePrice || card.dataset.originalNighttimePrice || singlePrice);
                 modalSaleInfo.style.display = 'flex';
                 modalOriginalPrice.textContent = `₱${parseFloat(originalPrice).toFixed(2)}`;
                 modalSalePercentage.textContent = `${salePercentage}% OFF`;
@@ -1333,566 +1455,409 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             modalDescription.textContent = card.dataset.description || 'No additional details available.';
-
         }
-
-
 
         bookingForm.classList.remove('is-hidden');
 
         const checkInInput = document.getElementById('bookingCheckIn');
-
         const checkOutInput = document.getElementById('bookingCheckOut');
+        const bookingReservationDate = document.getElementById('bookingReservationDate');
+        const bookingEndDate = document.getElementById('bookingEndDate');
+        const bookingStartSlot = document.getElementById('bookingStartSlot');
+        const bookingEndSlot = document.getElementById('bookingEndSlot');
+        const bookingTotalDays = document.getElementById('bookingTotalDays');
 
-        if (checkInInput) checkInInput.value = dateInput.value;
+        const { totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
 
-        if (checkOutInput) checkOutInput.value = dateInput.value;
+        if (checkInInput) checkInInput.value = sDate;
+        if (checkOutInput) checkOutInput.value = eDate;
+        if (bookingReservationDate) bookingReservationDate.value = sDate;
+        if (bookingEndDate) bookingEndDate.value = eDate;
+        if (bookingStartSlot) bookingStartSlot.value = sSlot;
+        if (bookingEndSlot) bookingEndSlot.value = eSlot;
+        if (bookingTotalDays) bookingTotalDays.value = totalDays;
 
         const guestInput = bookingForm.querySelector('input[name="number_of_guests"]');
-
         if (guestInput) guestInput.value = card.dataset.minCapacity || '1';
-
     };
 
+    const updateSelectionSummary = () => {
+        if (!selectionSummaryList || !selectionMathText || !selectionTotalPrice) return;
 
+        if (selectedCards.length === 0) {
+            selectionMathText.textContent = 'No items selected';
+            selectionTotalPrice.textContent = '₱0.00';
+            selectionSummaryList.innerHTML = '<li class="rp-selection-sheet__empty">Select an amenity to review it here.</li>';
+            return;
+        }
 
-    const getSelectionTotal = () => {
+        let total = 0;
+        const parts = [];
+        selectionSummaryList.innerHTML = '';
 
-        return selectedCards.reduce((total, card) => {
+        selectedCards.forEach(card => {
+            const amenityId = card.dataset.amenityId;
+            const cfg = amenityStayConfig[amenityId] || {};
+            const choice = cfg.choice || multiSelectionChoices[amenityId] || 'without';
+            const sDate = cfg.startDate || mainStartDate || dateInput.value;
+            const eDate = cfg.endDate || mainEndDate || sDate;
+            const sSlot = cfg.startSlot || mainStartSlot || selectedSlot;
+            const eSlot = cfg.endSlot || mainEndSlot || selectedSlot;
 
-            const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
-            const pricingType = amenityPricingTypes[card.dataset.amenityId] || selectedSlot;
+            const price = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+            total += price;
 
-            return total + getAmenityPrice(card, choice, pricingType);
+            const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+            const choiceLabel = `${choice === 'with' ? 'With Aircon' : 'Standard'} · ${totalDays}D (${dayCount}D ${nightCount}N)`;
 
-        }, 0);
+            const line = document.createElement('li');
+            line.className = 'rp-selection-sheet__item';
+            line.innerHTML = `
+                <div class="rp-selection-sheet__item-main">
+                    <strong>${card.dataset.name || 'Selected amenity'}</strong>
+                    <span>${choiceLabel}</span>
+                </div>
+                <div class="rp-selection-sheet__item-price">₱${price.toFixed(2)}</div>
+            `;
+            selectionSummaryList.appendChild(line);
+            parts.push(`₱${price.toFixed(2)}`);
+        });
 
+        selectionMathText.textContent = parts.join(' + ');
+        selectionTotalPrice.textContent = `₱${total.toFixed(2)}`;
     };
 
+    const openSelectionSheet = () => {
+        updateSelectionSummary();
+        if (selectionSheet) {
+            selectionSheet.classList.add('is-open');
+            selectionSheet.setAttribute('aria-hidden', 'false');
+            updateOverlayScrollLock();
+        }
+    };
 
+    const closeSelectionSheet = () => {
+        if (selectionSheet) {
+            selectionSheet.classList.remove('is-open');
+            selectionSheet.setAttribute('aria-hidden', 'true');
+            updateOverlayScrollLock();
+        }
+    };
 
     const updateSelectionUi = () => {
-
         const count = selectedCards.length;
-
         const total = getSelectionTotal();
 
         if (selectionFloatingBar) {
-
             selectionFloatingBar.hidden = !multiSelectionEnabled || count === 0;
-
         }
 
         if (selectionCountLabel) {
-
             selectionCountLabel.textContent = count === 1 ? '1 amenity selected' : `${count} amenities selected`;
-
         }
 
         if (selectionCheckoutBtn) {
-
             selectionCheckoutBtn.textContent = count === 1 ? 'Review selection' : 'Review selections';
-
         }
 
         const summaryHint = selectionFloatingBar?.querySelector('.rp-floating-actions__copy span');
-
         if (summaryHint) {
-
             summaryHint.textContent = count === 0 ? 'Tap to review your picks' : `₱${total.toFixed(2)} total`;
-
         }
-
-
 
         cards.forEach(card => {
-
             const isSelected = selectedCards.includes(card);
-
             card.classList.toggle('is-selected', multiSelectionEnabled && isSelected);
-
             const overlay = card.querySelector('.rp-card__overlay');
-
             if (overlay) {
-
                 overlay.classList.toggle('is-selected', multiSelectionEnabled && isSelected);
-
             }
-
         });
-
     };
 
-
-
     const renderMultiAirconSelection = (card, choice) => {
+        const sDate = mainStartDate || dateInput?.value || '';
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
 
-        let basePrice, airconPrice;
-
-        
-
-        if (selectedSlot === 'Nighttime') {
-
-            basePrice = Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.nighttimeAirconPrice);
-
-        } else if (selectedSlot === 'DayToNight' || selectedSlot === 'NightToDay') {
-
-            // For DayToNight / NightToDay, combine daytime and nighttime prices
-
-            basePrice = Number(card.dataset.daytimePrice) + Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice) + Number(card.dataset.nighttimeAirconPrice);
-
-        } else {
-
-            // Daytime (default)
-
-            basePrice = Number(card.dataset.daytimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice);
-
-        }
-
-        
-
+        const basePrice = getAmenityContinuousPrice(card, 'without', sDate, eDate, sSlot, eSlot);
+        const airconPrice = getAmenityContinuousPrice(card, 'with', sDate, eDate, sSlot, eSlot);
         const selectedPrice = choice === 'with' ? airconPrice : basePrice;
-
         const isAircon = choice === 'with';
-
-
 
         if (multiAirconName) multiAirconName.textContent = card.dataset.name || 'Amenity name';
 
-        
-
-        // Ensure date is properly formatted and displayed
-
-        if (multiAirconDate && dateInput && dateInput.value) {
-
-            const dateObj = new Date(dateInput.value);
-
-            const formattedDate = dateObj.toLocaleDateString('en-US', { 
-
-                weekday: 'short', 
-
-                year: 'numeric', 
-
-                month: 'short', 
-
-                day: 'numeric' 
-
-            });
-
-            multiAirconDate.textContent = formattedDate;
-
+        if (multiAirconDate && sDate) {
+            const sObj = new Date(sDate + 'T00:00:00');
+            const eObj = new Date(eDate + 'T00:00:00');
+            const sStr = sObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const eStr = eObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const { totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+            multiAirconDate.textContent = (sDate === eDate) ? `${sStr} (1 Day)` : `${sStr} – ${eStr} (${totalDays} Days)`;
         } else if (multiAirconDate) {
-
             multiAirconDate.textContent = 'Select a date';
-
         }
 
-        
-
-        if (multiAirconSlot) multiAirconSlot.textContent = selectedSlot;
-
+        if (multiAirconSlot) multiAirconSlot.textContent = (sDate === eDate && sSlot === eSlot) ? sSlot : `${sSlot} → ${eSlot}`;
         if (multiAirconCapacity) multiAirconCapacity.textContent = `${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
-
         if (multiAirconPriceValue) multiAirconPriceValue.textContent = `₱${selectedPrice.toFixed(2)}`;
-
         if (multiAirconPriceHint) multiAirconPriceHint.textContent = isAircon
-
             ? 'With air-conditioning included in this package.'
-
             : 'Standard package without air-conditioning.';
-
         if (multiAirconDescription) multiAirconDescription.textContent = card.dataset.description || 'No additional details available.';
 
-
-
         if (multiAirconChoice) {
-
             const baseDisplay = `₱${basePrice.toFixed(2)}`;
-
             const airconDisplay = airconPrice ? `₱${airconPrice.toFixed(2)}` : 'N/A';
-
             multiAirconChoice.innerHTML = `
-
                 <button type="button" class="rp-choice-btn ${choice === 'with' ? 'is-selected' : ''}" data-aircon-choice="with" data-price="${airconPrice}">
-
                     <span>With Aircon</span>
-
                     <span class="rp-choice-btn__price">${airconDisplay}</span>
-
                 </button>
-
                 <button type="button" class="rp-choice-btn ${choice === 'without' ? 'is-selected' : ''}" data-aircon-choice="without" data-price="${basePrice}">
-
                     <span>Without Aircon</span>
-
                     <span class="rp-choice-btn__price">${baseDisplay}</span>
-
                 </button>
-
             `;
-
         }
-
     };
-
-
 
     const openMultiAirconModal = (card) => {
-
         pendingMultiAmenity = card;
-
         const currentChoice = multiSelectionChoices[card.dataset.amenityId] || 'without';
-
         renderMultiAirconSelection(card, currentChoice);
-
         if (multiAirconModal) {
-
             multiAirconModal.classList.add('is-open');
-
             multiAirconModal.setAttribute('aria-hidden', 'false');
-
             updateOverlayScrollLock();
-
         }
-
         if (selectionFloatingBar) {
-
             selectionFloatingBar.hidden = true;
-
         }
-
     };
-
-
 
     const closeMultiAirconModal = () => {
-
         if (multiAirconModal) {
-
             multiAirconModal.classList.remove('is-open');
-
             multiAirconModal.setAttribute('aria-hidden', 'true');
-
             updateOverlayScrollLock();
-
         }
-
         if (selectionFloatingBar && multiSelectionEnabled) {
-
             const count = selectedCards.length;
-
             selectionFloatingBar.hidden = count === 0;
-
         }
-
     };
 
+    const editAmenityScheduleModal = document.getElementById('editAmenityScheduleModal');
+    const editScheduleAmenityId = document.getElementById('editScheduleAmenityId');
+    const editScheduleAmenityName = document.getElementById('editScheduleAmenityName');
+    const editScheduleStartDate = document.getElementById('editScheduleStartDate');
+    const editScheduleStartSlot = document.getElementById('editScheduleStartSlot');
+    const editScheduleEndDate = document.getElementById('editScheduleEndDate');
+    const editScheduleEndSlot = document.getElementById('editScheduleEndSlot');
+    const editScheduleAirconWrap = document.getElementById('editScheduleAirconWrap');
+    const editScheduleAirconToggle = document.getElementById('editScheduleAirconToggle');
+    const editScheduleAirconDiff = document.getElementById('editScheduleAirconDiff');
+    const editScheduleDurationText = document.getElementById('editScheduleDurationText');
+    const editScheduleMathText = document.getElementById('editScheduleMathText');
+    const editScheduleTotalPrice = document.getElementById('editScheduleTotalPrice');
+    const saveScheduleBtn = document.getElementById('saveScheduleBtn');
 
-
-    const toggleCardSelection = (card) => {
-
+    const updateEditScheduleDisplay = () => {
+        const amenityId = editScheduleAmenityId?.value;
+        if (!amenityId) return;
+        const card = cards.find(c => c.dataset.amenityId === amenityId);
         if (!card) return;
 
-        const exists = selectedCards.includes(card);
+        const sDate = editScheduleStartDate?.value || mainStartDate || dateInput?.value || '';
+        let eDate = editScheduleEndDate?.value || sDate;
+        if (sDate && eDate && eDate < sDate) {
+            eDate = sDate;
+            if (editScheduleEndDate) editScheduleEndDate.value = sDate;
+        }
+        const sSlot = editScheduleStartSlot?.value || 'Daytime';
+        const eSlot = editScheduleEndSlot?.value || 'Daytime';
+        const choice = editScheduleAirconToggle && editScheduleAirconToggle.checked ? 'with' : 'without';
 
+        const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+        const itemPrice = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+
+        const dayPrice = choice === 'with' ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0) : Number(card.dataset.daytimePrice || 0);
+        const nightPrice = choice === 'with' ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0) : Number(card.dataset.nighttimePrice || 0);
+
+        if (editScheduleDurationText) {
+            editScheduleDurationText.textContent = (sDate === eDate && sSlot === eSlot)
+                ? `1 Day (${sSlot})`
+                : `${totalDays} Day${totalDays > 1 ? 's' : ''} (${dayCount}D ${nightCount}N)`;
+        }
+        if (editScheduleMathText) {
+            editScheduleMathText.textContent = `${dayCount} Daytime${dayCount > 1 ? 's' : ''} × ₱${dayPrice.toFixed(0)} + ${nightCount} Nighttime${nightCount > 1 ? 's' : ''} × ₱${nightPrice.toFixed(0)}`;
+        }
+        if (editScheduleTotalPrice) {
+            editScheduleTotalPrice.textContent = `₱${itemPrice.toFixed(2)}`;
+        }
+    };
+
+    const openEditAmenityScheduleModal = (amenityId) => {
+        const card = cards.find(c => c.dataset.amenityId === amenityId);
+        if (!card || !editAmenityScheduleModal) return;
+
+        const sDate = mainStartDate || dateInput?.value || '';
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
+
+        if (!amenityStayConfig[amenityId]) {
+            amenityStayConfig[amenityId] = {
+                startDate: sDate,
+                endDate: eDate,
+                startSlot: sSlot,
+                endSlot: eSlot,
+                choice: multiSelectionChoices[amenityId] || 'without'
+            };
+        }
+
+        const cfg = amenityStayConfig[amenityId];
+        const hasAc = card.dataset.hasAircon === '1';
+
+        if (editScheduleAmenityId) editScheduleAmenityId.value = amenityId;
+        if (editScheduleAmenityName) editScheduleAmenityName.textContent = card.dataset.name || 'Amenity';
+        if (editScheduleStartDate) {
+            editScheduleStartDate.value = cfg.startDate || sDate;
+            editScheduleStartDate.min = dateInput?.min || '';
+        }
+        if (editScheduleStartSlot) editScheduleStartSlot.value = cfg.startSlot || sSlot;
+        if (editScheduleEndDate) {
+            editScheduleEndDate.value = cfg.endDate || eDate || cfg.startDate || sDate;
+            editScheduleEndDate.min = cfg.startDate || sDate || dateInput?.min || '';
+        }
+        if (editScheduleEndSlot) editScheduleEndSlot.value = cfg.endSlot || eSlot;
+
+        if (editScheduleAirconWrap) {
+            editScheduleAirconWrap.style.display = hasAc ? 'block' : 'none';
+        }
+        if (editScheduleAirconToggle) {
+            editScheduleAirconToggle.checked = cfg.choice === 'with';
+        }
+        if (editScheduleAirconDiff && hasAc) {
+            const dayAcDiff = Number(card.dataset.daytimeAirconPrice || 0) - Number(card.dataset.daytimePrice || 0);
+            const nightAcDiff = Number(card.dataset.nighttimeAirconPrice || 0) - Number(card.dataset.nighttimePrice || 0);
+            const diff = Math.max(dayAcDiff, nightAcDiff);
+            editScheduleAirconDiff.textContent = diff > 0 ? `+₱${diff.toFixed(0)} / slot` : 'AC Included';
+        }
+
+        updateEditScheduleDisplay();
+
+        editAmenityScheduleModal.classList.add('is-open');
+        editAmenityScheduleModal.setAttribute('aria-hidden', 'false');
+        updateOverlayScrollLock();
+    };
+
+    const closeEditAmenityScheduleModal = () => {
+        if (editAmenityScheduleModal) {
+            editAmenityScheduleModal.classList.remove('is-open');
+            editAmenityScheduleModal.setAttribute('aria-hidden', 'true');
+            updateOverlayScrollLock();
+        }
+    };
+
+    const toggleCardSelection = (card) => {
+        if (!card) return;
+        const amenityId = card.dataset.amenityId;
+        const exists = selectedCards.includes(card);
         const hasAircon = card.dataset.hasAircon === '1';
 
-
-
         if (exists) {
-
             selectedCards = selectedCards.filter(item => item !== card);
-
-            delete multiSelectionChoices[card.dataset.amenityId];
-
+            delete multiSelectionChoices[amenityId];
+            delete amenityStayConfig[amenityId];
             updateSelectionUi();
-
             updateSelectionSummary();
-
             return;
-
         }
 
-
+        const sDate = mainStartDate || dateInput?.value || '';
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
 
         if (multiSelectionEnabled && hasAircon) {
-
             openMultiAirconModal(card);
-
             return;
-
         }
-
-
 
         selectedCards.push(card);
-
-        multiSelectionChoices[card.dataset.amenityId] = 'without';
+        multiSelectionChoices[amenityId] = 'without';
+        amenityStayConfig[amenityId] = {
+            startDate: sDate,
+            endDate: eDate,
+            startSlot: sSlot,
+            endSlot: eSlot,
+            choice: 'without'
+        };
 
         updateSelectionUi();
-
         updateSelectionSummary();
-
     };
-
-
-
-    const getAmenityPrice = (card, choice, pricingType = selectedSlot) => {
-
-        let basePrice, airconPrice;
-
-        const slot = pricingType || selectedSlot;
-
-        if (slot === 'Nighttime') {
-
-            basePrice = Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.nighttimeAirconPrice);
-
-        } else if (slot === 'DayToNight' || slot === 'NightToDay') {
-
-            // For DayToNight / NightToDay, combine daytime and nighttime prices
-
-            basePrice = Number(card.dataset.daytimePrice) + Number(card.dataset.nighttimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice) + Number(card.dataset.nighttimeAirconPrice);
-
-        } else {
-
-            // Daytime (default)
-
-            basePrice = Number(card.dataset.daytimePrice);
-
-            airconPrice = Number(card.dataset.daytimeAirconPrice);
-
-        }
-
-        return choice === 'with' ? airconPrice : basePrice;
-
-    };
-
-
-
-    const updateSelectionSummary = () => {
-
-        if (!selectionSummaryList || !selectionMathText || !selectionTotalPrice) return;
-
-
-
-        if (selectedCards.length === 0) {
-
-            selectionMathText.textContent = 'No items selected';
-
-            selectionTotalPrice.textContent = '₱0.00';
-
-            selectionSummaryList.innerHTML = '<li class="rp-selection-sheet__empty">Select an amenity to review it here.</li>';
-
-            return;
-
-        }
-
-
-
-        let total = 0;
-
-        const parts = [];
-
-        selectionSummaryList.innerHTML = '';
-
-
-
-        selectedCards.forEach(card => {
-
-            const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
-
-            const price = getAmenityPrice(card, choice);
-
-            total += price;
-
-            const choiceLabel = choice === 'with' ? 'with aircon' : 'without aircon';
-
-            const line = document.createElement('li');
-
-            line.className = 'rp-selection-sheet__item';
-
-            line.innerHTML = `
-
-                <div class="rp-selection-sheet__item-main">
-
-                    <strong>${card.dataset.name || 'Selected amenity'}</strong>
-
-                    <span>${choiceLabel}</span>
-
-                </div>
-
-                <div class="rp-selection-sheet__item-price">₱${price.toFixed(2)}</div>
-
-            `;
-
-            selectionSummaryList.appendChild(line);
-
-            parts.push(`₱${price.toFixed(2)}`);
-
-        });
-
-
-
-        selectionMathText.textContent = parts.join(' + ');
-
-        selectionTotalPrice.textContent = `₱${total.toFixed(2)}`;
-
-    };
-
-
-
-    const openSelectionSheet = () => {
-
-        updateSelectionSummary();
-
-        if (selectionSheet) {
-
-            selectionSheet.classList.add('is-open');
-
-            selectionSheet.setAttribute('aria-hidden', 'false');
-
-            updateOverlayScrollLock();
-
-        }
-
-    };
-
-
-
-    const closeSelectionSheet = () => {
-
-        if (selectionSheet) {
-
-            selectionSheet.classList.remove('is-open');
-
-            selectionSheet.setAttribute('aria-hidden', 'true');
-
-            updateOverlayScrollLock();
-
-        }
-
-    };
-
-
 
     const openModal = (card) => {
-
         activeAmenity = card;
-
         bookingNotice.textContent = '';
-
         const currentChoice = multiSelectionChoices[card.dataset.amenityId] || 'without';
 
-        
-
         if (multiSelectionEnabled && selectedCards.length > 0) {
-
             const allNames = selectedCards.map(c => c.dataset.name).join(' + ');
-
             modalName.textContent = allNames;
-
         } else {
-
             modalName.textContent = card.dataset.name;
-
         }
 
-        
+        const sDate = mainStartDate || dateInput.value;
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
+        const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
 
-        // Ensure date is properly formatted and displayed
-
-        if (dateInput && dateInput.value) {
-
-            const dateObj = new Date(dateInput.value);
-
-            const formattedDate = dateObj.toLocaleDateString('en-US', { 
-
-                weekday: 'short', 
-
-                year: 'numeric', 
-
-                month: 'short', 
-
-                day: 'numeric' 
-
-            });
-
-            modalDate.textContent = formattedDate;
-
+        if (sDate) {
+            const sObj = new Date(sDate + 'T00:00:00');
+            const eObj = new Date(eDate + 'T00:00:00');
+            const sStr = sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const eStr = eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            modalDate.textContent = (sDate === eDate) ? `${sStr} (1 Day)` : `${sStr} – ${eStr} (${totalDays} Days)`;
         } else {
-
             modalDate.textContent = 'Select a date';
-
         }
 
-        
-
-        modalSlot.textContent = selectedSlot;
+        modalSlot.textContent = (sDate === eDate && sSlot === eSlot)
+            ? sSlot
+            : `${sSlot} → ${eSlot} (${dayCount}D ${nightCount}N)`;
 
         modalCapacity.textContent = `${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
 
-
-
         const hasAircon = card.dataset.hasAircon === '1';
-
-        if (hasAircon) {
-
+        if (hasAircon && (!multiSelectionEnabled || selectedCards.length <= 1)) {
             airconChoice.innerHTML = `
-
                 <button type="button" class="rp-choice-btn ${currentChoice === 'with' ? 'is-selected' : ''}" data-aircon-choice="with">With Aircon</button>
-
                 <button type="button" class="rp-choice-btn ${currentChoice === 'without' ? 'is-selected' : ''}" data-aircon-choice="without">Without Aircon</button>
-
             `;
-
             airconChoice.style.display = 'flex';
-
-            bookingForm.classList.add('is-hidden');
-
-            bookingForm.reset();
-
             renderBookingSelection(card, currentChoice);
-
         } else {
-
             airconChoice.innerHTML = '';
-
             airconChoice.style.display = 'none';
-
             renderBookingSelection(card, 'without');
-
         }
-
-
-
-        modal.classList.add('is-open');
-
-        modal.setAttribute('aria-hidden', 'false');
-
-        updateOverlayScrollLock();
 
         if (selectionFloatingBar) {
-
             selectionFloatingBar.hidden = true;
-
         }
 
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
     };
 
-
-
     const closeModal = () => {
-
         // Show confirmation modal instead of directly closing
         if (cancelConfirmModal) {
             cancelConfirmModal.classList.add('is-open');
@@ -1900,6 +1865,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateOverlayScrollLock();
         }
 
+        if (selectionFloatingBar && multiSelectionEnabled) {
+            const count = selectedCards.length;
+            selectionFloatingBar.hidden = count === 0;
+        }
     };
 
 
@@ -2011,6 +1980,183 @@ document.addEventListener('DOMContentLoaded', () => {
     const datePickerMonth = document.getElementById('datePickerMonth');
     const datePickerYear = document.getElementById('datePickerYear');
     const datePickerDays = document.getElementById('datePickerDays');
+    const dpModeSingle = document.getElementById('dpModeSingle');
+    const dpModeRange = document.getElementById('dpModeRange');
+    const dpSingleSlotWrap = document.getElementById('dpSingleSlotWrap');
+    const dpRangeSlotWrap = document.getElementById('dpRangeSlotWrap');
+    const dpRangeSummaryBar = document.getElementById('dpRangeSummaryBar');
+    const dpRangeActions = document.getElementById('dpRangeActions');
+    const dpRangeStartLabel = document.getElementById('dpRangeStartLabel');
+    const dpRangeEndLabel = document.getElementById('dpRangeEndLabel');
+    const dpRangeDaysBadge = document.getElementById('dpRangeDaysBadge');
+    const dpApplyRangeBtn = document.getElementById('dpApplyRangeBtn');
+
+    if (dpModeSingle && dpModeRange) {
+        dpModeSingle.addEventListener('click', () => {
+            dpStayMode = 'single';
+            dpModeSingle.classList.add('is-active');
+            dpModeRange.classList.remove('is-active');
+            if (dpSingleSlotWrap) dpSingleSlotWrap.style.display = 'block';
+            if (dpRangeSlotWrap) dpRangeSlotWrap.style.display = 'none';
+            if (dpRangeSummaryBar) dpRangeSummaryBar.style.display = 'none';
+            if (dpRangeActions) dpRangeActions.style.display = 'none';
+            dpRangeStart = null;
+            dpRangeEnd = null;
+            renderDatePickerDays();
+        });
+
+        dpModeRange.addEventListener('click', () => {
+            dpStayMode = 'range';
+            dpModeRange.classList.add('is-active');
+            dpModeSingle.classList.remove('is-active');
+            if (dpSingleSlotWrap) dpSingleSlotWrap.style.display = 'none';
+            if (dpRangeSlotWrap) dpRangeSlotWrap.style.display = 'grid';
+            if (dpRangeSummaryBar) dpRangeSummaryBar.style.display = 'flex';
+            if (dpRangeActions) dpRangeActions.style.display = 'block';
+            dpRangeStart = null;
+            dpRangeEnd = null;
+            if (dpRangeStartLabel) dpRangeStartLabel.textContent = 'Select start date';
+            if (dpRangeEndLabel) dpRangeEndLabel.textContent = 'Select end date';
+            if (dpRangeDaysBadge) dpRangeDaysBadge.textContent = '1 Day';
+            renderDatePickerDays();
+        });
+    }
+
+    // Range slot toggles
+    document.querySelectorAll('[data-range-start-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            dpRangeStartSlot = btn.dataset.rangeStartSlot;
+            document.querySelectorAll('[data-range-start-slot]').forEach(b => {
+                b.classList.toggle('is-active', b.dataset.rangeStartSlot === dpRangeStartSlot);
+            });
+            updateDpRangeDisplay();
+            renderDatePickerDays();
+        });
+    });
+
+    document.querySelectorAll('[data-range-end-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            dpRangeEndSlot = btn.dataset.rangeEndSlot;
+            document.querySelectorAll('[data-range-end-slot]').forEach(b => {
+                b.classList.toggle('is-active', b.dataset.rangeEndSlot === dpRangeEndSlot);
+            });
+            updateDpRangeDisplay();
+            renderDatePickerDays();
+        });
+    });
+
+    const updateDpRangeDisplay = () => {
+        if (!dpRangeStart) return;
+        const startObj = new Date(dpRangeStart + 'T00:00:00');
+        const endObj = dpRangeEnd ? new Date(dpRangeEnd + 'T00:00:00') : startObj;
+        const { dayCount, nightCount, totalDays } = calculateContinuousSlots(dpRangeStart, dpRangeEnd || dpRangeStart, dpRangeStartSlot, dpRangeEndSlot);
+
+        if (dpRangeStartLabel) {
+            dpRangeStartLabel.textContent = `${startObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${dpRangeStartSlot})`;
+        }
+        if (dpRangeEndLabel) {
+            dpRangeEndLabel.textContent = dpRangeEnd
+                ? `${endObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} (${dpRangeEndSlot})`
+                : 'Select end date';
+        }
+        if (dpRangeDaysBadge) {
+            dpRangeDaysBadge.textContent = `${totalDays} Day${totalDays > 1 ? 's' : ''} (${dayCount}D ${nightCount}N)`;
+        }
+    };
+
+    if (dpApplyRangeBtn) {
+        dpApplyRangeBtn.addEventListener('click', () => {
+            if (!dpRangeStart) return;
+            const finalEnd = dpRangeEnd || dpRangeStart;
+            mainStartDate = dpRangeStart;
+            mainEndDate = finalEnd;
+            mainStartSlot = dpRangeStartSlot;
+            mainEndSlot = dpRangeEndSlot;
+            stayMode = 'range';
+
+            if (multiSelectionEnabled && selectedCards.length > 0) {
+                selectedCards.forEach(c => {
+                    const aId = c.dataset.amenityId;
+                    amenityStayConfig[aId] = {
+                        ...(amenityStayConfig[aId] || {}),
+                        startDate: mainStartDate,
+                        endDate: mainEndDate,
+                        startSlot: mainStartSlot,
+                        endSlot: mainEndSlot,
+                        choice: amenityStayConfig[aId]?.choice || multiSelectionChoices[aId] || 'without'
+                    };
+                });
+            }
+
+            if (dateInput) {
+                dateInput.value = mainStartDate;
+            }
+            if (reservationDateTrigger) {
+                const sObj = new Date(mainStartDate + 'T00:00:00');
+                const eObj = new Date(mainEndDate + 'T00:00:00');
+                const { dayCount, nightCount, totalDays } = calculateContinuousSlots(mainStartDate, mainEndDate, mainStartSlot, mainEndSlot);
+                reservationDateTrigger.textContent = `${sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${totalDays}D (${dayCount}D ${nightCount}N)`;
+            }
+
+            closeDatePickerModal();
+            updateReservationDay();
+            refreshAvailability();
+            fetchWeatherForDate(mainStartDate);
+
+            const targetCard = (multiSelectionEnabled && selectedCards.length > 0)
+                ? selectedCards[0]
+                : (calendarSourceCard || activeAmenity);
+            if (targetCard) {
+                window.setTimeout(() => {
+                    openModal(targetCard);
+                }, 100);
+            }
+        });
+    }
+
+    let datePickerAvailability = [];
+
+    const fetchDatePickerAvailability = async () => {
+        if (!datePickerDays || !datePickerMonth || !datePickerYear) return;
+
+        const selectedMonth = datePickerMonth.value;
+        const selectedYear = datePickerYear.value;
+
+        let amenityIds = '';
+        if (multiSelectionEnabled && selectedCards.length > 0) {
+            amenityIds = selectedCards.map(c => c.dataset.amenityId).join(',');
+        } else if (activeAmenity) {
+            amenityIds = activeAmenity.dataset.amenityId;
+        }
+
+        datePickerDays.classList.add('is-loading');
+
+        try {
+            const url = new URL('/reservation/availability/calendar', window.location.origin);
+            if (amenityIds) {
+                url.searchParams.set('amenity_ids', amenityIds);
+            }
+            url.searchParams.set('month', selectedMonth);
+            url.searchParams.set('year', selectedYear);
+
+            const response = await fetch(url.toString(), {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (!response.ok) {
+                throw new Error('Date picker availability request failed');
+            }
+
+            const payload = await response.json();
+            datePickerAvailability = payload.availability || [];
+            renderDatePickerDays();
+        } catch (error) {
+            datePickerAvailability = [];
+            renderDatePickerDays();
+        } finally {
+            datePickerDays.classList.remove('is-loading');
+        }
+    };
 
     const openDatePickerModal = () => {
         if (!datePickerModal) return;
@@ -2019,10 +2165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
 
-        // Set current month/year
         if (datePickerMonth) datePickerMonth.value = currentMonth;
 
-        // Populate year dropdown (current year to 2 years ahead)
         if (datePickerYear) {
             datePickerYear.innerHTML = '';
             for (let year = currentYear; year <= currentYear + 2; year++) {
@@ -2034,7 +2178,10 @@ document.addEventListener('DOMContentLoaded', () => {
             datePickerYear.value = currentYear;
         }
 
-        renderDatePickerDays();
+        if (datePickerMonth) datePickerMonth.onchange = fetchDatePickerAvailability;
+        if (datePickerYear) datePickerYear.onchange = fetchDatePickerAvailability;
+
+        fetchDatePickerAvailability();
 
         datePickerModal.classList.add('is-open');
         datePickerModal.setAttribute('aria-hidden', 'false');
@@ -2061,7 +2208,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         datePickerDays.innerHTML = '';
 
-        // Add weekday labels
         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((weekday) => {
             const label = document.createElement('span');
             label.className = 'rp-calendar__weekday';
@@ -2069,7 +2215,6 @@ document.addEventListener('DOMContentLoaded', () => {
             datePickerDays.appendChild(label);
         });
 
-        // Add empty cells for days before the first day of the month
         for (let i = 0; i < firstDayOfMonth; i++) {
             const emptyCell = document.createElement('button');
             emptyCell.type = 'button';
@@ -2078,10 +2223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             datePickerDays.appendChild(emptyCell);
         }
 
-        // Update modal slot buttons visibility based on time
         updateModalSlotButtonsForDate();
 
-        // Add day buttons
         const days = Array.from({ length: daysInMonth }, (_, index) => {
             const date = new Date(selectedYear, selectedMonth, index + 1);
             const isoDate = date.getFullYear() + '-' +
@@ -2091,84 +2234,170 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPast = date < today;
             const isToday = date.getTime() === today.getTime();
 
-            // For today, check time-based availability based on selected modal slot
             let isAvailable = !isPast;
+
+            const modalSlotDaytime = document.getElementById('modalSlotDaytime');
+            const modalSlotNighttime = document.getElementById('modalSlotNighttime');
+            const modalSlotDayToNight = document.getElementById('modalSlotDayToNight');
+            const modalSlotNightToDay = document.getElementById('modalSlotNightToDay');
+
+            let currentModalSlot = 'Daytime';
+            if (modalSlotDaytime && modalSlotDaytime.classList.contains('is-active')) {
+                currentModalSlot = 'Daytime';
+            } else if (modalSlotNighttime && modalSlotNighttime.classList.contains('is-active')) {
+                currentModalSlot = 'Nighttime';
+            } else if (modalSlotDayToNight && modalSlotDayToNight.classList.contains('is-active')) {
+                currentModalSlot = 'DayToNight';
+            } else if (modalSlotNightToDay && modalSlotNightToDay.classList.contains('is-active')) {
+                currentModalSlot = 'NightToDay';
+            }
+
+            // Check availability from fetched availability array
+            if (datePickerAvailability.length > 0) {
+                const entry = datePickerAvailability.find((e) => e.date === isoDate);
+                if (entry) {
+                    if (dpStayMode === 'range') {
+                        if (!dpRangeStart) {
+                            // Picking start date
+                            if (dpRangeStartSlot === 'Nighttime') {
+                                isAvailable = entry.nighttime === true;
+                            } else {
+                                isAvailable = entry.daytime === true;
+                            }
+                        } else {
+                            // Picking end date
+                            if (isoDate < dpRangeStart) {
+                                if (dpRangeStartSlot === 'Nighttime') {
+                                    isAvailable = entry.nighttime === true;
+                                } else {
+                                    isAvailable = entry.daytime === true;
+                                }
+                            } else {
+                                isAvailable = isRangeAvailable(dpRangeStart, isoDate, dpRangeStartSlot, dpRangeEndSlot, datePickerAvailability);
+                            }
+                        }
+                    } else {
+                        const slotKey = currentModalSlot.toLowerCase();
+                        if (slotKey === 'daytime') {
+                            isAvailable = entry.daytime === true;
+                        } else if (slotKey === 'nighttime') {
+                            isAvailable = entry.nighttime === true;
+                        } else if (slotKey === 'daytonight') {
+                            isAvailable = entry.daytonight === true;
+                        } else if (slotKey === 'nighttoday') {
+                            isAvailable = entry.nighttoday === true;
+                        }
+                    }
+                }
+            }
+
             if (isToday) {
                 const currentHour = new Date().getHours();
-                const modalSlotDaytime = document.getElementById('modalSlotDaytime');
-                const modalSlotNighttime = document.getElementById('modalSlotNighttime');
-                const modalSlotDayToNight = document.getElementById('modalSlotDayToNight');
-                const modalSlotNightToDay = document.getElementById('modalSlotNightToDay');
-
-                let currentModalSlot = 'Daytime';
-                if (modalSlotDaytime && modalSlotDaytime.classList.contains('is-active')) {
-                    currentModalSlot = 'Daytime';
-                } else if (modalSlotNighttime && modalSlotNighttime.classList.contains('is-active')) {
-                    currentModalSlot = 'Nighttime';
-                } else if (modalSlotDayToNight && modalSlotDayToNight.classList.contains('is-active')) {
-                    currentModalSlot = 'DayToNight';
-                } else if (modalSlotNightToDay && modalSlotNightToDay.classList.contains('is-active')) {
-                    currentModalSlot = 'NightToDay';
-                }
-
                 if (currentModalSlot === 'Daytime') {
-                    isAvailable = (currentHour >= 1 && currentHour < 4);
+                    isAvailable = isAvailable && (currentHour >= 1 && currentHour < 4);
                 } else if (currentModalSlot === 'Nighttime' || currentModalSlot === 'NightToDay') {
-                    // Nighttime and Night to Day start tonight — bookable until night begins
-                    isAvailable = (currentHour >= 1 && currentHour < 18);
+                    isAvailable = isAvailable && (currentHour >= 1 && currentHour < 18);
                 } else if (currentModalSlot === 'DayToNight') {
                     const daytimeAvailable = (currentHour >= 1 && currentHour < 4);
-                    isAvailable = daytimeAvailable;
+                    isAvailable = isAvailable && daytimeAvailable;
                 }
+            }
+
+            if (isPast) {
+                isAvailable = false;
             }
 
             const dayButton = document.createElement('button');
             dayButton.type = 'button';
             dayButton.className = `rp-calendar__day ${isAvailable ? 'is-available' : 'is-disabled'}`;
             dayButton.disabled = !isAvailable;
+            dayButton.setAttribute('data-date', isoDate);
+
+            // Range highlighting classes
+            if (dpStayMode === 'range') {
+                if (dpRangeStart === isoDate) {
+                    dayButton.classList.add('is-range-start');
+                }
+                if (dpRangeEnd === isoDate) {
+                    dayButton.classList.add('is-range-end');
+                }
+                if (dpRangeStart && dpRangeEnd && isoDate > dpRangeStart && isoDate < dpRangeEnd) {
+                    dayButton.classList.add('is-in-range');
+                }
+            }
+
             dayButton.innerHTML = `
                 <span class="rp-calendar__day-num">${date.getDate()}</span>
                 <span class="rp-calendar__day-month">${date.toLocaleDateString('en', { month: 'short' })}</span>
             `;
 
-            if (!isPast) {
+            if (isAvailable) {
                 dayButton.addEventListener('click', () => {
-                    if (dateInput) {
-                        dateInput.value = isoDate;
+                    if (dpStayMode === 'single') {
+                        if (dateInput) {
+                            dateInput.value = isoDate;
+                        }
+                        mainStartDate = isoDate;
+                        mainEndDate = isoDate;
+                        stayMode = 'single';
+
+                        if (reservationDateTrigger) {
+                            const formattedDate = date.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
+                            reservationDateTrigger.textContent = formattedDate;
+                        }
+
+                        mainStartSlot = currentModalSlot;
+                        mainEndSlot = currentModalSlot;
+                        setActiveSlot(currentModalSlot);
+
+                        if (multiSelectionEnabled && selectedCards.length > 0) {
+                            selectedCards.forEach(c => {
+                                const aId = c.dataset.amenityId;
+                                amenityStayConfig[aId] = {
+                                    ...(amenityStayConfig[aId] || {}),
+                                    startDate: mainStartDate,
+                                    endDate: mainEndDate,
+                                    startSlot: mainStartSlot,
+                                    endSlot: mainEndSlot,
+                                    choice: amenityStayConfig[aId]?.choice || multiSelectionChoices[aId] || 'without'
+                                };
+                            });
+                        }
+
+                        closeDatePickerModal();
+                        updateReservationDay();
+                        refreshAvailability();
+                        fetchWeatherForDate(isoDate);
+
+                        const targetCard = (multiSelectionEnabled && selectedCards.length > 0)
+                            ? selectedCards[0]
+                            : (calendarSourceCard || activeAmenity);
+                        if (targetCard) {
+                            window.setTimeout(() => {
+                                openModal(targetCard);
+                            }, 100);
+                        }
+                    } else {
+                        // Multi-day date range click
+                        if (!dpRangeStart || (dpRangeStart && dpRangeEnd)) {
+                            dpRangeStart = isoDate;
+                            dpRangeEnd = null;
+                        } else if (dpRangeStart && !dpRangeEnd) {
+                            if (isoDate < dpRangeStart) {
+                                dpRangeStart = isoDate;
+                                dpRangeEnd = null;
+                            } else {
+                                dpRangeEnd = isoDate;
+                            }
+                        }
+                        updateDpRangeDisplay();
+                        renderDatePickerDays();
                     }
-                    if (reservationDateTrigger) {
-                        const formattedDate = date.toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        });
-                        reservationDateTrigger.textContent = formattedDate;
-                    }
-
-                    // Set the main slot to match the modal slot
-                    const modalSlotDaytime = document.getElementById('modalSlotDaytime');
-                    const modalSlotNighttime = document.getElementById('modalSlotNighttime');
-                    const modalSlotDayToNight = document.getElementById('modalSlotDayToNight');
-                    const modalSlotNightToDay = document.getElementById('modalSlotNightToDay');
-
-                    let selectedModalSlot = 'Daytime';
-                    if (modalSlotDaytime && modalSlotDaytime.classList.contains('is-active')) {
-                        selectedModalSlot = 'Daytime';
-                    } else if (modalSlotNighttime && modalSlotNighttime.classList.contains('is-active')) {
-                        selectedModalSlot = 'Nighttime';
-                    } else if (modalSlotDayToNight && modalSlotDayToNight.classList.contains('is-active')) {
-                        selectedModalSlot = 'DayToNight';
-                    } else if (modalSlotNightToDay && modalSlotNightToDay.classList.contains('is-active')) {
-                        selectedModalSlot = 'NightToDay';
-                    }
-
-                    setActiveSlot(selectedModalSlot);
-
-                    closeDatePickerModal();
-                    updateReservationDay();
-                    refreshAvailability();
-                    fetchWeatherForDate(isoDate);
                 });
             }
 
@@ -2181,14 +2410,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners for date picker
     if (reservationDateTrigger) {
         reservationDateTrigger.addEventListener('click', openDatePickerModal);
-    }
-
-    if (datePickerMonth) {
-        datePickerMonth.addEventListener('change', renderDatePickerDays);
-    }
-
-    if (datePickerYear) {
-        datePickerYear.addEventListener('change', renderDatePickerDays);
     }
 
     // Event listeners for modal slot buttons
@@ -2226,9 +2447,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
-
-    // Update modal slot buttons based on time
     const updateModalSlotButtonsForDate = () => {
         const modalSlotDaytime = document.getElementById('modalSlotDaytime');
         const modalSlotNighttime = document.getElementById('modalSlotNighttime');
@@ -2237,7 +2455,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!modalSlotDaytime || !modalSlotNighttime || !modalSlotDayToNight || !modalSlotNightToDay) return;
 
-        // Always show all buttons in modal - time restrictions apply to calendar days only
         modalSlotDaytime.hidden = false;
         modalSlotNighttime.hidden = false;
         modalSlotDayToNight.hidden = false;
@@ -2255,7 +2472,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalSlotDayToNight) modalSlotDayToNight.classList.toggle('is-active', slot === 'DayToNight');
         if (modalSlotNightToDay) modalSlotNightToDay.classList.toggle('is-active', slot === 'NightToDay');
 
-        // Re-render calendar with new slot selection
         renderDatePickerDays();
     };
 
@@ -2406,158 +2622,88 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     if (multiSelectionToggle) {
-
         multiSelectionToggle.addEventListener('change', () => {
-
             multiSelectionEnabled = multiSelectionToggle.checked;
-
             if (!multiSelectionEnabled) {
-
                 selectedCards = [];
-
+                multiSelectionChoices = {};
+                for (const k in amenityStayConfig) delete amenityStayConfig[k];
             }
-
             updateSelectionUi();
-
         });
-
     }
 
-
-
-    // Handle "Pick a Date" CTA button
-
-    const pickDateBtn = document.getElementById('pickDateBtn');
-
-    const dateCtaSection = document.getElementById('dateCtaSection');
-
-    const dateControlsSection = document.getElementById('dateControlsSection');
-
-    const slotControlsSection = document.getElementById('slotControlsSection');
-
-
-
-    if (pickDateBtn) {
-
-        pickDateBtn.addEventListener('click', () => {
-
-            // Hide CTA section
-
-            if (dateCtaSection) {
-
-                dateCtaSection.hidden = true;
-
-            }
-
-            // Show date controls only (slot bar is now inside modal)
-            if (dateControlsSection) {
-
-                dateControlsSection.hidden = false;
-
-            }
-
-            // Keep slot controls hidden since it's now in the modal
-            if (slotControlsSection) {
-
-                slotControlsSection.hidden = true;
-
-            }
-
-            // Trigger date picker modal
-            openDatePickerModal();
-
-        });
-
-    }
-
-
-
-    document.querySelectorAll('[data-open-modal]').forEach(button => {
-
-        button.addEventListener('click', () => {
-
-            if (isLoadingAvailability) {
-
-                return;
-
-            }
-
-
-
-            const card = button.closest('.rp-card');
-
-            if (!card) {
-
-                return;
-
-            }
-
-
-
-            if (multiSelectionEnabled) {
-
+    cards.forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (multiSelectionEnabled && !e.target.closest('[data-open-modal]')) {
                 toggleCardSelection(card);
-
-                return;
-
             }
-
-
-
-            if (card.classList.contains('is-booked')) {
-
-                return;
-
-            }
-
-
-
-            // If no date selected yet, open the calendar modal first
-
-            if (!dateInput || !dateInput.value) {
-
-                openAvailabilityModal(card);
-
-                return;
-
-            }
-
-
-
-            // Date is already selected, open the booking details modal
-
-            openModal(card);
-
         });
-
     });
 
+    // Handle "Pick a Date" CTA button
+    const pickDateBtn = document.getElementById('pickDateBtn');
+    const dateCtaSection = document.getElementById('dateCtaSection');
+    const dateControlsSection = document.getElementById('dateControlsSection');
+    const slotControlsSection = document.getElementById('slotControlsSection');
 
+    if (pickDateBtn) {
+        pickDateBtn.addEventListener('click', () => {
+            if (dateCtaSection) {
+                dateCtaSection.hidden = true;
+            }
+            if (dateControlsSection) {
+                dateControlsSection.hidden = false;
+            }
+            if (slotControlsSection) {
+                slotControlsSection.hidden = true;
+            }
+            openDatePickerModal();
+        });
+    }
 
-    if (selectionCheckoutBtn) {
-
-        selectionCheckoutBtn.addEventListener('click', () => {
-
-            if (multiSelectionEnabled && selectedCards.length > 0) {
-
-                const targetCard = selectedCards[0];
-
-                if (targetCard) {
-
-                    openAvailabilityModal(targetCard);
-
-                    return;
-
-                }
-
+    document.querySelectorAll('[data-open-modal]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            if (isLoadingAvailability) {
+                return;
             }
 
+            const card = button.closest('.rp-card');
+            if (!card) {
+                return;
+            }
 
+            if (multiSelectionEnabled) {
+                toggleCardSelection(card);
+                return;
+            }
+
+            if (card.classList.contains('is-booked')) {
+                return;
+            }
+
+            // If no date selected yet, open the calendar modal first
+            if (!dateInput || !dateInput.value) {
+                openAvailabilityModal(card);
+                return;
+            }
+
+            // Date is already selected, open the booking details modal
+            openModal(card);
+        });
+    });
+
+    if (selectionCheckoutBtn) {
+        selectionCheckoutBtn.addEventListener('click', () => {
+            if (multiSelectionEnabled && selectedCards.length > 0) {
+                if (!dateInput || !dateInput.value) {
+                    openDatePickerModal();
+                    return;
+                }
+            }
 
             openSelectionSheet();
-
         });
-
     }
 
 
@@ -2689,9 +2835,74 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSelectionSummary();
 
             closeMultiAirconModal();
-
         });
+    }
 
+    // ── Edit Individual Amenity Schedule Listeners ───────────────────────────
+    [editScheduleStartDate, editScheduleEndDate, editScheduleStartSlot, editScheduleEndSlot, editScheduleAirconToggle].forEach(ctrl => {
+        ctrl?.addEventListener('change', updateEditScheduleDisplay);
+        ctrl?.addEventListener('input', updateEditScheduleDisplay);
+    });
+
+    if (editScheduleStartDate) {
+        editScheduleStartDate.addEventListener('change', () => {
+            if (editScheduleEndDate && (!editScheduleEndDate.value || editScheduleEndDate.value < editScheduleStartDate.value)) {
+                editScheduleEndDate.value = editScheduleStartDate.value;
+            }
+            if (editScheduleEndDate) {
+                editScheduleEndDate.min = editScheduleStartDate.value;
+            }
+            updateEditScheduleDisplay();
+        });
+    }
+
+    if (saveScheduleBtn) {
+        saveScheduleBtn.addEventListener('click', () => {
+            const amenityId = editScheduleAmenityId?.value;
+            if (!amenityId) return;
+
+            const card = cards.find(c => c.dataset.amenityId === amenityId);
+            if (!card) return;
+
+            const startDate = editScheduleStartDate?.value || mainStartDate || dateInput?.value || '';
+            let endDate = editScheduleEndDate?.value || startDate;
+            if (startDate && endDate && endDate < startDate) {
+                endDate = startDate;
+            }
+            const startSlot = editScheduleStartSlot?.value || 'Daytime';
+            const endSlot = editScheduleEndSlot?.value || 'Daytime';
+            const choice = editScheduleAirconToggle && editScheduleAirconToggle.checked ? 'with' : 'without';
+
+            amenityStayConfig[amenityId] = {
+                startDate,
+                endDate,
+                startSlot,
+                endSlot,
+                choice
+            };
+            multiSelectionChoices[amenityId] = choice;
+
+            closeEditAmenityScheduleModal();
+
+            // Re-render display inside the main booking modal
+            if (activeAmenity) {
+                renderBookingSelection(activeAmenity, multiSelectionChoices[activeAmenity.dataset.amenityId] || 'without');
+            }
+            updateSelectionUi();
+            updateSelectionSummary();
+        });
+    }
+
+    document.querySelectorAll('[data-close-edit-schedule-modal]').forEach(btn => {
+        btn.addEventListener('click', closeEditAmenityScheduleModal);
+    });
+
+    if (editAmenityScheduleModal) {
+        editAmenityScheduleModal.addEventListener('click', (e) => {
+            if (e.target === editAmenityScheduleModal) {
+                closeEditAmenityScheduleModal();
+            }
+        });
     }
 
 
@@ -3153,26 +3364,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(bookingForm);
 
-        // Build amenities array for multi-selection
+        const sDate = mainStartDate || dateInput.value;
+        const eDate = mainEndDate || sDate;
+        const sSlot = mainStartSlot || selectedSlot;
+        const eSlot = mainEndSlot || selectedSlot;
+        const { totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+
+        // Build amenities array for continuous multi-stay reservation
         let amenitiesArray = [];
         if (multiSelectionEnabled && selectedCards.length > 0) {
             amenitiesArray = selectedCards.map(card => {
-                const choice = multiSelectionChoices[card.dataset.amenityId] || 'without';
-                const pricingTypeForCard = amenityPricingTypes[card.dataset.amenityId] || selectedSlot;
-                const price = getAmenityPrice(card, choice, pricingTypeForCard);
-                const pricingType = choice === 'with' ? `${pricingTypeForCard} Aircon` : pricingTypeForCard;
+                const amenityId = card.dataset.amenityId;
+                const cfg = amenityStayConfig[amenityId] || {};
+                const choice = cfg.choice || multiSelectionChoices[amenityId] || 'without';
+                const itemSDate = cfg.startDate || sDate;
+                const itemEDate = cfg.endDate || eDate || itemSDate;
+                const itemSSlot = cfg.startSlot || sSlot;
+                const itemESlot = cfg.endSlot || eSlot;
+                const price = getAmenityContinuousPrice(card, choice, itemSDate, itemEDate, itemSSlot, itemESlot);
+                const { dayCount, nightCount } = calculateContinuousSlots(itemSDate, itemEDate, itemSSlot, itemESlot);
+                const pricingType = choice === 'with' ? `${itemSSlot} Aircon` : itemSSlot;
 
                 return {
-                    amenity_id: card.dataset.amenityId,
+                    amenity_id: amenityId,
+                    start_date: itemSDate,
+                    end_date: itemEDate,
+                    start_slot: itemSSlot,
+                    end_slot: itemESlot,
                     pricing_type: pricingType,
                     price_at_booking: price,
+                    day_slots_count: dayCount,
+                    night_slots_count: nightCount,
                 };
             });
         } else {
+            const choice = (airconChoice && airconChoice.querySelector('[data-aircon-choice="with"]')?.classList.contains('is-selected')) ? 'with' : (multiSelectionChoices[activeAmenity.dataset.amenityId] || 'without');
+            const price = getAmenityContinuousPrice(activeAmenity, choice, sDate, eDate, sSlot, eSlot);
+            const { dayCount, nightCount } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+            const pricingType = choice === 'with' ? `${sSlot} Aircon` : sSlot;
+
             amenitiesArray = [{
                 amenity_id: activeAmenity.dataset.amenityId,
-                pricing_type: modalPriceLabel.textContent === 'Aircon package' ? `${selectedSlot} Aircon` : selectedSlot,
-                price_at_booking: Number(modalPriceValue.textContent.replace('₱', '').replace(',', '')),
+                start_date: sDate,
+                end_date: eDate,
+                start_slot: sSlot,
+                end_slot: eSlot,
+                pricing_type: pricingType,
+                price_at_booking: price,
+                day_slots_count: dayCount,
+                night_slots_count: nightCount,
             }];
         }
 
@@ -3181,10 +3421,14 @@ document.addEventListener('DOMContentLoaded', () => {
             phone: formData.get('phone'),
             email: formData.get('email'),
             number_of_guests: Number(formData.get('number_of_guests')),
-            reservation_date: dateInput.value,
-            check_in: dateInput.value,
-            check_out: dateInput.value,
-            slot: selectedSlot,
+            reservation_date: sDate,
+            end_date: eDate,
+            start_slot: sSlot,
+            end_slot: eSlot,
+            check_in: sDate,
+            check_out: eDate,
+            slot: sSlot,
+            total_days: totalDays,
             amenities: amenitiesArray,
         };
 

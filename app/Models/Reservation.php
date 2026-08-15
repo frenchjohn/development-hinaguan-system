@@ -22,6 +22,10 @@ class Reservation extends Model
         'phone',
         'email',
         'reservation_date',
+        'end_date',
+        'start_slot',
+        'end_slot',
+        'total_days',
         'check_in',
         'check_out',
         'number_of_guests',
@@ -37,6 +41,8 @@ class Reservation extends Model
 
     protected $casts = [
         'reservation_date' => 'datetime',
+        'end_date' => 'datetime',
+        'total_days' => 'integer',
         'check_in' => 'datetime',
         'check_out' => 'datetime',
         'total_amount' => 'decimal:2',

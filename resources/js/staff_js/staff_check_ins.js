@@ -72,9 +72,11 @@ window.AppPage['staff_check_ins'] = function () {
 
     const formatTimeLeft = (ms) => {
         const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-        const hours = Math.floor(totalSeconds / 3600);
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
+        if (days > 0) return `${days}d ${hours}h ${minutes}m`;
         if (hours > 0) return `${hours}h ${minutes}m`;
         if (minutes > 0) return `${minutes}m ${seconds}s`;
         return `${seconds}s`;
@@ -180,6 +182,51 @@ window.AppPage['staff_check_ins'] = function () {
 
     refreshCheckoutCountdowns();
 
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const clean = String(dateStr).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+            const [y, m, d] = clean.split('-').map(Number);
+            return new Date(y, m - 1, d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        const dt = new Date(clean);
+        return isNaN(dt.getTime()) ? clean.replace(/T.*$/, '').replace(/Z$/, '') : dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const formatExpectedCheckout = (res) => {
+        if (!res) return { date: 'N/A', session: 'Daytime', time: '', fullText: 'N/A' };
+        
+        let session = res.end_slot || res.start_slot;
+        if (!session && res.reservation_amenities && res.reservation_amenities.length > 0) {
+            const lastAmenity = res.reservation_amenities[res.reservation_amenities.length - 1];
+            session = lastAmenity.end_slot || (lastAmenity.pricing_type && lastAmenity.pricing_type.toLowerCase().includes('night') ? 'Nighttime' : 'Daytime');
+        }
+        session = session ? (session.toLowerCase().includes('night') ? 'Nighttime' : 'Daytime') : 'Daytime';
+
+        let rawDate = res.end_date || res.reservation_date;
+        let formattedDate = 'N/A';
+        let formattedTime = session === 'Nighttime' ? '6:00 AM (Next Day)' : '6:00 PM';
+
+        if (res.checkout_at) {
+            const dt = new Date(res.checkout_at);
+            if (!isNaN(dt.getTime())) {
+                formattedDate = dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                formattedTime = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+        }
+
+        if (formattedDate === 'N/A' && rawDate) {
+            formattedDate = formatDate(rawDate);
+        }
+
+        return {
+            date: formattedDate,
+            session: session,
+            time: formattedTime,
+            fullText: `${formattedDate} · ${session}${formattedTime ? ` (${formattedTime})` : ''}`
+        };
+    };
+
     // Reservation modal functions
     const openReservationModal = (reservationId) => {
         currentReservationId = reservationId;
@@ -194,9 +241,14 @@ window.AppPage['staff_check_ins'] = function () {
 
         // Does this reservation cover multiple amenity time periods?
         // (Daytime vs Daytime Aircon = same time; strip Aircon before comparing.)
-        const validAmenities = (reservation.reservation_amenities || []).filter(a => a.price > 0);
+        const validAmenities = (reservation.reservation_amenities || []).filter(a => a.price > 0 || a.price_at_booking > 0 || a.amenity_name || a.amenity);
         const uniquePricingTypes = [...new Set(validAmenities.map(a => String(a.pricing_type || 'N/A').replace(/\s*Aircon/gi, '').trim()))];
         const differentTime = validAmenities.length > 1 && uniquePricingTypes.length > 1;
+
+        const expectedCheckout = formatExpectedCheckout(reservation);
+        const startSlot = reservation.start_slot || 'Daytime';
+        const endSlot = reservation.end_slot || startSlot;
+        const isMultiDay = reservation.end_date && reservation.end_date !== reservation.reservation_date;
 
         let html = `
             <div class="ci-design-box">
@@ -212,16 +264,31 @@ window.AppPage['staff_check_ins'] = function () {
                     </div>
                 </div>
                 <div class="ci-col ci-border-left">
-                    <span class="ci-label">RESERVATION DATE</span>
-                    <div class="ci-value" style="display:flex;align-items:center;gap:4px;">
-                        ${reservation.reservation_date || 'N/A'}
-                        ${differentTime ? '<span class="resv-date-badge" style="margin-left:8px;">Mixed Time</span>' : ''}
+                    <span class="ci-label">RESERVATION STAY</span>
+                    <div class="ci-value" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                        ${isMultiDay 
+                            ? `${formatDate(reservation.reservation_date)} (${startSlot}) – ${formatDate(reservation.end_date)} (${endSlot}) <span class="resv-date-badge" style="margin-left:4px;">${reservation.total_days || 2} Days</span>` 
+                            : `${formatDate(reservation.reservation_date)} (${startSlot})`}
+                        ${differentTime ? '<span class="resv-date-badge" style="margin-left:4px;">Mixed Time</span>' : ''}
                     </div>
                 </div>
                 <div class="ci-col ci-border-left">
                     <span class="ci-label">GUESTS</span>
                     <div class="ci-value">${reservation.number_of_guests || (reservation.reservation_guests ? reservation.reservation_guests.length : 0)}</div>
                 </div>
+            </div>
+
+            <!-- Expected Checkout Card -->
+            <div class="ci-design-box" style="margin-top: 1rem; background: rgba(26,92,60,0.06); border: 1px solid rgba(26,92,60,0.25); border-radius: 0.75rem; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="ci-label" style="color: #1a5c3c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Expected Check-out</span>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #113824; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 3px;">
+                        <span>${expectedCheckout.date}</span>
+                        <span style="background: #1a5c3c; color: #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;">${expectedCheckout.session}</span>
+                        ${expectedCheckout.time ? `<span style="font-size: 0.88rem; font-weight: 500; color: #355e46;">at ${expectedCheckout.time}</span>` : ''}
+                    </div>
+                </div>
+                ${(String(reservation.status || '').toLowerCase().includes('checked') && reservation.checkout_at) ? `<div class="resv-checkout-countdown" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>` : ''}
             </div>
 
             <div class="ci-design-box" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -390,11 +457,19 @@ window.AppPage['staff_check_ins'] = function () {
                         ${validAmenities.map(a => {
                             const amenityStatus = a.status || 'Active';
                             const isCompleted = amenityStatus === 'Completed';
+                            const aStart = a.start_date ? formatDate(a.start_date) : '';
+                            const aEnd = a.end_date ? formatDate(a.end_date) : '';
+                            const aStartSlot = a.start_slot || startSlot;
+                            const aEndSlot = a.end_slot || endSlot;
+                            const aHasRange = a.start_date && a.end_date && a.start_date !== a.end_date;
+                            const aSched = aHasRange 
+                                ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])` 
+                                : (aStartSlot ? ` (${aStartSlot})` : '');
                             return `
                                 <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
                                     <div class="resv-amenity-item__info">
                                         <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
-                                        <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
+                                        <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'}${aSched} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
                                         ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
                                     </div>
                                     <div class="resv-amenity-item__actions">
@@ -616,6 +691,11 @@ window.AppPage['staff_check_ins'] = function () {
             const mainGuest = mainGuestEntry?.customer;
             const mainGuestName = mainGuest ? `${mainGuest.first_name} ${mainGuest.middle_name || ''} ${mainGuest.last_name}` : 'N/A';
 
+            const expectedCheckout = formatExpectedCheckout(reservation);
+            const startSlot = reservation.start_slot || 'Daytime';
+            const endSlot = reservation.end_slot || startSlot;
+            const isMultiDay = reservation.end_date && reservation.end_date !== reservation.reservation_date;
+
             html += `
                 <div style="margin-bottom: 1.5rem;">
                     <h4 style="margin-bottom: 0.75rem; font-weight: 600;">Reservation Details</h4>
@@ -628,6 +708,14 @@ window.AppPage['staff_check_ins'] = function () {
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Main Guest:</span>
                             <strong>${mainGuestName}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Reservation Stay:</span>
+                            <strong>${isMultiDay ? `${formatDate(reservation.reservation_date)} (${startSlot}) – ${formatDate(reservation.end_date)} (${endSlot})` : `${formatDate(reservation.reservation_date)} (${startSlot})`}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Expected Check-out:</span>
+                            <strong style="color: #1a5c3c;">${expectedCheckout.date} (${expectedCheckout.session}${expectedCheckout.time ? ` · ${expectedCheckout.time}` : ''})</strong>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                             <span>Check-in:</span>

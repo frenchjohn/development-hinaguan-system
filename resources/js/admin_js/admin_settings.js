@@ -2,7 +2,7 @@ window.AppPage = window.AppPage || {};
 window.AppPage['admin_settings'] = function () {
     // Drill-down navigation functionality
     const settingsMenu = document.getElementById('settingsMenu');
-    const menuCards = document.querySelectorAll('.admin-settings__menu-card');
+    const menuCards = document.querySelectorAll('.admin-settings__menu-card, #settingsMenu [data-target]');
     const contentSections = document.querySelectorAll('.admin-settings__content');
     const backButtons = document.querySelectorAll('.admin-settings__back-btn');
 
@@ -12,7 +12,9 @@ window.AppPage['admin_settings'] = function () {
             const targetId = card.getAttribute('data-target');
             
             // Hide menu
-            settingsMenu.classList.add('admin-settings__menu--hidden');
+            if (settingsMenu) {
+                settingsMenu.classList.add('admin-settings__menu--hidden');
+            }
             
             // Show target content
             contentSections.forEach(section => {
@@ -34,7 +36,9 @@ window.AppPage['admin_settings'] = function () {
             });
             
             // Show menu
-            settingsMenu.classList.remove('admin-settings__menu--hidden');
+            if (settingsMenu) {
+                settingsMenu.classList.remove('admin-settings__menu--hidden');
+            }
         });
     });
 
@@ -58,8 +62,8 @@ window.AppPage['admin_settings'] = function () {
         });
 
         // Show form actions, hide edit button
-        parkSettingsFormActions.classList.remove('admin-settings__form-actions--hidden');
-        editParkSettingsBtn.classList.add('admin-settings__btn--hidden');
+        parkSettingsFormActions?.classList.remove('admin-settings__form-actions--hidden');
+        editParkSettingsBtn?.classList.add('admin-settings__btn--hidden');
     });
 
     cancelParkSettingsBtn?.addEventListener('click', () => {
@@ -70,8 +74,8 @@ window.AppPage['admin_settings'] = function () {
         });
 
         // Hide form actions, show edit button
-        parkSettingsFormActions.classList.add('admin-settings__form-actions--hidden');
-        editParkSettingsBtn.classList.remove('admin-settings__btn--hidden');
+        parkSettingsFormActions?.classList.add('admin-settings__form-actions--hidden');
+        editParkSettingsBtn?.classList.remove('admin-settings__btn--hidden');
     });
 
     // Handle park settings form submission
@@ -91,14 +95,16 @@ window.AppPage['admin_settings'] = function () {
             
             if (response.ok) {
                 // Show success modal
-                parkSettingsSuccessModal.style.display = 'flex';
+                if (parkSettingsSuccessModal) {
+                    parkSettingsSuccessModal.style.display = 'flex';
+                }
                 
                 // Disable fields and hide form actions
                 parkSettingsInputs.forEach(input => {
                     input.disabled = true;
                 });
-                parkSettingsFormActions.classList.add('admin-settings__form-actions--hidden');
-                editParkSettingsBtn.classList.remove('admin-settings__btn--hidden');
+                parkSettingsFormActions?.classList.add('admin-settings__form-actions--hidden');
+                editParkSettingsBtn?.classList.remove('admin-settings__btn--hidden');
             } else {
                 // Handle error
                 const errorData = await response.json();
@@ -111,7 +117,9 @@ window.AppPage['admin_settings'] = function () {
 
     // Close success modal
     closeParkSettingsSuccessModal?.addEventListener('click', () => {
-        parkSettingsSuccessModal.style.display = 'none';
+        if (parkSettingsSuccessModal) {
+            parkSettingsSuccessModal.style.display = 'none';
+        }
     });
 
     // Close modal when clicking outside
@@ -120,8 +128,6 @@ window.AppPage['admin_settings'] = function () {
             parkSettingsSuccessModal.style.display = 'none';
         }
     });
-
-
 
     const changePasswordForm = document.getElementById('changePasswordForm');
     const changeEmailForm = document.getElementById('changeEmailForm');
@@ -152,7 +158,7 @@ window.AppPage['admin_settings'] = function () {
     // Toggle password form visibility
     if (togglePasswordBtn) {
         togglePasswordBtn.addEventListener('click', function () {
-            changePasswordForm.classList.toggle('admin-settings__form--hidden');
+            changePasswordForm?.classList.toggle('admin-settings__form--hidden');
             togglePasswordBtn.classList.toggle('active');
         });
     }
@@ -160,9 +166,9 @@ window.AppPage['admin_settings'] = function () {
     // Cancel password form
     if (cancelPasswordBtn) {
         cancelPasswordBtn.addEventListener('click', function () {
-            changePasswordForm.classList.add('admin-settings__form--hidden');
-            togglePasswordBtn.classList.remove('active');
-            changePasswordForm.reset();
+            changePasswordForm?.classList.add('admin-settings__form--hidden');
+            togglePasswordBtn?.classList.remove('active');
+            changePasswordForm?.reset();
             clearErrors(['currentPasswordError', 'newPasswordError', 'confirmPasswordError']);
         });
     }
@@ -198,16 +204,18 @@ window.AppPage['admin_settings'] = function () {
             // Send OTP
             try {
                 isPasswordLoading = true;
-                passwordSubmitBtn.disabled = true;
-                passwordSubmitBtn.classList.add('loading');
-                const originalText = passwordSubmitBtn.textContent;
-                passwordSubmitBtn.textContent = 'Sending...';
+                if (passwordSubmitBtn) {
+                    passwordSubmitBtn.disabled = true;
+                    passwordSubmitBtn.classList.add('loading');
+                }
+                const originalText = passwordSubmitBtn ? passwordSubmitBtn.textContent : 'Send OTP Code';
+                if (passwordSubmitBtn) passwordSubmitBtn.textContent = 'Sending...';
 
                 const response = await fetch('/admin/send-password-otp', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
                     body: JSON.stringify({
                         current_password: currentPassword,
@@ -226,9 +234,11 @@ window.AppPage['admin_settings'] = function () {
                         showError('currentPasswordError', data.message || 'Failed to send OTP');
                     }
                     isPasswordLoading = false;
-                    passwordSubmitBtn.disabled = false;
-                    passwordSubmitBtn.classList.remove('loading');
-                    passwordSubmitBtn.textContent = originalText;
+                    if (passwordSubmitBtn) {
+                        passwordSubmitBtn.disabled = false;
+                        passwordSubmitBtn.classList.remove('loading');
+                        passwordSubmitBtn.textContent = originalText;
+                    }
                     return;
                 }
 
@@ -239,19 +249,23 @@ window.AppPage['admin_settings'] = function () {
                 };
 
                 // Show OTP Modal
-                otpPasswordModal.style.display = 'flex';
-                otpPasswordCodeInput.focus();
+                if (otpPasswordModal) otpPasswordModal.style.display = 'flex';
+                if (otpPasswordCodeInput) otpPasswordCodeInput.focus();
                 isPasswordLoading = false;
-                passwordSubmitBtn.disabled = false;
-                passwordSubmitBtn.classList.remove('loading');
-                passwordSubmitBtn.textContent = originalText;
+                if (passwordSubmitBtn) {
+                    passwordSubmitBtn.disabled = false;
+                    passwordSubmitBtn.classList.remove('loading');
+                    passwordSubmitBtn.textContent = originalText;
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('currentPasswordError', 'An error occurred. Please try again.');
                 isPasswordLoading = false;
-                passwordSubmitBtn.disabled = false;
-                passwordSubmitBtn.classList.remove('loading');
-                passwordSubmitBtn.textContent = originalText;
+                if (passwordSubmitBtn) {
+                    passwordSubmitBtn.disabled = false;
+                    passwordSubmitBtn.classList.remove('loading');
+                    passwordSubmitBtn.textContent = 'Send OTP Code';
+                }
             }
         });
     }
@@ -259,10 +273,11 @@ window.AppPage['admin_settings'] = function () {
     // Handle Password OTP Verification
     if (verifyPasswordOtpBtn) {
         verifyPasswordOtpBtn.addEventListener('click', async function () {
-            const otpCode = otpPasswordCodeInput.value.trim();
+            const otpCode = otpPasswordCodeInput ? otpPasswordCodeInput.value.trim() : '';
 
             // Clear previous errors
-            document.getElementById('otpPasswordError').textContent = '';
+            const errEl = document.getElementById('otpPasswordError');
+            if (errEl) errEl.textContent = '';
 
             if (!otpCode || otpCode.length !== 6 || isNaN(otpCode)) {
                 showError('otpPasswordError', 'Please enter a valid 6-digit OTP code');
@@ -277,7 +292,7 @@ window.AppPage['admin_settings'] = function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
                     body: JSON.stringify({
                         otp_code: otpCode,
@@ -295,12 +310,12 @@ window.AppPage['admin_settings'] = function () {
                 }
 
                 // Success
-                otpPasswordModal.style.display = 'none';
-                changePasswordForm.reset();
-                changePasswordForm.classList.add('admin-settings__form--hidden');
-                togglePasswordBtn.classList.remove('active');
+                if (otpPasswordModal) otpPasswordModal.style.display = 'none';
+                changePasswordForm?.reset();
+                changePasswordForm?.classList.add('admin-settings__form--hidden');
+                togglePasswordBtn?.classList.remove('active');
                 pendingPasswordData = null;
-                otpPasswordCodeInput.value = '';
+                if (otpPasswordCodeInput) otpPasswordCodeInput.value = '';
                 verifyPasswordOtpBtn.disabled = false;
                 verifyPasswordOtpBtn.classList.remove('loading');
                 showSuccessMessage('Password changed successfully!');
@@ -316,9 +331,10 @@ window.AppPage['admin_settings'] = function () {
     // Handle Cancel Password OTP
     if (cancelPasswordOtpBtn) {
         cancelPasswordOtpBtn.addEventListener('click', function () {
-            otpPasswordModal.style.display = 'none';
-            otpPasswordCodeInput.value = '';
-            document.getElementById('otpPasswordError').textContent = '';
+            if (otpPasswordModal) otpPasswordModal.style.display = 'none';
+            if (otpPasswordCodeInput) otpPasswordCodeInput.value = '';
+            const errEl = document.getElementById('otpPasswordError');
+            if (errEl) errEl.textContent = '';
             pendingPasswordData = null;
         });
     }
@@ -328,7 +344,7 @@ window.AppPage['admin_settings'] = function () {
     // Toggle email form visibility
     if (toggleEmailBtn) {
         toggleEmailBtn.addEventListener('click', function () {
-            changeEmailForm.classList.toggle('admin-settings__form--hidden');
+            changeEmailForm?.classList.toggle('admin-settings__form--hidden');
             toggleEmailBtn.classList.toggle('active');
         });
     }
@@ -336,10 +352,11 @@ window.AppPage['admin_settings'] = function () {
     // Cancel email form
     if (cancelEmailBtn) {
         cancelEmailBtn.addEventListener('click', function () {
-            changeEmailForm.classList.add('admin-settings__form--hidden');
-            toggleEmailBtn.classList.remove('active');
-            changeEmailForm.reset();
-            document.getElementById('newEmailError').textContent = '';
+            changeEmailForm?.classList.add('admin-settings__form--hidden');
+            toggleEmailBtn?.classList.remove('active');
+            changeEmailForm?.reset();
+            const errEl = document.getElementById('newEmailError');
+            if (errEl) errEl.textContent = '';
         });
     }
 
@@ -351,7 +368,8 @@ window.AppPage['admin_settings'] = function () {
             const newEmail = document.getElementById('newEmail').value;
 
             // Clear previous errors
-            document.getElementById('newEmailError').textContent = '';
+            const errEl = document.getElementById('newEmailError');
+            if (errEl) errEl.textContent = '';
 
             // Validation
             if (!newEmail) {
@@ -367,16 +385,18 @@ window.AppPage['admin_settings'] = function () {
             // Send OTP
             try {
                 isEmailLoading = true;
-                emailSubmitBtn.disabled = true;
-                emailSubmitBtn.classList.add('loading');
-                const originalText = emailSubmitBtn.textContent;
-                emailSubmitBtn.textContent = 'Sending...';
+                if (emailSubmitBtn) {
+                    emailSubmitBtn.disabled = true;
+                    emailSubmitBtn.classList.add('loading');
+                }
+                const originalText = emailSubmitBtn ? emailSubmitBtn.textContent : 'Send OTP Code';
+                if (emailSubmitBtn) emailSubmitBtn.textContent = 'Sending...';
 
                 const response = await fetch('/admin/send-email-otp', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
                     body: JSON.stringify({
                         new_email: newEmail,
@@ -388,9 +408,11 @@ window.AppPage['admin_settings'] = function () {
                 if (!response.ok) {
                     showError('newEmailError', data.message || 'Failed to send OTP');
                     isEmailLoading = false;
-                    emailSubmitBtn.disabled = false;
-                    emailSubmitBtn.classList.remove('loading');
-                    emailSubmitBtn.textContent = originalText;
+                    if (emailSubmitBtn) {
+                        emailSubmitBtn.disabled = false;
+                        emailSubmitBtn.classList.remove('loading');
+                        emailSubmitBtn.textContent = originalText;
+                    }
                     return;
                 }
 
@@ -400,19 +422,23 @@ window.AppPage['admin_settings'] = function () {
                 };
 
                 // Show OTP Modal
-                otpEmailModal.style.display = 'flex';
-                otpEmailCodeInput.focus();
+                if (otpEmailModal) otpEmailModal.style.display = 'flex';
+                if (otpEmailCodeInput) otpEmailCodeInput.focus();
                 isEmailLoading = false;
-                emailSubmitBtn.disabled = false;
-                emailSubmitBtn.classList.remove('loading');
-                emailSubmitBtn.textContent = originalText;
+                if (emailSubmitBtn) {
+                    emailSubmitBtn.disabled = false;
+                    emailSubmitBtn.classList.remove('loading');
+                    emailSubmitBtn.textContent = originalText;
+                }
             } catch (error) {
                 console.error('Error:', error);
                 showError('newEmailError', 'An error occurred. Please try again.');
                 isEmailLoading = false;
-                emailSubmitBtn.disabled = false;
-                emailSubmitBtn.classList.remove('loading');
-                emailSubmitBtn.textContent = originalText;
+                if (emailSubmitBtn) {
+                    emailSubmitBtn.disabled = false;
+                    emailSubmitBtn.classList.remove('loading');
+                    emailSubmitBtn.textContent = 'Send OTP Code';
+                }
             }
         });
     }
@@ -420,10 +446,11 @@ window.AppPage['admin_settings'] = function () {
     // Handle Email OTP Verification
     if (verifyEmailOtpBtn) {
         verifyEmailOtpBtn.addEventListener('click', async function () {
-            const otpCode = otpEmailCodeInput.value.trim();
+            const otpCode = otpEmailCodeInput ? otpEmailCodeInput.value.trim() : '';
 
             // Clear previous errors
-            document.getElementById('otpEmailError').textContent = '';
+            const errEl = document.getElementById('otpEmailError');
+            if (errEl) errEl.textContent = '';
 
             if (!otpCode || otpCode.length !== 6 || isNaN(otpCode)) {
                 showError('otpEmailError', 'Please enter a valid 6-digit OTP code');
@@ -438,7 +465,7 @@ window.AppPage['admin_settings'] = function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]')?.value || '',
                     },
                     body: JSON.stringify({
                         otp_code: otpCode,
@@ -456,13 +483,14 @@ window.AppPage['admin_settings'] = function () {
                 }
 
                 // Success
-                otpEmailModal.style.display = 'none';
-                document.getElementById('currentEmailDisplay').textContent = pendingEmailData.new_email;
-                changeEmailForm.reset();
-                changeEmailForm.classList.add('admin-settings__form--hidden');
-                toggleEmailBtn.classList.remove('active');
+                if (otpEmailModal) otpEmailModal.style.display = 'none';
+                const curDisplay = document.getElementById('currentEmailDisplay');
+                if (curDisplay) curDisplay.textContent = pendingEmailData.new_email;
+                changeEmailForm?.reset();
+                changeEmailForm?.classList.add('admin-settings__form--hidden');
+                toggleEmailBtn?.classList.remove('active');
                 pendingEmailData = null;
-                otpEmailCodeInput.value = '';
+                if (otpEmailCodeInput) otpEmailCodeInput.value = '';
                 verifyEmailOtpBtn.disabled = false;
                 verifyEmailOtpBtn.classList.remove('loading');
                 showSuccessMessage('Email changed successfully!');
@@ -478,9 +506,10 @@ window.AppPage['admin_settings'] = function () {
     // Handle Cancel Email OTP
     if (cancelEmailOtpBtn) {
         cancelEmailOtpBtn.addEventListener('click', function () {
-            otpEmailModal.style.display = 'none';
-            otpEmailCodeInput.value = '';
-            document.getElementById('otpEmailError').textContent = '';
+            if (otpEmailModal) otpEmailModal.style.display = 'none';
+            if (otpEmailCodeInput) otpEmailCodeInput.value = '';
+            const errEl = document.getElementById('otpEmailError');
+            if (errEl) errEl.textContent = '';
             pendingEmailData = null;
         });
     }
@@ -552,4 +581,8 @@ window.AppPage['admin_settings'] = function () {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => window.AppPage['admin_settings']());
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => window.AppPage['admin_settings']());
+} else {
+    window.AppPage['admin_settings']();
+}

@@ -2002,7 +2002,7 @@ html {
 .rp-modal__panel {
     position: relative;
     width: 100%;
-    max-width: 54rem;
+    max-width: 62rem;
     max-height: none;
     overflow: visible;
     background: rgba(11, 36, 24, 0.98);
@@ -2101,9 +2101,18 @@ html {
 
 .rp-modal__content {
     display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    gap: 1.25rem;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1.5rem;
     align-items: start;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (max-width: 860px) {
+    .rp-modal__content {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
 }
 
 .rp-modal__content--stacked {
@@ -3538,4 +3547,480 @@ body:has(.rp-modal.is-open) .rp-footer {
     border-color: var(--rp-gold);
     color: #fff;
     transform: translateX(-2px);
+}
+
+/* ─────────────────────────── Continuous Multi-Day Date Range Styling ─────────────────────────── */
+
+.rp-mode-switch-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.rp-mode-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.35rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 0.35rem;
+}
+
+.rp-mode-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.6rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.rp-mode-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rp-mode-btn.is-active {
+    background: linear-gradient(135deg, var(--rp-gold), var(--rp-gold-dark));
+    color: #0b2418;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(200, 164, 93, 0.3);
+}
+
+.rp-range-slots-box {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+    margin-bottom: 1.25rem;
+    padding: 0.85rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(200, 164, 93, 0.2);
+}
+
+@media (max-width: 600px) {
+    .rp-range-slots-box {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rp-range-slot-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.rp-range-slot-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--rp-gold-light);
+}
+
+.rp-range-slot-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+}
+
+.rp-subslot-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.rp-subslot-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.rp-subslot-btn.is-active {
+    background: rgba(200, 164, 93, 0.25);
+    border-color: var(--rp-gold);
+    color: var(--rp-gold-light);
+    font-weight: 700;
+}
+
+.rp-range-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: rgba(200, 164, 93, 0.12);
+    border: 1px solid rgba(200, 164, 93, 0.3);
+    border-radius: 0.75rem;
+}
+
+.rp-range-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.rp-range-card__label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.rp-range-card strong {
+    font-size: 0.875rem;
+    color: var(--rp-gold-light);
+    font-weight: 700;
+}
+
+.rp-range-arrow {
+    color: var(--rp-gold);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.rp-range-badge {
+    background: var(--rp-gold);
+    color: #0b2418;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.rp-dp-actions {
+    margin-top: 1.25rem;
+}
+
+/* Calendar Range Highlights */
+.rp-calendar__day.is-range-start {
+    background: var(--rp-gold) !important;
+    color: #0b2418 !important;
+    border-color: #fff !important;
+    font-weight: 700 !important;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: 0 0 12px rgba(200, 164, 93, 0.6);
+}
+
+.rp-calendar__day.is-range-end {
+    background: var(--rp-gold) !important;
+    color: #0b2418 !important;
+    border-color: #fff !important;
+    font-weight: 700 !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    box-shadow: 0 0 12px rgba(200, 164, 93, 0.6);
+}
+
+.rp-calendar__day.is-range-start.is-range-end {
+    border-radius: 0.6rem !important;
+}
+
+.rp-calendar__day.is-in-range {
+    background: rgba(200, 164, 93, 0.35) !important;
+    color: #fff !important;
+    border-color: rgba(200, 164, 93, 0.4) !important;
+    border-radius: 0 !important;
+}
+
+.rp-calendar__day.is-range-hover {
+    background: rgba(200, 164, 93, 0.25) !important;
+    border-color: rgba(200, 164, 93, 0.5) !important;
+}
+
+/* Modal Multi-Amenity Selected Items & Cards */
+.rp-modal__multi-container {
+    margin-bottom: 1.25rem;
+}
+
+.rp-modal__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.rp-modal__section-title {
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--rp-gold-light);
+    margin: 0;
+    font-weight: 700;
+}
+
+.rp-modal__section-hint {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.rp-selected-amenities-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+}
+
+.rp-selected-amenity-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(200, 164, 93, 0.28);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.rp-selected-amenity-card:hover {
+    border-color: rgba(200, 164, 93, 0.6);
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.rp-selected-amenity-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.rp-selected-amenity-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.rp-selected-amenity-title {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.rp-item-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.rp-item-badge--ac {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.rp-selected-amenity-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rp-selected-amenity-meta svg {
+    color: var(--rp-gold);
+    flex-shrink: 0;
+}
+
+.rp-selected-amenity-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.rp-selected-amenity-price {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--rp-gold-light);
+    font-family: var(--rp-font-display);
+}
+
+.rp-edit-schedule-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.45rem;
+    background: rgba(200, 164, 93, 0.15);
+    border: 1px solid rgba(200, 164, 93, 0.4);
+    color: var(--rp-gold-light);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.rp-edit-schedule-btn:hover {
+    background: var(--rp-gold);
+    color: var(--rp-green-dark);
+    border-color: var(--rp-gold);
+    transform: translateY(-1px);
+}
+
+/* Edit Amenity Schedule Sub-Modal */
+.rp-schedule-edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rp-schedule-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.rp-schedule-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--rp-gold-light);
+}
+
+.rp-schedule-input-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0.5rem;
+}
+
+.rp-schedule-date-input,
+.rp-schedule-slot-select {
+    width: 100%;
+    min-height: 2.5rem;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(200, 164, 93, 0.35);
+    border-radius: 0.5rem;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color-scheme: dark;
+    box-sizing: border-box;
+}
+
+.rp-schedule-date-input:focus,
+.rp-schedule-slot-select:focus {
+    border-color: var(--rp-gold);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(200, 164, 93, 0.2);
+}
+
+.rp-schedule-aircon-box {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.85rem;
+}
+
+.rp-schedule-aircon-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.rp-schedule-checkbox {
+    width: 1.15rem;
+    height: 1.15rem;
+    accent-color: var(--rp-gold);
+    cursor: pointer;
+}
+
+.rp-schedule-aircon-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.rp-schedule-aircon-text strong {
+    font-size: 0.85rem;
+    color: #fff;
+}
+
+.rp-schedule-aircon-text small {
+    font-size: 0.75rem;
+    color: var(--rp-gold);
+}
+
+.rp-schedule-summary-box {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(200, 164, 93, 0.3);
+    border-radius: 0.65rem;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.rp-schedule-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rp-schedule-summary-label {
+    font-weight: 500;
+}
+
+.rp-schedule-math {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.78rem;
+}
+
+.rp-schedule-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.4rem;
+    margin-top: 0.2rem;
+    border-top: 1px dashed rgba(200, 164, 93, 0.3);
+    font-size: 0.875rem;
+    color: #fff;
+    font-weight: 600;
+}
+
+.rp-schedule-summary-total strong {
+    color: var(--rp-gold);
+    font-size: 1.1rem;
+    font-family: var(--rp-font-display);
+}
+
+.rp-schedule-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
 }

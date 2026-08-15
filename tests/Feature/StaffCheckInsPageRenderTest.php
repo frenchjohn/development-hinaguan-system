@@ -101,11 +101,11 @@ class StaffCheckInsPageRenderTest extends TestCase
         $response = $this->get('/staff/check-ins');
 
         $response->assertStatus(200);
-        $response->assertSee('Time left');
+        $response->assertSee('Time Left');
         $response->assertDontSee('Undefined variable');
     }
 
-    public function test_check_ins_countdown_anchors_to_check_in_not_future_booking_date(): void
+    public function test_check_ins_countdown_anchors_to_reservation_end_date_and_amenity_time(): void
     {
         $staff = StaffAccount::create([
             'name' => 'Staff Two',
@@ -133,21 +133,26 @@ class StaffCheckInsPageRenderTest extends TestCase
             'status' => true,
         ]);
 
-        // Guest booked for a FUTURE date but already checked in today — the
-        // countdown must be anchored to the actual check-in (today), not the
-        // future reservation_date (which would show 300+ hours).
+        // Guest booked for a continuous stay (e.g. Aug 25 to Aug 28) and checks in early — the
+        // countdown must be anchored to the scheduled reservation checkout date and amenity slot.
         $today = Carbon::today();
+        $startDate = $today->copy()->addDays(10)->toDateString();
+        $endDate = $today->copy()->addDays(13)->toDateString();
         $reservation = Reservation::create([
             'booker_name' => 'Maria Santos',
             'email' => 'maria@test.com',
             'phone' => '09170000001',
-            'reservation_date' => $today->copy()->addDays(14)->toDateString(),
+            'reservation_date' => $startDate,
+            'end_date' => $endDate,
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 4,
             'check_in' => $today->copy()->setTime(9, 0)->toDateTimeString(),
             'status' => 'Checked In',
             'reservation_type' => 'online',
             'number_of_guests' => 2,
-            'total_amount' => 500,
-            'amount_paid' => 500,
+            'total_amount' => 2000,
+            'amount_paid' => 2000,
             'remaining_balance' => 0,
             'payment_status' => 'Paid',
         ]);
@@ -156,6 +161,10 @@ class StaffCheckInsPageRenderTest extends TestCase
             'reservation_id' => $reservation->id,
             'amenity_id' => $amenity->id,
             'pricing_type' => 'Daytime',
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
             'price_at_booking' => 500,
             'quantity' => 1,
             'status' => 'Active',
@@ -179,18 +188,12 @@ class StaffCheckInsPageRenderTest extends TestCase
         $response->assertStatus(200);
 
         $content = $response->getContent();
-        $expectedDaytimeCheckout = $today->copy()->setTime(18, 0)->toIso8601String();
-        $futureBookingCheckout = $today->copy()->addDays(14)->setTime(18, 0)->toIso8601String();
+        $expectedContinuousCheckout = Carbon::parse($endDate)->setTime(18, 0)->toIso8601String();
 
         $this->assertStringContainsString(
-            'data-checkout-at="' . $expectedDaytimeCheckout . '"',
+            'data-checkout-at="' . $expectedContinuousCheckout . '"',
             $content,
-            'Countdown should use today\'s checkout time (anchored to check-in).'
-        );
-        $this->assertStringNotContainsString(
-            'data-checkout-at="' . $futureBookingCheckout . '"',
-            $content,
-            'Countdown must NOT use the future reservation_date checkout time.'
+            'Countdown should use the continuous reservation checkout date (end date daytime).'
         );
     }
 
