@@ -1606,6 +1606,11 @@
                     <input type="hidden" id="editScheduleAmenityId" value="">
                     
                     <div class="rp-schedule-edit-fields">
+                        <div id="editScheduleAllowedRangeHint" class="rp-schedule-range-hint" style="display: none;">
+                            <span>Reservation window:</span>
+                            <strong id="editScheduleRangeText"></strong>
+                        </div>
+
                         <div class="rp-schedule-field-group">
                             <label class="rp-schedule-label">Check-in Date &amp; Time Slot</label>
                             <div class="rp-schedule-input-row">

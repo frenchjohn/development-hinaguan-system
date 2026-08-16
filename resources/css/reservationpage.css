@@ -3895,6 +3895,29 @@ body:has(.rp-modal.is-open) .rp-footer {
     gap: 1rem;
 }
 
+.rp-schedule-range-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    background: rgba(200, 164, 93, 0.1);
+    border: 1px solid rgba(200, 164, 93, 0.25);
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.4;
+}
+
+.rp-schedule-range-hint strong {
+    color: var(--rp-gold-light);
+    font-weight: 600;
+}
+
+.rp-schedule-slot-select option:disabled {
+    color: rgba(255, 255, 255, 0.25);
+    background: #1a1a1a;
+}
+
 .rp-schedule-field-group {
     display: flex;
     flex-direction: column;

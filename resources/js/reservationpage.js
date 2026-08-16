@@ -1657,6 +1657,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const editScheduleEndDate = document.getElementById('editScheduleEndDate');
     const editScheduleEndSlot = document.getElementById('editScheduleEndSlot');
     const editScheduleAirconWrap = document.getElementById('editScheduleAirconWrap');
+    const editScheduleAllowedRangeHint = document.getElementById('editScheduleAllowedRangeHint');
+    const editScheduleRangeText = document.getElementById('editScheduleRangeText');
     const editScheduleAirconToggle = document.getElementById('editScheduleAirconToggle');
     const editScheduleAirconDiff = document.getElementById('editScheduleAirconDiff');
     const editScheduleDurationText = document.getElementById('editScheduleDurationText');
@@ -1664,18 +1666,112 @@ document.addEventListener('DOMContentLoaded', () => {
     const editScheduleTotalPrice = document.getElementById('editScheduleTotalPrice');
     const saveScheduleBtn = document.getElementById('saveScheduleBtn');
 
+    const getMasterBounds = () => {
+        const bStart = mainStartDate || dateInput?.value || '';
+        const bEnd = mainEndDate || bStart;
+        const bStartSlot = mainStartSlot || selectedSlot || 'Daytime';
+        const bEndSlot = mainEndSlot || selectedSlot || 'Daytime';
+        return { bStart, bEnd, bStartSlot, bEndSlot };
+    };
+
+    const enforceAmenityScheduleConstraints = () => {
+        const { bStart, bEnd, bStartSlot, bEndSlot } = getMasterBounds();
+        if (!bStart) return;
+
+        // 1. Min / Max for Start Date
+        if (editScheduleStartDate) {
+            editScheduleStartDate.min = bStart;
+            editScheduleStartDate.max = bEnd;
+            if (editScheduleStartDate.value && editScheduleStartDate.value < bStart) {
+                editScheduleStartDate.value = bStart;
+            } else if (editScheduleStartDate.value && editScheduleStartDate.value > bEnd) {
+                editScheduleStartDate.value = bEnd;
+            }
+        }
+
+        const curStartDate = editScheduleStartDate?.value || bStart;
+
+        // 2. Min / Max for End Date
+        if (editScheduleEndDate) {
+            editScheduleEndDate.min = curStartDate;
+            editScheduleEndDate.max = bEnd;
+            if (editScheduleEndDate.value && editScheduleEndDate.value < curStartDate) {
+                editScheduleEndDate.value = curStartDate;
+            } else if (editScheduleEndDate.value && editScheduleEndDate.value > bEnd) {
+                editScheduleEndDate.value = bEnd;
+            }
+        }
+
+        const curEndDate = editScheduleEndDate?.value || curStartDate;
+
+        // 3. Start Slot dropdown option constraints
+        if (editScheduleStartSlot) {
+            const daytimeStartOpt = editScheduleStartSlot.querySelector('option[value="Daytime"]');
+            const nighttimeStartOpt = editScheduleStartSlot.querySelector('option[value="Nighttime"]');
+
+            // If start date is on master start date and master starts at Nighttime, Daytime start is disallowed
+            const allowDaytimeStart = !(curStartDate === bStart && bStartSlot === 'Nighttime');
+
+            if (daytimeStartOpt) {
+                daytimeStartOpt.disabled = !allowDaytimeStart;
+                daytimeStartOpt.hidden = !allowDaytimeStart;
+            }
+            if (nighttimeStartOpt) {
+                nighttimeStartOpt.disabled = false;
+                nighttimeStartOpt.hidden = false;
+            }
+
+            if (!allowDaytimeStart && editScheduleStartSlot.value === 'Daytime') {
+                editScheduleStartSlot.value = 'Nighttime';
+            }
+        }
+
+        const curStartSlot = editScheduleStartSlot?.value || 'Daytime';
+
+        // 4. End Slot dropdown option constraints
+        if (editScheduleEndSlot) {
+            const daytimeEndOpt = editScheduleEndSlot.querySelector('option[value="Daytime"]');
+            const nighttimeEndOpt = editScheduleEndSlot.querySelector('option[value="Nighttime"]');
+
+            // If end date is on master end date and master ends at Daytime, Nighttime end is disallowed
+            const allowNighttimeEnd = !(curEndDate === bEnd && bEndSlot === 'Daytime');
+
+            // If start and end are on the same day and start slot is Nighttime, Daytime end is disallowed
+            const allowDaytimeEnd = !(curStartDate === curEndDate && curStartSlot === 'Nighttime');
+
+            if (daytimeEndOpt) {
+                daytimeEndOpt.disabled = !allowDaytimeEnd;
+                daytimeEndOpt.hidden = !allowDaytimeEnd;
+            }
+            if (nighttimeEndOpt) {
+                nighttimeEndOpt.disabled = !allowNighttimeEnd;
+                nighttimeEndOpt.hidden = !allowNighttimeEnd;
+            }
+
+            if (!allowDaytimeEnd && editScheduleEndSlot.value === 'Daytime') {
+                editScheduleEndSlot.value = 'Nighttime';
+            } else if (!allowNighttimeEnd && editScheduleEndSlot.value === 'Nighttime') {
+                editScheduleEndSlot.value = 'Daytime';
+            }
+        }
+    };
+
     const updateEditScheduleDisplay = () => {
+        enforceAmenityScheduleConstraints();
+
         const amenityId = editScheduleAmenityId?.value;
         if (!amenityId) return;
         const card = cards.find(c => c.dataset.amenityId === amenityId);
         if (!card) return;
 
-        const sDate = editScheduleStartDate?.value || mainStartDate || dateInput?.value || '';
+        const { bStart, bEnd } = getMasterBounds();
+        let sDate = editScheduleStartDate?.value || bStart || '';
         let eDate = editScheduleEndDate?.value || sDate;
-        if (sDate && eDate && eDate < sDate) {
-            eDate = sDate;
-            if (editScheduleEndDate) editScheduleEndDate.value = sDate;
-        }
+        if (bStart && sDate < bStart) sDate = bStart;
+        if (bEnd && sDate > bEnd) sDate = bEnd;
+        if (sDate && eDate < sDate) eDate = sDate;
+        if (bEnd && eDate > bEnd) eDate = bEnd;
+
         const sSlot = editScheduleStartSlot?.value || 'Daytime';
         const eSlot = editScheduleEndSlot?.value || 'Daytime';
         const choice = editScheduleAirconToggle && editScheduleAirconToggle.checked ? 'with' : 'without';
@@ -1703,10 +1799,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const card = cards.find(c => c.dataset.amenityId === amenityId);
         if (!card || !editAmenityScheduleModal) return;
 
-        const sDate = mainStartDate || dateInput?.value || '';
-        const eDate = mainEndDate || sDate;
-        const sSlot = mainStartSlot || selectedSlot;
-        const eSlot = mainEndSlot || selectedSlot;
+        const { bStart, bEnd, bStartSlot, bEndSlot } = getMasterBounds();
+        const sDate = bStart;
+        const eDate = bEnd || sDate;
+        const sSlot = bStartSlot;
+        const eSlot = bEndSlot;
 
         if (!amenityStayConfig[amenityId]) {
             amenityStayConfig[amenityId] = {
@@ -1721,18 +1818,49 @@ document.addEventListener('DOMContentLoaded', () => {
         const cfg = amenityStayConfig[amenityId];
         const hasAc = card.dataset.hasAircon === '1';
 
+        // Clamp cfg to master bounds
+        let initStartDate = cfg.startDate || sDate;
+        let initEndDate = cfg.endDate || eDate || initStartDate;
+        if (sDate && initStartDate < sDate) initStartDate = sDate;
+        if (eDate && initStartDate > eDate) initStartDate = eDate;
+        if (initStartDate && initEndDate < initStartDate) initEndDate = initStartDate;
+        if (eDate && initEndDate > eDate) initEndDate = eDate;
+
+        let initStartSlot = cfg.startSlot || sSlot;
+        let initEndSlot = cfg.endSlot || eSlot;
+        if (initStartDate === sDate && sSlot === 'Nighttime') initStartSlot = 'Nighttime';
+        if (initEndDate === eDate && eSlot === 'Daytime') initEndSlot = 'Daytime';
+        if (initStartDate === initEndDate && initStartSlot === 'Nighttime') initEndSlot = 'Nighttime';
+
         if (editScheduleAmenityId) editScheduleAmenityId.value = amenityId;
         if (editScheduleAmenityName) editScheduleAmenityName.textContent = card.dataset.name || 'Amenity';
+
+        if (editScheduleAllowedRangeHint && editScheduleRangeText) {
+            if (bStart) {
+                const sObj = new Date(bStart + 'T00:00:00');
+                const eObj = new Date(bEnd + 'T00:00:00');
+                const sFormatted = sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const eFormatted = eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                
+                if (bStart === bEnd) {
+                    editScheduleRangeText.textContent = `${sFormatted} (${bStartSlot})`;
+                } else {
+                    editScheduleRangeText.textContent = `${sFormatted} (${bStartSlot}) → ${eFormatted} (${bEndSlot})`;
+                }
+                editScheduleAllowedRangeHint.style.display = 'flex';
+            } else {
+                editScheduleAllowedRangeHint.style.display = 'none';
+            }
+        }
+
         if (editScheduleStartDate) {
-            editScheduleStartDate.value = cfg.startDate || sDate;
-            editScheduleStartDate.min = dateInput?.min || '';
+            editScheduleStartDate.value = initStartDate;
         }
-        if (editScheduleStartSlot) editScheduleStartSlot.value = cfg.startSlot || sSlot;
+        if (editScheduleStartSlot) editScheduleStartSlot.value = initStartSlot;
         if (editScheduleEndDate) {
-            editScheduleEndDate.value = cfg.endDate || eDate || cfg.startDate || sDate;
-            editScheduleEndDate.min = cfg.startDate || sDate || dateInput?.min || '';
+            editScheduleEndDate.value = initEndDate;
         }
-        if (editScheduleEndSlot) editScheduleEndSlot.value = cfg.endSlot || eSlot;
+        if (editScheduleEndSlot) editScheduleEndSlot.value = initEndSlot;
 
         if (editScheduleAirconWrap) {
             editScheduleAirconWrap.style.display = hasAc ? 'block' : 'none';
@@ -2864,11 +2992,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = cards.find(c => c.dataset.amenityId === amenityId);
             if (!card) return;
 
-            const startDate = editScheduleStartDate?.value || mainStartDate || dateInput?.value || '';
+            enforceAmenityScheduleConstraints();
+
+            const { bStart, bEnd } = getMasterBounds();
+            let startDate = editScheduleStartDate?.value || bStart || '';
             let endDate = editScheduleEndDate?.value || startDate;
-            if (startDate && endDate && endDate < startDate) {
-                endDate = startDate;
-            }
+
+            if (bStart && startDate < bStart) startDate = bStart;
+            if (bEnd && startDate > bEnd) startDate = bEnd;
+            if (startDate && endDate < startDate) endDate = startDate;
+            if (bEnd && endDate > bEnd) endDate = bEnd;
+
             const startSlot = editScheduleStartSlot?.value || 'Daytime';
             const endSlot = editScheduleEndSlot?.value || 'Daytime';
             const choice = editScheduleAirconToggle && editScheduleAirconToggle.checked ? 'with' : 'without';
@@ -2886,7 +3020,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Re-render display inside the main booking modal
             if (activeAmenity) {
-                renderBookingSelection(activeAmenity, multiSelectionChoices[activeAmenity.dataset.amenityId] || 'without');
+                openModal(activeAmenity);
             }
             updateSelectionUi();
             updateSelectionSummary();

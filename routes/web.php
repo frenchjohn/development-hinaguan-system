@@ -184,10 +184,18 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
               });
         })
         ->whereHas('reservationAmenities', function ($q) use ($amenityId) {
-            $q->where('amenity_id', $amenityId);
+            $q->where('amenity_id', $amenityId)
+              ->where(function ($sq) {
+                  $sq->whereNull('status')
+                     ->orWhere('status', '!=', 'Completed');
+              });
         })
         ->with(['reservationAmenities' => function ($q) use ($amenityId) {
-            $q->where('amenity_id', $amenityId);
+            $q->where('amenity_id', $amenityId)
+              ->where(function ($sq) {
+                  $sq->whereNull('status')
+                     ->orWhere('status', '!=', 'Completed');
+              });
         }])
         ->when($excludeReservationId !== null, fn ($q) => $q->whereKeyNot($excludeReservationId))
         ->get();
@@ -199,6 +207,9 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
 
     foreach ($reservations as $res) {
         foreach ($res->reservationAmenities as $ra) {
+            if ($ra->status === 'Completed') {
+                continue;
+            }
             $existingTimeline = $getReservationAmenityTimeline($ra, $res);
             foreach ($existingTimeline as [$d, $s]) {
                 if (isset($reqMap["{$d}_{$s}"])) {
@@ -277,8 +288,12 @@ $computeReservationCheckoutAt = function ($reservation) use ($amenityCheckoutAt,
         ? $reservation->reservationAmenities
         : $reservation->reservationAmenities()->get();
 
-    if ($amenities->isNotEmpty()) {
-        foreach ($amenities as $ra) {
+    // Filter to active (non-completed) amenities, fallback to all if all are completed
+    $activeAmenities = $amenities->filter(fn ($ra) => $ra->status !== 'Completed');
+    $amenitiesToConsider = $activeAmenities->isNotEmpty() ? $activeAmenities : $amenities;
+
+    if ($amenitiesToConsider->isNotEmpty()) {
+        foreach ($amenitiesToConsider as $ra) {
             $raStartDate = $ra->start_date ?: $reservation->reservation_date;
             if (! $raStartDate) {
                 continue;
@@ -359,7 +374,18 @@ $occupiedAmenityIdsForContinuousRange = function (string $startDate, ?string $en
                      ->whereDate('reservation_date', '>=', \Illuminate\Support\Carbon::parse($minDate)->subDays(2)->toDateString());
               });
         })
-        ->with('reservationAmenities')
+        ->whereHas('reservationAmenities', function ($q) {
+            $q->where(function ($sq) {
+                $sq->whereNull('status')
+                   ->orWhere('status', '!=', 'Completed');
+            });
+        })
+        ->with(['reservationAmenities' => function ($q) {
+            $q->where(function ($sq) {
+                $sq->whereNull('status')
+                   ->orWhere('status', '!=', 'Completed');
+            });
+        }])
         ->get();
 
     $reqMap = [];
@@ -370,7 +396,7 @@ $occupiedAmenityIdsForContinuousRange = function (string $startDate, ?string $en
     $occupied = [];
     foreach ($reservations as $res) {
         foreach ($res->reservationAmenities as $ra) {
-            if (! $ra->amenity_id) continue;
+            if (! $ra->amenity_id || $ra->status === 'Completed') continue;
             $existingTimeline = $getReservationAmenityTimeline($ra, $res);
             foreach ($existingTimeline as [$d, $s]) {
                 if (isset($reqMap["{$d}_{$s}"])) {
@@ -468,6 +494,7 @@ Route::get('/amenities', function () {
             $isSharedGroup = $uniqueAmenitiesCount > 1;
 
             foreach ($reservation->reservationAmenities as $ra) {
+                if ($ra->status === 'Completed') continue;
                 if ($ra->amenity_id === $amenity->id) {
                     $timeSlot = $ra->pricing_type;
                     // Normalize time slot
@@ -978,6 +1005,39 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
                 'success' => false,
                 'message' => 'Daytime bookings are not allowed for today. Please choose Nighttime or select an upcoming date.',
             ], 409);
+        }
+
+        // Validate amenity schedule is strictly within overall reservation date and session range
+        if ($itemStartDate < $reservationDate || $itemEndDate > $endDate) {
+            $name = $amenityModel->amenities_name;
+            return response()->json([
+                'success' => false,
+                'message' => "The schedule for {$name} ({$itemStartDate} to {$itemEndDate}) must fall within the overall reservation dates ({$reservationDate} to {$endDate}).",
+            ], 422);
+        }
+
+        if ($itemStartDate === $reservationDate && str_contains($startSlot, 'Night') && str_contains($itemStartSlot, 'Day')) {
+            $name = $amenityModel->amenities_name;
+            return response()->json([
+                'success' => false,
+                'message' => "The start slot for {$name} on {$reservationDate} cannot be Daytime because the reservation starts at Nighttime.",
+            ], 422);
+        }
+
+        if ($itemEndDate === $endDate && str_contains($endSlot, 'Day') && str_contains($itemEndSlot, 'Night')) {
+            $name = $amenityModel->amenities_name;
+            return response()->json([
+                'success' => false,
+                'message' => "The end slot for {$name} on {$endDate} cannot be Nighttime because the reservation ends at Daytime.",
+            ], 422);
+        }
+
+        if ($itemStartDate === $itemEndDate && str_contains($itemStartSlot, 'Night') && str_contains($itemEndSlot, 'Day')) {
+            $name = $amenityModel->amenities_name;
+            return response()->json([
+                'success' => false,
+                'message' => "The schedule for {$name} on {$itemStartDate} is invalid: Daytime cannot end after Nighttime start on the same day.",
+            ], 422);
         }
 
         if ($isAmenityRangeTaken($amenityId, $itemStartDate, $itemEndDate, $itemStartSlot, $itemEndSlot)) {
@@ -2156,6 +2216,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $isSharedGroup = $uniqueAmenitiesCount > 1;
 
                 foreach ($reservation->reservationAmenities as $ra) {
+                    if ($ra->status === 'Completed') continue;
                     if ($ra->amenity_id === $amenity->id) {
                         $timeSlot = $ra->pricing_type;
                         // Normalize time slot
