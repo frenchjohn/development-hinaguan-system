@@ -332,16 +332,49 @@
                             <input type="text" name="phone" id="editPhone" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
                         </label>
                     </div>
-                    <div class="guest-form__field edit-calendar grid gap-1.5">
-                        <span class="edit-calendar__label text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#81c784]">Reservation Date</span>
-                        <!-- Hidden field mirrors the calendar selection; the server re-validates on save. -->
+                    <!-- Stay Schedule & Continuous Multi-Day Selector -->
+                    <div class="guest-form__field edit-schedule-card grid gap-2 rounded-xl border border-glass-border bg-glass p-3.5 dark:border-white/10 dark:bg-white/5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#81c784]">Stay Schedule</span>
+                            <span id="editStayDurationBadge" class="inline-flex items-center rounded-full bg-hp-green/10 px-2.5 py-0.5 text-[0.75rem] font-bold text-hp-green dark:bg-hp-green/20 dark:text-[#81c784]">1 Day Stay</span>
+                        </div>
+                        
+                        <!-- Hidden inputs for full continuous schedule submission -->
                         <input type="hidden" name="reservation_date" id="editReservationDate">
+                        <input type="hidden" name="end_date" id="editEndDate">
+                        <input type="hidden" name="start_slot" id="editStartSlot" value="Daytime">
+                        <input type="hidden" name="end_slot" id="editEndSlot" value="Daytime">
 
-                        <button type="button" class="edit-calendar__trigger flex w-full cursor-pointer items-center gap-2.5 rounded-[0.7rem] border border-glass-border bg-glass px-3.5 py-3 text-left text-sm font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:shadow-glass focus-visible:border-hp-green focus-visible:shadow-glass focus-visible:outline-none dark:border-white/12 dark:bg-white/5 dark:text-[#c8e6c8] dark:hover:border-[#81c784]" id="editCalTrigger" aria-haspopup="dialog">
-                            <svg class="edit-calendar__trigger-icon h-[1.05rem] w-[1.05rem] shrink-0 text-[#8a7a4d] dark:text-[#c8a45d]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            <span class="edit-calendar__trigger-value min-w-0 flex-1 truncate" id="editCalTriggerValue">&mdash;</span>
-                            <svg class="edit-calendar__trigger-chevron h-4 w-4 shrink-0 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <button type="button" class="edit-calendar__trigger flex w-full cursor-pointer items-center justify-between gap-2.5 rounded-[0.7rem] border border-glass-border bg-glass px-3.5 py-3 text-left text-sm font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:shadow-glass focus-visible:border-hp-green focus-visible:shadow-glass focus-visible:outline-none dark:border-white/12 dark:bg-white/5 dark:text-[#c8e6c8] dark:hover:border-[#81c784]" id="editCalTrigger" aria-haspopup="dialog">
+                            <div class="flex min-w-0 items-center gap-2.5 overflow-hidden">
+                                <svg class="edit-calendar__trigger-icon h-5 w-5 shrink-0 text-[#8a7a4d] dark:text-[#c8a45d]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <div class="min-w-0">
+                                    <div class="edit-calendar__trigger-value truncate text-sm font-bold text-hp-text dark:text-[#c8e6c8]" id="editCalTriggerValue">&mdash;</div>
+                                    <div class="text-[0.75rem] text-hp-text-muted dark:text-[#a5d6a7]" id="editCalTriggerSessions">Daytime to Daytime</div>
+                                </div>
+                            </div>
+                            <span class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors dark:border-[#81c784]/40 dark:bg-[#81c784]/15 dark:text-[#81c784]">
+                                Change
+                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </span>
                         </button>
+
+                        <!-- Dynamic Price Impact & Balance Preview -->
+                        <div id="editPriceImpactCard" class="edit-price-impact rounded-lg border border-glass-border bg-[rgba(26,58,31,0.05)] p-3 text-xs dark:bg-white/5 dark:border-white/10" hidden>
+                            <div class="flex items-center justify-between font-semibold">
+                                <span class="text-hp-text-muted">Total Cost:</span>
+                                <span id="editPreviewTotal" class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">₱0.00</span>
+                            </div>
+                            <div class="mt-1 flex items-center justify-between text-hp-text-muted">
+                                <span>Amount Paid:</span>
+                                <span id="editPreviewPaid" class="font-medium text-hp-text dark:text-[#c8e6c8]">₱0.00</span>
+                            </div>
+                            <div class="mt-1.5 flex items-center justify-between border-t border-glass-border pt-1.5 dark:border-white/10">
+                                <span class="font-bold text-hp-text">New Balance:</span>
+                                <span id="editPreviewBalance" class="font-extrabold text-sm text-[#e65100] dark:text-[#ffb74d]">₱0.00</span>
+                            </div>
+                            <div id="editPriceDiffBadge" class="mt-2 text-center text-[0.72rem] font-bold text-hp-text-muted"></div>
+                        </div>
                     </div>
                     <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label class="guest-form__field grid gap-1.5">
@@ -370,37 +403,70 @@
 
     <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="editCalendarModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-edit-calendar="true"></div>
-        <div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[430px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-4 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
-            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-edit-calendar="true" aria-label="Close calendar">&times;</button>
-            <div class="guest-modal__header mb-2.5 flex items-center justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
-                <h3 id="editCalendarModalTitle" class="guest-modal__title m-0 font-display text-base text-hp-text">Choose a New Date</h3>
-                <span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-glass-border bg-[rgba(200,164,93,0.12)] px-3 py-1 text-[0.82rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editCalModalCurrent"></span>
+        <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-edit-calendar="true" aria-label="Close calendar">&times;</button>
+            <div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+                <div>
+                    <h3 id="editCalendarModalTitle" class="guest-modal__title m-0 font-display text-lg text-hp-text">Reschedule Stay</h3>
+                    <p class="m-0 text-xs text-hp-text-muted">Select continuous stay dates (up to 5 years ahead)</p>
+                </div>
+                <span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-glass-border bg-[rgba(200,164,93,0.12)] px-3 py-1 text-[0.8rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editCalModalCurrent"></span>
             </div>
-            <div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
-                <p class="edit-calendar__slot-note m-0 rounded-lg border border-glass-border bg-[rgba(200,164,93,0.12)] px-2.5 py-1.5 text-[0.82rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editSlotNote" hidden></p>
 
-                <div class="edit-calendar__head mt-0.5 flex items-center justify-between gap-2">
-                    <button type="button" class="edit-calendar__nav inline-flex h-[1.8rem] w-[1.8rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-[#8a7a4d] hover:bg-[rgba(200,164,93,0.15)] hover:text-[#8a7a4d] dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
-                    <div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-                        <div class="edit-calendar__title text-[0.88rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="editCalTitle">&mdash;</div>
-                        <select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-[0.82rem] font-semibold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalYear" aria-label="Select year"></select>
+            <!-- Sessions Bar: Start Slot & End Slot -->
+            <div class="edit-calendar__sessions-panel mb-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 rounded-xl border border-glass-border bg-glass p-3 dark:border-white/10 dark:bg-white/5">
+                <div class="grid gap-1">
+                    <span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-In Session</span>
+                    <div class="flex gap-1.5" id="editStartSlotGroup">
+                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="start" data-slot-val="Daytime">Daytime</button>
+                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="start" data-slot-val="Nighttime">Nighttime</button>
                     </div>
-                    <button type="button" class="edit-calendar__nav inline-flex h-[1.8rem] w-[1.8rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-[#8a7a4d] hover:bg-[rgba(200,164,93,0.15)] hover:text-[#8a7a4d] dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalNext" aria-label="Next month">&rsaquo;</button>
+                </div>
+                <div class="grid gap-1">
+                    <span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-Out Session</span>
+                    <div class="flex gap-1.5" id="editEndSlotGroup">
+                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Daytime">Daytime</button>
+                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Nighttime">Nighttime</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Component -->
+            <div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+                <div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
+                    <button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
+                    <div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
+                        <div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="editCalTitle">&mdash;</div>
+                        <select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalYear" aria-label="Select year"></select>
+                    </div>
+                    <button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="editCalNext" aria-label="Next month">&rsaquo;</button>
                 </div>
 
-                <div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-[0.28rem]">
-                    <span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.6rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+                <div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
+                    <span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
                 </div>
 
-                <div class="edit-calendar__grid relative grid min-h-12 grid-cols-7 gap-[0.28rem] transition-opacity duration-250" id="editCalGrid"></div>
+                <div class="edit-calendar__grid relative mt-1 grid min-h-[220px] grid-cols-7 gap-1 transition-opacity duration-250" id="editCalGrid"></div>
 
-                <p class="edit-calendar__hint mt-2 flex flex-wrap items-center gap-1.5 text-[0.72rem] text-hp-text-muted">
-                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-hp-green-mid"></span> Open
-                    &nbsp;&middot;&nbsp;
-                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[rgba(13,44,29,0.25)] dark:bg-white/25"></span> Unavailable (amenity already booked)
-                    &nbsp;&middot;&nbsp;
-                    <span class="edit-calendar__dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-[rgba(200,164,93,0.7)]"></span> Past
-                </p>
+                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.72rem] text-hp-text-muted dark:border-white/10">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-hp-green"></span> Selected Range</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Unavailable</span>
+                    </div>
+                    <span id="editCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to set check-in</span>
+                </div>
+            </div>
+
+            <!-- Modal Footer: Summary & Apply button -->
+            <div class="edit-calendar__footer mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border pt-3 dark:border-white/10">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-hp-text dark:text-[#c8e6c8]" id="editCalSummaryText">Select date range</div>
+                    <div class="text-[0.72rem] text-hp-text-muted" id="editCalCostSummary">₱0.00</div>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover" data-close-edit-calendar="true">Cancel</button>
+                    <button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark" id="editCalApplyBtn">Apply Schedule</button>
+                </div>
             </div>
         </div>
     </div>

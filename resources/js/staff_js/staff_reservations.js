@@ -1045,31 +1045,43 @@ window.AppPage['staff_reservations'] = function () {
             };
         };
 
-        const guests = (reservation.reservation_guests || []).map((guest) => {
-            const name = [guest.customer?.first_name, guest.customer?.last_name].filter(Boolean).join(' ').trim() || 'Unnamed guest';
+        const rawGuests = reservation.reservation_guests || reservation.reservationGuests || reservation.guests || [];
+        const guests = rawGuests.map((guest) => {
+            const name = [guest.customer?.first_name, guest.customer?.last_name].filter(Boolean).join(' ').trim() || (guest.is_primary_guest ? reservation.booker_name : 'Unnamed guest');
             const role = guest.is_primary_guest ? 'Primary Guest' : 'Companion';
+            const email = guest.customer?.email || (guest.is_primary_guest ? reservation.email : 'No email');
             return `
                 <div class="guest-relationship-item">
                     <div class="guest-relationship-label">${escapeHtml(role)}</div>
                     <div class="guest-relationship-name">${escapeHtml(name)}</div>
-                    <div class="guest-meta">${escapeHtml(guest.customer?.email || 'No email')}</div>
+                    <div class="guest-meta">${escapeHtml(email || 'No email')}</div>
                 </div>
             `;
         }).join('');
 
-        const amenities = (reservation.reservation_amenities || []).map((amenity) => {
-            const name = amenity.amenity?.amenities_name || amenity.amenity_name || 'Unknown amenity';
+        const guestsListHtml = guests || `
+            <div class="guest-relationship-item">
+                <div class="guest-relationship-label">Primary Guest (Booker)</div>
+                <div class="guest-relationship-name">${escapeHtml(reservation.booker_name || 'Booker')}</div>
+                <div class="guest-meta">${escapeHtml(reservation.email || 'No email')} · ${escapeHtml(reservation.phone || 'No phone')}</div>
+            </div>
+        `;
+
+        const rawAmenities = reservation.reservation_amenities || reservation.reservationAmenities || reservation.amenities || [];
+        const amenities = rawAmenities.map((amenity) => {
+            const name = amenity.amenity?.amenities_name || amenity.amenity_name || amenity.amenities_name || amenity.name || 'Unknown amenity';
             const sDate = amenity.start_date || reservation.reservation_date;
             const eDate = amenity.end_date || reservation.end_date || sDate;
             const sSlot = amenity.start_slot || reservation.start_slot || 'Daytime';
             const eSlot = amenity.end_slot || reservation.end_slot || sSlot;
             const hasRange = sDate && eDate && sDate !== eDate;
+            const pricingType = amenity.pricing_type || (hasRange ? `Continuous Stay (${reservation.total_days || 1}D)` : sSlot);
             const scheduleBadge = hasRange 
                 ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(formatDate(sDate))} (${escapeHtml(sSlot)}) – ${escapeHtml(formatDate(eDate))} (${escapeHtml(eSlot)})</span>` 
                 : (sSlot ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(sSlot)}</span>` : '');
             const slotCountBadge = (amenity.day_slots_count || amenity.night_slots_count) ? `<span style="font-size:0.75rem;color:#666;margin-left:4px;">(${amenity.day_slots_count || 0}D ${amenity.night_slots_count || 0}N)</span>` : '';
 
-            return `<li>${escapeHtml(name)} — ${escapeHtml(amenity.pricing_type)}${scheduleBadge}${slotCountBadge} · ₱${Number(amenity.price_at_booking || 0).toFixed(2)}</li>`;
+            return `<li>${escapeHtml(name)} — ${escapeHtml(pricingType)}${scheduleBadge}${slotCountBadge} · ₱${Number(amenity.price_at_booking || 0).toFixed(2)}</li>`;
         }).join('');
 
         const expectedCheckout = formatExpectedCheckout(reservation);
@@ -1110,7 +1122,7 @@ window.AppPage['staff_reservations'] = function () {
                 </div>
                 <div style="margin-top:0.75rem;">
                     <div class="guest-relationship-header">Guests on this reservation</div>
-                    <div class="guest-relationship-list">${guests || '<div class="guest-relationship-item"><div class="guest-relationship-name">No guest details listed.</div></div>'}</div>
+                    <div class="guest-relationship-list">${guestsListHtml}</div>
                 </div>
                 <div style="margin-top:0.75rem;">
                     <span class="guest-label">Reserved Amenities & Schedules</span>
@@ -1274,17 +1286,28 @@ window.AppPage['staff_reservations'] = function () {
             submitButton.textContent = 'Save Changes';
         }
 
+        const sDate = formatDateForInput(reservation.reservation_date);
+        const eDate = formatDateForInput(reservation.end_date) || sDate;
+        const sSlot = reservation.start_slot || 'Daytime';
+        const eSlot = reservation.end_slot || sSlot;
+
         // Populate form fields
         document.getElementById('editReservationId').value = reservation.id;
         document.getElementById('editBookerName').value = reservation.booker_name || '';
         document.getElementById('editEmail').value = reservation.email || '';
         document.getElementById('editPhone').value = reservation.phone || '';
-        document.getElementById('editReservationDate').value = formatDateForInput(reservation.reservation_date);
+        document.getElementById('editReservationDate').value = sDate;
+        document.getElementById('editEndDate').value = eDate;
+        document.getElementById('editStartSlot').value = sSlot;
+        document.getElementById('editEndSlot').value = eSlot;
         document.getElementById('editGuests').value = reservation.number_of_guests || '';
         document.getElementById('editStatus').value = reservation.status || 'Pending';
 
-        // Build the availability calendar for rescheduling
+        // Initialize state for the multi-day reschedule calendar
         initEditCalendar(reservationId);
+
+        // Update Stay Schedule Card in edit form
+        updateEditFormScheduleCard();
 
         // Hide body, show edit form
         modalBody.hidden = true;
@@ -1300,32 +1323,50 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
-    // ── Reschedule calendar ───────────────────────────────────────────────
-    // The edit form's date field is a small availability calendar: dates where
-    // any of the reservation's amenities are already booked for their slot are
-    // disabled, so staff can only reschedule to genuinely free dates.
+    // ── Continuous Multi-Day Reschedule Calendar & Pricing Engine ────────
     let editCalState = {
         reservationId: null,
         month: null,
         year: null,
-        selected: '',
-        currentDate: '',
+        startDate: '',
+        endDate: '',
+        startSlot: 'Daytime',
+        endSlot: 'Daytime',
+        selectingEnd: false,
+        hoverDate: null,
+        currentStartDate: '',
+        currentEndDate: '',
+        currentStartSlot: 'Daytime',
+        currentEndSlot: 'Daytime',
+        originalTotal: 0,
+        amountPaid: 0,
+        entranceFee: 0,
+        amenities: [],
         availability: [],
     };
 
     const editCalGrid = document.getElementById('editCalGrid');
     const editCalTitle = document.getElementById('editCalTitle');
-    const editCalSlotNote = document.getElementById('editSlotNote');
     const editCalPrev = document.getElementById('editCalPrev');
     const editCalNext = document.getElementById('editCalNext');
     const editCalTrigger = document.getElementById('editCalTrigger');
     const editCalTriggerValue = document.getElementById('editCalTriggerValue');
+    const editCalTriggerSessions = document.getElementById('editCalTriggerSessions');
+    const editStayDurationBadge = document.getElementById('editStayDurationBadge');
+    const editPriceImpactCard = document.getElementById('editPriceImpactCard');
+    const editPreviewTotal = document.getElementById('editPreviewTotal');
+    const editPreviewPaid = document.getElementById('editPreviewPaid');
+    const editPreviewBalance = document.getElementById('editPreviewBalance');
+    const editPriceDiffBadge = document.getElementById('editPriceDiffBadge');
     const editCalendarModal = document.getElementById('editCalendarModal');
     const editCalModalCurrent = document.getElementById('editCalModalCurrent');
     const editCalCloseButtons = document.querySelectorAll('[data-close-edit-calendar="true"]');
     const editCalYear = document.getElementById('editCalYear');
+    const editCalApplyBtn = document.getElementById('editCalApplyBtn');
+    const editCalSummaryText = document.getElementById('editCalSummaryText');
+    const editCalCostSummary = document.getElementById('editCalCostSummary');
+    const editCalStepHelp = document.getElementById('editCalStepHelp');
 
-    // The calendar is browsable up to 5 years ahead of the current year.
     const editCalMaxYear = new Date().getFullYear() + 5;
 
     const todayISO = () => {
@@ -1348,16 +1389,155 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const formatDateLong = (dateStr) => {
-        const date = new Date(`${dateStr}T00:00:00`);
-        if (isNaN(date.getTime())) return dateStr || 'Select a date';
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        if (isNaN(dt.getTime())) return dateStr;
+        return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const calculateContinuousSlots = (startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDateStr) return { dayCount: 1, nightCount: 0, totalDays: 1 };
+        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+
+        if (!endDateStr || startDateStr === endDateStr) {
+            if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
+                return { dayCount: 1, nightCount: 0, totalDays: 1 };
+            } else if (cleanStart === 'Nighttime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 0, nightCount: 1, totalDays: 1 };
+            } else if (cleanStart === 'Daytime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 1, nightCount: 1, totalDays: 1 };
+            } else {
+                return { dayCount: 1, nightCount: 1, totalDays: 2 };
+            }
+        }
+
+        const [sy, sm, sd] = startDateStr.split('-').map(Number);
+        const [ey, em, ed] = endDateStr.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+
+        let daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 0) daysDiff = 0;
+        const totalDays = daysDiff + 1;
+
+        let dayCount = 0;
+        let nightCount = 0;
+
+        for (let i = 0; i <= daysDiff; i++) {
+            if (i === 0) {
+                if (cleanStart === 'Daytime') {
+                    dayCount++;
+                    nightCount++;
+                } else {
+                    nightCount++;
+                }
+            } else if (i === daysDiff) {
+                if (cleanEnd === 'Daytime') {
+                    dayCount++;
+                } else {
+                    dayCount++;
+                    nightCount++;
+                }
+            } else {
+                dayCount++;
+                nightCount++;
+            }
+        }
+
+        return { dayCount, nightCount, totalDays };
+    };
+
+    const calculateReservationPricing = (startDateStr, endDateStr, startSlot, endSlot) => {
+        const { dayCount, nightCount, totalDays } = calculateContinuousSlots(startDateStr, endDateStr, startSlot, endSlot);
+        
+        let amenityTotal = 0;
+        if (editCalState.amenities && editCalState.amenities.length > 0) {
+            editCalState.amenities.forEach((a) => {
+                const qty = Math.max(1, Number(a.quantity) || 1);
+                const dayPrice = Number(a.daytime_price) || 0;
+                const nightPrice = Number(a.nighttime_price) || 0;
+                const price = ((dayCount * dayPrice) + (nightCount * nightPrice)) * qty;
+                amenityTotal += price;
+            });
+        } else {
+            amenityTotal = editCalState.originalTotal;
+        }
+
+        const entranceFee = Number(editCalState.entranceFee) || 0;
+        const newTotal = amenityTotal + entranceFee;
+        const amountPaid = Number(editCalState.amountPaid) || 0;
+        const newBalance = Math.max(0, newTotal - amountPaid);
+        const totalDiff = newTotal - editCalState.originalTotal;
+
+        return {
+            newTotal,
+            newBalance,
+            totalDiff,
+            dayCount,
+            nightCount,
+            totalDays,
+            amountPaid,
+        };
+    };
+
+    const updateEditFormScheduleCard = () => {
+        const sDate = document.getElementById('editReservationDate')?.value || editCalState.startDate;
+        const eDate = document.getElementById('editEndDate')?.value || editCalState.endDate || sDate;
+        const sSlot = document.getElementById('editStartSlot')?.value || editCalState.startSlot || 'Daytime';
+        const eSlot = document.getElementById('editEndSlot')?.value || editCalState.endSlot || sSlot;
+
+        if (!sDate) return;
+
+        const pricing = calculateReservationPricing(sDate, eDate, sSlot, eSlot);
+
+        if (editCalTriggerValue) {
+            editCalTriggerValue.textContent = (sDate === eDate)
+                ? formatDateLong(sDate)
+                : `${formatDateLong(sDate)} – ${formatDateLong(eDate)}`;
+        }
+
+        if (editCalTriggerSessions) {
+            editCalTriggerSessions.textContent = (sDate === eDate)
+                ? (sSlot === eSlot ? `${sSlot} Session` : `${sSlot} to ${eSlot}`)
+                : `${sSlot} check-in → ${eSlot} check-out (${pricing.dayCount}D ${pricing.nightCount}N)`;
+        }
+
+        if (editStayDurationBadge) {
+            editStayDurationBadge.textContent = `${pricing.totalDays} Day${pricing.totalDays > 1 ? 's' : ''} Stay`;
+        }
+
+        const hasScheduleChanged = (sDate !== editCalState.currentStartDate)
+            || (eDate !== editCalState.currentEndDate)
+            || (sSlot !== editCalState.currentStartSlot)
+            || (eSlot !== editCalState.currentEndSlot);
+
+        if (editPriceImpactCard) {
+            if (hasScheduleChanged || pricing.totalDiff !== 0) {
+                editPriceImpactCard.hidden = false;
+                if (editPreviewTotal) editPreviewTotal.textContent = `₱${pricing.newTotal.toFixed(2)}`;
+                if (editPreviewPaid) editPreviewPaid.textContent = `₱${pricing.amountPaid.toFixed(2)}`;
+                if (editPreviewBalance) editPreviewBalance.textContent = `₱${pricing.newBalance.toFixed(2)}`;
+
+                if (editPriceDiffBadge) {
+                    if (pricing.totalDiff > 0) {
+                        editPriceDiffBadge.innerHTML = `<span class="inline-block rounded-md bg-[#e65100]/10 px-2 py-0.5 text-[#e65100] dark:bg-[#ffb74d]/20 dark:text-[#ffb74d]">+₱${pricing.totalDiff.toFixed(2)} added to total & balance</span>`;
+                    } else if (pricing.totalDiff < 0) {
+                        editPriceDiffBadge.innerHTML = `<span class="inline-block rounded-md bg-hp-green/10 px-2 py-0.5 text-hp-green dark:bg-[#81c784]/20 dark:text-[#81c784]">-₱${Math.abs(pricing.totalDiff).toFixed(2)} reduced from total & balance</span>`;
+                    } else {
+                        editPriceDiffBadge.innerHTML = `<span class="text-hp-text-muted">Same total amount</span>`;
+                    }
+                }
+            } else {
+                editPriceImpactCard.hidden = true;
+            }
+        }
     };
 
     const populateEditCalYear = () => {
         if (!editCalYear) return;
         const currentYear = new Date().getFullYear();
-        // If the reservation is from a previous year, include it so the
-        // initial month stays selectable too.
         const fromYear = Math.min(currentYear, Number(editCalState.year) || currentYear);
         editCalYear.innerHTML = '';
         for (let year = fromYear; year <= editCalMaxYear; year++) {
@@ -1380,65 +1560,188 @@ window.AppPage['staff_reservations'] = function () {
         editCalNext.classList.toggle('is-disabled', atCap);
     };
 
-    const updateEditCalTrigger = () => {
-        if (editCalTriggerValue) {
-            editCalTriggerValue.textContent = editCalState.selected ? formatDateLong(editCalState.selected) : 'Select a date';
+    const syncSessionButtonsUI = () => {
+        document.querySelectorAll('#editStartSlotGroup .session-pill-btn').forEach((b) => {
+            b.dataset.active = (b.dataset.slotVal === editCalState.startSlot) ? 'true' : 'false';
+        });
+        document.querySelectorAll('#editEndSlotGroup .session-pill-btn').forEach((b) => {
+            b.dataset.active = (b.dataset.slotVal === editCalState.endSlot) ? 'true' : 'false';
+        });
+    };
+
+    const updateEditCalendarCostSummary = () => {
+        const sDate = editCalState.startDate;
+        const eDate = editCalState.endDate || sDate;
+        const sSlot = editCalState.startSlot;
+        const eSlot = editCalState.endSlot;
+
+        if (!sDate) {
+            if (editCalSummaryText) editCalSummaryText.textContent = 'Please select a check-in date';
+            if (editCalCostSummary) editCalCostSummary.textContent = '—';
+            return;
+        }
+
+        const pricing = calculateReservationPricing(sDate, eDate, sSlot, eSlot);
+
+        if (editCalSummaryText) {
+            editCalSummaryText.textContent = (sDate === eDate)
+                ? `${formatDateLong(sDate)} (${sSlot} to ${eSlot}) · 1 Day`
+                : `${formatDateLong(sDate)} (${sSlot}) → ${formatDateLong(eDate)} (${eSlot}) · ${pricing.totalDays} Days (${pricing.dayCount}D ${pricing.nightCount}N)`;
+        }
+
+        if (editCalCostSummary) {
+            const diffText = pricing.totalDiff > 0
+                ? ` (+₱${pricing.totalDiff.toFixed(2)})`
+                : (pricing.totalDiff < 0 ? ` (-₱${Math.abs(pricing.totalDiff).toFixed(2)})` : '');
+            editCalCostSummary.textContent = `New Total: ₱${pricing.newTotal.toFixed(2)}${diffText} · Balance: ₱${pricing.newBalance.toFixed(2)}`;
         }
     };
 
-    const closeEditCalendarModal = () => {
-        if (editCalendarModal) {
-            editCalendarModal.classList.remove('is-open');
-            editCalendarModal.setAttribute('aria-hidden', 'true');
+    const calculateContinuousSlotsTimeline = (startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDateStr) return [];
+        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+
+        const [sy, sm, sd] = startDateStr.split('-').map(Number);
+        const [ey, em, ed] = (endDateStr || startDateStr).split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+
+        let daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 0) daysDiff = 0;
+
+        const pairs = [];
+        if (daysDiff === 0) {
+            if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
+                pairs.push([startDateStr, 'Daytime']);
+            } else if (cleanStart === 'Nighttime' && cleanEnd === 'Nighttime') {
+                pairs.push([startDateStr, 'Nighttime']);
+            } else if (cleanStart === 'Daytime' && cleanEnd === 'Nighttime') {
+                pairs.push([startDateStr, 'Daytime']);
+                pairs.push([startDateStr, 'Nighttime']);
+            } else {
+                pairs.push([startDateStr, 'Nighttime']);
+                const nextDate = new Date(sy, sm - 1, sd + 1);
+                const nextIso = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+                pairs.push([nextIso, 'Daytime']);
+            }
+            return pairs;
         }
+
+        for (let i = 0; i <= daysDiff; i++) {
+            const curDt = new Date(sy, sm - 1, sd + i);
+            const curIso = `${curDt.getFullYear()}-${String(curDt.getMonth() + 1).padStart(2, '0')}-${String(curDt.getDate()).padStart(2, '0')}`;
+            if (i === 0) {
+                if (cleanStart === 'Daytime') {
+                    pairs.push([curIso, 'Daytime']);
+                    pairs.push([curIso, 'Nighttime']);
+                } else {
+                    pairs.push([curIso, 'Nighttime']);
+                }
+            } else if (i === daysDiff) {
+                if (cleanEnd === 'Daytime') {
+                    pairs.push([curIso, 'Daytime']);
+                } else {
+                    pairs.push([curIso, 'Daytime']);
+                    pairs.push([curIso, 'Nighttime']);
+                }
+            } else {
+                pairs.push([curIso, 'Daytime']);
+                pairs.push([curIso, 'Nighttime']);
+            }
+        }
+        return pairs;
     };
 
-    const openEditCalendarModal = () => {
-        if (!editCalendarModal) return;
-        editCalendarModal.classList.add('is-open');
-        editCalendarModal.setAttribute('aria-hidden', 'false');
-        loadEditCalendar();
+    const isSlotAvailableOnDate = (iso, slotType = 'Daytime') => {
+        if (!iso) return false;
+        const today = todayISO();
+        const isCurrentStayDate = editCalState.currentStartDate && editCalState.currentEndDate
+            && (iso >= editCalState.currentStartDate && iso <= editCalState.currentEndDate);
+
+        const entry = editCalState.availabilityMap?.[iso];
+        if (!entry) {
+            if (iso < today && !isCurrentStayDate) return false;
+            return true;
+        }
+
+        if (entry.is_past && !isCurrentStayDate) {
+            return false;
+        }
+
+        if (slotType === 'Daytime') {
+            return Boolean(entry.daytime);
+        }
+        if (slotType === 'Nighttime') {
+            return Boolean(entry.nighttime);
+        }
+        if (slotType === 'Both') {
+            return Boolean(entry.daytime && entry.nighttime);
+        }
+        return Boolean(entry.daytime || entry.nighttime);
+    };
+
+    const isRangeValidAndAvailable = (sDate, eDate, sSlot = editCalState.startSlot, eSlot = editCalState.endSlot) => {
+        if (!sDate) return false;
+        const e = eDate || sDate;
+        if (sDate > e) return false;
+
+        const timeline = calculateContinuousSlotsTimeline(sDate, e, sSlot, eSlot);
+        if (!timeline.length) return false;
+
+        for (const [d, s] of timeline) {
+            if (!isSlotAvailableOnDate(d, s)) {
+                return false;
+            }
+        }
+        return true;
     };
 
     const initEditCalendar = (reservationId) => {
         const reservation = reservationData?.[reservationId];
         if (!reservation) return;
 
-        const current = formatDateForInput(reservation.reservation_date);
-        const parts = current ? current.split('-').map(Number) : null;
+        const currentStart = formatDateForInput(reservation.reservation_date);
+        const currentEnd = formatDateForInput(reservation.end_date) || currentStart;
+        const currentStartSlot = reservation.start_slot || 'Daytime';
+        const currentEndSlot = reservation.end_slot || currentStartSlot;
+        const parts = currentStart ? currentStart.split('-').map(Number) : null;
 
         editCalState = {
             reservationId,
             month: parts ? parts[1] : new Date().getMonth() + 1,
             year: parts ? parts[0] : new Date().getFullYear(),
-            selected: current,
-            currentDate: current,
+            startDate: currentStart,
+            endDate: currentEnd,
+            startSlot: currentStartSlot,
+            endSlot: currentEndSlot,
+            selectingEnd: false,
+            hoverDate: null,
+            currentStartDate: currentStart,
+            currentEndDate: currentEnd,
+            currentStartSlot,
+            currentEndSlot,
+            originalTotal: Number(reservation.total_amount || 0),
+            amountPaid: Number(reservation.amount_paid || 0),
+            entranceFee: 0,
+            amenities: [],
             availability: [],
+            availabilityMap: {},
         };
 
         populateEditCalYear();
-        updateEditCalTrigger();
+        syncSessionButtonsUI();
         syncEditCalNextState();
 
-        // Show the current date in the calendar modal header
         if (editCalModalCurrent) {
-            editCalModalCurrent.textContent = current ? `Current: ${formatDateLong(current)}` : '';
-            editCalModalCurrent.hidden = !current;
+            editCalModalCurrent.textContent = currentStart ? `Current: ${formatDateLong(currentStart)}${currentEnd !== currentStart ? ' – ' + formatDateLong(currentEnd) : ''}` : '';
+            editCalModalCurrent.hidden = !currentStart;
         }
 
-        // Show which slot(s) the availability check applies to
-        if (editCalSlotNote) {
-            const slots = (reservation.time_slots || []).length
-                ? reservation.time_slots
-                : (reservation.reservation_amenities || []).map((a) => a.pricing_type).filter(Boolean);
-            const uniqueSlots = [...new Set(slots)];
-            editCalSlotNote.textContent = uniqueSlots.length
-                ? `Availability shown for ${uniqueSlots.join(' · ')}`
-                : '';
-            editCalSlotNote.hidden = uniqueSlots.length === 0;
+        if (editCalStepHelp) {
+            editCalStepHelp.textContent = 'Click date to set check-in';
         }
 
-        // The calendar lives in its own modal, opened from the date trigger.
         closeEditCalendarModal();
     };
 
@@ -1461,9 +1764,21 @@ window.AppPage['staff_reservations'] = function () {
 
             const payload = await response.json();
             editCalState.availability = payload.availability || [];
+            if (!editCalState.availabilityMap) editCalState.availabilityMap = {};
+            editCalState.availability.forEach((entry) => {
+                editCalState.availabilityMap[entry.date] = entry;
+            });
+
+            if (payload.amenities) editCalState.amenities = payload.amenities;
+            if (payload.entrance_fee !== undefined) editCalState.entranceFee = payload.entrance_fee;
+            if (payload.amount_paid !== undefined) editCalState.amountPaid = payload.amount_paid;
+            if (payload.total_amount !== undefined) editCalState.originalTotal = payload.total_amount;
+
+            syncSessionButtonsUI();
+            updateEditCalendarCostSummary();
             renderEditCalendar();
         } catch (error) {
-            editCalGrid.innerHTML = '<p class="edit-calendar__error">Unable to load availability. Please try again.</p>';
+            editCalGrid.innerHTML = '<p class="edit-calendar__error p-4 text-center text-xs text-red-500">Unable to load availability. Please try again.</p>';
         } finally {
             editCalGrid.classList.remove('is-loading');
         }
@@ -1472,8 +1787,7 @@ window.AppPage['staff_reservations'] = function () {
     const renderEditCalendar = () => {
         if (!editCalGrid) return;
 
-        const { month, year, availability, selected, currentDate } = editCalState;
-        const byDate = Object.fromEntries(availability.map((a) => [a.date, a]));
+        const { month, year, startDate, endDate, selectingEnd, hoverDate, startSlot, endSlot } = editCalState;
         const daysInMonth = new Date(year, month, 0).getDate();
         const leading = new Date(year, month - 1, 1).getDay();
         const today = todayISO();
@@ -1482,45 +1796,207 @@ window.AppPage['staff_reservations'] = function () {
 
         for (let i = 0; i < leading; i++) {
             const empty = document.createElement('div');
-            empty.className = 'edit-calendar__day edit-calendar__day--empty';
+            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
             editCalGrid.appendChild(empty);
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
             const iso = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const entry = byDate[iso];
-            const available = entry ? entry.available : true;
-            const isPast = entry ? entry.is_past : iso < today;
-            const isSelected = iso === selected;
-            const isCurrent = iso === currentDate && iso !== today;
+            const entry = editCalState.availabilityMap?.[iso];
+
+            let isAvailable = false;
+            let isPast = false;
+
+            if (!selectingEnd) {
+                // Step 1: Selecting Check-in date
+                isAvailable = isSlotAvailableOnDate(iso, startSlot);
+                isPast = entry ? entry.is_past : (iso < today && iso !== editCalState.currentStartDate);
+            } else {
+                // Step 2: Selecting Check-out date
+                if (iso < startDate) {
+                    isAvailable = isSlotAvailableOnDate(iso, startSlot);
+                    isPast = entry ? entry.is_past : (iso < today && iso !== editCalState.currentStartDate);
+                } else {
+                    isAvailable = isRangeValidAndAvailable(startDate, iso, startSlot, endSlot);
+                    isPast = false;
+                }
+            }
+
+            const isStart = iso === startDate;
+            const isEnd = iso === endDate;
+            const isInRange = startDate && endDate && iso > startDate && iso < endDate;
+            const isHoverRange = selectingEnd && hoverDate && startDate && iso > startDate && iso <= hoverDate && isRangeValidAndAvailable(startDate, hoverDate, startSlot, endSlot);
 
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'edit-calendar__day';
             btn.textContent = d;
-            btn.setAttribute('aria-label', `${iso}${available && !isPast ? ' available' : ' unavailable'}`);
+            btn.setAttribute('data-date', iso);
 
-            if (isSelected) btn.classList.add('is-selected');
-            if (isCurrent) btn.classList.add('is-current');
+            if (isStart && isEnd) {
+                btn.classList.add('is-range-start', 'is-range-end');
+            } else if (isStart) {
+                btn.classList.add('is-range-start');
+            } else if (isEnd) {
+                btn.classList.add('is-range-end');
+            } else if (isInRange) {
+                btn.classList.add('is-in-range');
+            } else if (isHoverRange) {
+                btn.classList.add('is-range-hover');
+            }
 
-            if (!available || isPast) {
+            if (!isAvailable || isPast) {
                 btn.classList.add('is-disabled');
                 btn.disabled = true;
+                btn.setAttribute('title', isPast ? 'Past date' : 'Booked / Unavailable');
+                btn.setAttribute('aria-label', `${iso} unavailable (booked)`);
             } else {
                 btn.classList.add('is-available');
+                btn.setAttribute('aria-label', `${iso} available`);
+
+                // Hover preview when selecting end date
+                btn.addEventListener('mouseenter', () => {
+                    if (editCalState.selectingEnd && editCalState.startDate && iso >= editCalState.startDate) {
+                        if (isRangeValidAndAvailable(editCalState.startDate, iso, editCalState.startSlot, editCalState.endSlot)) {
+                            editCalState.hoverDate = iso;
+                            document.querySelectorAll('#editCalGrid .edit-calendar__day').forEach((dayBtn) => {
+                                const date = dayBtn.getAttribute('data-date');
+                                if (!date) return;
+                                const inHover = date > editCalState.startDate && date <= iso;
+                                dayBtn.classList.toggle('is-range-hover', inHover);
+                            });
+                        }
+                    }
+                });
+
+                // Range click handling
                 btn.addEventListener('click', () => {
-                    editCalState.selected = iso;
-                    const hidden = document.getElementById('editReservationDate');
-                    if (hidden) hidden.value = iso;
-                    updateEditCalTrigger();
-                    renderEditCalendar();
-                    // A date was picked — close the calendar modal.
-                    closeEditCalendarModal();
+                    if (!editCalState.selectingEnd) {
+                        // First click: select check-in date
+                        editCalState.startDate = iso;
+                        editCalState.endDate = iso;
+                        editCalState.selectingEnd = true;
+                        editCalState.hoverDate = null;
+                        if (editCalStepHelp) {
+                            editCalStepHelp.textContent = 'Now click check-out date (or same date for 1 day)';
+                        }
+                        renderEditCalendar();
+                        updateEditCalendarCostSummary();
+                    } else {
+                        // Second click: select check-out date
+                        if (iso < editCalState.startDate) {
+                            // User clicked an earlier date; restart with this as start date
+                            editCalState.startDate = iso;
+                            editCalState.endDate = iso;
+                            editCalState.selectingEnd = true;
+                            editCalState.hoverDate = null;
+                            if (editCalStepHelp) {
+                                editCalStepHelp.textContent = 'Now click check-out date (or same date for 1 day)';
+                            }
+                            renderEditCalendar();
+                            updateEditCalendarCostSummary();
+                        } else {
+                            // Check that no unavailable dates are crossed in this continuous stay
+                            if (!isRangeValidAndAvailable(editCalState.startDate, iso, editCalState.startSlot, editCalState.endSlot)) {
+                                window.alert('Cannot select a continuous date range crossing booked or unavailable dates. All days in the stay must be available.');
+                                return;
+                            }
+
+                            editCalState.endDate = iso;
+                            editCalState.selectingEnd = false;
+                            editCalState.hoverDate = null;
+                            if (editCalStepHelp) {
+                                editCalStepHelp.textContent = 'Dates selected! Click Apply Schedule to confirm.';
+                            }
+                            renderEditCalendar();
+                            updateEditCalendarCostSummary();
+                        }
+                    }
                 });
             }
 
             editCalGrid.appendChild(btn);
         }
+    };
+
+    // Session buttons listener
+    document.querySelectorAll('.session-pill-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const type = btn.dataset.slotType;
+            const val = btn.dataset.slotVal;
+            if (type === 'start') {
+                editCalState.startSlot = val;
+                if (editCalState.startDate === editCalState.endDate && val === 'Nighttime' && editCalState.endSlot === 'Daytime') {
+                    editCalState.endSlot = 'Nighttime';
+                }
+            } else if (type === 'end') {
+                editCalState.endSlot = val;
+                if (editCalState.startDate === editCalState.endDate && val === 'Daytime' && editCalState.startSlot === 'Nighttime') {
+                    editCalState.startSlot = 'Daytime';
+                }
+            }
+
+            // If current selection is no longer valid with new session slots, validate and adjust if needed
+            if (editCalState.startDate && !isSlotAvailableOnDate(editCalState.startDate, editCalState.startSlot)) {
+                editCalState.startDate = null;
+                editCalState.endDate = null;
+                editCalState.selectingEnd = false;
+                if (editCalStepHelp) {
+                    editCalStepHelp.textContent = 'Selected date is booked for this session. Please click an available check-in date.';
+                }
+            } else if (editCalState.startDate && editCalState.endDate && !isRangeValidAndAvailable(editCalState.startDate, editCalState.endDate, editCalState.startSlot, editCalState.endSlot)) {
+                editCalState.endDate = editCalState.startDate;
+                editCalState.selectingEnd = true;
+                if (editCalStepHelp) {
+                    editCalStepHelp.textContent = 'Now click check-out date (or same date for 1 day)';
+                }
+            }
+
+            syncSessionButtonsUI();
+            updateEditCalendarCostSummary();
+            renderEditCalendar();
+        });
+    });
+
+    // Apply schedule button
+    editCalApplyBtn?.addEventListener('click', () => {
+        if (!editCalState.startDate) {
+            window.alert('Please select an available check-in date.');
+            return;
+        }
+
+        const sDate = editCalState.startDate;
+        const eDate = editCalState.endDate || sDate;
+        const sSlot = editCalState.startSlot || 'Daytime';
+        const eSlot = editCalState.endSlot || sSlot;
+
+        if (!isRangeValidAndAvailable(sDate, eDate, sSlot, eSlot)) {
+            window.alert('Cannot apply schedule: One or more selected dates or sessions are already booked. Please choose an available date range.');
+            return;
+        }
+
+        document.getElementById('editReservationDate').value = sDate;
+        document.getElementById('editEndDate').value = eDate;
+        document.getElementById('editStartSlot').value = sSlot;
+        document.getElementById('editEndSlot').value = eSlot;
+
+        updateEditFormScheduleCard();
+        closeEditCalendarModal();
+    });
+
+    const closeEditCalendarModal = () => {
+        if (editCalendarModal) {
+            editCalendarModal.classList.remove('is-open');
+            editCalendarModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    const openEditCalendarModal = () => {
+        if (!editCalendarModal) return;
+        editCalendarModal.classList.add('is-open');
+        editCalendarModal.setAttribute('aria-hidden', 'false');
+        loadEditCalendar();
     };
 
     editCalTrigger?.addEventListener('click', () => {
@@ -1531,7 +2007,6 @@ window.AppPage['staff_reservations'] = function () {
         button.addEventListener('click', closeEditCalendarModal);
     });
 
-    // Close the calendar modal with Escape, like a standard dialog.
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && editCalendarModal && editCalendarModal.classList.contains('is-open')) {
             closeEditCalendarModal();
@@ -1554,7 +2029,6 @@ window.AppPage['staff_reservations'] = function () {
     });
 
     editCalNext?.addEventListener('click', () => {
-        // Hard cap: the calendar covers up to 5 years ahead.
         if (editCalState.month === 12 && editCalState.year >= editCalMaxYear) return;
         editCalState.month += 1;
         if (editCalState.month > 12) {
@@ -1571,10 +2045,134 @@ window.AppPage['staff_reservations'] = function () {
         }
     });
 
+    cancelEditBtn?.addEventListener('click', closeEditForm);
+
+    editReservationForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(editReservationForm);
+        const reservationId = formData.get('reservation_id');
+        const submitButton = editReservationForm.querySelector('button[type="submit"]');
+
+        showConfirmModal(
+            'Save Changes',
+            'Are you sure you want to save these changes to the reservation?',
+            async () => {
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Saving...';
+                }
+
+                try {
+                    const response = await fetch(`/staff/reservations/${reservationId}/update`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            booker_name: formData.get('booker_name'),
+                            email: formData.get('email'),
+                            phone: formData.get('phone'),
+                            reservation_date: formData.get('reservation_date'),
+                            end_date: formData.get('end_date'),
+                            start_slot: formData.get('start_slot'),
+                            end_slot: formData.get('end_slot'),
+                            number_of_guests: formData.get('number_of_guests'),
+                            status: formData.get('status'),
+                        }),
+                    });
+
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(payload.message || 'Unable to update reservation.');
+                    }
+
+                    const updated = payload.reservation || {};
+
+                    // Update global reservationData cache
+                    if (reservationData[reservationId]) {
+                        reservationData[reservationId] = {
+                            ...reservationData[reservationId],
+                            ...updated,
+                        };
+                    }
+
+                    // Update table row with new data
+                    const tableRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+                    if (tableRow) {
+                        const bName = updated.booker_name || formData.get('booker_name');
+                        const bEmail = updated.email || formData.get('email');
+                        const bPhone = updated.phone || formData.get('phone');
+                        const sDate = updated.reservation_date || formData.get('reservation_date');
+                        const eDate = updated.end_date || formData.get('end_date') || sDate;
+                        const tDays = updated.total_days || 1;
+                        const status = updated.status || formData.get('status');
+                        const guests = updated.number_of_guests || formData.get('number_of_guests');
+
+                        tableRow.setAttribute('data-booker-name', bName);
+                        tableRow.setAttribute('data-email', bEmail);
+                        tableRow.setAttribute('data-phone', bPhone);
+                        tableRow.setAttribute('data-reservation-date', sDate);
+                        tableRow.setAttribute('data-status', String(status).toLowerCase());
+                        tableRow.setAttribute('data-guests', guests);
+                        if (updated.total_amount !== undefined) {
+                            tableRow.setAttribute('data-total-amount', updated.total_amount);
+                        }
+
+                        const cells = tableRow.querySelectorAll('td');
+                        if (cells[0]) {
+                            cells[0].innerHTML = `
+                                <div class="resv-booker flex items-center gap-3">
+                                    <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-br from-hp-green to-hp-green-mid text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:from-[#2e7d55] dark:to-[#1c5c3c]">${escapeHtml(getInitials(bName))}</span>
+                                    <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
+                                        <div class="guest-name font-semibold text-hp-text">${escapeHtml(bName)}</div>
+                                        <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">${escapeHtml(bEmail)}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        if (cells[1]) {
+                            if (eDate && eDate !== sDate) {
+                                cells[1].innerHTML = `
+                                    <div>
+                                        <span class="font-semibold text-hp-text">${formatDateLong(sDate)} – ${formatDateLong(eDate)}</span>
+                                        <div class="text-[0.75rem] text-hp-text-muted">(${tDays} Days Stay)</div>
+                                    </div>
+                                `;
+                            } else {
+                                cells[1].textContent = formatDateLong(sDate);
+                            }
+                        }
+                        if (cells[3]) {
+                            cells[3].textContent = guests;
+                        }
+                        if (cells[4]) {
+                            cells[4].innerHTML = `<span class="reservation-status reservation-status--${String(status).toLowerCase()} inline-flex items-center justify-center rounded-[0.4rem] px-3 py-1.5 text-[0.8rem] font-bold capitalize ${status === 'Pending' ? 'bg-[#fff3cd] text-[#856404] dark:bg-glass dark:text-[#ffd54f]' : 'bg-[#d4edda] text-[#155724] dark:bg-glass dark:text-[#81c784]'}">${status}</span>`;
+                        }
+                        if (cells[5] && updated.total_amount !== undefined) {
+                            cells[5].textContent = `₱${Number(updated.total_amount).toFixed(2)}`;
+                        }
+                    }
+
+                    closeModal();
+                    showSuccessModal('Reservation updated successfully!');
+                } catch (error) {
+                    window.alert(error.message || 'Unable to update reservation.');
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Save Changes';
+                    }
+                }
+            }
+        );
+    });
+
     // Refresh table functionality
     refreshTableBtn?.addEventListener('click', async () => {
         try {
-            // Show skeleton loading
             const skeletonCount = Math.min(5, Object.keys(reservationData).length || 5);
             tableBody.innerHTML = '';
             for (let i = 0; i < skeletonCount; i++) {
@@ -1601,9 +2199,6 @@ window.AppPage['staff_reservations'] = function () {
                         <div class="skeleton skeleton-text skeleton-text--short"></div>
                     </td>
                     <td>
-                        <div class="skeleton skeleton-text skeleton-text--short"></div>
-                    </td>
-                    <td>
                         <div class="skeleton resv-skeleton-action"></div>
                     </td>
                 `;
@@ -1624,188 +2219,17 @@ window.AppPage['staff_reservations'] = function () {
 
             const data = await response.json();
             
-            // Update reservation data
             if (data.reservations) {
-                // Update global reservationData
                 Object.assign(reservationData, data.reservations);
-                
-                // Convert object to array for iteration
-                const reservationsArray = Object.values(data.reservations);
-                
-                // Format date to readable format (e.g., September 2, 2023)
-                const formatDate = (dateStr) => {
-                    if (!dateStr) return 'N/A';
-                    const date = new Date(dateStr);
-                    if (isNaN(date.getTime())) return dateStr;
-                    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                    return date.toLocaleDateString('en-US', options);
-                };
-                
-                // Re-render table rows
-                tableBody.innerHTML = '';
-                reservationsArray.forEach((reservation) => {
-                    const row = document.createElement('tr');
-                    row.className = `guest-row reservation-row ${reservation.reservation_date === new Date().toISOString().split('T')[0] ? 'today-reservation' : ''}`;
-                    row.setAttribute('data-reservation-id', reservation.id);
-                    row.setAttribute('data-booker-name', reservation.booker_name);
-                    row.setAttribute('data-email', reservation.email);
-                    row.setAttribute('data-phone', reservation.phone);
-                    row.setAttribute('data-reservation-date', reservation.reservation_date);
-                    row.setAttribute('data-status', reservation.status.toLowerCase());
-                    row.setAttribute('data-guests', reservation.number_of_guests);
-                    row.setAttribute('data-total-amount', reservation.total_amount);
-                    row.setAttribute('data-search', `${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()}`);
-                    row.setAttribute('tabindex', '0');
-                    row.setAttribute('role', 'button');
-                    row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name}`);
-                    
-                    row.innerHTML = buildRowCells(reservation);
-                    
-                    tableBody.appendChild(row);
-                    
-                    // Add click event listener
-                    row.addEventListener('click', () => openModal(reservation.id));
-                    row.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            openModal(reservation.id);
-                        }
-                    });
-                });
-
-                // Update results count
-                if (resultsCount) {
-                    resultsCount.textContent = `Showing ${reservationsArray.length} reservation${reservationsArray.length === 1 ? '' : 's'}`;
-                }
-
-                // Update rows reference so applyFilters operates on fresh rows
-                updateRowsReference();
-
-                // Re-apply current filters
-                applyFilters();
+                renderTableFromData(reservationData);
             } else {
                 throw new Error('No reservation data received');
             }
         } catch (error) {
             console.error('Error refreshing table:', error);
             window.alert('Failed to refresh table. Please try again.');
-            // Re-render existing data to prevent empty table
             renderTableFromData(reservationData);
         }
-    });
-
-    cancelEditBtn?.addEventListener('click', closeEditForm);
-
-    editReservationForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(editReservationForm);
-        const reservationId = formData.get('reservation_id');
-        const submitButton = editReservationForm.querySelector('button[type="submit"]');
-
-        // Show custom confirmation modal
-        showConfirmModal(
-            'Save Changes',
-            'Are you sure you want to save these changes to the reservation?',
-            async () => {
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.textContent = 'Saving...';
-                }
-
-                try {
-                    const response = await fetch(`/staff/reservations/${reservationId}/update`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                        body: JSON.stringify({
-                            booker_name: formData.get('booker_name'),
-                            email: formData.get('email'),
-                            phone: formData.get('phone'),
-                            reservation_date: formData.get('reservation_date'),
-                            number_of_guests: formData.get('number_of_guests'),
-                            status: formData.get('status'),
-                        }),
-                    });
-
-                    const payload = await response.json().catch(() => ({}));
-                    if (!response.ok) {
-                        throw new Error(payload.message || 'Unable to update reservation.');
-                    }
-
-                    // Update local data
-                    if (reservationData[reservationId]) {
-                        reservationData[reservationId] = {
-                            ...reservationData[reservationId],
-                            booker_name: formData.get('booker_name'),
-                            email: formData.get('email'),
-                            phone: formData.get('phone'),
-                            reservation_date: formData.get('reservation_date'),
-                            number_of_guests: formData.get('number_of_guests'),
-                            status: formData.get('status'),
-                        };
-                    }
-
-                    // Update table row with new data
-                    const tableRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
-                    if (tableRow) {
-                        tableRow.setAttribute('data-booker-name', formData.get('booker_name'));
-                        tableRow.setAttribute('data-email', formData.get('email'));
-                        tableRow.setAttribute('data-phone', formData.get('phone'));
-                        tableRow.setAttribute('data-reservation-date', formData.get('reservation_date'));
-                        tableRow.setAttribute('data-status', formData.get('status').toLowerCase());
-                        tableRow.setAttribute('data-guests', formData.get('number_of_guests'));
-
-                        // Format date to readable format (e.g., September 2, 2023)
-                        const formatDate = (dateStr) => {
-                            if (!dateStr) return 'N/A';
-                            const date = new Date(dateStr);
-                            if (isNaN(date.getTime())) return dateStr;
-                            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-                            return date.toLocaleDateString('en-US', options);
-                        };
-
-                        // Update table cell content
-                        const cells = tableRow.querySelectorAll('td');
-                        if (cells[0]) {
-                            cells[0].innerHTML = `
-                                <div class="resv-booker">
-                                    <span class="resv-avatar">${escapeHtml(getInitials(formData.get('booker_name')))}</span>
-                                    <div class="resv-booker__info">
-                                        <div class="guest-name">${escapeHtml(formData.get('booker_name'))}</div>
-                                        <div class="guest-meta">${escapeHtml(formData.get('email'))}</div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                        if (cells[1]) {
-                            cells[1].textContent = formatDate(formData.get('reservation_date'));
-                        }
-                        if (cells[3]) {
-                            cells[3].textContent = formData.get('number_of_guests');
-                        }
-                        if (cells[4]) {
-                            const status = formData.get('status');
-                            cells[4].innerHTML = `<span class="reservation-status reservation-status--${String(status || '').toLowerCase()}">${status}</span>`;
-                        }
-                    }
-
-                    // Close modal after successful update
-                    closeModal();
-                    showSuccessModal('Reservation updated successfully!');
-                } catch (error) {
-                    window.alert(error.message || 'Unable to update reservation.');
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Save Changes';
-                    }
-                }
-            }
-        );
     });
 
     checkInCloseButtons.forEach((button) => {

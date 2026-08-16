@@ -139,6 +139,7 @@ class StaffReservationsPageTest extends TestCase
 
     public function test_reservation_availability_endpoint_disables_dates_where_the_amenity_is_booked(): void
     {
+        \Illuminate\Support\Carbon::setTestNow('2026-08-01');
         $this->staffSession();
         $this->createAmenity('amenity-1');
 

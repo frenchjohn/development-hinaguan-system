@@ -274,7 +274,7 @@
                                                                 @endif
                                                             </span>
                                                             <div class="cell-person__body min-w-0">
-                                                                <div class="guest-name font-semibold text-hp-text">{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</div>
+                                                                <div class="guest-name font-semibold text-hp-text">{{ collect([$customer->first_name, $customer->middle_name, $customer->last_name])->filter()->join(' ') }}</div>
                                                                 <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $guestTypeLabel }}</div>
                                                             </div>
                                                         </div>
@@ -439,10 +439,16 @@
                                         <td>{{ $reservation->email }}</td>
                                         <td>{{ $reservation->number_of_guests }}</td>
                                         <td>
-                                            <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $reservation->status)) }} inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">{{ $reservation->status }}</span>
+                                            @php
+                                                $allGuestsCheckedOut = $reservation->reservationGuests->isNotEmpty() && $reservation->reservationGuests->every(fn ($g) => $g->checked_out_at !== null);
+                                                $displayStatus = ($reservation->status === 'Checked Out' || $reservation->check_out || $allGuestsCheckedOut) ? 'Checked Out' : $reservation->status;
+                                                $lastGuestCheckout = $reservation->reservationGuests->pluck('checked_out_at')->filter()->max();
+                                                $displayCheckout = $reservation->check_out ?: $lastGuestCheckout;
+                                            @endphp
+                                            <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $displayStatus)) }} inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">{{ $displayStatus }}</span>
                                         </td>
                                         <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y h:i A') : 'N/A' }}</td>
-                                        <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y h:i A') : 'N/A' }}</td>
+                                        <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $displayCheckout ? \Carbon\Carbon::parse($displayCheckout)->format('M d, Y h:i A') : 'N/A' }}</td>
                                         <td class="num-cell whitespace-nowrap text-right font-semibold tabular-nums">₱{{ number_format($reservation->amount_paid, 2) }}</td>
                                         <td class="text-right text-[#9ca3af]">
                                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
@@ -450,8 +456,84 @@
                                     </tr>
 
                                     {{-- COMPANION ROWS --}}
-                                    @foreach ($reservation->reservationGuests as $guest)
-                                        @if(!$guest->is_primary_guest && $guest->customer)
+                                    @php
+                                        $isBulkCompanionName = function (?string $name): bool {
+                                            $name = strtolower(trim((string) $name));
+                                            return str_starts_with($name, 'bulk') || str_contains($name, 'companion');
+                                        };
+
+                                        $bulkAgeGroupLabel = function ($age): string {
+                                            if ($age === null || $age === '') return 'Unknown';
+                                            if (!is_numeric($age)) return (string) $age;
+                                            $age = (int) $age;
+                                            if ($age <= 12) return '0-12';
+                                            if ($age <= 17) return '13-17';
+                                            if ($age <= 59) return '18-59';
+                                            return '60+';
+                                        };
+
+                                        $companionGuests = $reservation->reservationGuests->filter(fn ($g) => ! $g->is_primary_guest && $g->customer);
+                                        $groupedCompanionRows = [];
+                                        $bulkGroupsForRes = [];
+
+                                        foreach ($companionGuests as $guest) {
+                                            $customer = $guest->customer;
+                                            if ($isBulkCompanionName($customer->first_name)) {
+                                                $ageGroup = $bulkAgeGroupLabel($customer->age);
+                                                $gender = $customer->gender ?? 'N/A';
+                                                $nationality = $customer->is_foreigner ? 'Foreigner' : 'Filipino';
+                                                $key = $gender . '|' . $ageGroup . '|' . $nationality;
+
+                                                if (! isset($bulkGroupsForRes[$key])) {
+                                                    $bulkGroupsForRes[$key] = [
+                                                        'type' => 'bulk',
+                                                        'name' => 'Bulk Companions',
+                                                        'age_group' => $ageGroup,
+                                                        'gender' => $gender,
+                                                        'nationality' => $nationality,
+                                                        'is_foreigner' => (bool) $customer->is_foreigner,
+                                                        'count' => 0,
+                                                    ];
+                                                }
+                                                $bulkGroupsForRes[$key]['count']++;
+                                            } else {
+                                                $groupedCompanionRows[] = [
+                                                    'type' => 'regular',
+                                                    'guest' => $guest,
+                                                ];
+                                            }
+                                        }
+
+                                        foreach ($bulkGroupsForRes as $bg) {
+                                            $groupedCompanionRows[] = $bg;
+                                        }
+                                    @endphp
+
+                                    @foreach ($groupedCompanionRows as $compRow)
+                                        @if ($compRow['type'] === 'bulk')
+                                            <tr class="companion-row companion-of-{{ $reservation->id }} hover:bg-hp-cream dark:hover:bg-[#2d5a32]" style="display: none;">
+                                                <td colspan="2">
+                                                    <div class="cell-person cell-person--companion flex min-w-0 items-center gap-3">
+                                                        <span class="cell-person__avatar cell-person__avatar--bulk flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]" title="Bulk Companion Group">
+                                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+                                                        </span>
+                                                        <div class="cell-person__body min-w-0">
+                                                            <div class="guest-name font-semibold text-hp-text">
+                                                                {{ $compRow['name'] }}
+                                                                <span class="guest-companion-count ml-1.5 inline-flex items-center gap-1 rounded-full bg-hp-green/10 px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">{{ $compRow['count'] }}x</span>
+                                                            </div>
+                                                            <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">Bulk companion group</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ $compRow['age_group'] }}</td>
+                                                <td><span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $compRow['is_foreigner'] ? 'bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $compRow['nationality'] }}</span></td>
+                                                <td colspan="4"></td>
+                                            </tr>
+                                        @else
+                                            @php
+                                                $guest = $compRow['guest'];
+                                            @endphp
                                             <tr class="companion-row companion-of-{{ $reservation->id }} hover:bg-hp-cream dark:hover:bg-[#2d5a32]" style="display: none;">
                                                 <td colspan="2">
                                                     <div class="cell-person cell-person--companion flex min-w-0 items-center gap-3">
@@ -459,7 +541,7 @@
                                                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
                                                         </span>
                                                         <div class="cell-person__body min-w-0">
-                                                            <div class="guest-name font-semibold text-hp-text">{{ trim(($guest->customer->first_name ?? '') . ' ' . ($guest->customer->middle_name ?? '') . ' ' . ($guest->customer->last_name ?? '')) }}</div>
+                                                            <div class="guest-name font-semibold text-hp-text">{{ collect([$guest->customer->first_name, $guest->customer->middle_name, $guest->customer->last_name])->filter()->join(' ') }}</div>
                                                             <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">ID: {{ $guest->customer->id }}</div>
                                                         </div>
                                                     </div>

@@ -318,7 +318,85 @@ window.AppPage['staff_reports'] = function () {
             `;
 
             let guestsHtml = '';
+            const isBulkCompanionName = (name) => {
+                const n = (name || '').toLowerCase().trim();
+                return n.startsWith('bulk') || n.includes('companion');
+            };
+
+            const bulkAgeGroupLabel = (age) => {
+                if (age === null || age === undefined || age === '') return 'Unknown';
+                const a = parseInt(age, 10);
+                if (isNaN(a)) return String(age);
+                if (a <= 12) return '0-12';
+                if (a <= 17) return '13-17';
+                if (a <= 59) return '18-59';
+                return '60+';
+            };
+
+            const regularGuests = [];
+            const bulkGroups = {};
+
             guests.forEach(guest => {
+                const c = guest.customer || {};
+                const name = trimString(`${c.first_name || ''} ${c.middle_name || ''} ${c.last_name || ''}`);
+                if (!guest.is_primary_guest && isBulkCompanionName(c.first_name || name)) {
+                    const ageGrp = bulkAgeGroupLabel(c.age);
+                    const gender = c.gender || 'N/A';
+                    const nat = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                    const key = `${gender}|${ageGrp}|${nat}`;
+                    if (!bulkGroups[key]) {
+                        bulkGroups[key] = {
+                            name: 'Bulk Companions',
+                            gender,
+                            ageGroup: ageGrp,
+                            nationality: nat,
+                            isForeigner: !!c.is_foreigner,
+                            count: 0,
+                            checkedOutCount: 0,
+                        };
+                    }
+                    bulkGroups[key].count++;
+                    if (guest.checked_out_at) bulkGroups[key].checkedOutCount++;
+                } else {
+                    regularGuests.push(guest);
+                }
+            });
+
+            // Render bulk companion groups
+            Object.values(bulkGroups).forEach(group => {
+                const demo = [group.gender, group.ageGroup ? group.ageGroup + ' yrs' : null, group.nationality].filter(Boolean).join(' &bull; ');
+                const isAllCheckedOut = group.checkedOutCount === group.count;
+                const statusText = isAllCheckedOut ? 'Checked Out' : (group.checkedOutCount > 0 ? `${group.checkedOutCount}/${group.count} Checked Out` : 'Active');
+                const statusClass = isAllCheckedOut ? 'checked-out' : 'active';
+                guestsHtml += `
+                    <tr>
+                        <td>
+                            <div class="guest-info">
+                                <div class="guest-avatar" style="width:28px;height:28px;font-size:0.7rem;background:linear-gradient(135deg, #178a52, #0e5c37);color:#fff;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;margin:auto;"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+                                </div>
+                                <div>
+                                    <div class="guest-name" style="font-size:0.85rem;">
+                                        ${group.name}
+                                        <span class="guest-companion-count ml-1.5 inline-flex items-center gap-1 rounded-full bg-hp-green/10 px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">${group.count}x</span>
+                                    </div>
+                                    <div class="guest-meta" style="font-size:0.75rem;color:var(--hp-text-muted);">Bulk companion group</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span style="font-size:0.8rem;color:var(--hp-text-muted);">${demo || '-'}</span></td>
+                        <td></td><td></td><td></td><td></td>
+                        <td style="text-align:right;">
+                            <span class="status-pill status-${statusClass}" style="transform:scale(0.85);transform-origin:right center;">
+                                ${statusText}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Render regular guests
+            regularGuests.forEach(guest => {
                 const c = guest.customer || {};
                 const name = trimString(`${c.first_name || ''} ${c.middle_name || ''} ${c.last_name || ''}`) || 'Walk-in Guest';
                 const demo = [c.gender, c.age ? c.age + ' yrs' : null, c.is_foreigner ? 'Foreigner' : 'Filipino'].filter(Boolean).join(' &bull; ');

@@ -52,8 +52,7 @@
 								if (! $reservation) return false;
 								if ($guest->checked_out_at) return false;
 								if (! $reservation->check_in) return false;
-								$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
-								return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
+								return $reservation->status === 'Checked In';
 							})->isNotEmpty();
 						});
 
@@ -87,7 +86,7 @@
 
 						foreach ($activeCustomers as $customer) {
 							$resEntry = $customer->reservationGuests->filter(function ($guest) {
-								return $guest->reservation && !$guest->checked_out_at;
+								return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
 							})->first();
 							$resId = $resEntry?->reservation?->id;
 							$coAt = $reservationData[$resId]['checkout_at'] ?? null;
@@ -606,10 +605,10 @@
 									$guestOrderKeys = [];
 									foreach ($customers ?? collect() as $orderCustomer) {
 										$orderEntry = $orderCustomer->reservationGuests
-											->filter(fn ($g) => $g->reservation && ! $g->checked_out_at)
+											->filter(fn ($g) => $g->reservation && ! $g->checked_out_at && $g->reservation->check_in && $g->reservation->status === 'Checked In')
 											->first(fn ($g) => $g->reservation && $g->reservation->reservation_type === 'walk_in')
 											?? $orderCustomer->reservationGuests
-												->filter(fn ($g) => $g->reservation && ! $g->checked_out_at)
+												->filter(fn ($g) => $g->reservation && ! $g->checked_out_at && $g->reservation->check_in && $g->reservation->status === 'Checked In')
 												->first();
 										$orderRes = $orderEntry?->reservation;
 										$resKey = $orderRes
@@ -644,8 +643,8 @@
 											$reservation = $guest->reservation ?? null;
 											if (! $reservation) return false;
 											if ($guest->checked_out_at) return false;
-											$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
-											return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out';
+											if (! $reservation->check_in) return false;
+											return $reservation->status === 'Checked In';
 										})->isNotEmpty();
 									@endphp
 
@@ -655,11 +654,11 @@
 
 									@php
 										$reservationEntry = $customer->reservationGuests->filter(function ($guest) {
-											return $guest->reservation && !$guest->checked_out_at;
+											return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
 										})->first(function ($guest) {
 											return $guest->reservation && $guest->reservation->reservation_type === 'walk_in';
 										}) ?? $customer->reservationGuests->filter(function ($guest) {
-											return $guest->reservation && !$guest->checked_out_at;
+											return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
 										})->first();
 										$reservationType = $reservationEntry?->reservation?->reservation_type;
 										$reservationTypeLabel = $reservationType === 'walk_in' ? 'walk-in' : ($reservationType ?? 'N/A');

@@ -274,4 +274,96 @@ class StaffCheckInsPageRenderTest extends TestCase
         $this->assertDatabaseHas('customers', ['first_name' => 'Companion', 'last_name' => 'C1']);
         $this->assertDatabaseHas('customers', ['first_name' => 'Companion', 'last_name' => 'C2']);
     }
+
+    public function test_pending_reservation_guests_do_not_appear_on_check_ins_page(): void
+    {
+        $staff = StaffAccount::create([
+            'name' => 'Staff Two',
+            'email' => 'staff2@test.com',
+            'password' => bcrypt('password'),
+            'ban_status' => false,
+        ]);
+        $this->makeStaffSession($staff);
+
+        $amenity = Amenity::create([
+            'id' => (string) Str::uuid(),
+            'amenities_name' => 'Payag B',
+            'daytime_price' => 500,
+            'nighttime_price' => 700,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => 10,
+            'status' => true,
+        ]);
+
+        // 1. Pending reservation (not yet checked in)
+        $pendingReservation = Reservation::create([
+            'booker_name' => 'Pending Booker',
+            'email' => 'pending@test.com',
+            'phone' => '09171112233',
+            'reservation_date' => now()->addDays(2)->toDateString(),
+            'check_in' => null,
+            'status' => 'Pending',
+            'reservation_type' => 'online',
+            'number_of_guests' => 3,
+            'total_amount' => 1500,
+            'amount_paid' => 750,
+            'remaining_balance' => 750,
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        $pendingCustomer = Customer::create([
+            'first_name' => 'Pending',
+            'last_name' => 'Booker',
+            'email' => 'pending@test.com',
+            'phone' => '09171112233',
+            'gender' => 'Male',
+        ]);
+
+        ReservationGuest::create([
+            'reservation_id' => $pendingReservation->id,
+            'customer_id' => $pendingCustomer->id,
+            'is_primary_guest' => true,
+        ]);
+
+        // 2. Checked-In reservation
+        $checkedInReservation = Reservation::create([
+            'booker_name' => 'Active Guest',
+            'email' => 'active@test.com',
+            'phone' => '09179998877',
+            'reservation_date' => now()->toDateString(),
+            'check_in' => now()->toDateTimeString(),
+            'status' => 'Checked In',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 1,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $activeCustomer = Customer::create([
+            'first_name' => 'Active',
+            'last_name' => 'Guest',
+            'email' => 'active@test.com',
+            'phone' => '09179998877',
+            'gender' => 'Male',
+        ]);
+
+        ReservationGuest::create([
+            'reservation_id' => $checkedInReservation->id,
+            'customer_id' => $activeCustomer->id,
+            'is_primary_guest' => true,
+        ]);
+
+        // 3. Render check-ins page
+        $response = $this->get('/staff/check-ins');
+        $response->assertOk();
+
+        // Check active guest is present
+        $response->assertSee('Active Guest');
+        $response->assertSee('Showing 1 active guest');
+
+        // Check pending booker is NOT present
+        $response->assertDontSee('Pending Booker');
+    }
 }

@@ -13206,3 +13206,171 @@ body.staff-portal .cell-person__avatar--bulk,
 body.admin-portal .cell-person__avatar--bulk {
     background: #0e7490;
 }
+
+/* ------------------------------------------------------------
+   Continuous Multi-Day Reschedule Calendar & Dynamic Pricing
+   ------------------------------------------------------------ */
+.session-pill-btn {
+    cursor: pointer;
+    border: 1px solid var(--border, rgba(13,44,29,0.15));
+    background: var(--surface, rgba(255,255,255,0.7));
+    color: var(--hp-text, #172a20);
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-radius: 0.55rem;
+    padding: 0.45rem 0.6rem;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.session-pill-btn:hover:not([data-active="true"]) {
+    border-color: var(--hp-green-mid, #225936);
+    background: rgba(34, 89, 54, 0.08);
+}
+
+.session-pill-btn[data-active="true"] {
+    background: var(--hp-green, #174026) !important;
+    border-color: var(--hp-green, #174026) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(23, 64, 38, 0.25);
+}
+
+.dark .session-pill-btn[data-active="true"] {
+    background: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.35);
+}
+
+/* Day grid buttons */
+.edit-calendar__day {
+    position: relative;
+    height: 38px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+    background: transparent;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--hp-text, #172a20);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.dark .edit-calendar__day {
+    color: #e2f0d9;
+}
+
+.edit-calendar__day.is-available:hover {
+    background: rgba(34, 89, 54, 0.12);
+    border-color: var(--hp-green-mid, #225936);
+}
+
+.dark .edit-calendar__day.is-available:hover {
+    background: rgba(129, 199, 132, 0.18);
+    border-color: rgba(129, 199, 132, 0.5);
+}
+
+/* Range Start */
+.edit-calendar__day.is-range-start {
+    background: var(--hp-green, #174026) !important;
+    border-color: var(--hp-green, #174026) !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    border-top-left-radius: 0.5rem !important;
+    border-bottom-left-radius: 0.5rem !important;
+    box-shadow: 0 2px 6px rgba(23, 64, 38, 0.3);
+    z-index: 2;
+}
+
+.dark .edit-calendar__day.is-range-start {
+    background: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    color: #ffffff !important;
+}
+
+/* Range End */
+.edit-calendar__day.is-range-end {
+    background: var(--hp-green, #174026) !important;
+    border-color: var(--hp-green, #174026) !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    border-top-right-radius: 0.5rem !important;
+    border-bottom-right-radius: 0.5rem !important;
+    box-shadow: 0 2px 6px rgba(23, 64, 38, 0.3);
+    z-index: 2;
+}
+
+.dark .edit-calendar__day.is-range-end {
+    background: #2e7d32 !important;
+    border-color: #2e7d32 !important;
+    color: #ffffff !important;
+}
+
+/* Range Middle */
+.edit-calendar__day.is-in-range {
+    background: rgba(34, 89, 54, 0.16) !important;
+    border-color: transparent !important;
+    color: var(--hp-green, #174026) !important;
+    font-weight: 700;
+    border-radius: 0 !important;
+}
+
+.dark .edit-calendar__day.is-in-range {
+    background: rgba(76, 175, 80, 0.22) !important;
+    color: #a5d6a7 !important;
+}
+
+/* Range Hover preview */
+.edit-calendar__day.is-range-hover {
+    background: rgba(34, 89, 54, 0.1) !important;
+    border-radius: 0 !important;
+}
+
+.dark .edit-calendar__day.is-range-hover {
+    background: rgba(76, 175, 80, 0.14) !important;
+}
+
+/* Single date selection (when start == end) */
+.edit-calendar__day.is-range-start.is-range-end {
+    border-radius: 0.55rem !important;
+}
+
+/* Disabled & Unavailable Days */
+.edit-calendar__day.is-disabled {
+    opacity: 0.35;
+    background: rgba(239, 68, 68, 0.06) !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    text-decoration: line-through !important;
+    text-decoration-color: rgba(239, 68, 68, 0.7) !important;
+    text-decoration-thickness: 1.5px !important;
+    border-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.dark .edit-calendar__day.is-disabled {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #64748b !important;
+    text-decoration-color: rgba(239, 68, 68, 0.6) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Price Impact Box */
+.edit-price-impact {
+    background: rgba(23, 64, 38, 0.04);
+    border: 1px solid rgba(23, 64, 38, 0.12);
+    border-radius: 0.65rem;
+}
+
+.dark .edit-price-impact {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
