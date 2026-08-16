@@ -160,7 +160,7 @@ window.AppPage['staff_records'] = function () {
                         <div class="guest-value">${customerData.gender || 'N/A'}</div>
                     </div>
                     <div>
-                        <span class="guest-label">Status</span>
+                        <span class="guest-label">Nationality</span>
                         <div class="guest-value">${customerData.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                     </div>
                     <div>

@@ -1127,21 +1127,47 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
-    // Add guest modal
+    // ==========================================
+    // Walk-In Guest Reservation & Multi-Day System
+    // ==========================================
     const addGuestModal = document.getElementById('addGuestModal');
     const addGuestCloseButtons = document.querySelectorAll('[data-close-add-modal="true"]');
     const openAddGuestButtons = document.querySelectorAll('[data-open-add-guest-modal="true"]');
     const primaryGuestSection = document.getElementById('primaryGuestSection');
-    const amenitySection = document.getElementById('amenitySection');
     const chooseAmenitiesBtn = document.getElementById('chooseAmenitiesBtn');
-    const timePeriod = document.getElementById('time_period');
     const includePool = document.getElementById('include_pool');
     const adultEntranceFee = document.getElementById('adultEntranceFee');
     const childEntranceFee = document.getElementById('childEntranceFee');
     const poolFee = document.getElementById('poolFee');
     const totalEntranceFee = document.getElementById('totalEntranceFee');
-    
-    // Park settings for pricing (will be loaded from server)
+    const reservationTotal = document.getElementById('reservationTotal');
+    const totalAmountInput = document.getElementById('totalAmountInput');
+    const selectedAmenitiesContainer = document.getElementById('selectedAmenitiesContainer');
+    const amenitiesHiddenInputs = document.getElementById('amenitiesHiddenInputs');
+    const walkInAmenitiesSubtotal = document.getElementById('walkInAmenitiesSubtotal');
+    const noAmenitiesNotice = document.getElementById('noAmenitiesNotice');
+
+    const todayStr = window.SERVER_TODAY || (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+
+    const currentServerSession = window.SERVER_CURRENT_SESSION || 'Daytime';
+
+    // Master walk-in schedule state (Walk-In Check-In starts TODAY at the active session)
+    let walkInSchedule = {
+        startDate: todayStr,
+        endDate: todayStr,
+        startSlot: currentServerSession,
+        endSlot: currentServerSession,
+        totalDays: 1,
+        dayCount: currentServerSession === 'Daytime' ? 1 : 0,
+        nightCount: currentServerSession === 'Nighttime' ? 1 : 0,
+    };
+
+    let selectedAmenities = [];
+
+    // Park settings for pricing (loaded from server)
     let parkSettings = {
         daytime_adult_entrance_fee: 0,
         daytime_child_entrance_fee: 0,
@@ -1155,16 +1181,121 @@ window.AppPage['staff_check_ins'] = function () {
         nighttime_end: '06:00'
     };
 
+    // Calculate slots count for a continuous range
+    const calculateWalkInSlots = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDate) return { daysSpan: 1, dayCount: 1, nightCount: 0, totalSlots: 1 };
+        const sD = new Date(startDate + 'T00:00:00');
+        const eD = new Date((endDate || startDate) + 'T00:00:00');
+        if (eD < sD) return { daysSpan: 1, dayCount: 1, nightCount: 0, totalSlots: 1 };
+
+        let dayCount = 0;
+        let nightCount = 0;
+        const cur = new Date(sD);
+
+        while (cur <= eD) {
+            const isStartDay = cur.getTime() === sD.getTime();
+            const isEndDay = cur.getTime() === eD.getTime();
+
+            if (isStartDay && isEndDay) {
+                if (startSlot === 'Daytime' && endSlot === 'Daytime') {
+                    dayCount += 1;
+                } else if (startSlot === 'Nighttime' && endSlot === 'Nighttime') {
+                    nightCount += 1;
+                } else if (startSlot === 'Daytime' && endSlot === 'Nighttime') {
+                    dayCount += 1;
+                    nightCount += 1;
+                }
+            } else if (isStartDay) {
+                if (startSlot === 'Daytime') {
+                    dayCount += 1;
+                    nightCount += 1;
+                } else {
+                    nightCount += 1;
+                }
+            } else if (isEndDay) {
+                if (endSlot === 'Daytime') {
+                    dayCount += 1;
+                } else {
+                    dayCount += 1;
+                    nightCount += 1;
+                }
+            } else {
+                dayCount += 1;
+                nightCount += 1;
+            }
+
+            cur.setDate(cur.getDate() + 1);
+        }
+
+        const daysSpan = Math.round((eD - sD) / (1000 * 60 * 60 * 24)) + 1;
+        return {
+            daysSpan: Math.max(1, daysSpan),
+            dayCount,
+            nightCount,
+            totalSlots: dayCount + nightCount
+        };
+    };
+
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    const syncMasterScheduleDisplay = () => {
+        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+        walkInSchedule.totalDays = counts.daysSpan;
+        walkInSchedule.dayCount = counts.dayCount;
+        walkInSchedule.nightCount = counts.nightCount;
+
+        // Hidden input sync
+        const startInput = document.getElementById('walkInStartDate');
+        const endInput = document.getElementById('walkInEndDate');
+        const startSlotInput = document.getElementById('walkInStartSlot');
+        const endSlotInput = document.getElementById('walkInEndSlot');
+        const totalDaysInput = document.getElementById('walkInTotalDays');
+
+        if (startInput) startInput.value = walkInSchedule.startDate;
+        if (endInput) endInput.value = walkInSchedule.endDate;
+        if (startSlotInput) startSlotInput.value = walkInSchedule.startSlot;
+        if (endSlotInput) endSlotInput.value = walkInSchedule.endSlot;
+        if (totalDaysInput) totalDaysInput.value = walkInSchedule.totalDays;
+
+        // Visual summary sync
+        const summaryText = document.getElementById('walkInScheduleSummaryText');
+        const datesText = document.getElementById('walkInScheduleDatesText');
+
+        const sFmt = formatDisplayDate(walkInSchedule.startDate);
+        const eFmt = formatDisplayDate(walkInSchedule.endDate);
+
+        if (summaryText) {
+            const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+            const breakdown = `(${counts.dayCount}D ${counts.nightCount}N)`;
+            summaryText.textContent = `${spanLabel} ${breakdown}`;
+        }
+        if (datesText) {
+            if (walkInSchedule.startDate === walkInSchedule.endDate) {
+                datesText.textContent = `${sFmt} (${walkInSchedule.startSlot}${walkInSchedule.startSlot !== walkInSchedule.endSlot ? ' to ' + walkInSchedule.endSlot : ''})`;
+            } else {
+                datesText.textContent = `${sFmt} (${walkInSchedule.startSlot}) → ${eFmt} (${walkInSchedule.endSlot})`;
+            }
+        }
+    };
+
     const openAddGuestModal = () => {
+        if (!addGuestModal) return;
         addGuestModal.classList.add('is-open');
+        addGuestModal.classList.remove('hidden');
         addGuestModal.setAttribute('aria-hidden', 'false');
-        // Load park settings
         loadParkSettings();
-        // Rebuild time period options for the current session
-        updateTimePeriodOptions();
+        syncMasterScheduleDisplay();
+        renderSelectedAmenities();
+        updateGrandTotal();
     };
 
     const closeAddGuestModal = () => {
+        if (!addGuestModal) return;
         addGuestModal.classList.remove('is-open');
         addGuestModal.setAttribute('aria-hidden', 'true');
     };
@@ -1174,6 +1305,14 @@ window.AppPage['staff_check_ins'] = function () {
             e.preventDefault();
             openAddGuestModal();
         });
+    });
+
+    document.addEventListener('click', (e) => {
+        const trigger = e.target.closest('[data-open-add-guest-modal="true"]');
+        if (trigger) {
+            e.preventDefault();
+            openAddGuestModal();
+        }
     });
 
     addGuestCloseButtons.forEach(button => {
@@ -1186,482 +1325,360 @@ window.AppPage['staff_check_ins'] = function () {
             const response = await fetch('/api/park-settings');
             if (response.ok) {
                 const data = await response.json();
-                console.log('Loaded park settings:', data);
                 parkSettings = { ...parkSettings, ...data };
-                // Update fee display with loaded settings
-                updateTimePeriodOptions();
-            } else {
-                console.error('Failed to load park settings. Status:', response.status);
+                updateGrandTotal();
             }
         } catch (error) {
             console.error('Failed to load park settings:', error);
         }
     };
 
-    // Current session (daytime vs nighttime) based on park settings
-    const getCurrentSession = () => {
-        const now = new Date();
-        const currentTime = now.getHours() * 60 + now.getMinutes();
-
-        const daytimeStart = parseTime(parkSettings.daytime_start);
-        const daytimeEnd = parseTime(parkSettings.daytime_end);
-
-        return currentTime >= daytimeStart && currentTime < daytimeEnd ? 'daytime' : 'nighttime';
-    };
-
-    // Effective period for entrance pricing: with amenities the first selected
-    // amenity's period wins; otherwise the time period select drives it.
-    const getEffectiveTimeType = () => {
-        if (selectedAmenities.length > 0) {
-            const pricingType = selectedAmenities[0].pricing_type || 'Daytime';
-            if (pricingType.includes('NightToDay') || pricingType.includes('DayToNight')) return 'daytonight';
-            if (pricingType.includes('Nighttime')) return 'nighttime';
-            return 'daytime';
-        }
-        return timePeriod?.value || 'daytime';
-    };
-
-    // Rebuild the time period select with only periods valid for the current
-    // session. Daytime session → Daytime/Nighttime/DayToNight (no NightToDay
-    // since it's not night yet); Nighttime session → Nighttime/NightToDay only.
-    const updateTimePeriodOptions = () => {
-        if (!timePeriod) return;
-
-        const session = getCurrentSession();
-        const options = session === 'nighttime'
-            ? [['nighttime', 'Nighttime'], ['nighttoday', 'Night to Day']]
-            : [['daytime', 'Daytime'], ['nighttime', 'Nighttime'], ['daytonight', 'Day to Night']];
-
-        const previous = timePeriod.value;
-        timePeriod.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
-        timePeriod.value = options.some(([value]) => value === previous)
-            ? previous
-            : (session === 'nighttime' ? 'nighttime' : 'daytime');
-
-        // The time period only matters when no amenity is availed — with
-        // amenities the amenity rows carry the period instead.
-        timePeriod.disabled = selectedAmenities.length > 0;
-
-        updateFeeDisplay();
-    };
-
-    // Parse time string to minutes
-    const parseTime = (timeStr) => {
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        return hours * 60 + minutes;
-    };
-
-    // Update primary guest required status based on amenities
-    const updatePrimaryGuestRequirement = () => {
-        const primaryGuestInputs = primaryGuestSection?.querySelectorAll('input');
-
-        if (primaryGuestInputs) {
-            primaryGuestInputs.forEach(input => {
-                // Only first + last name are truly required. Forcing required on
-                // middle name/phone/email silently blocks the first submit with
-                // a native tooltip and the payment modal never opens.
-                if (input.id === 'primary_first_name' || input.id === 'primary_last_name') {
-                    input.setAttribute('required', 'required');
-                } else {
-                    input.removeAttribute('required');
-                }
-            });
-        }
-    };
-
-    // Update fee display based on time period
-    const updateFeeDisplay = () => {
-        const timeType = getEffectiveTimeType();
-        
-        let adultFee = 0;
-        let childFee = 0;
-        let poolFeeValue = 0;
-        
-        if (timeType === 'daytime') {
-            adultFee = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
-            childFee = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
-            poolFeeValue = parseFloat(parkSettings.day_pool_fee) || 0;
-        } else if (timeType === 'nighttime') {
-            adultFee = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
-            childFee = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
-            poolFeeValue = parseFloat(parkSettings.night_pool_fee) || 0;
-        } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-            adultFee = (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
-            childFee = (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) + (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-            poolFeeValue = (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
-        }
-        
-        console.log('Time Type:', timeType);
-        console.log('Adult Fee:', adultFee);
-        console.log('Child Fee:', childFee);
-        console.log('Pool Fee:', poolFeeValue);
-        console.log('Park Settings:', parkSettings);
-        
-        if (adultEntranceFee) {
-            adultEntranceFee.textContent = `₱${adultFee.toFixed(2)}`;
-        }
-        if (childEntranceFee) {
-            childEntranceFee.textContent = `₱${childFee.toFixed(2)}`;
-        }
-        if (poolFee) {
-            poolFee.textContent = `₱${poolFeeValue.toFixed(2)}`;
-        }
-    };
-
     // Calculate entrance fee based on main guest, companions, and age types
     const calculateEntranceFee = () => {
-        const timeType = getEffectiveTimeType();
+        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+        const timeType = counts.nightCount > 0 && counts.dayCount > 0 ? 'daytonight' : (counts.nightCount > 0 ? 'nighttime' : 'daytime');
         const includePoolChecked = includePool?.checked || false;
-        
-        let totalFee = 0;
-        
-        // Add main guest fee (check age if primary_age input has value)
+
+        const dayAdult = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
+        const dayChild = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
+        const nightAdult = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
+        const nightChild = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
+        const dayPool = parseFloat(parkSettings.day_pool_fee) || 0;
+        const nightPool = parseFloat(parkSettings.night_pool_fee) || 0;
+
+        let adultRate = dayAdult;
+        let childRate = dayChild;
+        let poolRate = dayPool;
+
+        if (timeType === 'nighttime') {
+            adultRate = nightAdult;
+            childRate = nightChild;
+            poolRate = nightPool;
+        } else if (timeType === 'daytonight') {
+            adultRate = dayAdult + nightAdult;
+            childRate = dayChild + nightChild;
+            poolRate = dayPool + nightPool;
+        }
+
+        // Count adults and children
         const primaryAgeInput = document.getElementById('primary_age');
-        let primaryAgeVal = primaryAgeInput ? parseInt(primaryAgeInput.value) : null;
-        let mainGuestAgeType = (primaryAgeVal !== null && !isNaN(primaryAgeVal) && primaryAgeVal <= 12) ? 'child' : 'adult';
-        
-        let mainGuestFee = 0;
-        if (timeType === 'daytime') {
-            mainGuestFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0);
-        } else if (timeType === 'nighttime') {
-            mainGuestFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
-        } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-            const daytimeFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.daytime_child_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0);
-            const nighttimeFee = mainGuestAgeType === 'child' ? (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0);
-            mainGuestFee = daytimeFee + nighttimeFee;
-        }
-        
-        // Add pool fee for main guest if checked
-        if (includePoolChecked) {
-            if (timeType === 'daytime') {
-                mainGuestFee += parseFloat(parkSettings.day_pool_fee) || 0;
-            } else if (timeType === 'nighttime') {
-                mainGuestFee += parseFloat(parkSettings.night_pool_fee) || 0;
-            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-                mainGuestFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
+        const primaryAgeVal = primaryAgeInput ? parseInt(primaryAgeInput.value) : null;
+        let primaryIsChild = (primaryAgeVal !== null && !isNaN(primaryAgeVal)) ? primaryAgeVal <= 12 : false;
+
+        let adultCount = primaryIsChild ? 0 : 1;
+        let childCount = primaryIsChild ? 1 : 0;
+
+        // Individual companions
+        companions.forEach(c => {
+            let isChild = false;
+            if (c.age !== null && c.age !== undefined && c.age !== '') {
+                const age = parseInt(c.age);
+                if (!isNaN(age)) isChild = age <= 12;
+            } else if (c.age_type === 'child') {
+                isChild = true;
             }
-        }
-        
-        totalFee += mainGuestFee;
-        
-        // Calculate fees for companions
-        companions.forEach(companion => {
-            let companionFee = 0;
-            let ageType = companion.age_type;
-            if (companion.age !== null && companion.age !== undefined && companion.age !== '') {
-                const compAge = parseInt(companion.age);
-                if (!isNaN(compAge)) {
-                    ageType = compAge <= 12 ? 'child' : 'adult';
-                }
-            }
-            if (!ageType) ageType = 'adult';
-            
-            if (timeType === 'daytime') {
-                companionFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
-            } else if (timeType === 'nighttime') {
-                companionFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-                const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
-                const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-                companionFee = daytimeFee + nighttimeFee;
-            }
-            
-            // Add pool fee for companion if checked
-            if (includePoolChecked) {
-                if (timeType === 'daytime') {
-                    companionFee += parseFloat(parkSettings.day_pool_fee) || 0;
-                } else if (timeType === 'nighttime') {
-                    companionFee += parseFloat(parkSettings.night_pool_fee) || 0;
-                } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-                    companionFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
-                }
-            }
-            
-            totalFee += companionFee;
+            if (isChild) childCount++; else adultCount++;
         });
-        
-        // Calculate fees for bulk companions
-        bulkCompanionGroups.forEach(group => {
-            let groupFee = 0;
-            const ageType = group.age_type || 'adult';
-            
-            if (timeType === 'daytime') {
-                groupFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
-            } else if (timeType === 'nighttime') {
-                groupFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-            } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-                const daytimeFee = ageType === 'adult' ? (parseFloat(parkSettings.daytime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.daytime_child_entrance_fee) || 0);
-                const nighttimeFee = ageType === 'adult' ? (parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0) : (parseFloat(parkSettings.nighttime_child_entrance_fee) || 0);
-                groupFee = daytimeFee + nighttimeFee;
+
+        // Bulk companion groups
+        bulkCompanionGroups.forEach(g => {
+            const qty = parseInt(g.quantity) || 1;
+            if (g.age_group === '0-12') {
+                childCount += qty;
+            } else {
+                adultCount += qty;
             }
-            
-            // Add pool fee for bulk companions if checked
-            if (includePoolChecked) {
-                if (timeType === 'daytime') {
-                    groupFee += parseFloat(parkSettings.day_pool_fee) || 0;
-                } else if (timeType === 'nighttime') {
-                    groupFee += parseFloat(parkSettings.night_pool_fee) || 0;
-                } else if (timeType === 'daytonight' || timeType === 'nighttoday') {
-                    groupFee += (parseFloat(parkSettings.day_pool_fee) || 0) + (parseFloat(parkSettings.night_pool_fee) || 0);
-                }
-            }
-            
-            totalFee += groupFee * group.quantity;
         });
-        
-        // Update total entrance fee display
-        if (totalEntranceFee) {
-            totalEntranceFee.textContent = `₱${totalFee.toFixed(2)}`;
-        }
-        
-        return totalFee;
+
+        const totalGuests = adultCount + childCount;
+        const totalAdultFee = adultCount * adultRate;
+        const totalChildFee = childCount * childRate;
+        const totalPoolFee = includePoolChecked ? totalGuests * poolRate : 0;
+        const totalEntrance = totalAdultFee + totalChildFee + totalPoolFee;
+
+        if (adultEntranceFee) adultEntranceFee.textContent = `₱${totalAdultFee.toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
+        if (childEntranceFee) childEntranceFee.textContent = `₱${totalChildFee.toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
+        if (poolFee) poolFee.textContent = includePoolChecked ? `₱${totalPoolFee.toFixed(2)} (${totalGuests} × ₱${poolRate.toFixed(2)})` : '₱0.00';
+        if (totalEntranceFee) totalEntranceFee.textContent = `₱${totalEntrance.toFixed(2)}`;
+
+        return { totalEntrance, adultCount, childCount, totalPoolFee };
     };
 
-    // Calculate Combined Grand Total (Entrance Fees + Amenities)
+    // Calculate Grand Total (Entrance + Pool + Amenities)
     const updateGrandTotal = () => {
-        const entranceFeeTotal = calculateEntranceFee();
+        const { totalEntrance } = calculateEntranceFee();
         const amenitiesTotal = selectedAmenities.reduce((sum, a) => sum + (parseFloat(a.price_at_booking) || 0), 0);
-        const grandTotal = entranceFeeTotal + amenitiesTotal;
-        
+        const grandTotal = totalEntrance + amenitiesTotal;
+
+        if (walkInAmenitiesSubtotal) {
+            walkInAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+        }
         if (reservationTotal) {
             reservationTotal.textContent = `₱${grandTotal.toFixed(2)}`;
         }
         if (totalAmountInput) {
             totalAmountInput.value = grandTotal;
         }
-        return { entranceFeeTotal, amenitiesTotal, grandTotal };
+
+        const companionCountBadge = document.getElementById('walkInCompanionCountBadge');
+        if (companionCountBadge) {
+            const totalCompanions = companions.length + bulkCompanionGroups.reduce((acc, g) => acc + (parseInt(g.quantity) || 1), 0);
+            companionCountBadge.textContent = `${totalCompanions} companion${totalCompanions === 1 ? '' : 's'}`;
+        }
+
+        return { entranceFeeTotal: totalEntrance, amenitiesTotal, grandTotal };
     };
 
-    // Listen for fee calculation changes
-    timePeriod?.addEventListener('change', () => {
-        updateFeeDisplay();
-        updateGrandTotal();
-    });
-    includePool?.addEventListener('change', () => {
-        updateGrandTotal();
-    });
-    
-    // Listen for primary age input changes to update entrance fee dynamically
-    const primaryAgeInput = document.getElementById('primary_age');
-    primaryAgeInput?.addEventListener('input', () => {
-        updateGrandTotal();
-    });
-    primaryAgeInput?.addEventListener('change', () => {
-        updateGrandTotal();
-    });
+    includePool?.addEventListener('change', updateGrandTotal);
 
-    // Payment Confirmation Modal elements
-    const paymentConfirmModal = document.getElementById('paymentConfirmModal');
-    const payConfirmGuestName = document.getElementById('payConfirmGuestName');
-    const payConfirmEntranceTotal = document.getElementById('payConfirmEntranceTotal');
-    const payConfirmAmenitiesTotal = document.getElementById('payConfirmAmenitiesTotal');
-    const payConfirmGrandTotal = document.getElementById('payConfirmGrandTotal');
-    const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
-    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
-    const closePaymentButtons = document.querySelectorAll('[data-close-payment-modal="true"]');
+    const primaryAgeInput = document.getElementById('primary_age');
+    const primaryAgeBadge = document.getElementById('primaryAgeBadge');
+    const syncPrimaryAgeBadge = () => {
+        if (primaryAgeInput && primaryAgeBadge) {
+            const ageVal = parseInt(primaryAgeInput.value, 10);
+            if (!isNaN(ageVal) && ageVal <= 12) {
+                primaryAgeBadge.textContent = 'Child Rate (0-12 yrs)';
+                primaryAgeBadge.className = 'rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-700 dark:text-amber-300';
+            } else {
+                primaryAgeBadge.textContent = 'Adult Rate (13+ yrs)';
+                primaryAgeBadge.className = 'rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300';
+            }
+        }
+        updateGrandTotal();
+    };
+    primaryAgeInput?.addEventListener('input', syncPrimaryAgeBadge);
+
+    // Expected Check-Out Datetime Calculation Helper
+    const formatTime12h = (timeStr24) => {
+        if (!timeStr24) return '6:00 PM';
+        const [h, m] = timeStr24.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        const mStr = String(m || 0).padStart(2, '0');
+        return `${h12}:${mStr} ${period}`;
+    };
+
+    const computeExpectedCheckout = (endDateStr, endSlotStr) => {
+        const dStr = endDateStr || todayStr;
+        const cleanSlot = (endSlotStr || currentServerSession || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        
+        const dayEnd = parkSettings.daytime_end || '18:00';
+        const nightEnd = parkSettings.nighttime_end || '06:00';
+
+        const [y, m, d] = dStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+
+        let checkoutDateObj = new Date(dateObj.getTime());
+        let timeStr = '';
+
+        if (cleanSlot === 'Nighttime') {
+            checkoutDateObj.setDate(checkoutDateObj.getDate() + 1);
+            timeStr = formatTime12h(nightEnd);
+        } else {
+            timeStr = formatTime12h(dayEnd);
+        }
+
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        const formattedDate = `${daysOfWeek[checkoutDateObj.getDay()]}, ${monthNames[checkoutDateObj.getMonth()]} ${checkoutDateObj.getDate()}, ${checkoutDateObj.getFullYear()}`;
+        
+        return `${formattedDate} at ${timeStr}`;
+    };
 
     let isPaymentConfirmed = false;
+    const paymentConfirmModal = document.getElementById('paymentConfirmModal');
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+    const paymentCloseButtons = document.querySelectorAll('[data-close-payment-modal="true"]');
 
-    // Add Guest Form Submit Handler with Payment Confirmation
+    const openPaymentConfirmModal = () => {
+        if (!paymentConfirmModal) return;
+
+        const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim() || 'Walk-In';
+        const primaryMiddleName = document.getElementById('primary_middle_name')?.value?.trim() || '';
+        const primaryLastName = document.getElementById('primary_last_name')?.value?.trim() || 'Guest';
+        const primaryPhone = document.getElementById('primary_phone')?.value?.trim() || '';
+        const primaryEmail = document.getElementById('primary_email')?.value?.trim() || '';
+        const primaryAge = document.getElementById('primary_age')?.value?.trim() || '';
+        const primaryGender = document.getElementById('primary_gender')?.value || '';
+        const primaryIsForeigner = document.getElementById('primaryGuestIsForeigner')?.value === '1';
+
+        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+        const timeType = counts.nightCount > 0 && counts.dayCount > 0 ? 'daytonight' : (counts.nightCount > 0 ? 'nighttime' : 'daytime');
+        const includePoolChecked = includePool?.checked || false;
+
+        const dayAdult = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
+        const dayChild = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
+        const nightAdult = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
+        const nightChild = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
+        const dayPool = parseFloat(parkSettings.day_pool_fee) || 0;
+        const nightPool = parseFloat(parkSettings.night_pool_fee) || 0;
+
+        let adultRate = dayAdult;
+        let childRate = dayChild;
+        let poolRate = dayPool;
+
+        if (timeType === 'nighttime') {
+            adultRate = nightAdult;
+            childRate = nightChild;
+            poolRate = nightPool;
+        } else if (timeType === 'daytonight') {
+            adultRate = dayAdult + nightAdult;
+            childRate = dayChild + nightChild;
+            poolRate = dayPool + nightPool;
+        }
+
+        const { totalEntrance, adultCount, childCount, totalPoolFee } = calculateEntranceFee();
+        const totalGuests = adultCount + childCount;
+
+        // 1. Expected Check-Out
+        const expectedCheckoutStr = computeExpectedCheckout(walkInSchedule.endDate, walkInSchedule.endSlot);
+        const sFmt = formatDisplayDate(walkInSchedule.startDate);
+        const eFmt = formatDisplayDate(walkInSchedule.endDate);
+        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+
+        const payConfirmExpectedCheckoutText = document.getElementById('payConfirmExpectedCheckoutText');
+        const payConfirmStayScheduleBreakdown = document.getElementById('payConfirmStayScheduleBreakdown');
+        if (payConfirmExpectedCheckoutText) {
+            payConfirmExpectedCheckoutText.textContent = expectedCheckoutStr;
+        }
+        if (payConfirmStayScheduleBreakdown) {
+            payConfirmStayScheduleBreakdown.textContent = `Check-In: ${sFmt} (${walkInSchedule.startSlot}) → Check-Out: ${eFmt} (${walkInSchedule.endSlot}) • ${spanLabel} (${counts.dayCount}D ${counts.nightCount}N)`;
+        }
+
+        // 2. Primary Guest & Party
+        const payConfirmGuestName = document.getElementById('payConfirmGuestName');
+        const payConfirmContactInfo = document.getElementById('payConfirmContactInfo');
+        const payConfirmDemographics = document.getElementById('payConfirmDemographics');
+        const payConfirmPartyCount = document.getElementById('payConfirmPartyCount');
+
+        if (payConfirmGuestName) {
+            payConfirmGuestName.textContent = `${primaryFirstName} ${primaryMiddleName} ${primaryLastName}`.replace(/\s+/g, ' ').trim();
+        }
+        if (payConfirmContactInfo) {
+            const parts = [];
+            if (primaryPhone) parts.push(`📞 ${primaryPhone}`);
+            if (primaryEmail) parts.push(`✉️ ${primaryEmail}`);
+            payConfirmContactInfo.textContent = parts.join(' • ') || 'No contact info provided';
+        }
+        if (payConfirmDemographics) {
+            const ageNum = parseInt(primaryAge, 10);
+            const ageText = !isNaN(ageNum) ? `${ageNum} yrs (${ageNum <= 12 ? 'Child' : 'Adult'})` : 'Adult';
+            const natText = primaryIsForeigner ? 'Foreigner' : 'Filipino';
+            const genText = primaryGender || 'Unspecified';
+            payConfirmDemographics.textContent = `${genText} • ${ageText} • ${natText}`;
+        }
+        if (payConfirmPartyCount) {
+            payConfirmPartyCount.textContent = `${totalGuests} Guest${totalGuests === 1 ? '' : 's'} (${adultCount} Adult${adultCount === 1 ? '' : 's'}, ${childCount} Child${childCount === 1 ? '' : 'ren'})`;
+        }
+
+        // 3. Entrance & Pool Fees
+        const payConfirmAdultFee = document.getElementById('payConfirmAdultFee');
+        const payConfirmChildFee = document.getElementById('payConfirmChildFee');
+        const payConfirmPoolFee = document.getElementById('payConfirmPoolFee');
+        const payConfirmEntranceTotal = document.getElementById('payConfirmEntranceTotal');
+
+        if (payConfirmAdultFee) payConfirmAdultFee.textContent = `₱${(adultCount * adultRate).toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
+        if (payConfirmChildFee) payConfirmChildFee.textContent = `₱${(childCount * childRate).toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
+        if (payConfirmPoolFee) payConfirmPoolFee.textContent = includePoolChecked ? `₱${totalPoolFee.toFixed(2)} (${totalGuests} × ₱${poolRate.toFixed(2)})` : '₱0.00 (No pool access)';
+        if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${totalEntrance.toFixed(2)}`;
+
+        // 4. Amenities
+        const payConfirmAmenitiesList = document.getElementById('payConfirmAmenitiesList');
+        const payConfirmAmenitiesSubtotal = document.getElementById('payConfirmAmenitiesSubtotal');
+        let amenitiesTotal = 0;
+
+        if (payConfirmAmenitiesList) {
+            payConfirmAmenitiesList.innerHTML = '';
+            if (selectedAmenities.length === 0) {
+                payConfirmAmenitiesList.innerHTML = '<p class="m-0 text-hp-text-muted italic">No amenities selected (Park Entrance Only)</p>';
+            } else {
+                selectedAmenities.forEach(am => {
+                    const amPrice = parseFloat(am.price_at_booking) || 0;
+                    amenitiesTotal += amPrice;
+                    const amSFmt = formatDisplayDate(am.start_date);
+                    const amEFmt = formatDisplayDate(am.end_date);
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center border-b border-glass-border/30 pb-1';
+                    item.innerHTML = `
+                        <div>
+                            <strong class="text-hp-text font-bold">${am.amenity_name}</strong>
+                            <span class="text-[0.7rem] text-hp-text-muted"> (${amSFmt} ${am.start_slot} → ${amEFmt} ${am.end_slot}${am.is_aircon ? ' • Aircon' : ''})</span>
+                        </div>
+                        <strong class="text-hp-green font-bold">₱${amPrice.toFixed(2)}</strong>
+                    `;
+                    payConfirmAmenitiesList.appendChild(item);
+                });
+            }
+        }
+
+        if (payConfirmAmenitiesSubtotal) {
+            payConfirmAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+        }
+
+        // 5. Grand Total
+        const grandTotal = totalEntrance + amenitiesTotal;
+        const payConfirmGrandTotal = document.getElementById('payConfirmGrandTotal');
+        if (payConfirmGrandTotal) {
+            payConfirmGrandTotal.textContent = `₱${grandTotal.toFixed(2)}`;
+        }
+
+        paymentConfirmModal.classList.add('is-open');
+        paymentConfirmModal.classList.remove('hidden');
+        paymentConfirmModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closePaymentConfirmModal = () => {
+        if (!paymentConfirmModal) return;
+        paymentConfirmModal.classList.remove('is-open');
+        paymentConfirmModal.setAttribute('aria-hidden', 'true');
+    };
+
+    paymentCloseButtons.forEach(btn => btn.addEventListener('click', closePaymentConfirmModal));
+    cancelPaymentBtn?.addEventListener('click', closePaymentConfirmModal);
+
+    confirmPaymentBtn?.addEventListener('click', () => {
+        isPaymentConfirmed = true;
+        confirmPaymentBtn.disabled = true;
+        confirmPaymentBtn.innerHTML = `
+            <svg class="mr-2 h-4 w-4 inline animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            Processing Check-In...
+        `;
+        addGuestForm?.submit();
+    });
+
+    // Form submit validation & sync
     const addGuestForm = document.getElementById('addGuestForm');
     addGuestForm?.addEventListener('submit', (e) => {
         if (!isPaymentConfirmed) {
             e.preventDefault();
+            const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim();
+            const primaryLastName = document.getElementById('primary_last_name')?.value?.trim();
 
-            try {
-                const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim();
-                const primaryLastName = document.getElementById('primary_last_name')?.value?.trim();
-
-                if (!primaryFirstName || !primaryLastName) {
-                    alert('Please fill in the Primary Guest First Name and Last Name.');
-                    return;
-                }
-
-                // Fill check_in hidden input
-                const checkInInput = document.getElementById('check_in');
-                if (checkInInput) {
-                    const now = new Date();
-                    const year = now.getFullYear();
-                    const month = String(now.getMonth() + 1).padStart(2, '0');
-                    const day = String(now.getDate()).padStart(2, '0');
-                    const hours = String(now.getHours()).padStart(2, '0');
-                    const minutes = String(now.getMinutes()).padStart(2, '0');
-                    checkInInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-                }
-
-                // Update Grand Total
-                const { entranceFeeTotal, amenitiesTotal, grandTotal } = updateGrandTotal();
-
-                if (!Number.isFinite(grandTotal)) {
-                    alert('Unable to calculate the total amount. Please check the guest details and try again.');
-                    return;
-                }
-
-                // Populate Payment Confirmation Modal
-                if (payConfirmGuestName) payConfirmGuestName.textContent = `${primaryFirstName} ${primaryLastName}`;
-                if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${entranceFeeTotal.toFixed(2)}`;
-                if (payConfirmAmenitiesTotal) payConfirmAmenitiesTotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
-                if (payConfirmGrandTotal) payConfirmGrandTotal.textContent = `₱${grandTotal.toFixed(2)}`;
-
-                // Open Payment Modal
-                if (paymentConfirmModal) {
-                    paymentConfirmModal.classList.add('is-open');
-                    paymentConfirmModal.setAttribute('aria-hidden', 'false');
-                }
-            } catch (error) {
-                console.error('Add Guest submit error:', error);
-                alert('Something went wrong while preparing the payment confirmation: ' + (error && error.message ? error.message : error));
-            }
-        }
-    });
-
-    const closePaymentModal = () => {
-        if (paymentConfirmModal) {
-            paymentConfirmModal.classList.remove('is-open');
-            paymentConfirmModal.setAttribute('aria-hidden', 'true');
-        }
-    };
-
-    cancelPaymentBtn?.addEventListener('click', closePaymentModal);
-    closePaymentButtons.forEach(btn => btn.addEventListener('click', closePaymentModal));
-
-    confirmPaymentBtn?.addEventListener('click', () => {
-        isPaymentConfirmed = true;
-        closePaymentModal();
-        addGuestForm?.submit();
-    });
-
-    // Amenity modal
-    const amenityModal = document.getElementById('amenityModal');
-    const amenityCloseButtons = document.querySelectorAll('[data-close-amenity-modal="true"]');
-    const selectedAmenitiesContainer = document.getElementById('selectedAmenitiesContainer');
-    const reservationTotal = document.getElementById('reservationTotal');
-    const totalAmountInput = document.getElementById('totalAmountInput');
-    const amenitiesContainer = document.getElementById('amenitiesContainer');
-    
-    let selectedAmenities = [];
-
-    const openAmenityModal = () => {
-        amenityModal.classList.add('is-open');
-        amenityModal.setAttribute('aria-hidden', 'false');
-    };
-
-    const closeAmenityModal = () => {
-        amenityModal.classList.remove('is-open');
-        amenityModal.setAttribute('aria-hidden', 'true');
-    };
-
-    chooseAmenitiesBtn?.addEventListener('click', openAmenityModal);
-    amenityCloseButtons.forEach(button => {
-        button.addEventListener('click', closeAmenityModal);
-    });
-
-    // Amenity checkbox changes
-    amenitiesContainer?.addEventListener('change', (e) => {
-        if (e.target.classList.contains('amenity-checkbox')) {
-            const amenityId = e.target.dataset.amenityId;
-            const amenityName = e.target.dataset.amenityName;
-            
-            // Find selected option pricing
-            const parentLabel = e.target.closest('label');
-            const selectEl = parentLabel?.querySelector('.guest-amenity-option__select');
-            let pricingType = 'Daytime';
-            let price = 0;
-
-            if (selectEl) {
-                selectEl.disabled = !e.target.checked;
-                const opt = selectEl.options[selectEl.selectedIndex];
-                if (opt) {
-                    pricingType = opt.value;
-                    price = parseFloat(opt.dataset.price) || 0;
-                }
+            if (!primaryFirstName || !primaryLastName) {
+                alert('Please fill in the Primary Guest First Name and Last Name.');
+                document.getElementById('primary_first_name')?.focus();
+                return;
             }
 
-            if (e.target.checked) {
-                // Remove existing if any
-                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
-                selectedAmenities.push({
-                    amenity_id: amenityId,
-                    amenity_name: amenityName,
-                    pricing_type: pricingType,
-                    price_at_booking: price,
-                });
-            } else {
-                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
+            // Fill check_in hidden input
+            const checkInInput = document.getElementById('check_in');
+            if (checkInInput) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                checkInInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
             }
 
-            renderSelectedAmenities();
-            updatePrimaryGuestRequirement();
             updateGrandTotal();
-        } else if (e.target.classList.contains('guest-amenity-option__select')) {
-            const parentLabel = e.target.closest('label');
-            const checkbox = parentLabel?.querySelector('.amenity-checkbox');
-            if (checkbox && checkbox.checked) {
-                const amenityId = checkbox.dataset.amenityId;
-                const amenityName = checkbox.dataset.amenityName;
-                const opt = e.target.options[e.target.selectedIndex];
-                const pricingType = opt ? opt.value : 'Daytime';
-                const price = opt ? (parseFloat(opt.dataset.price) || 0) : 0;
-
-                selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
-                selectedAmenities.push({
-                    amenity_id: amenityId,
-                    amenity_name: amenityName,
-                    pricing_type: pricingType,
-                    price_at_booking: price,
-                });
-
-                renderSelectedAmenities();
-                updatePrimaryGuestRequirement();
-                updateGrandTotal();
-            }
-        }
-    });
-
-    const renderSelectedAmenities = () => {
-        if (!selectedAmenitiesContainer) return;
-
-        // Re-evaluate time period availability now that the amenity set changed
-        updateTimePeriodOptions();
-        selectedAmenitiesContainer.innerHTML = '';
-
-        selectedAmenities.forEach((amenity, index) => {
-            const pill = document.createElement('div');
-            pill.className = 'guest-amenity-pill flex items-center justify-between rounded-lg border border-glass-border bg-glass px-3 py-2 text-sm text-hp-text';
-            pill.innerHTML = `
-                <span><strong>${amenity.amenity_name}</strong> — ${amenity.pricing_type} · ₱${amenity.price_at_booking.toFixed(2)}</span>
-                <button type="button" class="guest-amenity-pill__remove text-hp-text-muted hover:text-red-500 font-bold ml-2" data-amenity-id="${amenity.amenity_id}">&times;</button>
-            `;
-            selectedAmenitiesContainer.appendChild(pill);
-
-            // Hidden inputs so the form submits the selected amenities
-            const hidden = document.createElement('div');
-            hidden.innerHTML = `
-                <input type="hidden" name="selected_amenities[${index}][amenity_id]" value="${amenity.amenity_id}">
-                <input type="hidden" name="selected_amenities[${index}][pricing_type]" value="${amenity.pricing_type}">
-                <input type="hidden" name="selected_amenities[${index}][price_at_booking]" value="${amenity.price_at_booking}">
-            `;
-            selectedAmenitiesContainer.appendChild(hidden);
-        });
-
-        updateGrandTotal();
-    };
-
-    // Remove amenity from selected list
-    selectedAmenitiesContainer?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('guest-amenity-pill__remove')) {
-            const amenityId = e.target.dataset.amenityId;
-            selectedAmenities = selectedAmenities.filter(a => a.amenity_id != amenityId);
-            
-            // Uncheck the checkbox
-            const checkbox = amenitiesContainer?.querySelector(`input[data-amenity-id="${amenityId}"]`);
-            if (checkbox) {
-                checkbox.checked = false;
-            }
-
-            renderSelectedAmenities();
-            updatePrimaryGuestRequirement();
-            updateGrandTotal();
+            openPaymentConfirmModal();
         }
     });
 
@@ -1674,22 +1691,37 @@ window.AppPage['staff_check_ins'] = function () {
     const companionList = document.getElementById('companionList');
     const companionHiddenFields = document.getElementById('companionHiddenFields');
     const companionAgeInput = document.getElementById('companion_age');
-    const companionAgeTypeSelect = document.getElementById('companion_age_type');
+    const companionAgeTypeInput = document.getElementById('companion_age_type');
+    const companionAgeComputedBadge = document.getElementById('companionAgeComputedBadge');
     
-    // Companion age auto-type listener
-    companionAgeInput?.addEventListener('input', () => {
-        const age = parseInt(companionAgeInput.value);
-        if (!isNaN(age) && companionAgeTypeSelect) {
-            companionAgeTypeSelect.value = age <= 12 ? 'child' : 'adult';
+    // Companion age auto-type & badge sync listener
+    const syncCompanionAgeBadge = () => {
+        if (!companionAgeInput) return;
+        const age = parseInt(companionAgeInput.value, 10);
+        if (!isNaN(age) && age <= 12) {
+            if (companionAgeTypeInput) companionAgeTypeInput.value = 'child';
+            if (companionAgeComputedBadge) {
+                companionAgeComputedBadge.textContent = 'Child Rate (0-12 yrs)';
+                companionAgeComputedBadge.className = 'rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-700 dark:text-amber-300';
+            }
+        } else {
+            if (companionAgeTypeInput) companionAgeTypeInput.value = 'adult';
+            if (companionAgeComputedBadge) {
+                companionAgeComputedBadge.textContent = 'Adult Rate (13+ yrs)';
+                companionAgeComputedBadge.className = 'rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300';
+            }
         }
-    });
+    };
+    companionAgeInput?.addEventListener('input', syncCompanionAgeBadge);
 
     let companions = [];
     let bulkCompanionGroups = [];
 
     const openCompanionModal = () => {
         companionModal.classList.add('is-open');
+        companionModal.classList.remove('hidden');
         companionModal.setAttribute('aria-hidden', 'false');
+        syncCompanionAgeBadge();
     };
 
     const closeCompanionModal = () => {
@@ -1697,6 +1729,7 @@ window.AppPage['staff_check_ins'] = function () {
         companionModal.setAttribute('aria-hidden', 'true');
         // Reset forms
         companionForm?.reset();
+        syncCompanionAgeBadge();
         bulkCompanionForm?.reset();
     };
 
@@ -1745,11 +1778,12 @@ window.AppPage['staff_check_ins'] = function () {
         // Render individual companions
         companions.forEach((companion, index) => {
             const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+            const rateLabel = companion.age_type === 'child' ? 'Child' : 'Adult';
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill';
+            item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
-                <span class="guest-companion-pill__name">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age || 'N/A'} - ${companion.gender}</span>
-                <button type="button" class="guest-companion-pill__delete" data-companion-index="${index}">Remove</button>
+                <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
+                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer" data-companion-index="${index}">Remove</button>
             `;
             companionList.appendChild(item);
 
@@ -1759,6 +1793,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="companions[${index}][middle_name]" value="${companion.middle_name || ''}">
                 <input type="hidden" name="companions[${index}][last_name]" value="${companion.last_name}">
                 <input type="hidden" name="companions[${index}][age]" value="${companion.age || ''}">
+                <input type="hidden" name="companions[${index}][age_type]" value="${companion.age_type || 'adult'}">
                 <input type="hidden" name="companions[${index}][gender]" value="${companion.gender || ''}">
                 <input type="hidden" name="companions[${index}][is_foreigner]" value="${companion.is_foreigner ? '1' : '0'}">
                 <input type="hidden" name="companions[${index}][phone]" value="${companion.phone || ''}">
@@ -1769,11 +1804,12 @@ window.AppPage['staff_check_ins'] = function () {
         // Render bulk companion groups
         bulkCompanionGroups.forEach((group, groupIndex) => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk';
+            item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
-                <span class="guest-companion-pill__name">${group.gender} - ${nationality} - Age Group: ${group.age_group} - Qty: ${group.quantity}</span>
-                <button type="button" class="guest-companion-pill__delete" data-bulk-index="${groupIndex}">Remove</button>
+                <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
+                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer" data-bulk-index="${groupIndex}">Remove</button>
             `;
             companionList.appendChild(item);
 
@@ -1781,10 +1817,11 @@ window.AppPage['staff_check_ins'] = function () {
             for (let i = 0; i < group.quantity; i++) {
                 const companionIndex = companions.length + groupIndex * 1000 + i;
                 companionHiddenFields.insertAdjacentHTML('beforeend', `
-                    <input type="hidden" name="companions[${companionIndex}][first_name]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][first_name]" value="Companion">
                     <input type="hidden" name="companions[${companionIndex}][middle_name]" value="">
-                    <input type="hidden" name="companions[${companionIndex}][last_name]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][last_name]" value="Guest">
                     <input type="hidden" name="companions[${companionIndex}][age_group]" value="${group.age_group}">
+                    <input type="hidden" name="companions[${companionIndex}][age_type]" value="${group.age_type || (group.age_group === '0-12' ? 'child' : 'adult')}">
                     <input type="hidden" name="companions[${companionIndex}][gender]" value="${group.gender}">
                     <input type="hidden" name="companions[${companionIndex}][is_foreigner]" value="${group.is_foreigner ? '1' : '0'}">
                     <input type="hidden" name="companions[${companionIndex}][phone]" value="">
@@ -1794,7 +1831,7 @@ window.AppPage['staff_check_ins'] = function () {
         });
 
         if (companions.length === 0 && bulkCompanionGroups.length === 0) {
-            companionList.innerHTML = '<p class="guest-empty">No companions added yet.</p>';
+            companionList.innerHTML = '<p class="guest-empty text-xs text-hp-text-muted italic py-2">No companions added yet.</p>';
         }
     };
 
@@ -1803,13 +1840,17 @@ window.AppPage['staff_check_ins'] = function () {
         e.preventDefault();
         
         const formData = new FormData(companionForm);
+        const ageVal = formData.get('age');
+        const parsedAge = parseInt(ageVal, 10);
+        const autoAgeType = (!isNaN(parsedAge) && parsedAge <= 12) ? 'child' : 'adult';
+
         const companionData = {
-            first_name: formData.get('first_name'),
+            first_name: formData.get('first_name') || 'Companion',
             middle_name: formData.get('middle_name'),
-            last_name: formData.get('last_name'),
-            age: formData.get('age'),
-            age_type: formData.get('age_type'),
-            gender: formData.get('gender'),
+            last_name: formData.get('last_name') || 'Guest',
+            age: ageVal,
+            age_type: autoAgeType,
+            gender: formData.get('gender') || 'Male',
             is_foreigner: formData.get('is_foreigner') === '1',
             phone: formData.get('phone'),
             email: formData.get('email'),
@@ -1819,50 +1860,26 @@ window.AppPage['staff_check_ins'] = function () {
         renderCompanions();
         updateGrandTotal();
         companionForm.reset();
+        syncCompanionAgeBadge();
         closeCompanionModal();
     });
-
-    // Bulk Stepper logic
-    const bulkBtnMinus = document.getElementById('bulkBtnMinus');
-    const bulkBtnPlus = document.getElementById('bulkBtnPlus');
-    const bulkQuantity = document.getElementById('bulkCompanionQuantity');
-
-    if (bulkBtnMinus && bulkBtnPlus && bulkQuantity) {
-        bulkBtnMinus.addEventListener('click', () => {
-            let val = parseInt(bulkQuantity.value, 10) || 1;
-            if (val > parseInt(bulkQuantity.min || 1, 10)) {
-                bulkQuantity.value = val - 1;
-            }
-        });
-        bulkBtnPlus.addEventListener('click', () => {
-            let val = parseInt(bulkQuantity.value, 10) || 1;
-            if (val < parseInt(bulkQuantity.max || 50, 10)) {
-                bulkQuantity.value = val + 1;
-            }
-        });
-    }
 
     // Bulk companion form submission
     bulkCompanionForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(bulkCompanionForm);
-        const bulkData = Object.fromEntries(formData.entries());
-        
-        // Map age_group to age_type for pricing
-        const ageGroup = bulkData.age_group || '18-59';
-        let ageType = 'adult';
-        if (ageGroup === '0-12') {
-            ageType = 'child';
-        } else {
-            ageType = 'adult';
-        }
+        const gender = formData.get('gender') || 'Male';
+        const ageGroup = formData.get('age_group') || '18-59';
+        const isForeigner = formData.get('is_foreigner') === '1';
+        const quantity = parseInt(formData.get('quantity'), 10) || 1;
+        const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
         
         bulkCompanionGroups.push({
-            gender: bulkData.gender,
+            gender,
             age_group: ageGroup,
             age_type: ageType,
-            is_foreigner: bulkData.is_foreigner === '1',
-            quantity: parseInt(bulkData.quantity) || 1,
+            is_foreigner: isForeigner,
+            quantity: quantity,
         });
         
         renderCompanions();
@@ -1871,21 +1888,764 @@ window.AppPage['staff_check_ins'] = function () {
         closeCompanionModal();
     });
 
-    // Delete companion handlers
+    // Delete companion handlers (both single & bulk)
     companionList?.addEventListener('click', (e) => {
-        if (e.target.classList.contains('guest-companion-pill__delete')) {
-            const index = e.target.dataset.companionIndex;
-            const bulkIndex = e.target.dataset.bulkIndex;
-            
-            if (index !== undefined) {
-                companions.splice(index, 1);
-            } else if (bulkIndex !== undefined) {
-                bulkCompanionGroups.splice(bulkIndex, 1);
-            }
-            
-            renderCompanions();
-            updateGrandTotal();
+        const removeBtn = e.target.closest('.guest-companion-pill__delete');
+        if (!removeBtn) return;
+        
+        const index = removeBtn.dataset.companionIndex;
+        const bulkIndex = removeBtn.dataset.bulkIndex;
+        
+        if (index !== undefined && index !== null && index !== '') {
+            companions.splice(parseInt(index, 10), 1);
+        } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
+            bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
         }
+        
+        renderCompanions();
+        updateGrandTotal();
+    });
+    primaryAgeInput?.addEventListener('change', updateGrandTotal);
+
+    // ==========================================
+    // Walk-In Range Calendar Modal Logic
+    // ==========================================
+    const walkInCalendarModal = document.getElementById('walkInCalendarModal');
+    const walkInOpenCalendarBtn = document.getElementById('walkInOpenCalendarBtn');
+    const walkInCalCloseButtons = document.querySelectorAll('[data-close-walkin-calendar="true"]');
+    const walkInCalPrev = document.getElementById('walkInCalPrev');
+    const walkInCalNext = document.getElementById('walkInCalNext');
+    const walkInCalTitle = document.getElementById('walkInCalTitle');
+    const walkInCalYear = document.getElementById('walkInCalYear');
+    const walkInCalGrid = document.getElementById('walkInCalGrid');
+    const walkInCalSummaryText = document.getElementById('walkInCalSummaryText');
+    const walkInCalSpanText = document.getElementById('walkInCalSpanText');
+    const walkInCalStepHelp = document.getElementById('walkInCalStepHelp');
+    const walkInCalApplyBtn = document.getElementById('walkInCalApplyBtn');
+    const walkInCalCurrentBadge = document.getElementById('walkInCalCurrentBadge');
+
+    const walkInCalState = {
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        selectedStartDate: todayStr,
+        selectedEndDate: todayStr,
+        selectedStartSlot: currentServerSession,
+        selectedEndSlot: currentServerSession,
+    };
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    // Populate Year Dropdown (current year up to +5 years)
+    const initWalkInCalYears = () => {
+        if (!walkInCalYear) return;
+        const currentYear = new Date().getFullYear();
+        walkInCalYear.innerHTML = '';
+        for (let y = currentYear; y <= currentYear + 5; y++) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            walkInCalYear.appendChild(opt);
+        }
+    };
+    initWalkInCalYears();
+
+    const openWalkInCalendarModal = () => {
+        if (!walkInCalendarModal) return;
+        // Walk-in check-in is ALWAYS locked to TODAY and CURRENT SESSION
+        walkInCalState.selectedStartDate = todayStr;
+        walkInCalState.selectedStartSlot = currentServerSession;
+        walkInCalState.selectedEndDate = walkInSchedule.endDate || todayStr;
+        walkInCalState.selectedEndSlot = walkInSchedule.endSlot || currentServerSession;
+
+        const [y, m] = walkInCalState.selectedStartDate.split('-');
+        walkInCalState.viewYear = parseInt(y);
+        walkInCalState.viewMonth = parseInt(m) - 1;
+
+        walkInCalendarModal.classList.add('is-open');
+        walkInCalendarModal.setAttribute('aria-hidden', 'false');
+
+        syncWalkInSessionPills();
+        renderWalkInCalendarMonth();
+    };
+
+    const closeWalkInCalendarModal = () => {
+        if (!walkInCalendarModal) return;
+        walkInCalendarModal.classList.remove('is-open');
+        walkInCalendarModal.setAttribute('aria-hidden', 'true');
+    };
+
+    walkInOpenCalendarBtn?.addEventListener('click', openWalkInCalendarModal);
+    walkInCalCloseButtons.forEach(btn => btn.addEventListener('click', closeWalkInCalendarModal));
+
+    // Session pills toggle
+    const syncWalkInSessionPills = () => {
+        document.querySelectorAll('#walkInEndSlotGroup [data-slot-val]').forEach(btn => {
+            const val = btn.dataset.slotVal;
+            btn.dataset.active = (val === walkInCalState.selectedEndSlot) ? 'true' : 'false';
+        });
+    };
+
+    document.querySelectorAll('#walkInEndSlotGroup [data-slot-val]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.slotVal;
+            // If same day and checkin is Nighttime, cannot pick Daytime checkout
+            if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime' && val === 'Daytime') {
+                return;
+            }
+            walkInCalState.selectedEndSlot = val;
+            syncWalkInSessionPills();
+            updateWalkInCalModalSummary();
+        });
+    });
+
+    const updateWalkInCalModalSummary = () => {
+        const counts = calculateWalkInSlots(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, walkInCalState.selectedEndSlot);
+        const sFmt = formatDisplayDate(walkInCalState.selectedStartDate);
+        const eFmt = formatDisplayDate(walkInCalState.selectedEndDate);
+
+        if (walkInCalSummaryText) {
+            if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate) {
+                walkInCalSummaryText.textContent = `Today: ${sFmt} (${walkInCalState.selectedStartSlot}${walkInCalState.selectedStartSlot !== walkInCalState.selectedEndSlot ? ' to ' + walkInCalState.selectedEndSlot : ''})`;
+            } else {
+                walkInCalSummaryText.textContent = `Check-In Today (${walkInCalState.selectedStartSlot}) → Check-Out ${eFmt} (${walkInCalState.selectedEndSlot})`;
+            }
+        }
+        if (walkInCalSpanText) {
+            const span = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+            walkInCalSpanText.textContent = `${span} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
+        }
+        if (walkInCalCurrentBadge) {
+            walkInCalCurrentBadge.textContent = `${counts.daysSpan}D Stay`;
+        }
+        if (walkInCalStepHelp) {
+            walkInCalStepHelp.textContent = 'Click any date from Today onwards to set Check-Out Date';
+        }
+    };
+
+    const renderWalkInCalendarMonth = () => {
+        if (!walkInCalGrid) return;
+        const year = walkInCalState.viewYear;
+        const month = walkInCalState.viewMonth;
+
+        if (walkInCalTitle) walkInCalTitle.textContent = `${monthNames[month]} ${year}`;
+        if (walkInCalYear) walkInCalYear.value = year;
+
+        walkInCalGrid.innerHTML = '';
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Empty padding cells
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
+            walkInCalGrid.appendChild(empty);
+        }
+
+        // Days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'edit-calendar__day flex flex-col items-center justify-center rounded-lg p-1.5 text-xs font-semibold transition-all duration-150 relative cursor-pointer border border-transparent';
+            btn.textContent = d;
+            btn.dataset.date = dateStr;
+
+            const isPast = dateStr < todayStr;
+            const isToday = dateStr === todayStr;
+            const isEnd = dateStr === walkInCalState.selectedEndDate;
+            const inRange = dateStr >= walkInCalState.selectedStartDate && dateStr <= walkInCalState.selectedEndDate;
+
+            if (isPast) {
+                btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
+                btn.disabled = true;
+            } else {
+                btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+            }
+
+            if (inRange && !isPast) {
+                btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
+                btn.classList.remove('hover:bg-hp-green/10');
+            }
+
+            if (isToday) {
+                const dot = document.createElement('span');
+                dot.className = 'absolute bottom-1 h-1 w-1 rounded-full bg-emerald-400';
+                btn.appendChild(dot);
+            }
+
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                // Single click sets Check-Out Date (since check-in is fixed to today)
+                walkInCalState.selectedEndDate = dateStr;
+
+                // If checkin is today nighttime and selected checkout is today, force nighttime checkout
+                if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime') {
+                    walkInCalState.selectedEndSlot = 'Nighttime';
+                }
+
+                syncWalkInSessionPills();
+                updateWalkInCalModalSummary();
+                renderWalkInCalendarMonth();
+            });
+
+            walkInCalGrid.appendChild(btn);
+        }
+
+        updateWalkInCalModalSummary();
+    };
+
+    walkInCalPrev?.addEventListener('click', () => {
+        walkInCalState.viewMonth--;
+        if (walkInCalState.viewMonth < 0) {
+            walkInCalState.viewMonth = 11;
+            walkInCalState.viewYear--;
+        }
+        renderWalkInCalendarMonth();
+    });
+
+    walkInCalNext?.addEventListener('click', () => {
+        walkInCalState.viewMonth++;
+        if (walkInCalState.viewMonth > 11) {
+            walkInCalState.viewMonth = 0;
+            walkInCalState.viewYear++;
+        }
+        renderWalkInCalendarMonth();
+    });
+
+    walkInCalYear?.addEventListener('change', (e) => {
+        walkInCalState.viewYear = parseInt(e.target.value);
+        renderWalkInCalendarMonth();
+    });
+
+    walkInCalApplyBtn?.addEventListener('click', () => {
+        walkInSchedule.startDate = walkInCalState.selectedStartDate;
+        walkInSchedule.endDate = walkInCalState.selectedEndDate;
+        walkInSchedule.startSlot = walkInCalState.selectedStartSlot;
+        walkInSchedule.endSlot = walkInCalState.selectedEndSlot;
+
+        syncMasterScheduleDisplay();
+
+        // Clamp any existing selected amenities to stay inside the new master range
+        selectedAmenities.forEach(am => {
+            if (am.start_date < walkInSchedule.startDate || am.start_date > walkInSchedule.endDate) {
+                am.start_date = walkInSchedule.startDate;
+            }
+            if (am.end_date < am.start_date || am.end_date > walkInSchedule.endDate) {
+                am.end_date = walkInSchedule.endDate;
+            }
+            // Recalculate amenity price
+            const counts = calculateWalkInSlots(am.start_date, am.end_date, am.start_slot, am.end_slot);
+            am.total_days = counts.daysSpan;
+            am.day_count = counts.dayCount;
+            am.night_count = counts.nightCount;
+
+            const dayP = am.is_aircon && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
+            const nightP = am.is_aircon && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
+            am.price_at_booking = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+        });
+
+        renderSelectedAmenities();
+        updateGrandTotal();
+        closeWalkInCalendarModal();
+    });
+
+    // ==========================================
+    // Amenities Modal & Dynamic Availability Loading
+    // ==========================================
+    const amenityModal = document.getElementById('amenityModal');
+    const amenityCloseButtons = document.querySelectorAll('[data-close-amenity-modal="true"]');
+    const amenityModalStayBadge = document.getElementById('amenityModalStayBadge');
+
+    const loadAvailableAmenitiesForStay = async () => {
+        const container = document.getElementById('amenitiesContainer');
+        if (!container) return;
+
+        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+        const sFmt = formatDisplayDate(walkInSchedule.startDate);
+        const eFmt = formatDisplayDate(walkInSchedule.endDate);
+        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+
+        if (amenityModalStayBadge) {
+            if (walkInSchedule.startDate === walkInSchedule.endDate) {
+                amenityModalStayBadge.textContent = `${sFmt} (${walkInSchedule.startSlot}) • ${spanLabel}`;
+            } else {
+                amenityModalStayBadge.textContent = `${sFmt} (${walkInSchedule.startSlot}) → ${eFmt} (${walkInSchedule.endSlot}) • ${spanLabel}`;
+            }
+        }
+
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-8 text-sm text-hp-text-muted">
+                <svg class="mr-2 h-5 w-5 animate-spin text-hp-green" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Checking amenity availability for selected stay...
+            </div>
+        `;
+
+        try {
+            const params = new URLSearchParams({
+                start_date: walkInSchedule.startDate,
+                end_date: walkInSchedule.endDate,
+                start_slot: walkInSchedule.startSlot,
+                end_slot: walkInSchedule.endSlot,
+            });
+
+            const res = await fetch(`/api/amenities/availability?${params.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch availability');
+            const data = await res.json();
+            const list = data.amenities || [];
+
+            if (list.length === 0) {
+                container.innerHTML = '<p class="guest-empty px-4 py-8 text-center text-hp-text-muted">No amenities found in the system.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            list.forEach(amenity => {
+                const isAvailable = Boolean(amenity.is_available);
+                const isAlreadySelected = selectedAmenities.some(a => String(a.amenity_id) === String(amenity.id));
+                const hasAc = amenity.daytime_aircon_price !== null || amenity.nighttime_aircon_price !== null;
+
+                const dayP = parseFloat(amenity.daytime_price) || 0;
+                const nightP = parseFloat(amenity.nighttime_price) || 0;
+                const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+                const card = document.createElement('div');
+                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${
+                    isAvailable
+                        ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/5' : 'border-glass-border bg-glass hover:border-hp-green')
+                        : 'border-red-300/40 bg-red-50/20 opacity-60 dark:border-red-500/20 dark:bg-red-500/5'
+                }`;
+                card.dataset.amenityId = amenity.id;
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2">
+                            <strong class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">${amenity.amenities_name}</strong>
+                            ${isAvailable
+                                ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
+                                : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
+                            }
+                            ${hasAc ? '<span class="rounded bg-blue-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-600 dark:text-blue-400">AC Option</span>' : ''}
+                        </div>
+                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
+                            <span>Capacity: ${amenity.minimum_capacity || 1}–${amenity.maximum_capacity || 10} guests</span>
+                            <span>•</span>
+                            <span>Day: ₱${dayP.toFixed(2)}</span>
+                            <span>•</span>
+                            <span>Night: ₱${nightP.toFixed(2)}</span>
+                        </div>
+                        ${isAvailable ? `
+                            <div class="mt-1.5 text-xs font-semibold text-hp-green">
+                                Stay Total: ₱${calculatedPrice.toFixed(2)} <span class="font-normal text-hp-text-muted">(${spanLabel} • ${counts.dayCount}D ${counts.nightCount}N)</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div>
+                        ${isAlreadySelected ? `
+                            <button type="button" class="rounded-xl border border-hp-green bg-hp-green px-3.5 py-1.5 text-xs font-bold text-white cursor-default" disabled>
+                                ✓ Added
+                            </button>
+                        ` : (isAvailable ? `
+                            <button type="button" class="walkin-add-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white" data-amenity-id="${amenity.id}">
+                                + Add Amenity
+                            </button>
+                        ` : `
+                            <button type="button" class="rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text-muted cursor-not-allowed opacity-60" disabled>
+                                Unavailable
+                            </button>
+                        `)}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        } catch (err) {
+            console.error('Failed to load available amenities:', err);
+            container.innerHTML = '<p class="guest-empty px-4 py-8 text-center text-red-500">Failed to load amenity availability. Please close and retry.</p>';
+        }
+    };
+
+    const openAmenityModal = () => {
+        if (!amenityModal) return;
+        amenityModal.classList.add('is-open');
+        amenityModal.setAttribute('aria-hidden', 'false');
+        loadAvailableAmenitiesForStay();
+    };
+
+    const closeAmenityModal = () => {
+        if (!amenityModal) return;
+        amenityModal.classList.remove('is-open');
+        amenityModal.setAttribute('aria-hidden', 'true');
+    };
+
+    chooseAmenitiesBtn?.addEventListener('click', openAmenityModal);
+    amenityCloseButtons.forEach(btn => btn.addEventListener('click', closeAmenityModal));
+
+    // Handle "+ Add Amenity" click from Choose Amenities Modal
+    document.addEventListener('click', (e) => {
+        const addBtn = e.target.closest('.walkin-add-amenity-btn');
+        if (addBtn) {
+            const amenityId = addBtn.dataset.amenityId;
+            const allAmenities = window.ALL_AMENITIES || [];
+            const amenity = allAmenities.find(a => String(a.id) === String(amenityId));
+            if (!amenity) return;
+
+            // Check if already added
+            if (selectedAmenities.some(a => String(a.amenity_id) === String(amenityId))) {
+                alert(`${amenity.amenities_name} is already added to this reservation.`);
+                return;
+            }
+
+            const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+            const dayPrice = parseFloat(amenity.daytime_price) || 0;
+            const nightPrice = parseFloat(amenity.nighttime_price) || 0;
+            const price = (counts.dayCount * dayPrice) + (counts.nightCount * nightPrice);
+
+            selectedAmenities.push({
+                amenity_id: amenity.id,
+                amenity_name: amenity.amenities_name,
+                min_cap: amenity.minimum_capacity,
+                max_cap: amenity.maximum_capacity,
+                start_date: walkInSchedule.startDate,
+                end_date: walkInSchedule.endDate,
+                start_slot: walkInSchedule.startSlot,
+                end_slot: walkInSchedule.endSlot,
+                is_aircon: false,
+                quantity: 1,
+                day_count: counts.dayCount,
+                night_count: counts.nightCount,
+                total_days: counts.daysSpan,
+                price_at_booking: price,
+                daytime_price: dayPrice,
+                nighttime_price: nightPrice,
+                daytime_aircon_price: amenity.daytime_aircon_price !== null ? parseFloat(amenity.daytime_aircon_price) : null,
+                nighttime_aircon_price: amenity.nighttime_aircon_price !== null ? parseFloat(amenity.nighttime_aircon_price) : null,
+            });
+
+            renderSelectedAmenities();
+            updateGrandTotal();
+            closeAmenityModal();
+        }
+    });
+
+    // Render Selected Amenities Cards
+    const renderSelectedAmenities = () => {
+        if (!selectedAmenitiesContainer || !amenitiesHiddenInputs) return;
+
+        selectedAmenitiesContainer.innerHTML = '';
+        amenitiesHiddenInputs.innerHTML = '';
+
+        if (selectedAmenities.length === 0) {
+            if (noAmenitiesNotice) noAmenitiesNotice.style.display = 'block';
+            selectedAmenitiesContainer.appendChild(noAmenitiesNotice);
+            updateGrandTotal();
+            return;
+        }
+
+        if (noAmenitiesNotice) noAmenitiesNotice.style.display = 'none';
+
+        selectedAmenities.forEach((am, index) => {
+            const hasAcOption = am.daytime_aircon_price !== null || am.nighttime_aircon_price !== null;
+            const sFmt = formatDisplayDate(am.start_date);
+            const eFmt = formatDisplayDate(am.end_date);
+            const spanLabel = am.total_days === 1 ? '1 Day' : `${am.total_days} Days`;
+
+            const card = document.createElement('div');
+            card.className = 'selected-amenity-card rounded-xl border border-glass-border bg-glass p-3.5 shadow-sm transition-all duration-200';
+            card.dataset.index = index;
+
+            card.innerHTML = `
+                <div class="flex flex-wrap items-start justify-between gap-2 border-b border-glass-border/50 pb-2.5">
+                    <div>
+                        <strong class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">${am.amenity_name}</strong>
+                        <div class="text-xs text-hp-text-muted">Capacity: ${am.min_cap || 1}–${am.max_cap || 10} guests</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-extrabold text-hp-green">₱${parseFloat(am.price_at_booking).toFixed(2)}</div>
+                        <button type="button" class="walkin-remove-amenity-btn text-[0.75rem] font-bold text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-1.5 rounded-lg border border-glass-border bg-hp-cream/60 px-2.5 py-1 text-hp-text dark:bg-white/5">
+                        <svg class="h-3.5 w-3.5 text-hp-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span class="font-semibold">${sFmt} (${am.start_slot}) → ${eFmt} (${am.end_slot}) • ${spanLabel} (${am.day_count}D ${am.night_count}N)</span>
+                    </div>
+                    <button type="button" class="walkin-customize-amenity-btn cursor-pointer rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all" data-index="${index}">
+                        Customize Stay
+                    </button>
+                </div>
+
+                ${hasAcOption ? `
+                    <div class="mt-2 flex items-center gap-2 border-t border-glass-border/40 pt-2 text-xs">
+                        <label class="flex cursor-pointer items-center gap-1.5 text-hp-text">
+                            <input type="checkbox" class="walkin-card-ac-toggle h-3.5 w-3.5 accent-hp-green" data-index="${index}" ${am.is_aircon ? 'checked' : ''}>
+                            <span class="font-semibold">Air-Conditioned</span>
+                        </label>
+                    </div>
+                ` : ''}
+            `;
+
+            selectedAmenitiesContainer.appendChild(card);
+
+            // Hidden inputs for backend submission
+            const pricingTypeStr = am.total_days > 1
+                ? `Continuous Stay (${am.total_days}D)${am.is_aircon ? ' Aircon' : ''}`
+                : ((am.start_slot === 'Daytime' && am.end_slot === 'Nighttime') ? (am.is_aircon ? 'DayToNight Aircon' : 'DayToNight') : (am.is_aircon ? `${am.start_slot} Aircon` : am.start_slot));
+
+            amenitiesHiddenInputs.insertAdjacentHTML('beforeend', `
+                <input type="hidden" name="selected_amenities[${index}][amenity_id]" value="${am.amenity_id}">
+                <input type="hidden" name="selected_amenities[${index}][start_date]" value="${am.start_date}">
+                <input type="hidden" name="selected_amenities[${index}][end_date]" value="${am.end_date}">
+                <input type="hidden" name="selected_amenities[${index}][start_slot]" value="${am.start_slot}">
+                <input type="hidden" name="selected_amenities[${index}][end_slot]" value="${am.end_slot}">
+                <input type="hidden" name="selected_amenities[${index}][pricing_type]" value="${pricingTypeStr}">
+                <input type="hidden" name="selected_amenities[${index}][price_at_booking]" value="${am.price_at_booking}">
+                <input type="hidden" name="selected_amenities[${index}][is_aircon]" value="${am.is_aircon ? '1' : '0'}">
+                <input type="hidden" name="selected_amenities[${index}][quantity]" value="${am.quantity || 1}">
+            `);
+        });
+
+        updateGrandTotal();
+    };
+
+    // Remove amenity card click
+    selectedAmenitiesContainer?.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.walkin-remove-amenity-btn');
+        if (removeBtn) {
+            const idx = parseInt(removeBtn.dataset.index);
+            if (!isNaN(idx)) {
+                selectedAmenities.splice(idx, 1);
+                renderSelectedAmenities();
+                updateGrandTotal();
+            }
+        }
+    });
+
+    // Aircon toggle from card
+    selectedAmenitiesContainer?.addEventListener('change', (e) => {
+        if (e.target.classList.contains('walkin-card-ac-toggle')) {
+            const idx = parseInt(e.target.dataset.index);
+            if (!isNaN(idx) && selectedAmenities[idx]) {
+                selectedAmenities[idx].is_aircon = e.target.checked;
+                const am = selectedAmenities[idx];
+                const dayP = am.is_aircon && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
+                const nightP = am.is_aircon && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
+                am.price_at_booking = (am.day_count * dayP) + (am.night_count * nightP);
+                renderSelectedAmenities();
+                updateGrandTotal();
+            }
+        }
+    });
+
+    // ==========================================
+    // Walk-In Per-Amenity Schedule Customizer Modal
+    // ==========================================
+    const walkInAmenityScheduleModal = document.getElementById('walkInAmenityScheduleModal');
+    const walkInAmenityScheduleTitle = document.getElementById('walkInAmenityScheduleTitle');
+    const walkInAmenityScheduleAmenityId = document.getElementById('walkInAmenityScheduleAmenityId');
+    const walkInAmenityScheduleRangeText = document.getElementById('walkInAmenityScheduleRangeText');
+    const walkInAmenityStartDate = document.getElementById('walkInAmenityStartDate');
+    const walkInAmenityStartSlot = document.getElementById('walkInAmenityStartSlot');
+    const walkInAmenityEndDate = document.getElementById('walkInAmenityEndDate');
+    const walkInAmenityEndSlot = document.getElementById('walkInAmenityEndSlot');
+    const walkInAmenityAirconWrap = document.getElementById('walkInAmenityAirconWrap');
+    const walkInAmenityAirconToggle = document.getElementById('walkInAmenityAirconToggle');
+    const walkInAmenityAirconDiff = document.getElementById('walkInAmenityAirconDiff');
+    const walkInAmenityDurationText = document.getElementById('walkInAmenityDurationText');
+    const walkInAmenityMathText = document.getElementById('walkInAmenityMathText');
+    const walkInAmenityTotalPrice = document.getElementById('walkInAmenityTotalPrice');
+    const walkInAmenitySaveScheduleBtn = document.getElementById('walkInAmenitySaveScheduleBtn');
+    const walkInAmenityScheduleCloseBtns = document.querySelectorAll('[data-close-walkin-amenity-schedule="true"]');
+
+    let currentEditingAmenityIndex = null;
+
+    const openAmenityScheduleModal = (index) => {
+        if (!walkInAmenityScheduleModal || !selectedAmenities[index]) return;
+        currentEditingAmenityIndex = index;
+        const am = selectedAmenities[index];
+
+        if (walkInAmenityScheduleTitle) walkInAmenityScheduleTitle.textContent = `Customize ${am.amenity_name} Stay`;
+        if (walkInAmenityScheduleAmenityId) walkInAmenityScheduleAmenityId.value = am.amenity_id;
+
+        const sFmt = formatDisplayDate(walkInSchedule.startDate);
+        const eFmt = formatDisplayDate(walkInSchedule.endDate);
+        if (walkInAmenityScheduleRangeText) {
+            walkInAmenityScheduleRangeText.textContent = `${sFmt} (${walkInSchedule.startSlot}) to ${eFmt} (${walkInSchedule.endSlot})`;
+        }
+
+        // Set min/max constraints
+        if (walkInAmenityStartDate) {
+            walkInAmenityStartDate.min = walkInSchedule.startDate;
+            walkInAmenityStartDate.max = walkInSchedule.endDate;
+            walkInAmenityStartDate.value = am.start_date;
+        }
+        if (walkInAmenityEndDate) {
+            walkInAmenityEndDate.min = am.start_date;
+            walkInAmenityEndDate.max = walkInSchedule.endDate;
+            walkInAmenityEndDate.value = am.end_date;
+        }
+        if (walkInAmenityStartSlot) walkInAmenityStartSlot.value = am.start_slot;
+        if (walkInAmenityEndSlot) walkInAmenityEndSlot.value = am.end_slot;
+
+        // Aircon wrap visibility
+        const hasAc = am.daytime_aircon_price !== null || am.nighttime_aircon_price !== null;
+        if (walkInAmenityAirconWrap) {
+            walkInAmenityAirconWrap.style.display = hasAc ? 'flex' : 'none';
+        }
+        if (walkInAmenityAirconToggle) {
+            walkInAmenityAirconToggle.checked = Boolean(am.is_aircon);
+        }
+
+        enforceWalkInAmenityModalConstraints();
+        walkInAmenityScheduleModal.classList.add('is-open');
+        walkInAmenityScheduleModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeAmenityScheduleModal = () => {
+        if (!walkInAmenityScheduleModal) return;
+        walkInAmenityScheduleModal.classList.remove('is-open');
+        walkInAmenityScheduleModal.setAttribute('aria-hidden', 'true');
+        currentEditingAmenityIndex = null;
+    };
+
+    walkInAmenityScheduleCloseBtns.forEach(btn => btn.addEventListener('click', closeAmenityScheduleModal));
+
+    selectedAmenitiesContainer?.addEventListener('click', (e) => {
+        const customizeBtn = e.target.closest('.walkin-customize-amenity-btn');
+        if (customizeBtn) {
+            const idx = parseInt(customizeBtn.dataset.index);
+            if (!isNaN(idx)) {
+                openAmenityScheduleModal(idx);
+            }
+        }
+    });
+
+    const enforceWalkInAmenityModalConstraints = () => {
+        if (currentEditingAmenityIndex === null || !selectedAmenities[currentEditingAmenityIndex]) return;
+        const am = selectedAmenities[currentEditingAmenityIndex];
+
+        const bStart = walkInSchedule.startDate;
+        const bEnd = walkInSchedule.endDate;
+        const bStartSlot = walkInSchedule.startSlot;
+        const bEndSlot = walkInSchedule.endSlot;
+
+        // Start Date clamping
+        if (walkInAmenityStartDate) {
+            walkInAmenityStartDate.min = bStart;
+            walkInAmenityStartDate.max = bEnd;
+            if (walkInAmenityStartDate.value < bStart) walkInAmenityStartDate.value = bStart;
+            if (walkInAmenityStartDate.value > bEnd) walkInAmenityStartDate.value = bEnd;
+        }
+
+        const curStart = walkInAmenityStartDate?.value || bStart;
+
+        // End Date clamping
+        if (walkInAmenityEndDate) {
+            walkInAmenityEndDate.min = curStart;
+            walkInAmenityEndDate.max = bEnd;
+            if (walkInAmenityEndDate.value < curStart) walkInAmenityEndDate.value = curStart;
+            if (walkInAmenityEndDate.value > bEnd) walkInAmenityEndDate.value = bEnd;
+        }
+
+        const curEnd = walkInAmenityEndDate?.value || curStart;
+
+        // Session slots constraints
+        if (walkInAmenityStartSlot) {
+            const dtOpt = walkInAmenityStartSlot.querySelector('option[value="Daytime"]');
+            const allowDayStart = !(curStart === bStart && bStartSlot === 'Nighttime');
+            if (dtOpt) dtOpt.disabled = !allowDayStart;
+            if (!allowDayStart && walkInAmenityStartSlot.value === 'Daytime') {
+                walkInAmenityStartSlot.value = 'Nighttime';
+            }
+        }
+
+        const curStartSlot = walkInAmenityStartSlot?.value || 'Daytime';
+
+        if (walkInAmenityEndSlot) {
+            const ntOpt = walkInAmenityEndSlot.querySelector('option[value="Nighttime"]');
+            const dtOpt = walkInAmenityEndSlot.querySelector('option[value="Daytime"]');
+
+            const allowNightEnd = !(curEnd === bEnd && bEndSlot === 'Daytime');
+            const isSameDayNightStart = (curStart === curEnd && curStartSlot === 'Nighttime');
+
+            if (ntOpt) ntOpt.disabled = !allowNightEnd;
+            if (dtOpt) dtOpt.disabled = isSameDayNightStart;
+
+            if (!allowNightEnd && walkInAmenityEndSlot.value === 'Nighttime') {
+                walkInAmenityEndSlot.value = 'Daytime';
+            }
+            if (isSameDayNightStart && walkInAmenityEndSlot.value === 'Daytime') {
+                walkInAmenityEndSlot.value = 'Nighttime';
+            }
+        }
+
+        const curEndSlot = walkInAmenityEndSlot?.value || 'Daytime';
+        const isAircon = Boolean(walkInAmenityAirconToggle?.checked);
+
+        // Recalculate duration and price
+        const counts = calculateWalkInSlots(curStart, curEnd, curStartSlot, curEndSlot);
+        const dayP = isAircon && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
+        const nightP = isAircon && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
+        const totalP = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+        if (walkInAmenityDurationText) {
+            const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+            walkInAmenityDurationText.textContent = `${spanLabel} (${counts.dayCount}D ${counts.nightCount}N)`;
+        }
+        if (walkInAmenityMathText) {
+            const parts = [];
+            if (counts.dayCount > 0) parts.push(`${counts.dayCount}D × ₱${dayP.toFixed(2)}`);
+            if (counts.nightCount > 0) parts.push(`${counts.nightCount}N × ₱${nightP.toFixed(2)}`);
+            walkInAmenityMathText.textContent = parts.join(' + ') || '0 slots';
+        }
+        if (walkInAmenityTotalPrice) {
+            walkInAmenityTotalPrice.textContent = `₱${totalP.toFixed(2)}`;
+        }
+    };
+
+    walkInAmenityStartDate?.addEventListener('change', enforceWalkInAmenityModalConstraints);
+    walkInAmenityEndDate?.addEventListener('change', enforceWalkInAmenityModalConstraints);
+    walkInAmenityStartSlot?.addEventListener('change', enforceWalkInAmenityModalConstraints);
+    walkInAmenityEndSlot?.addEventListener('change', enforceWalkInAmenityModalConstraints);
+    walkInAmenityAirconToggle?.addEventListener('change', enforceWalkInAmenityModalConstraints);
+
+    walkInAmenitySaveScheduleBtn?.addEventListener('click', () => {
+        if (currentEditingAmenityIndex === null || !selectedAmenities[currentEditingAmenityIndex]) return;
+        const am = selectedAmenities[currentEditingAmenityIndex];
+
+        enforceWalkInAmenityModalConstraints();
+
+        const sDate = walkInAmenityStartDate.value;
+        const eDate = walkInAmenityEndDate.value;
+        const sSlot = walkInAmenityStartSlot.value;
+        const eSlot = walkInAmenityEndSlot.value;
+        const isAc = Boolean(walkInAmenityAirconToggle.checked);
+
+        const counts = calculateWalkInSlots(sDate, eDate, sSlot, eSlot);
+        const dayP = isAc && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
+        const nightP = isAc && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
+
+        am.start_date = sDate;
+        am.end_date = eDate;
+        am.start_slot = sSlot;
+        am.end_slot = eSlot;
+        am.is_aircon = isAc;
+        am.total_days = counts.daysSpan;
+        am.day_count = counts.dayCount;
+        am.night_count = counts.nightCount;
+        am.price_at_booking = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+        renderSelectedAmenities();
+        updateGrandTotal();
+        closeAmenityScheduleModal();
     });
 
     // Guest filter toggle

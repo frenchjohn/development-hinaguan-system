@@ -184,8 +184,8 @@
                                             @if (($row['type'] ?? '') === 'bulk')
                                                 @php
                                                     $group = $row['group'];
-                                                    $bulkStatus = $group['status'] ?? 'Checked Out';
-                                                    $bulkStatusClass = $recordsStatusClasses[strtolower(str_replace(' ', '-', $bulkStatus))] ?? 'bg-[rgba(120,130,122,0.13)] text-hp-text-muted';
+                                                    $bulkStatus = 'Checked Out';
+                                                    $bulkStatusClass = $recordsStatusClasses['checked-out'] ?? 'bg-[rgba(120,130,122,0.13)] text-hp-text-muted';
                                                 @endphp
                                                 <tr
                                                     class="guest-row guest-row--bulk-group cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
@@ -197,7 +197,7 @@
                                                     data-reservation-id="{{ $group['reservation_id'] }}"
                                                     data-age-value="999999"
                                                     data-checked-out="{{ $group['checked_out_at'] ?? '' }}"
-                                                    data-search="{{ strtolower(trim(($group['name'] ?? '') . ' ' . $group['reservation_id'] . ' ' . $group['gender'] . ' ' . $group['age_group'] . ' ' . $group['nationality'] . ' ' . $bulkStatus . ' ' . $group['count'] . ' bulk companion group')) }}"
+                                                    data-search="{{ strtolower(trim(($group['name'] ?? '') . ' ' . $group['reservation_id'] . ' ' . $group['gender'] . ' ' . $group['age_group'] . ' ' . $group['nationality'] . ' checked out ' . $group['count'] . ' bulk companion group')) }}"
                                                     tabindex="0"
                                                     role="button"
                                                     aria-label="View bulk companion group details"
@@ -244,8 +244,8 @@
                                                     $customer = $guestEntry->customer;
                                                     $guestInitials = collect(explode(' ', trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''))))->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?';
                                                     $isPrimaryGuest = (bool) ($guestEntry->is_primary_guest ?? false);
-                                                    $resStatus = $guestEntry->reservation?->status ?? 'Checked Out';
-                                                    $guestStatusClass = $recordsStatusClasses[strtolower(str_replace(' ', '-', $resStatus))] ?? 'bg-[rgba(120,130,122,0.13)] text-hp-text-muted';
+                                                    $guestStatus = 'Checked Out';
+                                                    $guestStatusClass = $recordsStatusClasses['checked-out'] ?? 'bg-[rgba(120,130,122,0.13)] text-hp-text-muted';
                                                     $guestTypeLabel = ($guestEntry->reservation?->reservation_type ?? '') === 'walk_in' ? 'Walk-in Guest' : 'Online Guest';
                                                 @endphp
                                                 <tr
@@ -254,12 +254,12 @@
                                                     data-age="{{ $customer->age ?? 'N/A' }}"
                                                     data-gender="{{ $customer->gender ?? 'N/A' }}"
                                                     data-nationality="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
-                                                    data-status="{{ $resStatus }}"
+                                                    data-status="{{ $guestStatus }}"
                                                     data-reservation-id="{{ $guestEntry->reservation_id ?? '' }}"
                                                     data-is-foreigner="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
                                                     data-checked-out="{{ $guestEntry->checked_out_at ?? '' }}"
                                                     data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
-                                                    data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino') . ' ' . $resStatus . ' ' . $guestTypeLabel . ' ' . ($guestEntry->reservation_id ?? ''))) }}"
+                                                    data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino') . ' ' . $guestStatus . ' ' . $guestTypeLabel . ' ' . ($guestEntry->reservation_id ?? ''))) }}"
                                                     tabindex="0"
                                                     role="button"
                                                     aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
@@ -291,7 +291,7 @@
                                                     <td>{{ $customer->gender ?? 'N/A' }}</td>
                                                     <td class="whitespace-nowrap text-[0.84rem] font-medium text-hp-text">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</td>
                                                     <td>
-                                                        <span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $guestStatusClass }}">{{ $resStatus }}</span>
+                                                        <span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $guestStatusClass }}">{{ $guestStatus }}</span>
                                                     </td>
                                                     <td class="mono-cell whitespace-nowrap text-[0.8rem] text-hp-text-muted">
                                                         @if ($guestEntry->checked_out_at)
