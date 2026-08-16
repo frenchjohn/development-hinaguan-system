@@ -174,7 +174,6 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
 
     $reservations = Reservation::query()
         ->whereNotIn('status', ['Cancelled', 'Checked Out'])
-        ->where('payment_status', '!=', 'Unpaid')
         ->whereDate('reservation_date', '<=', $maxDate)
         ->where(function ($q) use ($minDate) {
             $q->whereDate('end_date', '>=', $minDate)
@@ -284,11 +283,29 @@ $computeReservationCheckoutAt = function ($reservation) use ($amenityCheckoutAt,
 
     $latestCheckout = null;
 
+    // 1. Compute checkout time from reservation's master stay schedule (end_date / end_slot or total_days)
+    $startDate = $reservation->reservation_date;
+    if ($startDate) {
+        $totalDays = max(1, (int) ($reservation->total_days ?? 1));
+        $endDate = $reservation->end_date ?: ($totalDays > 1 ? \Illuminate\Support\Carbon::parse($startDate)->addDays($totalDays - 1)->toDateString() : $startDate);
+        $endSlot = $reservation->end_slot ?: ($reservation->entranceFee?->pricing_type ?: $reservation->start_slot ?: 'Daytime');
+
+        if ($reservation->end_date || $totalDays > 1) {
+            $stayCheckout = $amenityContinuousCheckoutAt($endDate, $endSlot);
+        } else {
+            $stayCheckout = $amenityCheckoutAt($startDate, $endSlot);
+        }
+
+        if ($stayCheckout) {
+            $latestCheckout = $stayCheckout;
+        }
+    }
+
+    // 2. Check all active (or completed if all completed) amenities
     $amenities = $reservation->relationLoaded('reservationAmenities')
         ? $reservation->reservationAmenities
         : $reservation->reservationAmenities()->get();
 
-    // Filter to active (non-completed) amenities, fallback to all if all are completed
     $activeAmenities = $amenities->filter(fn ($ra) => $ra->status !== 'Completed');
     $amenitiesToConsider = $activeAmenities->isNotEmpty() ? $activeAmenities : $amenities;
 
@@ -310,21 +327,6 @@ $computeReservationCheckoutAt = function ($reservation) use ($amenityCheckoutAt,
 
             if ($amCheckout && (! $latestCheckout || $amCheckout->gt($latestCheckout))) {
                 $latestCheckout = $amCheckout;
-            }
-        }
-    }
-
-    if (! $latestCheckout) {
-        $startDate = $reservation->reservation_date;
-        if ($startDate) {
-            $totalDays = max(1, (int) ($reservation->total_days ?? 1));
-            $endDate = $reservation->end_date ?: ($totalDays > 1 ? \Illuminate\Support\Carbon::parse($startDate)->addDays($totalDays - 1)->toDateString() : $startDate);
-            $endSlot = $reservation->end_slot ?: ($reservation->entranceFee?->pricing_type ?: $reservation->start_slot ?: 'Daytime');
-
-            if ($reservation->end_date || $totalDays > 1) {
-                $latestCheckout = $amenityContinuousCheckoutAt($endDate, $endSlot);
-            } else {
-                $latestCheckout = $amenityCheckoutAt($startDate, $endSlot);
             }
         }
     }
@@ -1928,7 +1930,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('verify-email-otp')->withoutMiddleware([VerifyCsrfToken::class]);
 });
 
-Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
+Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
     Route::get('/dashboard', function (Request $request) use ($reservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
@@ -2590,6 +2592,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $daytimeEnd = $settings ? strtotime((string) ($settings->daytime_end ?? '18:00')) : strtotime('18:00');
         $nowSeconds = strtotime(now()->format('H:i'));
         $currentPeriod = ($nowSeconds >= $daytimeStart && $nowSeconds < $daytimeEnd) ? 'daytime' : 'nighttime';
+        $currentSlotName = $currentPeriod === 'nighttime' ? 'Nighttime' : 'Daytime';
+
+        // Amenities occupied today for the current session (cannot be added mid-stay today)
+        $occupiedTodayAmenityIds = $amenities
+            ->filter(fn ($amenity) => $isAmenitySlotTaken($amenity->id, $today, $currentSlotName))
+            ->pluck('id')
+            ->all();
 
         $guestData = $customers->mapWithKeys(function ($customer) use ($computeReservationCheckoutAt, $formatLocalDate) {
             return [$customer->id => [
@@ -2642,7 +2651,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
-        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'currentPeriod'));
+        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'occupiedTodayAmenityIds', 'currentPeriod', 'currentSlotName'));
     })->name('checkins');
 
     Route::get('/check-ins/lookup', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
@@ -4009,6 +4018,340 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.add-companion');
 
+    // Extend / Adjust master stay schedule for an active checked-in reservation
+    Route::post('/reservations/{reservation}/extend-stay', function (Request $request, Reservation $reservation) use ($calculateContinuousSlotsCount, $continuousSlotTimeline, $computeReservationCheckoutAt) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $statusKey = strtolower((string) $reservation->status);
+        if (! in_array($statusKey, ['checked in', 'checked-in', 'checked_in', 'active'], true)) {
+            return response()->json(['message' => 'Only checked-in reservations can have their stay adjusted.'], 422);
+        }
+
+        $data = $request->validate([
+            'new_end_date' => ['required', 'date'],
+            'new_end_slot' => ['required', 'in:Daytime,Nighttime'],
+        ]);
+
+        $origStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString();
+        $origStartSlot = $reservation->start_slot ?? 'Daytime';
+
+        $newEndDate = \Illuminate\Support\Carbon::parse($data['new_end_date'])->toDateString();
+        $newEndSlot = $data['new_end_slot'];
+
+        $newTimeline = $continuousSlotTimeline($origStartDate, $newEndDate, $origStartSlot, $newEndSlot);
+        if (empty($newTimeline)) {
+            return response()->json(['message' => "The new check-out date/session cannot be earlier than the reservation check-in date ({$origStartDate} [{$origStartSlot}])."], 422);
+        }
+
+        // Find the latest check-out among all active/booked amenities on this reservation
+        $amenities = $reservation->reservationAmenities()
+            ->where('status', '!=', 'Completed')
+            ->get();
+        if ($amenities->isEmpty()) {
+            $amenities = $reservation->reservationAmenities()->get();
+        }
+
+        $latestAmenityEndDate = null;
+        $latestAmenityEndSlot = 'Daytime';
+        $latestAmenityTimelineCount = 0;
+        $latestAmenityName = null;
+
+        foreach ($amenities as $ra) {
+            $amStart = $ra->start_date ? \Illuminate\Support\Carbon::parse($ra->start_date)->toDateString() : $origStartDate;
+            $amEnd = $ra->end_date ? \Illuminate\Support\Carbon::parse($ra->end_date)->toDateString() : $amStart;
+            $amStartSlot = $ra->start_slot ?? $origStartSlot;
+            $amEndSlot = $ra->end_slot ?? 'Daytime';
+
+            $amTimeline = $continuousSlotTimeline($origStartDate, $amEnd, $origStartSlot, $amEndSlot);
+            if (count($amTimeline) > $latestAmenityTimelineCount) {
+                $latestAmenityTimelineCount = count($amTimeline);
+                $latestAmenityEndDate = $amEnd;
+                $latestAmenityEndSlot = $amEndSlot;
+                $latestAmenityName = $ra->amenity?->amenities_name ?? ($ra->amenity_id ?? 'Amenity');
+            }
+        }
+
+        if ($latestAmenityTimelineCount > 0 && count($newTimeline) < $latestAmenityTimelineCount) {
+            $formattedAmenityDate = \Illuminate\Support\Carbon::parse($latestAmenityEndDate)->format('M d, Y');
+            return response()->json([
+                'message' => "Cannot step back stay schedule before {$formattedAmenityDate} ({$latestAmenityEndSlot}) because {$latestAmenityName} is booked until that date and session. Amenity durations cannot be decreased."
+            ], 422);
+        }
+
+        $newCounts = $calculateContinuousSlotsCount($origStartDate, $newEndDate, $origStartSlot, $newEndSlot);
+
+        $reservation->update([
+            'end_date' => $newEndDate,
+            'end_slot' => $newEndSlot,
+            'total_days' => $newCounts['days_span'],
+        ]);
+
+        $reservation->refresh();
+        $newCheckoutAt = $computeReservationCheckoutAt($reservation);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Stay schedule updated successfully.',
+            'end_date' => $newEndDate,
+            'end_slot' => $newEndSlot,
+            'total_days' => $newCounts['days_span'],
+            'checkout_at' => $newCheckoutAt?->toIso8601String(),
+        ]);
+    })->name('reservations.extend-stay');
+
+    // Extend an existing active amenity on a checked-in reservation
+    Route::post('/reservations/{reservation}/amenities/{reservationAmenity}/extend', function (Request $request, Reservation $reservation, ReservationAmenity $reservationAmenity) use ($calculateContinuousSlotsCount, $continuousSlotTimeline, $isAmenityRangeTaken, $computeReservationCheckoutAt) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $statusKey = strtolower((string) $reservation->status);
+        if (! in_array($statusKey, ['checked in', 'checked-in', 'checked_in', 'active'], true)) {
+            return response()->json(['message' => 'Only checked-in reservations can extend amenities.'], 422);
+        }
+
+        if ($reservationAmenity->reservation_id !== $reservation->id) {
+            return response()->json(['message' => 'Amenity does not belong to this reservation.'], 404);
+        }
+
+        if ($reservationAmenity->status === 'Completed') {
+            return response()->json(['message' => 'Cannot extend an amenity that is already completed/checked out.'], 422);
+        }
+
+        $data = $request->validate([
+            'new_end_date' => ['required', 'date'],
+            'new_end_slot' => ['required', 'in:Daytime,Nighttime'],
+        ]);
+
+        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString();
+        $masterEndDate = $reservation->end_date ? \Illuminate\Support\Carbon::parse($reservation->end_date)->toDateString() : $masterStartDate;
+        $masterStartSlot = $reservation->start_slot ?? 'Daytime';
+        $masterEndSlot = $reservation->end_slot ?? 'Daytime';
+
+        $masterTimeline = $continuousSlotTimeline($masterStartDate, $masterEndDate, $masterStartSlot, $masterEndSlot);
+        $masterKeys = [];
+        foreach ($masterTimeline as [$d, $s]) {
+            $masterKeys["{$d}_{$s}"] = true;
+        }
+
+        $amenityStartDate = $reservationAmenity->start_date ? \Illuminate\Support\Carbon::parse($reservationAmenity->start_date)->toDateString() : $masterStartDate;
+        $amenityStartSlot = $reservationAmenity->start_slot ?? $masterStartSlot;
+        $currentAmenityEndDate = $reservationAmenity->end_date ? \Illuminate\Support\Carbon::parse($reservationAmenity->end_date)->toDateString() : $amenityStartDate;
+        $currentAmenityEndSlot = $reservationAmenity->end_slot ?? $amenityStartSlot;
+
+        $newAmenityEndDate = \Illuminate\Support\Carbon::parse($data['new_end_date'])->toDateString();
+        $newAmenityEndSlot = $data['new_end_slot'];
+
+        $oldTimeline = $continuousSlotTimeline($amenityStartDate, $currentAmenityEndDate, $amenityStartSlot, $currentAmenityEndSlot);
+        $newTimeline = $continuousSlotTimeline($amenityStartDate, $newAmenityEndDate, $amenityStartSlot, $newAmenityEndSlot);
+
+        if (count($newTimeline) <= count($oldTimeline)) {
+            return response()->json(['message' => 'New amenity end date/session must be later than the current amenity schedule.'], 422);
+        }
+
+        // 1. Boundary enforcement: amenity cannot exceed the reservation master stay
+        foreach ($newTimeline as [$d, $s]) {
+            if (! isset($masterKeys["{$d}_{$s}"])) {
+                return response()->json([
+                    'message' => "The extended duration ({$newAmenityEndDate} [{$newAmenityEndSlot}]) exceeds the reservation's overall check-out schedule ({$masterEndDate} [{$masterEndSlot}]). Please extend the overall stay first."
+                ], 422);
+            }
+        }
+
+        // 2. Conflict check on the EXTENDED portion only:
+        $addedSlots = array_slice($newTimeline, count($oldTimeline));
+        if (! empty($addedSlots)) {
+            $firstAddedDate = $addedSlots[0][0];
+            $firstAddedSlot = $addedSlots[0][1];
+            $lastAddedDate = $addedSlots[count($addedSlots) - 1][0];
+            $lastAddedSlot = $addedSlots[count($addedSlots) - 1][1];
+
+            if ($isAmenityRangeTaken((string) $reservationAmenity->amenity_id, $firstAddedDate, $lastAddedDate, $firstAddedSlot, $lastAddedSlot, $reservation->id)) {
+                return response()->json([
+                    'message' => "Cannot extend {$reservationAmenity->amenity?->amenities_name}. The amenity is already reserved by another guest during the requested extension period."
+                ], 422);
+            }
+        }
+
+        // Calculate extra cost for the added slots
+        $amenity = $reservationAmenity->amenity;
+        $hasAircon = str_contains((string) $reservationAmenity->pricing_type, 'Aircon');
+        $dayPrice = $hasAircon && $amenity?->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) ($amenity?->daytime_price ?? 0);
+        $nightPrice = $hasAircon && $amenity?->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) ($amenity?->nighttime_price ?? 0);
+
+        $extraDayCount = 0;
+        $extraNightCount = 0;
+        foreach ($addedSlots as [$d, $s]) {
+            if ($s === 'Daytime') $extraDayCount++;
+            else $extraNightCount++;
+        }
+
+        $quantity = max(1, (int) ($reservationAmenity->quantity ?? 1));
+        $addedCost = round((($extraDayCount * $dayPrice) + ($extraNightCount * $nightPrice)) * $quantity, 2);
+
+        $fullCounts = $calculateContinuousSlotsCount($amenityStartDate, $newAmenityEndDate, $amenityStartSlot, $newAmenityEndSlot);
+        $newPricingType = $fullCounts['days_span'] > 1
+            ? "Continuous Stay ({$fullCounts['days_span']}D)" . ($hasAircon ? ' Aircon' : '')
+            : (($amenityStartSlot === 'Daytime' && $newAmenityEndSlot === 'Nighttime') ? ($hasAircon ? 'DayToNight Aircon' : 'DayToNight') : ($hasAircon ? "{$amenityStartSlot} Aircon" : $amenityStartSlot));
+
+        $oldPrice = (float) $reservationAmenity->price_at_booking;
+        $newAmenityPrice = round($oldPrice + $addedCost, 2);
+
+        $reservationAmenity->update([
+            'end_date' => $newAmenityEndDate,
+            'end_slot' => $newAmenityEndSlot,
+            'day_slots_count' => $fullCounts['day_count'],
+            'night_slots_count' => $fullCounts['night_count'],
+            'pricing_type' => $newPricingType,
+            'price_at_booking' => $newAmenityPrice,
+        ]);
+
+        // Update reservation totals and amount paid (settled at counter)
+        $reservation->update([
+            'total_amount' => round((float) $reservation->total_amount + $addedCost, 2),
+            'amount_paid' => round((float) $reservation->amount_paid + $addedCost, 2),
+        ]);
+
+        $reservation->refresh();
+        $newCheckoutAt = $computeReservationCheckoutAt($reservation);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Extended {$amenity?->amenities_name} successfully.",
+            'added_cost' => $addedCost,
+            'new_total' => $reservation->total_amount,
+            'new_end_date' => $newAmenityEndDate,
+            'new_end_slot' => $newAmenityEndSlot,
+            'checkout_at' => $newCheckoutAt?->toIso8601String(),
+        ]);
+    })->name('reservations.amenities.extend');
+
+    // Add a brand-new amenity to an active checked-in reservation
+    Route::post('/reservations/{reservation}/amenities/add', function (Request $request, Reservation $reservation) use ($calculateContinuousSlotsCount, $continuousSlotTimeline, $isAmenityRangeTaken, $computeReservationCheckoutAt) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $statusKey = strtolower((string) $reservation->status);
+        if (! in_array($statusKey, ['checked in', 'checked-in', 'checked_in', 'active'], true)) {
+            return response()->json(['message' => 'Only checked-in reservations can add amenities.'], 422);
+        }
+
+        $data = $request->validate([
+            'amenity_id' => ['required', 'string', 'exists:amenities,id'],
+            'start_date' => ['nullable', 'date'],
+            'start_slot' => ['nullable', 'in:Daytime,Nighttime'],
+            'end_date' => ['required', 'date'],
+            'end_slot' => ['required', 'in:Daytime,Nighttime'],
+            'is_aircon' => ['nullable', 'boolean'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        $amenity = Amenity::findOrFail($data['amenity_id']);
+
+        $settingsForSession = \App\Models\ParkSetting::first();
+        $currentHour = now()->format('H:i');
+        $nighttimeStart = $settingsForSession?->nighttime_start ?? '17:00';
+        $nighttimeEnd = $settingsForSession?->nighttime_end ?? '06:00';
+        $currentSession = 'Daytime';
+        if ($nighttimeStart && $nighttimeEnd) {
+            if ($nighttimeStart <= $nighttimeEnd) {
+                if ($currentHour >= $nighttimeStart && $currentHour <= $nighttimeEnd) $currentSession = 'Nighttime';
+            } else {
+                if ($currentHour >= $nighttimeStart || $currentHour <= $nighttimeEnd) $currentSession = 'Nighttime';
+            }
+        }
+
+        $masterStartDate = $reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString();
+        $masterEndDate = $reservation->end_date ? \Illuminate\Support\Carbon::parse($reservation->end_date)->toDateString() : $masterStartDate;
+        $masterStartSlot = $reservation->start_slot ?? 'Daytime';
+        $masterEndSlot = $reservation->end_slot ?? 'Daytime';
+
+        $masterTimeline = $continuousSlotTimeline($masterStartDate, $masterEndDate, $masterStartSlot, $masterEndSlot);
+        $masterKeys = [];
+        foreach ($masterTimeline as [$d, $s]) {
+            $masterKeys["{$d}_{$s}"] = true;
+        }
+
+        $startDate = ! empty($data['start_date']) ? \Illuminate\Support\Carbon::parse($data['start_date'])->toDateString() : now()->toDateString();
+        $startSlot = ! empty($data['start_slot']) ? $data['start_slot'] : $currentSession;
+        $endDate = \Illuminate\Support\Carbon::parse($data['end_date'])->toDateString();
+        $endSlot = $data['end_slot'];
+
+        $itemTimeline = $continuousSlotTimeline($startDate, $endDate, $startSlot, $endSlot);
+        if (empty($itemTimeline)) {
+            return response()->json(['message' => 'Invalid schedule selected for amenity.'], 422);
+        }
+
+        // 1. Boundary enforcement: cannot exceed master stay
+        foreach ($itemTimeline as [$d, $s]) {
+            if (! isset($masterKeys["{$d}_{$s}"])) {
+                return response()->json([
+                    'message' => "The requested schedule for {$amenity->amenities_name} ({$startDate} [{$startSlot}] to {$endDate} [{$endSlot}]) exceeds the reservation's overall check-out schedule ({$masterEndDate} [{$masterEndSlot}])."
+                ], 422);
+            }
+        }
+
+        // 2. Conflict check
+        if ($isAmenityRangeTaken((string) $amenity->id, $startDate, $endDate, $startSlot, $endSlot, $reservation->id)) {
+            return response()->json([
+                'message' => "Amenity {$amenity->amenities_name} is already booked by another guest during the selected schedule ({$startDate} [{$startSlot}] to {$endDate} [{$endSlot}])."
+            ], 422);
+        }
+
+        $itemCounts = $calculateContinuousSlotsCount($startDate, $endDate, $startSlot, $endSlot);
+        $hasAircon = ! empty($data['is_aircon']);
+
+        $dayPrice = $hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) ($amenity->daytime_price ?? 0);
+        $nightPrice = $hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) ($amenity->nighttime_price ?? 0);
+
+        $quantity = max(1, (int) ($data['quantity'] ?? 1));
+        $totalAmenityCost = round((($itemCounts['day_count'] * $dayPrice) + ($itemCounts['night_count'] * $nightPrice)) * $quantity, 2);
+
+        $pricingType = $itemCounts['days_span'] > 1
+            ? "Continuous Stay ({$itemCounts['days_span']}D)" . ($hasAircon ? ' Aircon' : '')
+            : (($startSlot === 'Daytime' && $endSlot === 'Nighttime') ? ($hasAircon ? 'DayToNight Aircon' : 'DayToNight') : ($hasAircon ? "{$startSlot} Aircon" : $startSlot));
+
+        $newAmenity = ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => $amenity->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'start_slot' => $startSlot,
+            'end_slot' => $endSlot,
+            'day_slots_count' => $itemCounts['day_count'],
+            'night_slots_count' => $itemCounts['night_count'],
+            'pricing_type' => $pricingType,
+            'price_at_booking' => $totalAmenityCost,
+            'quantity' => $quantity,
+            'status' => 'Active',
+            'remarks' => 'Added mid-stay from staff portal',
+        ]);
+
+        // Update reservation totals
+        $reservation->update([
+            'total_amount' => round((float) $reservation->total_amount + $totalAmenityCost, 2),
+            'amount_paid' => round((float) $reservation->amount_paid + $totalAmenityCost, 2),
+        ]);
+
+        $reservation->refresh();
+        $newCheckoutAt = $computeReservationCheckoutAt($reservation);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Added {$amenity->amenities_name} to reservation #{$reservation->id} successfully.",
+            'amenity' => $newAmenity,
+            'added_cost' => $totalAmenityCost,
+            'new_total' => $reservation->total_amount,
+            'checkout_at' => $newCheckoutAt?->toIso8601String(),
+        ]);
+    })->name('reservations.amenities.add');
+
     Route::post('/reservations/{reservation}/check-out', function (Request $request, Reservation $reservation) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
@@ -4139,7 +4482,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.amenities.checkout');
 
-    Route::get('/reservations/{reservation}/availability', function (Request $request, Reservation $reservation) use ($isAmenityRangeTaken, $formatLocalDate) {
+    Route::get('/reservations/{reservation}/availability', function (Request $request, Reservation $reservation) use ($isAmenityRangeTaken, $formatLocalDate, $getReservationAmenityTimeline) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -4149,40 +4492,115 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $year = (int) $request->query('year', now()->year);
         $month = max(1, min(12, $month));
 
-        // Gather all amenities belonging to this reservation
-        $amenityItems = $reservation->reservationAmenities()
-            ->with('amenity')
+        $targetAmenityId = $request->query('amenity_id');
+
+        if ($targetAmenityId) {
+            $combos = collect([[
+                'id' => null,
+                'amenity_id' => $targetAmenityId,
+                'amenity_name' => 'Amenity',
+                'pricing_type' => 'Daytime',
+                'has_aircon' => false,
+                'daytime_price' => 0,
+                'nighttime_price' => 0,
+                'quantity' => 1,
+                'price_at_booking' => 0,
+                'start_slot' => 'Daytime',
+                'end_slot' => 'Daytime',
+            ]]);
+        } else {
+            // Gather all amenities belonging to this reservation
+            $amenityItems = $reservation->reservationAmenities()
+                ->with('amenity')
+                ->get();
+
+            $combos = $amenityItems
+                ->filter(fn ($ra) => ! empty($ra->amenity_id))
+                ->map(function ($ra) {
+                    $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon');
+                    $amenity = $ra->amenity;
+
+                    $dayPrice = $amenity ? ($hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) $amenity->daytime_price) : 0;
+                    $nightPrice = $amenity ? ($hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) $amenity->nighttime_price) : 0;
+
+                    return [
+                        'id' => $ra->id,
+                        'amenity_id' => $ra->amenity_id,
+                        'amenity_name' => $amenity?->amenities_name ?? 'Amenity',
+                        'pricing_type' => $ra->pricing_type,
+                        'has_aircon' => $hasAircon,
+                        'daytime_price' => $dayPrice,
+                        'nighttime_price' => $nightPrice,
+                        'quantity' => max(1, (int) $ra->quantity),
+                        'price_at_booking' => (float) $ra->price_at_booking,
+                        'start_slot' => $ra->start_slot ?? 'Daytime',
+                        'end_slot' => $ra->end_slot ?? 'Daytime',
+                    ];
+                })
+                ->values();
+        }
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $start = \Illuminate\Support\Carbon::parse($request->query('start_date'))->startOfDay();
+            $end = \Illuminate\Support\Carbon::parse($request->query('end_date'))->startOfDay();
+            if ($end->lt($start)) {
+                $end = $start->copy();
+            }
+            $numDays = (int) $start->diffInDays($end) + 1;
+        } else {
+            $month = (int) $request->query('month', now()->month);
+            $year = (int) $request->query('year', now()->year);
+            $month = max(1, min(12, $month));
+            $start = \Illuminate\Support\Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $numDays = $start->daysInMonth;
+        }
+        $minDate = $start->toDateString();
+        $maxDate = $start->copy()->addDays($numDays - 1)->toDateString();
+
+        $amenityIds = $combos->pluck('amenity_id')->unique()->filter()->values()->all();
+
+        $bookedReservations = Reservation::query()
+            ->whereNotIn('status', ['Cancelled', 'Checked Out'])
+            ->whereDate('reservation_date', '<=', $maxDate)
+            ->where(function ($q) use ($minDate) {
+                $q->whereDate('end_date', '>=', $minDate)
+                  ->orWhere(function ($q2) use ($minDate) {
+                      $q2->whereNull('end_date')
+                         ->whereDate('reservation_date', '>=', \Illuminate\Support\Carbon::parse($minDate)->subDays(2)->toDateString());
+                  });
+            })
+            ->whereHas('reservationAmenities', function ($q) use ($amenityIds) {
+                $q->whereIn('amenity_id', $amenityIds)
+                  ->where(function ($sq) {
+                      $sq->whereNull('status')
+                         ->orWhere('status', '!=', 'Completed');
+                  });
+            })
+            ->with(['reservationAmenities' => function ($q) use ($amenityIds) {
+                $q->whereIn('amenity_id', $amenityIds)
+                  ->where(function ($sq) {
+                      $sq->whereNull('status')
+                         ->orWhere('status', '!=', 'Completed');
+                  });
+            }])
+            ->when($reservation->id, fn ($q) => $q->whereKeyNot($reservation->id))
             ->get();
 
-        $combos = $amenityItems
-            ->filter(fn ($ra) => ! empty($ra->amenity_id))
-            ->map(function ($ra) {
-                $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon');
-                $amenity = $ra->amenity;
+        $takenSlots = [];
+        foreach ($bookedReservations as $bRes) {
+            foreach ($bRes->reservationAmenities as $bRa) {
+                if ($bRa->status === 'Completed') {
+                    continue;
+                }
+                $tLine = $getReservationAmenityTimeline($bRa, $bRes);
+                $aId = (string) $bRa->amenity_id;
+                foreach ($tLine as [$d, $s]) {
+                    $takenSlots["{$aId}_{$d}_{$s}"] = true;
+                }
+            }
+        }
 
-                $dayPrice = $amenity ? ($hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) $amenity->daytime_price) : 0;
-                $nightPrice = $amenity ? ($hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) $amenity->nighttime_price) : 0;
-
-                return [
-                    'id' => $ra->id,
-                    'amenity_id' => $ra->amenity_id,
-                    'amenity_name' => $amenity?->amenities_name ?? 'Amenity',
-                    'pricing_type' => $ra->pricing_type,
-                    'has_aircon' => $hasAircon,
-                    'daytime_price' => $dayPrice,
-                    'nighttime_price' => $nightPrice,
-                    'quantity' => max(1, (int) $ra->quantity),
-                    'price_at_booking' => (float) $ra->price_at_booking,
-                    'start_slot' => $ra->start_slot ?? 'Daytime',
-                    'end_slot' => $ra->end_slot ?? 'Daytime',
-                ];
-            })
-            ->values();
-
-        $start = \Illuminate\Support\Carbon::createFromDate($year, $month, 1)->startOfDay();
-        $numDays = $start->daysInMonth;
         $today = now()->toDateString();
-        
         $currentStartDate = $formatLocalDate($reservation, 'reservation_date');
         $currentEndDate = $formatLocalDate($reservation, 'end_date') ?: $currentStartDate;
 
@@ -4196,18 +4614,14 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             $daytimeAvail = true;
             $nighttimeAvail = true;
-            $defaultSlotAvail = true;
 
             foreach ($combos as $combo) {
-                if ($isAmenityRangeTaken($combo['amenity_id'], $date, $date, 'Daytime', 'Daytime', $reservation->id)) {
+                $aId = (string) $combo['amenity_id'];
+                if (isset($takenSlots["{$aId}_{$date}_Daytime"])) {
                     $daytimeAvail = false;
                 }
-                if ($isAmenityRangeTaken($combo['amenity_id'], $date, $date, 'Nighttime', 'Nighttime', $reservation->id)) {
+                if (isset($takenSlots["{$aId}_{$date}_Nighttime"])) {
                     $nighttimeAvail = false;
-                }
-                $sSlot = $combo['start_slot'] ?? ($reservation->start_slot ?? 'Daytime');
-                if ($isAmenityRangeTaken($combo['amenity_id'], $date, $date, $sSlot, $sSlot, $reservation->id)) {
-                    $defaultSlotAvail = false;
                 }
             }
 
@@ -4216,7 +4630,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'is_past' => $isPast,
                 'daytime' => $daytimeAvail,
                 'nighttime' => $nighttimeAvail,
-                'available' => $defaultSlotAvail && ! $isPast,
+                'available' => $daytimeAvail && ! $isPast,
                 'full_available' => $daytimeAvail && $nighttimeAvail && ! $isPast,
             ];
         }

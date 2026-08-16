@@ -2280,11 +2280,368 @@
 					</div>
 				</div>
 
+				{{-- Adjust / Extend Stay Schedule Modal --}}
+				<div class="guest-modal guest-modal--compact" id="extendStayModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extend-stay-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendStayTitle">
+						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-stay-modal="true" aria-label="Close modal">&times;</button>
+						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+							<div class="flex items-center gap-2.5">
+								<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-hp-green/10 text-hp-green dark:bg-hp-green/20">
+									<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+								</div>
+								<div>
+									<h3 id="extendStayTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text">Adjust Stay Schedule</h3>
+									<span class="text-xs text-hp-text-muted">Reservation #<span id="extendStayResId"></span></span>
+								</div>
+							</div>
+							<span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400" id="extendStayCurrentBadge">Stay Window</span>
+						</div>
+
+						<form id="extendStayForm" class="grid gap-3.5">
+							<input type="hidden" id="extendStayNewEndDate" value="">
+							<input type="hidden" id="extendStayNewEndSlot" value="Daytime">
+
+							<div class="rounded-xl border border-glass-border bg-hp-cream/60 p-3 dark:bg-white/5">
+								<div class="text-[0.7rem] font-bold uppercase tracking-wider text-hp-text-muted mb-0.5">Current Stay Schedule</div>
+								<div class="text-xs font-bold text-hp-text" id="extendStayCurrentSummary">—</div>
+								<div class="mt-1 text-[0.72rem] text-hp-text-muted" id="extendStayBoundaryHelp">You can extend the stay forward or step back as long as it does not cross booked amenities.</div>
+							</div>
+
+							{{-- Check-Out Session Selector --}}
+							<div class="grid gap-1">
+								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-Out Session</span>
+								<div class="flex gap-1.5" id="extendStayEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Daytime" data-active="true">Daytime (until 5:00 PM)</button>
+									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Nighttime">Nighttime (until 6:00 AM)</button>
+								</div>
+							</div>
+
+							{{-- Interactive 5-Year Calendar --}}
+							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-3.5 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
+										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="extendStayCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalYear" aria-label="Select year"></select>
+									</div>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalNext" aria-label="Next month">&rsaquo;</button>
+								</div>
+
+								<div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-1">
+									<span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+								</div>
+
+								<div class="edit-calendar__grid relative mt-1 grid min-h-[190px] grid-cols-7 gap-1" id="extendStayCalGrid"></div>
+
+								<div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.7rem] text-hp-text-muted dark:border-white/10">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Selected Stay</span>
+										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green/20"></span> In Stay Range</span>
+									</div>
+									<span id="extendStayCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to set Check-Out</span>
+								</div>
+							</div>
+
+							<div id="extendStayWarning" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300"></div>
+
+							<div class="mt-1 flex justify-end gap-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all hover:bg-glass-hover" data-close-extend-stay-modal="true">Cancel</button>
+								<button type="submit" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-hp-green-dark" id="submitExtendStayBtn">Save Stay Schedule</button>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				{{-- Extend Existing Amenity Modal --}}
+				<div class="guest-modal guest-modal--compact" id="extendAmenityModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extend-amenity-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[560px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendAmenityTitle">
+						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-amenity-modal="true" aria-label="Close modal">&times;</button>
+						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+							<div class="flex items-center gap-2.5">
+								<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-hp-green/10 text-hp-green dark:bg-hp-green/20">
+									<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</div>
+								<div>
+									<h3 id="extendAmenityTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text">Extend Amenity Duration</h3>
+									<span class="text-xs text-hp-text-muted" id="extendAmenitySubtitle">Extend active amenity</span>
+								</div>
+							</div>
+						</div>
+
+						<form id="extendAmenityForm" class="grid gap-3.5">
+							<input type="hidden" id="extendAmenityResId" value="">
+							<input type="hidden" id="extendAmenityRaId" value="">
+							<input type="hidden" id="extendAmenityNewEndDate" value="">
+							<input type="hidden" id="extendAmenityNewEndSlot" value="Daytime">
+
+							{{-- Non-reversibility Policy Notice --}}
+							<div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+								<svg class="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+								</svg>
+								<div>
+									<strong>Notice:</strong> Once an amenity extension is confirmed and paid, its duration <strong>cannot be decreased or stepped back</strong>. It can only be extended further within the stay schedule.
+								</div>
+							</div>
+
+							<div class="rounded-xl border border-glass-border bg-hp-cream/60 p-3 dark:bg-white/5">
+								<div class="flex justify-between items-center mb-1">
+									<span class="text-xs font-semibold uppercase tracking-wider text-hp-text-muted">Amenity</span>
+									<strong class="text-sm font-bold text-hp-text" id="extendAmenityName">—</strong>
+								</div>
+								<div class="flex justify-between items-center mb-1">
+									<span class="text-xs text-hp-text-muted">Current Duration</span>
+									<span class="text-xs font-semibold text-hp-text" id="extendAmenityCurrentDuration">—</span>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-xs text-hp-text-muted">Master Stay Window Limit</span>
+									<span class="text-xs font-semibold text-hp-green" id="extendAmenityStayLimit">—</span>
+								</div>
+							</div>
+
+							{{-- Check-Out Session Selector --}}
+							<div class="grid gap-1">
+								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">New Check-Out Session</span>
+								<div class="flex gap-1.5" id="extendAmenityEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Daytime" data-active="true">Daytime</button>
+									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Nighttime">Nighttime</button>
+								</div>
+							</div>
+
+							{{-- Interactive 5-Year Calendar for Amenity Extension --}}
+							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-3.5 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
+										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="extendAmenityCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalYear" aria-label="Select year"></select>
+									</div>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalNext" aria-label="Next month">&rsaquo;</button>
+								</div>
+
+								<div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-1">
+									<span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+								</div>
+
+								<div class="edit-calendar__grid relative mt-1 grid min-h-[190px] grid-cols-7 gap-1" id="extendAmenityCalGrid"></div>
+
+								<div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.7rem] text-hp-text-muted dark:border-white/10">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Extended Range</span>
+										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Booked (Conflict)</span>
+										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500/60"></span> Exceeds Stay</span>
+									</div>
+									<span id="extendAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to extend amenity</span>
+								</div>
+							</div>
+
+							{{-- Price & Extra Duration Preview --}}
+							<div class="rounded-xl border border-glass-border bg-glass p-3.5">
+								<div class="flex justify-between text-xs mb-1.5">
+									<span class="text-hp-text-muted">Added Continuous Sessions:</span>
+									<strong class="text-hp-text" id="extendAmenityAddedSessionsText">0 sessions</strong>
+								</div>
+								<div class="flex justify-between text-sm font-bold border-t border-glass-border pt-1.5">
+									<span class="text-hp-text">Additional Fee to Pay:</span>
+									<span class="text-hp-green font-extrabold text-base" id="extendAmenityAddedCostText">₱0.00</span>
+								</div>
+							</div>
+
+							<div id="extendAmenityWarning" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300"></div>
+
+							<div class="mt-1 flex justify-end gap-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all hover:bg-glass-hover" data-close-extend-amenity-modal="true">Cancel</button>
+								<button type="submit" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-sm font-semibold text-white transition-all hover:bg-hp-green-dark" id="submitExtendAmenityBtn">Proceed to Pay & Confirm</button>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				{{-- Add New Amenity Mid-Stay Modal --}}
+				<div class="guest-modal guest-modal--wide" id="addAmenityMidStayModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-add-amenity-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[580px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addAmenityMidStayTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-amenity-modal="true" aria-label="Close add amenity modal">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+							<div class="flex items-center gap-2.5">
+								<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-hp-green/10 text-hp-green dark:bg-hp-green/20">
+									<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+									</svg>
+								</div>
+								<div>
+									<h3 id="addAmenityMidStayTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text">Add Amenity Mid-Stay</h3>
+									<span class="text-xs text-hp-text-muted">Add new amenity to Reservation #<span id="addAmenityResId"></span></span>
+								</div>
+							</div>
+						</div>
+
+						<form id="addAmenityMidStayForm" class="grid gap-3.5">
+							<input type="hidden" id="addAmenityMidStayResId" value="">
+							<input type="hidden" id="addAmenityNewEndDate" value="">
+							<input type="hidden" id="addAmenityNewEndSlot" value="Daytime">
+
+							<!-- 1. Select Amenity -->
+							<div class="grid gap-1.5">
+								<label class="text-xs font-bold uppercase tracking-wider text-hp-text-muted" for="midStayAmenitySelect">Select Amenity</label>
+								<select id="midStayAmenitySelect" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5">
+									<option value="">-- Choose an amenity --</option>
+								</select>
+							</div>
+
+							<!-- 2. Start Info (Fixed from Today) & Master Stay Limit -->
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 rounded-xl border border-glass-border bg-glass p-3 dark:border-white/10 dark:bg-white/5">
+								<div class="grid gap-1">
+									<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Start Session (Today)</span>
+									<div class="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+										<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+										<span id="addAmenityStartFixedText">Today • Daytime</span>
+									</div>
+								</div>
+								<div class="grid gap-1">
+									<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Stay Check-Out Limit</span>
+									<div class="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
+										<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+										</svg>
+										<span id="addAmenityStayLimit">—</span>
+									</div>
+								</div>
+							</div>
+
+							<!-- 3. Aircon Option (Only shown if amenity actually has aircon) -->
+							<div id="midStayAirconWrapper" class="hidden">
+								<label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-glass-border bg-glass p-3 text-xs text-hp-text hover:bg-glass-hover">
+									<input type="checkbox" id="midStayIsAircon" class="h-4 w-4 accent-hp-green">
+									<span class="font-bold">With Aircon Option</span>
+								</label>
+							</div>
+
+							<!-- 4. End Session Selector -->
+							<div class="grid gap-1">
+								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Select Amenity Check-Out Session</span>
+								<div class="flex gap-2" id="addAmenityEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1 rounded-xl border border-glass-border bg-glass py-2 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
+									<button type="button" class="session-pill-btn flex-1 rounded-xl border border-glass-border bg-glass py-2 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
+								</div>
+							</div>
+
+							<!-- 5. 5-Year Calendar Component -->
+							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
+									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
+										<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="addAmenityCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalYear" aria-label="Select year"></select>
+									</div>
+									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalNext" aria-label="Next month">&rsaquo;</button>
+								</div>
+
+								<div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
+									<span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+								</div>
+
+								<div class="edit-calendar__grid relative mt-1 grid min-h-[200px] grid-cols-7 gap-1 transition-opacity duration-250" id="addAmenityCalGrid">
+									<div class="col-span-7 flex flex-col items-center justify-center py-10 text-xs text-hp-text-muted font-medium">Please select an amenity above</div>
+								</div>
+
+								<div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.72rem] text-hp-text-muted dark:border-white/10">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-hp-green"></span> Selected Stay</span>
+										<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Booked</span>
+										<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> Exceeds Stay</span>
+									</div>
+									<span id="addAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to set check-out</span>
+								</div>
+							</div>
+
+							<!-- 6. Price Preview -->
+							<div class="rounded-xl border border-glass-border bg-glass p-3.5">
+								<div class="flex justify-between text-xs mb-1.5">
+									<span class="text-hp-text-muted font-semibold">Continuous Sessions:</span>
+									<strong class="text-hp-text" id="midStaySlotsText">0 sessions</strong>
+								</div>
+								<div class="flex justify-between text-sm font-bold border-t border-glass-border pt-1.5">
+									<span class="text-hp-text">Total Amenity Fee:</span>
+									<span class="text-hp-green font-extrabold text-base" id="midStayCostText">₱0.00</span>
+								</div>
+							</div>
+
+							<div id="addAmenityWarning" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-semibold text-amber-700 dark:text-amber-300"></div>
+
+							<div class="mt-1 flex justify-end gap-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all hover:bg-glass-hover" data-close-add-amenity-modal="true">Cancel</button>
+								<button type="submit" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-hp-green-dark" id="submitAddAmenityBtn">Proceed to Pay & Confirm</button>
+							</div>
+						</form>
+					</div>
+				</div>
+
+				{{-- Final Extension / Addition Payment Confirmation Modal --}}
+				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true">
+					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extension-payment-modal="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[520px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extensionPaymentTitle">
+						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extension-payment-modal="true" aria-label="Close payment modal">&times;</button>
+						<div class="guest-modal__header mb-4 flex items-center gap-2.5 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+							<div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20">
+								<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+								</svg>
+							</div>
+							<div>
+								<h3 id="extensionPaymentTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text">Review & Pay at Counter</h3>
+								<span class="text-xs text-hp-text-muted">Confirm payment to apply booking</span>
+							</div>
+						</div>
+
+						<div class="grid gap-4">
+							<div class="rounded-xl border border-glass-border bg-hp-cream/60 p-4 dark:bg-white/5">
+								<div class="text-xs font-semibold uppercase tracking-wider text-hp-text-muted mb-2">Itemized Addition Details</div>
+								<div class="flex justify-between items-center text-sm font-bold text-hp-text mb-1">
+									<span id="extPayItemName">—</span>
+									<span class="text-hp-green font-extrabold" id="extPayItemCost">₱0.00</span>
+								</div>
+								<div class="text-xs text-hp-text-muted mb-2" id="extPayItemSchedule">—</div>
+								<div class="border-t border-glass-border pt-2 text-xs flex justify-between text-hp-text-muted">
+									<span>Payment Method:</span>
+									<strong class="text-hp-text">Cash at Counter</strong>
+								</div>
+							</div>
+
+							<div class="flex items-center justify-between rounded-xl bg-hp-green/10 border border-hp-green/20 p-4">
+								<div>
+									<span class="block text-xs uppercase font-bold text-hp-green-dark dark:text-emerald-300">Amount Due Now</span>
+									<span class="text-xs text-hp-text-muted">Collect payment from guest</span>
+								</div>
+								<span class="text-2xl font-extrabold text-hp-green" id="extPayTotalAmount">₱0.00</span>
+							</div>
+
+							<div class="mt-2 flex justify-end gap-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all hover:bg-glass-hover" data-close-extension-payment-modal="true">Back / Cancel</button>
+								<button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-hp-green-dark" id="confirmExtensionPaymentBtn">Confirm & Pay at Counter</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
 	<x-staff_chatbot />
 
 	<script>
 		window.staffGuestData = @json($guestData ?? []);
 		window.staffReservationData = @json($reservationData ?? []);
+		window.ALL_AMENITIES = @json($amenities ?? []);
+		window.SERVER_TODAY = "{{ now()->toDateString() }}";
+		window.SERVER_CURRENT_SESSION = "{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}";
+		window.AVAILABLE_AMENITY_IDS = @json($availableAmenityIds ?? []);
+		window.OCCUPIED_TODAY_AMENITY_IDS = @json($occupiedTodayAmenityIds ?? []);
 	</script>
 </body>
 </html>

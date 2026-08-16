@@ -263,13 +263,19 @@ window.AppPage['staff_check_ins'] = function () {
                         ${reservation.email || 'N/A'}
                     </div>
                 </div>
-                <div class="ci-col ci-border-left">
+                <div class="ci-col ci-border-left" style="flex: 1.4; min-width: 190px;">
                     <span class="ci-label">RESERVATION STAY</span>
-                    <div class="ci-value" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
-                        ${isMultiDay 
-                            ? `${formatDate(reservation.reservation_date)} (${startSlot}) – ${formatDate(reservation.end_date)} (${endSlot}) <span class="resv-date-badge" style="margin-left:4px;">${reservation.total_days || 2} Days</span>` 
-                            : `${formatDate(reservation.reservation_date)} (${startSlot})`}
-                        ${differentTime ? '<span class="resv-date-badge" style="margin-left:4px;">Mixed Time</span>' : ''}
+                    <div class="ci-value" style="display: flex; flex-direction: column; gap: 0.35rem; line-height: 1.35;">
+                        <div>
+                            ${isMultiDay 
+                                ? `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span><br><span class="text-xs text-hp-text-muted">to</span> <span style="font-weight: 700;">${formatDate(reservation.end_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${endSlot})</span>` 
+                                : `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span>`}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                            ${isMultiDay ? `<span class="resv-date-badge">${reservation.total_days || 2} Days</span>` : ''}
+                            ${differentTime ? '<span class="resv-date-badge">Mixed Time</span>' : ''}
+                            ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `<button type="button" class="resv-extend-stay-btn inline-flex items-center gap-1 rounded-lg border border-hp-green/40 bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer" data-reservation-id="${reservation.id}">Adjust / Extend Stay</button>` : ''}
+                        </div>
                     </div>
                 </div>
                 <div class="ci-col ci-border-left">
@@ -314,10 +320,6 @@ window.AppPage['staff_check_ins'] = function () {
             </div>
 
             ${(() => {
-                // Highlight the reservation's time period(s): the amenity
-                // pricing types when amenities were availed (each one shown,
-                // so mixed periods are visible), otherwise the entrance fee's
-                // stored time period.
                 const periods = [];
                 if (validAmenities.length > 0) {
                     validAmenities.forEach(a => {
@@ -358,8 +360,6 @@ window.AppPage['staff_check_ins'] = function () {
         `;
 
         if (companions.length >= 0) {
-            // Only guests still inside count — checked-out companions (and
-            // fully checked-out bulk groups) must not appear as empty entries.
             const activeCompanions = companions.filter(c => !c.checked_out_at);
             const individualCompanions = activeCompanions.filter(c =>
                 c.customer &&
@@ -406,8 +406,6 @@ window.AppPage['staff_check_ins'] = function () {
                         ` : '<div class="ci-guest-card"><div class="ci-guest-info"><div class="ci-guest-name">No main guest assigned</div></div></div>'}
             `;
 
-            // Compact companion summary — just the counts so the card stays
-            // short (details live in the guest table / reservation dropdown).
             if (bulkCompanions.length > 0 || individualCompanions.length > 0) {
                 const totalCompanions = bulkCompanions.length + individualCompanions.length;
                 const singleCount = individualCompanions.length;
@@ -441,52 +439,66 @@ window.AppPage['staff_check_ins'] = function () {
             `;
         }
 
-        if (reservation.reservation_amenities && reservation.reservation_amenities.length > 0) {
-            if (validAmenities.length > 0) {
-                const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
-                const isCheckedIn = statusKey === 'checked_in';
-                const showPerAmenityCheckout = isCheckedIn && differentTime;
+        const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
+        const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active' || statusKey.includes('checked');
+        const showPerAmenityCheckout = isCheckedIn && differentTime;
 
-                html += `
-                <div style="margin-top:0.75rem;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
+        if (validAmenities.length > 0) {
+            html += `
+            <div style="margin-top:0.75rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
+                    <div class="flex items-center gap-2">
                         ${showPerAmenityCheckout ? '<span class="resv-diff-time-label">Different amenity time</span>' : ''}
-                    </div>
-                    <div class="resv-amenity-list">
-                        ${validAmenities.map(a => {
-                            const amenityStatus = a.status || 'Active';
-                            const isCompleted = amenityStatus === 'Completed';
-                            const aStart = a.start_date ? formatDate(a.start_date) : '';
-                            const aEnd = a.end_date ? formatDate(a.end_date) : '';
-                            const aStartSlot = a.start_slot || startSlot;
-                            const aEndSlot = a.end_slot || endSlot;
-                            const aHasRange = a.start_date && a.end_date && a.start_date !== a.end_date;
-                            const aSched = aHasRange 
-                                ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])` 
-                                : (aStartSlot ? ` (${aStartSlot})` : '');
-                            return `
-                                <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
-                                    <div class="resv-amenity-item__info">
-                                        <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
-                                        <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'}${aSched} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
-                                        ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
-                                    </div>
-                                    <div class="resv-amenity-item__actions">
-                                        ${isCompleted
-                                            ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
-                                            : (showPerAmenityCheckout
-                                                ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
-                                                : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
-                                        }
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+                        ${isCheckedIn ? `<button type="button" class="resv-add-amenity-btn rounded-lg bg-hp-green px-2.5 py-1 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">+ Add Amenity</button>` : ''}
                     </div>
                 </div>
-                `;
-            }
+                <div class="resv-amenity-list">
+                    ${validAmenities.map(a => {
+                        const amenityStatus = a.status || 'Active';
+                        const isCompleted = amenityStatus === 'Completed';
+                        const aStart = a.start_date ? formatDate(a.start_date) : '';
+                        const aEnd = a.end_date ? formatDate(a.end_date) : '';
+                        const aStartSlot = a.start_slot || startSlot;
+                        const aEndSlot = a.end_slot || endSlot;
+                        const aHasRange = a.start_date && a.end_date && a.start_date !== a.end_date;
+                        const aSched = aHasRange 
+                            ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])` 
+                            : (aStartSlot ? ` (${aStartSlot})` : '');
+                        return `
+                            <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
+                                <div class="resv-amenity-item__info">
+                                    <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
+                                    <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'}${aSched} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
+                                    ${!isCompleted && a.checkout_at ? `<div class="resv-amenity-countdown" data-checkout-at="${a.checkout_at}" data-checkout-state=""></div>` : ''}
+                                </div>
+                                <div class="resv-amenity-item__actions flex items-center gap-1.5">
+                                    ${isCompleted
+                                        ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
+                                        : (
+                                            (isCheckedIn ? `<button type="button" class="resv-amenity-extend-btn rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer" data-reservation-id="${reservation.id}" data-reservation-amenity-id="${a.id}">Extend</button>` : '') +
+                                            (showPerAmenityCheckout
+                                                ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
+                                                : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
+                                        )
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            `;
+        } else if (isCheckedIn) {
+            html += `
+            <div style="margin-top:0.75rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
+                    <button type="button" class="resv-add-amenity-btn rounded-lg bg-hp-green px-2.5 py-1 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">+ Add Amenity</button>
+                </div>
+                <div class="rounded-xl border border-glass-border bg-glass p-3 text-xs text-hp-text-muted italic">No amenities booked on this stay yet. Click "+ Add Amenity" to rent one.</div>
+            </div>
+            `;
         }
         
         html += `</div>`; // Close guest-card
@@ -636,6 +648,1523 @@ window.AppPage['staff_check_ins'] = function () {
                 window.alert(error.message || 'Unable to check out this amenity.');
                 btn.disabled = false;
                 btn.textContent = 'Check Out';
+            }
+        });
+    }
+
+    // ── Continuous timeline slot builder (JS) ──────────────────────────────
+    const buildContinuousTimeline = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDate) return [];
+        endDate = endDate || startDate;
+        const cleanStartSlot = String(startSlot).includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEndSlot = String(endSlot).includes('Night') ? 'Nighttime' : 'Daytime';
+
+        const s = new Date(startDate + 'T00:00:00');
+        const e = new Date(endDate + 'T00:00:00');
+        if (s > e) return [];
+
+        const daysDiff = Math.round((e - s) / (1000 * 60 * 60 * 24));
+        const pairs = [];
+
+        if (daysDiff === 0) {
+            if (cleanStartSlot === 'Daytime' && cleanEndSlot === 'Daytime') {
+                pairs.push([startDate, 'Daytime']);
+            } else if (cleanStartSlot === 'Nighttime' && cleanEndSlot === 'Nighttime') {
+                pairs.push([startDate, 'Nighttime']);
+            } else if (cleanStartSlot === 'Daytime' && cleanEndSlot === 'Nighttime') {
+                pairs.push([startDate, 'Daytime']);
+                pairs.push([startDate, 'Nighttime']);
+            } else {
+                const nextDay = new Date(s);
+                nextDay.setDate(nextDay.getDate() + 1);
+                const nextDayStr = nextDay.toISOString().split('T')[0];
+                pairs.push([startDate, 'Nighttime']);
+                pairs.push([nextDayStr, 'Daytime']);
+            }
+            return pairs;
+        }
+
+        for (let i = 0; i <= daysDiff; i++) {
+            const curr = new Date(s);
+            curr.setDate(curr.getDate() + i);
+            const currStr = curr.toISOString().split('T')[0];
+
+            if (i === 0) {
+                if (cleanStartSlot === 'Daytime') {
+                    pairs.push([currStr, 'Daytime']);
+                    pairs.push([currStr, 'Nighttime']);
+                } else {
+                    pairs.push([currStr, 'Nighttime']);
+                }
+            } else if (i === daysDiff) {
+                if (cleanEndSlot === 'Daytime') {
+                    pairs.push([currStr, 'Daytime']);
+                } else {
+                    pairs.push([currStr, 'Daytime']);
+                    pairs.push([currStr, 'Nighttime']);
+                }
+            } else {
+                pairs.push([currStr, 'Daytime']);
+                pairs.push([currStr, 'Nighttime']);
+            }
+        }
+        return pairs;
+    };
+
+    // ── Adjust / Extend Stay Modal Handlers (Interactive 5-Year Calendar) ───
+    const extendStayModal = document.getElementById('extendStayModal');
+    const extendStayForm = document.getElementById('extendStayForm');
+    const extendStayResId = document.getElementById('extendStayResId');
+    const extendStayCurrentSummary = document.getElementById('extendStayCurrentSummary');
+    const extendStayBoundaryHelp = document.getElementById('extendStayBoundaryHelp');
+    const extendStayNewEndDate = document.getElementById('extendStayNewEndDate');
+    const extendStayNewEndSlot = document.getElementById('extendStayNewEndSlot');
+    const extendStayCalPrev = document.getElementById('extendStayCalPrev');
+    const extendStayCalNext = document.getElementById('extendStayCalNext');
+    const extendStayCalTitle = document.getElementById('extendStayCalTitle');
+    const extendStayCalYear = document.getElementById('extendStayCalYear');
+    const extendStayCalGrid = document.getElementById('extendStayCalGrid');
+    const extendStayCalStepHelp = document.getElementById('extendStayCalStepHelp');
+    const extendStayWarning = document.getElementById('extendStayWarning');
+    const submitExtendStayBtn = document.getElementById('submitExtendStayBtn');
+    const extendStayCloseButtons = document.querySelectorAll('[data-close-extend-stay-modal="true"]');
+
+    const extendStayCalState = {
+        resId: null,
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        selectedEndDate: null,
+        selectedEndSlot: 'Daytime',
+        minPermissibleDate: null,
+        minPermissibleSlot: 'Daytime',
+        latestAmenityDate: null,
+        latestAmenitySlot: 'Daytime',
+        latestAmenityName: null,
+    };
+
+    const syncExtendStaySessionPills = () => {
+        document.querySelectorAll('#extendStayEndSlotGroup [data-slot-val]').forEach(btn => {
+            const val = btn.dataset.slotVal;
+            btn.dataset.active = (val === extendStayCalState.selectedEndSlot) ? 'true' : 'false';
+        });
+    };
+
+    document.querySelectorAll('#extendStayEndSlotGroup [data-slot-val]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.slotVal;
+            const res = reservationData[extendStayCalState.resId];
+            if (!res) return;
+
+            // Cannot choose Daytime if on minimum permissible date and amenity requires Nighttime
+            if (extendStayCalState.selectedEndDate === extendStayCalState.minPermissibleDate && extendStayCalState.minPermissibleSlot === 'Nighttime' && val === 'Daytime') {
+                if (extendStayWarning) {
+                    extendStayWarning.textContent = `Check-out session on ${formatDate(extendStayCalState.minPermissibleDate)} cannot be earlier than ${extendStayCalState.minPermissibleSlot} due to active ${extendStayCalState.latestAmenityName || 'amenity'}.`;
+                    extendStayWarning.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (extendStayWarning) extendStayWarning.classList.add('hidden');
+            extendStayCalState.selectedEndSlot = val;
+            if (extendStayNewEndSlot) extendStayNewEndSlot.value = val;
+            syncExtendStaySessionPills();
+            renderExtendStayCalendarMonth();
+        });
+    });
+
+    const renderExtendStayCalendarMonth = () => {
+        if (!extendStayCalGrid) return;
+        const res = reservationData[extendStayCalState.resId];
+        if (!res) return;
+
+        const year = extendStayCalState.viewYear;
+        const month = extendStayCalState.viewMonth;
+
+        if (extendStayCalTitle) extendStayCalTitle.textContent = `${monthNames[month]} ${year}`;
+        if (extendStayCalYear) extendStayCalYear.value = year;
+
+        extendStayCalGrid.innerHTML = '';
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Empty padding cells
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
+            extendStayCalGrid.appendChild(empty);
+        }
+
+        const minAllowedDate = extendStayCalState.minPermissibleDate || res.reservation_date || todayStr;
+        const startDate = res.reservation_date || todayStr;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'edit-calendar__day flex flex-col items-center justify-center rounded-lg p-1.5 text-xs font-semibold transition-all duration-150 relative cursor-pointer border border-transparent';
+            btn.textContent = d;
+            btn.dataset.date = dateStr;
+
+            const isBeforeMin = dateStr < minAllowedDate;
+            const isSelected = dateStr === extendStayCalState.selectedEndDate;
+            const inRange = dateStr >= startDate && dateStr <= extendStayCalState.selectedEndDate;
+
+            if (isBeforeMin) {
+                btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
+                btn.disabled = true;
+                if (extendStayCalState.latestAmenityDate) {
+                    btn.title = `Cannot step back before ${formatDate(extendStayCalState.latestAmenityDate)} due to active amenity`;
+                }
+            } else {
+                btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+            }
+
+            if (inRange && !isBeforeMin) {
+                btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
+                btn.classList.remove('hover:bg-hp-green/10');
+            }
+
+            if (dateStr === todayStr) {
+                const dot = document.createElement('span');
+                dot.className = 'absolute bottom-1 h-1 w-1 rounded-full bg-emerald-400';
+                btn.appendChild(dot);
+            }
+
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                extendStayCalState.selectedEndDate = dateStr;
+                if (extendStayNewEndDate) extendStayNewEndDate.value = dateStr;
+
+                if (dateStr === extendStayCalState.minPermissibleDate && extendStayCalState.minPermissibleSlot === 'Nighttime') {
+                    extendStayCalState.selectedEndSlot = 'Nighttime';
+                    if (extendStayNewEndSlot) extendStayNewEndSlot.value = 'Nighttime';
+                }
+
+                if (extendStayWarning) extendStayWarning.classList.add('hidden');
+                syncExtendStaySessionPills();
+                renderExtendStayCalendarMonth();
+            });
+
+            extendStayCalGrid.appendChild(btn);
+        }
+
+        if (extendStayCalStepHelp) {
+            extendStayCalStepHelp.textContent = `Selected: ${formatDate(extendStayCalState.selectedEndDate)} (${extendStayCalState.selectedEndSlot})`;
+        }
+    };
+
+    const openExtendStayModal = (reservationId) => {
+        const res = reservationData[reservationId];
+        if (!res) return;
+
+        extendStayCalState.resId = reservationId;
+        if (extendStayResId) extendStayResId.textContent = res.id;
+
+        const isMultiDay = res.end_date && res.end_date !== res.reservation_date;
+        const startSlot = res.start_slot || 'Daytime';
+        const endSlot = res.end_slot || startSlot;
+        if (extendStayCurrentSummary) {
+            extendStayCurrentSummary.textContent = isMultiDay
+                ? `${formatDate(res.reservation_date)} (${startSlot}) – ${formatDate(res.end_date)} (${endSlot}) · ${res.total_days || 2} Day(s)`
+                : `${formatDate(res.reservation_date)} (${startSlot}) · 1 Day`;
+        }
+
+        // Calculate minimum allowable check-out date & slot from booked amenities
+        let latestAmenityDate = null;
+        let latestAmenitySlot = 'Daytime';
+        let latestAmenityName = null;
+
+        if (res.reservation_amenities && res.reservation_amenities.length > 0) {
+            res.reservation_amenities.forEach(ra => {
+                if (ra.status === 'Completed') return;
+                const amEnd = ra.end_date || ra.start_date || res.reservation_date;
+                const amEndSlot = ra.end_slot || 'Daytime';
+
+                if (!latestAmenityDate || amEnd > latestAmenityDate || (amEnd === latestAmenityDate && amEndSlot === 'Nighttime')) {
+                    latestAmenityDate = amEnd;
+                    latestAmenitySlot = amEndSlot;
+                    latestAmenityName = ra.amenity ? ra.amenity.amenities_name : (ra.amenity_name || 'Amenity');
+                }
+            });
+        }
+
+        extendStayCalState.latestAmenityDate = latestAmenityDate;
+        extendStayCalState.latestAmenitySlot = latestAmenitySlot;
+        extendStayCalState.latestAmenityName = latestAmenityName;
+
+        const resStart = res.reservation_date || todayStr;
+        const minPermissible = latestAmenityDate ? (latestAmenityDate > resStart ? latestAmenityDate : resStart) : resStart;
+        extendStayCalState.minPermissibleDate = minPermissible;
+        extendStayCalState.minPermissibleSlot = (latestAmenityDate && latestAmenityDate === minPermissible) ? latestAmenitySlot : startSlot;
+
+        extendStayCalState.selectedEndDate = res.end_date || res.reservation_date || todayStr;
+        extendStayCalState.selectedEndSlot = res.end_slot || startSlot;
+
+        if (extendStayNewEndDate) extendStayNewEndDate.value = extendStayCalState.selectedEndDate;
+        if (extendStayNewEndSlot) extendStayNewEndSlot.value = extendStayCalState.selectedEndSlot;
+
+        if (extendStayBoundaryHelp) {
+            if (latestAmenityDate) {
+                extendStayBoundaryHelp.textContent = `Stay can step back down to ${formatDate(latestAmenityDate)} (${latestAmenitySlot}) due to active ${latestAmenityName || 'amenity'} booking.`;
+            } else {
+                extendStayBoundaryHelp.textContent = `Stay can step back down to check-in date (${formatDate(resStart)} [${startSlot}]).`;
+            }
+        }
+
+        // 5-Year population
+        const currentYear = new Date().getFullYear();
+        if (extendStayCalYear) {
+            extendStayCalYear.innerHTML = '';
+            for (let y = currentYear; y <= currentYear + 5; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                extendStayCalYear.appendChild(opt);
+            }
+        }
+
+        const initialDateObj = new Date(extendStayCalState.selectedEndDate);
+        extendStayCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
+        extendStayCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
+
+        if (extendStayWarning) extendStayWarning.classList.add('hidden');
+        syncExtendStaySessionPills();
+        renderExtendStayCalendarMonth();
+
+        if (extendStayModal) {
+            extendStayModal.classList.add('is-open');
+            extendStayModal.setAttribute('aria-hidden', 'false');
+        }
+    };
+
+    const closeExtendStayModal = () => {
+        if (extendStayModal) {
+            extendStayModal.classList.remove('is-open');
+            extendStayModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    extendStayCloseButtons.forEach(btn => btn.addEventListener('click', closeExtendStayModal));
+
+    extendStayCalPrev?.addEventListener('click', () => {
+        extendStayCalState.viewMonth--;
+        if (extendStayCalState.viewMonth < 0) {
+            extendStayCalState.viewMonth = 11;
+            extendStayCalState.viewYear--;
+        }
+        renderExtendStayCalendarMonth();
+    });
+
+    extendStayCalNext?.addEventListener('click', () => {
+        extendStayCalState.viewMonth++;
+        if (extendStayCalState.viewMonth > 11) {
+            extendStayCalState.viewMonth = 0;
+            extendStayCalState.viewYear++;
+        }
+        renderExtendStayCalendarMonth();
+    });
+
+    extendStayCalYear?.addEventListener('change', (e) => {
+        extendStayCalState.viewYear = parseInt(e.target.value, 10);
+        renderExtendStayCalendarMonth();
+    });
+
+    extendStayForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const resId = extendStayCalState.resId;
+        if (!resId) return;
+
+        const newEndDate = extendStayCalState.selectedEndDate;
+        const newEndSlot = extendStayCalState.selectedEndSlot;
+        if (!newEndDate || !newEndSlot) return;
+
+        if (submitExtendStayBtn) {
+            submitExtendStayBtn.disabled = true;
+            submitExtendStayBtn.textContent = 'Saving...';
+        }
+
+        try {
+            const response = await fetch(`/staff/reservations/${resId}/extend-stay`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    new_end_date: newEndDate,
+                    new_end_slot: newEndSlot,
+                }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Failed to adjust stay schedule.');
+            }
+
+            if (reservationData[resId]) {
+                reservationData[resId].end_date = data.end_date;
+                reservationData[resId].end_slot = data.end_slot;
+                reservationData[resId].total_days = data.total_days;
+                if (data.checkout_at) {
+                    reservationData[resId].checkout_at = data.checkout_at;
+                }
+            }
+
+            if (data.checkout_at) {
+                document.querySelectorAll(`[data-checkout-at][data-reservation-id="${resId}"]`).forEach(el => {
+                    el.setAttribute('data-checkout-at', data.checkout_at);
+                });
+            }
+
+            closeExtendStayModal();
+            openReservationModal(resId);
+            refreshCheckoutCountdowns();
+            showToast(data.message || 'Stay schedule updated successfully.');
+        } catch (error) {
+            if (extendStayWarning) {
+                extendStayWarning.textContent = error.message || 'Failed to adjust stay schedule.';
+                extendStayWarning.classList.remove('hidden');
+            } else {
+                alert(error.message || 'Failed to adjust stay schedule.');
+            }
+        } finally {
+            if (submitExtendStayBtn) {
+                submitExtendStayBtn.disabled = false;
+                submitExtendStayBtn.textContent = 'Save Stay Schedule';
+            }
+        }
+    });
+
+    // ── Extend Amenity Modal Handlers (5-Year Calendar with Booked Slots Disabled) ───
+    const extendAmenityModal = document.getElementById('extendAmenityModal');
+    const extendAmenityForm = document.getElementById('extendAmenityForm');
+    const extendAmenityResId = document.getElementById('extendAmenityResId');
+    const extendAmenityRaId = document.getElementById('extendAmenityRaId');
+    const extendAmenityName = document.getElementById('extendAmenityName');
+    const extendAmenityCurrentDuration = document.getElementById('extendAmenityCurrentDuration');
+    const extendAmenityStayLimit = document.getElementById('extendAmenityStayLimit');
+    const extendAmenityNewEndDate = document.getElementById('extendAmenityNewEndDate');
+    const extendAmenityNewEndSlot = document.getElementById('extendAmenityNewEndSlot');
+    const extendAmenityCalPrev = document.getElementById('extendAmenityCalPrev');
+    const extendAmenityCalNext = document.getElementById('extendAmenityCalNext');
+    const extendAmenityCalTitle = document.getElementById('extendAmenityCalTitle');
+    const extendAmenityCalYear = document.getElementById('extendAmenityCalYear');
+    const extendAmenityCalGrid = document.getElementById('extendAmenityCalGrid');
+    const extendAmenityCalStepHelp = document.getElementById('extendAmenityCalStepHelp');
+    const extendAmenityAddedSessionsText = document.getElementById('extendAmenityAddedSessionsText');
+    const extendAmenityAddedCostText = document.getElementById('extendAmenityAddedCostText');
+    const extendAmenityWarning = document.getElementById('extendAmenityWarning');
+    const submitExtendAmenityBtn = document.getElementById('submitExtendAmenityBtn');
+    const extendAmenityCloseButtons = document.querySelectorAll('[data-close-extend-amenity-modal="true"]');
+
+    let currentPendingExtension = null;
+
+    const extendAmenityCalState = {
+        resId: null,
+        raId: null,
+        amenityId: null,
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        selectedEndDate: null,
+        selectedEndSlot: 'Daytime',
+        amStartDate: null,
+        amStartSlot: null,
+        amCurrentEndDate: null,
+        amCurrentEndSlot: null,
+        masterEndDate: null,
+        masterEndSlot: null,
+        availabilityCache: {},
+        cachedMonths: {},
+    };
+
+    const syncExtendAmenitySessionPills = () => {
+        document.querySelectorAll('#extendAmenityEndSlotGroup [data-slot-val]').forEach(btn => {
+            const val = btn.dataset.slotVal;
+            btn.dataset.active = (val === extendAmenityCalState.selectedEndSlot) ? 'true' : 'false';
+        });
+    };
+
+    document.querySelectorAll('#extendAmenityEndSlotGroup [data-slot-val]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.slotVal;
+            extendAmenityCalState.selectedEndSlot = val;
+            if (extendAmenityNewEndSlot) extendAmenityNewEndSlot.value = val;
+            syncExtendAmenitySessionPills();
+            recalcExtendAmenityPrice();
+            renderExtendAmenityCalendarMonth();
+        });
+    });
+
+    const recalcExtendAmenityPrice = () => {
+        const resId = extendAmenityCalState.resId;
+        const raId = extendAmenityCalState.raId;
+        const res = reservationData[resId];
+        if (!res) return;
+
+        const ra = res.reservation_amenities?.find(a => String(a.id) === String(raId));
+        if (!ra) return;
+
+        const amenityObj = window.ALL_AMENITIES?.find(a => String(a.id) === String(ra.amenity_id || ra.amenity?.id));
+
+        const masterStartDate = res.reservation_date || window.SERVER_TODAY;
+        const masterEndDate = res.end_date || masterStartDate;
+        const masterStartSlot = res.start_slot || 'Daytime';
+        const masterEndSlot = res.end_slot || 'Daytime';
+
+        const amStartDate = ra.start_date || masterStartDate;
+        const amStartSlot = ra.start_slot || masterStartSlot;
+        const amCurrentEndDate = ra.end_date || amStartDate;
+        const amCurrentEndSlot = ra.end_slot || amStartSlot;
+
+        const newEndDate = extendAmenityCalState.selectedEndDate || amCurrentEndDate;
+        const newEndSlot = extendAmenityCalState.selectedEndSlot || 'Daytime';
+
+        const masterTimeline = buildContinuousTimeline(masterStartDate, masterEndDate, masterStartSlot, masterEndSlot);
+        const masterKeyMap = {};
+        masterTimeline.forEach(([d, s]) => { masterKeyMap[`${d}_${s}`] = true; });
+
+        const oldTimeline = buildContinuousTimeline(amStartDate, amCurrentEndDate, amStartSlot, amCurrentEndSlot);
+        const newTimeline = buildContinuousTimeline(amStartDate, newEndDate, amStartSlot, newEndSlot);
+
+        if (extendAmenityWarning) {
+            extendAmenityWarning.classList.add('hidden');
+            extendAmenityWarning.textContent = '';
+        }
+
+        if (newTimeline.length <= oldTimeline.length) {
+            if (extendAmenityWarning) {
+                extendAmenityWarning.textContent = 'Please choose an end date and session later than current duration.';
+                extendAmenityWarning.classList.remove('hidden');
+            }
+            if (extendAmenityAddedSessionsText) extendAmenityAddedSessionsText.textContent = '0 sessions';
+            if (extendAmenityAddedCostText) extendAmenityAddedCostText.textContent = '₱0.00';
+            if (submitExtendAmenityBtn) submitExtendAmenityBtn.disabled = true;
+            return;
+        }
+
+        let exceeds = false;
+        for (const [d, s] of newTimeline) {
+            if (!masterKeyMap[`${d}_${s}`]) {
+                exceeds = true;
+                break;
+            }
+        }
+
+        if (exceeds) {
+            if (extendAmenityWarning) {
+                extendAmenityWarning.textContent = `Extended duration exceeds the reservation's overall check-out schedule (${formatDate(masterEndDate)} [${masterEndSlot}]). Extend the overall stay first.`;
+                extendAmenityWarning.classList.remove('hidden');
+            }
+            if (submitExtendAmenityBtn) submitExtendAmenityBtn.disabled = true;
+            return;
+        }
+
+        if (submitExtendAmenityBtn) submitExtendAmenityBtn.disabled = false;
+
+        const addedSlots = newTimeline.slice(oldTimeline.length);
+        let extraDay = 0;
+        let extraNight = 0;
+        addedSlots.forEach(([d, s]) => {
+            if (s === 'Daytime') extraDay++;
+            else extraNight++;
+        });
+
+        const hasAircon = String(ra.pricing_type || '').includes('Aircon');
+        const dayPrice = hasAircon && amenityObj?.daytime_aircon_price ? parseFloat(amenityObj.daytime_aircon_price) : parseFloat(amenityObj?.daytime_price || ra.price_at_booking || 0);
+        const nightPrice = hasAircon && amenityObj?.nighttime_aircon_price ? parseFloat(amenityObj.nighttime_aircon_price) : parseFloat(amenityObj?.nighttime_price || ra.price_at_booking || 0);
+        const qty = parseInt(ra.quantity || 1, 10);
+
+        const addedCost = ((extraDay * dayPrice) + (extraNight * nightPrice)) * qty;
+
+        if (extendAmenityAddedSessionsText) {
+            extendAmenityAddedSessionsText.textContent = `${addedSlots.length} session${addedSlots.length === 1 ? '' : 's'} (${extraDay} Day, ${extraNight} Night)`;
+        }
+        if (extendAmenityAddedCostText) {
+            extendAmenityAddedCostText.textContent = `₱${addedCost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        }
+    };
+
+    const showCalendarLoading = (gridEl) => {
+        if (!gridEl) return;
+        gridEl.innerHTML = `
+            <div class="col-span-7 flex flex-col items-center justify-center py-10 gap-3">
+                <div class="relative flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-full border-2 border-hp-green/20 border-t-hp-green animate-spin"></div>
+                    <div class="absolute w-3 h-3 rounded-full bg-hp-green/30 animate-ping"></div>
+                </div>
+                <span class="text-xs font-semibold text-hp-text-muted tracking-wide animate-pulse">Checking availability...</span>
+            </div>
+        `;
+    };
+
+    const checkAmenityContinuousConflict = (targetDate, targetSlot) => {
+        const amCurrentEnd = extendAmenityCalState.amCurrentEndDate;
+        const amCurrentSlot = extendAmenityCalState.amCurrentEndSlot;
+
+        const fullTimeline = buildContinuousTimeline(extendAmenityCalState.amStartDate, targetDate, extendAmenityCalState.amStartSlot, targetSlot);
+        const oldTimeline = buildContinuousTimeline(extendAmenityCalState.amStartDate, amCurrentEnd, extendAmenityCalState.amStartSlot, amCurrentSlot);
+
+        if (fullTimeline.length <= oldTimeline.length) {
+            return { hasConflict: false, conflictDate: null, conflictSlot: null, isDirectConflict: false };
+        }
+
+        const addedSlots = fullTimeline.slice(oldTimeline.length);
+        for (const [d, s] of addedSlots) {
+            const dayAvail = extendAmenityCalState.availabilityCache[d];
+            if (dayAvail) {
+                const slotKey = s === 'Daytime' ? 'daytime' : 'nighttime';
+                if (dayAvail[slotKey] === false) {
+                    return {
+                        hasConflict: true,
+                        conflictDate: d,
+                        conflictSlot: s,
+                        isDirectConflict: (d === targetDate),
+                    };
+                }
+            }
+        }
+
+        return { hasConflict: false, conflictDate: null, conflictSlot: null, isDirectConflict: false };
+    };
+
+    const fetchAmenityAvailability = async (resId, amenityId, year, month) => {
+        const cacheKey = `${amenityId}_${year}_${month}`;
+        if (extendAmenityCalState.cachedMonths[cacheKey]) {
+            return extendAmenityCalState.availabilityCache;
+        }
+
+        try {
+            const resp = await fetch(`/staff/reservations/${resId}/availability?amenity_id=${encodeURIComponent(amenityId)}&month=${month + 1}&year=${year}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await resp.json().catch(() => ({}));
+            const list = data.availability || [];
+            list.forEach(item => {
+                extendAmenityCalState.availabilityCache[item.date] = item;
+            });
+            extendAmenityCalState.cachedMonths[cacheKey] = true;
+            return extendAmenityCalState.availabilityCache;
+        } catch (e) {
+            return extendAmenityCalState.availabilityCache || {};
+        }
+    };
+
+    const renderExtendAmenityCalendarMonth = async () => {
+        if (!extendAmenityCalGrid) return;
+        const res = reservationData[extendAmenityCalState.resId];
+        if (!res) return;
+
+        const year = extendAmenityCalState.viewYear;
+        const month = extendAmenityCalState.viewMonth;
+
+        if (extendAmenityCalTitle) extendAmenityCalTitle.textContent = `${monthNames[month]} ${year}`;
+        if (extendAmenityCalYear) extendAmenityCalYear.value = year;
+
+        const cacheKey = `${extendAmenityCalState.amenityId}_${year}_${month}`;
+        if (!extendAmenityCalState.cachedMonths[cacheKey]) {
+            showCalendarLoading(extendAmenityCalGrid);
+            await fetchAmenityAvailability(extendAmenityCalState.resId, extendAmenityCalState.amenityId, year, month);
+        }
+
+        // Avoid race conditions if user rapidly switched month
+        if (extendAmenityCalState.viewYear !== year || extendAmenityCalState.viewMonth !== month) {
+            return;
+        }
+
+        extendAmenityCalGrid.innerHTML = '';
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
+            extendAmenityCalGrid.appendChild(empty);
+        }
+
+        const amCurrentEnd = extendAmenityCalState.amCurrentEndDate;
+        const masterEnd = extendAmenityCalState.masterEndDate;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'edit-calendar__day flex flex-col items-center justify-center rounded-lg p-1.5 text-xs font-semibold transition-all duration-150 relative cursor-pointer border border-transparent';
+            btn.textContent = d;
+            btn.dataset.date = dateStr;
+
+            const isPast = dateStr < todayStr;
+            const isBeforeCurrentEnd = dateStr < amCurrentEnd;
+            const isExceedMaster = dateStr > masterEnd;
+            const inCurrentStay = dateStr >= extendAmenityCalState.amStartDate && dateStr <= amCurrentEnd;
+            const inExtendedRange = dateStr > amCurrentEnd && dateStr <= extendAmenityCalState.selectedEndDate;
+
+            const dayAvail = extendAmenityCalState.availabilityCache[dateStr];
+            const hasDirectSlotTaken = dayAvail && (dayAvail.daytime === false || dayAvail.nighttime === false);
+            const conflictCheck = checkAmenityContinuousConflict(dateStr, extendAmenityCalState.selectedEndSlot);
+
+            if (isPast || isBeforeCurrentEnd) {
+                btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
+                btn.disabled = true;
+                if (isBeforeCurrentEnd) btn.title = 'Amenity duration cannot step back.';
+            } else if (isExceedMaster) {
+                btn.classList.add('is-disabled', 'opacity-40', 'border-amber-500/30', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300', 'cursor-not-allowed');
+                btn.disabled = true;
+                btn.title = `Exceeds master stay check-out (${formatDate(masterEnd)}). Extend overall stay first.`;
+            } else if (conflictCheck.hasConflict || hasDirectSlotTaken) {
+                if (conflictCheck.isDirectConflict || hasDirectSlotTaken) {
+                    btn.classList.add('is-booked', 'opacity-50', 'border-rose-500', 'bg-rose-500/20', 'text-rose-700', 'dark:text-rose-300', 'cursor-not-allowed', 'font-bold');
+                    btn.disabled = true;
+                    btn.title = `Booked on ${formatDate(dateStr)} by another guest.`;
+                } else {
+                    btn.classList.add('is-blocked', 'opacity-30', 'border-rose-300/40', 'bg-rose-500/5', 'text-rose-400', 'cursor-not-allowed');
+                    btn.disabled = true;
+                    btn.title = `Blocked because ${formatDate(conflictCheck.conflictDate)} (${conflictCheck.conflictSlot}) is booked. No skip days allowed.`;
+                }
+            } else {
+                btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+            }
+
+            if (inCurrentStay && !isPast) {
+                btn.classList.add('border-emerald-500/50', 'bg-emerald-500/20', 'text-emerald-800', 'dark:text-emerald-200');
+            }
+
+            if (inExtendedRange && !isPast && !isExceedMaster && !conflictCheck.hasConflict && !hasDirectSlotTaken) {
+                btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
+                btn.classList.remove('hover:bg-hp-green/10');
+            }
+
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                const check = checkAmenityContinuousConflict(dateStr, extendAmenityCalState.selectedEndSlot);
+                if (check.hasConflict) {
+                    if (extendAmenityWarning) {
+                        extendAmenityWarning.textContent = `Cannot extend to this date because ${formatDate(check.conflictDate)} (${check.conflictSlot}) is booked by another guest. Continuous stay required.`;
+                        extendAmenityWarning.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                extendAmenityCalState.selectedEndDate = dateStr;
+                if (extendAmenityNewEndDate) extendAmenityNewEndDate.value = dateStr;
+
+                if (extendAmenityWarning) extendAmenityWarning.classList.add('hidden');
+                syncExtendAmenitySessionPills();
+                recalcExtendAmenityPrice();
+                renderExtendAmenityCalendarMonth();
+            });
+
+            extendAmenityCalGrid.appendChild(btn);
+        }
+
+        if (extendAmenityCalStepHelp) {
+            extendAmenityCalStepHelp.textContent = `Extend up to: ${formatDate(extendAmenityCalState.selectedEndDate || amCurrentEnd)} (${extendAmenityCalState.selectedEndSlot})`;
+        }
+    };
+
+    const openExtendAmenityModal = async (reservationId, raId) => {
+        const res = reservationData[reservationId];
+        if (!res) return;
+        const ra = res.reservation_amenities?.find(a => String(a.id) === String(raId));
+        if (!ra) return;
+
+        extendAmenityCalState.resId = reservationId;
+        extendAmenityCalState.raId = raId;
+        extendAmenityCalState.amenityId = ra.amenity_id || ra.amenity?.id;
+        extendAmenityCalState.availabilityCache = {};
+        extendAmenityCalState.cachedMonths = {};
+
+        if (extendAmenityResId) extendAmenityResId.value = reservationId;
+        if (extendAmenityRaId) extendAmenityRaId.value = raId;
+
+        const amenityName = ra.amenity ? ra.amenity.amenities_name : (ra.amenity_name || 'Amenity');
+        if (extendAmenityName) extendAmenityName.textContent = amenityName;
+
+        const amStartDate = ra.start_date || res.reservation_date || todayStr;
+        const amStartSlot = ra.start_slot || res.start_slot || 'Daytime';
+        const amEndDate = ra.end_date || amStartDate;
+        const amEndSlot = ra.end_slot || amStartSlot;
+
+        extendAmenityCalState.amStartDate = amStartDate;
+        extendAmenityCalState.amStartSlot = amStartSlot;
+        extendAmenityCalState.amCurrentEndDate = amEndDate;
+        extendAmenityCalState.amCurrentEndSlot = amEndSlot;
+
+        if (extendAmenityCurrentDuration) {
+            extendAmenityCurrentDuration.textContent = `${formatDate(amStartDate)} (${amStartSlot}) to ${formatDate(amEndDate)} (${amEndSlot})`;
+        }
+
+        const masterEndDate = res.end_date || res.reservation_date || todayStr;
+        const masterEndSlot = res.end_slot || res.start_slot || 'Daytime';
+        extendAmenityCalState.masterEndDate = masterEndDate;
+        extendAmenityCalState.masterEndSlot = masterEndSlot;
+
+        if (extendAmenityStayLimit) {
+            extendAmenityStayLimit.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
+        }
+
+        extendAmenityCalState.selectedEndDate = amEndDate;
+        extendAmenityCalState.selectedEndSlot = amEndSlot === 'Nighttime' ? 'Nighttime' : 'Daytime';
+
+        if (extendAmenityNewEndDate) extendAmenityNewEndDate.value = extendAmenityCalState.selectedEndDate;
+        if (extendAmenityNewEndSlot) extendAmenityNewEndSlot.value = extendAmenityCalState.selectedEndSlot;
+
+        // 5-Year population
+        const currentYear = new Date().getFullYear();
+        if (extendAmenityCalYear) {
+            extendAmenityCalYear.innerHTML = '';
+            for (let y = currentYear; y <= currentYear + 5; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                extendAmenityCalYear.appendChild(opt);
+            }
+        }
+
+        const initialDateObj = new Date(amEndDate);
+        extendAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
+        extendAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
+
+        if (extendAmenityModal) {
+            extendAmenityModal.classList.add('is-open');
+            extendAmenityModal.setAttribute('aria-hidden', 'false');
+        }
+
+        syncExtendAmenitySessionPills();
+        recalcExtendAmenityPrice();
+
+        // Render current month (fast & smooth)
+        renderExtendAmenityCalendarMonth();
+
+        // Background prefetch next month for instantaneous page flips
+        const nextMonthDate = new Date(extendAmenityCalState.viewYear, extendAmenityCalState.viewMonth + 1, 1);
+        fetchAmenityAvailability(reservationId, extendAmenityCalState.amenityId, nextMonthDate.getFullYear(), nextMonthDate.getMonth());
+    };
+
+    const closeExtendAmenityModal = () => {
+        if (extendAmenityModal) {
+            extendAmenityModal.classList.remove('is-open');
+            extendAmenityModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    extendAmenityCloseButtons.forEach(btn => btn.addEventListener('click', closeExtendAmenityModal));
+
+    extendAmenityCalPrev?.addEventListener('click', () => {
+        extendAmenityCalState.viewMonth--;
+        if (extendAmenityCalState.viewMonth < 0) {
+            extendAmenityCalState.viewMonth = 11;
+            extendAmenityCalState.viewYear--;
+        }
+        renderExtendAmenityCalendarMonth();
+    });
+
+    extendAmenityCalNext?.addEventListener('click', () => {
+        extendAmenityCalState.viewMonth++;
+        if (extendAmenityCalState.viewMonth > 11) {
+            extendAmenityCalState.viewMonth = 0;
+            extendAmenityCalState.viewYear++;
+        }
+        renderExtendAmenityCalendarMonth();
+    });
+
+    extendAmenityCalYear?.addEventListener('change', (e) => {
+        extendAmenityCalState.viewYear = parseInt(e.target.value, 10);
+        renderExtendAmenityCalendarMonth();
+    });
+
+    extendAmenityForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const resId = extendAmenityCalState.resId;
+        const raId = extendAmenityCalState.raId;
+        const res = reservationData[resId];
+        const ra = res?.reservation_amenities?.find(a => String(a.id) === String(raId));
+        if (!res || !ra) return;
+
+        const amenityName = ra.amenity ? ra.amenity.amenities_name : (ra.amenity_name || 'Amenity');
+        const newEndDate = extendAmenityCalState.selectedEndDate;
+        const newEndSlot = extendAmenityCalState.selectedEndSlot;
+        const addedCostStr = extendAmenityAddedCostText?.textContent?.replace('₱', '').replace(/,/g, '') || '0';
+        const addedCost = parseFloat(addedCostStr) || 0;
+
+        currentPendingExtension = {
+            type: 'extend_amenity',
+            reservationId: resId,
+            raId: raId,
+            newEndDate: newEndDate,
+            newEndSlot: newEndSlot,
+            cost: addedCost,
+            title: `Extend ${amenityName}`,
+            scheduleText: `Extended up to ${formatDate(newEndDate)} (${newEndSlot})`,
+        };
+
+        closeExtendAmenityModal();
+        openExtensionPaymentModal();
+    });
+
+    // ── Add New Amenity Mid-Stay Modal Handlers ─────────────────────────────
+    const addAmenityMidStayModal = document.getElementById('addAmenityMidStayModal');
+    const addAmenityMidStayForm = document.getElementById('addAmenityMidStayForm');
+    const addAmenityMidStayResId = document.getElementById('addAmenityMidStayResId');
+    const addAmenityResId = document.getElementById('addAmenityResId');
+    const midStayAmenitySelect = document.getElementById('midStayAmenitySelect');
+    const addAmenityStartFixedText = document.getElementById('addAmenityStartFixedText');
+    const addAmenityStayLimit = document.getElementById('addAmenityStayLimit');
+    const midStayAirconWrapper = document.getElementById('midStayAirconWrapper');
+    const midStayIsAircon = document.getElementById('midStayIsAircon');
+    const addAmenityNewEndDate = document.getElementById('addAmenityNewEndDate');
+    const addAmenityNewEndSlot = document.getElementById('addAmenityNewEndSlot');
+    const addAmenityCalPrev = document.getElementById('addAmenityCalPrev');
+    const addAmenityCalNext = document.getElementById('addAmenityCalNext');
+    const addAmenityCalTitle = document.getElementById('addAmenityCalTitle');
+    const addAmenityCalYear = document.getElementById('addAmenityCalYear');
+    const addAmenityCalGrid = document.getElementById('addAmenityCalGrid');
+    const addAmenityCalStepHelp = document.getElementById('addAmenityCalStepHelp');
+    const midStaySlotsText = document.getElementById('midStaySlotsText');
+    const midStayCostText = document.getElementById('midStayCostText');
+    const addAmenityWarning = document.getElementById('addAmenityWarning');
+    const submitAddAmenityBtn = document.getElementById('submitAddAmenityBtn');
+    const addAmenityCloseButtons = document.querySelectorAll('[data-close-add-amenity-modal="true"]');
+
+    let addAmenityCalState = {
+        resId: null,
+        amenityId: null,
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        startDate: null,
+        startSlot: 'Daytime',
+        selectedEndDate: null,
+        selectedEndSlot: 'Daytime',
+        masterEndDate: null,
+        masterEndSlot: 'Daytime',
+        availabilityCache: {},
+        cachedMonths: {},
+    };
+
+    const syncAddAmenitySessionPills = () => {
+        document.querySelectorAll('#addAmenityEndSlotGroup [data-slot-val]').forEach(btn => {
+            const val = btn.dataset.slotVal;
+            btn.dataset.active = (val === addAmenityCalState.selectedEndSlot) ? 'true' : 'false';
+        });
+    };
+
+    document.querySelectorAll('#addAmenityEndSlotGroup [data-slot-val]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.slotVal;
+            addAmenityCalState.selectedEndSlot = val;
+            if (addAmenityNewEndSlot) addAmenityNewEndSlot.value = val;
+            syncAddAmenitySessionPills();
+            recalcAddAmenityPrice();
+            renderAddAmenityCalendarMonth();
+        });
+    });
+
+    const checkAddAmenityContinuousConflict = (targetDate, targetSlot) => {
+        if (!addAmenityCalState.amenityId) {
+            return { hasConflict: false, conflictDate: null, conflictSlot: null, isDirectConflict: false };
+        }
+
+        const fullTimeline = buildContinuousTimeline(addAmenityCalState.startDate, targetDate, addAmenityCalState.startSlot, targetSlot);
+
+        for (const [d, s] of fullTimeline) {
+            const dayAvail = addAmenityCalState.availabilityCache[d];
+            if (dayAvail) {
+                const slotKey = s === 'Daytime' ? 'daytime' : 'nighttime';
+                if (dayAvail[slotKey] === false) {
+                    return {
+                        hasConflict: true,
+                        conflictDate: d,
+                        conflictSlot: s,
+                        isDirectConflict: (d === targetDate),
+                    };
+                }
+            }
+        }
+
+        return { hasConflict: false, conflictDate: null, conflictSlot: null, isDirectConflict: false };
+    };
+
+    const fetchAddAmenityAvailability = async (resId, amenityId, year, month) => {
+        if (!amenityId) return {};
+        const cacheKey = `${amenityId}_${year}_${month}`;
+        if (addAmenityCalState.cachedMonths[cacheKey]) {
+            return addAmenityCalState.availabilityCache;
+        }
+
+        try {
+            const resp = await fetch(`/staff/reservations/${resId}/availability?amenity_id=${encodeURIComponent(amenityId)}&month=${month + 1}&year=${year}`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await resp.json().catch(() => ({}));
+            const list = data.availability || [];
+            list.forEach(item => {
+                addAmenityCalState.availabilityCache[item.date] = item;
+            });
+            addAmenityCalState.cachedMonths[cacheKey] = true;
+            return addAmenityCalState.availabilityCache;
+        } catch (e) {
+            return addAmenityCalState.availabilityCache || {};
+        }
+    };
+
+    const renderAddAmenityCalendarMonth = async () => {
+        if (!addAmenityCalGrid) return;
+        const res = reservationData[addAmenityCalState.resId];
+        if (!res) return;
+
+        const year = addAmenityCalState.viewYear;
+        const month = addAmenityCalState.viewMonth;
+
+        if (addAmenityCalTitle) addAmenityCalTitle.textContent = `${monthNames[month]} ${year}`;
+        if (addAmenityCalYear) addAmenityCalYear.value = year;
+
+        if (!addAmenityCalState.amenityId) {
+            addAmenityCalGrid.innerHTML = `
+                <div class="col-span-7 flex flex-col items-center justify-center py-10 text-xs text-hp-text-muted font-medium">Please select an amenity above</div>
+            `;
+            return;
+        }
+
+        const cacheKey = `${addAmenityCalState.amenityId}_${year}_${month}`;
+        if (!addAmenityCalState.cachedMonths[cacheKey]) {
+            showCalendarLoading(addAmenityCalGrid);
+            await fetchAddAmenityAvailability(addAmenityCalState.resId, addAmenityCalState.amenityId, year, month);
+        }
+
+        if (addAmenityCalState.viewYear !== year || addAmenityCalState.viewMonth !== month) {
+            return;
+        }
+
+        addAmenityCalGrid.innerHTML = '';
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'edit-calendar__day edit-calendar__day--empty opacity-0 pointer-events-none';
+            addAmenityCalGrid.appendChild(empty);
+        }
+
+        const startDate = addAmenityCalState.startDate;
+        const masterEnd = addAmenityCalState.masterEndDate;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'edit-calendar__day flex flex-col items-center justify-center rounded-lg p-1.5 text-xs font-semibold transition-all duration-150 relative cursor-pointer border border-transparent';
+            btn.textContent = d;
+            btn.dataset.date = dateStr;
+
+            const isPast = dateStr < todayStr;
+            const isBeforeStart = dateStr < startDate;
+            const isExceedMaster = dateStr > masterEnd;
+            const inSelectedRange = dateStr >= startDate && dateStr <= addAmenityCalState.selectedEndDate;
+
+            const dayAvail = addAmenityCalState.availabilityCache[dateStr];
+            const hasDirectSlotTaken = dayAvail && (dayAvail.daytime === false || dayAvail.nighttime === false);
+            const conflictCheck = checkAddAmenityContinuousConflict(dateStr, addAmenityCalState.selectedEndSlot);
+
+            if (isPast || isBeforeStart) {
+                btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
+                btn.disabled = true;
+                if (isBeforeStart) btn.title = 'Cannot book amenity before start date.';
+            } else if (isExceedMaster) {
+                btn.classList.add('is-disabled', 'opacity-40', 'border-amber-500/30', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300', 'cursor-not-allowed');
+                btn.disabled = true;
+                btn.title = `Exceeds stay check-out (${formatDate(masterEnd)}). Extend overall stay first.`;
+            } else if (conflictCheck.hasConflict || hasDirectSlotTaken) {
+                if (conflictCheck.isDirectConflict || hasDirectSlotTaken) {
+                    btn.classList.add('is-booked', 'opacity-50', 'border-rose-500', 'bg-rose-500/20', 'text-rose-700', 'dark:text-rose-300', 'cursor-not-allowed', 'font-bold');
+                    btn.disabled = true;
+                    btn.title = `Booked on ${formatDate(dateStr)} by another guest.`;
+                } else {
+                    btn.classList.add('is-blocked', 'opacity-30', 'border-rose-300/40', 'bg-rose-500/5', 'text-rose-400', 'cursor-not-allowed');
+                    btn.disabled = true;
+                    btn.title = `Blocked because ${formatDate(conflictCheck.conflictDate)} (${conflictCheck.conflictSlot}) is booked. No skip days allowed.`;
+                }
+            } else {
+                btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+            }
+
+            if (inSelectedRange && !isPast && !isExceedMaster && !conflictCheck.hasConflict && !hasDirectSlotTaken) {
+                btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
+                btn.classList.remove('hover:bg-hp-green/10');
+            }
+
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                const check = checkAddAmenityContinuousConflict(dateStr, addAmenityCalState.selectedEndSlot);
+                if (check.hasConflict) {
+                    if (addAmenityWarning) {
+                        addAmenityWarning.textContent = `Cannot book this date because ${formatDate(check.conflictDate)} (${check.conflictSlot}) is booked by another guest. Continuous stay required.`;
+                        addAmenityWarning.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                addAmenityCalState.selectedEndDate = dateStr;
+                if (addAmenityNewEndDate) addAmenityNewEndDate.value = dateStr;
+
+                if (addAmenityWarning) addAmenityWarning.classList.add('hidden');
+                recalcAddAmenityPrice();
+                renderAddAmenityCalendarMonth();
+            });
+
+            addAmenityCalGrid.appendChild(btn);
+        }
+
+        if (addAmenityCalStepHelp) {
+            addAmenityCalStepHelp.textContent = `Stay up to: ${formatDate(addAmenityCalState.selectedEndDate || startDate)} (${addAmenityCalState.selectedEndSlot})`;
+        }
+    };
+
+    const recalcAddAmenityPrice = () => {
+        const resId = addAmenityCalState.resId;
+        const res = reservationData[resId];
+        if (!res) return;
+
+        const amId = addAmenityCalState.amenityId;
+        const amenityObj = window.ALL_AMENITIES?.find(a => String(a.id) === String(amId));
+
+        const startDate = addAmenityCalState.startDate || window.SERVER_TODAY;
+        const startSlot = addAmenityCalState.startSlot || 'Daytime';
+        const endDate = addAmenityCalState.selectedEndDate || startDate;
+        const endSlot = addAmenityCalState.selectedEndSlot || 'Daytime';
+
+        const masterStartDate = res.reservation_date || window.SERVER_TODAY;
+        const masterEndDate = res.end_date || masterStartDate;
+        const masterStartSlot = res.start_slot || 'Daytime';
+        const masterEndSlot = res.end_slot || 'Daytime';
+
+        const masterTimeline = buildContinuousTimeline(masterStartDate, masterEndDate, masterStartSlot, masterEndSlot);
+        const masterKeyMap = {};
+        masterTimeline.forEach(([d, s]) => { masterKeyMap[`${d}_${s}`] = true; });
+
+        const itemTimeline = buildContinuousTimeline(startDate, endDate, startSlot, endSlot);
+
+        if (addAmenityWarning) {
+            addAmenityWarning.classList.add('hidden');
+            addAmenityWarning.textContent = '';
+        }
+
+        if (!amenityObj) {
+            if (midStaySlotsText) midStaySlotsText.textContent = '0 sessions';
+            if (midStayCostText) midStayCostText.textContent = '₱0.00';
+            if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = true;
+            return;
+        }
+
+        if (itemTimeline.length === 0) {
+            if (addAmenityWarning) {
+                addAmenityWarning.textContent = 'End date/session must be on or after the start date/session.';
+                addAmenityWarning.classList.remove('hidden');
+            }
+            if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = true;
+            return;
+        }
+
+        let exceeds = false;
+        for (const [d, s] of itemTimeline) {
+            if (!masterKeyMap[`${d}_${s}`]) {
+                exceeds = true;
+                break;
+            }
+        }
+
+        if (exceeds) {
+            if (addAmenityWarning) {
+                addAmenityWarning.textContent = `The chosen schedule (${formatDate(endDate)} [${endSlot}]) exceeds the reservation's overall check-out schedule (${formatDate(masterEndDate)} [${masterEndSlot}]). Please extend the overall stay first.`;
+                addAmenityWarning.classList.remove('hidden');
+            }
+            if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = true;
+            return;
+        }
+
+        const conflictCheck = checkAddAmenityContinuousConflict(endDate, endSlot);
+        if (conflictCheck.hasConflict) {
+            if (addAmenityWarning) {
+                addAmenityWarning.textContent = `Cannot add amenity: ${formatDate(conflictCheck.conflictDate)} (${conflictCheck.conflictSlot}) is booked by another guest. Continuous stay required.`;
+                addAmenityWarning.classList.remove('hidden');
+            }
+            if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = true;
+            return;
+        }
+
+        if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = false;
+
+        let dayCount = 0;
+        let nightCount = 0;
+        itemTimeline.forEach(([d, s]) => {
+            if (s === 'Daytime') dayCount++;
+            else nightCount++;
+        });
+
+        const hasAircon = midStayIsAircon?.checked;
+        const dayPrice = hasAircon && amenityObj.daytime_aircon_price ? parseFloat(amenityObj.daytime_aircon_price) : parseFloat(amenityObj.daytime_price || 0);
+        const nightPrice = hasAircon && amenityObj.nighttime_aircon_price ? parseFloat(amenityObj.nighttime_aircon_price) : parseFloat(amenityObj.nighttime_price || 0);
+
+        const totalCost = (dayCount * dayPrice) + (nightCount * nightPrice);
+
+        if (midStaySlotsText) {
+            midStaySlotsText.textContent = `${itemTimeline.length} session${itemTimeline.length === 1 ? '' : 's'} (${dayCount} Day, ${nightCount} Night)`;
+        }
+        if (midStayCostText) {
+            midStayCostText.textContent = `₱${totalCost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        }
+    };
+
+    const openAddAmenityMidStayModal = (reservationId) => {
+        const res = reservationData[reservationId];
+        if (!res) return;
+
+        addAmenityCalState.resId = reservationId;
+        addAmenityCalState.amenityId = null;
+        addAmenityCalState.availabilityCache = {};
+        addAmenityCalState.cachedMonths = {};
+
+        if (addAmenityMidStayResId) addAmenityMidStayResId.value = reservationId;
+        if (addAmenityResId) addAmenityResId.textContent = reservationId;
+
+        const today = window.SERVER_TODAY || todayStr;
+        const curSession = window.SERVER_CURRENT_SESSION || 'Daytime';
+        const masterEndDate = res.end_date || res.reservation_date || today;
+        const masterEndSlot = res.end_slot || res.start_slot || 'Daytime';
+
+        addAmenityCalState.startDate = today;
+        addAmenityCalState.startSlot = curSession;
+        addAmenityCalState.selectedEndDate = today;
+        addAmenityCalState.selectedEndSlot = curSession;
+        addAmenityCalState.masterEndDate = masterEndDate;
+        addAmenityCalState.masterEndSlot = masterEndSlot;
+
+        if (addAmenityStartFixedText) {
+            addAmenityStartFixedText.textContent = `${formatDate(today)} • ${curSession}`;
+        }
+        if (addAmenityStayLimit) {
+            addAmenityStayLimit.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
+        }
+        if (addAmenityNewEndDate) addAmenityNewEndDate.value = today;
+        if (addAmenityNewEndSlot) addAmenityNewEndSlot.value = curSession;
+
+        // Populate amenities dropdown: disable any amenity occupied today in current session
+        if (midStayAmenitySelect) {
+            midStayAmenitySelect.innerHTML = '<option value="">-- Choose an amenity --</option>';
+            const occupiedTodayList = window.OCCUPIED_TODAY_AMENITY_IDS || [];
+            (window.ALL_AMENITIES || []).forEach(am => {
+                const opt = document.createElement('option');
+                opt.value = am.id;
+                const isOccupiedToday = occupiedTodayList.includes(am.id) || occupiedTodayList.includes(String(am.id));
+                if (isOccupiedToday) {
+                    opt.disabled = true;
+                    opt.textContent = `${am.amenities_name} (Occupied Today - ${curSession})`;
+                } else {
+                    opt.textContent = `${am.amenities_name} (Day: ₱${parseFloat(am.daytime_price || 0).toFixed(0)}, Night: ₱${parseFloat(am.nighttime_price || 0).toFixed(0)})`;
+                }
+                midStayAmenitySelect.appendChild(opt);
+            });
+        }
+
+        // Hide Aircon option initially
+        if (midStayAirconWrapper) midStayAirconWrapper.classList.add('hidden');
+        if (midStayIsAircon) midStayIsAircon.checked = false;
+
+        // 5-Year population
+        const currentYear = new Date().getFullYear();
+        if (addAmenityCalYear) {
+            addAmenityCalYear.innerHTML = '';
+            for (let y = currentYear; y <= currentYear + 5; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                addAmenityCalYear.appendChild(opt);
+            }
+        }
+
+        const initialDateObj = new Date(today);
+        addAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
+        addAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
+
+        syncAddAmenitySessionPills();
+        recalcAddAmenityPrice();
+
+        if (addAmenityMidStayModal) {
+            addAmenityMidStayModal.classList.add('is-open');
+            addAmenityMidStayModal.setAttribute('aria-hidden', 'false');
+        }
+
+        renderAddAmenityCalendarMonth();
+    };
+
+    const closeAddAmenityMidStayModal = () => {
+        if (addAmenityMidStayModal) {
+            addAmenityMidStayModal.classList.remove('is-open');
+            addAmenityMidStayModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    addAmenityCloseButtons.forEach(btn => btn.addEventListener('click', closeAddAmenityMidStayModal));
+
+    midStayAmenitySelect?.addEventListener('change', async (e) => {
+        const amId = e.target.value;
+        addAmenityCalState.amenityId = amId;
+        addAmenityCalState.availabilityCache = {};
+        addAmenityCalState.cachedMonths = {};
+
+        const amenityObj = window.ALL_AMENITIES?.find(a => String(a.id) === String(amId));
+        if (amenityObj) {
+            const hasAirconOption = parseFloat(amenityObj.daytime_aircon_price || 0) > 0 || parseFloat(amenityObj.nighttime_aircon_price || 0) > 0 || Boolean(amenityObj.has_aircon);
+            if (hasAirconOption) {
+                midStayAirconWrapper?.classList.remove('hidden');
+            } else {
+                midStayAirconWrapper?.classList.add('hidden');
+                if (midStayIsAircon) midStayIsAircon.checked = false;
+            }
+        } else {
+            midStayAirconWrapper?.classList.add('hidden');
+            if (midStayIsAircon) midStayIsAircon.checked = false;
+        }
+
+        recalcAddAmenityPrice();
+        renderAddAmenityCalendarMonth();
+    });
+
+    midStayIsAircon?.addEventListener('change', () => {
+        recalcAddAmenityPrice();
+    });
+
+    addAmenityCalPrev?.addEventListener('click', () => {
+        addAmenityCalState.viewMonth--;
+        if (addAmenityCalState.viewMonth < 0) {
+            addAmenityCalState.viewMonth = 11;
+            addAmenityCalState.viewYear--;
+        }
+        renderAddAmenityCalendarMonth();
+    });
+
+    addAmenityCalNext?.addEventListener('click', () => {
+        addAmenityCalState.viewMonth++;
+        if (addAmenityCalState.viewMonth > 11) {
+            addAmenityCalState.viewMonth = 0;
+            addAmenityCalState.viewYear++;
+        }
+        renderAddAmenityCalendarMonth();
+    });
+
+    addAmenityCalYear?.addEventListener('change', (e) => {
+        addAmenityCalState.viewYear = parseInt(e.target.value, 10);
+        renderAddAmenityCalendarMonth();
+    });
+
+    addAmenityMidStayForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const resId = addAmenityCalState.resId;
+        const res = reservationData[resId];
+        const amId = addAmenityCalState.amenityId;
+        const amenityObj = window.ALL_AMENITIES?.find(a => String(a.id) === String(amId));
+        if (!res || !amenityObj) return;
+
+        const startDate = addAmenityCalState.startDate;
+        const startSlot = addAmenityCalState.startSlot;
+        const endDate = addAmenityCalState.selectedEndDate;
+        const endSlot = addAmenityCalState.selectedEndSlot;
+        const isAircon = midStayIsAircon?.checked || false;
+
+        const costStr = midStayCostText?.textContent?.replace('₱', '').replace(/,/g, '') || '0';
+        const totalCost = parseFloat(costStr) || 0;
+
+        currentPendingExtension = {
+            type: 'add_amenity',
+            reservationId: resId,
+            amenityId: amId,
+            startDate: startDate,
+            startSlot: startSlot,
+            endDate: endDate,
+            endSlot: endSlot,
+            isAircon: isAircon,
+            quantity: 1,
+            cost: totalCost,
+            title: `Add ${amenityObj.amenities_name}`,
+            scheduleText: `${formatDate(startDate)} (${startSlot}) to ${formatDate(endDate)} (${endSlot})`,
+        };
+
+        closeAddAmenityMidStayModal();
+        openExtensionPaymentModal();
+    });
+
+    // ── Extension Payment Confirmation Modal Handlers ───────────────────────
+    const extensionPaymentModal = document.getElementById('extensionPaymentModal');
+    const extPayItemName = document.getElementById('extPayItemName');
+    const extPayItemCost = document.getElementById('extPayItemCost');
+    const extPayItemSchedule = document.getElementById('extPayItemSchedule');
+    const extPayTotalAmount = document.getElementById('extPayTotalAmount');
+    const confirmExtensionPaymentBtn = document.getElementById('confirmExtensionPaymentBtn');
+    const extensionPaymentCloseButtons = document.querySelectorAll('[data-close-extension-payment-modal="true"]');
+
+    const openExtensionPaymentModal = () => {
+        if (!currentPendingExtension) return;
+
+        if (extPayItemName) extPayItemName.textContent = currentPendingExtension.title;
+        if (extPayItemCost) extPayItemCost.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        if (extPayItemSchedule) extPayItemSchedule.textContent = currentPendingExtension.scheduleText;
+        if (extPayTotalAmount) extPayTotalAmount.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+
+        if (extensionPaymentModal) {
+            extensionPaymentModal.classList.add('is-open');
+            extensionPaymentModal.setAttribute('aria-hidden', 'false');
+        }
+    };
+
+    const closeExtensionPaymentModal = () => {
+        if (extensionPaymentModal) {
+            extensionPaymentModal.classList.remove('is-open');
+            extensionPaymentModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    extensionPaymentCloseButtons.forEach(btn => btn.addEventListener('click', closeExtensionPaymentModal));
+
+    confirmExtensionPaymentBtn?.addEventListener('click', async () => {
+        if (!currentPendingExtension) return;
+
+        const btn = confirmExtensionPaymentBtn;
+        btn.disabled = true;
+        btn.textContent = 'Processing payment...';
+
+        const resId = currentPendingExtension.reservationId;
+
+        try {
+            if (currentPendingExtension.type === 'extend_amenity') {
+                const raId = currentPendingExtension.raId;
+                const response = await fetch(`/staff/reservations/${resId}/amenities/${raId}/extend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        new_end_date: currentPendingExtension.newEndDate,
+                        new_end_slot: currentPendingExtension.newEndSlot,
+                    }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to extend amenity.');
+                }
+
+                const res = reservationData[resId];
+                if (res) {
+                    const ra = res.reservation_amenities?.find(a => String(a.id) === String(raId));
+                    if (ra) {
+                        ra.end_date = data.new_end_date;
+                        ra.end_slot = data.new_end_slot;
+                        ra.price_at_booking = (parseFloat(ra.price_at_booking || 0) + parseFloat(data.added_cost || 0));
+                    }
+                    res.total_amount = data.new_total;
+                    res.amount_paid = data.new_total;
+                    if (data.checkout_at) {
+                        res.checkout_at = data.checkout_at;
+                    }
+                }
+
+                if (data.checkout_at) {
+                    document.querySelectorAll(`[data-checkout-at][data-reservation-id="${resId}"]`).forEach(el => {
+                        el.setAttribute('data-checkout-at', data.checkout_at);
+                    });
+                }
+
+                closeExtensionPaymentModal();
+                openReservationModal(resId);
+                refreshCheckoutCountdowns();
+                showToast(data.message || 'Amenity extended successfully.');
+            } else if (currentPendingExtension.type === 'add_amenity') {
+                const response = await fetch(`/staff/reservations/${resId}/amenities/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        amenity_id: currentPendingExtension.amenityId,
+                        start_date: currentPendingExtension.startDate,
+                        start_slot: currentPendingExtension.startSlot,
+                        end_date: currentPendingExtension.endDate,
+                        end_slot: currentPendingExtension.endSlot,
+                        is_aircon: currentPendingExtension.isAircon,
+                        quantity: currentPendingExtension.quantity,
+                    }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to add amenity.');
+                }
+
+                const res = reservationData[resId];
+                if (res) {
+                    if (!res.reservation_amenities) res.reservation_amenities = [];
+                    res.reservation_amenities.push(data.amenity);
+                    res.total_amount = data.new_total;
+                    res.amount_paid = data.new_total;
+                    if (data.checkout_at) {
+                        res.checkout_at = data.checkout_at;
+                    }
+                }
+
+                if (data.checkout_at) {
+                    document.querySelectorAll(`[data-checkout-at][data-reservation-id="${resId}"]`).forEach(el => {
+                        el.setAttribute('data-checkout-at', data.checkout_at);
+                    });
+                }
+
+                closeExtensionPaymentModal();
+                openReservationModal(resId);
+                refreshCheckoutCountdowns();
+                showToast(data.message || 'Amenity added successfully.');
+            }
+        } catch (error) {
+            alert(error.message || 'Transaction failed.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Confirm & Pay at Counter';
+        }
+    });
+
+    // Delegated click handler on document for extend stay, add amenity, and extend amenity
+    if (!window.__staffCheckInsExtensionActionsBound) {
+        window.__staffCheckInsExtensionActionsBound = true;
+        document.addEventListener('click', (e) => {
+            const extendStayBtn = e.target.closest('.resv-extend-stay-btn');
+            if (extendStayBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openExtendStayModal(extendStayBtn.dataset.reservationId);
+                return;
+            }
+
+            const addAmenityBtn = e.target.closest('.resv-add-amenity-btn');
+            if (addAmenityBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openAddAmenityMidStayModal(addAmenityBtn.dataset.reservationId);
+                return;
+            }
+
+            const extendAmenityBtn = e.target.closest('.resv-amenity-extend-btn');
+            if (extendAmenityBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                openExtendAmenityModal(extendAmenityBtn.dataset.reservationId, extendAmenityBtn.dataset.reservationAmenityId);
+                return;
             }
         });
     }
