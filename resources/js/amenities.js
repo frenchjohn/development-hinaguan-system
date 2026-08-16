@@ -138,14 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     div.className = 'rounded-lg border border-red-500/40 bg-red-950/70 p-2.5 text-xs text-white flex flex-wrap items-center justify-between gap-2';
                     const guestCount = Number(item.guest_count ?? 0);
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-[0.62rem] font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<div><strong class="text-red-400">Occupied</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot})${sharedTag}</div><span class="font-bold bg-white/10 px-2 py-0.5 rounded-full text-white text-[0.68rem]">${guestCount} guest${guestCount === 1 ? '' : 's'} inside</span>`;
+                    div.innerHTML = `<div><strong class="text-red-400">Occupied</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div><span class="font-bold bg-white/10 px-2 py-0.5 rounded-full text-white text-[0.68rem]">${guestCount} guest${guestCount === 1 ? '' : 's'} inside</span>`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'rounded-lg border border-amber-500/40 bg-amber-950/70 p-2.5 text-xs text-white flex flex-wrap items-center justify-between gap-2';
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-[0.62rem] font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<div><strong class="text-amber-400">Reserved Today</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot})${sharedTag}</div>`;
+                    div.innerHTML = `<div><strong class="text-amber-400">Reserved Today</strong> (Reservation #${item.reservation_id} &middot; ${item.time_slot_label || item.time_slot})${sharedTag}</div>`;
                     modalStatusList.appendChild(div);
                 });
             }

@@ -490,22 +490,28 @@ Route::get('/api/amenities/availability', function (Request $request) use ($occu
     ]);
 })->name('api.amenities.availability');
 
-Route::get('/amenities', function () {
+Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
     $amenities = Amenity::where('status', true)
         ->orderBy('amenities_name')
         ->get();
 
     $today = now()->toDateString();
 
-    // Fetch reservations for occupancy monitor
-    // Include: Checked In (any date), Pending (today only)
+    // Fetch reservations relevant to today's occupancy
+    // Include: Checked In (active stays on site)
+    // Include: Pending or Confirmed (reserved stays that overlap with today)
     // Exclude: Cancelled, Checked Out
     $reservations = \App\Models\Reservation::query()
         ->where(function ($query) use ($today) {
             $query->where('status', 'Checked In')
                   ->orWhere(function ($q) use ($today) {
-                      $q->where('status', 'Pending')
-                        ->whereDate('reservation_date', $today);
+                      $q->whereIn('status', ['Pending', 'Confirmed'])
+                        ->whereDate('reservation_date', '<=', $today)
+                        ->where(function ($endQ) use ($today) {
+                            $endQ->whereNull('end_date')
+                                 ->whereDate('reservation_date', $today)
+                                 ->orWhereDate('end_date', '>=', $today);
+                        });
                   });
         })
         ->whereNotIn('status', ['Cancelled', 'Checked Out'])
@@ -529,16 +535,43 @@ Route::get('/amenities', function () {
             foreach ($reservation->reservationAmenities as $ra) {
                 if ($ra->status === 'Completed') continue;
                 if ($ra->amenity_id === $amenity->id) {
-                    $timeSlot = $ra->pricing_type;
-                    // Normalize time slot
-                    if (str_contains($timeSlot, 'DayToNight')) $timeSlot = 'DayToNight';
-                    elseif (str_contains($timeSlot, 'NightToDay')) $timeSlot = 'NightToDay';
-                    elseif (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
-                    elseif (str_contains($timeSlot, 'Nighttime')) $timeSlot = 'Nighttime';
+                    $timeline = $getReservationAmenityTimeline($ra, $reservation);
+
+                    // Filter timeline for TODAY's slots only
+                    $todaySlots = [];
+                    foreach ($timeline as [$d, $s]) {
+                        if ($d === $today) {
+                            $todaySlots[] = $s;
+                        }
+                    }
+
+                    if (empty($todaySlots)) {
+                        continue;
+                    }
+
+                    $hasDay = in_array('Daytime', $todaySlots);
+                    $hasNight = in_array('Nighttime', $todaySlots);
+
+                    if ($hasDay && $hasNight) {
+                        $timeSlot = 'DayToNight';
+                        $timeSlotLabel = 'Day & Night';
+                    } elseif ($hasDay) {
+                        $timeSlot = 'Daytime';
+                        $timeSlotLabel = 'Daytime';
+                    } else {
+                        $timeSlot = 'Nighttime';
+                        $timeSlotLabel = 'Nighttime';
+                    }
+
+                    if (str_contains((string) $ra->pricing_type, 'Continuous Stay')) {
+                        $timeSlotLabel = "Continuous Stay ({$timeSlotLabel})";
+                    }
 
                     $entry = [
                         'reservation_id' => $reservation->id,
                         'time_slot' => $timeSlot,
+                        'time_slot_label' => $timeSlotLabel,
+                        'today_slots' => array_map('strtolower', $todaySlots),
                         'status' => $reservation->status,
                         // Headcount of guests (main + companions) still inside
                         'guest_count' => $reservation->reservationGuests->whereNull('checked_out_at')->count(),
@@ -548,11 +581,8 @@ Route::get('/amenities', function () {
 
                     if ($reservation->status === 'Checked In') {
                         $occupancyData[$amenity->id]['occupied'][] = $entry;
-                    } elseif ($reservation->status === 'Pending') {
-                        $reservationDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString();
-                        if ($reservationDate === $today) {
-                            $occupancyData[$amenity->id]['reserved'][] = $entry;
-                        }
+                    } elseif (in_array($reservation->status, ['Pending', 'Confirmed'])) {
+                        $occupancyData[$amenity->id]['reserved'][] = $entry;
                     }
                 }
             }
@@ -2207,7 +2237,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ));
     })->name('reservations');
 
-    Route::get('/occupancy-monitor', function (Request $request) {
+    Route::get('/occupancy-monitor', function (Request $request) use ($getReservationAmenityTimeline) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -2219,15 +2249,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $today = now()->toDateString();
 
-        // Fetch reservations for occupancy monitor
-        // Include: Checked In (any date), Pending (today only)
+        // Fetch reservations relevant to today's occupancy
+        // Include: Checked In (active stays on site)
+        // Include: Pending or Confirmed (reserved stays that overlap with today)
         // Exclude: Cancelled, Checked Out
         $reservations = \App\Models\Reservation::query()
             ->where(function ($query) use ($today) {
                 $query->where('status', 'Checked In')
                       ->orWhere(function ($q) use ($today) {
-                          $q->where('status', 'Pending')
-                            ->whereDate('reservation_date', $today);
+                          $q->whereIn('status', ['Pending', 'Confirmed'])
+                            ->whereDate('reservation_date', '<=', $today)
+                            ->where(function ($endQ) use ($today) {
+                                $endQ->whereNull('end_date')
+                                     ->whereDate('reservation_date', $today)
+                                     ->orWhereDate('end_date', '>=', $today);
+                            });
                       });
             })
             ->whereNotIn('status', ['Cancelled', 'Checked Out'])
@@ -2251,16 +2287,43 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 foreach ($reservation->reservationAmenities as $ra) {
                     if ($ra->status === 'Completed') continue;
                     if ($ra->amenity_id === $amenity->id) {
-                        $timeSlot = $ra->pricing_type;
-                        // Normalize time slot
-                        if (str_contains($timeSlot, 'DayToNight')) $timeSlot = 'DayToNight';
-                        elseif (str_contains($timeSlot, 'NightToDay')) $timeSlot = 'NightToDay';
-                        elseif (str_contains($timeSlot, 'Daytime')) $timeSlot = 'Daytime';
-                        elseif (str_contains($timeSlot, 'Nighttime')) $timeSlot = 'Nighttime';
+                        $timeline = $getReservationAmenityTimeline($ra, $reservation);
+
+                        // Filter timeline for TODAY's slots only
+                        $todaySlots = [];
+                        foreach ($timeline as [$d, $s]) {
+                            if ($d === $today) {
+                                $todaySlots[] = $s;
+                            }
+                        }
+
+                        if (empty($todaySlots)) {
+                            continue;
+                        }
+
+                        $hasDay = in_array('Daytime', $todaySlots);
+                        $hasNight = in_array('Nighttime', $todaySlots);
+
+                        if ($hasDay && $hasNight) {
+                            $timeSlot = 'DayToNight';
+                            $timeSlotLabel = 'Day & Night';
+                        } elseif ($hasDay) {
+                            $timeSlot = 'Daytime';
+                            $timeSlotLabel = 'Daytime';
+                        } else {
+                            $timeSlot = 'Nighttime';
+                            $timeSlotLabel = 'Nighttime';
+                        }
+
+                        if (str_contains((string) $ra->pricing_type, 'Continuous Stay')) {
+                            $timeSlotLabel = "Continuous Stay ({$timeSlotLabel})";
+                        }
 
                         $entry = [
                             'reservation_id' => $reservation->id,
                             'time_slot' => $timeSlot,
+                            'time_slot_label' => $timeSlotLabel,
+                            'today_slots' => array_map('strtolower', $todaySlots),
                             'status' => $reservation->status,
                             // Headcount of guests (main + companions) still inside
                             'guest_count' => $reservation->reservationGuests->whereNull('checked_out_at')->count(),
@@ -2270,11 +2333,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
                         if ($reservation->status === 'Checked In') {
                             $occupancyData[$amenity->id]['occupied'][] = $entry;
-                        } elseif ($reservation->status === 'Pending') {
-                            $reservationDate = \Illuminate\Support\Carbon::parse($reservation->reservation_date)->toDateString();
-                            if ($reservationDate === $today) {
-                                $occupancyData[$amenity->id]['reserved'][] = $entry;
-                            }
+                        } elseif (in_array($reservation->status, ['Pending', 'Confirmed'])) {
+                            $occupancyData[$amenity->id]['reserved'][] = $entry;
                         }
                     }
                 }

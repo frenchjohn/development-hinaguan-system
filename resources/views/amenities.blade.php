@@ -182,40 +182,53 @@
                 @forelse ($amenities as $amenity)
                     @php
                         $amenityOccupancy = $occupancyData[$amenity->id] ?? ['occupied' => [], 'reserved' => []];
-
                         $occupiedSlots = [];
                         foreach ($amenityOccupancy['occupied'] as $occupied) {
-                            $timeSlot = strtolower($occupied['time_slot']);
-                            if (str_contains($timeSlot, 'daytonight')) {
-                                $occupiedSlots[] = 'daytime';
-                                $occupiedSlots[] = 'nighttime';
-                            } elseif (str_contains($timeSlot, 'nighttoday')) {
-                                $occupiedSlots[] = 'nighttime';
-                            } elseif (str_contains($timeSlot, 'daytime')) {
-                                $occupiedSlots[] = 'daytime';
-                            } elseif (str_contains($timeSlot, 'nighttime')) {
-                                $occupiedSlots[] = 'nighttime';
+                            if (!empty($occupied['today_slots'])) {
+                                foreach ($occupied['today_slots'] as $s) {
+                                    $occupiedSlots[] = strtolower($s);
+                                }
+                            } else {
+                                $timeSlot = strtolower($occupied['time_slot']);
+                                if (str_contains($timeSlot, 'daytonight')) {
+                                    $occupiedSlots[] = 'daytime';
+                                    $occupiedSlots[] = 'nighttime';
+                                } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                    $occupiedSlots[] = 'nighttime';
+                                } elseif (str_contains($timeSlot, 'daytime')) {
+                                    $occupiedSlots[] = 'daytime';
+                                } elseif (str_contains($timeSlot, 'nighttime')) {
+                                    $occupiedSlots[] = 'nighttime';
+                                }
                             }
                         }
 
                         $reservedSlots = [];
                         foreach ($amenityOccupancy['reserved'] as $reserved) {
-                            $timeSlot = strtolower($reserved['time_slot']);
-                            if (str_contains($timeSlot, 'daytonight')) {
-                                $reservedSlots[] = 'daytime';
-                                $reservedSlots[] = 'nighttime';
-                            } elseif (str_contains($timeSlot, 'nighttoday')) {
-                                $reservedSlots[] = 'nighttime';
-                            } elseif (str_contains($timeSlot, 'daytime')) {
-                                $reservedSlots[] = 'daytime';
-                            } elseif (str_contains($timeSlot, 'nighttime')) {
-                                $reservedSlots[] = 'nighttime';
+                            if (!empty($reserved['today_slots'])) {
+                                foreach ($reserved['today_slots'] as $s) {
+                                    $reservedSlots[] = strtolower($s);
+                                }
+                            } else {
+                                $timeSlot = strtolower($reserved['time_slot']);
+                                if (str_contains($timeSlot, 'daytonight')) {
+                                    $reservedSlots[] = 'daytime';
+                                    $reservedSlots[] = 'nighttime';
+                                } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                    $reservedSlots[] = 'nighttime';
+                                } elseif (str_contains($timeSlot, 'daytime')) {
+                                    $reservedSlots[] = 'daytime';
+                                } elseif (str_contains($timeSlot, 'nighttime')) {
+                                    $reservedSlots[] = 'nighttime';
+                                }
                             }
                         }
 
-                        $unavailableSlots = array_unique(array_merge($occupiedSlots, $reservedSlots));
+                        $occupiedSlots = array_values(array_unique($occupiedSlots));
+                        $reservedSlots = array_values(array_unique($reservedSlots));
+                        $unavailableSlots = array_values(array_unique(array_merge($occupiedSlots, $reservedSlots)));
                         $allSlots = ['daytime', 'nighttime'];
-                        $availableSlots = array_diff($allSlots, $unavailableSlots);
+                        $availableSlots = array_values(array_diff($allSlots, $unavailableSlots));
 
                         $isOccupied = ! empty($amenityOccupancy['occupied']);
                         $isReserved = ! empty($amenityOccupancy['reserved']);
@@ -248,25 +261,26 @@
                          data-additional-per-head="{{ $amenity->additional_per_head ? '₱'.number_format($amenity->additional_per_head, 2) : 'N/A' }}"
                          data-min-cap="{{ $amenity->minimum_capacity ?? 'N/A' }}"
                          data-max-cap="{{ $amenity->maximum_capacity ?? 'N/A' }}"
-                         data-description="{{ e($amenity->description ?? 'No description available.') }}"
+                         data-description="{{ e($amenity->description ?? 'No description available for this amenity.') }}"
                          data-image-src="{{ $amenity->image ? asset('storage/' . $amenity->image) : '' }}"
                          data-occupied-json="{{ json_encode($amenityOccupancy['occupied']) }}"
                          data-reserved-json="{{ json_encode($amenityOccupancy['reserved']) }}"
                          data-available-slots="{{ implode(',', $availableSlots) }}"
                          data-unavailable-slots="{{ implode(',', $unavailableSlots) }}">
 
-                        <!-- Card Header & Image (Compact Aspect Ratio) -->
-                        <div class="relative aspect-[16/10] w-full overflow-hidden bg-[#061810]">
+                        <!-- Card Image / Header -->
+                        <div class="relative aspect-[4/3] w-full overflow-hidden bg-[#061810]">
                             @if ($amenity->image)
-                                <img src="{{ asset('storage/' . $amenity->image) }}" alt="{{ $amenity->amenities_name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                <img src="{{ asset('storage/' . $amenity->image) }}" alt="{{ $amenity->amenities_name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                             @else
-                                <div class="flex h-full w-full items-center justify-center text-white/30">
+                                <div class="flex h-full w-full items-center justify-center text-white/40">
                                     <svg class="h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                                     </svg>
                                 </div>
                             @endif
-                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061810] via-[#061810]/30 to-transparent"></div>
+
+                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061810]/80 to-transparent"></div>
 
                             <!-- Status Badge -->
                             <span class="absolute left-2.5 top-2.5 z-[5] inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider text-white shadow-md backdrop-blur-md {{ $statusBadgeBg }}">
@@ -280,7 +294,7 @@
                                         <div class="occupancy-card__status-item flex flex-wrap items-center gap-1 leading-snug">
                                             <span class="font-semibold text-white/90">Occupied:</span>
                                             <span class="font-bold text-white">#{{ $occupied['reservation_id'] }}</span>
-                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $occupied['time_slot'] }}</span>
+                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}</span>
                                             <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold text-white">{{ $occupied['guest_count'] ?? 0 }} inside</span>
                                             @if (!empty($occupied['is_shared_group']))
                                                 <span class="inline-flex items-center gap-0.5 rounded-full border border-amber-300/80 bg-amber-500/90 px-1.5 py-0.2 text-[0.62rem] font-bold text-white shadow-sm">
@@ -300,7 +314,7 @@
                                         <div class="occupancy-card__status-item flex flex-wrap items-center gap-1 leading-snug">
                                             <span class="font-semibold text-white/90">Reserved:</span>
                                             <span class="font-bold text-white">#{{ $reserved['reservation_id'] }}</span>
-                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $reserved['time_slot'] }}</span>
+                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}</span>
                                             @if (!empty($reserved['is_shared_group']))
                                                 <span class="inline-flex items-center gap-0.5 rounded-full border border-amber-300/80 bg-amber-500/90 px-1.5 py-0.2 text-[0.62rem] font-bold text-white shadow-sm">
                                                     <svg class="h-2.5 w-2.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
