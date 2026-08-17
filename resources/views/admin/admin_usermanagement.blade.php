@@ -26,6 +26,7 @@
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_usermanagement.js',
+        'resources/js/admin_chatbot.js',
     ])
 </head>
 <body class="antialiased admin-portal">
@@ -215,5 +216,8 @@
             </form>
         </div>
     </div>
+
+    {{-- Admin AI Intelligence Chatbot --}}
+    <x-admin_chatbot />
 </body>
 </html>

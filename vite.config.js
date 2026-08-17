@@ -20,6 +20,7 @@ export default defineConfig({
                 'resources/css/chatbot.css',
                 'resources/js/guest_chatbot.js',
                 'resources/js/staff_chatbot.js',
+                'resources/js/admin_chatbot.js',
 
                 // Shared dashboard components
                 'resources/components/css_js/header.css',

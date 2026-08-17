@@ -39,13 +39,13 @@
         </div>
 
         <div class="chatbot-quick" id="chatbotQuick">
-            <span class="chatbot-quick__label">Try asking</span>
+            <span class="chatbot-quick__label">Ask HinaguanBot</span>
             <div class="chatbot-quick__chips">
-                <button type="button" class="chatbot-chip" data-quick-reply="What are your amenities and rates?">Amenities &amp; rates</button>
-                <button type="button" class="chatbot-chip" data-quick-reply="How do I make a reservation?">How to book</button>
-                <button type="button" class="chatbot-chip" data-quick-reply="What are the park hours?">Park hours</button>
-                <button type="button" class="chatbot-chip" data-quick-reply="How much is the entrance fee?">Entrance fees</button>
-                <button type="button" class="chatbot-chip" data-quick-reply="What is your contact number?">Contact us</button>
+                <button type="button" class="chatbot-chip" data-quick-reply="What amenities are available today and what are their rates?">Available Amenities</button>
+                <button type="button" class="chatbot-chip" data-quick-reply="Suggest the best amenity for our group of 10 people">Suggest for 10 Pax</button>
+                <button type="button" class="chatbot-chip" data-quick-reply="How do I book an amenity online?">How to Book Online</button>
+                <button type="button" class="chatbot-chip" data-quick-reply="How does walk-in booking work at the counter?">Walk-in Guide</button>
+                <button type="button" class="chatbot-chip" data-quick-reply="What are the entrance fees and operating sessions?">Entrance Fees &amp; Hours</button>
             </div>
         </div>
 
@@ -62,7 +62,7 @@
                         <span class="chatbot-message__author">HinaguanBot</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>Hello! I'm <strong>HinaguanBot</strong> &#127807; I can help you with our amenities, rates, and how to book your visit. What would you like to know?</p>
+                        <p>Hello and welcome to <strong>Hinaguan Nature Park</strong>! &#127807; I can suggest the best amenities for your group size, check live availability &amp; expected checkout times, and guide you through online or walk-in booking. How may I help you today?</p>
                     </div>
                 </div>
             </div>

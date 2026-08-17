@@ -26,6 +26,7 @@
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_settings.js',
+        'resources/js/admin_chatbot.js',
     ])
 </head>
 <body class="antialiased admin-portal">
@@ -34,7 +35,7 @@
         <div class="dash-main">
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <x-header title="Settings" subtitle="Manage park settings and security" />
+                <x-header title="Settings" subtitle="Manage park configuration, rules, and security" />
                 <div class="admin-settings">
                     <!-- Horizontal Card Menu -->
                     <div class="admin-settings__menu" id="settingsMenu">
@@ -45,7 +46,16 @@
                                 </svg>
                             </div>
                             <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Settings</h3>
-                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park configuration, hours, and fees</p>
+                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park configuration, hours, and entrance/pool fees</p>
+                        </div>
+                        <div class="admin-settings__menu-card group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="park-rules">
+                            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-8 w-8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Rules</h3>
+                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park guidelines, swimming attire, corkage, and regulations</p>
                         </div>
                         <div class="admin-settings__menu-card group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="security">
                             <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
@@ -162,6 +172,158 @@
                             <h3 class="admin-settings__modal-title">Success!</h3>
                             <p class="admin-settings__modal-text">Park settings have been successfully updated.</p>
                             <button type="button" id="closeParkSettingsSuccessModal" class="admin-settings__btn admin-settings__btn--primary">OK</button>
+                        </div>
+                    </div>
+
+                    <!-- Park Rules Content -->
+                    <div class="admin-settings__content admin-settings__content--hidden" id="park-rules">
+                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromRules">
+                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Settings
+                        </button>
+
+                        <section class="dash-panel p-6 sm:p-8">
+                            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                                <div>
+                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Rules &amp; Guidelines</h2>
+                                    <p class="admin-settings__card-text m-0 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Click on any rule to view its description, edit, or delete.</p>
+                                </div>
+                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="addRuleBtn">
+                                    <svg class="admin-settings__btn-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Add Rule
+                                </button>
+                            </div>
+
+                            <!-- Compact Rules List -->
+                            <div class="park-rules-list grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" id="parkRulesGrid">
+                                @forelse($parkRules as $rule)
+                                    <div class="park-rule-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]"
+                                         id="parkRuleCard_{{ $rule->id }}"
+                                         data-rule-id="{{ $rule->id }}"
+                                         data-rule-name="{{ $rule->rule_name }}"
+                                         data-rule-desc="{{ $rule->rule_descriptions }}"
+                                         data-rule-updated="{{ $rule->updated_at ? $rule->updated_at->diffForHumans() : 'Recently' }}">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(26,58,31,0.08)] text-xs font-bold text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
+                                                #{{ $rule->id }}
+                                            </span>
+                                            <span class="truncate text-sm font-semibold text-[var(--hp-text)] rule-name-display">
+                                                {{ $rule->rule_name }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="col-span-full py-10 text-center text-sm text-[var(--hp-text-muted)]" id="emptyParkRulesState">
+                                        No park rules defined yet. Click "Add Rule" above to create one.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- View Park Rule Modal -->
+                    <div id="viewParkRuleModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-lg text-left">
+                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewRuleIdBadge">
+                                        #1
+                                    </span>
+                                    <div>
+                                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewRuleModalTitle">Rule Name</h3>
+                                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewRuleModalUpdated">Updated recently</p>
+                                    </div>
+                                </div>
+                                <button type="button" id="closeViewRuleModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Rule Description &amp; Policy</label>
+                                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewRuleModalDesc">
+                                    Rule description goes here...
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                                <button type="button" id="viewModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Delete Rule
+                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="viewModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
+                                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Edit Rule
+                                    </button>
+                                    <button type="button" id="closeViewRuleModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add / Edit Park Rule Modal -->
+                    <div id="parkRuleModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-lg">
+                            <h3 class="admin-settings__modal-title text-left" id="parkRuleModalTitle">Add Park Rule</h3>
+                            <p class="admin-settings__modal-text text-left" id="parkRuleModalSubtitle">Create a new operational rule or guideline for Hinaguan Nature Park.</p>
+                            
+                            <form id="parkRuleForm" class="mt-4 flex flex-col gap-4 text-left">
+                                @csrf
+                                <input type="hidden" id="ruleIdInput" name="rule_id" value="">
+                                
+                                <div class="admin-settings__group admin-settings__group--full">
+                                    <label for="ruleNameInput" class="admin-settings__label font-semibold">Rule Name / Title</label>
+                                    <input type="text" id="ruleNameInput" name="rule_name" class="admin-settings__input" placeholder="e.g. Proper Swimming Attire" required>
+                                    <span class="admin-settings__error" id="ruleNameError"></span>
+                                </div>
+
+                                <div class="admin-settings__group admin-settings__group--full">
+                                    <label for="ruleDescInput" class="admin-settings__label font-semibold">Rule Description / Guidelines</label>
+                                    <textarea id="ruleDescInput" name="rule_descriptions" rows="4" class="admin-settings__input h-auto resize-y" placeholder="Describe the policy, requirements, or restrictions..." required></textarea>
+                                    <span class="admin-settings__error" id="ruleDescError"></span>
+                                </div>
+
+                                <div class="admin-settings__form-actions mt-2 flex justify-end gap-3">
+                                    <button type="submit" class="admin-settings__btn admin-settings__btn--primary" id="saveRuleSubmitBtn">Save Rule</button>
+                                    <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelRuleModalBtn">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Delete Rule Confirmation Modal -->
+                    <div id="deleteParkRuleModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-md text-center">
+                            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </div>
+                            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Rule?</h3>
+                            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteRuleConfirmText">Are you sure you want to delete this rule? This action cannot be undone.</p>
+                            
+                            <input type="hidden" id="deleteRuleIdInput" value="">
+
+                            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
+                                <button type="button" id="confirmDeleteRuleBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Rule</button>
+                                <button type="button" id="cancelDeleteRuleBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+                            </div>
                         </div>
                     </div>
 
@@ -285,5 +447,8 @@
             </main>
         </div>
     </div>
+
+    {{-- Admin AI Intelligence Chatbot --}}
+    <x-admin_chatbot />
 </body>
 </html>

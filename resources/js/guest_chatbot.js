@@ -239,6 +239,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const modelSelect = document.getElementById('chatbotModel');
         const selectedModel = modelSelect ? modelSelect.value : 'openrouter/free';
         
+        // Prepare multi-turn history before adding new user message to state
+        const historyPayload = messages.slice(-6).map(m => ({
+            role: m.isBot ? 'assistant' : 'user',
+            content: m.content
+        }));
+
         // Add user message
         addMessage(message, false);
         chatbotInput.value = '';
@@ -261,7 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ message, model: selectedModel }),
+                body: JSON.stringify({
+                    message,
+                    history: historyPayload,
+                    model: selectedModel
+                }),
             });
             
             const data = await response.json();

@@ -3,8 +3,10 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\StaffChatbotController;
 use App\Http\Controllers\GuestChatbotController;
+use App\Http\Controllers\AdminChatbotController;
 use App\Http\Controllers\HomeController;
 use App\Mail\ReservationQrMail;
+use App\Models\ActivityLog;
 use App\Models\Amenity;
 use App\Models\Customer;
 use App\Models\Reservation;
@@ -469,6 +471,8 @@ $occupiedAmenityIdsForSlot = function (string $date, string $slot) use ($occupie
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::post('/chatbot', [StaffChatbotController::class, 'chat'])->name('chatbot.chat');
+
+Route::post('/admin-chatbot', [AdminChatbotController::class, 'chat'])->name('admin.chatbot.chat');
 
 Route::post('/guest-chatbot', [GuestChatbotController::class, 'chat'])->name('chatbot.guest')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
@@ -1440,6 +1444,18 @@ Route::post('/reservation/check-in/{reservation}', function (Request $request, R
         'check_in' => now()->toDateTimeString(),
     ]);
 
+    $staffName = $user['name'] ?? 'Staff User';
+    ActivityLog::log(
+        activityType: 'check_in',
+        title: 'Guest Checked In',
+        description: "Reservation #{$reservation->id} ({$reservation->booker_name}) checked in by {$staffName}",
+        reservationId: $reservation->id,
+        actorName: $staffName,
+        actorRole: $user['role'] ?? 'staff',
+        staffId: (string) ($user['id'] ?? ''),
+        metadata: ['staff_name' => $staffName]
+    );
+
     return response()->json([
         'success' => true,
         'reservation_id' => $reservation->id,
@@ -1521,6 +1537,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             $weekRevenue[] = (int) Reservation::whereDate('check_in', $date->toDateString())->sum('amount_paid');
         }
 
+        $recentActivities = ActivityLog::orderByDesc('created_at')->take(10)->get();
+
         return view('admin.admin_dashboard', [
             'totalReservations' => $totalReservations,
             'totalGuests' => $totalGuests,
@@ -1532,6 +1550,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'uniqueCustomerCount' => $uniqueCustomerCount,
             'topAmenity' => $topAmenity,
             'recentReservations' => $recentReservations,
+            'recentActivities' => $recentActivities,
             'statusBreakdown' => $statusBreakdown,
             'weekRevenue' => $weekRevenue,
             'weekDays' => $weekDays,
@@ -1723,12 +1742,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'ban_status' => ['nullable', 'boolean'],
         ]);
 
-        StaffAccount::create([
+        $staff = StaffAccount::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'ban_status' => (bool) ($data['ban_status'] ?? false),
         ]);
+
+        $adminName = $user['name'] ?? 'Admin User';
+        ActivityLog::log(
+            activityType: 'staff_created',
+            title: 'Staff Account Created',
+            description: "Staff account '{$staff->name}' ({$staff->email}) was created by {$adminName}",
+            actorName: $adminName,
+            actorRole: 'admin',
+            staffId: (string) $staff->id,
+            metadata: ['staff_id' => $staff->id, 'staff_name' => $staff->name, 'staff_email' => $staff->email]
+        );
 
         return redirect()->route('admin.users')->with('success', 'Staff account created successfully.');
     })->name('users.store');
@@ -1758,6 +1788,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         $staffAccount->update($update);
 
+        $adminName = $user['name'] ?? 'Admin User';
+        ActivityLog::log(
+            activityType: 'staff_updated',
+            title: 'Staff Account Updated',
+            description: "Staff account '{$staffAccount->name}' was updated by {$adminName}",
+            actorName: $adminName,
+            actorRole: 'admin',
+            staffId: (string) $staffAccount->id,
+            metadata: ['staff_id' => $staffAccount->id, 'staff_name' => $staffAccount->name]
+        );
+
         return redirect()->route('admin.users')->with('success', 'Staff account updated successfully.');
     })->name('users.update');
 
@@ -1770,6 +1811,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $staffAccount->update([
             'ban_status' => ! $staffAccount->ban_status,
         ]);
+
+        $adminName = $user['name'] ?? 'Admin User';
+        $actionText = $staffAccount->ban_status ? 'banned' : 'unbanned';
+        ActivityLog::log(
+            activityType: $staffAccount->ban_status ? 'staff_banned' : 'staff_unbanned',
+            title: 'Staff Account ' . ucfirst($actionText),
+            description: "Staff account '{$staffAccount->name}' was {$actionText} by {$adminName}",
+            actorName: $adminName,
+            actorRole: 'admin',
+            staffId: (string) $staffAccount->id,
+            metadata: ['staff_id' => $staffAccount->id, 'staff_name' => $staffAccount->name, 'ban_status' => $staffAccount->ban_status]
+        );
 
         return redirect()->route('admin.users')->with('success', $staffAccount->ban_status ? 'Staff account banned.' : 'Staff account unbanned.');
     })->name('users.toggle-ban');
@@ -1925,7 +1978,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
         $parkSettings = \App\Models\ParkSetting::first();
-        return view('admin.admin_settings', ['parkSettings' => $parkSettings]);
+        $parkRules = \App\Models\ParkRule::orderBy('id', 'asc')->get();
+        return view('admin.admin_settings', [
+            'parkSettings' => $parkSettings,
+            'parkRules' => $parkRules,
+        ]);
     })->name('settings');
 
     Route::post('/settings/park/update', function (Request $request) {
@@ -1960,6 +2017,104 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         return redirect()->route('admin.settings')->with('success', 'Park settings updated successfully.');
     })->name('settings.park.update');
+
+    // Park Rules CRUD Routes
+    Route::post('/settings/rules', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'rule_name' => ['required', 'string', 'max:255'],
+            'rule_descriptions' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $rule = \App\Models\ParkRule::create($validated);
+
+        \App\Models\ActivityLog::log(
+            activityType: 'rule_created',
+            title: 'Park Rule Created',
+            description: "Admin created park rule: {$rule->rule_name}",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['rule_id' => $rule->id, 'rule_name' => $rule->rule_name]
+        );
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Park rule created successfully.',
+                'rule' => $rule,
+            ]);
+        }
+
+        return redirect()->route('admin.settings')->with('success', 'Park rule created successfully.');
+    })->name('settings.rules.store');
+
+    Route::put('/settings/rules/{parkRule}', function (Request $request, \App\Models\ParkRule $parkRule) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'rule_name' => ['required', 'string', 'max:255'],
+            'rule_descriptions' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $parkRule->update($validated);
+
+        \App\Models\ActivityLog::log(
+            activityType: 'rule_updated',
+            title: 'Park Rule Updated',
+            description: "Admin updated park rule: {$parkRule->rule_name}",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['rule_id' => $parkRule->id, 'rule_name' => $parkRule->rule_name]
+        );
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Park rule updated successfully.',
+                'rule' => $parkRule,
+            ]);
+        }
+
+        return redirect()->route('admin.settings')->with('success', 'Park rule updated successfully.');
+    })->name('settings.rules.update');
+
+    Route::delete('/settings/rules/{parkRule}', function (Request $request, \App\Models\ParkRule $parkRule) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $ruleName = $parkRule->rule_name;
+        $ruleId = $parkRule->id;
+        $parkRule->delete();
+
+        \App\Models\ActivityLog::log(
+            activityType: 'rule_deleted',
+            title: 'Park Rule Deleted',
+            description: "Admin deleted park rule: {$ruleName}",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['rule_id' => $ruleId, 'rule_name' => $ruleName]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Park rule deleted successfully.',
+        ]);
+    })->name('settings.rules.delete');
 
     Route::post('/send-password-otp', function (Request $request) {
         $user = $request->session()->get('auth_user');
@@ -2082,6 +2237,60 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         return response()->json(['message' => 'Email changed successfully']);
     })->name('verify-email-otp')->withoutMiddleware([VerifyCsrfToken::class]);
+
+    Route::get('/api/recent-activities', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $type = $request->query('type');
+        $search = $request->query('search');
+
+        $query = ActivityLog::query()->orderByDesc('created_at');
+
+        if ($type && $type !== 'all') {
+            if ($type === 'extensions') {
+                $query->whereIn('activity_type', ['stay_extended', 'amenity_extended']);
+            } elseif ($type === 'checkins_outs') {
+                $query->whereIn('activity_type', ['check_in', 'check_out', 'amenity_checked_out']);
+            } elseif ($type === 'amenities') {
+                $query->whereIn('activity_type', ['amenity_added', 'amenity_extended', 'amenity_checked_out']);
+            } elseif ($type === 'staff') {
+                $query->whereIn('activity_type', ['staff_created', 'staff_updated', 'staff_banned', 'staff_unbanned', 'staff_deleted']);
+            } else {
+                $query->where('activity_type', $type);
+            }
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('actor_name', 'like', "%{$search}%")
+                  ->orWhere('title', 'like', "%{$search}%")
+                  ->orWhere('reservation_id', 'like', "%{$search}%");
+            });
+        }
+
+        $activities = $query->take(30)->get();
+
+        return response()->json([
+            'activities' => $activities->map(function ($act) {
+                return [
+                    'id' => $act->id,
+                    'type' => $act->activity_type,
+                    'title' => $act->title,
+                    'description' => $act->description,
+                    'reservation_id' => $act->reservation_id,
+                    'actor_name' => $act->actor_name,
+                    'actor_role' => $act->actor_role,
+                    'staff_id' => $act->staff_id,
+                    'created_at_human' => $act->created_at ? $act->created_at->diffForHumans() : 'Recently',
+                    'created_at_formatted' => $act->created_at ? $act->created_at->format('M d, Y · g:i A') : '',
+                ];
+            }),
+        ]);
+    })->name('api.recent-activities');
 });
 
 Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
@@ -3559,6 +3768,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]);
         }
 
+        $staffUser = $request->session()->get('auth_user') ?? [];
+        $staffName = $staffUser['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'walkin_created',
+            title: 'Walk-In Created & Checked In',
+            description: "Walk-in reservation #{$reservation->id} ({$reservation->booker_name}, {$reservation->number_of_guests} guests) created and checked in by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $staffUser['role'] ?? 'staff',
+            staffId: (string) ($staffUser['id'] ?? ''),
+            metadata: [
+                'total_amount' => $reservation->total_amount,
+                'number_of_guests' => $reservation->number_of_guests,
+                'staff_name' => $staffName,
+            ]
+        );
+
         return redirect()->route('staff.checkins')->with('success', 'Walk-in reservation checked in successfully.');
     })->name('checkins.guests.store');
 
@@ -4293,6 +4519,25 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservation->refresh();
         $newCheckoutAt = $computeReservationCheckoutAt($reservation);
 
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'stay_extended',
+            title: 'Stay Extended',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) extended stay from {$origStartDate} ({$origStartSlot}) to {$newEndDate} ({$newEndSlot}) by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'orig_start_date' => $origStartDate,
+                'orig_start_slot' => $origStartSlot,
+                'new_end_date' => $newEndDate,
+                'new_end_slot' => $newEndSlot,
+                'total_days' => $newCounts['days_span'],
+                'staff_name' => $staffName,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Stay schedule updated successfully.',
@@ -4420,6 +4665,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservation->refresh();
         $newCheckoutAt = $computeReservationCheckoutAt($reservation);
 
+        $staffName = $user['name'] ?? 'Staff User';
+        $amenityName = $amenity?->amenities_name ?? 'Amenity';
+        ActivityLog::log(
+            activityType: 'amenity_extended',
+            title: 'Amenity Extended',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) extended {$amenityName} to {$newAmenityEndDate} ({$newAmenityEndSlot}) by {$staffName} (₱" . number_format($addedCost, 2) . " added)",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'amenity_id' => $reservationAmenity->amenity_id,
+                'amenity_name' => $amenityName,
+                'new_end_date' => $newAmenityEndDate,
+                'new_end_slot' => $newAmenityEndSlot,
+                'added_cost' => $addedCost,
+                'staff_name' => $staffName,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => "Extended {$amenity?->amenities_name} successfully.",
@@ -4543,6 +4808,27 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservation->refresh();
         $newCheckoutAt = $computeReservationCheckoutAt($reservation);
 
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'amenity_added',
+            title: 'Amenity Added Mid-Stay',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) added {$amenity->amenities_name} ({$startDate} [{$startSlot}] to {$endDate} [{$endSlot}]) by {$staffName} (₱" . number_format($totalAmenityCost, 2) . ")",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'amenity_id' => $amenity->id,
+                'amenity_name' => $amenity->amenities_name,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'start_slot' => $startSlot,
+                'end_slot' => $endSlot,
+                'cost' => $totalAmenityCost,
+                'staff_name' => $staffName,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => "Added {$amenity->amenities_name} to reservation #{$reservation->id} successfully.",
@@ -4576,6 +4862,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ReservationAmenity::where('reservation_id', $reservation->id)
             ->where('status', 'Active')
             ->update(['status' => 'Completed']);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'check_out',
+            title: 'Guest Checked Out',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) completed check out with {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'checked_out_at' => now()->toDateTimeString(),
+                'staff_name' => $staffName,
+            ]
+        );
 
         // Send receipt emails to all guests with email addresses
         $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity']);
@@ -4674,6 +4975,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $reservationAmenity->update(['status' => 'Completed']);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $amenityName = $reservationAmenity->amenity?->amenities_name ?? 'Amenity';
+        ActivityLog::log(
+            activityType: 'amenity_checked_out',
+            title: 'Amenity Checked Out',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) checked out {$amenityName} with {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'amenity_id' => $reservationAmenity->amenity_id,
+                'amenity_name' => $amenityName,
+                'staff_name' => $staffName,
+            ]
+        );
 
         return response()->json([
             'success' => true,

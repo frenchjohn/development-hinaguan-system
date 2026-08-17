@@ -27,6 +27,7 @@
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_reports.js',
+        'resources/js/admin_chatbot.js',
     ])
     <style>
         /* Hide print elements strictly on screen view */
@@ -572,5 +573,7 @@
             ]
         };
     </script>
+    {{-- Admin AI Intelligence Chatbot --}}
+    <x-admin_chatbot />
 </body>
 </html>

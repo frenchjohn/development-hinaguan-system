@@ -18,6 +18,6 @@ class AdminReportsPageTest extends TestCase
         ])->get(route('admin.reports'));
 
         $response->assertStatus(200);
-        $response->assertSee('Park Reports');
+        $response->assertSee('Admin Reports & Analytics');
     }
 }

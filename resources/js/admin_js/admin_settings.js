@@ -514,7 +514,302 @@ window.AppPage['admin_settings'] = function () {
         });
     }
 
+    // ===== PARK RULES MANAGEMENT SECTION =====
+    const viewParkRuleModal = document.getElementById('viewParkRuleModal');
+    const viewRuleIdBadge = document.getElementById('viewRuleIdBadge');
+    const viewRuleModalTitle = document.getElementById('viewRuleModalTitle');
+    const viewRuleModalUpdated = document.getElementById('viewRuleModalUpdated');
+    const viewRuleModalDesc = document.getElementById('viewRuleModalDesc');
+    const viewModalEditBtn = document.getElementById('viewModalEditBtn');
+    const viewModalDeleteBtn = document.getElementById('viewModalDeleteBtn');
+    const closeViewRuleModalBtn = document.getElementById('closeViewRuleModalBtn');
+    const closeViewRuleModalXBtn = document.getElementById('closeViewRuleModalXBtn');
+
+    const parkRuleModal = document.getElementById('parkRuleModal');
+    const parkRuleModalTitle = document.getElementById('parkRuleModalTitle');
+    const parkRuleModalSubtitle = document.getElementById('parkRuleModalSubtitle');
+    const addRuleBtn = document.getElementById('addRuleBtn');
+    const cancelRuleModalBtn = document.getElementById('cancelRuleModalBtn');
+    const parkRuleForm = document.getElementById('parkRuleForm');
+    const ruleIdInput = document.getElementById('ruleIdInput');
+    const ruleNameInput = document.getElementById('ruleNameInput');
+    const ruleDescInput = document.getElementById('ruleDescInput');
+    const saveRuleSubmitBtn = document.getElementById('saveRuleSubmitBtn');
+    const parkRulesGrid = document.getElementById('parkRulesGrid');
+    const emptyParkRulesState = document.getElementById('emptyParkRulesState');
+
+    const deleteParkRuleModal = document.getElementById('deleteParkRuleModal');
+    const deleteRuleConfirmText = document.getElementById('deleteRuleConfirmText');
+    const deleteRuleIdInput = document.getElementById('deleteRuleIdInput');
+    const confirmDeleteRuleBtn = document.getElementById('confirmDeleteRuleBtn');
+    const cancelDeleteRuleBtn = document.getElementById('cancelDeleteRuleBtn');
+
+    let activeRuleData = null;
+
+    // Open Rule Details / View Modal on Click
+    parkRulesGrid?.addEventListener('click', (e) => {
+        const item = e.target.closest('.park-rule-item');
+        if (!item) return;
+
+        const ruleId = item.getAttribute('data-rule-id');
+        const ruleName = item.getAttribute('data-rule-name') || '';
+        const ruleDesc = item.getAttribute('data-rule-desc') || '';
+        const ruleUpdated = item.getAttribute('data-rule-updated') || 'Recently';
+
+        activeRuleData = {
+            id: ruleId,
+            name: ruleName,
+            description: ruleDesc,
+            updated: ruleUpdated,
+        };
+
+        if (viewRuleIdBadge) viewRuleIdBadge.textContent = `#${ruleId}`;
+        if (viewRuleModalTitle) viewRuleModalTitle.textContent = ruleName;
+        if (viewRuleModalUpdated) viewRuleModalUpdated.textContent = `Updated ${ruleUpdated}`;
+        if (viewRuleModalDesc) viewRuleModalDesc.textContent = ruleDesc;
+
+        if (viewParkRuleModal) viewParkRuleModal.style.display = 'flex';
+    });
+
+    // Close View Modal
+    const closeViewModal = () => {
+        if (viewParkRuleModal) viewParkRuleModal.style.display = 'none';
+    };
+
+    closeViewRuleModalBtn?.addEventListener('click', closeViewModal);
+    closeViewRuleModalXBtn?.addEventListener('click', closeViewModal);
+    viewParkRuleModal?.addEventListener('click', (e) => {
+        if (e.target === viewParkRuleModal) closeViewModal();
+    });
+
+    // Switch from View Modal to Edit Modal
+    viewModalEditBtn?.addEventListener('click', () => {
+        if (!activeRuleData) return;
+        closeViewModal();
+
+        if (ruleIdInput) ruleIdInput.value = activeRuleData.id;
+        if (ruleNameInput) ruleNameInput.value = activeRuleData.name;
+        if (ruleDescInput) ruleDescInput.value = activeRuleData.description;
+        if (parkRuleModalTitle) parkRuleModalTitle.textContent = 'Edit Park Rule';
+        if (parkRuleModalSubtitle) parkRuleModalSubtitle.textContent = `Update the configuration for Rule #${activeRuleData.id}.`;
+        clearErrors(['ruleNameError', 'ruleDescError']);
+
+        if (parkRuleModal) parkRuleModal.style.display = 'flex';
+        ruleNameInput?.focus();
+    });
+
+    // Switch from View Modal to Delete Modal
+    viewModalDeleteBtn?.addEventListener('click', () => {
+        if (!activeRuleData) return;
+        closeViewModal();
+
+        if (deleteRuleIdInput) deleteRuleIdInput.value = activeRuleData.id;
+        if (deleteRuleConfirmText) deleteRuleConfirmText.textContent = `Are you sure you want to delete "${activeRuleData.name}" (Rule #${activeRuleData.id})? This action cannot be undone.`;
+
+        if (deleteParkRuleModal) deleteParkRuleModal.style.display = 'flex';
+    });
+
+    // Open Add Rule Modal
+    addRuleBtn?.addEventListener('click', () => {
+        if (!parkRuleModal) return;
+        parkRuleForm?.reset();
+        if (ruleIdInput) ruleIdInput.value = '';
+        if (parkRuleModalTitle) parkRuleModalTitle.textContent = 'Add Park Rule';
+        if (parkRuleModalSubtitle) parkRuleModalSubtitle.textContent = 'Create a new operational rule or guideline for Hinaguan Nature Park.';
+        clearErrors(['ruleNameError', 'ruleDescError']);
+        parkRuleModal.style.display = 'flex';
+        ruleNameInput?.focus();
+    });
+
+    // Close Add / Edit Rule Modal
+    cancelRuleModalBtn?.addEventListener('click', () => {
+        if (parkRuleModal) parkRuleModal.style.display = 'none';
+        parkRuleForm?.reset();
+        clearErrors(['ruleNameError', 'ruleDescError']);
+    });
+
+    parkRuleModal?.addEventListener('click', (e) => {
+        if (e.target === parkRuleModal) {
+            parkRuleModal.style.display = 'none';
+            parkRuleForm?.reset();
+        }
+    });
+
+    // Handle Add / Edit Rule Form Submission
+    parkRuleForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearErrors(['ruleNameError', 'ruleDescError']);
+
+        const ruleId = ruleIdInput ? ruleIdInput.value.trim() : '';
+        const ruleName = ruleNameInput ? ruleNameInput.value.trim() : '';
+        const ruleDesc = ruleDescInput ? ruleDescInput.value.trim() : '';
+
+        if (!ruleName) {
+            showError('ruleNameError', 'Rule name is required.');
+            return;
+        }
+        if (!ruleDesc) {
+            showError('ruleDescError', 'Rule description is required.');
+            return;
+        }
+
+        const isEditing = Boolean(ruleId);
+        const url = isEditing ? `/admin/settings/rules/${ruleId}` : '/admin/settings/rules';
+        const method = isEditing ? 'PUT' : 'POST';
+
+        if (saveRuleSubmitBtn) {
+            saveRuleSubmitBtn.disabled = true;
+            saveRuleSubmitBtn.classList.add('loading');
+        }
+
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    rule_name: ruleName,
+                    rule_descriptions: ruleDesc,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (parkRuleModal) parkRuleModal.style.display = 'none';
+                parkRuleForm.reset();
+                showSuccessMessage(data.message || (isEditing ? 'Park rule updated successfully!' : 'Park rule created successfully!'));
+
+                if (isEditing) {
+                    // Update existing item in DOM
+                    const card = document.getElementById(`parkRuleCard_${ruleId}`);
+                    if (card) {
+                        const nameEl = card.querySelector('.rule-name-display');
+                        if (nameEl) nameEl.textContent = data.rule.rule_name;
+                        card.setAttribute('data-rule-name', data.rule.rule_name);
+                        card.setAttribute('data-rule-desc', data.rule.rule_descriptions);
+                        card.setAttribute('data-rule-updated', 'Just now');
+                    }
+                } else {
+                    // Create new compact item in DOM
+                    if (emptyParkRulesState) emptyParkRulesState.remove();
+                    const newRule = data.rule;
+                    const newItem = document.createElement('div');
+                    newItem.className = 'park-rule-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]';
+                    newItem.id = `parkRuleCard_${newRule.id}`;
+                    newItem.setAttribute('data-rule-id', newRule.id);
+                    newItem.setAttribute('data-rule-name', newRule.rule_name);
+                    newItem.setAttribute('data-rule-desc', newRule.rule_descriptions);
+                    newItem.setAttribute('data-rule-updated', 'Just now');
+                    newItem.innerHTML = `
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[rgba(26,58,31,0.08)] text-xs font-bold text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
+                                #${newRule.id}
+                            </span>
+                            <span class="truncate text-sm font-semibold text-[var(--hp-text)] rule-name-display">
+                                ${escapeHtml(newRule.rule_name)}
+                            </span>
+                        </div>
+                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    `;
+                    parkRulesGrid?.prepend(newItem);
+                }
+            } else {
+                if (data.errors) {
+                    if (data.errors.rule_name) showError('ruleNameError', data.errors.rule_name[0]);
+                    if (data.errors.rule_descriptions) showError('ruleDescError', data.errors.rule_descriptions[0]);
+                } else {
+                    showError('ruleNameError', data.message || 'Failed to save park rule.');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving park rule:', error);
+            showError('ruleNameError', 'Network error occurred while saving.');
+        } finally {
+            if (saveRuleSubmitBtn) {
+                saveRuleSubmitBtn.disabled = false;
+                saveRuleSubmitBtn.classList.remove('loading');
+            }
+        }
+    });
+
+    // Cancel Delete Modal
+    cancelDeleteRuleBtn?.addEventListener('click', () => {
+        if (deleteParkRuleModal) deleteParkRuleModal.style.display = 'none';
+        if (deleteRuleIdInput) deleteRuleIdInput.value = '';
+    });
+
+    deleteParkRuleModal?.addEventListener('click', (e) => {
+        if (e.target === deleteParkRuleModal) {
+            deleteParkRuleModal.style.display = 'none';
+        }
+    });
+
+    // Confirm Delete Rule
+    confirmDeleteRuleBtn?.addEventListener('click', async () => {
+        const ruleId = deleteRuleIdInput ? deleteRuleIdInput.value.trim() : '';
+        if (!ruleId) return;
+
+        if (confirmDeleteRuleBtn) {
+            confirmDeleteRuleBtn.disabled = true;
+            confirmDeleteRuleBtn.classList.add('loading');
+        }
+
+        try {
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const response = await fetch(`/admin/settings/rules/${ruleId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                if (deleteParkRuleModal) deleteParkRuleModal.style.display = 'none';
+                const card = document.getElementById(`parkRuleCard_${ruleId}`);
+                if (card) {
+                    card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => card.remove(), 300);
+                }
+                showSuccessMessage(data.message || 'Park rule deleted successfully!');
+            } else {
+                alert(data.message || 'Failed to delete park rule.');
+            }
+        } catch (error) {
+            console.error('Error deleting park rule:', error);
+            alert('A network error occurred while deleting.');
+        } finally {
+            if (confirmDeleteRuleBtn) {
+                confirmDeleteRuleBtn.disabled = false;
+                confirmDeleteRuleBtn.classList.remove('loading');
+            }
+        }
+    });
+
     // ===== HELPER FUNCTIONS =====
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
     function showError(elementId, message) {
         const errorElement = document.getElementById(elementId);
@@ -547,10 +842,12 @@ window.AppPage['admin_settings'] = function () {
             background-color: #10b981;
             color: white;
             padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
             z-index: 2000;
             animation: slideIn 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
         `;
         successDiv.textContent = message;
         document.body.appendChild(successDiv);

@@ -1,5 +1,49 @@
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
+let activeStaffCheckInsHandlers = null;
+
+if (!window.__staffCheckInsGlobalClickBound) {
+    window.__staffCheckInsGlobalClickBound = true;
+    document.addEventListener('click', (e) => {
+        const extendStayBtn = e.target.closest('.resv-extend-stay-btn');
+        if (extendStayBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.openExtendStayModal?.(extendStayBtn.dataset.reservationId);
+            return;
+        }
+
+        const addAmenityBtn = e.target.closest('.resv-add-amenity-btn');
+        if (addAmenityBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.openAddAmenityMidStayModal?.(addAmenityBtn.dataset.reservationId);
+            return;
+        }
+
+        const extendAmenityBtn = e.target.closest('.resv-amenity-extend-btn');
+        if (extendAmenityBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.openExtendAmenityModal?.(extendAmenityBtn.dataset.reservationId, extendAmenityBtn.dataset.reservationAmenityId);
+            return;
+        }
+
+        const amenityCheckoutBtn = e.target.closest('.resv-amenity-checkout-btn');
+        if (amenityCheckoutBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.handleAmenityCheckout?.(amenityCheckoutBtn);
+            return;
+        }
+
+        if (e.target.classList.contains('guest-companion-pill__delete')) {
+            e.target.closest('.guest-companion-pill')?.remove();
+            return;
+        }
+    });
+}
+
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_check_ins'] = function () {
 
@@ -605,52 +649,46 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
-    // Per-amenity check out (delegated so it survives modal re-renders, and
-    // guarded so SPA re-inits don't stack duplicate listeners)
-    if (!window.__staffCheckInsAmenityCheckoutBound) {
-        window.__staffCheckInsAmenityCheckoutBound = true;
-        document.getElementById('reservationModalBody')?.addEventListener('click', async (e) => {
-            const btn = e.target.closest('.resv-amenity-checkout-btn');
-            if (!btn) return;
-            e.stopPropagation();
+    // Per-amenity check out handler
+    const handleAmenityCheckout = async (btn) => {
+        if (!btn) return;
+        const reservationAmenityId = btn.dataset.reservationAmenityId;
+        const reservationId = btn.dataset.reservationId;
+        if (!reservationAmenityId || !reservationId) return;
 
-            const reservationAmenityId = btn.dataset.reservationAmenityId;
-            const reservationId = btn.dataset.reservationId;
-            if (!reservationAmenityId) return;
+        if (!confirm('Check out this amenity? The reservation stays active until all amenities are checked out.')) return;
 
-            if (!confirm('Check out this amenity? The reservation stays active until all amenities are checked out.')) return;
+        btn.disabled = true;
+        btn.textContent = 'Checking out...';
 
-            btn.disabled = true;
-            btn.textContent = 'Checking out...';
+        try {
+            const response = await fetch(`/staff/reservations/${reservationId}/amenities/${reservationAmenityId}/check-out`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
 
-            try {
-                const response = await fetch(`/staff/reservations/${reservationId}/amenities/${reservationAmenityId}/check-out`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                });
-
-                const payload = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    throw new Error(payload.message || 'Unable to check out this amenity.');
-                }
-
-                // Mark completed in local data and re-render the modal
-                const amenity = reservationData[reservationId]?.reservation_amenities?.find(a => String(a.id) === String(reservationAmenityId));
-                if (amenity) amenity.status = 'Completed';
-                openReservationModal(reservationId);
-                showToast('Amenity checked out successfully.');
-            } catch (error) {
-                window.alert(error.message || 'Unable to check out this amenity.');
-                btn.disabled = false;
-                btn.textContent = 'Check Out';
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.message || 'Unable to check out this amenity.');
             }
-        });
-    }
+
+            // Mark completed in local data and re-render the modal
+            const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
+            const amenity = res?.reservation_amenities?.find(a => String(a.id) === String(reservationAmenityId));
+            if (amenity) amenity.status = 'Completed';
+            openReservationModal(reservationId);
+            showToast('Amenity checked out successfully.');
+        } catch (error) {
+            window.alert(error.message || 'Unable to check out this amenity.');
+            btn.disabled = false;
+            btn.textContent = 'Check Out';
+        }
+    };
 
     // ── Continuous timeline slot builder (JS) ──────────────────────────────
     const buildContinuousTimeline = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
@@ -855,17 +893,19 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     const openExtendStayModal = (reservationId) => {
-        const res = reservationData[reservationId];
+        const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
         if (!res) return;
 
         extendStayCalState.resId = reservationId;
-        if (extendStayResId) extendStayResId.textContent = res.id;
+        const resIdEl = document.getElementById('extendStayResId');
+        if (resIdEl) resIdEl.textContent = res.id;
 
         const isMultiDay = res.end_date && res.end_date !== res.reservation_date;
         const startSlot = res.start_slot || 'Daytime';
         const endSlot = res.end_slot || startSlot;
-        if (extendStayCurrentSummary) {
-            extendStayCurrentSummary.textContent = isMultiDay
+        const summaryEl = document.getElementById('extendStayCurrentSummary');
+        if (summaryEl) {
+            summaryEl.textContent = isMultiDay
                 ? `${formatDate(res.reservation_date)} (${startSlot}) – ${formatDate(res.end_date)} (${endSlot}) · ${res.total_days || 2} Day(s)`
                 : `${formatDate(res.reservation_date)} (${startSlot}) · 1 Day`;
         }
@@ -901,26 +941,30 @@ window.AppPage['staff_check_ins'] = function () {
         extendStayCalState.selectedEndDate = res.end_date || res.reservation_date || todayStr;
         extendStayCalState.selectedEndSlot = res.end_slot || startSlot;
 
-        if (extendStayNewEndDate) extendStayNewEndDate.value = extendStayCalState.selectedEndDate;
-        if (extendStayNewEndSlot) extendStayNewEndSlot.value = extendStayCalState.selectedEndSlot;
+        const newEndDateInput = document.getElementById('extendStayNewEndDate');
+        const newEndSlotInput = document.getElementById('extendStayNewEndSlot');
+        if (newEndDateInput) newEndDateInput.value = extendStayCalState.selectedEndDate;
+        if (newEndSlotInput) newEndSlotInput.value = extendStayCalState.selectedEndSlot;
 
-        if (extendStayBoundaryHelp) {
+        const helpEl = document.getElementById('extendStayBoundaryHelp');
+        if (helpEl) {
             if (latestAmenityDate) {
-                extendStayBoundaryHelp.textContent = `Stay can step back down to ${formatDate(latestAmenityDate)} (${latestAmenitySlot}) due to active ${latestAmenityName || 'amenity'} booking.`;
+                helpEl.textContent = `Stay can step back down to ${formatDate(latestAmenityDate)} (${latestAmenitySlot}) due to active ${latestAmenityName || 'amenity'} booking.`;
             } else {
-                extendStayBoundaryHelp.textContent = `Stay can step back down to check-in date (${formatDate(resStart)} [${startSlot}]).`;
+                helpEl.textContent = `Stay can step back down to check-in date (${formatDate(resStart)} [${startSlot}]).`;
             }
         }
 
         // 5-Year population
         const currentYear = new Date().getFullYear();
-        if (extendStayCalYear) {
-            extendStayCalYear.innerHTML = '';
+        const yearSelect = document.getElementById('extendStayCalYear');
+        if (yearSelect) {
+            yearSelect.innerHTML = '';
             for (let y = currentYear; y <= currentYear + 5; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
-                extendStayCalYear.appendChild(opt);
+                yearSelect.appendChild(opt);
             }
         }
 
@@ -928,13 +972,15 @@ window.AppPage['staff_check_ins'] = function () {
         extendStayCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
         extendStayCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
 
-        if (extendStayWarning) extendStayWarning.classList.add('hidden');
+        const warningEl = document.getElementById('extendStayWarning');
+        if (warningEl) warningEl.classList.add('hidden');
         syncExtendStaySessionPills();
         renderExtendStayCalendarMonth();
 
-        if (extendStayModal) {
-            extendStayModal.classList.add('is-open');
-            extendStayModal.setAttribute('aria-hidden', 'false');
+        const modal = document.getElementById('extendStayModal');
+        if (modal) {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
         }
     };
 
@@ -1366,7 +1412,7 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     const openExtendAmenityModal = async (reservationId, raId) => {
-        const res = reservationData[reservationId];
+        const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
         if (!res) return;
         const ra = res.reservation_amenities?.find(a => String(a.id) === String(raId));
         if (!ra) return;
@@ -1377,11 +1423,21 @@ window.AppPage['staff_check_ins'] = function () {
         extendAmenityCalState.availabilityCache = {};
         extendAmenityCalState.cachedMonths = {};
 
-        if (extendAmenityResId) extendAmenityResId.value = reservationId;
-        if (extendAmenityRaId) extendAmenityRaId.value = raId;
+        const resIdInput = document.getElementById('extendAmenityResId');
+        const raIdInput = document.getElementById('extendAmenityRaId');
+        const nameEl = document.getElementById('extendAmenityName');
+        const currDurEl = document.getElementById('extendAmenityCurrentDuration');
+        const limitEl = document.getElementById('extendAmenityStayLimit');
+        const newEndDateInput = document.getElementById('extendAmenityNewEndDate');
+        const newEndSlotInput = document.getElementById('extendAmenityNewEndSlot');
+        const yearSelect = document.getElementById('extendAmenityCalYear');
+        const modal = document.getElementById('extendAmenityModal');
+
+        if (resIdInput) resIdInput.value = reservationId;
+        if (raIdInput) raIdInput.value = raId;
 
         const amenityName = ra.amenity ? ra.amenity.amenities_name : (ra.amenity_name || 'Amenity');
-        if (extendAmenityName) extendAmenityName.textContent = amenityName;
+        if (nameEl) nameEl.textContent = amenityName;
 
         const amStartDate = ra.start_date || res.reservation_date || todayStr;
         const amStartSlot = ra.start_slot || res.start_slot || 'Daytime';
@@ -1393,8 +1449,8 @@ window.AppPage['staff_check_ins'] = function () {
         extendAmenityCalState.amCurrentEndDate = amEndDate;
         extendAmenityCalState.amCurrentEndSlot = amEndSlot;
 
-        if (extendAmenityCurrentDuration) {
-            extendAmenityCurrentDuration.textContent = `${formatDate(amStartDate)} (${amStartSlot}) to ${formatDate(amEndDate)} (${amEndSlot})`;
+        if (currDurEl) {
+            currDurEl.textContent = `${formatDate(amStartDate)} (${amStartSlot}) to ${formatDate(amEndDate)} (${amEndSlot})`;
         }
 
         const masterEndDate = res.end_date || res.reservation_date || todayStr;
@@ -1402,25 +1458,25 @@ window.AppPage['staff_check_ins'] = function () {
         extendAmenityCalState.masterEndDate = masterEndDate;
         extendAmenityCalState.masterEndSlot = masterEndSlot;
 
-        if (extendAmenityStayLimit) {
-            extendAmenityStayLimit.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
+        if (limitEl) {
+            limitEl.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
         }
 
         extendAmenityCalState.selectedEndDate = amEndDate;
         extendAmenityCalState.selectedEndSlot = amEndSlot === 'Nighttime' ? 'Nighttime' : 'Daytime';
 
-        if (extendAmenityNewEndDate) extendAmenityNewEndDate.value = extendAmenityCalState.selectedEndDate;
-        if (extendAmenityNewEndSlot) extendAmenityNewEndSlot.value = extendAmenityCalState.selectedEndSlot;
+        if (newEndDateInput) newEndDateInput.value = extendAmenityCalState.selectedEndDate;
+        if (newEndSlotInput) newEndSlotInput.value = extendAmenityCalState.selectedEndSlot;
 
         // 5-Year population
         const currentYear = new Date().getFullYear();
-        if (extendAmenityCalYear) {
-            extendAmenityCalYear.innerHTML = '';
+        if (yearSelect) {
+            yearSelect.innerHTML = '';
             for (let y = currentYear; y <= currentYear + 5; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
-                extendAmenityCalYear.appendChild(opt);
+                yearSelect.appendChild(opt);
             }
         }
 
@@ -1428,9 +1484,9 @@ window.AppPage['staff_check_ins'] = function () {
         extendAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
         extendAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
 
-        if (extendAmenityModal) {
-            extendAmenityModal.classList.add('is-open');
-            extendAmenityModal.setAttribute('aria-hidden', 'false');
+        if (modal) {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
         }
 
         syncExtendAmenitySessionPills();
@@ -1819,7 +1875,7 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     const openAddAmenityMidStayModal = (reservationId) => {
-        const res = reservationData[reservationId];
+        const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
         if (!res) return;
 
         addAmenityCalState.resId = reservationId;
@@ -1827,8 +1883,10 @@ window.AppPage['staff_check_ins'] = function () {
         addAmenityCalState.availabilityCache = {};
         addAmenityCalState.cachedMonths = {};
 
-        if (addAmenityMidStayResId) addAmenityMidStayResId.value = reservationId;
-        if (addAmenityResId) addAmenityResId.textContent = reservationId;
+        const resIdInput = document.getElementById('addAmenityMidStayResId');
+        const resIdEl = document.getElementById('addAmenityResId');
+        if (resIdInput) resIdInput.value = reservationId;
+        if (resIdEl) resIdEl.textContent = reservationId;
 
         const today = window.SERVER_TODAY || todayStr;
         const curSession = window.SERVER_CURRENT_SESSION || 'Daytime';
@@ -1842,46 +1900,39 @@ window.AppPage['staff_check_ins'] = function () {
         addAmenityCalState.masterEndDate = masterEndDate;
         addAmenityCalState.masterEndSlot = masterEndSlot;
 
-        if (addAmenityStartFixedText) {
-            addAmenityStartFixedText.textContent = `${formatDate(today)} • ${curSession}`;
-        }
-        if (addAmenityStayLimit) {
-            addAmenityStayLimit.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
-        }
-        if (addAmenityNewEndDate) addAmenityNewEndDate.value = today;
-        if (addAmenityNewEndSlot) addAmenityNewEndSlot.value = curSession;
+        const startFixedEl = document.getElementById('addAmenityStartFixedText');
+        const stayLimitEl = document.getElementById('addAmenityStayLimit');
+        const newEndDateInput = document.getElementById('addAmenityNewEndDate');
+        const newEndSlotInput = document.getElementById('addAmenityNewEndSlot');
 
-        // Populate amenities dropdown: disable any amenity occupied today in current session
-        if (midStayAmenitySelect) {
-            midStayAmenitySelect.innerHTML = '<option value="">-- Choose an amenity --</option>';
-            const occupiedTodayList = window.OCCUPIED_TODAY_AMENITY_IDS || [];
-            (window.ALL_AMENITIES || []).forEach(am => {
-                const opt = document.createElement('option');
-                opt.value = am.id;
-                const isOccupiedToday = occupiedTodayList.includes(am.id) || occupiedTodayList.includes(String(am.id));
-                if (isOccupiedToday) {
-                    opt.disabled = true;
-                    opt.textContent = `${am.amenities_name} (Occupied Today - ${curSession})`;
-                } else {
-                    opt.textContent = `${am.amenities_name} (Day: ₱${parseFloat(am.daytime_price || 0).toFixed(0)}, Night: ₱${parseFloat(am.nighttime_price || 0).toFixed(0)})`;
-                }
-                midStayAmenitySelect.appendChild(opt);
-            });
+        if (startFixedEl) {
+            startFixedEl.textContent = `${formatDate(today)} (${curSession})`;
+        }
+        if (stayLimitEl) {
+            stayLimitEl.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
         }
 
-        // Hide Aircon option initially
-        if (midStayAirconWrapper) midStayAirconWrapper.classList.add('hidden');
-        if (midStayIsAircon) midStayIsAircon.checked = false;
+        if (newEndDateInput) newEndDateInput.value = today;
+        if (newEndSlotInput) newEndSlotInput.value = curSession;
 
-        // 5-Year population
+        // Reset inputs
+        const selectEl = document.getElementById('midStayAmenitySelect');
+        const airconCheck = document.getElementById('midStayIsAircon');
+        const airconWrap = document.getElementById('midStayAirconWrapper');
+        if (selectEl) selectEl.value = '';
+        if (airconCheck) airconCheck.checked = false;
+        if (airconWrap) airconWrap.classList.add('hidden');
+
+        // Populate 5 years
         const currentYear = new Date().getFullYear();
-        if (addAmenityCalYear) {
-            addAmenityCalYear.innerHTML = '';
+        const yearSelect = document.getElementById('addAmenityCalYear');
+        if (yearSelect) {
+            yearSelect.innerHTML = '';
             for (let y = currentYear; y <= currentYear + 5; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
-                addAmenityCalYear.appendChild(opt);
+                yearSelect.appendChild(opt);
             }
         }
 
@@ -1889,15 +1940,17 @@ window.AppPage['staff_check_ins'] = function () {
         addAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
         addAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
 
+        const warningEl = document.getElementById('addAmenityWarning');
+        if (warningEl) warningEl.classList.add('hidden');
         syncAddAmenitySessionPills();
         recalcAddAmenityPrice();
-
-        if (addAmenityMidStayModal) {
-            addAmenityMidStayModal.classList.add('is-open');
-            addAmenityMidStayModal.setAttribute('aria-hidden', 'false');
-        }
-
         renderAddAmenityCalendarMonth();
+
+        const modal = document.getElementById('addAmenityMidStayModal');
+        if (modal) {
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
     };
 
     const closeAddAmenityMidStayModal = () => {
@@ -2139,35 +2192,20 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
-    // Delegated click handler on document for extend stay, add amenity, and extend amenity
-    if (!window.__staffCheckInsExtensionActionsBound) {
-        window.__staffCheckInsExtensionActionsBound = true;
-        document.addEventListener('click', (e) => {
-            const extendStayBtn = e.target.closest('.resv-extend-stay-btn');
-            if (extendStayBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                openExtendStayModal(extendStayBtn.dataset.reservationId);
-                return;
-            }
+    // Register active handlers for delegated click events
+    const checkInsHandlers = {
+        openExtendStayModal,
+        openAddAmenityMidStayModal,
+        openExtendAmenityModal,
+        handleAmenityCheckout,
+    };
+    activeStaffCheckInsHandlers = checkInsHandlers;
 
-            const addAmenityBtn = e.target.closest('.resv-add-amenity-btn');
-            if (addAmenityBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                openAddAmenityMidStayModal(addAmenityBtn.dataset.reservationId);
-                return;
-            }
-
-            const extendAmenityBtn = e.target.closest('.resv-amenity-extend-btn');
-            if (extendAmenityBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                openExtendAmenityModal(extendAmenityBtn.dataset.reservationId, extendAmenityBtn.dataset.reservationAmenityId);
-                return;
-            }
-        });
-    }
+    window.addEventListener('spa:leaving', () => {
+        if (activeStaffCheckInsHandlers === checkInsHandlers) {
+            activeStaffCheckInsHandlers = null;
+        }
+    }, { once: true });
 
     // Guest modal functionality
     const guestModal = document.getElementById('guestModal');
@@ -4630,16 +4668,6 @@ window.AppPage['staff_check_ins'] = function () {
         });
     }
 
-    // Remove companion buttons (delegated listener — bind once so SPA re-inits don't stack)
-    if (!window.__staffCheckInsDocClickBound) {
-        window.__staffCheckInsDocClickBound = true;
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('guest-companion-pill__delete')) {
-                e.target.closest('.guest-companion-pill').remove();
-            }
-        });
-    }
-
     // If a companion was just added, auto-open that reservation's detail
     // modal so the addition is immediately visible under its reservation.
     const justAddedRes = (() => {
@@ -4649,7 +4677,7 @@ window.AppPage['staff_check_ins'] = function () {
             return v;
         } catch (e) { return null; }
     })();
-    if (justAddedRes && reservationData[justAddedRes]) {
+    if (justAddedRes && (window.staffReservationData?.[justAddedRes] || reservationData[justAddedRes])) {
         setTimeout(() => openReservationModal(justAddedRes), 450);
     }
 

@@ -26,6 +26,7 @@
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_dashboard.js',
+        'resources/js/admin_chatbot.js',
     ])
 </head>
 <body class="antialiased admin-portal">
@@ -240,6 +241,59 @@
                         </div>
                     </section>
 
+                    {{-- Recent Operational Activity & Staff Audit Log --}}
+                    <section class="dash-panel flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h3 class="m-0 text-lg font-semibold text-hp-text flex items-center gap-2">
+                                    <span>Recent Operational Activities</span>
+                                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-300">Staff Audit</span>
+                                </h3>
+                                <p class="m-0 text-xs text-hp-text-muted">Live audit log of check-ins, checkouts, stay/amenity extensions, and mid-stay additions</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                            @forelse($recentActivities as $act)
+                                @php
+                                    $badgeColor = match($act->activity_type) {
+                                        'check_in' => 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/30',
+                                        'check_out', 'amenity_checked_out' => 'bg-slate-500/20 text-slate-600 dark:text-slate-300 border-slate-500/30',
+                                        'stay_extended', 'amenity_extended' => 'bg-blue-500/20 text-blue-600 dark:text-blue-300 border-blue-500/30',
+                                        'amenity_added' => 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border-purple-500/30',
+                                        'walkin_created' => 'bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/30',
+                                        'staff_created', 'staff_updated', 'staff_banned', 'staff_unbanned' => 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/30',
+                                        default => 'bg-hp-green-light/30 text-hp-green-dark dark:text-hp-green-light border-hp-green-mid/30',
+                                    };
+                                @endphp
+                                <div class="flex items-start justify-between gap-3 rounded-xl border border-glass-border bg-glass-hover p-3.5 transition-all hover:border-hp-green-mid/40">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center rounded-md border px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider {{ $badgeColor }}">
+                                                {{ $act->title }}
+                                            </span>
+                                            @if($act->actor_name)
+                                                <span class="text-xs font-semibold text-hp-text flex items-center gap-1">
+                                                    <span class="text-hp-text-muted">by</span>
+                                                    <span class="text-hp-green-dark dark:text-emerald-400 underline decoration-dotted">{{ $act->actor_name }}</span>
+                                                    <span class="text-[0.65rem] px-1.5 py-0.2 rounded bg-glass border border-glass-border text-hp-text-muted uppercase">({{ $act->actor_role }})</span>
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs text-hp-text leading-relaxed m-0">{{ $act->description }}</p>
+                                    </div>
+                                    <span class="shrink-0 text-[0.7rem] font-medium text-hp-text-muted whitespace-nowrap">
+                                        {{ $act->created_at ? $act->created_at->diffForHumans() : 'Recently' }}
+                                    </span>
+                                </div>
+                            @empty
+                                <div class="py-6 text-center text-sm text-hp-text-muted">
+                                    No operational activities logged yet.
+                                </div>
+                            @endforelse
+                        </div>
+                    </section>
+
                     {{-- Operations Summary & Quick Links --}}
                     <section class="dash-panel flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                         <div class="mb-4">
@@ -285,6 +339,9 @@
             </main>
         </div>
     </div>
+
+    {{-- Admin AI Intelligence Chatbot --}}
+    <x-admin_chatbot />
 
     <script>
         window.__sdChartData = {
