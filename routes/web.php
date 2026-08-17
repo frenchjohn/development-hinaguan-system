@@ -2293,6 +2293,171 @@ Route::prefix('admin')->name('admin.')->group(function () {
     })->name('api.recent-activities');
 });
 
+// Shared Activity Log Notifications API for Admin & Staff (Per-Account Scoped)
+Route::get('/api/activity-notifications', function (Request $request) {
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'] ?? '', ['admin', 'staff'])) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $userRole = $user['role'] ?? 'staff';
+    $userId = (int) ($user['id'] ?? 0);
+    $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
+
+    $queryLastSeenId = (int) $request->query('last_seen_id', 0);
+    $effectiveLastSeenId = max($dbLastSeenId, $queryLastSeenId);
+
+    $clientLatestId = (int) $request->query('latest_id', 0);
+    $sinceId = (int) $request->query('since_id', 0);
+    $checkOnly = $request->boolean('check_only');
+    $limit = min(50, max(5, (int) $request->query('limit', 25)));
+
+    $latestId = \App\Models\ActivityLog::max('id') ?? 0;
+    
+    // Calculate unread count specifically for this logged-in account
+    $unreadCount = \App\Models\ActivityLog::where('id', '>', $effectiveLastSeenId)->count();
+
+    // Fast check-only heartbeat
+    if ($checkOnly) {
+        $hasNew = $clientLatestId > 0 ? ($latestId > $clientLatestId) : false;
+        return response()->json([
+            'has_new' => $hasNew,
+            'latest_id' => $latestId,
+            'unread_count' => $unreadCount,
+            'last_seen_id' => $effectiveLastSeenId,
+        ]);
+    }
+
+    // Fetch activities
+    $query = \App\Models\ActivityLog::query()->orderByDesc('id');
+    if ($sinceId > 0) {
+        $query->where('id', '>', $sinceId);
+    } else {
+        $query->take($limit);
+    }
+    $activities = $query->get();
+
+    return response()->json([
+        'has_new' => true,
+        'latest_id' => $latestId,
+        'unread_count' => $unreadCount,
+        'last_seen_id' => $effectiveLastSeenId,
+        'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
+            return [
+                'id' => $act->id,
+                'type' => $act->activity_type,
+                'title' => $act->title,
+                'description' => $act->description,
+                'reservation_id' => $act->reservation_id,
+                'actor_name' => $act->actor_name,
+                'actor_role' => $act->actor_role,
+                'staff_id' => $act->staff_id,
+                'is_new' => ($act->id > $effectiveLastSeenId),
+                'created_at_human' => $act->created_at ? $act->created_at->diffForHumans() : 'Recently',
+                'created_at_formatted' => $act->created_at ? $act->created_at->format('M d, Y · g:i A') : '',
+                'created_at_timestamp' => $act->created_at ? $act->created_at->timestamp : 0,
+            ];
+        }),
+    ]);
+})->name('api.activity-notifications');
+
+// Mark Activity Logs as Read specifically for the authenticated Account
+Route::post('/api/activity-notifications/mark-read', function (Request $request) {
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'] ?? '', ['admin', 'staff'])) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $lastSeenId = (int) $request->input('last_seen_id', 0);
+    if ($lastSeenId <= 0) {
+        $lastSeenId = \App\Models\ActivityLog::max('id') ?? 0;
+    }
+
+    $userRole = $user['role'] ?? 'staff';
+    $userId = (int) ($user['id'] ?? 0);
+
+    \App\Models\UserActivityRead::setLastSeenId($userRole, $userId, $lastSeenId);
+
+    return response()->json([
+        'success' => true,
+        'last_seen_id' => $lastSeenId,
+        'unread_count' => 0,
+    ]);
+})->name('api.activity-notifications.mark-read');
+
+// Real-time Event Stream (Server-Sent Events) - waits and pushes ONLY when new activity logs are added
+Route::get('/api/activity-notifications/stream', function (Request $request) {
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'] ?? '', ['admin', 'staff'])) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $userRole = $user['role'] ?? 'staff';
+    $userId = (int) ($user['id'] ?? 0);
+    $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
+
+    $initialLatestId = (int) $request->query('latest_id', 0);
+
+    // Save session to release lock so standard browsing/AJAX requests are never blocked
+    $request->session()->save();
+
+    return response()->stream(function () use ($initialLatestId, $dbLastSeenId) {
+        if (ob_get_level() > 0) ob_end_flush();
+        flush();
+
+        $currentLatestId = $initialLatestId > 0 ? $initialLatestId : (\App\Models\ActivityLog::max('id') ?? 0);
+        $startTime = time();
+        $timeout = 25; // 25s streaming connection per cycle
+
+        while ((time() - $startTime) < $timeout) {
+            if (connection_aborted()) {
+                break;
+            }
+
+            $maxId = \App\Models\ActivityLog::max('id') ?? 0;
+
+            if ($maxId > $currentLatestId) {
+                $newLogs = \App\Models\ActivityLog::where('id', '>', $currentLatestId)
+                    ->orderBy('id', 'asc')
+                    ->get();
+
+                $currentLatestId = $maxId;
+
+                foreach ($newLogs as $act) {
+                    $payload = [
+                        'id' => $act->id,
+                        'type' => $act->activity_type,
+                        'title' => $act->title,
+                        'description' => $act->description,
+                        'reservation_id' => $act->reservation_id,
+                        'actor_name' => $act->actor_name,
+                        'actor_role' => $act->actor_role,
+                        'staff_id' => $act->staff_id,
+                        'is_new' => true,
+                        'created_at_human' => $act->created_at ? $act->created_at->diffForHumans() : 'Recently',
+                        'created_at_formatted' => $act->created_at ? $act->created_at->format('M d, Y · g:i A') : '',
+                        'created_at_timestamp' => $act->created_at ? $act->created_at->timestamp : 0,
+                    ];
+
+                    echo "event: new_activity\n";
+                    echo "data: " . json_encode($payload) . "\n\n";
+                    flush();
+                }
+            }
+
+            usleep(750000); // 0.75s sleep within persistent server connection
+        }
+
+        echo ": keepalive\n\n";
+        flush();
+    }, 200, [
+        'Content-Type' => 'text/event-stream',
+        'Cache-Control' => 'no-cache, no-transform',
+        'Connection' => 'keep-alive',
+        'X-Accel-Buffering' => 'no',
+    ]);
+})->name('api.activity-notifications.stream');
+
 Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
     Route::get('/dashboard', function (Request $request) use ($reservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
@@ -3931,6 +4096,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]);
         }
 
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'check_in',
+            title: 'Visit-Only Guest Checked In',
+            description: "Visit-only reservation #{$reservation->id} ({$reservation->number_of_guests} guests) checked in by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'total_amount' => $entranceTotal,
+                'number_of_guests' => $reservation->number_of_guests,
+                'staff_name' => $staffName,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Check-in successful',
@@ -3957,27 +4138,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
             'companions' => ['nullable', 'array'],
-            // Bulk companions submit empty names (they only carry an age group),
-            // so names must be nullable — but stay required when the other name
-            // IS present for individually-added companions.
+            'companions.*.customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'companions.*.first_name' => ['nullable', 'required_with:companions.*.last_name', 'string', 'max:255'],
             'companions.*.middle_name' => ['nullable', 'string', 'max:255'],
             'companions.*.last_name' => ['nullable', 'required_with:companions.*.first_name', 'string', 'max:255'],
             'companions.*.age' => ['nullable', 'string', 'max:255'],
+            'companions.*.age_group' => ['nullable', 'string', 'max:255'],
             'companions.*.gender' => ['nullable', 'in:Male,Female'],
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
-            // Checkboxes send "on" — Laravel's boolean rule rejects it
             'include_pool' => ['nullable', 'in:on,1,true,0,false'],
         ]);
 
-        // Delete existing reservation guests to replace them
         ReservationGuest::where('reservation_id', $reservation->id)->delete();
 
         $primaryCustomer = null;
 
-        // Handle primary guest - either update existing or create new
         if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
             $primaryGuestData = $data['primary_guest'];
             $primaryFirstName = trim((string) ($primaryGuestData['first_name'] ?? '')) ?: 'Main';
@@ -3987,7 +4164,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             $primaryIsForeigner = (bool) ($primaryGuestData['is_foreigner'] ?? false);
 
-            // If primary_guest_id is provided, update the existing customer
             if ($data['primary_guest_id']) {
                 $primaryCustomer = Customer::find($data['primary_guest_id']);
                 if ($primaryCustomer) {
@@ -4003,7 +4179,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     ]);
                 }
             } else {
-                // Create new customer
                 $primaryCustomer = Customer::firstOrCreate(
                     [
                         'first_name' => $primaryFirstName,
@@ -4033,7 +4208,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        // Create companions
         foreach ($data['companions'] ?? [] as $companionData) {
             $companionFirstName = trim((string) ($companionData['first_name'] ?? '')) ?: 'Companion';
             $companionLastName = trim((string) ($companionData['last_name'] ?? '')) ?: 'Guest';
@@ -4042,9 +4216,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             $companionIsForeigner = (bool) ($companionData['is_foreigner'] ?? false);
 
-            // For bulk companions without email/phone, create a new customer each time
-            if (empty($companionEmail) && empty($companionPhone)) {
-                $companionCustomer = Customer::create([
+            if (! empty($companionData['customer_id'])) {
+                $companionCustomer = Customer::find($companionData['customer_id']);
+                $companionCustomer?->update([
                     'first_name' => $companionFirstName,
                     'middle_name' => $companionData['middle_name'] ?? null,
                     'last_name' => $companionLastName,
@@ -4055,7 +4229,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     'email' => $companionEmail,
                 ]);
             } else {
-                // For companions with email/phone, use firstOrCreate to avoid duplicates
                 $companionCustomer = Customer::firstOrCreate(
                     [
                         'first_name' => $companionFirstName,
@@ -4076,9 +4249,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 );
             }
 
-            // Guard against the (reservation_id, customer_id) unique key — two
-            // companions can resolve to the same customer (e.g. same email).
-            if (! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
+            if ($companionCustomer && ! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
                 ReservationGuest::create([
                     'reservation_id' => $reservation->id,
                     'customer_id' => $companionCustomer->id,
@@ -4087,8 +4258,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        // ── Entrance fee (mirrors the walk-in Add Guest computation) ────────
-        // Adult/child counts from guest ages (12 and below = child).
         $adultCount = 0;
         $childCount = 0;
         if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
@@ -4100,8 +4269,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
         foreach ($data['companions'] ?? [] as $companionData) {
-            // Bulk companions may send an age_group (0-12, 13-17, 18-59, 60+)
-            // instead of an exact age.
             if (($companionData['age_group'] ?? null) === '0-12') {
                 $childCount++;
             } else {
@@ -4114,29 +4281,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        // The entrance period follows the reservation's first amenity (its
-        // pricing_type drives the checkout timer too); without amenities it
-        // falls back to the current park session.
-        $amenityPeriodToEntrance = [
-            'Daytime' => 'daytime',
-            'Daytime Aircon' => 'daytime',
-            'Nighttime' => 'nighttime',
-            'Nighttime Aircon' => 'nighttime',
-            'DayToNight' => 'daytonight',
-            'DayToNight Aircon' => 'daytonight',
-            'NightToDay' => 'daytonight',
-            'NightToDay Aircon' => 'daytonight',
-        ];
+        $effectivePeriod = 'daytime';
         $hasAmenities = $reservation->reservationAmenities()->exists();
-        $firstAmenityPricingType = $reservation->reservationAmenities()->first()?->pricing_type;
-        $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? null;
-
-        if (! $effectivePeriod) {
+        if ($hasAmenities) {
+            $firstAmenityPricingType = $reservation->reservationAmenities()->first()?->pricing_type;
+            $amenityPeriodToEntrance = [
+                'Daytime' => 'daytime',
+                'Daytime Aircon' => 'daytime',
+                'Nighttime' => 'nighttime',
+                'Nighttime Aircon' => 'nighttime',
+                'DayToNight' => 'daytonight',
+                'DayToNight Aircon' => 'daytonight',
+                'NightToDay' => 'daytonight',
+                'NightToDay Aircon' => 'daytonight',
+            ];
+            $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? 'daytime';
+        } else {
             $settingsForSession = \App\Models\ParkSetting::first();
             $currentHour = now()->format('H:i');
             $nighttimeStart = $settingsForSession?->nighttime_start ?? '17:00';
             $nighttimeEnd = $settingsForSession?->nighttime_end ?? '06:00';
-            $effectivePeriod = 'daytime';
             if ($nighttimeStart && $nighttimeEnd) {
                 if ($nighttimeStart <= $nighttimeEnd) {
                     if ($currentHour >= $nighttimeStart && $currentHour <= $nighttimeEnd) $effectivePeriod = 'nighttime';
@@ -4146,66 +4310,54 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        $settings = \App\Models\ParkSetting::first();
-        $dayAdult = (float) ($settings->daytime_adult_entrance_fee ?? 0);
-        $dayChild = (float) ($settings->daytime_child_entrance_fee ?? 0);
-        $nightAdult = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
-        $nightChild = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+        $periodPricingTypeMap = [
+            'daytime' => 'Daytime',
+            'nighttime' => 'Nighttime',
+            'daytonight' => 'DayToNight',
+        ];
+        $storedPricingType = $periodPricingTypeMap[$effectivePeriod] ?? 'Daytime';
 
+        $settings = \App\Models\ParkSetting::first();
         if ($effectivePeriod === 'nighttime') {
-            $adultRate = $nightAdult;
-            $childRate = $nightChild;
-        } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
-            $adultRate = $dayAdult + $nightAdult;
-            $childRate = $dayChild + $nightChild;
+            $adultRate = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+        } elseif ($effectivePeriod === 'daytonight') {
+            $adultRate = (float) ($settings->daytime_adult_entrance_fee ?? 0) + (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0) + (float) ($settings->nighttime_child_entrance_fee ?? 0);
         } else {
-            $adultRate = $dayAdult;
-            $childRate = $dayChild;
+            $adultRate = (float) ($settings->daytime_adult_entrance_fee ?? 0);
+            $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0);
         }
 
-        $entranceTotal = ($adultCount * $adultRate) + ($childCount * $childRate);
+        $entranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
 
-        // Pool access is a one-time fee for the reservation (matches the
-        // walk-in flow).
-        $poolFee = 0;
+        $poolTotal = 0;
         if (! empty($data['include_pool'])) {
             $dayPool = (float) ($settings->day_pool_fee ?? 0);
             $nightPool = (float) ($settings->night_pool_fee ?? 0);
+            $headCount = $adultCount + $childCount;
             if ($effectivePeriod === 'nighttime') {
-                $poolFee = $nightPool;
-            } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
-                $poolFee = $dayPool + $nightPool;
+                $poolTotal = round($headCount * $nightPool, 2);
+            } elseif ($effectivePeriod === 'daytonight') {
+                $poolTotal = round($headCount * ($dayPool + $nightPool), 2);
             } else {
-                $poolFee = $dayPool;
+                $poolTotal = round($headCount * $dayPool, 2);
             }
         }
 
-        $grandTotal = round($entranceTotal + $poolFee, 2);
-
-        // Entrance fee, separated from amenity fees. pricing_type stays null
-        // when the reservation has amenities (the checkout timer references
-        // the amenity rows' pricing_type instead).
-        $entrancePricingType = $hasAmenities ? null : match ($effectivePeriod) {
-            'nighttime' => 'Nighttime',
-            'daytonight' => 'DayToNight',
-            'nighttoday' => 'NightToDay',
-            default => 'Daytime',
-        };
+        $grandTotal = round($entranceTotal + $poolTotal, 2);
 
         \App\Models\ReservationEntranceFee::updateOrCreate(
             ['reservation_id' => $reservation->id],
             [
-                'pricing_type' => $entrancePricingType,
+                'pricing_type' => $hasAmenities ? null : $storedPricingType,
                 'total_amount' => $grandTotal,
-                'pool_fee' => round($poolFee, 2),
+                'pool_fee' => $poolTotal,
                 'adult_count' => $adultCount,
                 'child_count' => $childCount,
             ]
         );
 
-        // Update reservation with check-in date and status. The entrance fee
-        // collected at the counter pays off the remaining balance, so the
-        // reservation becomes fully PAID.
         $oldTotal = (float) $reservation->total_amount;
         $oldPaid = (float) $reservation->amount_paid;
         $reservation->update([
@@ -4217,12 +4369,27 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'payment_status' => 'Paid',
         ]);
 
-        // Keep number_of_guests in sync with the actual guest list
-        // (moved here from the check-ins GET page so reads never mutate).
         $actualGuestCount = $reservation->reservationGuests()->count();
         if ((int) $reservation->number_of_guests !== $actualGuestCount) {
             $reservation->update(['number_of_guests' => $actualGuestCount]);
         }
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'check_in',
+            title: 'Guest Checked In',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}, {$reservation->number_of_guests} guests) checked in by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'booker_name' => $reservation->booker_name,
+                'number_of_guests' => $reservation->number_of_guests,
+                'entrance_fee' => $grandTotal,
+                'staff_name' => $staffName,
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -4435,6 +4602,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $updates['remaining_balance'] = round((float) $reservation->remaining_balance + $newCompanionTotal, 2);
         }
         $reservation->update($updates);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $addedCount = count($data['companions'] ?? []);
+        ActivityLog::log(
+            activityType: 'companion_added',
+            title: 'Companion(s) Added',
+            description: "{$addedCount} companion(s) added to Reservation #{$reservation->id} ({$reservation->booker_name}) by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'added_count' => $addedCount,
+                'new_number_of_guests' => $actualGuestCount,
+                'staff_name' => $staffName,
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -5551,6 +5735,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]);
         }
 
+        $staffName = $user['name'] ?? 'Staff User';
+        $guestCustomer = $reservationGuest->customer;
+        $guestName = trim(($guestCustomer?->first_name ?? '') . ' ' . ($guestCustomer?->last_name ?? '')) ?: 'Guest';
+        $resInfo = $reservation ? " (Reservation #{$reservation->id} - {$reservation->booker_name})" : '';
+        ActivityLog::log(
+            activityType: 'check_out',
+            title: 'Guest Checked Out',
+            description: "{$guestName} checked out{$resInfo} with {$staffName}",
+            reservationId: $reservation?->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'reservation_guest_id' => $reservationGuest->id,
+                'guest_name' => $guestName,
+                'all_guests_checked_out' => $allGuestsCheckedOut,
+                'staff_name' => $staffName,
+            ]
+        );
+
         return response()->json([
             'success' => true,
             'checked_out_at' => $reservationGuest->checked_out_at,
@@ -5655,6 +5859,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'status' => 'Checked Out',
             ]);
         }
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'check_out',
+            title: 'Bulk Companions Checked Out',
+            description: "{$checkedOut} companion(s) checked out of Reservation #{$reservation->id} ({$reservation->booker_name}) with {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'checked_out_count' => $checkedOut,
+                'staff_name' => $staffName,
+            ]
+        );
 
         return response()->json([
             'success' => true,

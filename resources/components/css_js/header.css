@@ -18,19 +18,19 @@
     --dash-header-h: 3.75rem;
     --dash-sidebar-w: 10rem;
 
-    /* Glassmorphism header tokens — Light Mode */
-    --header-bg: rgba(255, 255, 255, 0.42);
-    --header-border: rgba(255, 255, 255, 0.55);
-    --header-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+    /* Solid header tokens — Light Mode */
+    --header-bg: #ffffff;
+    --header-border: #e5e9e6;
+    --header-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 
-    /* Glass tokens — Light Mode (each portal page CSS may refresh them) */
-    --glass-bg: rgba(255, 255, 255, 0.4);
-    --glass-bg-hover: rgba(255, 255, 255, 0.5);
-    --glass-bg-strong: rgba(255, 255, 255, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.5);
-    --glass-border-strong: rgba(255, 255, 255, 0.8);
-    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-    --glass-blur: blur(6px);
+    /* Solid tokens — Light Mode */
+    --glass-bg: #f4f7f5;
+    --glass-bg-hover: #e8efe9;
+    --glass-bg-strong: #ffffff;
+    --glass-border: #dbe3de;
+    --glass-border-strong: #c5d4cb;
+    --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    --glass-blur: none;
 
     /* Shared portal tokens — Light Mode */
     --ink: #0d2c1d;
@@ -72,17 +72,17 @@
     --hp-text-muted: #a8b8a8;
     --dash-border: #1a3d2a;
 
-    /* Glassmorphism header tokens — Dark Mode */
-    --header-bg: rgba(8, 18, 12, 0.42);
-    --header-border: rgba(255, 255, 255, 0.12);
-    --header-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    /* Solid header tokens — Dark Mode */
+    --header-bg: #0d2116;
+    --header-border: #1a3d2a;
+    --header-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 
-    --glass-bg: rgba(0, 0, 0, 0.35);
-    --glass-bg-hover: rgba(0, 0, 0, 0.45);
-    --glass-bg-strong: rgba(0, 0, 0, 0.55);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-border-strong: rgba(255, 255, 255, 0.25);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --glass-bg: #12281c;
+    --glass-bg-hover: #183525;
+    --glass-bg-strong: #0d2116;
+    --glass-border: #1a3d2a;
+    --glass-border-strong: #27573d;
+    --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 
     /* Shared portal tokens — Dark Mode */
     --ink: #eaf0eb;
@@ -146,12 +146,11 @@
     padding: 0 1.5rem;
     height: var(--dash-header-h);
     min-height: var(--dash-header-h);
-    background: var(--header-bg);
+    background: var(--header-bg) !important;
     border-bottom: 1px solid var(--header-border);
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow: var(--header-shadow);
-    backdrop-filter: var(--glass-blur) saturate(1.4);
-    -webkit-backdrop-filter: var(--glass-blur) saturate(1.4);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     transition: background 0.3s ease, border-color 0.3s ease;
     /* Edge-to-edge app bar: cancel the .dash-content gutters so the bar
        spans the full width and sits flush against the very top (matches the
