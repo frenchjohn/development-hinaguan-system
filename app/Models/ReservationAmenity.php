@@ -39,4 +39,9 @@ class ReservationAmenity extends Model
     {
         return $this->belongsTo(Amenity::class, 'amenity_id');
     }
+
+    public function reservation()
+    {
+        return $this->belongsTo(Reservation::class, 'reservation_id');
+    }
 }

@@ -950,10 +950,18 @@ html {
     box-shadow: 0 3px 12px rgba(200, 164, 93, 0.35);
 }
 
-.rp-slot-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+.rp-slot-btn:disabled,
+.rp-slot-btn.is-disabled-slot,
+.rp-subslot-btn:disabled,
+.rp-subslot-btn.is-disabled-slot {
+    opacity: 0.35 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+    transform: none !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: rgba(255, 255, 255, 0.35) !important;
+    box-shadow: none !important;
 }
 
 /* ─────────────────────────── Date picker modal ─────────────────────────── */

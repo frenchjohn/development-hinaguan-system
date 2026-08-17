@@ -14,6 +14,21 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
 
+    @php
+        $settings = $parkSettings ?? \App\Models\ParkSetting::first();
+        $daytimeStart = $settings ? strtotime((string) ($settings->daytime_start ?? '06:00')) : strtotime('06:00');
+        $daytimeEnd = $settings ? strtotime((string) ($settings->daytime_end ?? '18:00')) : strtotime('18:00');
+        $nowSeconds = strtotime(now()->format('H:i'));
+        $isNighttimeNow = !($nowSeconds >= $daytimeStart && $nowSeconds < $daytimeEnd);
+        $todayDate = now()->toDateString();
+    @endphp
+    <script>
+        window.PARK_TODAY_DATE = @json($todayDate);
+        window.PARK_IS_NIGHTTIME_NOW = @json($isNighttimeNow);
+        window.PARK_DAYTIME_START = @json($settings->daytime_start ?? '06:00');
+        window.PARK_DAYTIME_END = @json($settings->daytime_end ?? '18:00');
+    </script>
+
     @vite(['resources/css/app.css', 'resources/css/reservationpage.css', 'resources/css/chatbot.css', 'resources/js/reservationpage.js', 'resources/js/guest_chatbot.js'])
 
 </head>
