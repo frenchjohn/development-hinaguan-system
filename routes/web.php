@@ -3485,13 +3485,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         foreach ($checkedOutGuests as $rg) {
             $customer = $rg->customer;
             if ($customer && $isBulkCompanionName($customer->first_name)) {
-                $groupKey = implode('|', [
-                    (string) $rg->reservation_id,
-                    strtolower(trim((string) $customer->first_name)),
-                    (string) ($customer->age ?? ''),
-                    strtolower((string) ($customer->gender ?? 'N/A')),
-                    $customer->is_foreigner ? 'Foreigner' : 'Filipino',
-                ]);
+                $ageGroup = $bulkAgeGroupLabel($customer->age);
+                $gender = strtolower((string) ($customer->gender ?? 'N/A'));
+                $nationality = $customer->is_foreigner ? 'Foreigner' : 'Filipino';
+                $groupKey = "{$rg->reservation_id}|{$ageGroup}|{$gender}|{$nationality}";
                 $bulkGroupMembers[$groupKey][] = $rg;
             } else {
                 $regularGuestEntries->push($rg);
@@ -3509,14 +3506,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $first = $members[0];
             $customer = $first->customer;
             $sorted = collect($members)->sortByDesc(fn ($m) => $m->checked_out_at)->values();
+            $ageGroup = $bulkAgeGroupLabel($customer->age);
+            $gender = $customer->gender ?? 'N/A';
+            $nationality = $customer->is_foreigner ? 'Foreigner' : 'Filipino';
 
             return [
                 'key' => $key,
                 'reservation_id' => $first->reservation_id,
-                'name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')) ?: 'Bulk Companions',
-                'age_group' => $bulkAgeGroupLabel($customer->age),
-                'gender' => $customer->gender ?? 'N/A',
-                'nationality' => $customer->is_foreigner ? 'Foreigner' : 'Filipino',
+                'name' => 'Bulk Companions',
+                'age_group' => $ageGroup,
+                'gender' => $gender,
+                'nationality' => $nationality,
                 'status' => 'Checked Out',
                 'count' => count($members),
                 'checked_out_at' => $toDateTimeString($sorted->first()?->checked_out_at),
@@ -3688,6 +3688,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
+        $reservationAmounts = $checkedOutReservations->pluck('amount_paid', 'id')->toArray();
+
         return view('staff.staff_records', compact(
             'checkedOutGuests',
             'guestRows',
@@ -3695,6 +3697,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'checkedOutReservations',
             'guestData',
             'reservationData',
+            'reservationAmounts',
             'amenities',
             'guestRecordsCount',
             'completedReservationsCount',
