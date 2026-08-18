@@ -752,12 +752,12 @@ Route::get('/reservation/weather-preview', function (Request $request, WeatherSe
 
     return response()->json([
         'available' => true,
-        'date' => $forecast['date'],
-        'condition' => $forecast['condition'],
-        'icon' => $forecast['icon'],
-        'max_temp_c' => $forecast['max_temp_c'],
-        'min_temp_c' => $forecast['min_temp_c'],
-        'chance_of_rain' => $forecast['chance_of_rain'],
+        'date' => $forecast['date'] ?? null,
+        'condition' => $forecast['condition'] ?? null,
+        'icon' => $forecast['icon'] ?? null,
+        'max_temp_c' => $forecast['max_temp_c'] ?? null,
+        'min_temp_c' => $forecast['min_temp_c'] ?? null,
+        'chance_of_rain' => $forecast['chance_of_rain'] ?? null,
     ]);
 })->name('reservation.weather-preview');
 
@@ -2360,6 +2360,127 @@ Route::get('/api/activity-notifications', function (Request $request) {
         }),
     ]);
 })->name('api.activity-notifications');
+
+// Fetch All Activity Logs with Search & Date Filters for Modal
+Route::get('/api/activity-notifications/all', function (Request $request) {
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'] ?? '', ['admin', 'staff'])) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $userRole = $user['role'] ?? 'staff';
+    $userId = (int) ($user['id'] ?? 0);
+    $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
+
+    $queryLastSeenId = (int) $request->query('last_seen_id', 0);
+    $effectiveLastSeenId = max($dbLastSeenId, $queryLastSeenId);
+
+    $search = trim((string) $request->query('search', ''));
+    $startDate = $request->query('start_date');
+    $endDate = $request->query('end_date');
+    $type = $request->query('type');
+
+    $query = \App\Models\ActivityLog::query()->orderByDesc('id');
+
+    if ($search !== '') {
+        $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%")
+              ->orWhere('actor_name', 'like', "%{$search}%")
+              ->orWhere('activity_type', 'like', "%{$search}%");
+            if (is_numeric($search)) {
+                $q->orWhere('reservation_id', (int) $search);
+            }
+        });
+    }
+
+    if (! empty($type) && $type !== 'all') {
+        if ($type === 'check_in') {
+            $query->whereIn('activity_type', ['check_in', 'checked_in']);
+        } elseif ($type === 'check_out') {
+            $query->whereIn('activity_type', ['check_out', 'amenity_checked_out']);
+        } elseif ($type === 'amenities') {
+            $query->where(function ($q) {
+                $q->where('activity_type', 'like', '%amenity%')
+                  ->orWhere('activity_type', 'stay_extended');
+            });
+        } elseif ($type === 'rules') {
+            $query->where('activity_type', 'like', 'rule_%');
+        } elseif ($type === 'staff') {
+            $query->where('activity_type', 'like', 'staff_%');
+        } else {
+            $query->where('activity_type', $type);
+        }
+    }
+
+    if (! empty($startDate)) {
+        $query->whereDate('created_at', '>=', $startDate);
+    }
+    if (! empty($endDate)) {
+        $query->whereDate('created_at', '<=', $endDate);
+    }
+
+    $activities = $query->take(300)->get();
+
+    return response()->json([
+        'total' => $activities->count(),
+        'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
+            return [
+                'id' => $act->id,
+                'type' => $act->activity_type,
+                'title' => $act->title,
+                'description' => $act->description,
+                'reservation_id' => $act->reservation_id,
+                'actor_name' => $act->actor_name,
+                'actor_role' => $act->actor_role,
+                'staff_id' => $act->staff_id,
+                'is_new' => ($act->id > $effectiveLastSeenId),
+                'created_at_human' => $act->created_at ? $act->created_at->diffForHumans() : 'Recently',
+                'created_at_formatted' => $act->created_at ? $act->created_at->format('M d, Y · g:i A') : '',
+                'created_at_full' => $act->created_at ? $act->created_at->format('l, F j, Y \a\t g:i A') : '',
+                'created_at_date' => $act->created_at ? $act->created_at->format('Y-m-d') : '',
+                'created_at_timestamp' => $act->created_at ? $act->created_at->timestamp : 0,
+            ];
+        }),
+    ]);
+})->name('api.activity-notifications.all');
+
+// Fetch Single Activity Log Details
+Route::get('/api/activity-notifications/{id}', function (Request $request, $id) {
+    $user = $request->session()->get('auth_user');
+    if (! $user || ! in_array($user['role'] ?? '', ['admin', 'staff'])) {
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
+    $userRole = $user['role'] ?? 'staff';
+    $userId = (int) ($user['id'] ?? 0);
+    $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
+
+    $act = \App\Models\ActivityLog::find((int) $id);
+    if (! $act) {
+        return response()->json(['message' => 'Activity not found'], 404);
+    }
+
+    return response()->json([
+        'activity' => [
+            'id' => $act->id,
+            'type' => $act->activity_type,
+            'title' => $act->title,
+            'description' => $act->description,
+            'reservation_id' => $act->reservation_id,
+            'actor_name' => $act->actor_name,
+            'actor_role' => $act->actor_role,
+            'staff_id' => $act->staff_id,
+            'is_new' => ($act->id > $dbLastSeenId),
+            'metadata' => $act->metadata,
+            'created_at_human' => $act->created_at ? $act->created_at->diffForHumans() : 'Recently',
+            'created_at_formatted' => $act->created_at ? $act->created_at->format('M d, Y · g:i A') : '',
+            'created_at_full' => $act->created_at ? $act->created_at->format('l, F j, Y \a\t g:i A') : '',
+            'created_at_date' => $act->created_at ? $act->created_at->format('Y-m-d') : '',
+            'created_at_timestamp' => $act->created_at ? $act->created_at->timestamp : 0,
+        ]
+    ]);
+})->name('api.activity-notifications.detail');
 
 // Mark Activity Logs as Read specifically for the authenticated Account
 Route::post('/api/activity-notifications/mark-read', function (Request $request) {

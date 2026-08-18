@@ -8,27 +8,21 @@
     // Single cached forecast call (forecast.json embeds current conditions).
     $weatherForecast = $weatherService->getMultiDayForecast(3);
     $weatherNow = $weatherForecast['now'] ?? null;
-    $weatherUpdated = null;
-    if (! empty($weatherForecast['updated_at'])) {
-        try {
-            $weatherUpdated = \Carbon\Carbon::parse($weatherForecast['updated_at'])->format('g:i A');
-        } catch (\Throwable $e) {
-            $weatherUpdated = null;
-        }
-    }
+    $weatherUpdated = ! empty($weatherForecast['updated_at']) ? \Carbon\Carbon::parse($weatherForecast['updated_at'])->format('g:i A') : null;
 
     $authUser = session('auth_user');
     $userRole = $authUser['role'] ?? 'guest';
     $userId = (int) ($authUser['id'] ?? 0);
     $userLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
 
+    // Limit dropdown display to 20 notifications
     $initialActivities = \App\Models\ActivityLog::query()->orderByDesc('id')->take(20)->get();
     $latestActivityId = \App\Models\ActivityLog::max('id') ?? 0;
 
     $initialUnreadCount = \App\Models\ActivityLog::where('id', '>', $userLastSeenId)->count();
 @endphp
 
-<header class="sticky top-0 z-[100] flex items-center justify-between gap-4 px-6 h-[3.75rem] min-h-[3.75rem] bg-white dark:bg-[#0d2116] border-b border-[#e5e9e6] dark:border-[#1a3d2a] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out -mt-[1.5rem] -mx-[1.5rem] mb-[1.5rem]">
+<header class="dash-header sticky top-0 z-[100] flex items-center justify-between gap-4 px-6 h-[3.75rem] min-h-[3.75rem] bg-white dark:bg-[#0d2116] border-b border-[#e5e9e6] dark:border-[#1a3d2a] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out -mt-[1.5rem] -mx-[1.5rem] mb-[1.5rem]" data-dash-header>
     <div class="flex items-center gap-4 min-w-0">
         <button type="button" class="inline-flex items-center justify-center w-9 h-9 border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[0.6rem] bg-[#f4f7f5] dark:bg-[#12281c] text-[#0d2c1d] dark:text-white cursor-pointer transition-all duration-200 ease-in-out shrink-0 hover:bg-[#e8efe9] dark:hover:bg-[#183525] hover:border-[#c5d4cb] dark:hover:border-[#27573d] hover:text-[#178a52] dark:hover:text-[#3cac77]" data-dash-sidebar-toggle aria-label="Toggle menu">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-5 h-5">
@@ -50,93 +44,79 @@
             <span class="font-semibold">Park Open</span>
         </div>
 
-        <!-- Weather Forecast Widget -->
-        @if ($weatherNow || $weatherForecast)
+        @if ($weatherNow)
+        <!-- Live Weather Forecast Widget -->
         <div class="col-start-2 relative">
-            <button type="button" class="inline-flex flex-col items-stretch justify-center gap-[0.12rem] w-full py-[0.3rem] px-[0.8rem] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[0.85rem] bg-[#f4f7f5] dark:bg-[#12281c] text-[#0d2c1d] dark:text-white font-['Montserrat',sans-serif] text-[0.78rem] font-semibold cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#e8efe9] dark:hover:bg-[#183525] hover:border-[#c5d4cb] dark:hover:border-[#27573d] hover:text-[#178a52] dark:hover:text-[#c8a45d] [&.is-active]:bg-[#e8efe9] dark:[&.is-active]:bg-[#183525] [&.is-active]:border-[#c5d4cb] dark:[&.is-active]:border-[#27573d] [&.is-active]:text-[#178a52] dark:[&.is-active]:text-[#c8a45d] group/weather" id="weatherBtn" aria-label="Weather forecast" aria-haspopup="true" aria-expanded="false" aria-controls="weatherDropdown">
-                <span class="inline-flex items-center justify-center gap-[0.45rem] whitespace-nowrap">
-                    @if (!empty($weatherNow['icon']))
-                        <img src="{{ $weatherNow['icon'] }}" alt="" class="w-[1.35rem] h-[1.35rem] object-contain shrink-0">
-                    @else
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-[1.35rem] h-[1.35rem] shrink-0"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    @endif
-                    <span class="text-[0.82rem] font-bold">{{ round($weatherNow['temp_c'] ?? 0) }}°</span>
-                    <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] max-w-[10.5rem] overflow-hidden text-ellipsis whitespace-nowrap">{{ $weatherNow['condition'] ?? '—' }}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-[0.9rem] h-[0.9rem] text-[#5a6b5c] dark:text-[#a8b8a8] transition-transform duration-200 ease-in-out shrink-0 group-[.is-active]/weather:rotate-180" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                </span>
-                <span class="text-[0.66rem] font-semibold leading-none tracking-[0.01em] text-[#5a6b5c] dark:text-[#a8b8a8] whitespace-nowrap overflow-hidden text-ellipsis text-center">
-                    <span id="weatherClockDay">{{ now()->format('l') }}</span>
-                    <span class="opacity-60 mx-[0.15rem]" aria-hidden="true">·</span>
-                    <span id="weatherClockTime">{{ now()->format('g:i A') }}</span>
-                </span>
+            <button type="button" class="w-full flex items-center justify-between gap-[0.35rem] py-[0.3rem] px-[0.6rem] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-full bg-[#f4f7f5] dark:bg-[#12281c] text-[#0d2c1d] dark:text-white cursor-pointer transition-all duration-200 ease-in-out hover:bg-[#e8efe9] dark:hover:bg-[#183525] hover:border-[#c5d4cb] dark:hover:border-[#27573d] [&.is-active]:bg-[#e8efe9] dark:[&.is-active]:bg-[#183525] [&.is-active]:border-[#c5d4cb] dark:[&.is-active]:border-[#27573d]" id="weatherBtn" aria-label="Toggle weather forecast" aria-haspopup="true" aria-expanded="false" aria-controls="weatherDropdown">
+                <div class="flex items-center gap-[0.35rem] min-w-0">
+                    <img src="{{ $weatherNow['icon'] }}" alt="{{ $weatherNow['condition'] }}" class="w-[1.1rem] h-[1.1rem] object-contain shrink-0" onerror="this.style.display='none';">
+                    <span class="text-[0.75rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">{{ round($weatherNow['temp_c']) }}°C</span>
+                </div>
+                <div class="flex items-center gap-[0.3rem] text-[#2a6a8f] dark:text-[#6ea9c9] shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-[0.75rem] h-[0.75rem] shrink-0">
+                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                    </svg>
+                    <span class="text-[0.75rem] font-semibold">{{ $weatherNow['chance_of_rain'] ?? 0 }}%</span>
+                </div>
+                <div class="flex items-center gap-[0.25rem] text-[#5a6b5c] dark:text-[#a8b8a8] border-l border-[#dbe3de] dark:border-[#1a3d2a] pl-[0.35rem] shrink-0">
+                    <span class="text-[0.75rem] font-medium" id="weatherClockDay">{{ now()->format('D') }}</span>
+                    <span class="text-[0.75rem] font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]" id="weatherClockTime">{{ now()->format('g:i A') }}</span>
+                </div>
             </button>
 
-            <div class="absolute top-[calc(100%+0.5rem)] right-0 w-[22rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[0.9rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] opacity-0 invisible -translate-y-2 transition-all duration-200 ease-in-out z-[130] overflow-hidden [&.is-open]:opacity-100 [&.is-open]:visible [&.is-open]:translate-y-0" id="weatherDropdown" aria-hidden="true">
-                <div class="flex items-center justify-between gap-3 py-[0.85rem] px-4 border-b border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c]">
-                    <div>
-                        <h3 class="m-0 mb-[0.15rem] text-[0.9rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Weather · {{ $weatherForecast['location'] ?? 'Park' }}</h3>
-                        <p class="m-0 text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">3-day forecast{{ $weatherUpdated ? ' · updated ' . $weatherUpdated : '' }}</p>
+            <div class="absolute top-[calc(100%+0.5rem)] right-0 w-[22.5rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[1rem] shadow-[0_12px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] opacity-0 invisible -translate-y-2 transition-all duration-200 ease-in-out z-[120] overflow-hidden [&.is-open]:opacity-100 [&.is-open]:visible [&.is-open]:translate-y-0" id="weatherDropdown" aria-hidden="true">
+                <div class="flex items-center justify-between py-3 px-4 border-b border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c]">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Park Weather · Jasaan, Misamis Oriental</span>
                     </div>
-                    <button type="button" class="inline-flex items-center justify-center w-7 h-7 border-none rounded-lg bg-transparent text-[#5a6b5c] dark:text-[#a8b8a8] text-[1.15rem] leading-none cursor-pointer shrink-0 transition-all duration-150 ease-in-out hover:bg-[#0d2c1d]/5 hover:text-[#0d2c1d] dark:hover:text-[#f5f5f0]" data-weather-close aria-label="Close weather forecast">&times;</button>
+                    @if ($weatherUpdated)
+                        <span class="text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Updated {{ $weatherUpdated }}</span>
+                    @endif
                 </div>
 
-                @if ($weatherNow)
-                    <div class="flex items-center gap-[0.9rem] p-4 border-b border-[#e5e9e6] dark:border-[#1a3d2a]">
-                        @if (!empty($weatherNow['icon']))
-                            <img src="{{ $weatherNow['icon'] }}" alt="" class="w-12 h-12 object-contain shrink-0">
-                        @endif
-                        <div class="flex flex-col min-w-0">
-                            <span class="font-['Poppins',sans-serif] text-[1.6rem] font-bold leading-[1.1] text-[#0d2c1d] dark:text-[#f5f5f0]">{{ round($weatherNow['temp_c'] ?? 0) }}°</span>
-                            <span class="text-[0.78rem] text-[#5a6b5c] dark:text-[#a8b8a8] leading-[1.35]">{{ $weatherNow['condition'] ?? '—' }}</span>
-                        </div>
-                        <div class="grid gap-[0.4rem] ml-auto shrink-0">
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Feels like</span>
-                                <strong class="text-[0.76rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0] min-w-[3.6rem] text-right">{{ round($weatherNow['feelslike_c'] ?? $weatherNow['temp_c'] ?? 0) }}°</strong>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Humidity</span>
-                                <strong class="text-[0.76rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0] min-w-[3.6rem] text-right">{{ $weatherNow['humidity'] ?? 0 }}%</strong>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <span class="text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Wind</span>
-                                <strong class="text-[0.76rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0] min-w-[3.6rem] text-right">{{ round($weatherNow['wind_kph'] ?? 0) }} km/h</strong>
-                            </div>
+                <div class="grid grid-cols-2 gap-3 p-4 bg-gradient-to-br from-[#f0f7f2] to-[#e4efe7] dark:from-[#112a1c] dark:to-[#091710] border-b border-[#e5e9e6] dark:border-[#1a3d2a]">
+                    <div class="flex items-center gap-3">
+                        <img src="{{ $weatherNow['icon'] }}" alt="{{ $weatherNow['condition'] }}" class="w-12 h-12 object-contain filter drop-shadow-md">
+                        <div>
+                            <div class="text-2xl font-black text-[#0d2c1d] dark:text-[#f5f5f0] leading-none">{{ round($weatherNow['temp_c']) }}°<span class="text-sm font-normal text-[#5a6b5c] dark:text-[#a8b8a8]">C</span></div>
+                            <div class="text-xs font-medium text-[#2f6f45] dark:text-[#8fd0ab] mt-1">{{ $weatherNow['condition'] }}</div>
                         </div>
                     </div>
-                @endif
+                    <div class="grid grid-cols-2 gap-2 text-right">
+                        <div class="bg-white/60 dark:bg-black/20 rounded-lg p-2 flex flex-col justify-center">
+                            <span class="text-[0.65rem] text-[#5a6b5c] dark:text-[#a8b8a8] block">Rain Chance</span>
+                            <span class="text-xs font-bold text-[#2a6a8f] dark:text-[#6ea9c9]">{{ $weatherNow['chance_of_rain'] ?? 0 }}%</span>
+                        </div>
+                        <div class="bg-white/60 dark:bg-black/20 rounded-lg p-2 flex flex-col justify-center">
+                            <span class="text-[0.65rem] text-[#5a6b5c] dark:text-[#a8b8a8] block">Humidity</span>
+                            <span class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $weatherNow['humidity'] ?? 0 }}%</span>
+                        </div>
+                    </div>
+                </div>
 
-                @if ($weatherForecast && count($weatherForecast['days'] ?? []) > 0)
-                    <div class="flex gap-[0.4rem] pt-3 px-4 pb-2 overflow-x-auto" role="tablist" aria-label="Forecast days">
-                        @foreach ($weatherForecast['days'] as $dayIndex => $day)
-                            <button type="button" class="flex-1 min-w-0 flex flex-col gap-[0.2rem] py-[0.45rem] px-[0.6rem] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-[0.6rem] bg-transparent text-[#5a6b5c] dark:text-[#a8b8a8] font-['Montserrat',sans-serif] cursor-pointer transition-all duration-150 ease-in-out hover:border-[#c8a45d] hover:text-[#0d2c1d] dark:hover:text-[#f5f5f0] [&.is-active]:bg-[#c8a45d]/15 [&.is-active]:border-[#c8a45d] [&.is-active]:text-[#1a3d2a] dark:[&.is-active]:text-[#c8a45d] {{ $dayIndex === 0 ? 'is-active' : '' }}" data-weather-tab="{{ $dayIndex }}" role="tab" aria-selected="{{ $dayIndex === 0 ? 'true' : 'false' }}">
-                                <span class="text-[0.72rem] font-bold">{{ $day['day_name'] }}</span>
-                                <span class="inline-flex items-center gap-[0.3rem] text-[0.68rem] font-semibold">
-                                    @if (!empty($day['icon']))
-                                        <img src="{{ $day['icon'] }}" alt="" class="w-4 h-4">
-                                    @endif
-                                    {{ round($day['max_temp_c'] ?? 0) }}° / {{ round($day['min_temp_c'] ?? 0) }}°
-                                </span>
+                @if (! empty($weatherForecast['days']))
+                    <div class="flex border-b border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c]">
+                        @foreach ($weatherForecast['days'] as $i => $day)
+                            <button type="button" class="flex-1 py-2.5 px-2 text-center border-0 bg-transparent cursor-pointer transition-colors border-b-2 border-transparent hover:bg-black/5 dark:hover:bg-white/5 [&.is-active]:border-[var(--hp-green)] [&.is-active]:font-bold [&.is-active]:text-[var(--hp-green)] dark:[&.is-active]:text-[var(--hp-gold)] dark:[&.is-active]:border-[var(--hp-gold)] {{ $i === 0 ? 'is-active' : '' }}" data-weather-tab="{{ $i }}" aria-selected="{{ $i === 0 ? 'true' : 'false' }}">
+                                <span class="block text-[0.7rem] uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">{{ $day['day_label'] ?? $day['day_name'] ?? 'Day' }}</span>
+                                <span class="text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ round($day['max_temp_c'] ?? 0) }}° / {{ round($day['min_temp_c'] ?? 0) }}°</span>
                             </button>
                         @endforeach
                     </div>
 
-                    @foreach ($weatherForecast['days'] as $dayIndex => $day)
-                        <div class="hidden [&.is-active]:block p-4 {{ $dayIndex === 0 ? 'is-active' : '' }}" data-weather-hours="{{ $dayIndex }}">
-                            <div class="flex items-center justify-between mb-3 text-[0.7rem] font-semibold text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Hourly — {{ $day['day_name'] }}</span>
-                                <span class="text-[#2a6a8f] dark:text-[#6ea9c9]">Rain {{ $day['chance_of_rain'] ?? 0 }}%</span>
+                    @foreach ($weatherForecast['days'] as $i => $day)
+                        <div class="p-3 {{ $i !== 0 ? 'hidden' : '' }}" data-weather-hours="{{ $i }}">
+                            <div class="flex items-center justify-between mb-2 px-1">
+                                <span class="text-[0.7rem] font-semibold text-[#5a6b5c] dark:text-[#a8b8a8]">{{ $day['condition'] ?? 'Clear' }}</span>
+                                <span class="text-[0.7rem] font-medium text-[#2a6a8f] dark:text-[#6ea9c9]">🌧 {{ $day['chance_of_rain'] ?? 0 }}% rain</span>
                             </div>
-                            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-white/20 scrollbar-track-transparent">
-                                @forelse ($day['hourly'] as $hour)
-                                    @php
-                                        if ($hour['hour'] % 3 !== 0) continue;
-                                        if ($day['is_today'] && ($hour['is_past'] ?? false)) continue;
-                                    @endphp
-                                    <div class="flex flex-col items-center gap-1 min-w-[3.5rem] p-2 rounded-lg bg-[#f4f7f5] dark:bg-[#12281c] border border-[#dbe3de] dark:border-[#1a3d2a] shrink-0">
-                                        <span class="text-[0.65rem] font-semibold text-[#5a6b5c] dark:text-[#a8b8a8]">{{ $hour['time_label'] }}</span>
-                                        @if (!empty($hour['icon']))
-                                            <img src="{{ $hour['icon'] }}" alt="" class="w-6 h-6 object-contain">
+                            <div class="flex gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                                @forelse (($day['hours'] ?? $day['hourly'] ?? []) as $hour)
+                                    <div class="flex flex-col items-center gap-1 min-w-[3.25rem] py-1.5 px-1 rounded-lg bg-[#f4f7f5] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] shrink-0">
+                                        <span class="text-[0.65rem] font-medium text-[#5a6b5c] dark:text-[#a8b8a8]">{{ $hour['time'] ?? $hour['time_label'] ?? '' }}</span>
+                                        @if (! empty($hour['icon']))
+                                            <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] ?? 'Weather' }}" class="w-5 h-5 object-contain" onerror="this.style.display='none';">
                                         @endif
                                         <span class="text-[0.75rem] font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ round($hour['temp_c'] ?? 0) }}°</span>
                                         <span class="text-[0.6rem] font-semibold text-[#2a6a8f] dark:text-[#6ea9c9]">{{ $hour['chance_of_rain'] ?? 0 }}%</span>
@@ -196,7 +176,7 @@
 
                             $isNew = ($act->id > $userLastSeenId);
                         @endphp
-                        <div class="notif-item flex items-start gap-3 p-3.5 transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#12281c] cursor-pointer" data-activity-id="{{ $act->id }}">
+                        <div class="notif-item flex items-start gap-3 p-3.5 transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#12281c] cursor-pointer" data-activity-id="{{ $act->id }}" data-activity-title="{{ $act->title }}" data-activity-desc="{{ $act->description }}" data-activity-type="{{ $act->activity_type }}" data-actor-name="{{ $act->actor_name }}" data-actor-role="{{ $act->actor_role }}" data-reservation-id="{{ $act->reservation_id }}" data-activity-time="{{ $act->created_at ? $act->created_at->format('l, F j, Y \a\t g:i A') : '' }}" data-activity-relative="{{ $act->created_at ? $act->created_at->diffForHumans() : 'Recently' }}">
                             <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 {{ $iconBg }}">
                                 @if(in_array($type, ['check_in', 'checked_in']))
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/><path stroke-linecap="round" stroke-linejoin="round" d="M18 11l2 2 4-4"/></svg>
@@ -234,13 +214,158 @@
                     @endforelse
                 </div>
 
-                <div class="py-2.5 px-4 bg-[#f8faf9] dark:bg-[#12281c] border-t border-[#e5e9e6] dark:border-[#1a3d2a] text-center">
-                    <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Live activity feed updates in real-time</span>
+                <!-- See all previous notifications footer button -->
+                <div class="py-2.5 px-3 bg-[#f8faf9] dark:bg-[#12281c] border-t border-[#e5e9e6] dark:border-[#1a3d2a]">
+                    <button type="button" id="openAllNotifsModalBtn" class="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 text-[0.75rem] font-bold text-[#178a52] dark:text-[#8fd0ab] hover:bg-[#eaf5ee] dark:hover:bg-[#183525] rounded-lg transition-colors border border-[#c2e2ce]/60 dark:border-[#1e4e33] bg-white dark:bg-[#0d2116] cursor-pointer shadow-sm">
+                        <span>See all previous notifications</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="w-3.5 h-3.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </header>
+
+<!-- ============================================================ -->
+<!-- NOTIFICATION DETAIL MODAL                                    -->
+<!-- ============================================================ -->
+<div id="notifDetailModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-200" aria-hidden="true">
+    <div class="relative w-full max-w-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden transform scale-95 opacity-0 transition-all duration-200 ease-out" id="notifDetailModalCard">
+        <!-- Modal Header -->
+        <div class="flex items-start justify-between p-5 border-b border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c]">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div id="notifDetailIcon" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="min-w-0">
+                    <span id="notifDetailTypeBadge" class="inline-block text-[0.68rem] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 tracking-wider mb-1">Activity</span>
+                    <h3 id="notifDetailTitle" class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-tight truncate">Notification Details</h3>
+                </div>
+            </div>
+            <button type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#5a6b5c] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer" data-close-notif-detail aria-label="Close">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+            <!-- Metadata Grid -->
+            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#e5e9e6] dark:border-[#183525] text-xs">
+                <div>
+                    <span class="block text-[0.7rem] font-semibold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-0.5">Date & Time</span>
+                    <span id="notifDetailTime" class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">-</span>
+                </div>
+                <div>
+                    <span class="block text-[0.7rem] font-semibold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-0.5">Logged By</span>
+                    <span id="notifDetailActor" class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">-</span>
+                </div>
+                <div id="notifDetailResWrap" class="col-span-2 hidden">
+                    <span class="block text-[0.7rem] font-semibold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-0.5">Reservation Reference</span>
+                    <span id="notifDetailRes" class="inline-flex items-center gap-1 font-bold text-[#178a52] dark:text-[#8fd0ab]">-</span>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <h4 class="m-0 text-xs font-bold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-1.5">Activity Description</h4>
+                <div id="notifDetailDesc" class="p-4 rounded-xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-sm text-[#0d2c1d] dark:text-[#f5f5f0] leading-relaxed whitespace-pre-wrap">
+                    -
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-2.5 p-4 border-t border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c]">
+            <button type="button" class="py-2 px-4 text-xs font-semibold text-[#5a6b5c] dark:text-[#a8b8a8] hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors border-0 bg-transparent cursor-pointer" data-close-notif-detail>Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- ALL PREVIOUS NOTIFICATIONS MODAL (Search & Date Filters)      -->
+<!-- ============================================================ -->
+<div id="allNotifsModal" class="fixed inset-0 z-[190] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all duration-200" aria-hidden="true">
+    <div class="relative w-full max-w-3xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col max-h-[88vh] transform scale-95 opacity-0 transition-all duration-200 ease-out" id="allNotifsModalCard">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between py-4 px-6 border-b border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c] shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-tight">All Activity Notifications</h3>
+                    <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Search, filter, and review complete activity log history</p>
+                </div>
+            </div>
+            <button type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#5a6b5c] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors border-0 bg-transparent cursor-pointer" data-close-all-notifs aria-label="Close">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Filter Controls Bar -->
+        <div class="p-4 bg-[#f4f7f5] dark:bg-[#0e2418] border-b border-[#e5e9e6] dark:border-[#1a3d2a] shrink-0 space-y-3">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <!-- Search Bar -->
+                <div class="relative flex-1">
+                    <svg class="w-4 h-4 text-[#6e7c73] dark:text-[#7f9486] absolute left-3 top-1/2 -translate-y-1/2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input type="text" id="allNotifsSearchInput" placeholder="Search title, details, staff name, reservation #..." class="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-[#0d2c1d] dark:text-[#f5f5f0] placeholder-[#889b8a] dark:placeholder-[#6e7c73] focus:outline-none focus:ring-2 focus:ring-[#178a52] transition-all shadow-sm">
+                    <button type="button" id="allNotifsSearchClear" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-[#889b8a] hover:text-[#0d2c1d] dark:hover:text-white border-0 bg-transparent cursor-pointer p-1">✕</button>
+                </div>
+
+                <!-- Activity Type Filter -->
+                <select id="allNotifsTypeSelect" class="py-2 px-3 text-xs rounded-xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-[#0d2c1d] dark:text-[#f5f5f0] focus:outline-none focus:ring-2 focus:ring-[#178a52] cursor-pointer shadow-sm">
+                    <option value="all">All Activity Types</option>
+                    <option value="check_in">Check-Ins</option>
+                    <option value="check_out">Check-Outs</option>
+                    <option value="amenities">Amenities & Extensions</option>
+                    <option value="staff">Staff Actions</option>
+                    <option value="rules">Rules & System</option>
+                </select>
+
+                <!-- Date Range Preset Filter -->
+                <select id="allNotifsDatePreset" class="py-2 px-3 text-xs rounded-xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-[#0d2c1d] dark:text-[#f5f5f0] focus:outline-none focus:ring-2 focus:ring-[#178a52] cursor-pointer shadow-sm">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                    <option value="custom">Custom Date Range</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs (shown only when 'custom' selected) -->
+            <div id="allNotifsCustomDateWrap" class="hidden flex items-center gap-2 pt-1">
+                <span class="text-[0.72rem] font-semibold text-[#5a6b5c] dark:text-[#a8b8a8]">From:</span>
+                <input type="date" id="allNotifsStartDate" class="py-1.5 px-2.5 text-xs rounded-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm">
+                <span class="text-[0.72rem] font-semibold text-[#5a6b5c] dark:text-[#a8b8a8]">To:</span>
+                <input type="date" id="allNotifsEndDate" class="py-1.5 px-2.5 text-xs rounded-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm">
+                <button type="button" id="allNotifsApplyCustomDate" class="py-1.5 px-3 text-xs font-semibold rounded-lg bg-[#178a52] text-white hover:bg-[#126e41] border-0 cursor-pointer transition-colors shadow-sm">Apply</button>
+            </div>
+        </div>
+
+        <!-- Scrollable Notifications List -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-2.5 min-h-[320px] max-h-[50vh]" id="allNotifsListContainer">
+            <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-between py-3 px-6 border-t border-[#e5e9e6] dark:border-[#1a3d2a] bg-[#f8faf9] dark:bg-[#12281c] shrink-0 text-xs">
+            <span id="allNotifsCountLabel" class="text-[#5a6b5c] dark:text-[#a8b8a8] font-medium">Loading notifications…</span>
+            <button type="button" class="py-2 px-4 text-xs font-semibold text-[#0d2c1d] dark:text-white bg-white dark:bg-[#0d2116] hover:bg-[#e8efe9] dark:hover:bg-[#183525] border border-[#dbe3de] dark:border-[#1a3d2a] rounded-lg transition-colors cursor-pointer" data-close-all-notifs>Close</button>
+        </div>
+    </div>
+</div>
+
 <style>
 @keyframes statusPulse {
     0%, 100% { transform: scale(1); opacity: 1; }

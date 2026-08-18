@@ -1,8 +1,5 @@
 // ============================================================
-// Sidebar navigation is always instant. (A previous "Processing
-// still in progress" guard modal was removed — it appeared even
-// when nothing real was running and confused users. In-flight
-// operations show their own button-level loading states.)
+// Sidebar navigation is always instant.
 // ============================================================
 window.AppBusy = {
     get isBusy() { return false; },
@@ -27,7 +24,6 @@ window.addEventListener('DOMContentLoaded', function () {
         const themeText = document.querySelector('.dash-sidebar__theme-text');
         if (themeText) {
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            // Show the current mode name
             themeText.textContent = currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
         }
     }
@@ -46,10 +42,8 @@ window.addEventListener('DOMContentLoaded', function () {
         const isMobile = window.innerWidth <= 992;
 
         if (isMobile) {
-            // Mobile: toggle sidebar-open class
             dashLayout.classList.toggle('sidebar-open');
         } else {
-            // Desktop: toggle sidebar-collapsed class
             dashLayout.classList.toggle('sidebar-collapsed');
         }
         syncOverlay();
@@ -66,9 +60,7 @@ window.addEventListener('DOMContentLoaded', function () {
         syncOverlay();
     }
 
-    // Show/hide the mobile backdrop that sits behind the open sidebar. The
-    // Tailwind sidebar uses [data-sidebar-overlay] (toggled via .is-open),
-    // the classic theme uses .dash-sidebar__overlay (CSS-driven) — handle both.
+    // Show/hide the mobile backdrop that sits behind the open sidebar.
     function syncOverlay() {
         const overlay = document.querySelector('.dash-sidebar__overlay, [data-sidebar-overlay]');
         if (!overlay) return;
@@ -77,9 +69,7 @@ window.addEventListener('DOMContentLoaded', function () {
         overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
     }
 
-    // Sidebar toggle + overlay clicks are delegated at the document level so
-    // they keep working after SPA page swaps re-render the header (and its
-    // toggle button), and so no other script can fight this handler.
+    // Sidebar toggle + overlay clicks are delegated at the document level
     document.addEventListener('click', (e) => {
         if (e.target.closest('[data-dash-sidebar-toggle]')) {
             toggleSidebar(e);
@@ -109,7 +99,6 @@ window.addEventListener('DOMContentLoaded', function () {
                 } else {
                     dropdown.classList.add('is-open');
                     userToggle.classList.add('is-open');
-                    // Update theme text when dropdown opens
                     updateThemeText();
                 }
             }
@@ -143,7 +132,6 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Handle window resize
     window.addEventListener('resize', () => {
-        // Reset classes when switching between mobile/desktop
         if (window.innerWidth > 992) {
             dashLayout.classList.remove('sidebar-open');
         } else {
@@ -175,16 +163,12 @@ window.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Handle logout confirm button with loading effect
     if (logoutConfirmSubmitBtn) {
-        logoutConfirmSubmitBtn.addEventListener('click', (e) => {
-            // Add loading state
+        logoutConfirmSubmitBtn.addEventListener('click', () => {
             logoutConfirmSubmitBtn.classList.add('is-loading');
-            // The form will submit naturally after this
         });
     }
 
-    // Close modal when clicking backdrop
     if (logoutModal) {
         const backdrop = logoutModal.querySelector('.logout-modal__backdrop');
         if (backdrop) {
@@ -194,7 +178,6 @@ window.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Close modal on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && logoutModal.classList.contains('is-open')) {
                 logoutModal.classList.remove('is-open');
@@ -204,12 +187,9 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     // ============================================================
-    // INSTANT NAVIGATION (SPA-style page swapping)
-    // Replaces the old full-page reload: fetch the target page,
-    // swap only the <main> content, load its CSS/JS, re-run init.
+    // INSTANT NAVIGATION (SPA-style page swapping with 0ms DOM swap)
     // ============================================================
 
-    // Map dashboard URL paths to their registered page init functions.
     const SPA_PAGE_KEYS = {
         '/staff/dashboard': 'staff_dashboard',
         '/staff/reservations': 'staff_reservations',
@@ -230,8 +210,7 @@ window.addEventListener('DOMContentLoaded', function () {
         Array.from(document.querySelectorAll('script[src]')).map(s => s.src)
     );
 
-    // Mark the current page's inline <style> blocks and body-level data scripts so
-    // they can be swapped out on later navigations.
+    // Mark current inline styles and body scripts
     document.querySelectorAll('head > style').forEach(style => {
         style.setAttribute('data-page-style', '');
     });
@@ -239,12 +218,18 @@ window.addEventListener('DOMContentLoaded', function () {
         script.setAttribute('data-spa-data', '');
     });
 
-    // Preloaded page HTML, keyed by pathname, so navigation is a pure DOM swap.
+    // In-memory DOM cache for instant 0ms transitions
     const pageCache = new Map();
+    const inFlightFetches = new Map();
+
+    // Cache the initial document immediately
+    const initialDoc = document.cloneNode(true);
+    pageCache.set(window.location.pathname, initialDoc);
 
     // Inline <script> tags inserted via innerHTML never execute, so recreate them.
     function rehydrateScripts(container) {
         container.querySelectorAll('script:not([src])').forEach((oldScript) => {
+            if (oldScript.closest('header, .dash-header, [data-dash-header]')) return;
             const fresh = document.createElement('script');
             fresh.textContent = oldScript.textContent;
             oldScript.replaceWith(fresh);
@@ -253,7 +238,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Bring over the new page's stylesheets, inline styles, and JS bundles.
     async function loadPageAssets(doc) {
-        // Stylesheet links (each page ships its own CSS bundle)
+        // Stylesheet links
         doc.querySelectorAll('head link[rel="stylesheet"]').forEach(link => {
             const href = link.getAttribute('href');
             if (!href || document.querySelector('head link[rel="stylesheet"][href="' + href + '"]')) return;
@@ -272,7 +257,7 @@ window.addEventListener('DOMContentLoaded', function () {
             document.head.appendChild(fresh);
         });
 
-        // Page JS bundles (only the ones not already loaded)
+        // Page JS bundles
         const missing = Array.from(doc.querySelectorAll('head script[type="module"][src]'))
             .map(s => s.getAttribute('src'))
             .filter(src => src && !loadedScriptSrcs.has(new URL(src, window.location.origin).href));
@@ -288,8 +273,7 @@ window.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Refresh the page-data scripts at the end of <body>
-    // (e.g. window.staffReservationData = @json(...)).
+    // Refresh page data scripts
     function syncBodyDataScripts(doc) {
         document.body.querySelectorAll('script[data-spa-data]').forEach(s => s.remove());
         doc.querySelectorAll('body > script:not([src])').forEach(script => {
@@ -302,7 +286,6 @@ window.addEventListener('DOMContentLoaded', function () {
 
     function updateActiveLink(url) {
         const targetPath = new URL(url, window.location.origin).pathname;
-        // Staff sidebar links use .nav-link (Tailwind), admin uses .dash-sidebar__link.
         document.querySelectorAll('.dash-sidebar__link, #dashSidebar .nav-link').forEach(link => {
             const href = link.getAttribute('href');
             if (!href) return;
@@ -312,10 +295,6 @@ window.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Gentle entrance for dashboard content on initial load and SPA swaps.
-    // A single, quick fade-up of everything BELOW the header — the header bar
-    // itself stays perfectly still so it never looks like it "moves" when
-    // switching pages. Inline styles are cleared once the entrance finishes.
     let entranceTimer = null;
     function runContentEntrance() {
         if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -323,36 +302,29 @@ window.addEventListener('DOMContentLoaded', function () {
         const main = document.querySelector('main.dash-content');
         if (!main) return;
 
-        // Fade every visible direct child except the header (the app bar stays
-        // put). Fixed-position modals and hidden panels (offsetParent null) are
-        // excluded so the entrance never touches their inline styles.
-        const header = main.querySelector(':scope > .dash-header');
+        const header = main.querySelector(':scope > header, :scope > .dash-header, [data-dash-header]');
         const targets = Array.from(main.children).filter((el) => el !== header && el.offsetParent !== null);
         if (!targets.length) return;
 
-        // Cancel any still-running entrance from a previous navigation so a
-        // fast double-click can't leave a stale timer that snaps content visible.
         clearTimeout(entranceTimer);
 
         const apply = (style, value) => targets.forEach((el) => { el.style[style] = value; });
         apply('opacity', '0');
-        apply('transform', 'translateY(10px)');
-        apply('transition', 'opacity 0.25s ease-out, transform 0.25s ease-out');
+        apply('transform', 'translateY(6px)');
+        apply('transition', 'opacity 0.15s ease-out, transform 0.15s ease-out');
 
         requestAnimationFrame(() => {
             apply('opacity', '1');
             apply('transform', 'none');
         });
 
-        // Clearing the inline styles restores the stylesheet values, so
-        // content can never stay hidden.
         entranceTimer = setTimeout(() => {
             targets.forEach((el) => {
                 el.style.transition = '';
                 el.style.opacity = '';
                 el.style.transform = '';
             });
-        }, 380);
+        }, 200);
     }
 
     let navToken = 0;
@@ -362,83 +334,114 @@ window.addEventListener('DOMContentLoaded', function () {
         const currentPath = new URL(window.location.href).pathname;
         if (targetPath === currentPath) return;
 
-        // Highlight the clicked link IMMEDIATELY — before anything else — so the
-        // sidebar responds to the click the instant it happens.
+        // Highlight clicked link immediately for instant feedback
         updateActiveLink(url);
 
         const token = ++navToken;
 
         try {
-            // Serve from the warm cache first (populated by preload below) so a
-            // click is a pure DOM swap with zero network wait.
             let doc = pageCache.get(targetPath) || null;
             const servedFromCache = !!doc;
+
+            if (!doc) {
+                showNavBar();
+                // Preload / wait on existing in-flight fetch
+                await preloadPage(url);
+                doc = pageCache.get(targetPath) || null;
+            }
+
             let newMain = doc ? doc.querySelector('main.dash-content') : null;
 
             if (!newMain) {
-                // Give the click's fetch the single-threaded server: pause the
-                // warm-up queue while this navigation's page is loading, and
-                // show a slim progress bar so the wait isn't a dead screen.
-                prepare.paused = true;
-                showNavBar();
-                const response = await fetch(url, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    __skipBusy: true,
-                });
-                if (!response.ok) throw new Error('Bad status ' + response.status);
-
-                const html = await response.text();
-                if (token !== navToken) return; // a newer navigation superseded this one
-
-                doc = new DOMParser().parseFromString(html, 'text/html');
-                newMain = doc.querySelector('main.dash-content');
-                if (!newMain) {
-                    // Not a dashboard page (e.g. session expired) — do a normal load.
-                    window.location.href = url;
-                    return;
-                }
-                // Remember it so a revisit is instant.
-                pageCache.set(targetPath, doc);
+                window.location.href = url;
+                return;
             }
+
+            if (token !== navToken) return;
 
             const pageKey = SPA_PAGE_KEYS[targetPath] || null;
             const main = document.querySelector('main.dash-content');
+            if (!main) {
+                window.location.href = url;
+                return;
+            }
 
-            // Let the current page clean up (e.g. stop the QR camera) before swapping.
+            // Cleanup event for camera or charts
             window.dispatchEvent(new CustomEvent('spa:leaving'));
 
-            // Load the new page's CSS/JS before swapping content. In the preloaded
-            // path this is usually a no-op because the assets are already loaded.
+            // Load assets
             await loadPageAssets(doc);
             if (token !== navToken) return;
 
-            // Swap content
-            main.innerHTML = newMain.innerHTML;
+            // Persistent Header DOM swap: keep header intact, update only page title & body content
+            const currentHeader = main.querySelector(':scope > header, :scope > .dash-header, [data-dash-header]');
+            const newHeader = newMain.querySelector(':scope > header, :scope > .dash-header, [data-dash-header]');
+
+            if (currentHeader && newHeader) {
+                const newH1 = newHeader.querySelector('h1');
+                const newP = newHeader.querySelector('p');
+                const currentH1 = currentHeader.querySelector('h1');
+                const currentP = currentHeader.querySelector('p');
+
+                if (currentH1 && newH1) {
+                    currentH1.textContent = newH1.textContent;
+                }
+                if (currentP) {
+                    if (newP && newP.textContent.trim()) {
+                        currentP.textContent = newP.textContent;
+                        currentP.style.display = '';
+                    } else {
+                        currentP.textContent = '';
+                        currentP.style.display = 'none';
+                    }
+                }
+
+                // Remove only non-header elements from current main
+                const toRemove = Array.from(main.children).filter(el => el !== currentHeader);
+                toRemove.forEach(el => el.remove());
+
+                // Append all non-header elements from newMain
+                const toAdd = Array.from(newMain.children).filter(el => el !== newHeader);
+                toAdd.forEach(el => {
+                    main.appendChild(el.cloneNode(true));
+                });
+            } else {
+                main.innerHTML = newMain.innerHTML;
+            }
             finishNavBar();
 
-            // Swap body classes (for CSS scoping like .s-das-page, which fixes modals)
+            // Swap body classes
             document.body.className = doc.body.className;
 
             // Update title
             const title = doc.querySelector('title');
             if (title) document.title = title.textContent;
 
-            // Re-run inline scripts inside main (header clock, page init helpers)
+            // Re-run inline scripts inside main
             rehydrateScripts(main);
 
-            // Refresh body-level data scripts
+            // Refresh body data scripts
             syncBodyDataScripts(doc);
 
-            // Swap body-level overlays (modals kept outside <main>)
+            // Swap overlays/modals
             syncBodyOverlays(doc);
 
-            // Run the page's init
+            // Run page init immediately
             if (pageKey && window.AppPage && typeof window.AppPage[pageKey] === 'function') {
-                window.AppPage[pageKey]();
+                try {
+                    window.AppPage[pageKey]();
+                } catch (e) {
+                    console.debug('[instant-nav] page init error', e);
+                }
             } else if (pageKey) {
-                // Page's bundle failed to load — fall back to a normal navigation.
                 window.location.href = url;
                 return;
+            }
+
+            // Sync notification UI with current account's read state
+            window.dispatchEvent(new CustomEvent('spa:navigated'));
+            if (typeof window.syncNotificationUI === 'function') {
+                window.syncNotificationUI();
             }
 
             // History state
@@ -446,44 +449,29 @@ window.addEventListener('DOMContentLoaded', function () {
 
             // Close mobile sidebar and scroll to top
             if (window.innerWidth <= 992) closeSidebar();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
 
-            // Gentle entrance for the swapped content
+            // Micro entrance
             runContentEntrance();
 
-            // If this page was served from cache, refresh just that one page in
-            // the background so the cached copy is current for the next visit.
-            // (Refreshing ALL cached pages after every navigation floods the
-            // single-threaded PHP dev server and makes real clicks queue behind
-            // background fetches.)
+            // Refresh in background quietly
             if (servedFromCache) {
-                setTimeout(() => preloadPage(targetPath, true), 400);
+                setTimeout(() => preloadPage(targetPath, true), 500);
             }
-
-            // Resume (or kick off) the warm-up queue for the remaining pages.
-            startPrepare();
         } catch (err) {
-            console.warn('[instant-nav] failed, falling back to full navigation', err);
+            console.warn('[instant-nav] fallback to hard navigation', err);
             window.location.href = url;
         }
     }
 
-    // Bring the new page's body-level overlays (e.g. #userModal on admin/users,
-    // #amenityModal on admin/amenities, #staffOtpModal on staff/settings) into the
-    // live document. The SPA only swaps <main>, but a few pages keep modals at the
-    // <body> level — without this they silently disappear after SPA navigation and
-    // their open buttons throw errors.
     function syncBodyOverlays(doc) {
-        const keepSelector = '.dash-layout, .chatbot-widget';
+        const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown';
 
-        // Drop leftover page-level overlays left behind by the previous page.
         document.body.querySelectorAll('body > .modal, body > [id$="odal"]').forEach((el) => {
             if (el.matches(keepSelector)) return;
             el.remove();
         });
 
-        // Bring in the new page's body-level overlays (cloned so the cached
-        // document keeps its own copy for future revisits).
         Array.from(doc.body.children).forEach((el) => {
             if (el.matches('script, style, link, meta')) return;
             if (el.matches(keepSelector)) return;
@@ -495,9 +483,7 @@ window.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Intercept sidebar navigation links (dash-sidebar__link, profile dropdown
-    // links and any [data-page-transition] links) so they navigate instantly.
-    // Regular in-content links are left alone to keep their normal behavior.
+    // Intercept sidebar navigation clicks
     document.addEventListener('click', (e) => {
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
@@ -505,7 +491,7 @@ window.addEventListener('DOMContentLoaded', function () {
         if (!anchor) return;
         if (anchor.target === '_blank' || anchor.hasAttribute('download')) return;
 
-        const isNavLink = anchor.matches('.dash-sidebar__link, .dash-sidebar__profile-item, [data-page-transition]');
+        const isNavLink = anchor.matches('.dash-sidebar__link, .dash-sidebar__profile-item, [data-page-transition], #dashSidebar a');
         if (!isNavLink) return;
 
         const href = anchor.getAttribute('href');
@@ -522,187 +508,159 @@ window.addEventListener('DOMContentLoaded', function () {
         navigateTo(url.href, true);
     });
 
-    // Back/forward buttons
+    // Back/forward browser buttons
     window.addEventListener('popstate', () => {
         navigateTo(window.location.href, false);
     });
 
-    // ------------------------------------------------------------
-    // Background preloading — this is what makes clicks feel instant.
-    // The hovered page is fetched (and its JS/CSS bundles loaded) ahead of
-    // time, so clicking a sidebar item is a pure DOM swap. Only the hovered
-    // page is preloaded: bulk-preloading every dashboard page at once floods
-    // the single-threaded PHP dev server and real clicks queue behind it.
-    // ------------------------------------------------------------
-
-    // Fetch + cache a page's HTML and load its JS/CSS bundles ahead of time.
-    // Pass force=true to replace an existing cached copy (used after navigation
-    // so revisits get fresh data).
+    // Fetch + cache a page's HTML in memory with in-flight deduplication
     async function preloadPage(url, force = false) {
         try {
             const targetPath = new URL(url, window.location.origin).pathname;
             if (!force && pageCache.has(targetPath)) return true;
 
-            const response = await fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                __skipBusy: true,
-            });
-            if (!response.ok) return false;
+            if (inFlightFetches.has(targetPath)) {
+                return await inFlightFetches.get(targetPath);
+            }
 
-            const html = await response.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            if (!doc.querySelector('main.dash-content')) return false; // not a dashboard page (e.g. session expired)
+            const fetchPromise = (async () => {
+                try {
+                    const response = await fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        __skipBusy: true,
+                    });
+                    if (!response.ok) return false;
 
-            pageCache.set(targetPath, doc);
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    if (!doc.querySelector('main.dash-content')) return false;
 
-            // Load the page's JS bundle(s) and CSS in the background too, so the
-            // swap + init runs with zero remaining work at click time.
-            await loadPageAssets(doc);
-            return true;
+                    pageCache.set(targetPath, doc);
+                    await loadPageAssets(doc);
+                    return true;
+                } catch (err) {
+                    return false;
+                } finally {
+                    inFlightFetches.delete(targetPath);
+                }
+            })();
+
+            inFlightFetches.set(targetPath, fetchPromise);
+            return await fetchPromise;
         } catch (err) {
-            /* silent — preloading is best-effort */
             return false;
         }
     }
 
-    // Only dashboard pages are preloadable (skip the 'Back to Website' link).
     function isDashboardHref(href) {
         return href && (href.includes('/staff/') || href.includes('/admin/'));
     }
 
-    // Preload the hovered page immediately so the next click is already cached.
-    // [data-page-transition] covers the Tailwind staff sidebar links (they carry
-    // that attribute but not the classic .dash-sidebar__link class).
-    document.addEventListener('mouseover', (e) => {
-        const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href], [data-page-transition][href]');
+    // Immediate preload on hover/touch
+    const handlePreloadTrigger = (e) => {
+        const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href], [data-page-transition][href], #dashSidebar a[href]');
         if (!anchor || anchor.dataset.preloaded) return;
         anchor.dataset.preloaded = '1';
         const href = anchor.getAttribute('href');
         if (!isDashboardHref(href)) return;
         preloadPage(href);
-    });
-
-    // ------------------------------------------------------------
-    // Warm-up preload — "Preparing pages…"
-    // After a full page load, fetch every sidebar page in the
-    // background (one at a time, with a pause between requests) so
-    // the FIRST click on each page is a pure DOM swap — you never
-    // need to visit a page once to make it instant. A sequential
-    // queue with gaps never floods the single-threaded PHP dev
-    // server the way a parallel storm did. A small pill in the
-    // corner shows progress while the pages are being prepared.
-    // ------------------------------------------------------------
-    const PREPARE_DELAY_MS = 1500; // wait for the page to settle first
-    const PREPARE_GAP_MS = 500;    // gap between background requests
-
-    const prepare = {
-        active: false, // a warm-up run is in progress
-        paused: false, // temporarily halted (a real navigation is loading)
-        urls: [],
     };
 
-    function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+    document.addEventListener('pointerenter', handlePreloadTrigger, true);
+    document.addEventListener('touchstart', handlePreloadTrigger, { passive: true });
 
-    function prepareToast() {
+    // ------------------------------------------------------------
+    // Preparing Pages Indicator & Fast Background Preloader
+    // ------------------------------------------------------------
+    function getPrepareToast() {
         let toast = document.getElementById('spaPrepareToast');
         if (toast) return toast;
         toast = document.createElement('div');
         toast.id = 'spaPrepareToast';
-        toast.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;align-items:center;gap:8px;background:rgba(15,23,42,0.88);color:#fff;font:600 12px/1.4 Poppins,system-ui,sans-serif;padding:8px 14px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,0.28);opacity:0;transition:opacity .3s ease;pointer-events:none;';
-        const spin = document.createElement('span');
-        spin.style.cssText = 'width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;animation:spaPrepareSpin .7s linear infinite;';
-        const label = document.createElement('span');
-        label.id = 'spaPrepareLabel';
-        toast.appendChild(spin);
-        toast.appendChild(label);
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;align-items:center;gap:8px;background:rgba(13,44,29,0.92);backdrop-filter:blur(10px);color:#f5f5f0;font:600 12px/1.4 "Poppins",system-ui,sans-serif;padding:8px 16px;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.15);opacity:0;transition:opacity .3s cubic-bezier(0.4,0,0.2,1),transform .3s cubic-bezier(0.4,0,0.2,1);transform:translateY(10px);pointer-events:none;';
+        
+        toast.innerHTML = `
+            <span id="spaPrepareIcon" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;">
+                <span style="width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spaSpin 0.7s linear infinite;"></span>
+            </span>
+            <span id="spaPrepareLabel">Preparing pages…</span>
+        `;
         document.body.appendChild(toast);
-        if (!document.getElementById('spaPrepareKeyframes')) {
+
+        if (!document.getElementById('spaSpinKeyframes')) {
             const style = document.createElement('style');
-            style.id = 'spaPrepareKeyframes';
-            style.textContent = '@keyframes spaPrepareSpin { to { transform: rotate(360deg); } }';
+            style.id = 'spaSpinKeyframes';
+            style.textContent = '@keyframes spaSpin { to { transform: rotate(360deg); } }';
             document.head.appendChild(style);
         }
         return toast;
     }
 
-    function showPrepareToast() {
-        prepareToast().style.opacity = '1';
-    }
-
-    function updatePrepareToast() {
-        const done = prepare.urls.filter((p) => pageCache.has(p)).length;
+    function showPrepareProgress(done, total) {
+        const toast = getPrepareToast();
         const label = document.getElementById('spaPrepareLabel');
-        if (label) label.textContent = 'Preparing pages… ' + done + '/' + prepare.urls.length;
+        const icon = document.getElementById('spaPrepareIcon');
+        if (label) label.textContent = `Preparing pages… ${done}/${total}`;
+        if (icon) icon.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spaSpin 0.7s linear infinite;"></span>';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
     }
 
-    function hidePrepareToast() {
-        const toast = document.getElementById('spaPrepareToast');
-        if (toast) toast.style.opacity = '0';
+    function showPrepareDone() {
+        const toast = getPrepareToast();
+        const label = document.getElementById('spaPrepareLabel');
+        const icon = document.getElementById('spaPrepareIcon');
+        if (label) label.textContent = 'Pages ready ✓';
+        if (icon) icon.innerHTML = '<svg style="width:14px;height:14px;color:#4ade80;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+        }, 1500);
     }
 
-    // Every dashboard URL reachable from the current sidebar (staff + admin).
-    function sidebarPageUrls() {
-        const paths = [];
-        document.querySelectorAll('a[href]').forEach((a) => {
-            const href = a.getAttribute('href');
-            if (!isDashboardHref(href)) return;
-            let url;
-            try { url = new URL(href, window.location.origin); } catch (e) { return; }
-            if (url.origin !== window.location.origin) return;
-            if (!paths.includes(url.pathname)) paths.push(url.pathname);
-        });
-        return paths;
-    }
+    // Fast parallel batch preloader
+    async function prefetchSidebarPages() {
+        const currentPath = window.location.pathname;
+        const links = Array.from(document.querySelectorAll('#dashSidebar a[href], [data-page-transition][href]'))
+            .map(a => a.getAttribute('href'))
+            .filter(href => isDashboardHref(href))
+            .map(href => new URL(href, window.location.origin).pathname)
+            .filter((path, idx, arr) => path !== currentPath && arr.indexOf(path) === idx);
 
-    function startPrepare() {
-        if (prepare.active) {
-            // A navigation just finished — unpause and let the queue continue.
-            prepare.paused = false;
-            return;
-        }
-        const currentPath = new URL(window.location.href).pathname;
-        const urls = sidebarPageUrls().filter((p) => p !== currentPath);
-        if (!urls.length) return;
-        prepare.urls = urls;
-        // Everything is already cached (e.g. right after a navigation) — stay silent.
-        if (urls.every((p) => pageCache.has(p))) return;
-        prepare.active = true;
-        prepare.paused = false;
-        showPrepareToast();
-        updatePrepareToast();
-        runPrepare();
-    }
+        if (!links.length) return;
 
-    async function runPrepare() {
-        const tried = new Set();
-        while (prepare.active) {
-            if (prepare.paused) {
-                await sleep(200);
-                continue;
+        const total = links.length;
+        let done = links.filter(p => pageCache.has(p)).length;
+
+        if (done >= total) return;
+
+        showPrepareProgress(done, total);
+
+        // Preload in parallel batches of 2 for maximum speed without overloading
+        const batchSize = 2;
+        for (let i = 0; i < links.length; i += batchSize) {
+            const batch = links.slice(i, i + batchSize).filter(p => !pageCache.has(p));
+            if (batch.length > 0) {
+                await Promise.all(batch.map(path => preloadPage(path)));
             }
-            const next = prepare.urls.find((p) => !pageCache.has(p) && !tried.has(p));
-            if (!next) break; // all pages prepared (or every attempt failed — best effort)
-            tried.add(next);
-            await preloadPage(next);
-            updatePrepareToast();
-            await sleep(PREPARE_GAP_MS);
+            done = links.filter(p => pageCache.has(p)).length;
+            showPrepareProgress(done, total);
         }
-        prepare.active = false;
-        hidePrepareToast();
+
+        showPrepareDone();
     }
 
-    // ------------------------------------------------------------
-    // Slim progress bar for the rare click that still misses the
-    // cache (e.g. you click within the first seconds after a refresh,
-    // before warm-up finishes). Turns a "dead" 1-3s wait into
-    // visible feedback.
-    // ------------------------------------------------------------
+    setTimeout(prefetchSidebarPages, 120);
+
+    // Slim progress bar for un-cached clicks
     function navBar() {
         let bar = document.getElementById('spaNavBar');
         if (bar) return bar;
         bar = document.createElement('div');
         bar.id = 'spaNavBar';
-        bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0;opacity:0;background:linear-gradient(90deg,#6E9F54,#4ade80);box-shadow:0 0 8px rgba(110,159,84,0.6);z-index:9999;transition:width .25s ease,opacity .3s ease;pointer-events:none;';
+        bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;width:0;opacity:0;background:linear-gradient(90deg,#6E9F54,#4ade80);box-shadow:0 0 8px rgba(110,159,84,0.6);z-index:9999;transition:width .15s ease,opacity .2s ease;pointer-events:none;';
         document.body.appendChild(bar);
         return bar;
     }
@@ -721,13 +679,9 @@ window.addEventListener('DOMContentLoaded', function () {
         setTimeout(() => {
             bar.style.opacity = '0';
             bar.style.width = '0%';
-        }, 300);
+        }, 150);
     }
 
-    // Warm up every sidebar page shortly after the page settles so the
-    // first click on each one is already instant.
-    setTimeout(startPrepare, PREPARE_DELAY_MS);
-
-    // Initial content entrance (full page loads)
+    // Initial content entrance
     runContentEntrance();
 });
