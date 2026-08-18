@@ -54,20 +54,19 @@ class GuestChatbotController extends Controller
 
         $guestContext = $this->getGuestContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the official guest concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n"
-            . "CRITICAL INSTRUCTIONS:\n"
-            . "- BE DIRECT, CONCISE, AND ON-POINT. Answer in 2 to 4 sentences or compact bullet points.\n"
-            . "- DO NOT use filler phrases (e.g. 'I hope this helps!', 'Feel free to ask more!', 'Hello! Welcome!'). Save token usage by delivering only the exact answer immediately.\n"
+        $systemPrompt = "You are HinaguanBot, the warm, friendly, and helpful guest concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+            . "CONVERSATION STYLE & TONE GUIDELINES:\n"
+            . "- Speak warmly and naturally in clear, friendly human sentences (like a welcoming resort front-desk host).\n"
+            . "- Answer the guest's specific questions directly in 1 to 3 helpful sentences. Avoid stiff robotic lists or data dumps unless the guest asks for a full price list or breakdown.\n"
             . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
-            . "- CAPABILITIES:\n"
-            . "  1. AMENITY RECOMMENDATIONS: Recommend based on party size & budget from the catalogue.\n"
-            . "  2. COST ESTIMATOR: Calculate price breakdowns immediately if guest mentions group size/amenity (e.g., Adults × Entrance + Kids × Entrance + Pool + Cottage).\n"
-            . "  3. AVAILABILITY & CHECKOUT: Report live available vs occupied amenities with expected checkout times.\n"
-            . "  4. PARK POLICIES: Outside food allowed (NO corkage fee for common meals/drinks), free grilling stations, proper swimwear required for pool, free parking, pets allowed on leash.\n"
-            . "  5. BOOKING STEPS: Online (click 'Book Now' > pick date/time > select amenity > pay via GCash/Bank > get QR code) or Walk-in (register & pay at entrance counter).\n"
-            . "  6. SESSIONS: Daytime (6:00 AM - 6:00 PM), Nighttime (6:00 PM - 6:00 AM).\n"
-            . "  7. FEES: Daytime Entrance: Adult ₱70, Child ₱50 | Nighttime Entrance: Adult ₱100, Child ₱70 | Pool Access: Day ₱100, Night ₱150.\n"
-            . "  8. LOCATION: Upper Hinaguan, Jasaan, Misamis Oriental (Hotline: 0917 861 8383).\n\n"
+            . "- DO NOT include any thinking process, reasoning steps, internal analysis, notes, or prefixes (e.g. NEVER output \"Here's a thinking process:\"). Deliver ONLY the natural human response.\n\n"
+            . "PARK INFO & POLICIES:\n"
+            . "1. SESSIONS: Daytime (6:00 AM - 6:00 PM), Nighttime (6:00 PM - 6:00 AM).\n"
+            . "2. ENTRANCE: Daytime (Adult ₱70, Child ₱50) | Nighttime (Adult ₱100, Child ₱70).\n"
+            . "3. POOL ACCESS: Day ₱100, Night ₱150 (proper swimwear required).\n"
+            . "4. PARK POLICIES: Outside food allowed (NO corkage fee for common meals/drinks), free grilling stations, pets allowed on leash, free parking.\n"
+            . "5. BOOKING STEPS: Online (click 'Book Now' > pick date/time > select amenity > pay via GCash/Bank > get QR code) or Walk-in (register & pay at entrance counter).\n"
+            . "6. LOCATION & HOTLINE: Upper Hinaguan, Jasaan, Misamis Oriental (Hotline: 0917 861 8383).\n\n"
             . "=== LIVE PARK & AMENITIES CONTEXT ===\n"
             . $guestContext;
 
@@ -106,14 +105,14 @@ class GuestChatbotController extends Controller
                 'model' => $model,
                 'messages' => $messagesPayload,
                 'max_tokens' => 350,
-                'temperature' => 0.4,
+                'temperature' => 0.2,
+                'include_reasoning' => false,
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $reply = $data['choices'][0]['message']['content'] ?? 'I could not process your request at this time.';
-                $reply = str_replace(['HinaguanBot:', 'Bot:', 'GuestBot:'], '', $reply);
-                $reply = trim($reply);
+                $rawReply = $data['choices'][0]['message']['content'] ?? 'I could not process your request at this time.';
+                $reply = $this->cleanChatbotReply($rawReply);
 
                 return response()->json(['reply' => $reply]);
             } else {
@@ -128,6 +127,23 @@ class GuestChatbotController extends Controller
                 'reply' => 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.'
             ], 500);
         }
+    }
+
+    /**
+     * Clean raw AI response to strip thinking processes, reasoning tags, and bot prefixes.
+     */
+    private function cleanChatbotReply(string $reply): string
+    {
+        // 1. Strip <think>...</think> tags if model outputs raw reasoning tokens
+        $reply = preg_replace('/<think>.*?<\/think>/is', '', $reply);
+
+        // 2. Strip "Here's a thinking process: ... \n\n" or "Thinking Process: ... \n\n"
+        $reply = preg_replace('/(?:^|\n)\s*(?:Here\'?s\s+(?:a\s+)?thinking\s+process|Thinking\s+Process|Thought\s+Process):.*?(?:\r?\n\r?\n|$)/is', '', $reply);
+
+        // 3. Strip leading bot prefix
+        $reply = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant):\s*/i', '', trim($reply));
+
+        return trim($reply);
     }
 
     private function getGuestContext(string $message): string

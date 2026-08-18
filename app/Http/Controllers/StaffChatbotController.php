@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Amenity;
+use App\Models\ChatbotMessage;
 use App\Models\Customer;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
@@ -28,6 +29,20 @@ class StaffChatbotController extends Controller
 
         $userMessage = trim($request->input('message'));
         $msgLower = strtolower($userMessage);
+        $authUser = session('auth_user') ?? [];
+        $userId = !empty($authUser['id']) ? (int) $authUser['id'] : null;
+
+        // Persist user's message to database if authenticated
+        $userMsgRecord = null;
+        if ($userId) {
+            $userMsgRecord = ChatbotMessage::create([
+                'user_type' => 'staff',
+                'user_id' => $userId,
+                'role' => 'user',
+                'content' => $userMessage,
+                'model' => $request->input('model', 'openrouter/free'),
+            ]);
+        }
 
         // Security Guardrail: Staff chatbot CANNOT access staff account passwords or admin credentials
         $restrictedForStaff = [
@@ -38,9 +53,17 @@ class StaffChatbotController extends Controller
 
         foreach ($restrictedForStaff as $term) {
             if (str_contains($msgLower, $term)) {
-                return response()->json([
-                    'reply' => "I am the Staff Assistant. I cannot display or modify staff account credentials, passwords, or admin security accounts. Please consult the Park Administrator for system security management."
-                ]);
+                $guardrailReply = "I am the Staff Assistant. I cannot display or modify staff account credentials, passwords, or admin security accounts. Please consult the Park Administrator for system security management.";
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'staff',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $guardrailReply,
+                        'model' => $request->input('model', 'openrouter/free'),
+                    ]);
+                }
+                return response()->json(['reply' => $guardrailReply]);
             }
         }
 
@@ -48,9 +71,17 @@ class StaffChatbotController extends Controller
         $forbiddenTopics = ['write python code', 'solve math equation', 'celebrity gossip', 'astrology horoscope', 'cryptocurrency trading'];
         foreach ($forbiddenTopics as $topic) {
             if (stripos($userMessage, $topic) !== false) {
-                return response()->json([
-                    'reply' => "I can only assist with Hinaguan Nature Park staff operations, guest reservations, check-ins, checkouts, and demographic data mining."
-                ]);
+                $offTopicReply = "I can only assist with Hinaguan Nature Park staff operations, guest reservations, check-ins, checkouts, and demographic data mining.";
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'staff',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $offTopicReply,
+                        'model' => $request->input('model', 'openrouter/free'),
+                    ]);
+                }
+                return response()->json(['reply' => $offTopicReply]);
             }
         }
 
@@ -58,24 +89,34 @@ class StaffChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
-            return response()->json([
-                'reply' => 'The staff chatbot service is currently offline. Please check system configuration.'
-            ], 500);
+            $offlineReply = 'The staff chatbot service is currently offline. Please check system configuration.';
+            if ($userId) {
+                ChatbotMessage::create([
+                    'user_type' => 'staff',
+                    'user_id' => $userId,
+                    'role' => 'assistant',
+                    'content' => $offlineReply,
+                    'model' => $model,
+                ]);
+            }
+            return response()->json(['reply' => $offlineReply], 500);
         }
 
         $staffContext = $this->getStaffContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot Staff Assistant, the operations & data mining copilot for staff at Hinaguan Nature Park.\n"
-            . "CRITICAL INSTRUCTIONS:\n"
-            . "- BE DIRECT, CONCISE, AND ON-POINT. Answer in 2 to 4 sentences or compact bullet points.\n"
-            . "- DO NOT use filler conversational text (e.g. 'I would be happy to help!', 'Let me know if you need anything else!'). Deliver the exact facts immediately to minimize token cost.\n"
-            . "- CAPABILITIES:\n"
-            . "  1. OPERATIONS: Identify checked-in guests, departures/due checkouts today, countdowns, and upcoming arrivals.\n"
-            . "  2. CASHIER & BALANCES: Report collected sales and highlight any checked-in reservations with unpaid remaining balances.\n"
-            . "  3. WALK-IN PRICE CALCULATOR: Instantly calculate total walk-in cost for staff (Adults × Entrance + Kids × Entrance + Pool + Amenity).\n"
-            . "  4. DEMOGRAPHICS MINING: Report guest counts for Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female vs Male), and Nationality.\n"
-            . "  5. PARK RATES: Daytime Entrance: Adult ₱70, Child ₱50 | Nighttime Entrance: Adult ₱100, Child ₱70 | Pool: Day ₱100, Night ₱150.\n"
-            . "  6. PROCEDURES: Explain stay extensions, mid-stay amenity additions, and checkout steps in the staff portal.\n\n"
+        $systemPrompt = "You are HinaguanBot, a friendly and helpful AI assistant for the staff at Hinaguan Nature Park.\n\n"
+            . "CONVERSATION STYLE & TONE GUIDELINES:\n"
+            . "- Speak naturally in friendly, human-like sentences (like a helpful coworker chatting with the staff member).\n"
+            . "- Answer the specific question directly in 1 to 3 clear, flowing sentences. Avoid robotic outlines, stiff headers, or unnecessary data dumps unless the user specifically asks for a full list or table.\n"
+            . "- When answering about reservations or checkouts, summarize the answer warmly and clearly in natural conversational English (e.g., 'Right now, there are no checkouts due today. The nearest upcoming checkouts are Reservation #6 under Ashlyn Famador and #4 under Tryyy, both scheduled to check out on August 31.').\n"
+            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
+            . "- DO NOT include any thinking process, reasoning steps, internal analysis, notes, or prefixes (e.g. NEVER output \"Here's a thinking process:\"). Deliver ONLY the natural human response.\n\n"
+            . "CORE KNOWLEDGE & CAPABILITIES:\n"
+            . "1. OPERATIONS: Checked-in guests, departures/due checkouts today, countdowns, upcoming arrivals, stay extensions, and checkout procedures.\n"
+            . "2. CASHIER & BALANCES: Total sales collected, and reservations with unpaid remaining balances.\n"
+            . "3. WALK-IN PRICE CALCULATOR: Calculate total walk-in cost for staff (Adults × Entrance + Kids × Entrance + Pool + Amenity).\n"
+            . "4. DEMOGRAPHICS MINING: Guest counts for Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female vs Male), and Nationality.\n"
+            . "5. PARK RATES: Daytime Entrance: Adult ₱70, Child ₱50 | Nighttime Entrance: Adult ₱100, Child ₱70 | Pool: Day ₱100, Night ₱150.\n\n"
             . "=== LIVE STAFF OPERATIONS & ANALYTICS CONTEXT ===\n"
             . $staffContext;
 
@@ -86,15 +127,32 @@ class StaffChatbotController extends Controller
             ]
         ];
 
-        $history = $request->input('history', []);
-        if (is_array($history) && !empty($history)) {
-            $recentHistory = array_slice($history, -4);
-            foreach ($recentHistory as $turn) {
-                if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
-                    $messagesPayload[] = [
-                        'role' => $turn['role'],
-                        'content' => $turn['content']
-                    ];
+        // Retrieve past conversation history from database (or fallback to request payload)
+        if ($userId && $userMsgRecord) {
+            $pastDbMessages = ChatbotMessage::forUser('staff', $userId)
+                ->where('id', '<', $userMsgRecord->id)
+                ->latest('id')
+                ->take(6)
+                ->get()
+                ->reverse();
+
+            foreach ($pastDbMessages as $msg) {
+                $messagesPayload[] = [
+                    'role' => $msg->role,
+                    'content' => $msg->content,
+                ];
+            }
+        } else {
+            $history = $request->input('history', []);
+            if (is_array($history) && !empty($history)) {
+                $recentHistory = array_slice($history, -4);
+                foreach ($recentHistory as $turn) {
+                    if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
+                        $messagesPayload[] = [
+                            'role' => $turn['role'],
+                            'content' => $turn['content']
+                        ];
+                    }
                 }
             }
         }
@@ -114,28 +172,112 @@ class StaffChatbotController extends Controller
                 'model' => $model,
                 'messages' => $messagesPayload,
                 'max_tokens' => 350,
-                'temperature' => 0.3,
+                'temperature' => 0.2,
+                'include_reasoning' => false,
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $reply = $data['choices'][0]['message']['content'] ?? 'I could not process your request at this time.';
-                $reply = str_replace(['HinaguanBot:', 'Bot:', 'StaffBot:'], '', $reply);
-                $reply = trim($reply);
+                $rawReply = $data['choices'][0]['message']['content'] ?? 'I could not process your request at this time.';
+                $reply = $this->cleanChatbotReply($rawReply);
+
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'staff',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $reply,
+                        'model' => $model,
+                    ]);
+                }
 
                 return response()->json(['reply' => $reply]);
             } else {
                 Log::error('Staff Chatbot OpenRouter Error: ' . $response->body());
-                return response()->json([
-                    'reply' => 'The staff assistant service encountered an error. Please try again shortly.'
-                ], 500);
+                $errReply = 'The staff assistant service encountered an error. Please try again shortly.';
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'staff',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $errReply,
+                        'model' => $model,
+                    ]);
+                }
+                return response()->json(['reply' => $errReply], 500);
             }
         } catch (\Exception $e) {
             Log::error('Staff Chatbot Exception: ' . $e->getMessage());
-            return response()->json([
-                'reply' => 'The staff assistant is temporarily unavailable. Error: ' . $e->getMessage()
-            ], 500);
+            $excReply = 'The staff assistant is temporarily unavailable. Error: ' . $e->getMessage();
+            if ($userId) {
+                ChatbotMessage::create([
+                    'user_type' => 'staff',
+                    'user_id' => $userId,
+                    'role' => 'assistant',
+                    'content' => $excReply,
+                    'model' => $model,
+                ]);
+            }
+            return response()->json(['reply' => $excReply], 500);
         }
+    }
+
+    /**
+     * Get saved chat history for the logged-in staff member.
+     */
+    public function history(Request $request)
+    {
+        $authUser = session('auth_user');
+        if (!$authUser || empty($authUser['id'])) {
+            return response()->json(['messages' => []]);
+        }
+
+        $messages = ChatbotMessage::forUser('staff', (int) $authUser['id'])
+            ->orderBy('id', 'asc')
+            ->get(['id', 'role', 'content', 'created_at'])
+            ->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'role' => $msg->role,
+                    'content' => $msg->content,
+                    'isBot' => $msg->role === 'assistant',
+                    'created_at' => $msg->created_at?->toIso8601String(),
+                ];
+            });
+
+        return response()->json(['messages' => $messages]);
+    }
+
+    /**
+     * Clear all saved chat history for the logged-in staff member.
+     */
+    public function clear(Request $request)
+    {
+        $authUser = session('auth_user');
+        if (!$authUser || empty($authUser['id'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        ChatbotMessage::forUser('staff', (int) $authUser['id'])->delete();
+
+        return response()->json(['success' => true, 'message' => 'Conversation history cleared.']);
+    }
+
+    /**
+     * Clean raw AI response to strip thinking processes, reasoning tags, and bot prefixes.
+     */
+    private function cleanChatbotReply(string $reply): string
+    {
+        // 1. Strip <think>...</think> tags if model outputs raw reasoning tokens
+        $reply = preg_replace('/<think>.*?<\/think>/is', '', $reply);
+
+        // 2. Strip "Here's a thinking process: ... \n\n" or "Thinking Process: ... \n\n"
+        $reply = preg_replace('/(?:^|\n)\s*(?:Here\'?s\s+(?:a\s+)?thinking\s+process|Thinking\s+Process|Thought\s+Process):.*?(?:\r?\n\r?\n|$)/is', '', $reply);
+
+        // 3. Strip leading bot prefix
+        $reply = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant):\s*/i', '', trim($reply));
+
+        return trim($reply);
     }
 
     private function getStaffContext(string $message): string

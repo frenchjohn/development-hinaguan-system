@@ -7,7 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatbotInput = document.getElementById('chatbotInput');
     const chatbotMessages = document.getElementById('chatbotMessages');
     const chatbotSend = document.getElementById('chatbotSend');
+    const chatbotClear = document.getElementById('chatbotClear');
 
+    if (!chatbotWidget || !chatbotToggle || !chatbotWindow) return;
+
+    // Escape HTML to prevent XSS
     // Escape HTML to prevent XSS
     const escapeHtml = (text) => {
         const div = document.createElement('div');
@@ -15,36 +19,61 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
-    // Load state from localStorage
-    const loadState = () => {
+    // Format bot responses with clean markdown rendering
+    const formatBotMessage = (text) => {
+        let formatted = escapeHtml(text);
+        // Headers
+        formatted = formatted.replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-sm text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h5>');
+        formatted = formatted.replace(/^##\s+(.*)$/gm, '<h4 class="font-bold text-base text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h4>');
+        // Convert **bold** to <strong>bold</strong>
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Convert *italic* to <em>italic</em>
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Convert bullet points (- or *)
+        formatted = formatted.replace(/^[-*]\s+(.*)$/gm, '• $1');
+        // Convert numbered lists
+        formatted = formatted.replace(/^(\d+)\.\s+(.*)$/gm, '$1. $2');
+        // Convert newlines to <br>
+        formatted = formatted.replace(/\n/g, '<br>');
+        return formatted;
+    };
+
+    const getCsrfToken = () => {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            || document.querySelector('input[name="_token"]')?.value
+            || '';
+    };
+
+    // Load window state (open / model preference) from localStorage
+    const loadPreferences = () => {
         try {
-            const saved = localStorage.getItem('chatbotState');
+            const saved = localStorage.getItem('staffChatbotPrefs');
             if (saved) {
                 return JSON.parse(saved);
             }
         } catch (e) {
-            console.error('Error loading chatbot state:', e);
+            console.error('Error loading chatbot prefs:', e);
         }
-        return { isOpen: false, messages: [], selectedModel: null };
+        return { isOpen: false, selectedModel: null };
     };
 
-    // Save state to localStorage
-    const saveState = (isOpen, messages, selectedModel) => {
+    const savePreferences = (isOpen, selectedModel) => {
         try {
-            localStorage.setItem('chatbotState', JSON.stringify({ isOpen, messages, selectedModel }));
+            localStorage.setItem('staffChatbotPrefs', JSON.stringify({ isOpen, selectedModel }));
         } catch (e) {
-            console.error('Error saving chatbot state:', e);
+            console.error('Error saving chatbot prefs:', e);
         }
     };
 
-    // Initialize state
-    const initialState = loadState();
-    let isOpen = initialState.isOpen || false;
-    let messages = initialState.messages || [];
-    let selectedModel = initialState.selectedModel || null;
+    const prefs = loadPreferences();
+    let isOpen = prefs.isOpen || false;
+    let selectedModel = prefs.selectedModel || null;
+    let conversationCleared = false;
+    let clearArmTimer = null;
+    let messages = [];
 
-    // Add message to chat
-    const addMessage = (content, isBot = true, shouldSave = true) => {
+    // Add message to chat UI
+    const addMessage = (content, isBot = true) => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 
@@ -58,10 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot</span>
+                        <span class="chatbot-message__author">HinaguanBot (Staff)</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>${escapeHtml(content)}</p>
+                        <p>${formatBotMessage(content)}</p>
                     </div>
                 </div>
             `;
@@ -77,34 +106,49 @@ document.addEventListener('DOMContentLoaded', () => {
         
         chatbotMessages.appendChild(messageDiv);
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-
-        // Save to localStorage
-        if (shouldSave) {
-            messages.push({ content, isBot });
-            saveState(isOpen, messages, selectedModel);
-        }
     };
 
-    // Restore messages from localStorage
-    if (messages.length > 0) {
+    const showWelcomeMessage = () => {
         chatbotMessages.innerHTML = '';
-        chatbotWidget.classList.add('is-conversation');
-        messages.forEach(msg => {
-            addMessage(msg.content, msg.isBot, false);
-        });
-    }
+        chatbotWidget.classList.remove('is-conversation');
+        addMessage('Hello! I\'m HinaguanBot, your staff assistant. I can walk you through check-ins, guest records, reservations, and park operations. How can I help your shift today?', true);
+    };
+
+    // Load database history
+    const loadDatabaseHistory = async () => {
+        try {
+            const res = await fetch('/chatbot/history', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const dbMessages = data.messages || [];
+                if (dbMessages.length > 0) {
+                    chatbotMessages.innerHTML = '';
+                    chatbotWidget.classList.add('is-conversation');
+                    messages = dbMessages;
+                    dbMessages.forEach((msg) => {
+                        addMessage(msg.content, msg.isBot);
+                    });
+                } else {
+                    showWelcomeMessage();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load staff chatbot history from database:', e);
+        }
+    };
 
     // Restore window state
     if (isOpen) {
         chatbotWindow.hidden = false;
         chatbotToggle.setAttribute('aria-expanded', 'true');
-        
-        // Scroll to bottom after window is visible with longer delay
         setTimeout(() => {
-            if (chatbotMessages) {
-                chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-            }
-        }, 500);
+            if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }, 300);
     }
 
     // Restore selected model
@@ -113,10 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modelSelect.value = selectedModel;
     }
 
-    // Save selected model when changed
     modelSelect?.addEventListener('change', (e) => {
         selectedModel = e.target.value;
-        saveState(isOpen, messages, selectedModel);
+        savePreferences(isOpen, selectedModel);
     });
 
     // Toggle chatbot window
@@ -128,7 +171,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (isOpen) {
             chatbotInput.focus();
-            // Scroll to bottom when opening
             setTimeout(() => {
                 if (chatbotMessages) {
                     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
@@ -136,43 +178,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 50);
         }
         
-        saveState(isOpen, messages, selectedModel);
+        savePreferences(isOpen, selectedModel);
     };
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
 
-    // Delete conversation (two-tap confirm to avoid accidental clears)
-    const chatbotClear = document.getElementById('chatbotClear');
-    let clearArmed = false;
-    let clearArmTimer = null;
-    // Set when the conversation is wiped; a reply still in flight must not resurrect it
-    let conversationCleared = false;
+    // Delete conversation from DB and UI (two-tap confirm to avoid accidental clears)
     const disarmClear = () => {
-        clearArmed = false;
         clearArmTimer = null;
         chatbotClear?.classList.remove('is-armed');
         chatbotClear?.setAttribute('aria-label', 'Delete conversation');
     };
-    chatbotClear?.addEventListener('click', () => {
-        if (!clearArmed) {
-            clearArmed = true;
+
+    chatbotClear?.addEventListener('click', async () => {
+        if (!chatbotClear.classList.contains('is-armed')) {
             chatbotClear.classList.add('is-armed');
             chatbotClear.setAttribute('aria-label', 'Click again to delete');
             clearArmTimer = setTimeout(disarmClear, 2500);
             return;
         }
-        // Confirm: wipe the conversation
+
+        // Confirm: delete the conversation on server and UI
         clearTimeout(clearArmTimer);
         disarmClear();
         conversationCleared = true;
         messages = [];
-        saveState(isOpen, messages, selectedModel);
-        chatbotMessages.innerHTML = '';
-        // Bring back the welcome message + quick-reply chips
-        chatbotWidget.classList.remove('is-conversation');
-        addMessage('Hello! I\'m HinaguanBot, your staff assistant. I can walk you through check-ins, guest records, reservations, and park settings. How can I help you today?', true, false);
-        chatbotInput.focus();
+
+        try {
+            await fetch('/chatbot/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+                __skipBusy: true,
+            });
+        } catch (e) {
+            console.error('Error clearing chatbot history in database:', e);
+        }
+
+        showWelcomeMessage();
+        chatbotInput?.focus();
     });
 
     // Quick-reply chips: send the preset question
@@ -206,9 +255,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
                 </svg>
-            </div>                <div class="chatbot-message__body">
-                    <div class="chatbot-message__content">
-                        <div class="chatbot-typing">
+            </div>
+            <div class="chatbot-message__body">
+                <div class="chatbot-message__content">
+                    <div class="chatbot-typing">
                         <span></span>
                         <span></span>
                         <span></span>
@@ -235,28 +285,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = chatbotInput.value.trim();
         if (!message) return;
         
-        // Get selected model
         const modelSelect = document.getElementById('chatbotModel');
-        const selectedModel = modelSelect ? modelSelect.value : 'meta-llama/llama-3-8b-instruct:free';
+        const activeModel = modelSelect ? modelSelect.value : 'openrouter/free';
         
-        // Prepare multi-turn history before adding new user message to state
-        const historyPayload = messages.slice(-6).map(m => ({
-            role: m.isBot ? 'assistant' : 'user',
-            content: m.content
-        }));
-
-        // Add user message
+        // Add user message to UI immediately
         addMessage(message, false);
+        messages.push({ content: message, isBot: false });
         chatbotInput.value = '';
         
-        // Conversation started — hide the quick-reply chips
         chatbotWidget.classList.add('is-conversation');
         conversationCleared = false;
         
-        // Show typing indicator
         showTyping();
-        
-        // Disable send button
         chatbotSend.disabled = true;
         
         try {
@@ -264,30 +304,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     message,
-                    history: historyPayload,
-                    model: selectedModel
+                    model: activeModel
                 }),
-                // AI replies can take a while; don't count this as a page task
-                // so the busy guard never blocks navigation mid-chat.
                 __skipBusy: true,
             });
             
             const data = await response.json();
             
-            // Hide typing indicator
             hideTyping();
             
-            // A wiped conversation must not be resurrected by a late reply
             if (conversationCleared) return;
             
-            // Add bot response
             if (data.reply) {
                 addMessage(data.reply, true);
+                messages.push({ content: data.reply, isBot: true });
             } else {
                 addMessage('I apologize, but I encountered an error. Please try again.', true);
             }
@@ -297,9 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conversationCleared) return;
             addMessage('I apologize, but the service is temporarily unavailable. Please try again later.', true);
         } finally {
-            // Re-enable send button
             chatbotSend.disabled = false;
             chatbotInput.focus();
         }
     });
+
+    // Fetch conversation from database
+    loadDatabaseHistory();
 });

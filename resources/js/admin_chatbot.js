@@ -18,6 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
+    const getCsrfToken = () => {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+            || document.querySelector('input[name="_token"]')?.value
+            || '';
+    };
+
     // Format bot responses with enhanced clean markdown rendering
     const formatBotMessage = (text) => {
         let formatted = escapeHtml(text);
@@ -37,38 +43,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return formatted;
     };
 
-    // Load state from localStorage
-    const loadState = () => {
+    // Load preferences from localStorage
+    const loadPreferences = () => {
         try {
-            const saved = localStorage.getItem('adminChatbotState');
+            const saved = localStorage.getItem('adminChatbotPrefs');
             if (saved) {
                 return JSON.parse(saved);
             }
         } catch (e) {
-            console.error('Error loading admin chatbot state:', e);
+            console.error('Error loading admin chatbot prefs:', e);
         }
-        return { isOpen: false, messages: [], selectedModel: null };
+        return { isOpen: false, selectedModel: null };
     };
 
-    // Save state to localStorage
-    const saveState = (isOpen, messages, selectedModel) => {
+    const savePreferences = (isOpen, selectedModel) => {
         try {
-            localStorage.setItem('adminChatbotState', JSON.stringify({ isOpen, messages, selectedModel }));
+            localStorage.setItem('adminChatbotPrefs', JSON.stringify({ isOpen, selectedModel }));
         } catch (e) {
-            console.error('Error saving admin chatbot state:', e);
+            console.error('Error saving admin chatbot prefs:', e);
         }
     };
 
-    // Initialize state
-    const initialState = loadState();
-    let isOpen = initialState.isOpen || false;
-    let messages = initialState.messages || [];
-    let selectedModel = initialState.selectedModel || null;
+    const prefs = loadPreferences();
+    let isOpen = prefs.isOpen || false;
+    let selectedModel = prefs.selectedModel || null;
     let conversationCleared = false;
     let clearArmTimer = null;
+    let messages = [];
 
-    // Add message to chat
-    const addMessage = (content, isBot = true, shouldSave = true) => {
+    // Add message to chat UI
+    const addMessage = (content, isBot = true) => {
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 
@@ -100,27 +104,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chatbotMessages.appendChild(messageDiv);
         chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-
-        if (shouldSave) {
-            messages.push({ content, isBot });
-            saveState(isOpen, messages, selectedModel);
-        }
     };
 
-    // Restore messages
-    if (messages.length > 0) {
+    const showWelcomeMessage = () => {
         chatbotMessages.innerHTML = '';
-        chatbotWidget.classList.add('is-conversation');
-        messages.forEach(msg => {
-            addMessage(msg.content, msg.isBot, false);
-        });
-    }
+        chatbotWidget.classList.remove('is-conversation');
+        addMessage('Welcome, Administrator! I am your Admin Intelligence Assistant. Ask me anything about recent operational activities, who performed check-ins or extensions, revenue analytics, guest demographics, or staff accounts.', true);
+    };
+
+    // Load database history
+    const loadDatabaseHistory = async () => {
+        try {
+            const res = await fetch('/admin-chatbot/history', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const dbMessages = data.messages || [];
+                if (dbMessages.length > 0) {
+                    chatbotMessages.innerHTML = '';
+                    chatbotWidget.classList.add('is-conversation');
+                    messages = dbMessages;
+                    dbMessages.forEach((msg) => {
+                        addMessage(msg.content, msg.isBot);
+                    });
+                } else {
+                    showWelcomeMessage();
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load admin chatbot history from database:', e);
+        }
+    };
 
     // Restore window state
     if (isOpen) {
         chatbotWindow.hidden = false;
         chatbotToggle.setAttribute('aria-expanded', 'true');
         chatbotWidget.classList.add('is-open');
+        setTimeout(() => {
+            if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }, 300);
     }
 
     // Restore model selection
@@ -129,10 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modelSelect.value = selectedModel;
     }
 
-    // Model selection change
     modelSelect?.addEventListener('change', (e) => {
         selectedModel = e.target.value;
-        saveState(isOpen, messages, selectedModel);
+        savePreferences(isOpen, selectedModel);
     });
 
     // Toggle chatbot
@@ -141,39 +167,57 @@ document.addEventListener('DOMContentLoaded', () => {
         chatbotWindow.hidden = !isOpen;
         chatbotToggle.setAttribute('aria-expanded', isOpen.toString());
         chatbotWidget.classList.toggle('is-open', isOpen);
-        saveState(isOpen, messages, selectedModel);
+        savePreferences(isOpen, selectedModel);
 
         if (isOpen) {
             chatbotInput?.focus();
-            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            setTimeout(() => {
+                if (chatbotMessages) {
+                    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+                }
+            }, 50);
         }
     };
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
 
-    // Delete conversation handler
+    // Delete conversation from DB and UI
     const disarmClear = () => {
         if (!chatbotClear) return;
         chatbotClear.classList.remove('is-armed');
         chatbotClear.setAttribute('aria-label', 'Delete conversation');
     };
 
-    chatbotClear?.addEventListener('click', () => {
+    chatbotClear?.addEventListener('click', async () => {
         if (!chatbotClear.classList.contains('is-armed')) {
             chatbotClear.classList.add('is-armed');
             chatbotClear.setAttribute('aria-label', 'Click again to delete');
             clearArmTimer = setTimeout(disarmClear, 2500);
             return;
         }
+
         clearTimeout(clearArmTimer);
         disarmClear();
         conversationCleared = true;
         messages = [];
-        saveState(isOpen, messages, selectedModel);
-        chatbotMessages.innerHTML = '';
-        chatbotWidget.classList.remove('is-conversation');
-        addMessage('Welcome, Administrator! I am your Admin Intelligence Assistant. Ask me anything about recent operational activities, who performed check-ins or extensions, revenue analytics, guest demographics, or staff accounts.', true, false);
+
+        try {
+            await fetch('/admin-chatbot/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({}),
+                __skipBusy: true,
+            });
+        } catch (e) {
+            console.error('Error clearing admin chatbot history in database:', e);
+        }
+
+        showWelcomeMessage();
         chatbotInput?.focus();
     });
 
@@ -224,25 +268,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hideTyping = () => {
         const typingDiv = document.getElementById('chatbotTyping');
-        if (typingDiv) typingDiv.remove();
+        if (typingDiv) {
+            typingDiv.remove();
+        }
     };
 
-    // Form submission
+    // Form submit
     chatbotForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const message = chatbotInput.value.trim();
         if (!message) return;
 
-        const currentModel = modelSelect ? modelSelect.value : 'openrouter/free';
+        const modelSelect = document.getElementById('chatbotModel');
+        const activeModel = modelSelect ? modelSelect.value : 'openrouter/free';
 
-        // Prepare multi-turn history before adding new user message to state
-        const historyPayload = messages.slice(-6).map(m => ({
-            role: m.isBot ? 'assistant' : 'user',
-            content: m.content
-        }));
-
+        // Add user message to UI immediately
         addMessage(message, false);
+        messages.push({ content: message, isBot: false });
         chatbotInput.value = '';
 
         chatbotWidget.classList.add('is-conversation');
@@ -252,39 +295,43 @@ document.addEventListener('DOMContentLoaded', () => {
         chatbotSend.disabled = true;
 
         try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const response = await fetch('/admin-chatbot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
+                    'X-CSRF-TOKEN': getCsrfToken(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     message,
-                    history: historyPayload,
-                    model: currentModel
+                    model: activeModel
                 }),
+                __skipBusy: true,
             });
 
             const data = await response.json();
+
             hideTyping();
 
             if (conversationCleared) return;
 
             if (data.reply) {
                 addMessage(data.reply, true);
+                messages.push({ content: data.reply, isBot: true });
             } else {
-                addMessage('I apologize, but I could not retrieve that admin information. Please try again.', true);
+                addMessage('I apologize, but I encountered an error processing your query. Please try again.', true);
             }
         } catch (error) {
-            console.error('Admin chatbot error:', error);
+            console.error('Admin Chatbot error:', error);
             hideTyping();
             if (conversationCleared) return;
-            addMessage('The admin intelligence service is temporarily unreachable. Please try again shortly.', true);
+            addMessage('I apologize, but the admin intelligence service is temporarily unavailable.', true);
         } finally {
             chatbotSend.disabled = false;
-            chatbotInput.focus();
+            chatbotInput?.focus();
         }
     });
+
+    // Fetch conversation from database
+    loadDatabaseHistory();
 });

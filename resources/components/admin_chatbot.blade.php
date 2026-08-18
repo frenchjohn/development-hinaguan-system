@@ -73,11 +73,9 @@
             <label for="chatbotModel" class="chatbot-model-label">AI Model</label>
             <select id="chatbotModel" class="chatbot-model-select">
                 <option value="openrouter/free" selected>OpenRouter Free (Auto)</option>
-                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (Free)</option>
                 <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Free)</option>
+                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (Free)</option>
                 <option value="google/gemma-3-4b-it:free">Gemma 3 4B (Free)</option>
-                <option value="openai/gpt-3.5-turbo">GPT-3.5 Turbo (Paid)</option>
-                <option value="anthropic/claude-3-haiku">Claude 3 Haiku (Paid)</option>
             </select>
         </div>
 

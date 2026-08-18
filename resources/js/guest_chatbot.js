@@ -15,6 +15,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
+    // Format bot responses with clean markdown rendering
+    const formatBotMessage = (text) => {
+        let formatted = escapeHtml(text);
+        // Headers
+        formatted = formatted.replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-sm text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h5>');
+        formatted = formatted.replace(/^##\s+(.*)$/gm, '<h4 class="font-bold text-base text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h4>');
+        // Convert **bold** to <strong>bold</strong>
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Convert *italic* to <em>italic</em>
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Convert bullet points (- or *)
+        formatted = formatted.replace(/^[-*]\s+(.*)$/gm, '• $1');
+        // Convert numbered lists
+        formatted = formatted.replace(/^(\d+)\.\s+(.*)$/gm, '$1. $2');
+        // Convert newlines to <br>
+        formatted = formatted.replace(/\n/g, '<br>');
+        return formatted;
+    };
+
     // Load state from localStorage
     const loadState = () => {
         try {
@@ -61,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="chatbot-message__author">HinaguanBot</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>${escapeHtml(content)}</p>
+                        <p>${formatBotMessage(content)}</p>
                     </div>
                 </div>
             `;

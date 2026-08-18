@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Amenity;
+use App\Models\ChatbotMessage;
 use App\Models\Customer;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
@@ -29,14 +30,36 @@ class AdminChatbotController extends Controller
         ]);
 
         $userMessage = trim($request->input('message'));
+        $authUser = session('auth_user') ?? [];
+        $userId = !empty($authUser['id']) ? (int) $authUser['id'] : null;
+
+        // Persist user's message to database if authenticated
+        $userMsgRecord = null;
+        if ($userId) {
+            $userMsgRecord = ChatbotMessage::create([
+                'user_type' => 'admin',
+                'user_id' => $userId,
+                'role' => 'user',
+                'content' => $userMessage,
+                'model' => $request->input('model', 'openrouter/free'),
+            ]);
+        }
 
         // Check for general completely off-topic questions
         $forbiddenTopics = ['write python code', 'solve math equation', 'celebrity gossip', 'astrology horoscope', 'cryptocurrency trading'];
         foreach ($forbiddenTopics as $topic) {
             if (stripos($userMessage, $topic) !== false) {
-                return response()->json([
-                    'reply' => "I am the Hinaguan Nature Park Admin Intelligence Assistant. I specialize in park operations, reservations, revenue analytics, staff records, and activity audit logs."
-                ]);
+                $offTopicReply = "I am the Hinaguan Nature Park Admin Intelligence Assistant. I specialize in park operations, reservations, revenue analytics, staff records, and activity audit logs.";
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'admin',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $offTopicReply,
+                        'model' => $request->input('model', 'openrouter/free'),
+                    ]);
+                }
+                return response()->json(['reply' => $offTopicReply]);
             }
         }
 
@@ -44,24 +67,34 @@ class AdminChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
-            return response()->json([
-                'reply' => 'The admin intelligence service is currently offline. Please check system configuration.'
-            ], 500);
+            $offlineReply = 'The admin intelligence service is currently offline. Please check system configuration.';
+            if ($userId) {
+                ChatbotMessage::create([
+                    'user_type' => 'admin',
+                    'user_id' => $userId,
+                    'role' => 'assistant',
+                    'content' => $offlineReply,
+                    'model' => $model,
+                ]);
+            }
+            return response()->json(['reply' => $offlineReply], 500);
         }
 
         $adminContext = $this->getAdminContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot Admin Assistant, the executive intelligence & audit copilot for administrators at Hinaguan Nature Park.\n"
-            . "CRITICAL INSTRUCTIONS:\n"
-            . "- BE DIRECT, CONCISE, AND ON-POINT. Answer in 2 to 4 sentences or compact bullet points.\n"
-            . "- DO NOT use filler conversational text (e.g. 'I would be delighted to assist you with that today!', 'Please let me know if you need further reports!'). Answer the exact query immediately with real numbers and names to save token usage.\n"
+        $systemPrompt = "You are HinaguanBot, a friendly and professional executive intelligence assistant for administrators at Hinaguan Nature Park.\n\n"
+            . "CONVERSATION STYLE & TONE GUIDELINES:\n"
+            . "- Speak naturally in clear, professional, human-like sentences (like an intelligent operations manager briefing an executive).\n"
+            . "- Answer the specific query directly in 1 to 3 natural, conversational sentences. Blend names, numbers, and dates smoothly into the explanation.\n"
+            . "- Avoid stiff robotic outlines or dumping unrelated sections unless the administrator specifically asks for a full report or breakdown.\n"
             . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
-            . "- CAPABILITIES:\n"
-            . "  1. AUDIT & RECENT ACTIVITIES: Pinpoint who performed check-ins, checkouts, extensions, or account actions with exact reservation IDs, staff names, and timestamps.\n"
-            . "  2. EXECUTIVE FINANCIALS: Provide gross revenue, collected sales, outstanding uncollected balances, today/weekly/monthly revenue, and online vs walk-in breakdowns.\n"
-            . "  3. STAFF ROSTER: Report total staff, active/banned status, and staff member details.\n"
-            . "  4. DEMOGRAPHICS MINING: Report Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female/Male), and Nationality counts.\n"
-            . "  5. RESERVATIONS & ON-SITE OCCUPANCY: Report checked-in reservations, departures, and look up any specific reservation by ID or name.\n\n"
+            . "- DO NOT include any thinking process, reasoning steps, internal analysis, notes, or prefixes (e.g. NEVER output \"Here's a thinking process:\"). Deliver ONLY the natural human response.\n\n"
+            . "CORE KNOWLEDGE & CAPABILITIES:\n"
+            . "1. AUDIT & RECENT ACTIVITIES: Pinpoint who performed check-ins, checkouts, extensions, or account actions with exact reservation IDs, staff names, and timestamps.\n"
+            . "2. EXECUTIVE FINANCIALS: Provide gross revenue, collected sales, outstanding uncollected balances, today/weekly/monthly revenue, and online vs walk-in breakdowns.\n"
+            . "3. STAFF ROSTER: Report total staff, active/banned status, and staff member details.\n"
+            . "4. DEMOGRAPHICS MINING: Report Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female/Male), and Nationality counts.\n"
+            . "5. RESERVATIONS & ON-SITE OCCUPANCY: Report checked-in reservations, departures, and look up any specific reservation by ID or name.\n\n"
             . "=== LIVE SYSTEM & DATABASE CONTEXT ===\n"
             . $adminContext;
 
@@ -72,15 +105,32 @@ class AdminChatbotController extends Controller
             ]
         ];
 
-        $history = $request->input('history', []);
-        if (is_array($history) && !empty($history)) {
-            $recentHistory = array_slice($history, -4);
-            foreach ($recentHistory as $turn) {
-                if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
-                    $messagesPayload[] = [
-                        'role' => $turn['role'],
-                        'content' => $turn['content']
-                    ];
+        // Retrieve past conversation history from database (or fallback to request payload)
+        if ($userId && $userMsgRecord) {
+            $pastDbMessages = ChatbotMessage::forUser('admin', $userId)
+                ->where('id', '<', $userMsgRecord->id)
+                ->latest('id')
+                ->take(6)
+                ->get()
+                ->reverse();
+
+            foreach ($pastDbMessages as $msg) {
+                $messagesPayload[] = [
+                    'role' => $msg->role,
+                    'content' => $msg->content,
+                ];
+            }
+        } else {
+            $history = $request->input('history', []);
+            if (is_array($history) && !empty($history)) {
+                $recentHistory = array_slice($history, -4);
+                foreach ($recentHistory as $turn) {
+                    if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
+                        $messagesPayload[] = [
+                            'role' => $turn['role'],
+                            'content' => $turn['content']
+                        ];
+                    }
                 }
             }
         }
@@ -100,28 +150,112 @@ class AdminChatbotController extends Controller
                 'model' => $model,
                 'messages' => $messagesPayload,
                 'max_tokens' => 350,
-                'temperature' => 0.3,
+                'temperature' => 0.2,
+                'include_reasoning' => false,
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $reply = $data['choices'][0]['message']['content'] ?? 'I could not process your admin query at this moment.';
-                $reply = str_replace(['HinaguanBot:', 'Bot:', 'AdminBot:'], '', $reply);
-                $reply = trim($reply);
+                $rawReply = $data['choices'][0]['message']['content'] ?? 'I could not process your admin query at this moment.';
+                $reply = $this->cleanChatbotReply($rawReply);
+
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'admin',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $reply,
+                        'model' => $model,
+                    ]);
+                }
 
                 return response()->json(['reply' => $reply]);
             } else {
                 Log::error('Admin Chatbot OpenRouter Error: ' . $response->body());
-                return response()->json([
-                    'reply' => 'The admin intelligence service encountered an error. Please try again shortly.'
-                ], 500);
+                $errReply = 'The admin intelligence service encountered an error. Please try again shortly.';
+                if ($userId) {
+                    ChatbotMessage::create([
+                        'user_type' => 'admin',
+                        'user_id' => $userId,
+                        'role' => 'assistant',
+                        'content' => $errReply,
+                        'model' => $model,
+                    ]);
+                }
+                return response()->json(['reply' => $errReply], 500);
             }
         } catch (\Exception $e) {
             Log::error('Admin Chatbot Exception: ' . $e->getMessage());
-            return response()->json([
-                'reply' => 'The admin assistant is temporarily unavailable. Error: ' . $e->getMessage()
-            ], 500);
+            $excReply = 'The admin assistant is temporarily unavailable. Error: ' . $e->getMessage();
+            if ($userId) {
+                ChatbotMessage::create([
+                    'user_type' => 'admin',
+                    'user_id' => $userId,
+                    'role' => 'assistant',
+                    'content' => $excReply,
+                    'model' => $model,
+                ]);
+            }
+            return response()->json(['reply' => $excReply], 500);
         }
+    }
+
+    /**
+     * Get saved chat history for the logged-in admin.
+     */
+    public function history(Request $request)
+    {
+        $authUser = session('auth_user');
+        if (!$authUser || empty($authUser['id'])) {
+            return response()->json(['messages' => []]);
+        }
+
+        $messages = ChatbotMessage::forUser('admin', (int) $authUser['id'])
+            ->orderBy('id', 'asc')
+            ->get(['id', 'role', 'content', 'created_at'])
+            ->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'role' => $msg->role,
+                    'content' => $msg->content,
+                    'isBot' => $msg->role === 'assistant',
+                    'created_at' => $msg->created_at?->toIso8601String(),
+                ];
+            });
+
+        return response()->json(['messages' => $messages]);
+    }
+
+    /**
+     * Clear all saved chat history for the logged-in admin.
+     */
+    public function clear(Request $request)
+    {
+        $authUser = session('auth_user');
+        if (!$authUser || empty($authUser['id'])) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        ChatbotMessage::forUser('admin', (int) $authUser['id'])->delete();
+
+        return response()->json(['success' => true, 'message' => 'Conversation history cleared.']);
+    }
+
+    /**
+     * Clean raw AI response to strip thinking processes, reasoning tags, and bot prefixes.
+     */
+    private function cleanChatbotReply(string $reply): string
+    {
+        // 1. Strip <think>...</think> tags if model outputs raw reasoning tokens
+        $reply = preg_replace('/<think>.*?<\/think>/is', '', $reply);
+
+        // 2. Strip "Here's a thinking process: ... \n\n" or "Thinking Process: ... \n\n"
+        $reply = preg_replace('/(?:^|\n)\s*(?:Here\'?s\s+(?:a\s+)?thinking\s+process|Thinking\s+Process|Thought\s+Process):.*?(?:\r?\n\r?\n|$)/is', '', $reply);
+
+        // 3. Strip leading bot prefix
+        $reply = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant):\s*/i', '', trim($reply));
+
+        return trim($reply);
     }
 
     private function getAdminContext(string $message): string
