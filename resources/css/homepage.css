@@ -49,6 +49,93 @@ body {
     text-align: center;
 }
 
+.hp-topbar--closed {
+    background: #fee2e2;
+    border-bottom: 1px solid #fca5a5;
+}
+
+.hp-topbar--closed .hp-topbar__text {
+    color: #991b1b;
+}
+
+.hp-topbar-tooltip {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1.35;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    white-space: normal;
+    min-width: 14rem;
+    max-width: 22rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    z-index: 150;
+    text-align: left;
+}
+
+.hp-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hp-status-pill--open {
+    background: rgba(46, 125, 79, 0.25);
+    border: 1px solid rgba(76, 154, 95, 0.45);
+    color: #8fd0ab;
+}
+
+.hp-status-pill--closed {
+    background: rgba(220, 38, 38, 0.25);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    color: #fca5a5;
+}
+
+.hp-status-pill__dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+}
+
+.hp-status-pill--open .hp-status-pill__dot {
+    background: #2f9e63;
+    box-shadow: 0 0 6px rgba(47, 158, 99, 0.6);
+    animation: statusPulse 2s infinite ease-in-out;
+}
+
+.hp-status-pill--closed .hp-status-pill__dot {
+    background: #ef4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+}
+
+.hp-status-tooltip {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: rgba(11, 36, 24, 0.98);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.75rem;
+    width: 15rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    z-index: 150;
+    text-align: left;
+}
+
 .hp-topbar__text {
     margin: 0;
     font-size: 0.75rem;

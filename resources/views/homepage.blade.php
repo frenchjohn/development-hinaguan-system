@@ -16,16 +16,37 @@
 <body class="antialiased">
 
     {{-- Fixed site header (topbar + nav stay together on scroll) --}}
+    {{-- Fixed site header (topbar + nav stay together on scroll) --}}
     <div class="hp-site-header" id="hpSiteHeader">
-        <div class="hp-topbar">
+        <div class="hp-topbar {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'hp-topbar--closed' : '' }}">
             <div class="hp-topbar__inner">
-                <p class="hp-topbar__text">
-                    <strong>Now Open!</strong>
-                    Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
-                    Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
-                    <a href="{{ route('reservation') }}">Reserve Now</a>
-                    &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
-                </p>
+                @if (($parkSettings->park_status ?? 'open') === 'closed')
+                    <p class="hp-topbar__text flex items-center justify-center gap-2 flex-wrap">
+                        <span class="hp-topbar-badge hp-topbar-badge--closed relative group cursor-help inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-red-600 text-white font-bold text-xs shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                            Park Closed
+                            <span class="hp-topbar-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" role="tooltip">
+                                <strong>Closure Reason:</strong><br>{{ $parkSettings->close_description ?: 'The park is temporarily closed for maintenance or weather conditions.' }}
+                            </span>
+                        </span>
+                        <span>{{ !empty($parkSettings->close_description) ? $parkSettings->close_description : 'The park is temporarily closed for maintenance.' }}</span>
+                        <span class="opacity-80">&nbsp;|&nbsp; Inquiries: {{ $parkSettings->contact_number ?? '0917 861 8383' }}</span>
+                    </p>
+                @else
+                    <p class="hp-topbar__text">
+                        <span class="hp-topbar-badge hp-topbar-badge--open relative group cursor-help inline-flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-[#1b5e3a] text-white font-bold text-xs mr-1 shadow-sm">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                            Now Open!
+                            <span class="hp-topbar-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200" role="tooltip">
+                                The park is currently open to guests & visitors.
+                            </span>
+                        </span>
+                        Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
+                        Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
+                        <a href="{{ route('reservation') }}">Reserve Now</a>
+                        &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
+                    </p>
+                @endif
             </div>
         </div>
 
@@ -53,6 +74,30 @@
                     <li><a href="#gallery" data-nav-link>Gallery</a></li>
                     <li><a href="#directions" data-nav-link>Directions</a></li>
                 </ul>
+
+                <!-- Live Status Pill with Hover Tooltip -->
+                <div class="hp-nav-status relative group shrink-0">
+                    @if (($parkSettings->park_status ?? 'open') === 'closed')
+                        <div class="hp-status-pill hp-status-pill--closed cursor-help" tabindex="0">
+                            <span class="hp-status-pill__dot"></span>
+                            <span>Park Closed</span>
+                        </div>
+                        <div class="hp-status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
+                            <p class="font-bold text-red-400 text-xs mb-1">Park Currently Closed</p>
+                            <p class="text-xs text-white/90 leading-relaxed">{{ $parkSettings->close_description ?: 'The park is temporarily closed for maintenance or weather conditions.' }}</p>
+                        </div>
+                    @else
+                        <div class="hp-status-pill hp-status-pill--open cursor-help" tabindex="0">
+                            <span class="hp-status-pill__dot"></span>
+                            <span>Park Open</span>
+                        </div>
+                        <div class="hp-status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
+                            <p class="font-bold text-emerald-400 text-xs mb-1">Park Is Open</p>
+                            <p class="text-xs text-white/90 leading-relaxed">Open daily for day tour and overnight stays.</p>
+                        </div>
+                    @endif
+                </div>
+
                 <a href="{{ route('reservation') }}" class="hp-btn hp-btn--book">Book Now</a>
             </nav>
 
@@ -67,6 +112,19 @@
 
     {{-- Mobile nav --}}
     <nav class="hp-mobile-nav" aria-hidden="true">
+        <div class="px-4 py-2 mb-2">
+            @if (($parkSettings->park_status ?? 'open') === 'closed')
+                <div class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span>Park Closed: {{ $parkSettings->close_description ?: 'Temporarily closed' }}</span>
+                </div>
+            @else
+                <div class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Park Open Today</span>
+                </div>
+            @endif
+        </div>
         <a href="#about" data-nav-link>About</a>
         <a href="#amenities" data-nav-link>Amenities</a>
         <a href="#activities" data-nav-link>Activities</a>

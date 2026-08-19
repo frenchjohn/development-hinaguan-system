@@ -155,6 +155,12 @@ class GuestChatbotController extends Controller
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
 
+        $settings = ParkSetting::first();
+        $statusStr = ($settings?->park_status ?? 'open') === 'closed' 
+            ? "CLOSED (Reason: " . ($settings?->close_description ?: 'Temporarily closed for maintenance') . ")" 
+            : "OPEN (Operating normally for all visitors)";
+        $context .= "Live Park Operational Status: {$statusStr}\n";
+
         // 1. ALL ACTIVE AMENITIES WITH CAPACITIES & RATES
         $amenities = Amenity::where('status', true)->get();
         $context .= "\n[AMENITIES & RATES]:\n";

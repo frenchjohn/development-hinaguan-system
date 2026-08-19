@@ -289,6 +289,12 @@ class StaffChatbotController extends Controller
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
 
+        $settings = ParkSetting::first();
+        $statusStr = ($settings?->park_status ?? 'open') === 'closed' 
+            ? "CLOSED (Reason: " . ($settings?->close_description ?: 'Temporarily closed for maintenance') . ")" 
+            : "OPEN (Operating normally for all day and night visitors)";
+        $context .= "Live Park Operational Status: {$statusStr}\n";
+
         // 1. CURRENTLY CHECKED-IN ACTIVE GUESTS & HEADCOUNT
         $checkedIn = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->where('status', 'Checked In')

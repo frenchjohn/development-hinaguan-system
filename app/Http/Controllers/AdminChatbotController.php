@@ -267,6 +267,12 @@ class AdminChatbotController extends Controller
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
 
+        $settings = ParkSetting::first();
+        $statusStr = ($settings?->park_status ?? 'open') === 'closed' 
+            ? "CLOSED (Reason: " . ($settings?->close_description ?: 'Temporarily closed for maintenance') . ")" 
+            : "OPEN (Operating normally for all day and night visitors)";
+        $context .= "Live Park Operational Status: {$statusStr}\n";
+
         // 1. RECENT ACTIVITY AUDIT TRAIL (LATEST 30)
         $recentLogs = ActivityLog::orderByDesc('created_at')->take(30)->get();
         $context .= "\n[AUDIT & RECENT ACTIVITIES]:\n";

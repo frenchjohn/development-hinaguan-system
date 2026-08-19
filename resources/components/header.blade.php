@@ -20,6 +20,10 @@
     $latestActivityId = \App\Models\ActivityLog::max('id') ?? 0;
 
     $initialUnreadCount = \App\Models\ActivityLog::where('id', '>', $userLastSeenId)->count();
+
+    $headerParkSettings = \App\Models\ParkSetting::first();
+    $headerParkStatus = $headerParkSettings->park_status ?? 'open';
+    $headerCloseDesc = $headerParkSettings->close_description ?? null;
 @endphp
 
 <header class="dash-header sticky top-0 z-[100] flex items-center justify-between gap-4 px-6 h-[3.75rem] min-h-[3.75rem] bg-white dark:bg-[#0d2116] border-b border-[#e5e9e6] dark:border-[#1a3d2a] shadow-[0_2px_12px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 ease-in-out -mt-[1.5rem] -mx-[1.5rem] mb-[1.5rem]" data-dash-header>
@@ -38,10 +42,37 @@
     </div>
 
     <div class="grid grid-cols-[6.75rem_13rem_2.25rem] items-center gap-[1.15rem] shrink-0">
-        <!-- Live Park Status Pill -->
-        <div class="col-start-1 w-full inline-flex items-center justify-center gap-[0.45rem] py-[0.3rem] px-[0.75rem] rounded-full bg-[#eaf5ee] dark:bg-[#133020] border border-[#c2e2ce] dark:border-[#1e4e33] text-[#2f6f45] dark:text-[#8fd0ab] text-[0.75rem] font-semibold">
-            <span class="w-[0.45rem] h-[0.45rem] rounded-full bg-[#2f9e63] shadow-[0_0_6px_rgba(47,158,99,0.4)] animate-[statusPulse_2s_infinite_ease-in-out]"></span>
-            <span class="font-semibold">Park Open</span>
+        <!-- Live Park Status Pill with Interactive Hover Tooltip -->
+        <div class="col-start-1 w-full relative group">
+            @if ($headerParkStatus === 'closed')
+                <div class="dash-header__status-badge dash-header__status-badge--closed cursor-help" data-park-status-badge data-status="closed" tabindex="0">
+                    <span class="dash-header__status-dot"></span>
+                    <span class="font-semibold">Park Closed</span>
+                </div>
+                <div class="dash-header__status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
+                    <div class="text-[0.7rem] font-bold text-red-700 dark:text-red-400 mb-0.5 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Park Currently Closed</span>
+                    </div>
+                    <div class="text-[0.72rem] text-[#3d4a3e] dark:text-[#d1ddd4] leading-relaxed" data-park-status-tooltip>
+                        {{ $headerCloseDesc ?: 'The park is temporarily closed for maintenance or weather conditions.' }}
+                    </div>
+                </div>
+            @else
+                <div class="dash-header__status-badge cursor-help" data-park-status-badge data-status="open" tabindex="0">
+                    <span class="dash-header__status-dot"></span>
+                    <span class="font-semibold">Park Open</span>
+                </div>
+                <div class="dash-header__status-tooltip pointer-events-none opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200" role="tooltip">
+                    <div class="text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-400 mb-0.5 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Park Is Open</span>
+                    </div>
+                    <div class="text-[0.72rem] text-[#3d4a3e] dark:text-[#d1ddd4] leading-relaxed" data-park-status-tooltip>
+                        The park is open and operating normally for day and night guests.
+                    </div>
+                </div>
+            @endif
         </div>
 
         @if ($weatherNow)

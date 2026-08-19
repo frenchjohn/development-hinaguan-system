@@ -100,6 +100,41 @@
                             <form method="POST" action="{{ route('admin.settings.park.update') }}" class="admin-settings__form" id="parkSettingsForm">
                                 @csrf
                                 <div class="admin-settings__form-grid">
+                                    <!-- Live Park Status & Closure Reason Card -->
+                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#183525]">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <label class="admin-settings__label text-sm font-bold text-[#0d2c1d] dark:text-[#f5f5f0] mb-0.5">Live Park Operational Status</label>
+                                                <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Set whether the park is currently open for visitors or temporarily closed.</p>
+                                            </div>
+                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#0d2116] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#1a3d2a]">
+                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
+                                                    <input type="radio" name="park_status" value="open" id="park_status_open" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" {{ ($parkSettings->park_status ?? 'open') === 'open' ? 'checked' : '' }} disabled>
+                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        Park Open
+                                                    </span>
+                                                </label>
+                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
+                                                    <input type="radio" name="park_status" value="closed" id="park_status_closed" class="w-4 h-4 text-red-600 focus:ring-red-500" {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'checked' : '' }} disabled>
+                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
+                                                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                                        Park Closed
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Close Description (Reason for Closure) -->
+                                        <div id="closeDescriptionWrapper" class="{{ ($parkSettings->park_status ?? 'open') === 'closed' ? '' : 'hidden' }} mt-3 pt-3 border-t border-[#dbe3de] dark:border-[#183525]">
+                                            <label for="close_description" class="admin-settings__label text-xs font-semibold text-red-700 dark:text-red-400">
+                                                Closure Reason / Description <span class="text-xs font-normal text-[#5a6b5c] dark:text-[#a8b8a8]">(Shows on hover in headers & guest website)</span>
+                                            </label>
+                                            <textarea id="close_description" name="close_description" rows="2" class="admin-settings__input w-full mt-1" placeholder="e.g., Temporarily closed for scheduled river maintenance and pool water treatment. We will reopen tomorrow." disabled>{{ $parkSettings->close_description ?? '' }}</textarea>
+                                            <p class="m-0 mt-1 text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8]">When set to Open, this description will automatically be cleared.</p>
+                                        </div>
+                                    </div>
+
                                     <div class="admin-settings__group">
                                         <label for="contact_number" class="admin-settings__label">Contact Number</label>
                                         <input type="tel" id="contact_number" name="contact_number" class="admin-settings__input" value="{{ $parkSettings->contact_number ?? '' }}" disabled>

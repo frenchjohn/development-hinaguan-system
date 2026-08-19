@@ -18,9 +18,26 @@
 <body class="antialiased am-page" style="--am-page-bg: url('{{ asset('images/background.jpeg') }}')">
 
     <div class="am-site-header" id="amSiteHeader">
-        <div class="am-topbar">
+        <div class="am-topbar {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'bg-red-100 border-b border-red-300' : '' }}">
             <div class="am-topbar__inner">
-                <p class="am-topbar__text"><strong>Now Open!</strong> Daytime: Adult &#8369;70 &middot; Child &#8369;50 &nbsp;|&nbsp; Overnight: Adult &#8369;100 &nbsp;|&nbsp; <a href="{{ route('reservation') }}">Reserve Now</a> &nbsp;&middot;&nbsp; Call: 0917 861 8383</p>
+                @if (($parkSettings->park_status ?? 'open') === 'closed')
+                    <p class="am-topbar__text text-red-800 font-medium">
+                        <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-red-600 text-white font-bold text-xs shadow-sm mr-1">
+                            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                            Park Closed
+                        </span>
+                        <span>{{ !empty($parkSettings->close_description) ? $parkSettings->close_description : 'The park is temporarily closed for maintenance.' }}</span>
+                        &nbsp;|&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
+                    </p>
+                @else
+                    <p class="am-topbar__text">
+                        <strong>Now Open!</strong>
+                        Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
+                        Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
+                        <a href="{{ route('reservation') }}">Reserve Now</a>
+                        &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
+                    </p>
+                @endif
             </div>
         </div>
         <header class="am-header">

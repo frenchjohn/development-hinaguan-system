@@ -47,17 +47,44 @@ window.AppPage['admin_settings'] = function () {
     const cancelParkSettingsBtn = document.getElementById('cancelParkSettingsBtn');
     const parkSettingsForm = document.getElementById('parkSettingsForm');
     const parkSettingsFormActions = document.getElementById('parkSettingsFormActions');
-    const parkSettingsInputs = parkSettingsForm ? parkSettingsForm.querySelectorAll('input') : [];
+    const parkSettingsInputs = parkSettingsForm ? parkSettingsForm.querySelectorAll('input, select, textarea') : [];
     const parkSettingsSuccessModal = document.getElementById('parkSettingsSuccessModal');
     const closeParkSettingsSuccessModal = document.getElementById('closeParkSettingsSuccessModal');
 
+    const parkStatusOpen = document.getElementById('park_status_open');
+    const parkStatusClosed = document.getElementById('park_status_closed');
+    const closeDescriptionWrapper = document.getElementById('closeDescriptionWrapper');
+    const closeDescriptionInput = document.getElementById('close_description');
+
+    // Handle Park Status Radio Toggle
+    const updateCloseDescriptionVisibility = () => {
+        if (parkStatusClosed?.checked) {
+            closeDescriptionWrapper?.classList.remove('hidden');
+        } else {
+            closeDescriptionWrapper?.classList.add('hidden');
+            if (closeDescriptionInput) {
+                closeDescriptionInput.value = '';
+            }
+        }
+    };
+
+    parkStatusOpen?.addEventListener('change', updateCloseDescriptionVisibility);
+    parkStatusClosed?.addEventListener('change', updateCloseDescriptionVisibility);
+
     // Store original values for cancel functionality
     let originalParkSettingsValues = {};
+    let originalParkStatus = 'open';
 
     editParkSettingsBtn?.addEventListener('click', () => {
         // Store original values
         parkSettingsInputs.forEach(input => {
-            originalParkSettingsValues[input.id] = input.value;
+            if (input.type === 'radio') {
+                if (input.checked) {
+                    originalParkStatus = input.value;
+                }
+            } else {
+                originalParkSettingsValues[input.id || input.name] = input.value;
+            }
             input.disabled = false;
         });
 
@@ -69,9 +96,15 @@ window.AppPage['admin_settings'] = function () {
     cancelParkSettingsBtn?.addEventListener('click', () => {
         // Restore original values
         parkSettingsInputs.forEach(input => {
-            input.value = originalParkSettingsValues[input.id] || '';
+            if (input.type === 'radio') {
+                input.checked = (input.value === originalParkStatus);
+            } else {
+                input.value = originalParkSettingsValues[input.id || input.name] || '';
+            }
             input.disabled = true;
         });
+
+        updateCloseDescriptionVisibility();
 
         // Hide form actions, show edit button
         parkSettingsFormActions?.classList.add('admin-settings__form-actions--hidden');
@@ -94,17 +127,52 @@ window.AppPage['admin_settings'] = function () {
             });
             
             if (response.ok) {
+                const data = await response.json();
+
+                // Update original values
+                originalParkStatus = parkStatusClosed?.checked ? 'closed' : 'open';
+                parkSettingsInputs.forEach(input => {
+                    if (input.type !== 'radio') {
+                        originalParkSettingsValues[input.id || input.name] = input.value;
+                    }
+                    input.disabled = true;
+                });
+
                 // Show success modal
                 if (parkSettingsSuccessModal) {
                     parkSettingsSuccessModal.style.display = 'flex';
                 }
                 
-                // Disable fields and hide form actions
-                parkSettingsInputs.forEach(input => {
-                    input.disabled = true;
-                });
                 parkSettingsFormActions?.classList.add('admin-settings__form-actions--hidden');
                 editParkSettingsBtn?.classList.remove('admin-settings__btn--hidden');
+
+                // If header status pill exists, update it dynamically
+                const headerStatusBadge = document.querySelector('[data-park-status-badge]');
+                if (headerStatusBadge && data.park_status) {
+                    if (data.park_status === 'closed') {
+                        headerStatusBadge.className = 'dash-header__status-badge dash-header__status-badge--closed';
+                        headerStatusBadge.setAttribute('data-status', 'closed');
+                        headerStatusBadge.innerHTML = `
+                            <span class="dash-header__status-dot"></span>
+                            <span class="font-semibold">Park Closed</span>
+                        `;
+                        const tooltip = headerStatusBadge.parentElement?.querySelector('[data-park-status-tooltip]');
+                        if (tooltip) {
+                            tooltip.textContent = data.close_description || 'The park is temporarily closed.';
+                        }
+                    } else {
+                        headerStatusBadge.className = 'dash-header__status-badge';
+                        headerStatusBadge.setAttribute('data-status', 'open');
+                        headerStatusBadge.innerHTML = `
+                            <span class="dash-header__status-dot"></span>
+                            <span class="font-semibold">Park Open</span>
+                        `;
+                        const tooltip = headerStatusBadge.parentElement?.querySelector('[data-park-status-tooltip]');
+                        if (tooltip) {
+                            tooltip.textContent = 'The park is currently open to visitors and guests.';
+                        }
+                    }
+                }
             } else {
                 // Handle error
                 const errorData = await response.json();

@@ -497,6 +497,8 @@ Route::get('/api/park-settings', function () {
     $settings = \App\Models\ParkSetting::first();
     
     return response()->json([
+        'park_status' => $settings->park_status ?? 'open',
+        'close_description' => $settings->close_description ?? null,
         'daytime_adult_entrance_fee' => $settings->daytime_adult_entrance_fee ?? 0,
         'daytime_child_entrance_fee' => $settings->daytime_child_entrance_fee ?? 0,
         'nighttime_adult_entrance_fee' => $settings->nighttime_adult_entrance_fee ?? 0,
@@ -721,6 +723,8 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
         ->filter(fn ($res) => $res->reservationAmenities->isEmpty())
         ->sum(fn ($res) => $res->reservationGuests->whereNull('checked_out_at')->count());
 
+    $parkSettings = \App\Models\ParkSetting::first();
+
     return view('amenities', compact(
         'amenities',
         'occupancyData',
@@ -736,7 +740,8 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
         'femaleCount',
         'maleCount',
         'adultCount',
-        'childCount'
+        'childCount',
+        'parkSettings'
     ));
 })->name('amenities');
 
@@ -1998,6 +2003,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $validated = $request->validate([
             'contact_number' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
+            'park_status' => 'required|in:open,closed',
+            'close_description' => 'nullable|string|max:1000',
             'daytime_start' => 'required',
             'daytime_end' => 'required',
             'nighttime_start' => 'required',
@@ -2011,13 +2018,46 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'facebook_link' => 'nullable|url|max:255',
         ]);
 
+        if ($validated['park_status'] === 'open') {
+            $validated['close_description'] = null;
+        }
+
         $parkSettings = \App\Models\ParkSetting::first();
         if (!$parkSettings) {
             $parkSettings = new \App\Models\ParkSetting();
         }
 
+        $previousStatus = $parkSettings->park_status ?? 'open';
+        $previousDesc = $parkSettings->close_description ?? null;
+
         $parkSettings->fill($validated);
         $parkSettings->save();
+
+        // Activity Log for Park Status Change
+        if ($previousStatus !== $validated['park_status'] || ($validated['park_status'] === 'closed' && $previousDesc !== $validated['close_description'])) {
+            $statusLabel = $validated['park_status'] === 'open' ? 'Open' : 'Closed';
+            $descText = $validated['park_status'] === 'closed' && !empty($validated['close_description']) 
+                ? "Admin set park status to Closed: {$validated['close_description']}"
+                : "Admin set park status to {$statusLabel}";
+
+            \App\Models\ActivityLog::log(
+                activityType: 'park_status_updated',
+                title: "Park Status: {$statusLabel}",
+                description: $descText,
+                reservationId: null,
+                actorName: $user['name'] ?? 'Admin User',
+                actorRole: $user['role'] ?? 'admin',
+            );
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Park settings updated successfully.',
+                'park_status' => $parkSettings->park_status,
+                'close_description' => $parkSettings->close_description,
+            ]);
+        }
 
         return redirect()->route('admin.settings')->with('success', 'Park settings updated successfully.');
     })->name('settings.park.update');

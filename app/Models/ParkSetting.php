@@ -9,6 +9,8 @@ class ParkSetting extends Model
     protected $fillable = [
         'contact_number',
         'email',
+        'park_status',
+        'close_description',
         'opening_time',
         'closing_time',
         'daytime_start',
@@ -25,4 +27,20 @@ class ParkSetting extends Model
     ];
 
     protected $table = 'park_settings';
+
+    /**
+     * Check if park is currently set to Open.
+     */
+    public function isOpen(): bool
+    {
+        return ($this->park_status ?? 'open') === 'open';
+    }
+
+    /**
+     * Check if park is currently set to Closed.
+     */
+    public function isClosed(): bool
+    {
+        return ($this->park_status ?? 'open') === 'closed';
+    }
 }
