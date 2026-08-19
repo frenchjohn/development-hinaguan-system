@@ -1,6 +1,45 @@
 <!-- Admin Chatbot Widget -->
 <div class="chatbot-widget chatbot-widget--admin" id="chatbotWidget">
 
+    <!-- Responsive AI Proactive Speech Bubble Pop-up -->
+    <aside class="chatbot-proactive-bubble" id="chatbotProactiveBubble" hidden aria-live="polite" role="dialog" aria-label="Admin AI Proactive Notice">
+        <div class="chatbot-proactive-bubble__card">
+            <div class="chatbot-proactive-bubble__header">
+                <div class="chatbot-proactive-bubble__avatar">
+                    <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Admin AI">
+                    <span class="chatbot-proactive-bubble__pulse" aria-hidden="true"></span>
+                </div>
+                <div class="chatbot-proactive-bubble__meta">
+                    <span class="chatbot-proactive-bubble__name">Admin Intelligence</span>
+                    <span class="chatbot-proactive-bubble__tag" id="proactiveHeadline">Notice</span>
+                </div>
+                <button type="button" class="chatbot-proactive-bubble__close-icon" id="proactiveCloseIcon" aria-label="Dismiss message" title="Dismiss">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="chatbot-proactive-bubble__body">
+                <p class="chatbot-proactive-bubble__message" id="proactiveMessageText"></p>
+                <p class="chatbot-proactive-bubble__followup" id="proactiveFollowupText"></p>
+            </div>
+
+            <div class="chatbot-proactive-bubble__actions">
+                <button type="button" class="chatbot-proactive-bubble__action-btn" id="proactiveActionBtn">
+                    <span id="proactiveActionLabel">Briefing</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="chatbot-proactive-bubble__action-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/>
+                    </svg>
+                </button>
+                <button type="button" class="chatbot-proactive-bubble__nevermind-btn" id="proactiveNevermindBtn">
+                    Nevermind
+                </button>
+            </div>
+        </div>
+        <div class="chatbot-proactive-bubble__tail" aria-hidden="true"></div>
+    </aside>
+
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open Admin AI Assistant" aria-expanded="false">
         <span class="chatbot-toggle__label">Admin Intelligence</span>
         <svg class="chatbot-toggle__icon chatbot-toggle__icon--chat" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">

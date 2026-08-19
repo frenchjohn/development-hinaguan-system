@@ -9,6 +9,7 @@ use App\Models\ParkSetting;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
 use App\Models\ReservationGuest;
+use App\Services\WeatherService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -261,6 +262,164 @@ class StaffChatbotController extends Controller
         ChatbotMessage::forUser('staff', (int) $authUser['id'])->delete();
 
         return response()->json(['success' => true, 'message' => 'Conversation history cleared.']);
+    }
+
+    /**
+     * Generate real-time responsive / proactive AI greeting with contextual insight & follow-up question.
+     */
+    public function proactiveMessage(Request $request)
+    {
+        $authUser = session('auth_user') ?? [];
+        if (empty($authUser) || empty($authUser['id'])) {
+            return response()->json(['has_message' => false], 401);
+        }
+
+        $userId = (int) $authUser['id'];
+        $rawName = !empty($authUser['name']) ? trim($authUser['name']) : 'Staff';
+        $firstName = explode(' ', $rawName)[0];
+
+        $now = now();
+        $todayStr = $now->toDateString();
+        $hour = (int) $now->format('G');
+        $timeOfDay = ($hour < 12) ? 'morning' : (($hour < 17) ? 'afternoon' : 'evening');
+
+        $settings = ParkSetting::first();
+        $isParkClosed = ($settings?->park_status ?? 'open') === 'closed';
+        $closeDesc = $settings?->close_description ?: 'scheduled maintenance';
+
+        // 1. Pending Reservations needing staff action
+        $pendingCount = Reservation::whereIn('status', ['Pending', 'pending'])->count();
+
+        // 2. Checkouts Due Today
+        $dueCheckoutsCount = Reservation::where('status', 'Checked In')
+            ->where(function ($q) use ($todayStr) {
+                $q->whereDate('end_date', $todayStr)
+                  ->orWhere(function ($q2) use ($todayStr) {
+                      $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                  });
+            })
+            ->count();
+
+        // 3. Checked-In Active Guests
+        $activeGuestsCount = ReservationGuest::whereNull('checked_out_at')
+            ->whereHas('reservation', fn($q) => $q->where('status', 'Checked In'))
+            ->count();
+
+        // 4. Revenue Comparisons
+        $todayRevenue = (float) Reservation::whereDate('created_at', $todayStr)
+            ->orWhereDate('reservation_date', $todayStr)
+            ->sum('amount_paid');
+
+        $yesterdayStr = $now->copy()->subDay()->toDateString();
+        $yesterdayRevenue = (float) Reservation::whereDate('created_at', $yesterdayStr)
+            ->orWhereDate('reservation_date', $yesterdayStr)
+            ->sum('amount_paid');
+
+        // 5. Live Weather
+        $weatherCondition = 'Clear skies';
+        $tempC = 29;
+        $rainChance = 10;
+        $isRaining = false;
+
+        try {
+            $weatherData = app(WeatherService::class)->getMultiDayForecast(1);
+            if (!empty($weatherData['now'])) {
+                $tempC = $weatherData['now']['temp_c'] ?? $tempC;
+                $weatherCondition = $weatherData['now']['condition'] ?? $weatherCondition;
+                $rainChance = $weatherData['now']['chance_of_rain'] ?? $rainChance;
+                $isRaining = !empty($weatherData['now']['is_raining']) || $rainChance >= 60;
+            }
+        } catch (\Throwable $e) {
+            // gracefully fallback
+        }
+
+        // Intelligently select the most timely insight scenario
+        $scenario = 'default';
+        $headline = 'Shift Briefing';
+        $message = "Good {$timeOfDay}, {$firstName}! All park operations are running smoothly today.";
+        $followUp = "Would you like me to walk you through today's expected schedule or guest demographics?";
+        $quickActionPrompt = "Give me an overview of today's schedule and expected guests";
+        $actionBtnLabel = "View Overview";
+
+        if ($isParkClosed) {
+            $scenario = 'park_closed';
+            $headline = 'Park Closed Notice';
+            $message = "Hey {$firstName}, just a reminder that the park is currently set to Closed (\"{$closeDesc}\").";
+            $followUp = "Would you like to review operational details or check guest inquiries?";
+            $quickActionPrompt = "Tell me the park closure status and guest guidelines";
+            $actionBtnLabel = "Check Status";
+        } elseif ($pendingCount > 0) {
+            $scenario = 'pending_reservations';
+            $headline = 'New Reservations';
+            $plural = $pendingCount > 1 ? "{$pendingCount} new reservations" : "1 new reservation";
+            $message = "Hey {$firstName}, there are {$plural} we have, kindly check those!";
+            $followUp = "Would you like me to summarize their booked dates and guest counts for you?";
+            $quickActionPrompt = "Summarize the pending reservations waiting for review";
+            $actionBtnLabel = "Summarize Bookings";
+        } elseif ($dueCheckoutsCount > 0) {
+            $scenario = 'due_checkouts';
+            $headline = 'Due Checkouts';
+            $plural = $dueCheckoutsCount > 1 ? "{$dueCheckoutsCount} reservations" : "1 reservation";
+            $message = "Hey {$firstName}, we have {$plural} scheduled for checkout today.";
+            $followUp = "Would you like me to pull up their departure time slots and check for any outstanding balances?";
+            $quickActionPrompt = "Who is due for checkout today and do they have remaining balances?";
+            $actionBtnLabel = "View Checkouts";
+        } elseif ($todayRevenue > 0 && $todayRevenue >= $yesterdayRevenue) {
+            $scenario = 'revenue_growth';
+            $headline = 'Revenue Milestone';
+            $revFormatted = number_format($todayRevenue, 2);
+            $message = "Wow {$firstName}, our revenue increased today, reaching ₱{$revFormatted}!";
+            $followUp = "Would you like me to compare our current revenue and past collections?";
+            $quickActionPrompt = "Compare current revenue with past collections and show top amenities";
+            $actionBtnLabel = "Compare Revenue";
+        } elseif ($activeGuestsCount >= 10) {
+            $scenario = 'high_occupancy';
+            $headline = 'Park Occupancy';
+            $message = "Hey {$firstName}, the park is lively right now with {$activeGuestsCount} active guests inside!";
+            $followUp = "Would you like me to check which cottages and amenities are still available for walk-ins?";
+            $quickActionPrompt = "Check amenity availability and occupied slots for walk-ins";
+            $actionBtnLabel = "Check Availability";
+        } elseif ($isRaining || $rainChance >= 40) {
+            $scenario = 'weather_rain';
+            $headline = 'Weather Alert';
+            $message = "Heads up {$firstName}, there's a {$rainChance}% chance of rain in Jasaan ({$weatherCondition}, {$tempC}°C).";
+            $followUp = "Would you like me to check the 3-day weather forecast for upcoming outdoor bookings?";
+            $quickActionPrompt = "Check 3-day weather forecast and rain outlook";
+            $actionBtnLabel = "Check Weather";
+        } elseif (preg_match('/clear|sunny/i', $weatherCondition) || $tempC >= 27) {
+            $scenario = 'weather_sunny';
+            $headline = 'Weather & Arrivals';
+            $message = "Woah {$firstName}, we got nice weather right now in Jasaan ({$tempC}°C, {$weatherCondition})!";
+            $followUp = "Would you like an overview of expected guest arrivals and remaining day slots?";
+            $quickActionPrompt = "Show expected arrivals and day slot availability for today";
+            $actionBtnLabel = "View Arrivals";
+        }
+
+        $fullSpeech = "{$message}\n\n{$followUp}";
+
+        // Persist message to database if not already saved recently
+        $lastMessage = ChatbotMessage::forUser('staff', $userId)->orderByDesc('id')->first();
+        if (!$lastMessage || $lastMessage->content !== $fullSpeech) {
+            ChatbotMessage::create([
+                'user_type' => 'staff',
+                'user_id' => $userId,
+                'role' => 'assistant',
+                'content' => $fullSpeech,
+                'model' => 'openrouter/free',
+            ]);
+        }
+
+        return response()->json([
+            'has_message' => true,
+            'scenario' => $scenario,
+            'headline' => $headline,
+            'message' => $message,
+            'follow_up' => $followUp,
+            'full_speech' => $fullSpeech,
+            'quick_action_prompt' => $quickActionPrompt,
+            'action_button_text' => $actionBtnLabel,
+            'timestamp' => $now->toDateTimeString(),
+        ]);
     }
 
     /**

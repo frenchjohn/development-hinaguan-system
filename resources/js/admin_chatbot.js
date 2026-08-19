@@ -9,6 +9,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatbotSend = document.getElementById('chatbotSend');
     const chatbotClear = document.getElementById('chatbotClear');
 
+    // Proactive Speech Bubble Elements
+    const chatbotProactiveBubble = document.getElementById('chatbotProactiveBubble');
+    const proactiveHeadline = document.getElementById('proactiveHeadline');
+    const proactiveMessageText = document.getElementById('proactiveMessageText');
+    const proactiveFollowupText = document.getElementById('proactiveFollowupText');
+    const proactiveActionBtn = document.getElementById('proactiveActionBtn');
+    const proactiveActionLabel = document.getElementById('proactiveActionLabel');
+    const proactiveNevermindBtn = document.getElementById('proactiveNevermindBtn');
+    const proactiveCloseIcon = document.getElementById('proactiveCloseIcon');
+
+    let currentProactiveData = null;
+
     if (!chatbotWidget || !chatbotToggle || !chatbotWindow) return;
 
     // Escape HTML to prevent XSS
@@ -161,6 +173,64 @@ document.addEventListener('DOMContentLoaded', () => {
         savePreferences(isOpen, selectedModel);
     });
 
+    // Dismiss Proactive Speech Bubble
+    const dismissProactiveBubble = () => {
+        if (!chatbotProactiveBubble || chatbotProactiveBubble.hidden) return;
+        chatbotProactiveBubble.classList.add('is-hiding');
+        sessionStorage.setItem('admin_chatbot_proactive_dismissed', Date.now().toString());
+        setTimeout(() => {
+            chatbotProactiveBubble.hidden = true;
+            chatbotProactiveBubble.classList.remove('is-hiding');
+        }, 280);
+    };
+
+    // Show Proactive Speech Bubble
+    const showProactiveBubble = (data) => {
+        if (!chatbotProactiveBubble || isOpen) return;
+        currentProactiveData = data;
+        if (proactiveHeadline) proactiveHeadline.textContent = data.headline || 'Notice';
+        if (proactiveMessageText) proactiveMessageText.textContent = data.message || '';
+        if (proactiveFollowupText) proactiveFollowupText.textContent = data.follow_up || '';
+        if (proactiveActionLabel) proactiveActionLabel.textContent = data.action_button_text || 'Briefing';
+        chatbotProactiveBubble.hidden = false;
+    };
+
+    // Check & trigger proactive AI greeting for Admin
+    const checkProactiveGreeting = async (force = false) => {
+        if (isOpen && !force) return;
+        
+        const lastDismissed = sessionStorage.getItem('admin_chatbot_proactive_dismissed');
+        const now = Date.now();
+        if (!force && lastDismissed && (now - parseInt(lastDismissed, 10)) < 180000) {
+            return; // 3 minute cooldown after dismissal
+        }
+
+        try {
+            const res = await fetch('/admin-chatbot/proactive', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.has_message) {
+                    showProactiveBubble(data);
+                    // Ensure it is in the chat list as well
+                    const fullSpeech = data.full_speech || `${data.message}\n\n${data.follow_up}`;
+                    const exists = messages.some(m => m.content === fullSpeech);
+                    if (!exists) {
+                        addMessage(fullSpeech, true);
+                        messages.push({ content: fullSpeech, isBot: true });
+                        chatbotWidget.classList.add('is-conversation');
+                    }
+                }
+            }
+        } catch (e) {
+            console.debug('Admin proactive greeting check skipped:', e);
+        }
+    };
+
     // Toggle chatbot
     const toggleChatbot = () => {
         isOpen = !isOpen;
@@ -170,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         savePreferences(isOpen, selectedModel);
 
         if (isOpen) {
+            dismissProactiveBubble();
             chatbotInput?.focus();
             setTimeout(() => {
                 if (chatbotMessages) {
@@ -181,6 +252,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
+
+    // Proactive bubble button listeners
+    proactiveNevermindBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissProactiveBubble();
+    });
+
+    proactiveCloseIcon?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissProactiveBubble();
+    });
+
+    proactiveActionBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const prompt = currentProactiveData?.quick_action_prompt;
+        dismissProactiveBubble();
+        if (!isOpen) toggleChatbot();
+        if (prompt && chatbotInput && chatbotForm) {
+            chatbotInput.value = prompt;
+            setTimeout(() => {
+                if (typeof chatbotForm.requestSubmit === 'function') {
+                    chatbotForm.requestSubmit();
+                } else {
+                    chatbotForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            }, 150);
+        }
+    });
+
+    chatbotProactiveBubble?.querySelector('.chatbot-proactive-bubble__body')?.addEventListener('click', () => {
+        dismissProactiveBubble();
+        if (!isOpen) toggleChatbot();
+    });
 
     // Delete conversation from DB and UI
     const disarmClear = () => {
@@ -332,6 +436,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Fetch conversation from database
-    loadDatabaseHistory();
+    // Fetch conversation from database and check proactive greeting
+    loadDatabaseHistory().then(() => {
+        setTimeout(() => {
+            checkProactiveGreeting();
+        }, 2200);
+    });
+
+    // Periodic proactive check every 90 seconds
+    setInterval(() => {
+        if (document.visibilityState === 'visible' && !isOpen) {
+            checkProactiveGreeting();
+        }
+    }, 90000);
 });

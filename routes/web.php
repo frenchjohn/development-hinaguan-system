@@ -473,10 +473,12 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/chatbot', [StaffChatbotController::class, 'chat'])->name('chatbot.chat');
 Route::get('/chatbot/history', [StaffChatbotController::class, 'history'])->name('chatbot.history');
 Route::post('/chatbot/clear', [StaffChatbotController::class, 'clear'])->name('chatbot.clear');
+Route::get('/chatbot/proactive', [StaffChatbotController::class, 'proactiveMessage'])->name('chatbot.proactive');
 
 Route::post('/admin-chatbot', [AdminChatbotController::class, 'chat'])->name('admin.chatbot.chat');
 Route::get('/admin-chatbot/history', [AdminChatbotController::class, 'history'])->name('admin.chatbot.history');
 Route::post('/admin-chatbot/clear', [AdminChatbotController::class, 'clear'])->name('admin.chatbot.clear');
+Route::get('/admin-chatbot/proactive', [AdminChatbotController::class, 'proactiveMessage'])->name('admin.chatbot.proactive');
 
 Route::post('/guest-chatbot', [GuestChatbotController::class, 'chat'])->name('chatbot.guest')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 

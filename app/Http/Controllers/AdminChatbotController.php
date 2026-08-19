@@ -11,6 +11,7 @@ use App\Models\Reservation;
 use App\Models\ReservationAmenity;
 use App\Models\ReservationGuest;
 use App\Models\StaffAccount;
+use App\Services\WeatherService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -239,6 +240,133 @@ class AdminChatbotController extends Controller
         ChatbotMessage::forUser('admin', (int) $authUser['id'])->delete();
 
         return response()->json(['success' => true, 'message' => 'Conversation history cleared.']);
+    }
+
+    /**
+     * Generate real-time responsive / proactive AI greeting for Administrator.
+     */
+    public function proactiveMessage(Request $request)
+    {
+        $authUser = session('auth_user') ?? [];
+        if (empty($authUser) || empty($authUser['id'])) {
+            return response()->json(['has_message' => false], 401);
+        }
+
+        $userId = (int) $authUser['id'];
+        $rawName = !empty($authUser['name']) ? trim($authUser['name']) : 'Admin';
+        $firstName = explode(' ', $rawName)[0];
+
+        $now = now();
+        $todayStr = $now->toDateString();
+        $hour = (int) $now->format('G');
+        $timeOfDay = ($hour < 12) ? 'morning' : (($hour < 17) ? 'afternoon' : 'evening');
+
+        $settings = ParkSetting::first();
+        $isParkClosed = ($settings?->park_status ?? 'open') === 'closed';
+        $closeDesc = $settings?->close_description ?: 'scheduled maintenance';
+
+        // 1. Pending Reservations
+        $pendingCount = Reservation::whereIn('status', ['Pending', 'pending'])->count();
+
+        // 2. Total Collected Revenue Today vs Yesterday
+        $todayRevenue = (float) Reservation::whereDate('created_at', $todayStr)
+            ->orWhereDate('reservation_date', $todayStr)
+            ->sum('amount_paid');
+
+        $yesterdayStr = $now->copy()->subDay()->toDateString();
+        $yesterdayRevenue = (float) Reservation::whereDate('created_at', $yesterdayStr)
+            ->orWhereDate('reservation_date', $yesterdayStr)
+            ->sum('amount_paid');
+
+        // 3. Recent Staff Activities in Audit Log (Last 3 hours)
+        $recentStaffActivitiesCount = ActivityLog::where('created_at', '>=', $now->copy()->subHours(3))->count();
+
+        // 4. Live Weather
+        $weatherCondition = 'Clear skies';
+        $tempC = 29;
+        $rainChance = 10;
+
+        try {
+            $weatherData = app(WeatherService::class)->getMultiDayForecast(1);
+            if (!empty($weatherData['now'])) {
+                $tempC = $weatherData['now']['temp_c'] ?? $tempC;
+                $weatherCondition = $weatherData['now']['condition'] ?? $weatherCondition;
+                $rainChance = $weatherData['now']['chance_of_rain'] ?? $rainChance;
+            }
+        } catch (\Throwable $e) {}
+
+        // Select the most relevant scenario for Admin
+        $scenario = 'default';
+        $headline = 'Admin Briefing';
+        $message = "Good {$timeOfDay}, {$firstName}! All management systems and staff audit logs are running smoothly.";
+        $followUp = "Would you like an intelligence report on recent revenue, demographics, or staff activity?";
+        $quickActionPrompt = "Give me an admin intelligence briefing on revenue and operations";
+        $actionBtnLabel = "Admin Briefing";
+
+        if ($isParkClosed) {
+            $scenario = 'park_closed';
+            $headline = 'Park Closed Notice';
+            $message = "Hey {$firstName}, the park is currently set to Closed (\"{$closeDesc}\").";
+            $followUp = "Would you like me to review the park operational settings or pending guest inquiries?";
+            $quickActionPrompt = "Show current park settings and operational status";
+            $actionBtnLabel = "Review Settings";
+        } elseif ($pendingCount > 0) {
+            $scenario = 'pending_reservations';
+            $headline = 'New Reservations';
+            $plural = $pendingCount > 1 ? "{$pendingCount} new reservations" : "1 new reservation";
+            $message = "Hey {$firstName}, there are {$plural} waiting for staff review and processing.";
+            $followUp = "Would you like me to summarize the booking dates and revenue value for you?";
+            $quickActionPrompt = "Summarize the pending reservations and their booking values";
+            $actionBtnLabel = "Summarize Bookings";
+        } elseif ($todayRevenue > 0 && $todayRevenue >= $yesterdayRevenue) {
+            $scenario = 'revenue_growth';
+            $headline = 'Revenue Milestone';
+            $revFormatted = number_format($todayRevenue, 2);
+            $message = "Wow {$firstName}, our revenue increased today, reaching ₱{$revFormatted}!";
+            $followUp = "Would you like me to compare our current revenue and past collections?";
+            $quickActionPrompt = "Compare today's revenue with previous periods and show top earning amenities";
+            $actionBtnLabel = "Compare Revenue";
+        } elseif ($recentStaffActivitiesCount > 0) {
+            $scenario = 'recent_activities';
+            $headline = 'Recent Staff Activities';
+            $message = "Hey {$firstName}, {$recentStaffActivitiesCount} staff activities have recently been logged in the audit trail.";
+            $followUp = "Would you like me to summarize the latest staff check-ins and stay extensions?";
+            $quickActionPrompt = "Summarize recent staff activity audit logs";
+            $actionBtnLabel = "Audit Summary";
+        } elseif (preg_match('/clear|sunny/i', $weatherCondition) || $tempC >= 27) {
+            $scenario = 'weather_sunny';
+            $headline = 'Weather Intelligence';
+            $message = "Woah {$firstName}, we got nice weather right now in Jasaan ({$tempC}°C, {$weatherCondition})!";
+            $followUp = "Would you like a quick breakdown of today's resort operations and expected revenue?";
+            $quickActionPrompt = "Give me today's resort operations and revenue overview";
+            $actionBtnLabel = "Resort Overview";
+        }
+
+        $fullSpeech = "{$message}\n\n{$followUp}";
+
+        // Persist message to database if not duplicate
+        $lastMessage = ChatbotMessage::forUser('admin', $userId)->orderByDesc('id')->first();
+        if (!$lastMessage || $lastMessage->content !== $fullSpeech) {
+            ChatbotMessage::create([
+                'user_type' => 'admin',
+                'user_id' => $userId,
+                'role' => 'assistant',
+                'content' => $fullSpeech,
+                'model' => 'openrouter/free',
+            ]);
+        }
+
+        return response()->json([
+            'has_message' => true,
+            'scenario' => $scenario,
+            'headline' => $headline,
+            'message' => $message,
+            'follow_up' => $followUp,
+            'full_speech' => $fullSpeech,
+            'quick_action_prompt' => $quickActionPrompt,
+            'action_button_text' => $actionBtnLabel,
+            'timestamp' => $now->toDateTimeString(),
+        ]);
     }
 
     /**
