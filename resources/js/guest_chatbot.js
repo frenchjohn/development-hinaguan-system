@@ -161,29 +161,41 @@ document.addEventListener('DOMContentLoaded', () => {
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
 
-    // Delete conversation (two-tap confirm to avoid accidental clears)
+    // Delete conversation confirmation modal workflow
     const chatbotClear = document.getElementById('chatbotClear');
-    let clearArmed = false;
-    let clearArmTimer = null;
-    // Set when the conversation is wiped; a reply still in flight must not resurrect it
+    const chatbotDeleteModal = document.getElementById('chatbotDeleteModal');
+    const chatbotCancelDelete = document.getElementById('chatbotCancelDelete');
+    const chatbotConfirmDelete = document.getElementById('chatbotConfirmDelete');
     let conversationCleared = false;
-    const disarmClear = () => {
-        clearArmed = false;
-        clearArmTimer = null;
-        chatbotClear?.classList.remove('is-armed');
-        chatbotClear?.setAttribute('aria-label', 'Delete conversation');
+
+    const openDeleteModal = () => {
+        if (!chatbotDeleteModal) return;
+        chatbotDeleteModal.hidden = false;
+        chatbotCancelDelete?.focus();
     };
-    chatbotClear?.addEventListener('click', () => {
-        if (!clearArmed) {
-            clearArmed = true;
-            chatbotClear.classList.add('is-armed');
-            chatbotClear.setAttribute('aria-label', 'Click again to delete');
-            clearArmTimer = setTimeout(disarmClear, 2500);
-            return;
+
+    const closeDeleteModal = () => {
+        if (!chatbotDeleteModal) return;
+        chatbotDeleteModal.hidden = true;
+        chatbotInput?.focus();
+    };
+
+    chatbotClear?.addEventListener('click', openDeleteModal);
+    chatbotCancelDelete?.addEventListener('click', closeDeleteModal);
+    chatbotDeleteModal?.addEventListener('click', (e) => {
+        if (e.target === chatbotDeleteModal) {
+            closeDeleteModal();
         }
-        // Confirm: wipe the conversation
-        clearTimeout(clearArmTimer);
-        disarmClear();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && chatbotDeleteModal && !chatbotDeleteModal.hidden) {
+            closeDeleteModal();
+        }
+    });
+
+    chatbotConfirmDelete?.addEventListener('click', () => {
+        closeDeleteModal();
         conversationCleared = true;
         messages = [];
         saveState(isOpen, messages, selectedModel);
@@ -191,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Bring back the welcome message + quick-reply chips
         chatbotWidget.classList.remove('is-conversation');
         addMessage('Hello! I\'m HinaguanBot 🌿 I can help you with our amenities, rates, and how to book your visit. What would you like to know?', true, false);
-        chatbotInput.focus();
+        chatbotInput?.focus();
     });
 
     // Quick-reply chips: send the preset question

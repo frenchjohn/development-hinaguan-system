@@ -287,8 +287,45 @@ class StaffChatbotController extends Controller
         $isParkClosed = ($settings?->park_status ?? 'open') === 'closed';
         $closeDesc = $settings?->close_description ?: 'scheduled maintenance';
 
-        // 1. Pending Reservations needing staff action
-        $pendingCount = Reservation::whereIn('status', ['Pending', 'pending'])->count();
+        $sessionKeysName = "staff_announced_keys_{$userId}";
+        $announcedKeys = (array) session($sessionKeysName, []);
+        $clientKeys = array_filter(explode(',', (string) $request->query('announced_keys', '')));
+        foreach ($clientKeys as $ck) {
+            $announcedKeys[$ck] = true;
+        }
+
+        $resSessionKey = "staff_last_announced_res_id_{$userId}";
+        $clientLastAnnounced = (int) $request->query('last_announced_res_id', 0);
+        $sessionLastAnnounced = (int) session($resSessionKey, 0);
+        $lastAnnouncedResId = max($clientLastAnnounced, $sessionLastAnnounced);
+
+        // 1. Pending Reservations needing staff action (matching reservations awaiting confirmation)
+        $pendingQuery = Reservation::query()
+            ->whereIn('status', ['Pending', 'pending'])
+            ->where(function ($query) {
+                $query->whereNull('check_in')
+                    ->orWhere('check_in', '');
+            });
+
+        $pendingCount = (clone $pendingQuery)->count();
+        $latestPending = (clone $pendingQuery)->latest('id')->first();
+
+        // Check if there is an unannounced brand new reservation
+        $isBrandNew = false;
+        if ($latestPending) {
+            if ($lastAnnouncedResId === 0) {
+                // On initial load, announce if created recently (last 15 mins) or if forced/new activity triggered
+                $isRecent = $latestPending->created_at && $latestPending->created_at->diffInMinutes(now()) <= 15;
+                if ($isRecent || $request->boolean('force')) {
+                    $isBrandNew = true;
+                } else {
+                    $lastAnnouncedResId = $latestPending->id;
+                    session([$resSessionKey => $latestPending->id]);
+                }
+            } elseif ($latestPending->id > $lastAnnouncedResId) {
+                $isBrandNew = true;
+            }
+        }
 
         // 2. Checkouts Due Today
         $dueCheckoutsCount = Reservation::where('status', 'Checked In')
@@ -335,6 +372,7 @@ class StaffChatbotController extends Controller
 
         // Intelligently select the most timely insight scenario
         $scenario = 'default';
+        $currentKey = "briefing_{$todayStr}_{$timeOfDay}";
         $headline = 'Shift Briefing';
         $message = "Good {$timeOfDay}, {$firstName}! All park operations are running smoothly today.";
         $followUp = "Would you like me to walk you through today's expected schedule or guest demographics?";
@@ -343,21 +381,25 @@ class StaffChatbotController extends Controller
 
         if ($isParkClosed) {
             $scenario = 'park_closed';
+            $currentKey = "closed_{$closeDesc}";
             $headline = 'Park Closed Notice';
             $message = "Hey {$firstName}, just a reminder that the park is currently set to Closed (\"{$closeDesc}\").";
             $followUp = "Would you like to review operational details or check guest inquiries?";
             $quickActionPrompt = "Tell me the park closure status and guest guidelines";
             $actionBtnLabel = "Check Status";
-        } elseif ($pendingCount > 0) {
+        } elseif ($isBrandNew && $latestPending) {
             $scenario = 'pending_reservations';
-            $headline = 'New Reservations';
-            $plural = $pendingCount > 1 ? "{$pendingCount} new reservations" : "1 new reservation";
-            $message = "Hey {$firstName}, there are {$plural} we have, kindly check those!";
-            $followUp = "Would you like me to summarize their booked dates and guest counts for you?";
-            $quickActionPrompt = "Summarize the pending reservations waiting for review";
-            $actionBtnLabel = "Summarize Bookings";
+            $currentKey = "pending_res_{$latestPending->id}";
+            $headline = 'New Reservation';
+            $message = "Hey {$firstName}, a new reservation is booked right now, go and check it!";
+            $followUp = "Would you like me to summarize the booking details for {$latestPending->booker_name}?";
+            $quickActionPrompt = "Summarize new reservation #{$latestPending->id} for {$latestPending->booker_name}";
+            $actionBtnLabel = "Check Reservation";
+            $lastAnnouncedResId = $latestPending->id;
+            session([$resSessionKey => $latestPending->id]);
         } elseif ($dueCheckoutsCount > 0) {
             $scenario = 'due_checkouts';
+            $currentKey = "due_checkouts_{$dueCheckoutsCount}_{$todayStr}";
             $headline = 'Due Checkouts';
             $plural = $dueCheckoutsCount > 1 ? "{$dueCheckoutsCount} reservations" : "1 reservation";
             $message = "Hey {$firstName}, we have {$plural} scheduled for checkout today.";
@@ -366,6 +408,7 @@ class StaffChatbotController extends Controller
             $actionBtnLabel = "View Checkouts";
         } elseif ($todayRevenue > 0 && $todayRevenue >= $yesterdayRevenue) {
             $scenario = 'revenue_growth';
+            $currentKey = "revenue_{$todayRevenue}_{$todayStr}";
             $headline = 'Revenue Milestone';
             $revFormatted = number_format($todayRevenue, 2);
             $message = "Wow {$firstName}, our revenue increased today, reaching ₱{$revFormatted}!";
@@ -374,6 +417,7 @@ class StaffChatbotController extends Controller
             $actionBtnLabel = "Compare Revenue";
         } elseif ($activeGuestsCount >= 10) {
             $scenario = 'high_occupancy';
+            $currentKey = "occupancy_" . floor($activeGuestsCount / 5) . "_{$todayStr}";
             $headline = 'Park Occupancy';
             $message = "Hey {$firstName}, the park is lively right now with {$activeGuestsCount} active guests inside!";
             $followUp = "Would you like me to check which cottages and amenities are still available for walk-ins?";
@@ -381,6 +425,7 @@ class StaffChatbotController extends Controller
             $actionBtnLabel = "Check Availability";
         } elseif ($isRaining || $rainChance >= 40) {
             $scenario = 'weather_rain';
+            $currentKey = "weather_rain_{$weatherCondition}_" . round($rainChance / 20) . "_" . round($tempC / 2);
             $headline = 'Weather Alert';
             $message = "Heads up {$firstName}, there's a {$rainChance}% chance of rain in Jasaan ({$weatherCondition}, {$tempC}°C).";
             $followUp = "Would you like me to check the 3-day weather forecast for upcoming outdoor bookings?";
@@ -388,12 +433,30 @@ class StaffChatbotController extends Controller
             $actionBtnLabel = "Check Weather";
         } elseif (preg_match('/clear|sunny/i', $weatherCondition) || $tempC >= 27) {
             $scenario = 'weather_sunny';
+            $currentKey = "weather_sunny_{$weatherCondition}_" . round($tempC / 2);
             $headline = 'Weather & Arrivals';
             $message = "Woah {$firstName}, we got nice weather right now in Jasaan ({$tempC}°C, {$weatherCondition})!";
             $followUp = "Would you like an overview of expected guest arrivals and remaining day slots?";
             $quickActionPrompt = "Show expected arrivals and day slot availability for today";
             $actionBtnLabel = "View Arrivals";
         }
+
+        // If this exact announcement was already made and not forced, do not re-announce
+        $alreadyAnnounced = !empty($announcedKeys[$currentKey]);
+        if ($alreadyAnnounced && !$request->boolean('force')) {
+            return response()->json([
+                'has_message' => false,
+                'scenario' => $scenario,
+                'announced_key' => $currentKey,
+                'announced_keys' => array_keys($announcedKeys),
+                'announced_res_id' => $lastAnnouncedResId,
+                'timestamp' => $now->toDateTimeString(),
+            ]);
+        }
+
+        // Update announced keys in session
+        $announcedKeys[$currentKey] = true;
+        session([$sessionKeysName => $announcedKeys]);
 
         $fullSpeech = "{$message}\n\n{$followUp}";
 
@@ -418,6 +481,9 @@ class StaffChatbotController extends Controller
             'full_speech' => $fullSpeech,
             'quick_action_prompt' => $quickActionPrompt,
             'action_button_text' => $actionBtnLabel,
+            'announced_key' => $currentKey,
+            'announced_keys' => array_keys($announcedKeys),
+            'announced_res_id' => $lastAnnouncedResId,
             'timestamp' => $now->toDateTimeString(),
         ]);
     }

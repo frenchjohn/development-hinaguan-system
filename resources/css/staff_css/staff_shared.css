@@ -67,46 +67,78 @@ body.staff-portal, body.admin-portal {
 }
 
 [data-theme="dark"] body.staff-portal, [data-theme="dark"] body.admin-portal {
-    /* Cleaner, higher-contrast dark: neutral charcoal with a subtle green cast.
-       Surfaces are clearly lighter than the page background so cards read as
-       separate layers instead of one muddy green-black blob. */
-    --hp-green-darkest: #0b130d;
-    --hp-green-dark: #152619;
-    --hp-green: #1d3826;
-    --hp-green-mid: #2c6343;
-    --hp-gold: #c4b282;
-    --hp-gold-light: #d4c496;
-    --hp-gold-dark: #a08e5c;
-    --hp-cream: #151c17;
-    --hp-light: #121813;
-    --hp-text: #eaf0eb;
-    --hp-text-muted: #9baaa1;
-    --hp-text-light: #6d7b72;
+    /* Refined, rich botanical dark green palette:
+       Deep forest slate background, emerald-infused dark cards,
+       and soft, soothing accents that eliminate eye strain. */
+    --hp-green-darkest: #040d07;
+    --hp-green-dark: #0a1c11;
+    --hp-green: #133822;
+    --hp-green-mid: #1d5334;
+    --hp-gold: #c9a86a;
+    --hp-gold-light: #dfc68e;
+    --hp-gold-dark: #9c7c42;
+    --hp-cream: #0c1c12;
+    --hp-light: #07130b;
+    --hp-text: #ecf5ef;
+    --hp-text-muted: #93a89c;
+    --hp-text-light: #677d70;
 
-    --bg: #0d120e;
-    --surface: #1a221b;
-    --surface-2: #141b15;
-    --border: #28332b;
-    --border-strong: #3b4740;
-    --ink: #eaf0eb;
-    --ink-muted: #9baaa1;
-    --ink-faint: #6e7c73;
-    --green: #3cac77;
-    --green-deep: #a2dcc0;
-    --green-edge: #1d6e48;
-    --green-hover: #2a8a5f;
-    --green-soft: #1d2f24;
-    --green-tint: #18261d;
-    --danger: #e5827a;
-    --danger-soft: #331e1c;
-    --success: #57c58a;
-    --warn: #d9b058;
-    --warn-soft: #302614;
+    --bg: #06120a;
+    --surface: #0c1f14;
+    --surface-2: #09180f;
+    --border: rgba(52, 211, 153, 0.12);
+    --border-strong: rgba(52, 211, 153, 0.22);
+    --ink: #ecf5ef;
+    --ink-muted: #93a89c;
+    --ink-faint: #677d70;
+    --green: #10b981;
+    --green-deep: #34d399;
+    --green-edge: #059669;
+    --green-hover: #10b981;
+    --green-soft: rgba(16, 185, 129, 0.12);
+    --green-tint: rgba(16, 185, 129, 0.06);
+    --danger: #f87171;
+    --danger-soft: rgba(244, 63, 94, 0.14);
+    --danger-border: rgba(248, 113, 113, 0.28);
+    --success: #34d399;
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.12);
 
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4), 0 10px 24px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 48px rgba(0, 0, 0, 0.5);
+    --glass-bg: rgba(12, 31, 20, 0.75);
+    --glass-bg-hover: rgba(18, 44, 29, 0.85);
+    --glass-border: rgba(52, 211, 153, 0.14);
+    --glass-border-strong: rgba(52, 211, 153, 0.26);
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* Sleek custom scrollbars for dark mode across both portals */
+[data-theme="dark"] * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(52, 211, 153, 0.22) rgba(6, 18, 10, 0.4);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: rgba(6, 18, 10, 0.3);
+    border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: rgba(52, 211, 153, 0.22);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: rgba(52, 211, 153, 0.38);
 }
 
 /* ------------------------------------------------------------
@@ -870,13 +902,117 @@ body.staff-portal .users-table-wrap , body.admin-portal .users-table-wrap {
 
 /* Records page: keep the tables wide enough that names, dates and pills never
    cramp/wrap, regardless of the 992px responsive override below. */
-body.staff-portal #guestTableWrap .guest-table,
-body.admin-portal #guestTableWrap .guest-table {
+body.staff-portal .records-content #guestTableWrap .guest-table,
+body.admin-portal .records-content #guestTableWrap .guest-table,
+body.staff-portal .guest-panel #guestTableWrap .guest-table,
+body.admin-portal .guest-panel #guestTableWrap .guest-table {
     min-width: 1080px;
 }
-body.staff-portal #reservationTableWrap .guest-table,
-body.admin-portal #reservationTableWrap .guest-table {
+body.staff-portal .records-content #reservationTableWrap .guest-table,
+body.admin-portal .records-content #reservationTableWrap .guest-table,
+body.staff-portal .guest-panel #reservationTableWrap .guest-table,
+body.admin-portal .guest-panel #reservationTableWrap .guest-table {
     min-width: 960px;
+}
+
+/* Check-ins page: internal scrollable table container with sticky header & clean edges */
+body.staff-portal #guestTableSection .guest-table-wrap,
+body.admin-portal #guestTableSection .guest-table-wrap,
+body.staff-portal #reservationTableSection .guest-table-wrap,
+body.admin-portal #reservationTableSection .guest-table-wrap,
+#guestTableWrap,
+#reservationTableWrap {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: 520px !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    position: relative !important;
+    scrollbar-width: thin;
+}
+
+body.staff-portal #guestTableSection .guest-table,
+body.admin-portal #guestTableSection .guest-table,
+body.staff-portal #reservationTableSection .guest-table,
+body.admin-portal #reservationTableSection .guest-table {
+    min-width: 100% !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: none !important;
+}
+
+body.staff-portal #guestTableSection .guest-table thead,
+body.admin-portal #guestTableSection .guest-table thead,
+body.staff-portal #reservationTableSection .guest-table thead,
+body.admin-portal #reservationTableSection .guest-table thead {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+}
+
+body.staff-portal #guestTableSection .guest-table thead th,
+body.admin-portal #guestTableSection .guest-table thead th,
+body.staff-portal #reservationTableSection .guest-table thead th,
+body.admin-portal #reservationTableSection .guest-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background: #ffffff !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 0.5rem 1rem !important;
+    color: var(--hp-text-muted) !important;
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+}
+
+[data-theme="dark"] body.staff-portal #guestTableSection .guest-table thead th,
+[data-theme="dark"] body.admin-portal #guestTableSection .guest-table thead th,
+[data-theme="dark"] body.staff-portal #reservationTableSection .guest-table thead th,
+[data-theme="dark"] body.admin-portal #reservationTableSection .guest-table thead th {
+    background: #0c1f14 !important;
+    border-bottom-color: var(--glass-border) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+body.staff-portal #guestTableSection .guest-table tbody td,
+body.admin-portal #guestTableSection .guest-table tbody td,
+body.staff-portal #reservationTableSection .guest-table tbody td,
+body.admin-portal #reservationTableSection .guest-table tbody td {
+    padding: 0.5rem 1rem !important;
+    border-bottom: 1px solid var(--glass-border) !important;
+    vertical-align: middle !important;
+    background: transparent !important;
+    font-size: 0.82rem !important;
+}
+
+body.staff-portal #guestTableSection .guest-table tbody tr:last-child td,
+body.admin-portal #guestTableSection .guest-table tbody tr:last-child td,
+body.staff-portal #reservationTableSection .guest-table tbody tr:last-child td,
+body.admin-portal #reservationTableSection .guest-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+body.staff-portal #guestTableSection .guest-table tbody tr:hover td,
+body.admin-portal #guestTableSection .guest-table tbody tr:hover td,
+body.staff-portal #reservationTableSection .guest-table tbody tr:hover td,
+body.admin-portal #reservationTableSection .guest-table tbody tr:hover td {
+    background: rgba(16, 185, 129, 0.04) !important;
+}
+
+[data-theme="dark"] body.staff-portal #guestTableSection .guest-table tbody tr:hover td,
+[data-theme="dark"] body.admin-portal #guestTableSection .guest-table tbody tr:hover td,
+[data-theme="dark"] body.staff-portal #reservationTableSection .guest-table tbody tr:hover td,
+[data-theme="dark"] body.admin-portal #reservationTableSection .guest-table tbody tr:hover td {
+    background: rgba(16, 185, 129, 0.08) !important;
 }
 
 /* Records page: table container with margin and padding */
@@ -2487,87 +2623,60 @@ td.mono-cell {
     flex-wrap: wrap;
 }
 
-/* Integrated Segmented Control */
-/* Integrated Segmented Control (Image Design) */
+/* Integrated Segmented Control (Tabs) */
 .checkins-tabs-container {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background: #ffffff;
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    justify-content: flex-start;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
     margin-bottom: 1.5rem;
 }
 
-[data-theme="dark"] .checkins-tabs-container {
-    background: rgba(0,0,0,0.2);
-    box-shadow: none;
-}
-
 .checkins-tabs {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.35rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 0.35rem;
+    box-shadow: var(--glass-shadow);
 }
 
 .checkins-tab {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0;
+    padding: 0.55rem 1.15rem;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-radius: 0.75rem;
     background: transparent;
     color: var(--hp-text-muted);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-decoration: none;
 }
 
 .checkins-tab:hover:not(.is-active) {
-    color: var(--hp-text-color);
+    color: var(--hp-text);
+    background: var(--glass-bg-hover);
 }
 
 .checkins-tab.is-active {
-    color: var(--hp-green-dark);
-    border-bottom: 2px solid var(--hp-green-dark);
+    color: #ffffff !important;
+    background: var(--hp-green-mid) !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    border-bottom: none;
 }
 
 [data-theme="dark"] .checkins-tab.is-active {
-    color: #34d399;
-    border-bottom: 2px solid #34d399;
-}
-
-/* Analytics Dashboard Button */
-.checkins-dashboard-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    background: var(--hp-green-dark) !important;
-    color: white !important;
-    font-weight: 600;
-    font-size: 0.85rem;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-    border-bottom: none !important;
-}
-
-.checkins-dashboard-btn:hover {
-    background: #104a30 !important;
-    transform: translateY(-1px);
-}
-
-.checkins-dashboard-btn.is-active {
+    color: #ffffff !important;
     background: #10b981 !important;
-    color: white !important;
-    border-bottom: none !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 2px 10px rgba(16, 185, 129, 0.35);
 }
 
 .checkins-top-stats {
@@ -2882,20 +2991,20 @@ td.mono-cell {
 
 /* Dark mode overrides */
 [data-theme="dark"] .premium-widget {
-    background: rgba(20, 33, 26, 0.6);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: var(--glass-shadow);
 }
 [data-theme="dark"] .premium-widget--alert {
-    background: rgba(40, 25, 15, 0.6);
-    border-color: rgba(245, 158, 11, 0.2);
+    background: rgba(20, 33, 24, 0.75);
+    border-color: rgba(251, 191, 36, 0.2);
 }
-[data-theme="dark"] .premium-widget__header { border-bottom-color: rgba(255,255,255,0.05); }
-[data-theme="dark"] .premium-widget__header h4 { color: #fff; }
-[data-theme="dark"] .premium-stat span { color: #aaa; }
-[data-theme="dark"] .premium-stat strong { color: #fff; }
-[data-theme="dark"] .premium-stat.stat-due strong { color: #ef4444; }
-[data-theme="dark"] .premium-stat.stat-near strong { color: #f59e0b; }
+[data-theme="dark"] .premium-widget__header { border-bottom-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .premium-widget__header h4 { color: var(--hp-text); }
+[data-theme="dark"] .premium-stat span { color: var(--hp-text-muted); }
+[data-theme="dark"] .premium-stat strong { color: var(--hp-text); }
+[data-theme="dark"] .premium-stat.stat-due strong { color: #f87171; }
+[data-theme="dark"] .premium-stat.stat-near strong { color: #fbbf24; }
 
 /* Table Header Flex */
 .table-header-flex {

@@ -174,11 +174,16 @@ document.addEventListener('DOMContentLoaded', () => {
         savePreferences(isOpen, selectedModel);
     });
 
+    const currentUserId = chatbotWidget?.getAttribute('data-user-id') || '0';
+    const storageKeyDismissed = `staff_chatbot_proactive_dismissed_${currentUserId}`;
+    const storageKeyResId = `staff_last_announced_res_id_${currentUserId}`;
+    const storageKeyAnnouncedKeys = `staff_announced_keys_${currentUserId}`;
+
     // Dismiss Proactive Speech Bubble
     const dismissProactiveBubble = () => {
         if (!chatbotProactiveBubble || chatbotProactiveBubble.hidden) return;
         chatbotProactiveBubble.classList.add('is-hiding');
-        sessionStorage.setItem('staff_chatbot_proactive_dismissed', Date.now().toString());
+        sessionStorage.setItem(storageKeyDismissed, Date.now().toString());
         setTimeout(() => {
             chatbotProactiveBubble.hidden = true;
             chatbotProactiveBubble.classList.remove('is-hiding');
@@ -200,14 +205,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkProactiveGreeting = async (force = false) => {
         if (isOpen && !force) return;
         
-        const lastDismissed = sessionStorage.getItem('staff_chatbot_proactive_dismissed');
+        if (force) {
+            sessionStorage.removeItem(storageKeyDismissed);
+        }
+
+        const lastDismissed = sessionStorage.getItem(storageKeyDismissed);
         const now = Date.now();
         if (!force && lastDismissed && (now - parseInt(lastDismissed, 10)) < 180000) {
             return; // 3 minute cooldown after user dismissal
         }
 
+        const lastAnnounced = sessionStorage.getItem(storageKeyResId) || '0';
+        const announcedKeysRaw = sessionStorage.getItem(storageKeyAnnouncedKeys) || '';
+        const url = `/chatbot/proactive?last_announced_res_id=${encodeURIComponent(lastAnnounced)}&announced_keys=${encodeURIComponent(announcedKeysRaw)}${force ? '&force=1' : ''}`;
+
         try {
-            const res = await fetch('/chatbot/proactive', {
+            const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -215,6 +228,16 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (res.ok) {
                 const data = await res.json();
+                if (Array.isArray(data.announced_keys)) {
+                    sessionStorage.setItem(storageKeyAnnouncedKeys, data.announced_keys.join(','));
+                } else if (data.announced_key) {
+                    const keysSet = new Set(announcedKeysRaw.split(',').filter(Boolean));
+                    keysSet.add(data.announced_key);
+                    sessionStorage.setItem(storageKeyAnnouncedKeys, Array.from(keysSet).join(','));
+                }
+                if (data.announced_res_id) {
+                    sessionStorage.setItem(storageKeyResId, data.announced_res_id.toString());
+                }
                 if (data.has_message) {
                     showProactiveBubble(data);
                     // Ensure it is in the chat list as well
@@ -231,6 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.debug('Staff proactive greeting check skipped:', e);
         }
     };
+
+    window.checkStaffChatbotProactive = checkProactiveGreeting;
+    window.addEventListener('activity:new', () => checkProactiveGreeting(true));
 
     // Toggle chatbot window
     const toggleChatbot = () => {
@@ -288,24 +314,39 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isOpen) toggleChatbot();
     });
 
-    // Delete conversation from DB and UI (two-tap confirm to avoid accidental clears)
-    const disarmClear = () => {
-        clearArmTimer = null;
-        chatbotClear?.classList.remove('is-armed');
-        chatbotClear?.setAttribute('aria-label', 'Delete conversation');
+    // Delete conversation confirmation modal workflow
+    const chatbotDeleteModal = document.getElementById('chatbotDeleteModal');
+    const chatbotCancelDelete = document.getElementById('chatbotCancelDelete');
+    const chatbotConfirmDelete = document.getElementById('chatbotConfirmDelete');
+
+    const openDeleteModal = () => {
+        if (!chatbotDeleteModal) return;
+        chatbotDeleteModal.hidden = false;
+        chatbotCancelDelete?.focus();
     };
 
-    chatbotClear?.addEventListener('click', async () => {
-        if (!chatbotClear.classList.contains('is-armed')) {
-            chatbotClear.classList.add('is-armed');
-            chatbotClear.setAttribute('aria-label', 'Click again to delete');
-            clearArmTimer = setTimeout(disarmClear, 2500);
-            return;
-        }
+    const closeDeleteModal = () => {
+        if (!chatbotDeleteModal) return;
+        chatbotDeleteModal.hidden = true;
+        chatbotInput?.focus();
+    };
 
-        // Confirm: delete the conversation on server and UI
-        clearTimeout(clearArmTimer);
-        disarmClear();
+    chatbotClear?.addEventListener('click', openDeleteModal);
+    chatbotCancelDelete?.addEventListener('click', closeDeleteModal);
+    chatbotDeleteModal?.addEventListener('click', (e) => {
+        if (e.target === chatbotDeleteModal) {
+            closeDeleteModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && chatbotDeleteModal && !chatbotDeleteModal.hidden) {
+            closeDeleteModal();
+        }
+    });
+
+    chatbotConfirmDelete?.addEventListener('click', async () => {
+        closeDeleteModal();
         conversationCleared = true;
         messages = [];
 

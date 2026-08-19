@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (titleEl) titleEl.textContent = act.title || 'Activity Notification';
         if (descEl) descEl.textContent = act.description || 'No additional details provided.';
-        
+
         const timeText = act.created_at_full || act.created_at_formatted || act.time || 'Recently';
         const relativeText = act.created_at_human || act.relative || '';
         if (timeEl) timeEl.textContent = relativeText ? `${timeText} (${relativeText})` : timeText;
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const card = document.createElement('div');
                 card.className = 'notif-modal-item group flex items-start gap-3.5 p-3.5 rounded-xl bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] hover:border-[#178a52] dark:hover:border-[#2f9e63] hover:shadow-md transition-all cursor-pointer';
-                
+
                 const newBadgeHtml = isNew
                     ? `<span class="text-[0.6rem] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-red-600 text-white tracking-wide shadow-sm">NEW</span>`
                     : '';
@@ -633,6 +633,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         pendingSeenId = Math.max(pendingSeenId, knownLatestId);
                     }
                 }
+
+                // Notify Staff Chatbot Proactive Speech immediately
+                if (typeof window.checkStaffChatbotProactive === 'function') {
+                    window.checkStaffChatbotProactive(true);
+                }
+                window.dispatchEvent(new CustomEvent('activity:new', { detail: { activities, latestId: data.latest_id } }));
             }
 
             if (typeof data.unread_count === 'number') {

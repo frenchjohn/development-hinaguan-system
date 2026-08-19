@@ -171,24 +171,85 @@
 							->filter(fn($r) => $r->reservation_type === 'walk_in' && \Carbon\Carbon::parse($r->check_in)->isToday())
 							->count();
 						$expectedCheckouts = $guestSummaryCheckoutDue + $guestSummaryNearCheckout;
+
+						// 6. Real Comparisons vs Yesterday & vs Last Month
+						$yesterdayDate = now()->subDay()->toDateString();
+						$yesterdayActiveGuests = \App\Models\ReservationGuest::whereHas('reservation', function($q) use ($yesterdayDate) {
+							$q->whereDate('check_in', $yesterdayDate)
+							  ->orWhere(function($q2) use ($yesterdayDate) {
+								  $q2->whereNull('check_in')->whereDate('reservation_date', $yesterdayDate)->where('status', '!=', 'Cancelled');
+							  });
+						})->count();
+
+						$activeGuestCount = $activeCustomers->count();
+						if ($yesterdayActiveGuests > 0) {
+							$guestTrendPct = round((($activeGuestCount - $yesterdayActiveGuests) / $yesterdayActiveGuests) * 100);
+						} elseif ($activeGuestCount > 0) {
+							$guestTrendPct = 100;
+						} else {
+							$guestTrendPct = 0;
+						}
+
+						$yesterdayActiveRes = \App\Models\Reservation::whereDate('check_in', $yesterdayDate)
+							->orWhere(function($q) use ($yesterdayDate) {
+								$q->whereNull('check_in')->whereDate('reservation_date', $yesterdayDate)->where('status', '!=', 'Cancelled');
+							})->count();
+
+						if ($yesterdayActiveRes > 0) {
+							$resTrendPct = round((($totalActiveRes - $yesterdayActiveRes) / $yesterdayActiveRes) * 100);
+						} elseif ($totalActiveRes > 0) {
+							$resTrendPct = 100;
+						} else {
+							$resTrendPct = 0;
+						}
+
+						$todayAmount = (float) $totalAmount;
+						$yesterdayAmount = (float) \App\Models\Reservation::whereDate('created_at', $yesterdayDate)
+							->orWhereDate('reservation_date', $yesterdayDate)
+							->sum('amount_paid');
+
+						if ($yesterdayAmount > 0) {
+							$amountTrendPct = round((($todayAmount - $yesterdayAmount) / $yesterdayAmount) * 100);
+						} elseif ($todayAmount > 0) {
+							$amountTrendPct = 100;
+						} else {
+							$amountTrendPct = 0;
+						}
+
+						$thisMonthRev = (float) \App\Models\Reservation::whereYear('created_at', now()->year)
+							->whereMonth('created_at', now()->month)
+							->sum('amount_paid');
+
+						$lastMonthDate = now()->subMonth();
+						$lastMonthRev = (float) \App\Models\Reservation::whereYear('created_at', $lastMonthDate->year)
+							->whereMonth('created_at', $lastMonthDate->month)
+							->sum('amount_paid');
+
+						if ($lastMonthRev > 0) {
+							$monthTrendPct = round((($thisMonthRev - $lastMonthRev) / $lastMonthRev) * 100);
+						} elseif ($thisMonthRev > 0) {
+							$monthTrendPct = 100;
+						} else {
+							$monthTrendPct = 0;
+						}
 					@endphp
 
-					<!-- MASTER TABS (Image Design) -->
+					<!-- MASTER TABS -->
 					<div class="checkins-tabs-container mb-5">
-						<div class="checkins-tabs flex items-center gap-1 rounded-2xl border border-glass-border bg-glass p-1.5 shadow-glass" role="tablist">
-							<button type="button" class="checkins-tab is-active flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white dark:text-[#c8e6c8]" data-tab-target="guest" role="tab" aria-selected="true">
-								<svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-								Guests
+						<div class="checkins-tabs" role="tablist">
+							<button type="button" class="checkins-tab is-active" data-tab-target="guest" role="tab" aria-selected="true">
+								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+								<span>Guests</span>
 							</button>
-							<button type="button" class="checkins-tab flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white dark:text-[#c8e6c8]" data-tab-target="reservation" role="tab" aria-selected="false">
-								<svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
-								Reservations
+							<button type="button" class="checkins-tab" data-tab-target="reservation" role="tab" aria-selected="false">
+								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+								<span>Reservations</span>
+							</button>
+							<button type="button" class="checkins-tab" data-tab-target="dashboard" role="tab" aria-selected="false">
+								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+								<span>Analytics Dashboard</span>
 							</button>
 						</div>
-						<button type="button" class="checkins-tab checkins-dashboard-btn mt-2 flex cursor-pointer items-center gap-2 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 is-active:bg-hp-green-dark is-active:text-white hover:border-hp-green-mid dark:text-[#c8e6c8]" data-tab-target="dashboard" role="tab" aria-selected="false">
-							<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
-							Analytics Dashboard
-						</button>
 					</div>
 
 
@@ -207,17 +268,35 @@
 								<div class="premium-stat">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ACTIVE GUESTS</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $activeCustomers->count() }}</strong>
-									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 12% vs yesterday</div>
+									@if ($guestTrendPct > 0)
+										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $guestTrendPct }}% vs yesterday</div>
+									@elseif ($guestTrendPct < 0)
+										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($guestTrendPct) }}% vs yesterday</div>
+									@else
+										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+									@endif
 								</div>
 								<div class="premium-stat">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">RESERVATIONS</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $totalActiveRes }}</strong>
-									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 25% vs yesterday</div>
+									@if ($resTrendPct > 0)
+										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $resTrendPct }}% vs yesterday</div>
+									@elseif ($resTrendPct < 0)
+										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($resTrendPct) }}% vs yesterday</div>
+									@else
+										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+									@endif
 								</div>
 								<div class="premium-stat">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL AMOUNT</span>
 									<strong class="text-gradient-green block bg-gradient-to-r from-[#16a34a] to-[#0e5c37] bg-clip-text font-display text-2xl font-bold text-transparent">₱{{ number_format($totalAmount, 0) }}</strong>
-									<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ 8% vs yesterday</div>
+									@if ($amountTrendPct > 0)
+										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $amountTrendPct }}% vs yesterday</div>
+									@elseif ($amountTrendPct < 0)
+										<div class="stat-trend trend-down mt-1 text-xs font-semibold text-[#dc2626]">▼ {{ abs($amountTrendPct) }}% vs yesterday</div>
+									@else
+										<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">0% vs yesterday</div>
+									@endif
 								</div>
 							</div>
 							<!-- Role breakdown -->
@@ -239,9 +318,15 @@
 							<div class="revenue-this-month mt-6 flex items-end justify-between rounded-lg bg-[rgba(34,197,94,0.05)] px-4 py-3">
 								<div>
 									<div class="mb-0.5 text-xs font-medium text-[#166534]">Revenue this month</div>
-									<strong class="text-xl text-[#15803d]">₱98,450</strong>
+									<strong class="text-xl text-[#15803d]">₱{{ number_format($thisMonthRev, 2) }}</strong>
 								</div>
-								<div class="stat-trend trend-up text-xs font-semibold text-[#16a34a]">▲ 15% vs last month</div>
+								@if ($monthTrendPct > 0)
+									<div class="stat-trend trend-up text-xs font-semibold text-[#16a34a]">▲ {{ $monthTrendPct }}% vs last month</div>
+								@elseif ($monthTrendPct < 0)
+									<div class="stat-trend trend-down text-xs font-semibold text-[#dc2626]">▼ {{ abs($monthTrendPct) }}% vs last month</div>
+								@else
+									<div class="stat-trend text-xs font-semibold text-hp-text-muted">0% vs last month</div>
+								@endif
 							</div>
 						</div>
 
@@ -254,15 +339,19 @@
 								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">DEMOGRAPHICS</h4>
 							</div>
 							@php
-								$totalGuests = $activeCustomers->count() ?: 1; // prevent div by zero
-								$pctMale = round(($guestSummaryMale / $totalGuests) * 100);
-								$pctFem = round(($guestSummaryFemale / $totalGuests) * 100);
-								$pctFor = round(($guestSummaryForeign / $totalGuests) * 100);
-								$pctFil = round(($guestSummaryFilipino / $totalGuests) * 100);
+								$totalGuests = $activeCustomers->count();
+								$pctMale = $totalGuests > 0 ? round(($guestSummaryMale / $totalGuests) * 100) : 0;
+								$pctFem = $totalGuests > 0 ? round(($guestSummaryFemale / $totalGuests) * 100) : 0;
+								$pctFor = $totalGuests > 0 ? round(($guestSummaryForeign / $totalGuests) * 100) : 0;
+								$pctFil = $totalGuests > 0 ? round(($guestSummaryFilipino / $totalGuests) * 100) : 0;
 
-								$degMale = $pctMale * 3.6;
-								$degFem = $degMale + ($pctFem * 3.6);
-								$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
+								if ($totalGuests === 0) {
+									$conicGradient = "rgba(100, 116, 139, 0.15) 0deg 360deg";
+								} else {
+									$degMale = $pctMale * 3.6;
+									$degFem = $degMale + ($pctFem * 3.6);
+									$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
+								}
 							@endphp
 							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
@@ -275,12 +364,12 @@
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFemale }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFem }}%</div>
 								</div>
-								<div class="premium-stat">
+								<div class="premium-stat" data-tooltip="Filipino: {{ $demoForFil ?? 0 }}&#xa;Foreigner: {{ $demoForFor ?? 0 }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FOREIGNER</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryForeign }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFor }}%</div>
 								</div>
-								<div class="premium-stat">
+								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFilFil ?? 0 }}&#xa;Foreigner: {{ $demoFilFor ?? 0 }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FILIPINO</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFilipino }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFil }}%</div>
@@ -395,24 +484,24 @@
 								<div class="premium-widget__grid cols-4 mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
 									<div class="premium-stat stat-due bg-transparent p-0 shadow-none">
 										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">TOTAL DUE</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $guestSummaryCheckoutDue }}</strong>
+										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $guestSummaryCheckoutDue }}</strong>
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
-										<strong class="block text-xl font-bold text-[#f97316]">{{ $resSummaryCheckoutDue }}</strong>
+										<strong class="block text-xl font-bold text-[#f59e0b] dark:text-[#fcd34d]">{{ $resSummaryCheckoutDue }}</strong>
 										<div class="text-xs text-hp-text-muted">Reservations due</div>
 									</div>
 									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
 										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">MAIN DUE</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueMainGuests }}</strong>
+										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueMainGuests }}</strong>
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
 									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
 										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">SINGLE COMP.</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueSingleCompanions }}</strong>
+										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueSingleCompanions }}</strong>
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
 									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
 										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">BULK COMP.</span>
-										<strong class="block text-[1.8rem] font-extrabold text-[#ef4444]">{{ $dueBulkCompanions }}</strong>
+										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueBulkCompanions }}</strong>
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
 								</div>
@@ -427,7 +516,7 @@
 								</div>
 
 								<div class="upcoming-checkouts-list flex flex-col gap-3">
-									@foreach (collect($activeReservations ?? [])->take(3) as $res)
+									@forelse (collect($activeReservations ?? [])->take(3) as $res)
 						@php
 							$primaryGuest = $res->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
 							$guestName = $primaryGuest ? trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) : 'Unknown';
@@ -451,7 +540,11 @@
 												<span class="table-time-left" data-checkout-at="{{ $reservationData[$res->id]['checkout_at'] ?? '' }}"></span>
 											</div>
 										</div>
-									@endforeach
+									@empty
+										<div class="rounded-xl border border-dashed border-black/10 py-6 text-center text-xs text-hp-text-muted dark:border-white/10">
+											No active check-outs scheduled
+										</div>
+									@endforelse
 								</div>
 							</div>
 						</div>
@@ -496,10 +589,10 @@
 						@endphp
 						<div class="checkins-main-column min-w-0">
 
-							<section class="checkins-card rounded-2xl border border-glass-border bg-glass shadow-glass">
-							<div class="checkins-card-header mb-5 flex items-center justify-between gap-4 border-b border-glass-border px-5 pb-5 pt-4">
+							<section class="checkins-card overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
+							<div class="checkins-card-header flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5">
 								<div class="table-header-left flex items-center">
-									<h2 class="checkins-title m-0 mr-6 font-display text-xl font-bold text-hp-text">Guest Data View</h2>
+									<h2 class="checkins-title m-0 font-display text-xl font-bold text-hp-text">Guest Data View</h2>
 								</div>
 								<div class="checkins-actions flex items-center gap-2">
 									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
@@ -516,8 +609,8 @@
 									</button>
 								</div>
 							</div>
-						<div class="guest-filter-shell mb-3 grid gap-3">
-							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
+						<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
+							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
 							<span>Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
@@ -581,12 +674,12 @@
 						</div>
 					</div>
 
-					<div class="guest-toolbar__meta mb-3.5 text-sm text-hp-text-muted">
+					<div class="guest-toolbar__meta flex items-center justify-between border-b border-glass-border/30 bg-black/[0.01] px-6 py-2.5 text-xs font-semibold text-hp-text-muted dark:bg-white/[0.01]">
 						<span id="guestResultsCount">Showing {{ $activeCustomers->count() }} active guests</span>
 					</div>
 
-					<div class="guest-table-wrap max-h-[440px] overflow-auto px-5 pb-5" id="guestTableWrap">
-						<table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
+					<div class="guest-table-wrap w-full overflow-x-auto" id="guestTableWrap">
+						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent">
 							<thead>
 								<tr>
 									<th>Guest</th>
@@ -778,40 +871,40 @@
 											aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
 									>
 										<td>
-											<div class="cell-person flex min-w-0 items-center gap-3">
-												<span class="cell-person__avatar flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)] {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
+											<div class="cell-person flex min-w-0 items-center gap-2.5">
+												<span class="cell-person__avatar flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
 													@if($isBulk)
-														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
 													@elseif($isPrimary)
-														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
 													@else
-														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
 													@endif
 												</span>
 												@if($isPrimary && $companionCount > 0)
-													<button type="button" class="btn-expand-row flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
-														<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+													<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 													</button>
 												@endif
 												<div class="cell-person__body min-w-0">
-													<div class="guest-name font-semibold text-hp-text">
-														@if($isBulk)
-															{{ $customer->first_name }}
-															<small class="mt-0.5 block font-normal text-hp-text-muted">{{ $customer->middle_name }}</small>
-														@else
-															{{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}
-														@endif
+													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
+														<span>{{ $isBulk ? $customer->first_name : trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</span>
 														@if($isStray)
-															<span class="ml-1.5 rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.65rem] font-semibold text-white">Stray</span>
+															<span class="rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.6rem] font-semibold text-white">Stray</span>
 														@endif
 														@if ($isPrimary && $companionCount > 0 && ! $isStray)
-															<span class="guest-companion-count ml-1.5 inline-flex items-center gap-1 rounded-full bg-hp-green/10 px-2 py-0.5 align-middle text-[0.65rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">
-																<svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-																{{ $companionCount }} companion{{ $companionCount === 1 ? '' : 's' }}
+															<span class="guest-companion-count inline-flex items-center gap-0.5 rounded-full bg-hp-green/10 px-1.5 py-0.2 text-[0.62rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">
+																+{{ $companionCount }}
 															</span>
 														@endif
 													</div>
-													<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">ID: {{ $isBulk ? '-' : $customer->id }}</div>
+													<div class="guest-meta mt-0.5 flex items-center gap-2 text-[0.72rem] leading-tight text-hp-text-muted">
+														@if($isBulk)
+															<span>{{ $customer->middle_name }}</span>
+														@else
+															<span>ID: {{ $customer->id }}</span>
+														@endif
+													</div>
 												</div>
 											</div>
 										</td>
@@ -825,17 +918,17 @@
 													else $displayAge = 'Seniors';
 												}
 											@endphp
-											<div class="guest-name font-semibold text-hp-text">{{ $displayAge }}</div>
-											<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $customer->gender ?? 'N/A' }}</div>
+											<div class="text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $displayAge }}</div>
+											<div class="text-[0.72rem] leading-tight text-hp-text-muted capitalize">{{ $customer->gender ?? 'N/A' }}</div>
 										</td>
 										<td>
-											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
+											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2 py-0.5 text-[0.65rem] font-bold tracking-[0.02em] shadow-sm {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
 										</td>
 										<td>
-											<span class="table-time-left text-xs font-semibold text-hp-text-muted" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
+											<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
 										</td>
 										<td class="text-right text-[#9ca3af]">
-											<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@endforeach
@@ -862,43 +955,43 @@
 						<!-- Sidebar Summary Cards (Individual Pastel Cards Container) -->
 						<div class="sidebar-summary-cards mb-6 flex flex-col gap-3 rounded-2xl border border-glass-border bg-glass p-3 shadow-glass">
 							<!-- Item 1: Active Guests -->
-							<div class="top-stat-card flex items-center rounded-2xl border border-[#e1f2e6] bg-[#f2f9f5] p-3.5 transition-all hover:shadow-sm dark:border-[#284a34] dark:bg-[#183323]/50">
-								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#dcfce7] text-[#16a34a] dark:bg-[#1f472d] dark:text-[#4ade80]">
-									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+							<div class="top-stat-card flex items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 transition-all hover:shadow-sm dark:border-emerald-500/25 dark:bg-emerald-950/30">
+								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
 								</div>
-								<div class="mx-4 h-7 w-[1px] bg-[#bbf7d0] dark:bg-[#28573a]"></div>
-								<strong class="text-3xl font-extrabold text-[#15803d] dark:text-[#4ade80] min-w-[28px]">{{ $activeCustomers->count() }}</strong>
-								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Active Guests</span>
+								<div class="mx-3.5 h-6 w-[1px] bg-emerald-500/20"></div>
+								<strong class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 min-w-[28px]">{{ $activeCustomers->count() }}</strong>
+								<span class="ml-3.5 text-sm font-semibold text-hp-text">Active Guests</span>
 							</div>
 
 							<!-- Item 2: Checked In Today -->
-							<div class="top-stat-card flex items-center rounded-2xl border border-[#e0ecfc] bg-[#f0f6ff] p-3.5 transition-all hover:shadow-sm dark:border-[#223d61] dark:bg-[#16273d]/50">
-								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#dbeafe] text-[#2563eb] dark:bg-[#1e385b] dark:text-[#60a5fa]">
-									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+							<div class="top-stat-card flex items-center rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 transition-all hover:shadow-sm dark:border-sky-500/25 dark:bg-sky-950/30">
+								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-400">
+									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
 								</div>
-								<div class="mx-4 h-7 w-[1px] bg-[#bfdbfe] dark:bg-[#2a4873]"></div>
-								<strong class="text-3xl font-extrabold text-[#1d4ed8] dark:text-[#60a5fa] min-w-[28px]">{{ $todaysCheckins }}</strong>
-								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Checked In Today</span>
+								<div class="mx-3.5 h-6 w-[1px] bg-sky-500/20"></div>
+								<strong class="text-2xl font-extrabold text-sky-600 dark:text-sky-400 min-w-[28px]">{{ $todaysCheckins }}</strong>
+								<span class="ml-3.5 text-sm font-semibold text-hp-text">Checked In Today</span>
 							</div>
 
 							<!-- Item 3: Expected Check-outs -->
-							<div class="top-stat-card flex items-center rounded-2xl border border-[#fde8d7] bg-[#fff8f2] p-3.5 transition-all hover:shadow-sm dark:border-[#52321e] dark:bg-[#382216]/50">
-								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#ffedd5] text-[#ea580c] dark:bg-[#522e1b] dark:text-[#fb923c]">
-									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+							<div class="top-stat-card flex items-center rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 transition-all hover:shadow-sm dark:border-amber-500/25 dark:bg-amber-950/30">
+								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
+									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 								</div>
-								<div class="mx-4 h-7 w-[1px] bg-[#fed7aa] dark:bg-[#6b3b20]"></div>
-								<strong class="text-3xl font-extrabold text-[#c2410c] dark:text-[#fb923c] min-w-[28px]">{{ $expectedCheckouts }}</strong>
-								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Expected Check-outs</span>
+								<div class="mx-3.5 h-6 w-[1px] bg-amber-500/20"></div>
+								<strong class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 min-w-[28px]">{{ $expectedCheckouts }}</strong>
+								<span class="ml-3.5 text-sm font-semibold text-hp-text">Expected Check-outs</span>
 							</div>
 
 							<!-- Item 4: Walk-ins Today -->
-							<div class="top-stat-card flex items-center rounded-2xl border border-[#f3e8ff] bg-[#faf5ff] p-3.5 transition-all hover:shadow-sm dark:border-[#432057] dark:bg-[#2d1638]/50">
-								<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3e8ff] text-[#9333ea] dark:bg-[#431e57] dark:text-[#c084fc]">
-									<svg class="h-6 w-6 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+							<div class="top-stat-card flex items-center rounded-xl border border-purple-500/20 bg-purple-500/10 p-3 transition-all hover:shadow-sm dark:border-purple-500/25 dark:bg-purple-950/30">
+								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400">
+									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
 								</div>
-								<div class="mx-4 h-7 w-[1px] bg-[#e9d5ff] dark:bg-[#562670]"></div>
-								<strong class="text-3xl font-extrabold text-[#7e22ce] dark:text-[#c084fc] min-w-[28px]">{{ $walkInsToday }}</strong>
-								<span class="ml-5 text-base font-semibold text-hp-text dark:text-white">Walk-Ins Today</span>
+								<div class="mx-3.5 h-6 w-[1px] bg-purple-500/20"></div>
+								<strong class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 min-w-[28px]">{{ $walkInsToday }}</strong>
+								<span class="ml-3.5 text-sm font-semibold text-hp-text">Walk-Ins Today</span>
 							</div>
 						</div>
 
@@ -941,10 +1034,10 @@
 
 					{{-- RESERVATION TABLE --}}
 					<div id="reservationTableSection" class="tab-content-section" style="display: none;">
-						<section class="checkins-card rounded-2xl border border-glass-border bg-glass shadow-glass">
-							<div class="checkins-card-header mb-5 flex items-center justify-between gap-4 border-b border-glass-border px-5 pb-5 pt-4">
+						<section class="checkins-card overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
+							<div class="checkins-card-header flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5">
 								<div class="table-header-left flex items-center">
-									<h2 class="checkins-title m-0 mr-6 font-display text-xl font-bold text-hp-text">Reservation Data View</h2>
+									<h2 class="checkins-title m-0 font-display text-xl font-bold text-hp-text">Reservation Data View</h2>
 								</div>
 								<div class="checkins-actions flex items-center gap-2">
 									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
@@ -962,8 +1055,8 @@
 								</div>
 							</div>
 
-					<div class="guest-filter-shell mb-3 grid gap-3 px-5">
-						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
+					<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
+						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
 							<span>Reservation Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
@@ -992,12 +1085,12 @@
 						</div>
 					</div>
 
-					<div class="guest-toolbar__meta mb-3.5 px-5 text-sm text-hp-text-muted">
+					<div class="guest-toolbar__meta flex items-center justify-between border-b border-glass-border/30 bg-black/[0.01] px-6 py-2.5 text-xs font-semibold text-hp-text-muted dark:bg-white/[0.01]">
 						<span id="resvResultsCount">Showing {{ $activeReservations->count() }} reservation{{ $activeReservations->count() === 1 ? '' : 's' }}</span>
 					</div>
 
-					<div class="guest-table-wrap max-h-[440px] overflow-auto px-5 pb-5" id="reservationTableWrap">
-						<table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
+					<div class="guest-table-wrap w-full overflow-x-auto" id="reservationTableWrap">
+						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent">
 							<thead>
 								<tr>
 									<th>Reservation</th>
@@ -1052,16 +1145,16 @@
 										aria-label="View reservation {{ $reservation->id }}"
 									>
 										<td>
-											<div class="flex items-center">
-												<button type="button" class="btn-expand-row flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
-													<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+											<div class="flex items-center gap-2">
+												<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
+													<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 												</button>
 												<div>
-													<div class="guest-name font-semibold text-hp-text">#{{ $reservation->id }}</div>
-													<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">
-														{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}
+													<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">#{{ $reservation->id }}</div>
+													<div class="guest-meta mt-0.5 flex items-center gap-1 text-[0.72rem] leading-tight text-hp-text-muted">
+														<span>{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</span>
 														@if ($isMixedTime)
-															<span class="status-pill status-pill--pending ml-1 inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">Mixed Time</span>
+															<span class="status-pill status-pill--pending inline-flex items-center gap-0.5 rounded-full border border-glass-border px-1.5 py-0.2 text-[0.62rem] font-bold bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">Mixed</span>
 														@endif
 													</div>
 												</div>
@@ -1069,37 +1162,37 @@
 										</td>
 										<td>
 											@if ($primaryGuest)
-												<div class="cell-person flex min-w-0 items-center gap-3">
-													<span class="cell-person__avatar cell-person__avatar--star flex h-[2.1rem] w-[2.1rem] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.66rem] font-bold tracking-[0.03em] text-white shadow-[inset_0_2px_3px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.22),0_2px_6px_rgba(23,42,32,0.14)]" title="Main Guest">
-														<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+												<div class="cell-person flex min-w-0 items-center gap-2.5">
+													<span class="cell-person__avatar cell-person__avatar--star flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm" title="Main Guest">
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
 													</span>
 													<div class="cell-person__body min-w-0">
-														<div class="guest-name font-semibold text-hp-text">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
+														<div class="guest-name truncate text-[0.82rem] font-semibold leading-tight text-hp-text">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
 													</div>
 												</div>
 											@else
-												<div class="guest-name font-semibold text-hp-text">—</div>
+												<div class="guest-name text-[0.82rem] font-semibold text-hp-text">—</div>
 											@endif
 										</td>
 										<td>
-											<div class="guest-name mono-cell whitespace-nowrap text-[0.8rem] font-semibold text-hp-text">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
-											<div class="guest-meta mono-cell mt-0.5 whitespace-nowrap text-[0.8rem] text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
+											<div class="guest-name mono-cell whitespace-nowrap text-[0.8rem] font-semibold leading-tight text-hp-text">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
+											<div class="guest-meta mono-cell mt-0.5 whitespace-nowrap text-[0.72rem] leading-tight text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
 										</td>
 										<td>
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
-											<span class="guest-meta text-[0.84rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
+											<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
 										</td>
 										<td>
-											<div class="guest-name font-semibold text-hp-text">{{ $totalResGuests }} Total</div>
-											<div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
+											<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $totalResGuests }} Total</div>
+											<div class="guest-meta mt-0.5 text-[0.72rem] leading-tight text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
 										</td>
 										<td>
-											<span class="table-time-left text-xs font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+											<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
 										</td>
 										<td class="text-right text-[#9ca3af]">
-											<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
 								@empty
@@ -2244,7 +2337,7 @@
 							</div>
 
 							<div class="mb-6 flex items-center justify-center gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:bg-glass">
-								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full border-0 bg-[rgba(239,68,68,0.1)] text-[#ef4444] shadow-[inset_0_0_0_1px_rgba(239,68,68,0.2)] transition-all duration-200 hover:bg-[rgba(239,68,68,0.2)]">
+								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/15 text-rose-500 dark:text-rose-400 transition-all duration-200 hover:bg-rose-500/25">
 									<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
 								</button>
 
@@ -2265,14 +2358,14 @@
 									<button type="button" id="bulkManageQtyMinus" aria-label="Decrease quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">−</button>
 									<input type="number" id="bulkManageQtyInput" value="1" min="1" max="50" class="bulk-stepper__input h-11 w-16 border-x-0 border border-glass-border bg-transparent text-center text-lg font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label="Number of companions to check out">
 									<button type="button" id="bulkManageQtyPlus" aria-label="Increase quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">+</button>
-									<button type="button" id="bulkManageCheckOutBtn" class="ml-1 flex h-11 cursor-pointer items-center gap-2 rounded-xl border-0 bg-[#ef4444] px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#dc2626]">
+									<button type="button" id="bulkManageCheckOutBtn" class="ml-1 flex h-11 cursor-pointer items-center gap-2 rounded-xl border-0 bg-rose-600 px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-rose-700 shadow-[0_2px_8px_rgba(225,29,72,0.25)]">
 										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
 										Check Out
 									</button>
 								</div>
 							</div>
 
-							<div class="flex items-center justify-center gap-2 rounded-xl bg-[rgba(239,68,68,0.05)] p-3 text-left text-[0.8rem] leading-[1.4] text-[#ef4444]">
+							<div class="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-left text-[0.8rem] leading-[1.4] text-rose-600 dark:text-rose-400">
 								<svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
 								<span>Click the <strong>minus button</strong> to check out one, or set a quantity and press <strong>Check Out</strong> to check out several at once.</span>
 							</div>

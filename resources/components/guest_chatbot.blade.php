@@ -99,5 +99,22 @@
             </form>
             <p class="chatbot-input-wrapper__hint">AI may occasionally get things wrong &mdash; please verify details with the park.</p>
         </div>
+
+        <!-- Delete Conversation Confirmation Modal -->
+        <div class="chatbot-modal-overlay" id="chatbotDeleteModal" hidden>
+            <div class="chatbot-modal" role="dialog" aria-modal="true" aria-labelledby="guestChatbotDeleteTitle">
+                <div class="chatbot-modal__icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h4 class="chatbot-modal__title" id="guestChatbotDeleteTitle">Delete Conversation</h4>
+                <p class="chatbot-modal__text">Are you sure you want to delete the conversation? You won't be able to retrieve it again.</p>
+                <div class="chatbot-modal__actions">
+                    <button type="button" class="chatbot-modal__btn chatbot-modal__btn--cancel" id="chatbotCancelDelete">Cancel</button>
+                    <button type="button" class="chatbot-modal__btn chatbot-modal__btn--danger" id="chatbotConfirmDelete">Yes, Delete</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

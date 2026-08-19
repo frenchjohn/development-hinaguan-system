@@ -104,15 +104,15 @@
 
                 {{-- ===== CHECKOUT ALERTS BANNER ===== --}}
                 @if (($dashboardGuestsDue ?? 0) > 0 || ($dashboardResDue ?? 0) > 0)
-                <div class="mb-6 flex items-center gap-5 rounded-2xl border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] p-5 shadow-[0_4px_12px_rgba(239,68,68,0.05)] dark:border-[rgba(239,68,68,0.3)] dark:bg-[rgba(239,68,68,0.15)]">
-                    <div class="sd-pulse flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-[#ef4444] text-white">
+                <div class="mb-6 flex items-center gap-5 rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5 shadow-sm dark:border-rose-500/30 dark:bg-rose-950/25">
+                    <div class="sd-pulse flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm">
                         <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     </div>
                     <div class="flex flex-1 flex-col gap-1">
-                        <strong class="text-base font-extrabold uppercase tracking-[0.05em] text-[#b91c1c] dark:text-[#fca5a5]">ATTENTION REQUIRED</strong>
+                        <strong class="text-base font-extrabold uppercase tracking-[0.05em] text-rose-700 dark:text-rose-300">ATTENTION REQUIRED</strong>
                         <span class="text-sm text-hp-text">There are <strong>{{ $dashboardResDue }} reservations</strong> ({{ $dashboardGuestsDue }} guests) currently overdue for checkout.</span>
                     </div>
-                    <a href="{{ route('staff.checkins') }}" class="whitespace-nowrap rounded-lg bg-[#ef4444] px-6 py-3 text-sm font-bold text-white no-underline shadow-[0_4px_12px_rgba(239,68,68,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#dc2626] hover:text-white hover:shadow-[0_6px_15px_rgba(239,68,68,0.4)]">Resolve Check-outs &rarr;</a>
+                    <a href="{{ route('staff.checkins') }}" class="whitespace-nowrap rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white no-underline shadow-[0_4px_12px_rgba(225,29,72,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-700 hover:text-white hover:shadow-[0_6px_15px_rgba(225,29,72,0.35)]">Resolve Check-outs &rarr;</a>
                 </div>
                 @endif
 

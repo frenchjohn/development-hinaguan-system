@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const slotDayToNight = document.getElementById('slotDayToNight');
         const slotNightToDay = document.getElementById('slotNightToDay');
 
-        if (!slotDaytime || !slotNighttime || !slotDayToNight || !slotNightToDay) return;
+        if (!slotDaytime || !slotNighttime || !slotDayToNight) return;
 
         const dateToEvaluate = date || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
         const isTodayNight = isNighttimeForToday(dateToEvaluate);
@@ -365,15 +365,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             slotDayToNight.disabled = true;
             slotDayToNight.classList.add('is-disabled-slot');
-            slotDayToNight.setAttribute('title', 'Day to Night is unavailable for today as daytime has concluded.');
+            slotDayToNight.setAttribute('title', 'Whole Day is unavailable for today as daytime has concluded.');
 
             slotNighttime.disabled = false;
             slotNighttime.classList.remove('is-disabled-slot');
             slotNighttime.removeAttribute('title');
 
-            slotNightToDay.disabled = false;
-            slotNightToDay.classList.remove('is-disabled-slot');
-            slotNightToDay.removeAttribute('title');
+            if (slotNightToDay) {
+                slotNightToDay.disabled = false;
+                slotNightToDay.classList.remove('is-disabled-slot');
+                slotNightToDay.removeAttribute('title');
+            }
 
             if (selectedSlot === 'Daytime' || selectedSlot === 'DayToNight') {
                 setActiveSlot('Nighttime');
@@ -391,9 +393,11 @@ document.addEventListener('DOMContentLoaded', () => {
             slotNighttime.classList.remove('is-disabled-slot');
             slotNighttime.removeAttribute('title');
 
-            slotNightToDay.disabled = false;
-            slotNightToDay.classList.remove('is-disabled-slot');
-            slotNightToDay.removeAttribute('title');
+            if (slotNightToDay) {
+                slotNightToDay.disabled = false;
+                slotNightToDay.classList.remove('is-disabled-slot');
+                slotNightToDay.removeAttribute('title');
+            }
         }
     };
 
@@ -403,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const modalSlotDayToNight = document.getElementById('modalSlotDayToNight');
         const modalSlotNightToDay = document.getElementById('modalSlotNightToDay');
 
-        if (!modalSlotDaytime || !modalSlotNighttime || !modalSlotDayToNight || !modalSlotNightToDay) return;
+        if (!modalSlotDaytime || !modalSlotNighttime || !modalSlotDayToNight) return;
 
         const dateToEvaluate = date || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
         const isTodayNight = isNighttimeForToday(dateToEvaluate);
@@ -415,15 +419,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modalSlotDayToNight.disabled = true;
             modalSlotDayToNight.classList.add('is-disabled-slot');
-            modalSlotDayToNight.setAttribute('title', 'Day to Night is unavailable for today as daytime has concluded.');
+            modalSlotDayToNight.setAttribute('title', 'Whole Day is unavailable for today as daytime has concluded.');
 
             modalSlotNighttime.disabled = false;
             modalSlotNighttime.classList.remove('is-disabled-slot');
             modalSlotNighttime.removeAttribute('title');
 
-            modalSlotNightToDay.disabled = false;
-            modalSlotNightToDay.classList.remove('is-disabled-slot');
-            modalSlotNightToDay.removeAttribute('title');
+            if (modalSlotNightToDay) {
+                modalSlotNightToDay.disabled = false;
+                modalSlotNightToDay.classList.remove('is-disabled-slot');
+                modalSlotNightToDay.removeAttribute('title');
+            }
 
             if (modalSlotDaytime.classList.contains('is-active') || modalSlotDayToNight.classList.contains('is-active')) {
                 setActiveModalSlot('Nighttime');
@@ -441,9 +447,11 @@ document.addEventListener('DOMContentLoaded', () => {
             modalSlotNighttime.classList.remove('is-disabled-slot');
             modalSlotNighttime.removeAttribute('title');
 
-            modalSlotNightToDay.disabled = false;
-            modalSlotNightToDay.classList.remove('is-disabled-slot');
-            modalSlotNightToDay.removeAttribute('title');
+            if (modalSlotNightToDay) {
+                modalSlotNightToDay.disabled = false;
+                modalSlotNightToDay.classList.remove('is-disabled-slot');
+                modalSlotNightToDay.removeAttribute('title');
+            }
         }
     };
 
@@ -456,8 +464,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (daysDiff < 0) daysDiff = 0;
         const totalDays = daysDiff + 1;
 
-        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
-        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanStart = (startSlot === 'DayToNight' || startSlot === 'daytonight' || (startSlot && startSlot.startsWith('Day'))) ? 'Daytime' : 'Nighttime';
+        const cleanEnd = (endSlot === 'DayToNight' || endSlot === 'daytonight' || (endSlot && endSlot.includes('Night'))) ? 'Nighttime' : 'Daytime';
 
         if (daysDiff === 0) {
             if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
@@ -1077,8 +1085,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const daysDiff = Math.round((endObj - startObj) / (1000 * 60 * 60 * 24));
         if (daysDiff < 0) return false;
 
-        const cleanStartSlot = startSlot && startSlot.includes('Night') ? 'Nighttime' : 'Daytime';
-        const cleanEndSlot = endSlot && endSlot.includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanStartSlot = (startSlot === 'DayToNight' || startSlot === 'daytonight' || (startSlot && startSlot.startsWith('Day'))) ? 'Daytime' : 'Nighttime';
+        const cleanEndSlot = (endSlot === 'DayToNight' || endSlot === 'daytonight' || (endSlot && endSlot.includes('Night'))) ? 'Nighttime' : 'Daytime';
 
         for (let i = 0; i <= daysDiff; i++) {
             const curDate = new Date(startObj);

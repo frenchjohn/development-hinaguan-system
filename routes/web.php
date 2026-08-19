@@ -50,8 +50,8 @@ $continuousSlotTimeline = function (string $startDate, ?string $endDate = null, 
     $end = $endDate ? \Illuminate\Support\Carbon::parse($endDate)->startOfDay() : $start->copy();
     
     // Normalize slots (clean out Aircon if present)
-    $cleanStartSlot = str_contains($startSlot, 'Night') ? 'Nighttime' : 'Daytime';
-    $cleanEndSlot = str_contains($endSlot, 'Night') ? 'Nighttime' : 'Daytime';
+    $cleanStartSlot = (str_contains($startSlot, 'DayToNight') || str_contains($startSlot, 'Daytime') || str_starts_with($startSlot, 'Day')) ? 'Daytime' : 'Nighttime';
+    $cleanEndSlot = (str_contains($endSlot, 'DayToNight') || str_contains($endSlot, 'Nighttime') || str_contains($endSlot, 'Night')) ? 'Nighttime' : 'Daytime';
 
     if ($start->gt($end)) {
         $end = $start->copy();
@@ -1118,6 +1118,22 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
             report($ex);
         }
 
+        ActivityLog::log(
+            activityType: 'online_reservation_created',
+            title: 'New Online Reservation',
+            description: "New online reservation #{$reservation->id} from {$reservation->booker_name} ({$reservation->number_of_guests} guests) for " . ($reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'upcoming date'),
+            reservationId: $reservation->id,
+            actorName: $reservation->booker_name,
+            actorRole: 'guest',
+            staffId: null,
+            metadata: [
+                'total_amount' => $reservation->total_amount,
+                'amount_paid' => $reservation->amount_paid,
+                'number_of_guests' => $reservation->number_of_guests,
+                'booker_name' => $reservation->booker_name,
+            ]
+        );
+
         Cache::forget("pending_reservation_{$paymentIntentId}");
 
         return $reservation;
@@ -1218,7 +1234,12 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
             ], 422);
         }
 
-        if ($itemStartDate === $reservationDate && str_contains($startSlot, 'Night') && str_contains($itemStartSlot, 'Day')) {
+        $startSlotNorm = (str_contains($startSlot, 'DayToNight') || str_contains($startSlot, 'Daytime') || str_starts_with($startSlot, 'Day')) ? 'Daytime' : 'Nighttime';
+        $itemStartSlotNorm = (str_contains($itemStartSlot, 'DayToNight') || str_contains($itemStartSlot, 'Daytime') || str_starts_with($itemStartSlot, 'Day')) ? 'Daytime' : 'Nighttime';
+        $endSlotNorm = (str_contains($endSlot, 'DayToNight') || str_contains($endSlot, 'Nighttime') || str_contains($endSlot, 'Night')) ? 'Nighttime' : 'Daytime';
+        $itemEndSlotNorm = (str_contains($itemEndSlot, 'DayToNight') || str_contains($itemEndSlot, 'Nighttime') || str_contains($itemEndSlot, 'Night')) ? 'Nighttime' : 'Daytime';
+
+        if ($itemStartDate === $reservationDate && $startSlotNorm === 'Nighttime' && $itemStartSlotNorm === 'Daytime') {
             $name = $amenityModel->amenities_name;
             return response()->json([
                 'success' => false,
@@ -1226,7 +1247,7 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
             ], 422);
         }
 
-        if ($itemEndDate === $endDate && str_contains($endSlot, 'Day') && str_contains($itemEndSlot, 'Night')) {
+        if ($itemEndDate === $endDate && $endSlotNorm === 'Daytime' && $itemEndSlotNorm === 'Nighttime') {
             $name = $amenityModel->amenities_name;
             return response()->json([
                 'success' => false,
@@ -1234,7 +1255,7 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
             ], 422);
         }
 
-        if ($itemStartDate === $itemEndDate && str_contains($itemStartSlot, 'Night') && str_contains($itemEndSlot, 'Day')) {
+        if ($itemStartDate === $itemEndDate && $itemStartSlotNorm === 'Nighttime' && $itemEndSlotNorm === 'Daytime') {
             $name = $amenityModel->amenities_name;
             return response()->json([
                 'success' => false,

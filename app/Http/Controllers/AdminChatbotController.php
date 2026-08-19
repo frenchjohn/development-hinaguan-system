@@ -265,10 +265,14 @@ class AdminChatbotController extends Controller
         $isParkClosed = ($settings?->park_status ?? 'open') === 'closed';
         $closeDesc = $settings?->close_description ?: 'scheduled maintenance';
 
-        // 1. Pending Reservations
-        $pendingCount = Reservation::whereIn('status', ['Pending', 'pending'])->count();
+        $sessionKeysName = "admin_announced_keys_{$userId}";
+        $announcedKeys = (array) session($sessionKeysName, []);
+        $clientKeys = array_filter(explode(',', (string) $request->query('announced_keys', '')));
+        foreach ($clientKeys as $ck) {
+            $announcedKeys[$ck] = true;
+        }
 
-        // 2. Total Collected Revenue Today vs Yesterday
+        // 1. Total Collected Revenue Today vs Yesterday
         $todayRevenue = (float) Reservation::whereDate('created_at', $todayStr)
             ->orWhereDate('reservation_date', $todayStr)
             ->sum('amount_paid');
@@ -278,10 +282,10 @@ class AdminChatbotController extends Controller
             ->orWhereDate('reservation_date', $yesterdayStr)
             ->sum('amount_paid');
 
-        // 3. Recent Staff Activities in Audit Log (Last 3 hours)
+        // 2. Recent Staff Activities in Audit Log (Last 3 hours)
         $recentStaffActivitiesCount = ActivityLog::where('created_at', '>=', $now->copy()->subHours(3))->count();
 
-        // 4. Live Weather
+        // 3. Live Weather
         $weatherCondition = 'Clear skies';
         $tempC = 29;
         $rainChance = 10;
@@ -297,6 +301,7 @@ class AdminChatbotController extends Controller
 
         // Select the most relevant scenario for Admin
         $scenario = 'default';
+        $currentKey = "admin_briefing_{$todayStr}_{$timeOfDay}";
         $headline = 'Admin Briefing';
         $message = "Good {$timeOfDay}, {$firstName}! All management systems and staff audit logs are running smoothly.";
         $followUp = "Would you like an intelligence report on recent revenue, demographics, or staff activity?";
@@ -305,21 +310,15 @@ class AdminChatbotController extends Controller
 
         if ($isParkClosed) {
             $scenario = 'park_closed';
+            $currentKey = "admin_closed_{$closeDesc}";
             $headline = 'Park Closed Notice';
             $message = "Hey {$firstName}, the park is currently set to Closed (\"{$closeDesc}\").";
             $followUp = "Would you like me to review the park operational settings or pending guest inquiries?";
             $quickActionPrompt = "Show current park settings and operational status";
             $actionBtnLabel = "Review Settings";
-        } elseif ($pendingCount > 0) {
-            $scenario = 'pending_reservations';
-            $headline = 'New Reservations';
-            $plural = $pendingCount > 1 ? "{$pendingCount} new reservations" : "1 new reservation";
-            $message = "Hey {$firstName}, there are {$plural} waiting for staff review and processing.";
-            $followUp = "Would you like me to summarize the booking dates and revenue value for you?";
-            $quickActionPrompt = "Summarize the pending reservations and their booking values";
-            $actionBtnLabel = "Summarize Bookings";
         } elseif ($todayRevenue > 0 && $todayRevenue >= $yesterdayRevenue) {
             $scenario = 'revenue_growth';
+            $currentKey = "admin_revenue_{$todayRevenue}_{$todayStr}";
             $headline = 'Revenue Milestone';
             $revFormatted = number_format($todayRevenue, 2);
             $message = "Wow {$firstName}, our revenue increased today, reaching ₱{$revFormatted}!";
@@ -328,6 +327,7 @@ class AdminChatbotController extends Controller
             $actionBtnLabel = "Compare Revenue";
         } elseif ($recentStaffActivitiesCount > 0) {
             $scenario = 'recent_activities';
+            $currentKey = "admin_activities_{$recentStaffActivitiesCount}";
             $headline = 'Recent Staff Activities';
             $message = "Hey {$firstName}, {$recentStaffActivitiesCount} staff activities have recently been logged in the audit trail.";
             $followUp = "Would you like me to summarize the latest staff check-ins and stay extensions?";
@@ -335,12 +335,29 @@ class AdminChatbotController extends Controller
             $actionBtnLabel = "Audit Summary";
         } elseif (preg_match('/clear|sunny/i', $weatherCondition) || $tempC >= 27) {
             $scenario = 'weather_sunny';
+            $currentKey = "admin_weather_{$weatherCondition}_" . round($tempC / 2);
             $headline = 'Weather Intelligence';
             $message = "Woah {$firstName}, we got nice weather right now in Jasaan ({$tempC}°C, {$weatherCondition})!";
             $followUp = "Would you like a quick breakdown of today's resort operations and expected revenue?";
             $quickActionPrompt = "Give me today's resort operations and revenue overview";
             $actionBtnLabel = "Resort Overview";
         }
+
+        // If this exact announcement was already made and not forced, do not re-announce
+        $alreadyAnnounced = !empty($announcedKeys[$currentKey]);
+        if ($alreadyAnnounced && !$request->boolean('force')) {
+            return response()->json([
+                'has_message' => false,
+                'scenario' => $scenario,
+                'announced_key' => $currentKey,
+                'announced_keys' => array_keys($announcedKeys),
+                'timestamp' => $now->toDateTimeString(),
+            ]);
+        }
+
+        // Update announced keys in session
+        $announcedKeys[$currentKey] = true;
+        session([$sessionKeysName => $announcedKeys]);
 
         $fullSpeech = "{$message}\n\n{$followUp}";
 
@@ -365,6 +382,8 @@ class AdminChatbotController extends Controller
             'full_speech' => $fullSpeech,
             'quick_action_prompt' => $quickActionPrompt,
             'action_button_text' => $actionBtnLabel,
+            'announced_key' => $currentKey,
+            'announced_keys' => array_keys($announcedKeys),
             'timestamp' => $now->toDateTimeString(),
         ]);
     }

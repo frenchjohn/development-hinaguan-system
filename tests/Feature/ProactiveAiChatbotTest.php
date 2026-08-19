@@ -55,7 +55,7 @@ class ProactiveAiChatbotTest extends TestCase
             ->assertJson([
                 'has_message' => true,
                 'scenario' => 'pending_reservations',
-                'headline' => 'New Reservations',
+                'headline' => 'New Reservation',
             ]);
 
         $json = $response->json();
@@ -217,13 +217,88 @@ class ProactiveAiChatbotTest extends TestCase
         ]];
 
         // Call 1
-        $this->withSession($session)->getJson('/chatbot/proactive')->assertOk();
+        $res1 = $this->withSession($session)->getJson('/chatbot/proactive')->assertOk();
+        $res1->assertJson(['has_message' => true]);
+        $announcedKey = $res1->json('announced_key');
+        $this->assertNotEmpty($announcedKey);
         $countAfterFirst = ChatbotMessage::where('user_id', $staff->id)->count();
         $this->assertEquals(1, $countAfterFirst);
 
-        // Call 2 (identical situation)
-        $this->withSession($session)->getJson('/chatbot/proactive')->assertOk();
+        // Call 2 (identical situation with same announced key)
+        $res2 = $this->withSession($session)->getJson('/chatbot/proactive?last_announced_key=' . urlencode($announcedKey))->assertOk();
+        $res2->assertJson(['has_message' => false]);
         $countAfterSecond = ChatbotMessage::where('user_id', $staff->id)->count();
         $this->assertEquals(1, $countAfterSecond);
+
+        // Call 3 (new reservation placed)
+        $newRes = Reservation::create([
+            'booker_name' => 'Brand New Guest',
+            'email' => 'brandnew@example.com',
+            'phone' => '09123456789',
+            'reservation_type' => 'online',
+            'number_of_guests' => 3,
+            'status' => 'Pending',
+            'reservation_date' => now()->toDateString(),
+            'total_amount' => 3000,
+            'amount_paid' => 1500,
+            'remaining_balance' => 1500,
+        ]);
+
+        $res3 = $this->withSession($session)->getJson('/chatbot/proactive?announced_keys=' . urlencode($announcedKey))->assertOk();
+        $res3->assertJson([
+            'has_message' => true,
+            'scenario' => 'pending_reservations',
+            'headline' => 'New Reservation',
+        ]);
+        $countAfterThird = ChatbotMessage::where('user_id', $staff->id)->count();
+        $this->assertEquals(2, $countAfterThird);
+    }
+
+    public function test_announcement_isolation_across_different_staff_accounts(): void
+    {
+        $staff1 = StaffAccount::create([
+            'name' => 'Staff Member One',
+            'email' => 'staff1@example.com',
+            'password' => bcrypt('password123'),
+            'ban_status' => false,
+        ]);
+
+        $staff2 = StaffAccount::create([
+            'name' => 'Staff Member Two',
+            'email' => 'staff2@example.com',
+            'password' => bcrypt('password123'),
+            'ban_status' => false,
+        ]);
+
+        $sessionStaff1 = ['auth_user' => [
+            'id' => $staff1->id,
+            'name' => 'Staff Member One',
+            'role' => 'staff',
+        ]];
+
+        $sessionStaff2 = ['auth_user' => [
+            'id' => $staff2->id,
+            'name' => 'Staff Member Two',
+            'role' => 'staff',
+        ]];
+
+        // 1. Staff 1 receives initial announcement
+        $resStaff1A = $this->withSession($sessionStaff1)->getJson('/chatbot/proactive')->assertOk();
+        $resStaff1A->assertJson(['has_message' => true]);
+        $keyStaff1 = $resStaff1A->json('announced_key');
+
+        // 2. Staff 1 polls again -> blocked (no repetition for Staff 1)
+        $resStaff1B = $this->withSession($sessionStaff1)->getJson('/chatbot/proactive?announced_keys=' . urlencode($keyStaff1))->assertOk();
+        $resStaff1B->assertJson(['has_message' => false]);
+
+        // 3. Staff 2 logs in -> Still receives the announcement because Staff 2 hasn't seen it yet!
+        $resStaff2A = $this->withSession($sessionStaff2)->getJson('/chatbot/proactive')->assertOk();
+        $resStaff2A->assertJson(['has_message' => true]);
+        $keyStaff2 = $resStaff2A->json('announced_key');
+        $this->assertEquals($keyStaff1, $keyStaff2);
+
+        // 4. Staff 2 polls again -> blocked (no repetition for Staff 2)
+        $resStaff2B = $this->withSession($sessionStaff2)->getJson('/chatbot/proactive?announced_keys=' . urlencode($keyStaff2))->assertOk();
+        $resStaff2B->assertJson(['has_message' => false]);
     }
 }
