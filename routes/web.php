@@ -15,6 +15,7 @@ use App\Models\ReservationGuest;
 use App\Models\StaffAccount;
 use App\Services\WeatherService;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
@@ -1023,7 +1024,7 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
     $endSlot = $pending['end_slot'] ?? $startSlot;
     $mainCounts = $calculateContinuousSlotsCount($startDate, $endDate, $startSlot, $endSlot);
 
-    return DB::transaction(function () use ($pending, $paymentIntentId, $finalPaymentMethod, $startDate, $endDate, $startSlot, $endSlot, $mainCounts, $calculateContinuousSlotsCount) {
+    $reservation = DB::transaction(function () use ($pending, $paymentIntentId, $finalPaymentMethod, $startDate, $endDate, $startSlot, $endSlot, $mainCounts, $calculateContinuousSlotsCount) {
         $reservation = Reservation::create([
             'booker_name' => $pending['booker_name'],
             'phone' => $pending['phone'],
@@ -1112,6 +1113,15 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
             }
         }
 
+        return $reservation;
+    });
+
+    // ── Post-transaction side-effects (email & activity log) ──────────────────
+    // These are intentionally kept OUTSIDE the DB transaction to avoid holding
+    // the database lock while waiting for SMTP or other slow I/O operations.
+    if ($reservation) {
+        Cache::forget("pending_reservation_{$paymentIntentId}");
+
         try {
             Mail::to($reservation->email)->send(new ReservationQrMail($reservation));
         } catch (\Throwable $ex) {
@@ -1133,11 +1143,9 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
                 'booker_name' => $reservation->booker_name,
             ]
         );
+    }
 
-        Cache::forget("pending_reservation_{$paymentIntentId}");
-
-        return $reservation;
-    });
+    return $reservation;
 };
 
 Route::post('/reservation/create-intent', function (Request $request, \App\Services\PayMongoService $payMongo) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
@@ -1354,7 +1362,7 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
             'message' => 'Failed to initialize payment gateway: ' . \App\Services\PayMongoService::readableError($e),
         ], 500);
     }
-})->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class]);
+})->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
 
 Route::post('/reservation/process-payment', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
@@ -1422,7 +1430,7 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
             'message' => \App\Services\PayMongoService::readableError($e),
         ], 400);
     }
-})->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class]);
+})->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
 
 Route::post('/reservation/check-payment-status', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
@@ -1450,7 +1458,7 @@ Route::post('/reservation/check-payment-status', function (Request $request, \Ap
             'message' => \App\Services\PayMongoService::readableError($e),
         ], 400);
     }
-})->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class]);
+})->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
 
 Route::post('/reservation/prototype', function (Request $request) {
     return redirect()->route('reservation.create-intent');
