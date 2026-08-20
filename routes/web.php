@@ -1430,7 +1430,7 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
             'message' => \App\Services\PayMongoService::readableError($e),
         ], 400);
     }
-})->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
+})->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::post('/reservation/check-payment-status', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
@@ -1458,7 +1458,7 @@ Route::post('/reservation/check-payment-status', function (Request $request, \Ap
             'message' => \App\Services\PayMongoService::readableError($e),
         ], 400);
     }
-})->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
+})->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::post('/reservation/prototype', function (Request $request) {
     return redirect()->route('reservation.create-intent');
