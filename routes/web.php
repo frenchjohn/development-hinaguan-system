@@ -1362,7 +1362,7 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
             'message' => 'Failed to initialize payment gateway: ' . \App\Services\PayMongoService::readableError($e),
         ], 500);
     }
-})->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class, StartSession::class]);
+})->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::post('/reservation/process-payment', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
     $data = $request->validate([
