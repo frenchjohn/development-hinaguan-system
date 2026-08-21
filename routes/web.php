@@ -9,6 +9,7 @@ use App\Mail\ReservationQrMail;
 use App\Models\ActivityLog;
 use App\Models\Amenity;
 use App\Models\Customer;
+use App\Models\Feedback;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
 use App\Models\ReservationGuest;
@@ -767,6 +768,52 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
         'parkSettings'
     ));
 })->name('amenities');
+
+Route::get('/feedback', function () {
+    $parkSettings = \App\Models\ParkSetting::first();
+    $feedbacks = Feedback::visible()->topRated()->get();
+
+    return view('feedback', compact('parkSettings', 'feedbacks'));
+})->name('feedback');
+
+Route::post('/feedback', function (Request $request) {
+    $isAnonymous = filter_var($request->input('is_anonymous'), FILTER_VALIDATE_BOOLEAN);
+
+    $validated = $request->validate([
+        'full_name' => [$isAnonymous ? 'nullable' : 'required', 'string', 'max:255'],
+        'description' => ['required', 'string', 'max:2000'],
+        'stars' => ['required', 'integer', 'min:1', 'max:5'],
+    ]);
+
+    $fullName = $isAnonymous
+        ? Feedback::ANONYMOUS_NAME
+        : trim($validated['full_name'] ?? '');
+
+    $feedback = Feedback::create([
+        'full_name' => $fullName,
+        'is_anonymous' => $isAnonymous,
+        'description' => $validated['description'],
+        'stars' => (int) $validated['stars'],
+        'is_shown' => true,
+    ]);
+
+    if ($request->expectsJson()) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Thank you for your feedback!',
+            'feedback' => [
+                'id' => $feedback->id,
+                'full_name' => $feedback->display_name,
+                'initials' => $feedback->initials,
+                'description' => $feedback->description,
+                'stars' => $feedback->stars,
+                'created_at' => $feedback->created_at->format('M j, Y'),
+            ],
+        ]);
+    }
+
+    return redirect()->route('feedback')->with('success', 'Thank you for your feedback!');
+})->name('feedback.store');
 
 
 
@@ -1633,6 +1680,79 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'onSaleAmenities' => $amenities->filter(fn ($a) => $a->sale_percentage && $a->sale_percentage > 0)->count(),
         ]);
     })->name('amenities');
+
+    Route::get('/feedback', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $feedbacks = Feedback::orderByDesc('created_at')->get();
+
+        return view('admin.admin_feedback', [
+            'feedbacks' => $feedbacks,
+            'totalFeedbacks' => $feedbacks->count(),
+            'shownFeedbacks' => $feedbacks->where('is_shown', true)->count(),
+            'hiddenFeedbacks' => $feedbacks->where('is_shown', false)->count(),
+            'averageStars' => $feedbacks->count() > 0 ? round($feedbacks->avg('stars'), 1) : 0,
+            'todayFeedbacks' => $feedbacks->filter(fn ($f) => $f->created_at->isToday())->count(),
+        ]);
+    })->name('feedback');
+
+    Route::patch('/feedback/{feedback}/visibility', function (Request $request, Feedback $feedback) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'is_shown' => ['required', 'boolean'],
+        ]);
+
+        $feedback->update(['is_shown' => $validated['is_shown']]);
+
+        ActivityLog::log(
+            activityType: 'feedback_visibility',
+            title: $validated['is_shown'] ? 'Feedback Shown' : 'Feedback Hidden',
+            description: "Admin ".($validated['is_shown'] ? 'showed' : 'hid')." guest feedback from {$feedback->full_name}",
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['feedback_id' => $feedback->id, 'is_shown' => $validated['is_shown']]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => $validated['is_shown'] ? 'Feedback is now visible on the website.' : 'Feedback is now hidden from the website.',
+            'feedback' => $feedback->fresh(),
+        ]);
+    })->name('feedback.visibility');
+
+    Route::delete('/feedback/{feedback}', function (Request $request, Feedback $feedback) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $guestName = $feedback->full_name;
+        $feedbackId = $feedback->id;
+        $feedback->delete();
+
+        ActivityLog::log(
+            activityType: 'feedback_deleted',
+            title: 'Feedback Deleted',
+            description: "Admin deleted guest feedback from {$guestName}",
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['feedback_id' => $feedbackId, 'guest_name' => $guestName]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Feedback deleted successfully.',
+        ]);
+    })->name('feedback.destroy');
 
     Route::post('/amenities', function (Request $request) {
         $user = $request->session()->get('auth_user');

@@ -72,6 +72,7 @@
                     <li><a href="#activities" data-nav-link>Activities</a></li>
                     <li><a href="#rates" data-nav-link>Rates</a></li>
                     <li><a href="#gallery" data-nav-link>Gallery</a></li>
+                    <li><a href="#reviews" data-nav-link>Reviews</a></li>
                     <li><a href="#directions" data-nav-link>Directions</a></li>
                 </ul>
 
@@ -130,6 +131,7 @@
         <a href="#activities" data-nav-link>Activities</a>
         <a href="#rates" data-nav-link>Rates</a>
         <a href="#gallery" data-nav-link>Gallery</a>
+        <a href="#reviews" data-nav-link>Reviews</a>
         <a href="#directions" data-nav-link>Directions</a>
         <a href="{{ route('reservation') }}" class="hp-btn hp-btn--book">Book Now</a>
     </nav>
@@ -446,6 +448,54 @@
                     </div>
                 @endforeach
             </div>
+        </div>
+    </section>
+
+    {{-- Guest Reviews --}}
+    <section class="hp-section hp-section--reviews" id="reviews" data-section>
+        <div class="hp-container">
+            <div class="hp-section__header" data-animate="fade-up">
+                <span class="hp-section__label">Guest Reviews</span>
+                <h2 class="hp-section__title">What Visitors Say</h2>
+                <p class="hp-section__desc">Real experiences from guests who explored Hinaguan Nature Park.</p>
+            </div>
+
+            @if ($featuredFeedbacks->isNotEmpty())
+                <div class="hp-reviews-marquee" data-animate="fade-up" data-delay="100">
+                    <div class="hp-reviews-marquee__track">
+                        @foreach (range(1, 2) as $copy)
+                            <div class="hp-reviews-marquee__group" {{ $loop->last ? 'aria-hidden' : '' }}>
+                                @foreach ($featuredFeedbacks as $feedback)
+                                    <article class="hp-review-card">
+                                        <div class="hp-review-card__header">
+                                            <span class="hp-review-card__avatar" aria-hidden="true">{{ $feedback->initials }}</span>
+                                            <div>
+                                                <h3 class="hp-review-card__name">{{ $feedback->full_name }}</h3>
+                                                <time class="hp-review-card__date" datetime="{{ $feedback->created_at->toDateString() }}">{{ $feedback->created_at->format('M j, Y') }}</time>
+                                            </div>
+                                        </div>
+                                        <div class="hp-review-card__stars" aria-label="{{ $feedback->stars }} out of 5 stars">
+                                            @for ($s = 1; $s <= 5; $s++)
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $s <= $feedback->stars ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                            @endfor
+                                        </div>
+                                        <p class="hp-review-card__text">&ldquo;{{ $feedback->description }}&rdquo;</p>
+                                    </article>
+                                @endforeach
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="hp-reviews-marquee__actions">
+                        <a href="{{ route('feedback') }}" class="hp-btn hp-btn--outline">See Other Reviews</a>
+                    </div>
+                </div>
+            @else
+                <div class="hp-reviews-empty" data-animate="fade-up">
+                    <p>No guest reviews yet. Be the first to share your Hinaguan experience.</p>
+                    <a href="{{ route('feedback') }}" class="hp-btn hp-btn--hero">Write a Review</a>
+                </div>
+            @endif
         </div>
     </section>
 

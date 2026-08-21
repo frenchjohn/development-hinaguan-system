@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Feedback;
 use App\Models\ParkSetting;
 use App\Models\ReservationGuest;
 use App\Services\WeatherService;
@@ -20,10 +21,16 @@ class HomeController extends Controller
 
         $parkSettings = ParkSetting::first();
 
+        $featuredFeedbacks = Feedback::visible()
+            ->topRated()
+            ->limit(10)
+            ->get();
+
         return view('homepage', [
             'weather' => $weather->getTodayWeather(),
             'activeGuestCount' => $activeGuestCount,
             'parkSettings' => $parkSettings,
+            'featuredFeedbacks' => $featuredFeedbacks,
         ]);
     }
 }

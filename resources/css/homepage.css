@@ -1,4 +1,4 @@
-/* Hinaguan Nature Park — Landing Page */
+﻿/* Hinaguan Nature Park â€” Landing Page */
 
 :root {
     --hp-green-darkest: #001a11;
@@ -27,7 +27,7 @@ body {
     color: var(--hp-text);
 }
 
-/* ── Fixed site header wrapper ── */
+/* â”€â”€ Fixed site header wrapper â”€â”€ */
 .hp-site-header {
     position: fixed;
     top: 0;
@@ -36,7 +36,7 @@ body {
     z-index: 100;
 }
 
-/* ── Top announcement bar ── */
+/* â”€â”€ Top announcement bar â”€â”€ */
 .hp-topbar {
     background: var(--hp-gold);
     padding: 0.45rem 0;
@@ -155,7 +155,7 @@ body {
     opacity: 0.8;
 }
 
-/* ── Header ── */
+/* â”€â”€ Header â”€â”€ */
 .hp-header {
     position: relative;
     transition: background 0.35s ease, box-shadow 0.35s ease, padding 0.35s ease;
@@ -275,7 +275,7 @@ body {
     width: 100%;
 }
 
-/* ── Buttons ── */
+/* â”€â”€ Buttons â”€â”€ */
 .hp-btn {
     display: inline-flex;
     align-items: center;
@@ -356,7 +356,7 @@ body {
     padding: 0.25rem;
 }
 
-/* ── Hero ── */
+/* â”€â”€ Hero â”€â”€ */
 .hp-hero {
     position: relative;
     min-height: 100vh;
@@ -503,7 +503,7 @@ body {
     50% { transform: translateX(-50%) translateY(8px); }
 }
 
-/* ── Weather widget ── */
+/* â”€â”€ Weather widget â”€â”€ */
 .hp-weather {
     position: absolute;
     top: calc(var(--hp-header-offset) + 1rem);
@@ -565,7 +565,7 @@ body {
     color: rgba(255, 255, 255, 0.6);
 }
 
-/* ── Sections ── */
+/* â”€â”€ Sections â”€â”€ */
 .hp-section {
     padding: 5.5rem 1.5rem;
     scroll-margin-top: var(--hp-header-offset);
@@ -638,7 +638,7 @@ body {
     margin-top: 3rem;
 }
 
-/* ── About ── */
+/* â”€â”€ About â”€â”€ */
 .hp-about-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -750,7 +750,7 @@ body {
     color: var(--hp-gold-dark);
 }
 
-/* ── Amenities grid ── */
+/* â”€â”€ Amenities grid â”€â”€ */
 .hp-amenities-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -797,7 +797,7 @@ body {
     text-align: left;
 }
 
-/* ── Activities ── */
+/* â”€â”€ Activities â”€â”€ */
 .hp-activities-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -852,7 +852,7 @@ body {
     margin: 0;
 }
 
-/* ── Rates ── */
+/* â”€â”€ Rates â”€â”€ */
 .hp-rates-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -992,7 +992,7 @@ body {
     margin: 0 0 1.5rem;
 }
 
-/* ── Gallery ── */
+/* â”€â”€ Gallery â”€â”€ */
 .hp-gallery-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1021,7 +1021,7 @@ body {
     transform: scale(1.08);
 }
 
-/* ── Directions / Contact ── */
+/* â”€â”€ Directions / Contact â”€â”€ */
 .hp-directions-grid {
     display: grid;
     grid-template-columns: 1fr 1.2fr;
@@ -1118,7 +1118,7 @@ body {
     display: block;
 }
 
-/* ── Footer ── */
+/* â”€â”€ Footer â”€â”€ */
 .hp-footer {
     background: var(--hp-green-darkest);
     color: rgba(255, 255, 255, 0.55);
@@ -1150,7 +1150,7 @@ body {
     font-size: 0.8125rem;
 }
 
-/* ── Floating action buttons ── */
+/* â”€â”€ Floating action buttons â”€â”€ */
 .hp-fab-group {
     position: fixed;
     z-index: 90;
@@ -1218,7 +1218,7 @@ body {
     transform: translateY(0);
 }
 
-/* ── Mobile nav ── */
+/* â”€â”€ Mobile nav â”€â”€ */
 .hp-mobile-nav {
     display: none;
     position: fixed;
@@ -1256,7 +1256,7 @@ body {
     color: var(--hp-gold);
 }
 
-/* ── Scroll entrance animations ── */
+/* â”€â”€ Scroll entrance animations â”€â”€ */
 [data-animate] {
     opacity: 0;
     transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1297,7 +1297,7 @@ body {
     opacity: 1;
 }
 
-/* ── Responsive ── */
+/* â”€â”€ Responsive â”€â”€ */
 @media (max-width: 1024px) {
     .hp-amenities-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -1892,7 +1892,152 @@ body {
     }
 }
 
+/* ── Guest Reviews Marquee ── */
+.hp-section--reviews {
+    background: linear-gradient(180deg, #0b2418 0%, #0d2c1d 100%);
+    color: #fff;
+}
+
+.hp-section--reviews .hp-section__title,
+.hp-section--reviews .hp-section__desc {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.hp-section--reviews .hp-section__desc {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.hp-reviews-marquee__track {
+    display: flex;
+    width: max-content;
+    animation: hpMarqueeScroll 45s linear infinite;
+}
+
+.hp-reviews-marquee:hover .hp-reviews-marquee__track {
+    animation-play-state: paused;
+}
+
+.hp-reviews-marquee__group {
+    display: flex;
+    gap: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+@keyframes hpMarqueeScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+.hp-review-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    width: 21rem;
+    max-width: 82vw;
+    border: 1px solid rgba(200, 164, 93, 0.25);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(8px);
+    padding: 1.5rem 1.4rem;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.hp-review-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.hp-review-card__avatar {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #6E9F54 0%, #244A2D 100%);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.hp-review-card__name {
+    margin: 0;
+    font-family: var(--hp-font-display);
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.hp-review-card__date {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+.hp-review-card__stars {
+    display: flex;
+    gap: 0.15rem;
+    color: rgba(255, 255, 255, 0.22);
+}
+
+.hp-review-card__stars svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: currentColor;
+}
+
+.hp-review-card__stars svg.is-filled {
+    color: var(--hp-gold);
+}
+
+.hp-review-card__text {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.hp-reviews-marquee__actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.hp-btn--outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.35rem;
+    border-radius: 999px;
+    border: 1px solid rgba(200, 164, 93, 0.45);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.hp-btn--outline:hover {
+    background: rgba(200, 164, 93, 0.12);
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    .hp-review-card {
+        width: 17rem;
+        padding: 1.25rem 1.1rem;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
+    .hp-reviews-marquee__track {
+        animation: none;
+        overflow-x: auto;
+    }
+
     html {
         scroll-behavior: auto;
     }

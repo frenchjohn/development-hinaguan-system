@@ -5,6 +5,7 @@
         ['key' => 'dashboard', 'label' => 'Dashboard', 'url' => route('admin.dashboard'), 'icon' => 'grid'],
         ['key' => 'amenities', 'label' => 'Amenities', 'url' => route('admin.amenities'), 'icon' => 'map'],
         ['key' => 'reports', 'label' => 'Reports', 'url' => route('admin.reports'), 'icon' => 'chart'],
+        ['key' => 'feedback', 'label' => 'Feedback', 'url' => route('admin.feedback'), 'icon' => 'message'],
         ['key' => 'users', 'label' => 'Users', 'url' => route('admin.users'), 'icon' => 'users'],
     ];
 @endphp
