@@ -147,6 +147,26 @@ $getReservationAmenityTimeline = function ($ra, $res = null) use ($continuousSlo
     $resEndSlot = $res ? ($res->getRawOriginal('end_slot') ?? $res->end_slot) : null;
     $endSlot = $raEndSlot ?: ($resEndSlot ?: ($raStartSlot ?: ($resStartSlot ?: ($baseType ?: 'Daytime'))));
 
+    // Early check-in: guest arrived before the scheduled start — occupy the amenity
+    // from actual check-in until the original scheduled checkout (end_date/end_slot).
+    if ($res) {
+        $resStatus = strtolower(trim((string) ($res->status ?? '')));
+        $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+
+        if ($isCheckedIn && $res->check_in) {
+            $checkInCarbon = \Illuminate\Support\Carbon::parse($res->check_in);
+            $checkInDate = $checkInCarbon->toDateString();
+
+            if ($checkInDate < $startDate) {
+                $settings = \App\Models\ParkSetting::first();
+                $daytimeEnd = $settings->daytime_end ?? '18:00';
+                $checkInTime = $checkInCarbon->format('H:i');
+                $startDate = $checkInDate;
+                $startSlot = ($checkInTime < $daytimeEnd) ? 'Daytime' : 'Nighttime';
+            }
+        }
+    }
+
     $hasExplicitMultiDay = ($ra && (is_object($ra) ? $ra->start_date : ($ra['start_date'] ?? null)))
         || ($res && $res->end_date)
         || ($startDate !== $endDate);
