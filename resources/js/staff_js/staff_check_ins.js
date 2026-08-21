@@ -1874,6 +1874,66 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
+    const populateMidStayAmenitySelect = (res) => {
+        const selectEl = document.getElementById('midStayAmenitySelect');
+        if (!selectEl) return;
+
+        const occupiedTodayIds = new Set((window.OCCUPIED_TODAY_AMENITY_IDS || []).map(String));
+        const existingAmenityIds = new Set(
+            (res?.reservation_amenities || [])
+                .filter((a) => (a.status || 'Active') !== 'Completed')
+                .map((a) => String(a.amenity_id || a.amenity?.id))
+                .filter(Boolean)
+        );
+
+        const allAmenities = window.ALL_AMENITIES || [];
+        const pickable = [];
+        const unavailable = [];
+
+        allAmenities.forEach((amenity) => {
+            const id = String(amenity.id);
+            const name = amenity.amenities_name || amenity.name || 'Amenity';
+
+            if (existingAmenityIds.has(id)) {
+                unavailable.push({ name, reason: 'Already on this reservation' });
+            } else if (occupiedTodayIds.has(id)) {
+                unavailable.push({ name, reason: 'Occupied / unavailable today' });
+            } else {
+                pickable.push({ id, name });
+            }
+        });
+
+        pickable.sort((a, b) => a.name.localeCompare(b.name));
+        unavailable.sort((a, b) => a.name.localeCompare(b.name));
+
+        selectEl.innerHTML = '<option value="">-- Choose an amenity --</option>';
+
+        pickable.forEach(({ id, name }) => {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = name;
+            selectEl.appendChild(opt);
+        });
+
+        unavailable.forEach(({ name, reason }) => {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.disabled = true;
+            opt.textContent = `${name} (${reason})`;
+            selectEl.appendChild(opt);
+        });
+
+        if (pickable.length === 0) {
+            const emptyOpt = document.createElement('option');
+            emptyOpt.value = '';
+            emptyOpt.disabled = true;
+            emptyOpt.textContent = unavailable.length
+                ? 'No amenities available to add right now'
+                : 'No amenities configured in the system';
+            selectEl.appendChild(emptyOpt);
+        }
+    };
+
     const openAddAmenityMidStayModal = (reservationId) => {
         const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
         if (!res) return;
@@ -1919,6 +1979,7 @@ window.AppPage['staff_check_ins'] = function () {
         const selectEl = document.getElementById('midStayAmenitySelect');
         const airconCheck = document.getElementById('midStayIsAircon');
         const airconWrap = document.getElementById('midStayAirconWrapper');
+        populateMidStayAmenitySelect(res);
         if (selectEl) selectEl.value = '';
         if (airconCheck) airconCheck.checked = false;
         if (airconWrap) airconWrap.classList.add('hidden');
