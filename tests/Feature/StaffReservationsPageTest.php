@@ -93,12 +93,15 @@ class StaffReservationsPageTest extends TestCase
         });
     }
 
-    public function test_reservation_data_includes_computed_checkout_datetime_per_slot(): void
+    public function test_reservation_data_computes_checkout_from_master_schedule_only(): void
     {
         $this->staffSession();
         $this->createAmenity('amenity-1');
 
-        // Daytime ends at 18:00 of the reservation date.
+        // Checkout reference is ONLY the reservation's own master stay schedule.
+        // Amenity pricing types must NOT influence it. Reservations created here
+        // have no explicit slots, so they default to a single Daytime day (18:00).
+
         $daytime = $this->createReservation('2026-08-10');
         ReservationAmenity::create([
             'reservation_id' => $daytime->id,
@@ -108,7 +111,7 @@ class StaffReservationsPageTest extends TestCase
             'quantity' => 1,
         ]);
 
-        // NightToDay covers night of the date + day of the NEXT day -> 18:00 next day.
+        // Even though the amenity row claims NightToDay, the master schedule wins.
         $nightToDay = $this->createReservation('2026-08-11');
         ReservationAmenity::create([
             'reservation_id' => $nightToDay->id,
@@ -118,7 +121,6 @@ class StaffReservationsPageTest extends TestCase
             'quantity' => 1,
         ]);
 
-        // Nighttime ends at 06:00 of the next day.
         $nighttime = $this->createReservation('2026-08-12');
         ReservationAmenity::create([
             'reservation_id' => $nighttime->id,
@@ -133,8 +135,37 @@ class StaffReservationsPageTest extends TestCase
 
         $data = $response->viewData('reservationData');
         $this->assertSame('2026-08-10T18:00:00+08:00', $data[$daytime->id]['checkout_at']);
-        $this->assertSame('2026-08-12T18:00:00+08:00', $data[$nightToDay->id]['checkout_at']);
-        $this->assertSame('2026-08-13T06:00:00+08:00', $data[$nighttime->id]['checkout_at']);
+        $this->assertSame('2026-08-11T18:00:00+08:00', $data[$nightToDay->id]['checkout_at']);
+        $this->assertSame('2026-08-12T18:00:00+08:00', $data[$nighttime->id]['checkout_at']);
+    }
+
+    public function test_reservation_data_uses_explicit_master_end_date_for_checkout(): void
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-08-01');
+        $this->staffSession();
+        $this->createAmenity('amenity-1');
+
+        // Multi-day stay: master end_date drives the checkout (+4 days, Daytime 18:00),
+        // even when an amenity row inside ends earlier or claims another slot.
+        $multiDay = $this->createReservation('2026-08-10');
+        $multiDay->update([
+            'end_date' => '2026-08-14',
+            'end_slot' => 'Daytime',
+            'total_days' => 5,
+        ]);
+        ReservationAmenity::create([
+            'reservation_id' => $multiDay->id,
+            'amenity_id' => 'amenity-1',
+            'pricing_type' => 'Nighttime',
+            'price_at_booking' => 700,
+            'quantity' => 1,
+        ]);
+
+        $response = $this->get('/staff/reservations');
+        $response->assertOk();
+
+        $data = $response->viewData('reservationData');
+        $this->assertSame('2026-08-14T18:00:00+08:00', $data[$multiDay->id]['checkout_at']);
     }
 
     public function test_reservation_availability_endpoint_disables_dates_where_the_amenity_is_booked(): void

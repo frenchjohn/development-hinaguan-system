@@ -321,63 +321,30 @@ $amenityCheckoutAt = function (?string $date, ?string $slot): ?\Illuminate\Suppo
     };
 };
 
-// Returns the overall checkout Carbon datetime for a reservation based on its scheduled stay and amenities
+// Returns the checkout Carbon datetime for a reservation based ONLY on its
+// master stay schedule (reservation_date / end_date / end_slot / total_days).
+// Amenity rows are intentionally ignored: amenities are boundary-enforced to
+// never exceed the master schedule, so the reservation's own checkout date is
+// the single source of truth for checkout reminders and counters.
 $computeReservationCheckoutAt = function ($reservation) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt): ?\Illuminate\Support\Carbon {
     if (! $reservation) {
         return null;
     }
 
-    $latestCheckout = null;
-
-    // 1. Compute checkout time from reservation's master stay schedule (end_date / end_slot or total_days)
     $startDate = $reservation->reservation_date;
-    if ($startDate) {
-        $totalDays = max(1, (int) ($reservation->total_days ?? 1));
-        $endDate = $reservation->end_date ?: ($totalDays > 1 ? \Illuminate\Support\Carbon::parse($startDate)->addDays($totalDays - 1)->toDateString() : $startDate);
-        $endSlot = $reservation->end_slot ?: ($reservation->entranceFee?->pricing_type ?: $reservation->start_slot ?: 'Daytime');
-
-        if ($reservation->end_date || $totalDays > 1) {
-            $stayCheckout = $amenityContinuousCheckoutAt($endDate, $endSlot);
-        } else {
-            $stayCheckout = $amenityCheckoutAt($startDate, $endSlot);
-        }
-
-        if ($stayCheckout) {
-            $latestCheckout = $stayCheckout;
-        }
+    if (! $startDate) {
+        return null;
     }
 
-    // 2. Check all active (or completed if all completed) amenities
-    $amenities = $reservation->relationLoaded('reservationAmenities')
-        ? $reservation->reservationAmenities
-        : $reservation->reservationAmenities()->get();
+    $totalDays = max(1, (int) ($reservation->total_days ?? 1));
+    $endDate = $reservation->end_date ?: ($totalDays > 1 ? \Illuminate\Support\Carbon::parse($startDate)->addDays($totalDays - 1)->toDateString() : $startDate);
+    $endSlot = $reservation->end_slot ?: ($reservation->entranceFee?->pricing_type ?: $reservation->start_slot ?: 'Daytime');
 
-    $activeAmenities = $amenities->filter(fn ($ra) => $ra->status !== 'Completed');
-    $amenitiesToConsider = $activeAmenities->isNotEmpty() ? $activeAmenities : $amenities;
-
-    if ($amenitiesToConsider->isNotEmpty()) {
-        foreach ($amenitiesToConsider as $ra) {
-            $raStartDate = $ra->start_date ?: $reservation->reservation_date;
-            if (! $raStartDate) {
-                continue;
-            }
-
-            $raEndDate = $ra->end_date ?: ($reservation->end_date ?: $raStartDate);
-            $raEndSlot = $ra->end_slot ?: ($reservation->end_slot ?: $ra->pricing_type ?: 'Daytime');
-
-            if ($ra->start_date || $ra->end_date || $reservation->end_date || ($reservation->total_days && $reservation->total_days > 1)) {
-                $amCheckout = $amenityContinuousCheckoutAt($raEndDate, $raEndSlot);
-            } else {
-                $amCheckout = $amenityCheckoutAt($raStartDate, $ra->pricing_type ?: $raEndSlot);
-            }
-
-            if ($amCheckout && (! $latestCheckout || $amCheckout->gt($latestCheckout))) {
-                $latestCheckout = $amCheckout;
-            }
-        }
+    if ($reservation->end_date || $totalDays > 1) {
+        return $amenityContinuousCheckoutAt($endDate, $endSlot);
     }
 
-    return $latestCheckout;
+    return $amenityCheckoutAt($startDate, $endSlot);
 };
 
 $reservationCheckoutAt = function (?string $date, array $slots, ?string $endDate = null, ?string $endSlot = null) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt): ?\Illuminate\Support\Carbon {
@@ -2795,7 +2762,7 @@ Route::get('/api/activity-notifications/stream', function (Request $request) {
 })->name('api.activity-notifications.stream');
 
 Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
-    Route::get('/dashboard', function (Request $request) use ($reservationCheckoutAt) {
+    Route::get('/dashboard', function (Request $request) use ($computeReservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -2902,32 +2869,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderBy('reservation_date')
             ->get(['booker_name', 'number_of_guests', 'status', 'reservation_date']);
 
-        // Calculate due checkouts for dashboard alert
+        // Calculate due checkouts for dashboard alert.
+        // Reference is ONLY the reservation's own expected checkout
+        // (master stay schedule) — amenity checkouts never trigger the alert.
         $dashboardGuestsDue = 0;
         $dashboardResDue = 0;
-        
+
         $activeReservationsDashboard = Reservation::query()
-            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+            ->with(['reservationGuests'])
             ->whereNotNull('check_in')
             ->where('status', 'Checked In')
             ->get();
-            
-        foreach ($activeReservationsDashboard as $res) {
-            $timeSlots = $res->reservationAmenities
-                ->pluck('pricing_type')
-                ->map(function ($pricingType) {
-                    $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
-                    if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
-                    if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
-                    if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
-                    if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
-                    return $baseSlot;
-                })
-                ->unique()
-                ->values()
-                ->all();
 
-            $coAt = $reservationCheckoutAt($res->check_in, $timeSlots);
+        foreach ($activeReservationsDashboard as $res) {
+            $coAt = $computeReservationCheckoutAt($res);
             if ($coAt && \Carbon\Carbon::parse($coAt)->isPast()) {
                 $dashboardResDue++;
                 $dashboardGuestsDue += $res->reservationGuests->whereNull('checked_out_at')->count();
