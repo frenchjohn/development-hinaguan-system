@@ -5119,6 +5119,35 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $endDate = \Illuminate\Support\Carbon::parse($data['end_date'])->toDateString();
         $endSlot = $data['end_slot'];
 
+        // Chronological ordering helper: Day < Night within the same day.
+        $slotOrderIndex = fn (string $date, string $slot): int => ((int) strtotime($date)) * 2 + (str_contains($slot, 'Night') ? 1 : 0);
+
+        // Sessions that have already begun cannot be booked retroactively:
+        // - Daytime now   -> earliest bookable start is tonight's Nighttime.
+        // - Nighttime now -> today is fully underway; earliest is tomorrow's Daytime.
+        if ($currentSession === 'Nighttime') {
+            $earliestDate = now()->addDay()->toDateString();
+            $earliestSlot = 'Daytime';
+        } else {
+            $earliestDate = now()->toDateString();
+            $earliestSlot = 'Nighttime';
+        }
+
+        if ($slotOrderIndex($startDate, $startSlot) < $slotOrderIndex($earliestDate, $earliestSlot)) {
+            return response()->json([
+                'message' => "That session has already started. The earliest available start for a new amenity is {$earliestDate} ({$earliestSlot}).",
+            ], 422);
+        }
+
+        // Reject an end session chronologically before the start session
+        // (e.g. start Aug 22 Nighttime -> end Aug 22 Daytime would otherwise
+        // silently roll over into the next day).
+        if ($slotOrderIndex($endDate, $endSlot) < $slotOrderIndex($startDate, $startSlot)) {
+            return response()->json([
+                'message' => "The end date/session ({$endDate} [{$endSlot}]) cannot be earlier than the start date/session ({$startDate} [{$startSlot}]).",
+            ], 422);
+        }
+
         $itemTimeline = $continuousSlotTimeline($startDate, $endDate, $startSlot, $endSlot);
         if (empty($itemTimeline)) {
             return response()->json(['message' => 'Invalid schedule selected for amenity.'], 422);

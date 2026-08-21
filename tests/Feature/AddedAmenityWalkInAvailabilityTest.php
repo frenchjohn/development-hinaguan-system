@@ -54,9 +54,14 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
 
     public function test_added_amenity_on_existing_checked_in_reservation_is_immediately_unavailable_for_walkin()
     {
+        // Freeze "now" to daytime so the earliest bookable session for a
+        // mid-stay amenity is tonight's Nighttime (daytime already started).
+        \Illuminate\Support\Carbon::setTestNow(now()->setTime(10, 0));
+
         $today = now()->toDateString();
 
-        // 1. Existing Checked In reservation on site (originally booked only Poolside Cottage)
+        // 1. Existing Checked In reservation on site (originally booked only Poolside
+        // Cottage). Stay covers today Day -> Night so a nighttime amenity fits inside.
         $reservation = Reservation::create([
             'booker_name' => 'Alice CheckedIn',
             'phone' => '09123456789',
@@ -64,7 +69,7 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
             'reservation_date' => $today,
             'end_date' => $today,
             'start_slot' => 'Daytime',
-            'end_slot' => 'Daytime',
+            'end_slot' => 'Nighttime',
             'total_days' => 1,
             'number_of_guests' => 4,
             'status' => 'Checked In',
@@ -87,20 +92,21 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
             'status' => 'Active',
         ]);
 
-        // Before adding Gazebo, Gazebo should be AVAILABLE for today Daytime
-        $availBefore = $this->getJson("/api/amenities/availability?start_date={$today}&end_date={$today}&start_slot=Daytime&end_slot=Daytime");
+        // Before adding Gazebo, Gazebo should be AVAILABLE for tonight Nighttime
+        $availBefore = $this->getJson("/api/amenities/availability?start_date={$today}&end_date={$today}&start_slot=Nighttime&end_slot=Nighttime");
         $availBefore->assertStatus(200);
         $amenitiesBefore = collect($availBefore->json('amenities'))->keyBy('id');
         $this->assertTrue($amenitiesBefore[$this->gazebo->id]['is_available'], 'Gazebo should initially be available');
 
-        // 2. Staff adds Gazebo to Alice\'s checked-in reservation
+        // 2. Staff adds Gazebo to Alice\'s checked-in reservation (tonight Nighttime —
+        // today's daytime session has already started, so it cannot be booked).
         $addResponse = $this->withSession(['auth_user' => ['id' => 1, 'name' => 'Staff Member', 'role' => 'staff']])
             ->postJson("/staff/reservations/{$reservation->id}/amenities/add", [
                 'amenity_id' => $this->gazebo->id,
                 'start_date' => $today,
                 'end_date' => $today,
-                'start_slot' => 'Daytime',
-                'end_slot' => 'Daytime',
+                'start_slot' => 'Nighttime',
+                'end_slot' => 'Nighttime',
                 'quantity' => 1,
             ]);
 
@@ -108,7 +114,7 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
         $addResponse->assertJson(['success' => true]);
 
         // 3. Now check walk-in availability endpoint: Gazebo MUST BE UNAVAILABLE
-        $availAfter = $this->getJson("/api/amenities/availability?start_date={$today}&end_date={$today}&start_slot=Daytime&end_slot=Daytime");
+        $availAfter = $this->getJson("/api/amenities/availability?start_date={$today}&end_date={$today}&start_slot=Nighttime&end_slot=Nighttime");
         $availAfter->assertStatus(200);
         $amenitiesAfter = collect($availAfter->json('amenities'))->keyBy('id');
         $this->assertFalse($amenitiesAfter[$this->gazebo->id]['is_available'], 'Gazebo must now be unavailable for walk-in picker');
@@ -121,8 +127,8 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
                 'reservation_type' => 'walk_in',
                 'start_date' => $today,
                 'end_date' => $today,
-                'start_slot' => 'Daytime',
-                'end_slot' => 'Daytime',
+                'start_slot' => 'Nighttime',
+                'end_slot' => 'Nighttime',
                 'total_days' => 1,
                 'primary_guest' => [
                     'first_name' => 'Bob',
@@ -138,9 +144,9 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
                         'amenity_id' => (string) $this->gazebo->id,
                         'start_date' => $today,
                         'end_date' => $today,
-                        'start_slot' => 'Daytime',
-                        'end_slot' => 'Daytime',
-                        'pricing_type' => 'Daytime',
+                        'start_slot' => 'Nighttime',
+                        'end_slot' => 'Nighttime',
+                        'pricing_type' => 'Nighttime',
                     ],
                 ],
             ]);

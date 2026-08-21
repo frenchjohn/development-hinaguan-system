@@ -691,6 +691,10 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     // ── Continuous timeline slot builder (JS) ──────────────────────────────
+    // Formats a Date object as a LOCAL YYYY-MM-DD key (toISOString() would shift
+    // the date backwards for timezones ahead of UTC, e.g. PHT).
+    const toDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
     const buildContinuousTimeline = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
         if (!startDate) return [];
         endDate = endDate || startDate;
@@ -715,7 +719,7 @@ window.AppPage['staff_check_ins'] = function () {
             } else {
                 const nextDay = new Date(s);
                 nextDay.setDate(nextDay.getDate() + 1);
-                const nextDayStr = nextDay.toISOString().split('T')[0];
+                const nextDayStr = toDateKey(nextDay);
                 pairs.push([startDate, 'Nighttime']);
                 pairs.push([nextDayStr, 'Daytime']);
             }
@@ -725,7 +729,7 @@ window.AppPage['staff_check_ins'] = function () {
         for (let i = 0; i <= daysDiff; i++) {
             const curr = new Date(s);
             curr.setDate(curr.getDate() + i);
-            const currStr = curr.toISOString().split('T')[0];
+            const currStr = toDateKey(curr);
 
             if (i === 0) {
                 if (cleanStartSlot === 'Daytime') {
@@ -1585,6 +1589,28 @@ window.AppPage['staff_check_ins'] = function () {
     const submitAddAmenityBtn = document.getElementById('submitAddAmenityBtn');
     const addAmenityCloseButtons = document.querySelectorAll('[data-close-add-amenity-modal="true"]');
 
+    // Earliest bookable (date, slot) for an amenity added mid-stay.
+    // Sessions that have already begun cannot be booked retroactively:
+    // - Daytime now   -> today's daytime is underway; earliest is tonight's Nighttime.
+    // - Nighttime now -> today is fully underway; earliest is tomorrow's Daytime
+    //                    (today's date is disabled on the calendar).
+    const resolveMidStayStart = () => {
+        const today = window.SERVER_TODAY || todayStr;
+        const session = window.SERVER_CURRENT_SESSION || 'Daytime';
+        if (session === 'Nighttime') {
+            const t = new Date(today + 'T00:00:00');
+            t.setDate(t.getDate() + 1);
+            return { date: toDateKey(t), slot: 'Daytime' };
+        }
+        return { date: today, slot: 'Nighttime' };
+    };
+
+    // Chronological ordering index for a (date, slot) pair: Day < Night per day.
+    const slotOrderIndex = (dateStr, slot) => {
+        const [y, m, d] = String(dateStr).split('-').map(Number);
+        return ((y * 372) + (m * 31) + d) * 2 + (String(slot).includes('Night') ? 1 : 0);
+    };
+
     let addAmenityCalState = {
         resId: null,
         amenityId: null,
@@ -1612,6 +1638,23 @@ window.AppPage['staff_check_ins'] = function () {
             const val = btn.dataset.slotVal;
             addAmenityCalState.selectedEndSlot = val;
             if (addAmenityNewEndSlot) addAmenityNewEndSlot.value = val;
+
+            // Block picking an end session that falls before the amenity's start
+            // session (e.g. start Aug 22 Nighttime -> end Aug 22 Daytime), which
+            // would otherwise silently roll over into the next day.
+            const endDate = addAmenityCalState.selectedEndDate || addAmenityCalState.startDate;
+            if (endDate && addAmenityCalState.startDate
+                && slotOrderIndex(endDate, val) < slotOrderIndex(addAmenityCalState.startDate, addAmenityCalState.startSlot)) {
+                if (addAmenityWarning) {
+                    addAmenityWarning.textContent = 'End date/session must be on or after the start date/session.';
+                    addAmenityWarning.classList.remove('hidden');
+                }
+                syncAddAmenitySessionPills();
+                recalcAddAmenityPrice();
+                return;
+            }
+
+            if (addAmenityWarning) addAmenityWarning.classList.add('hidden');
             syncAddAmenitySessionPills();
             recalcAddAmenityPrice();
             renderAddAmenityCalendarMonth();
@@ -1728,7 +1771,12 @@ window.AppPage['staff_check_ins'] = function () {
             if (isPast || isBeforeStart) {
                 btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
                 btn.disabled = true;
-                if (isBeforeStart) btn.title = 'Cannot book amenity before start date.';
+                if (isPast) {
+                    btn.title = 'Date has already passed.';
+                } else {
+                    btn.title = 'This session has already started. The amenity can start from '
+                        + `${formatDate(addAmenityCalState.startDate)} (${addAmenityCalState.startSlot}).`;
+                }
             } else if (isExceedMaster) {
                 btn.classList.add('is-disabled', 'opacity-40', 'border-amber-500/30', 'bg-amber-500/10', 'text-amber-700', 'dark:text-amber-300', 'cursor-not-allowed');
                 btn.disabled = true;
@@ -1800,6 +1848,20 @@ window.AppPage['staff_check_ins'] = function () {
         const masterTimeline = buildContinuousTimeline(masterStartDate, masterEndDate, masterStartSlot, masterEndSlot);
         const masterKeyMap = {};
         masterTimeline.forEach(([d, s]) => { masterKeyMap[`${d}_${s}`] = true; });
+
+        // Reject an end session that is chronologically before the start session
+        // (same-day Nighttime start -> Daytime end would silently roll to next day).
+        if (addAmenityCalState.startDate
+            && slotOrderIndex(endDate, endSlot) < slotOrderIndex(startDate, startSlot)) {
+            if (addAmenityWarning) {
+                addAmenityWarning.textContent = 'End date/session must be on or after the start date/session.';
+                addAmenityWarning.classList.remove('hidden');
+            }
+            if (midStaySlotsText) midStaySlotsText.textContent = '0 sessions';
+            if (midStayCostText) midStayCostText.textContent = '₱0.00';
+            if (submitAddAmenityBtn) submitAddAmenityBtn.disabled = true;
+            return;
+        }
 
         const itemTimeline = buildContinuousTimeline(startDate, endDate, startSlot, endSlot);
 
@@ -1953,10 +2015,15 @@ window.AppPage['staff_check_ins'] = function () {
         const masterEndDate = res.end_date || res.reservation_date || today;
         const masterEndSlot = res.end_slot || res.start_slot || 'Daytime';
 
-        addAmenityCalState.startDate = today;
-        addAmenityCalState.startSlot = curSession;
-        addAmenityCalState.selectedEndDate = today;
-        addAmenityCalState.selectedEndSlot = curSession;
+        // The amenity must start at the first session that has NOT begun yet:
+        // daytime now -> tonight's Nighttime; nighttime now -> tomorrow's Daytime
+        // (today's date is disabled on the calendar).
+        const resolvedStart = resolveMidStayStart();
+
+        addAmenityCalState.startDate = resolvedStart.date;
+        addAmenityCalState.startSlot = resolvedStart.slot;
+        addAmenityCalState.selectedEndDate = resolvedStart.date;
+        addAmenityCalState.selectedEndSlot = resolvedStart.slot;
         addAmenityCalState.masterEndDate = masterEndDate;
         addAmenityCalState.masterEndSlot = masterEndSlot;
 
@@ -1966,14 +2033,14 @@ window.AppPage['staff_check_ins'] = function () {
         const newEndSlotInput = document.getElementById('addAmenityNewEndSlot');
 
         if (startFixedEl) {
-            startFixedEl.textContent = `${formatDate(today)} (${curSession})`;
+            startFixedEl.textContent = `${formatDate(resolvedStart.date)} (${resolvedStart.slot})`;
         }
         if (stayLimitEl) {
             stayLimitEl.textContent = `${formatDate(masterEndDate)} (${masterEndSlot})`;
         }
 
-        if (newEndDateInput) newEndDateInput.value = today;
-        if (newEndSlotInput) newEndSlotInput.value = curSession;
+        if (newEndDateInput) newEndDateInput.value = resolvedStart.date;
+        if (newEndSlotInput) newEndSlotInput.value = resolvedStart.slot;
 
         // Reset inputs
         const selectEl = document.getElementById('midStayAmenitySelect');
@@ -1997,7 +2064,7 @@ window.AppPage['staff_check_ins'] = function () {
             }
         }
 
-        const initialDateObj = new Date(today);
+        const initialDateObj = new Date(resolvedStart.date);
         addAmenityCalState.viewYear = !isNaN(initialDateObj.getFullYear()) ? initialDateObj.getFullYear() : currentYear;
         addAmenityCalState.viewMonth = !isNaN(initialDateObj.getMonth()) ? initialDateObj.getMonth() : new Date().getMonth();
 
