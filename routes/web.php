@@ -4038,24 +4038,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $primaryPhone = trim((string) ($primaryGuestData['phone'] ?? '')) ?: null;
             $primaryIsForeigner = (bool) ($primaryGuestData['is_foreigner'] ?? false);
 
-            $primaryCustomer = Customer::firstOrCreate(
-                [
-                    'first_name' => $primaryFirstName,
-                    'last_name' => $primaryLastName,
-                    'email' => $primaryEmail,
-                    'phone' => $primaryPhone,
-                ],
-                [
-                    'first_name' => $primaryFirstName,
-                    'middle_name' => $primaryGuestData['middle_name'] ?? null,
-                    'last_name' => $primaryLastName,
-                    'age' => $primaryGuestData['age'] ?? null,
-                    'gender' => $primaryGuestData['gender'] ?? 'Male',
-                    'is_foreigner' => $primaryIsForeigner,
-                    'phone' => $primaryPhone,
-                    'email' => $primaryEmail,
-                ]
-            );
+            $primaryCustomer = Customer::create([
+                'first_name' => $primaryFirstName,
+                'middle_name' => $primaryGuestData['middle_name'] ?? null,
+                'last_name' => $primaryLastName,
+                'age' => $primaryGuestData['age'] ?? null,
+                'gender' => $primaryGuestData['gender'] ?? 'Male',
+                'is_foreigner' => $primaryIsForeigner,
+                'phone' => $primaryPhone,
+                'email' => $primaryEmail,
+            ]);
 
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
@@ -4070,48 +4062,25 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $companionEmail = trim((string) ($companionData['email'] ?? '')) ?: null;
             $companionPhone = trim((string) ($companionData['phone'] ?? '')) ?: null;
             $companionIsForeigner = (bool) ($companionData['is_foreigner'] ?? false);
+            $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
+            $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
 
-            if (empty($companionEmail) && empty($companionPhone)) {
-                $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
-                $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
-                $companionCustomer = Customer::create([
-                    'first_name' => $companionFirstName,
-                    'middle_name' => $companionData['middle_name'] ?? null,
-                    'last_name' => $companionLastName,
-                    'age' => $companionAge,
-                    'gender' => $companionData['gender'] ?? 'Male',
-                    'is_foreigner' => $companionIsForeigner,
-                    'phone' => $companionPhone,
-                    'email' => $companionEmail,
-                ]);
-            } else {
-                $companionCustomer = Customer::firstOrCreate(
-                    [
-                        'first_name' => $companionFirstName,
-                        'last_name' => $companionLastName,
-                        'email' => $companionEmail,
-                        'phone' => $companionPhone,
-                    ],
-                    [
-                        'first_name' => $companionFirstName,
-                        'middle_name' => $companionData['middle_name'] ?? null,
-                        'last_name' => $companionLastName,
-                        'age' => $companionData['age'] ?? null,
-                        'gender' => $companionData['gender'] ?? 'Male',
-                        'is_foreigner' => $companionIsForeigner,
-                        'phone' => $companionPhone,
-                        'email' => $companionEmail,
-                    ]
-                );
-            }
+            $companionCustomer = Customer::create([
+                'first_name' => $companionFirstName,
+                'middle_name' => $companionData['middle_name'] ?? null,
+                'last_name' => $companionLastName,
+                'age' => $companionAge,
+                'gender' => $companionData['gender'] ?? 'Male',
+                'is_foreigner' => $companionIsForeigner,
+                'phone' => $companionPhone,
+                'email' => $companionEmail,
+            ]);
 
-            if (! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
-                ReservationGuest::create([
-                    'reservation_id' => $reservation->id,
-                    'customer_id' => $companionCustomer->id,
-                    'is_primary_guest' => false,
-                ]);
-            }
+            ReservationGuest::create([
+                'reservation_id' => $reservation->id,
+                'customer_id' => $companionCustomer->id,
+                'is_primary_guest' => false,
+            ]);
         }
 
         foreach ($processedAmenities as $pAm) {
@@ -4352,8 +4321,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         ReservationGuest::where('reservation_id', $reservation->id)->delete();
 
-        $primaryCustomer = null;
-
         if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
             $primaryGuestData = $data['primary_guest'];
             $primaryFirstName = trim((string) ($primaryGuestData['first_name'] ?? '')) ?: 'Main';
@@ -4363,48 +4330,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
             $primaryIsForeigner = (bool) ($primaryGuestData['is_foreigner'] ?? false);
 
-            if ($data['primary_guest_id']) {
-                $primaryCustomer = Customer::find($data['primary_guest_id']);
-                if ($primaryCustomer) {
-                    $primaryCustomer->update([
-                        'first_name' => $primaryFirstName,
-                        'middle_name' => $primaryGuestData['middle_name'] ?? null,
-                        'last_name' => $primaryLastName,
-                        'age' => $primaryGuestData['age'] ?? null,
-                        'gender' => $primaryGuestData['gender'] ?? 'Male',
-                        'is_foreigner' => $primaryIsForeigner,
-                        'phone' => $primaryPhone,
-                        'email' => $primaryEmail,
-                    ]);
-                }
-            } else {
-                $primaryCustomer = Customer::firstOrCreate(
-                    [
-                        'first_name' => $primaryFirstName,
-                        'last_name' => $primaryLastName,
-                        'email' => $primaryEmail,
-                        'phone' => $primaryPhone,
-                    ],
-                    [
-                        'first_name' => $primaryFirstName,
-                        'middle_name' => $primaryGuestData['middle_name'] ?? null,
-                        'last_name' => $primaryLastName,
-                        'age' => $primaryGuestData['age'] ?? null,
-                        'gender' => $primaryGuestData['gender'] ?? 'Male',
-                        'is_foreigner' => $primaryIsForeigner,
-                        'phone' => $primaryPhone,
-                        'email' => $primaryEmail,
-                    ]
-                );
-            }
+            // Always create a fresh customer row per reservation check-in.
+            // Matching personal info must not collapse guests across reservations.
+            $primaryCustomer = Customer::create([
+                'first_name' => $primaryFirstName,
+                'middle_name' => $primaryGuestData['middle_name'] ?? null,
+                'last_name' => $primaryLastName,
+                'age' => $primaryGuestData['age'] ?? null,
+                'gender' => $primaryGuestData['gender'] ?? 'Male',
+                'is_foreigner' => $primaryIsForeigner,
+                'phone' => $primaryPhone,
+                'email' => $primaryEmail,
+            ]);
 
-            if ($primaryCustomer) {
-                ReservationGuest::create([
-                    'reservation_id' => $reservation->id,
-                    'customer_id' => $primaryCustomer->id,
-                    'is_primary_guest' => true,
-                ]);
-            }
+            ReservationGuest::create([
+                'reservation_id' => $reservation->id,
+                'customer_id' => $primaryCustomer->id,
+                'is_primary_guest' => true,
+            ]);
         }
 
         foreach ($data['companions'] ?? [] as $companionData) {
@@ -4412,49 +4355,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $companionLastName = trim((string) ($companionData['last_name'] ?? '')) ?: 'Guest';
             $companionEmail = trim((string) ($companionData['email'] ?? '')) ?: null;
             $companionPhone = trim((string) ($companionData['phone'] ?? '')) ?: null;
-
             $companionIsForeigner = (bool) ($companionData['is_foreigner'] ?? false);
+            $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
+            $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
 
-            if (! empty($companionData['customer_id'])) {
-                $companionCustomer = Customer::find($companionData['customer_id']);
-                $companionCustomer?->update([
-                    'first_name' => $companionFirstName,
-                    'middle_name' => $companionData['middle_name'] ?? null,
-                    'last_name' => $companionLastName,
-                    'age' => $companionData['age'] ?? null,
-                    'gender' => $companionData['gender'] ?? 'Male',
-                    'is_foreigner' => $companionIsForeigner,
-                    'phone' => $companionPhone,
-                    'email' => $companionEmail,
-                ]);
-            } else {
-                $companionCustomer = Customer::firstOrCreate(
-                    [
-                        'first_name' => $companionFirstName,
-                        'last_name' => $companionLastName,
-                        'email' => $companionEmail,
-                        'phone' => $companionPhone,
-                    ],
-                    [
-                        'first_name' => $companionFirstName,
-                        'middle_name' => $companionData['middle_name'] ?? null,
-                        'last_name' => $companionLastName,
-                        'age' => $companionData['age'] ?? null,
-                        'gender' => $companionData['gender'] ?? 'Male',
-                        'is_foreigner' => $companionIsForeigner,
-                        'phone' => $companionPhone,
-                        'email' => $companionEmail,
-                    ]
-                );
-            }
+            $companionCustomer = Customer::create([
+                'first_name' => $companionFirstName,
+                'middle_name' => $companionData['middle_name'] ?? null,
+                'last_name' => $companionLastName,
+                'age' => $companionAge,
+                'gender' => $companionData['gender'] ?? 'Male',
+                'is_foreigner' => $companionIsForeigner,
+                'phone' => $companionPhone,
+                'email' => $companionEmail,
+            ]);
 
-            if ($companionCustomer && ! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
-                ReservationGuest::create([
-                    'reservation_id' => $reservation->id,
-                    'customer_id' => $companionCustomer->id,
-                    'is_primary_guest' => false,
-                ]);
-            }
+            ReservationGuest::create([
+                'reservation_id' => $reservation->id,
+                'customer_id' => $companionCustomer->id,
+                'is_primary_guest' => false,
+            ]);
         }
 
         $adultCount = 0;
@@ -4716,53 +4636,25 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $companionPhone = trim((string) ($companionData['phone'] ?? '')) ?: null;
             $companionIsForeigner = (bool) ($companionData['is_foreigner'] ?? false);
 
-            // Bulk companions (and any companion without contact details) must
-            // get a fresh customer row each time — firstOrCreate would collapse
-            // them into ONE customer and the second reservation_guests insert
-            // would violate the (reservation_id, customer_id) unique key.
-            if (empty($companionEmail) && empty($companionPhone)) {
-                $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
-                $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
-                $companionCustomer = Customer::create([
-                    'first_name' => $companionFirstName,
-                    'middle_name' => $companionData['middle_name'] ?? null,
-                    'last_name' => $companionLastName,
-                    'age' => $companionAge,
-                    'gender' => $companionData['gender'] ?? 'Male',
-                    'is_foreigner' => $companionIsForeigner,
-                    'phone' => $companionPhone,
-                    'email' => $companionEmail,
-                ]);
-            } else {
-                $companionCustomer = Customer::firstOrCreate(
-                    [
-                        'first_name' => $companionFirstName,
-                        'last_name' => $companionLastName,
-                        'email' => $companionEmail,
-                        'phone' => $companionPhone,
-                    ],
-                    [
-                        'first_name' => $companionFirstName,
-                        'middle_name' => $companionData['middle_name'] ?? null,
-                        'last_name' => $companionLastName,
-                        'age' => $companionData['age'] ?? null,
-                        'gender' => $companionData['gender'] ?? 'Male',
-                        'is_foreigner' => $companionIsForeigner,
-                        'phone' => $companionPhone,
-                        'email' => $companionEmail,
-                    ]
-                );
-            }
+            $ageGroupMidpoint = ['0-12' => 6, '13-17' => 15, '18-59' => 30, '60+' => 65];
+            $companionAge = $companionData['age'] ?? ($ageGroupMidpoint[$companionData['age_group'] ?? ''] ?? null);
 
-            // Guard against the (reservation_id, customer_id) unique key — two
-            // companions can resolve to the same customer (e.g. same email).
-            if (! ReservationGuest::where('reservation_id', $reservation->id)->where('customer_id', $companionCustomer->id)->exists()) {
-                ReservationGuest::create([
-                    'reservation_id' => $reservation->id,
-                    'customer_id' => $companionCustomer->id,
-                    'is_primary_guest' => false,
-                ]);
-            }
+            $companionCustomer = Customer::create([
+                'first_name' => $companionFirstName,
+                'middle_name' => $companionData['middle_name'] ?? null,
+                'last_name' => $companionLastName,
+                'age' => $companionAge,
+                'gender' => $companionData['gender'] ?? 'Male',
+                'is_foreigner' => $companionIsForeigner,
+                'phone' => $companionPhone,
+                'email' => $companionEmail,
+            ]);
+
+            ReservationGuest::create([
+                'reservation_id' => $reservation->id,
+                'customer_id' => $companionCustomer->id,
+                'is_primary_guest' => false,
+            ]);
         }
 
         $actualGuestCount = $reservation->reservationGuests()->count();

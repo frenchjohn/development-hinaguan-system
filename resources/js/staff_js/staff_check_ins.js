@@ -86,7 +86,7 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Initialize: show dashboard table by default
     const dashboardSection = document.getElementById('dashboardSection');
-    
+
     if (dashboardSection && guestTableSection && reservationTableSection) {
         // HTML already has the correct initial display states:
         // guest = visible, dashboard = hidden, reservation = hidden
@@ -95,10 +95,10 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Tab switching
     const switchTab = (target) => {
-        if(dashboardSection) dashboardSection.style.display = target === 'dashboard' ? '' : 'none';
-        if(guestTableSection) guestTableSection.style.display = target === 'guest' ? '' : 'none';
-        if(reservationTableSection) reservationTableSection.style.display = target === 'reservation' ? '' : 'none';
-        
+        if (dashboardSection) dashboardSection.style.display = target === 'dashboard' ? '' : 'none';
+        if (guestTableSection) guestTableSection.style.display = target === 'guest' ? '' : 'none';
+        if (reservationTableSection) reservationTableSection.style.display = target === 'reservation' ? '' : 'none';
+
         document.querySelectorAll('.checkins-tab').forEach(btn => btn.classList.remove('is-active'));
         document.querySelectorAll(`.checkins-tab[data-tab-target="${target}"]`).forEach(btn => btn.classList.add('is-active'));
     };
@@ -162,9 +162,9 @@ window.AppPage['staff_check_ins'] = function () {
             const state = getCheckoutState(el.dataset.checkoutAt);
             const statusStr = el.dataset.status || '';
             const tr = el.closest('tr');
-            
+
             const isCheckedOut = statusStr === 'checked_out' || statusStr === 'checkedout' || statusStr === 'checked-out';
-            
+
             if (isCheckedOut) {
                 el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(107, 114, 128, 0.1); color: #6b7280;">Checked Out</span>`;
                 if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
@@ -176,9 +176,9 @@ window.AppPage['staff_check_ins'] = function () {
                 if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
                 return;
             }
-            
+
             const clockIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 0.9rem; height: 0.9rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-            
+
             if (state.tone === 'due') {
                 el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(239, 68, 68, 0.1); color: #ef4444;">Time to checkout</span>`;
             } else {
@@ -190,7 +190,7 @@ window.AppPage['staff_check_ins'] = function () {
                 }
                 el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: ${bgClass}; color: ${colorClass};">${clockIcon} ${formatTimeLeft(state.left)} left</span>`;
             }
-            
+
             if (tr) {
                 if (state.tone === 'due') {
                     tr.classList.add('row-checkout-due');
@@ -239,7 +239,7 @@ window.AppPage['staff_check_ins'] = function () {
 
     const formatExpectedCheckout = (res) => {
         if (!res) return { date: 'N/A', session: 'Daytime', time: '', fullText: 'N/A' };
-        
+
         let session = res.end_slot || res.start_slot;
         if (!session && res.reservation_amenities && res.reservation_amenities.length > 0) {
             const lastAmenity = res.reservation_amenities[res.reservation_amenities.length - 1];
@@ -311,9 +311,9 @@ window.AppPage['staff_check_ins'] = function () {
                     <span class="ci-label">RESERVATION STAY</span>
                     <div class="ci-value" style="display: flex; flex-direction: column; gap: 0.35rem; line-height: 1.35;">
                         <div>
-                            ${isMultiDay 
-                                ? `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span><br><span class="text-xs text-hp-text-muted">to</span> <span style="font-weight: 700;">${formatDate(reservation.end_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${endSlot})</span>` 
-                                : `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span>`}
+                            ${isMultiDay
+                ? `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span><br><span class="text-xs text-hp-text-muted">to</span> <span style="font-weight: 700;">${formatDate(reservation.end_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${endSlot})</span>`
+                : `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span>`}
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                             ${isMultiDay ? `<span class="resv-date-badge">${reservation.total_days || 2} Days</span>` : ''}
@@ -345,15 +345,15 @@ window.AppPage['staff_check_ins'] = function () {
                 <div style="display:flex; gap: 2rem; flex-wrap: wrap;">
                     <div class="ci-col">
                         <span class="ci-label" style="text-transform: none;">Total Due:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.total_amount || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     </div>
                     <div class="ci-col ci-border-left">
                         <span class="ci-label" style="text-transform: none;">Paid to Date:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.amount_paid || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     </div>
                     <div class="ci-col ci-border-left">
                         <span class="ci-label" style="text-transform: none;">Balance Due:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.remaining_balance || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                        <div class="ci-value-lg">₱${parseFloat(reservation.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                     </div>
                 </div>
                 <div>
@@ -499,17 +499,17 @@ window.AppPage['staff_check_ins'] = function () {
                 </div>
                 <div class="resv-amenity-list">
                     ${validAmenities.map(a => {
-                        const amenityStatus = a.status || 'Active';
-                        const isCompleted = amenityStatus === 'Completed';
-                        const aStart = a.start_date ? formatDate(a.start_date) : '';
-                        const aEnd = a.end_date ? formatDate(a.end_date) : '';
-                        const aStartSlot = a.start_slot || startSlot;
-                        const aEndSlot = a.end_slot || endSlot;
-                        const aHasRange = a.start_date && a.end_date && a.start_date !== a.end_date;
-                        const aSched = aHasRange 
-                            ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])` 
-                            : (aStartSlot ? ` (${aStartSlot})` : '');
-                        return `
+                const amenityStatus = a.status || 'Active';
+                const isCompleted = amenityStatus === 'Completed';
+                const aStart = a.start_date ? formatDate(a.start_date) : '';
+                const aEnd = a.end_date ? formatDate(a.end_date) : '';
+                const aStartSlot = a.start_slot || startSlot;
+                const aEndSlot = a.end_slot || endSlot;
+                const aHasRange = a.start_date && a.end_date && a.start_date !== a.end_date;
+                const aSched = aHasRange
+                    ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])`
+                    : (aStartSlot ? ` (${aStartSlot})` : '');
+                return `
                             <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
                                 <div class="resv-amenity-item__info">
                                     <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
@@ -518,18 +518,18 @@ window.AppPage['staff_check_ins'] = function () {
                                 </div>
                                 <div class="resv-amenity-item__actions flex items-center gap-1.5">
                                     ${isCompleted
-                                        ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
-                                        : (
-                                            (isCheckedIn ? `<button type="button" class="resv-amenity-extend-btn rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer" data-reservation-id="${reservation.id}" data-reservation-amenity-id="${a.id}">Extend</button>` : '') +
-                                            (showPerAmenityCheckout
-                                                ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
-                                                : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
-                                        )
-                                    }
+                        ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
+                        : (
+                            (isCheckedIn ? `<button type="button" class="resv-amenity-extend-btn rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer" data-reservation-id="${reservation.id}" data-reservation-amenity-id="${a.id}">Extend</button>` : '') +
+                            (showPerAmenityCheckout
+                                ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
+                                : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
+                        )
+                    }
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+            }).join('')}
                 </div>
             </div>
             `;
@@ -544,7 +544,7 @@ window.AppPage['staff_check_ins'] = function () {
             </div>
             `;
         }
-        
+
         html += `</div>`; // Close guest-card
 
         // Update modal status badge
@@ -1229,7 +1229,7 @@ window.AppPage['staff_check_ins'] = function () {
             extendAmenityAddedSessionsText.textContent = `${addedSlots.length} session${addedSlots.length === 1 ? '' : 's'} (${extraDay} Day, ${extraNight} Night)`;
         }
         if (extendAmenityAddedCostText) {
-            extendAmenityAddedCostText.textContent = `₱${addedCost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            extendAmenityAddedCostText.textContent = `₱${addedCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
     };
 
@@ -1870,7 +1870,7 @@ window.AppPage['staff_check_ins'] = function () {
             midStaySlotsText.textContent = `${itemTimeline.length} session${itemTimeline.length === 1 ? '' : 's'} (${dayCount} Day, ${nightCount} Night)`;
         }
         if (midStayCostText) {
-            midStayCostText.textContent = `₱${totalCost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            midStayCostText.textContent = `₱${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
     };
 
@@ -2062,9 +2062,9 @@ window.AppPage['staff_check_ins'] = function () {
         if (!currentPendingExtension) return;
 
         if (extPayItemName) extPayItemName.textContent = currentPendingExtension.title;
-        if (extPayItemCost) extPayItemCost.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        if (extPayItemCost) extPayItemCost.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         if (extPayItemSchedule) extPayItemSchedule.textContent = currentPendingExtension.scheduleText;
-        if (extPayTotalAmount) extPayTotalAmount.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        if (extPayTotalAmount) extPayTotalAmount.textContent = `₱${currentPendingExtension.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
         if (extensionPaymentModal) {
             extensionPaymentModal.classList.add('is-open');
@@ -2427,7 +2427,7 @@ window.AppPage['staff_check_ins'] = function () {
     document.querySelectorAll('[data-close-bulk-manage-modal="true"]').forEach(btn => {
         btn.addEventListener('click', closeBulkManageModal);
     });
-    
+
     // Check out one or several bulk companions at once. Shared by the minus
     // button (1x) and the quantity stepper + Check Out button (Nx). Shows a
     // toast on success instead of silently reloading.
@@ -2521,97 +2521,97 @@ window.AppPage['staff_check_ins'] = function () {
     document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
         expandBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            
+
             const tr = expandBtn.closest('tr');
             if (!tr) return;
-            
+
             const isExpanded = expandBtn.classList.toggle('expanded');
             expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';                // Guest Table Expand — toggle every companion under the main
-                // guest together (single AND bulk groups).
-                if (tr.classList.contains('guest-row--primary')) {
-                    tr.classList.toggle('is-expanded', isExpanded);
-                    const resId = tr.getAttribute('data-reservation-id');
-                    const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
-                    companions.forEach(c => {
-                        c.style.display = isExpanded ? '' : 'none';
-                    });
-                }
-            
+            // guest together (single AND bulk groups).
+            if (tr.classList.contains('guest-row--primary')) {
+                tr.classList.toggle('is-expanded', isExpanded);
+                const resId = tr.getAttribute('data-reservation-id');
+                const companions = document.querySelectorAll(`.guest-row--companion[data-reservation-id="${resId}"]`);
+                companions.forEach(c => {
+                    c.style.display = isExpanded ? '' : 'none';
+                });
+            }
+
             // Reservation Table Expand
             if (tr.classList.contains('reservation-row')) {
                 const resId = tr.getAttribute('data-reservation-id');
                 let nestedRow = tr.nextElementSibling;
-                
+
                 if (isExpanded) {
                     if (!nestedRow || !nestedRow.classList.contains('reservation-nested-row')) {
-                         // Generate it!
-                         const reservation = reservationData[resId];
-                         if (!reservation) return;
-                         
-                         let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
-                         let bulkGuests = [];
-                         let normalGuests = [];
-                         
-                         reservation.reservation_guests.forEach(g => {
-                             if (!g.customer) return;
-                             const fn = (g.customer.first_name || '').toLowerCase();
-                             if (fn.startsWith('bulk') || fn.includes('companion')) {
-                                 bulkGuests.push(g);
-                             } else {
-                                 normalGuests.push(g);
-                             }
-                         });
-                         
-                         normalGuests.forEach(g => {
-                             if (g.checked_out_at) return;
-                             const pill = g.is_primary_guest 
+                        // Generate it!
+                        const reservation = reservationData[resId];
+                        if (!reservation) return;
+
+                        let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
+                        let bulkGuests = [];
+                        let normalGuests = [];
+
+                        reservation.reservation_guests.forEach(g => {
+                            if (!g.customer) return;
+                            const fn = (g.customer.first_name || '').toLowerCase();
+                            if (fn.startsWith('bulk') || fn.includes('companion')) {
+                                bulkGuests.push(g);
+                            } else {
+                                normalGuests.push(g);
+                            }
+                        });
+
+                        normalGuests.forEach(g => {
+                            if (g.checked_out_at) return;
+                            const pill = g.is_primary_guest
                                 ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
                                 : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
-                             // Clicking a guest (main or single companion) opens
-                             // the same detail modal as the guest table.
-                             guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0; cursor: pointer; border-radius: 6px; transition: background 0.15s ease;">
+                            // Clicking a guest (main or single companion) opens
+                            // the same detail modal as the guest table.
+                            guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0; cursor: pointer; border-radius: 6px; transition: background 0.15s ease;">
                                 <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: ${g.is_primary_guest ? 'var(--hp-gold)' : 'var(--hp-green)'};"></span>
                                 ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
                                 <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
                              </div>`;
-                         });
-                         
-                         if (bulkGuests.length > 0) {
-                             // ONE trigger per bulk group (same reservation,
-                             // gender, age group and nationality) — groups are
-                             // never merged together.
-                             const bulkGroupMap = {};
-                             bulkGuests.forEach(g => {
-                                 const c = g.customer || {};
-                                 const gender = c.gender || 'Unknown';
-                                 const ageGroup = ageGroupLabel(c.age);
-                                 const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
-                                 const key = `${gender}|${ageGroup}|${nationality}`;
-                                 if (!bulkGroupMap[key]) {
-                                     bulkGroupMap[key] = { gender, ageGroup, nationality, members: [] };
-                                 }
-                                 bulkGroupMap[key].members.push(g);
-                             });
+                        });
 
-                             Object.values(bulkGroupMap).forEach(group => {
-                                 const activeBulk = group.members.filter(g => !g.checked_out_at).length;
-                                 // Fully checked-out groups disappear from the
-                                 // dropdown — never show an empty group.
-                                 if (activeBulk === 0) return;
-                                 const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
-                                 guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${group.members.length}" data-bulk-demo="${demo}" data-bulk-gender="${group.gender}" data-bulk-age-group="${group.ageGroup}" data-bulk-nationality="${group.nationality}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
+                        if (bulkGuests.length > 0) {
+                            // ONE trigger per bulk group (same reservation,
+                            // gender, age group and nationality) — groups are
+                            // never merged together.
+                            const bulkGroupMap = {};
+                            bulkGuests.forEach(g => {
+                                const c = g.customer || {};
+                                const gender = c.gender || 'Unknown';
+                                const ageGroup = ageGroupLabel(c.age);
+                                const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                                const key = `${gender}|${ageGroup}|${nationality}`;
+                                if (!bulkGroupMap[key]) {
+                                    bulkGroupMap[key] = { gender, ageGroup, nationality, members: [] };
+                                }
+                                bulkGroupMap[key].members.push(g);
+                            });
+
+                            Object.values(bulkGroupMap).forEach(group => {
+                                const activeBulk = group.members.filter(g => !g.checked_out_at).length;
+                                // Fully checked-out groups disappear from the
+                                // dropdown — never show an empty group.
+                                if (activeBulk === 0) return;
+                                const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
+                                guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${group.members.length}" data-bulk-demo="${demo}" data-bulk-gender="${group.gender}" data-bulk-age-group="${group.ageGroup}" data-bulk-nationality="${group.nationality}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
                                     <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: #0e7490;"></span>
                                     Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${group.members.length} Checked In</span>
                                     <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${demo}</span>
                                  </div>`;
-                             });
-                         }
-                         guestsHtml += `</div>`;
-                         
-                         nestedRow = document.createElement('tr');
-                         nestedRow.className = 'reservation-nested-row';
-                         nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
-                         tr.insertAdjacentElement('afterend', nestedRow);
+                            });
+                        }
+                        guestsHtml += `</div>`;
+
+                        nestedRow = document.createElement('tr');
+                        nestedRow.className = 'reservation-nested-row';
+                        nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
+                        tr.insertAdjacentElement('afterend', nestedRow);
                     }
                     nestedRow.style.display = '';
                 } else {
@@ -3028,7 +3028,7 @@ window.AppPage['staff_check_ins'] = function () {
     const computeExpectedCheckout = (endDateStr, endSlotStr) => {
         const dStr = endDateStr || todayStr;
         const cleanSlot = (endSlotStr || currentServerSession || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
-        
+
         const dayEnd = parkSettings.daytime_end || '18:00';
         const nightEnd = parkSettings.nighttime_end || '06:00';
 
@@ -3049,7 +3049,7 @@ window.AppPage['staff_check_ins'] = function () {
         const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         const formattedDate = `${daysOfWeek[checkoutDateObj.getDay()]}, ${monthNames[checkoutDateObj.getMonth()]} ${checkoutDateObj.getDate()}, ${checkoutDateObj.getFullYear()}`;
-        
+
         return `${formattedDate} at ${timeStr}`;
     };
 
@@ -3260,7 +3260,7 @@ window.AppPage['staff_check_ins'] = function () {
     const companionAgeInput = document.getElementById('companion_age');
     const companionAgeTypeInput = document.getElementById('companion_age_type');
     const companionAgeComputedBadge = document.getElementById('companionAgeComputedBadge');
-    
+
     // Companion age auto-type & badge sync listener
     const syncCompanionAgeBadge = () => {
         if (!companionAgeInput) return;
@@ -3312,7 +3312,7 @@ window.AppPage['staff_check_ins'] = function () {
     companionTabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const tabType = tab.dataset.companionTab;
-            
+
             // Update tab button styles
             companionTabs.forEach(t => {
                 if (t.dataset.companionTab === tabType) {
@@ -3323,7 +3323,7 @@ window.AppPage['staff_check_ins'] = function () {
                     t.classList.add('bg-transparent', 'text-hp-text', 'font-semibold');
                 }
             });
-            
+
             // Update form section visibility
             companionTabContents.forEach(content => {
                 if (content.dataset.companionContent === tabType) {
@@ -3405,7 +3405,7 @@ window.AppPage['staff_check_ins'] = function () {
     // Single companion form submission
     companionForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const formData = new FormData(companionForm);
         const ageVal = formData.get('age');
         const parsedAge = parseInt(ageVal, 10);
@@ -3422,7 +3422,7 @@ window.AppPage['staff_check_ins'] = function () {
             phone: formData.get('phone'),
             email: formData.get('email'),
         };
-        
+
         companions.push(companionData);
         renderCompanions();
         updateGrandTotal();
@@ -3440,7 +3440,7 @@ window.AppPage['staff_check_ins'] = function () {
         const isForeigner = formData.get('is_foreigner') === '1';
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
         const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
-        
+
         bulkCompanionGroups.push({
             gender,
             age_group: ageGroup,
@@ -3448,7 +3448,7 @@ window.AppPage['staff_check_ins'] = function () {
             is_foreigner: isForeigner,
             quantity: quantity,
         });
-        
+
         renderCompanions();
         updateGrandTotal();
         bulkCompanionForm.reset();
@@ -3459,16 +3459,16 @@ window.AppPage['staff_check_ins'] = function () {
     companionList?.addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.guest-companion-pill__delete');
         if (!removeBtn) return;
-        
+
         const index = removeBtn.dataset.companionIndex;
         const bulkIndex = removeBtn.dataset.bulkIndex;
-        
+
         if (index !== undefined && index !== null && index !== '') {
             companions.splice(parseInt(index, 10), 1);
         } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
             bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
         }
-        
+
         renderCompanions();
         updateGrandTotal();
     });
@@ -3780,11 +3780,10 @@ window.AppPage['staff_check_ins'] = function () {
                 const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
 
                 const card = document.createElement('div');
-                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${
-                    isAvailable
+                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
                         ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/5' : 'border-glass-border bg-glass hover:border-hp-green')
                         : 'border-red-300/40 bg-red-50/20 opacity-60 dark:border-red-500/20 dark:bg-red-500/5'
-                }`;
+                    }`;
                 card.dataset.amenityId = amenity.id;
 
                 card.innerHTML = `
@@ -3792,9 +3791,9 @@ window.AppPage['staff_check_ins'] = function () {
                         <div class="flex items-center gap-2">
                             <strong class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">${amenity.amenities_name}</strong>
                             ${isAvailable
-                                ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
-                                : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
-                            }
+                        ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
+                        : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
+                    }
                             ${hasAc ? '<span class="rounded bg-blue-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-600 dark:text-blue-400">AC Option</span>' : ''}
                         </div>
                         <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
@@ -4219,7 +4218,7 @@ window.AppPage['staff_check_ins'] = function () {
     const guestFilterToggle = document.getElementById('guestFilterToggle');
     const guestFilterPanel = document.getElementById('guestFilterPanel');
     const guestReservationSelect = document.getElementById('guestReservationSelect');
-    
+
     guestFilterToggle?.addEventListener('click', () => {
         const isExpanded = guestFilterToggle.getAttribute('aria-expanded') === 'true';
         guestFilterToggle.setAttribute('aria-expanded', !isExpanded);
@@ -4229,35 +4228,35 @@ window.AppPage['staff_check_ins'] = function () {
     // Unified Guest Table Filter Function
     const guestSearchInput = document.getElementById('guestSearchInput');
     const guestRoleSelect = document.getElementById('guestRoleSelect');
-    
+
     const applyGuestFilters = () => {
         const searchTerm = (guestSearchInput?.value || '').toLowerCase();
         const selectedRole = guestRoleSelect?.value || 'all';
         const selectedReservationId = guestReservationSelect?.value || '';
-        
+
         const guestRows = document.querySelectorAll('#guestTableBody .guest-row');
-        
+
         guestRows.forEach(row => {
             let show = true;
-            
+
             // Search filter
             if (searchTerm) {
                 const searchableText = row.getAttribute('data-search') || '';
                 if (!searchableText.includes(searchTerm)) show = false;
             }
-            
+
             // Role filter
             if (selectedRole !== 'all') {
                 const isPrimary = row.getAttribute('data-is-primary') === 'true';
                 if (selectedRole === 'primary' && !isPrimary) show = false;
                 if (selectedRole === 'companion' && isPrimary) show = false;
             }
-            
+
             // Reservation filter
             if (selectedReservationId) {
                 if (row.getAttribute('data-reservation-id') !== selectedReservationId) show = false;
             }
-            
+
             // Collapsed companions stay hidden until their primary is expanded
             if (show && row.classList.contains('guest-row--companion')) {
                 const resId = row.getAttribute('data-reservation-id');
@@ -4266,17 +4265,17 @@ window.AppPage['staff_check_ins'] = function () {
                     : null;
                 if (!primaryRow || !primaryRow.classList.contains('is-expanded')) show = false;
             }
-            
+
             row.style.display = show ? '' : 'none';
         });
-        
+
         // Update results count and empty state
         const visibleRows = Array.from(guestRows).filter(row => row.style.display !== 'none');
         const resultsCount = document.getElementById('guestResultsCount');
         if (resultsCount) {
             resultsCount.textContent = `Showing ${visibleRows.length} active guests`;
         }
-        
+
         const emptyRow = document.getElementById('guestEmptyRow');
         if (emptyRow) {
             emptyRow.style.display = visibleRows.length === 0 ? '' : 'none';
@@ -4363,17 +4362,17 @@ window.AppPage['staff_check_ins'] = function () {
     const scanQrBtn = document.getElementById('scanQrBtn');
     const scanQrModal = document.getElementById('scanQrModal');
     const scanQrCloseButtons = document.querySelectorAll('[data-close-scan-modal="true"]');
-    
+
     const openScanQrModal = () => {
         scanQrModal.classList.add('is-open');
         scanQrModal.setAttribute('aria-hidden', 'false');
     };
-    
+
     const closeScanQrModal = () => {
         scanQrModal.classList.remove('is-open');
         scanQrModal.setAttribute('aria-hidden', 'true');
     };
-    
+
     scanQrBtn?.addEventListener('click', openScanQrModal);
     scanQrCloseButtons.forEach(button => {
         button.addEventListener('click', closeScanQrModal);
@@ -4382,12 +4381,12 @@ window.AppPage['staff_check_ins'] = function () {
     // Check-in modal
     const checkInModal = document.getElementById('checkInModal');
     const checkInCloseButtons = document.querySelectorAll('[data-close-check-in-modal="true"]');
-    
+
     const closeCheckInModal = () => {
         checkInModal.classList.remove('is-open');
         checkInModal.setAttribute('aria-hidden', 'true');
     };
-    
+
     checkInCloseButtons.forEach(button => {
         button.addEventListener('click', closeCheckInModal);
     });
@@ -4421,7 +4420,7 @@ window.AppPage['staff_check_ins'] = function () {
         e.preventDefault();
         const formData = new FormData(checkInCompanionForm);
         const companionData = Object.fromEntries(formData.entries());
-        
+
         companionCount++;
         const companionHtml = `
             <div class="guest-companion-pill">
@@ -4430,7 +4429,7 @@ window.AppPage['staff_check_ins'] = function () {
             </div>
         `;
         checkInCompanionList.insertAdjacentHTML('beforeend', companionHtml);
-        
+
         checkInCompanionForm.reset();
         closeCheckInCompanionModal();
     });

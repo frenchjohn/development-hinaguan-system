@@ -275,6 +275,79 @@ class StaffCheckInsPageRenderTest extends TestCase
         $this->assertDatabaseHas('customers', ['first_name' => 'Companion', 'last_name' => 'C2']);
     }
 
+    public function test_same_guest_info_creates_separate_records_per_reservation(): void
+    {
+        $staff = StaffAccount::create([
+            'name' => 'Staff Four',
+            'email' => 'staff4@test.com',
+            'password' => bcrypt('password'),
+            'ban_status' => false,
+        ]);
+        $this->makeStaffSession($staff);
+
+        $guestPayload = [
+            'first_name' => 'Juan',
+            'last_name' => 'Dela Cruz',
+            'age' => '25',
+            'gender' => 'Male',
+            'is_foreigner' => false,
+            'email' => 'juan@test.com',
+            'phone' => '09170000001',
+        ];
+
+        $reservationOne = Reservation::create([
+            'booker_name' => 'Juan Dela Cruz',
+            'email' => 'juan@test.com',
+            'phone' => '09170000001',
+            'reservation_date' => now()->toDateString(),
+            'status' => 'Pending',
+            'reservation_type' => 'online',
+            'number_of_guests' => 1,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $reservationTwo = Reservation::create([
+            'booker_name' => 'Juan Dela Cruz',
+            'email' => 'juan@test.com',
+            'phone' => '09170000001',
+            'reservation_date' => now()->toDateString(),
+            'status' => 'Pending',
+            'reservation_type' => 'online',
+            'number_of_guests' => 1,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $this->postJson("/staff/reservations/{$reservationOne->id}/check-in", [
+            'guest_mode' => 'with_primary',
+            'primary_guest' => $guestPayload,
+            'companions' => [],
+        ])->assertOk();
+
+        $this->postJson("/staff/reservations/{$reservationTwo->id}/check-in", [
+            'guest_mode' => 'with_primary',
+            'primary_guest' => $guestPayload,
+            'companions' => [],
+        ])->assertOk();
+
+        $this->assertSame(2, Customer::where('first_name', 'Juan')
+            ->where('last_name', 'Dela Cruz')
+            ->where('phone', '09170000001')
+            ->count());
+
+        $guestOne = ReservationGuest::where('reservation_id', $reservationOne->id)->where('is_primary_guest', true)->first();
+        $guestTwo = ReservationGuest::where('reservation_id', $reservationTwo->id)->where('is_primary_guest', true)->first();
+
+        $this->assertNotNull($guestOne);
+        $this->assertNotNull($guestTwo);
+        $this->assertNotSame($guestOne->customer_id, $guestTwo->customer_id);
+    }
+
     public function test_pending_reservation_guests_do_not_appear_on_check_ins_page(): void
     {
         $staff = StaffAccount::create([
