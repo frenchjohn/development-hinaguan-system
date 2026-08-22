@@ -201,6 +201,7 @@ window.addEventListener('DOMContentLoaded', function () {
         '/admin/dashboard': 'admin_dashboard',
         '/admin/amenities': 'admin_amenitiesmanagement',
         '/admin/reports': 'admin_reports',
+        '/admin/feedback': 'admin_feedback',
         '/admin/users': 'admin_usermanagement',
         '/admin/settings': 'admin_settings',
     };
