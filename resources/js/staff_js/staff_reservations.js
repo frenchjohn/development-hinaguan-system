@@ -1309,6 +1309,9 @@ window.AppPage['staff_reservations'] = function () {
         // Render booked amenities list for swapping and date editing
         renderEditAmenitiesList(reservation);
 
+        // Update amenity select dropdown availability (disable unavailable amenities)
+        updateAmenitySelectsAvailability(reservationId);
+
         // Update Stay Schedule Card in edit form
         updateEditFormScheduleCard();
 
@@ -1531,11 +1534,135 @@ window.AppPage['staff_reservations'] = function () {
                         eInput.value = sInput.value;
                     }
                     updateEditFormScheduleCard();
+                    updateAmenitySelectsAvailability();
                 });
             });
 
             container.appendChild(item);
         });
+    };
+
+    const isRangesOverlapping = (s1, e1, slotS1, slotE1, s2, e2, slotS2, slotE2) => {
+        if (!s1 || !s2) return false;
+        const end1 = e1 || s1;
+        const end2 = e2 || s2;
+
+        const t1 = calculateContinuousSlotsTimeline(s1, end1, slotS1, slotE1);
+        const t2 = calculateContinuousSlotsTimeline(s2, end2, slotS2, slotE2);
+
+        const map1 = {};
+        for (const [d, s] of t1) {
+            map1[`${d}_${s}`] = true;
+        }
+        for (const [d, s] of t2) {
+            if (map1[`${d}_${s}`]) return true;
+        }
+        return false;
+    };
+
+    const updateAmenitySelectsAvailability = async (reservationId) => {
+        const amenityItems = document.querySelectorAll('.edit-amenity-item');
+        if (!amenityItems.length) return;
+
+        const resId = reservationId || document.getElementById('editReservationId')?.value;
+        if (!resId) return;
+
+        const ranges = [];
+        amenityItems.forEach((item) => {
+            const idx = item.getAttribute('data-index');
+            const sDate = item.querySelector('.edit-amenity-start-date')?.value;
+            const eDate = item.querySelector('.edit-amenity-end-date')?.value || sDate;
+            const sSlot = item.querySelector('.edit-amenity-start-slot')?.value || 'Daytime';
+            const eSlot = item.querySelector('.edit-amenity-end-slot')?.value || 'Daytime';
+
+            if (sDate) {
+                ranges.push({
+                    index: Number(idx),
+                    start_date: sDate,
+                    end_date: eDate,
+                    start_slot: sSlot,
+                    end_slot: eSlot,
+                });
+            }
+        });
+
+        if (!ranges.length) return;
+
+        try {
+            const response = await fetch(`/staff/reservations/${resId}/check-amenities-availability`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ ranges }),
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const availabilityMap = data.availability || {};
+            const allAmenities = window.staffAmenitiesData || [];
+
+            const selectedByRow = {};
+            amenityItems.forEach((item) => {
+                const idx = item.getAttribute('data-index');
+                const select = item.querySelector('.edit-amenity-select');
+                selectedByRow[idx] = {
+                    amenityId: select?.value,
+                    sDate: item.querySelector('.edit-amenity-start-date')?.value,
+                    eDate: item.querySelector('.edit-amenity-end-date')?.value,
+                    sSlot: item.querySelector('.edit-amenity-start-slot')?.value,
+                    eSlot: item.querySelector('.edit-amenity-end-slot')?.value,
+                };
+            });
+
+            amenityItems.forEach((item) => {
+                const idx = item.getAttribute('data-index');
+                const select = item.querySelector('.edit-amenity-select');
+                if (!select) return;
+
+                const currentSelected = select.value;
+                const unavailableForThisRow = availabilityMap[idx] || [];
+
+                const takenByOtherRows = [];
+                Object.keys(selectedByRow).forEach((otherIdx) => {
+                    if (String(otherIdx) !== String(idx)) {
+                        const other = selectedByRow[otherIdx];
+                        const thisR = ranges.find(r => String(r.index) === String(idx));
+                        if (other.amenityId && thisR) {
+                            if (isRangesOverlapping(thisR.start_date, thisR.end_date, thisR.start_slot, thisR.end_slot, other.sDate, other.eDate, other.sSlot, other.eSlot)) {
+                                takenByOtherRows.push(String(other.amenityId));
+                            }
+                        }
+                    }
+                });
+
+                Array.from(select.options).forEach((opt) => {
+                    const optValue = String(opt.value);
+                    const amenityModel = allAmenities.find(a => String(a.id) === optValue);
+                    const isTakenInDb = unavailableForThisRow.includes(optValue);
+                    const isTakenByRow = takenByOtherRows.includes(optValue);
+                    const isCurrent = (optValue === String(currentSelected));
+
+                    const isUnavailable = (isTakenInDb || isTakenByRow) && !isCurrent;
+
+                    opt.disabled = isUnavailable;
+                    if (isUnavailable) {
+                        opt.textContent = `${amenityModel?.amenities_name || optValue} (Unavailable)`;
+                        opt.title = 'This amenity is unavailable for the selected dates/slots';
+                    } else {
+                        const dayP = amenityModel ? Number(amenityModel.daytime_price || 0).toFixed(2) : '0.00';
+                        opt.textContent = `${amenityModel?.amenities_name || optValue} (₱${dayP})`;
+                        opt.removeAttribute('title');
+                    }
+                });
+            });
+        } catch (err) {
+            console.error('Check amenity options availability failed:', err);
+        }
     };
 
     const calculateReservationPricing = (startDateStr, endDateStr, startSlot, endSlot) => {
@@ -2144,6 +2271,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         updateEditFormScheduleCard();
+        updateAmenitySelectsAvailability();
         closeEditCalendarModal();
     });
 

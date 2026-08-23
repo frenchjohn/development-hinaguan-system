@@ -5608,6 +5608,46 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.availability');
 
+    Route::post('/reservations/{reservation}/check-amenities-availability', function (Request $request, Reservation $reservation) use ($isAmenityRangeTaken) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'ranges' => 'required|array',
+            'ranges.*.index' => 'required',
+            'ranges.*.start_date' => 'required|date',
+            'ranges.*.end_date' => 'nullable|date',
+            'ranges.*.start_slot' => 'nullable|string',
+            'ranges.*.end_slot' => 'nullable|string',
+        ]);
+
+        $allAmenities = Amenity::where('status', true)->pluck('id')->all();
+        $result = [];
+
+        foreach ($validated['ranges'] as $range) {
+            $idx = $range['index'];
+            $sDate = \Illuminate\Support\Carbon::parse($range['start_date'])->toDateString();
+            $eDate = !empty($range['end_date']) ? \Illuminate\Support\Carbon::parse($range['end_date'])->toDateString() : $sDate;
+            $sSlot = !empty($range['start_slot']) ? (str_contains($range['start_slot'], 'Night') ? 'Nighttime' : 'Daytime') : 'Daytime';
+            $eSlot = !empty($range['end_slot']) ? (str_contains($range['end_slot'], 'Night') ? 'Nighttime' : 'Daytime') : $sSlot;
+
+            $unavailable = [];
+            foreach ($allAmenities as $aId) {
+                if ($isAmenityRangeTaken((string)$aId, $sDate, $eDate, $sSlot, $eSlot, $reservation->id)) {
+                    $unavailable[] = (string)$aId;
+                }
+            }
+            $result[$idx] = $unavailable;
+        }
+
+        return response()->json([
+            'success' => true,
+            'availability' => $result,
+        ]);
+    })->name('reservations.check-amenities-availability');
+
     Route::post('/reservations/{reservation}/update', function (Request $request, Reservation $reservation) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $formatLocalDate, $computeReservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
