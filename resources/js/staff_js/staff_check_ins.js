@@ -1,3 +1,4 @@
+import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
 let activeStaffCheckInsHandlers = null;
@@ -41,6 +42,13 @@ if (!window.__staffCheckInsGlobalClickBound) {
             e.target.closest('.guest-companion-pill')?.remove();
             return;
         }
+    });
+
+    window.addEventListener('beforeunload', () => {
+        activeStaffCheckInsHandlers?.stopQrScanner?.();
+    });
+    window.addEventListener('spa:leaving', () => {
+        activeStaffCheckInsHandlers?.stopQrScanner?.();
     });
 }
 
@@ -2326,6 +2334,7 @@ window.AppPage['staff_check_ins'] = function () {
         openAddAmenityMidStayModal,
         openExtendAmenityModal,
         handleAmenityCheckout,
+        stopQrScanner: () => stopQrScanner?.(),
     };
     activeStaffCheckInsHandlers = checkInsHandlers;
 
@@ -2333,6 +2342,7 @@ window.AppPage['staff_check_ins'] = function () {
         if (activeStaffCheckInsHandlers === checkInsHandlers) {
             activeStaffCheckInsHandlers = null;
         }
+        stopQrScanner?.();
     }, { once: true });
 
     // Guest modal functionality
@@ -4490,20 +4500,201 @@ window.AppPage['staff_check_ins'] = function () {
     const scanQrBtn = document.getElementById('scanQrBtn');
     const scanQrModal = document.getElementById('scanQrModal');
     const scanQrCloseButtons = document.querySelectorAll('[data-close-scan-modal="true"]');
+    const stopQrBtn = document.getElementById('stopQrBtn');
+    const qrCameraSelect = document.getElementById('qrCameraSelect');
+    const qrScannerStatus = document.getElementById('qrScannerStatus');
+    const qrScannerElement = document.getElementById('qrScanner');
+    let html5QrCode = null;
+    let qrScannerActive = false;
 
-    const openScanQrModal = () => {
+    const parseReservationId = (text) => {
+        if (!text) return null;
+        try {
+            const normalized = text.trim();
+            const maybeUrl = normalized.includes('reservation_id=') ? normalized : `reservation_id=${normalized}`;
+            const query = maybeUrl.includes('?') ? maybeUrl.split('?')[1] : maybeUrl;
+            const params = new URLSearchParams(query);
+            const value = params.get('reservation_id');
+            return value && /^[0-9]+$/.test(value) ? value : null;
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const populateCameraOptions = (cameras) => {
+        if (!qrCameraSelect) return;
+        qrCameraSelect.innerHTML = cameras.map((camera) => `
+            <option value="${camera.id}">${camera.label || camera.id}</option>
+        `).join('');
+    };
+
+    const stopQrScanner = async () => {
+        if (!html5QrCode || !qrScannerActive) return;
+        try {
+            await html5QrCode.stop();
+        } catch (error) {
+            console.warn('QR scanner stop error', error);
+        }
+        try {
+            html5QrCode.clear();
+        } catch (e) {}
+        qrScannerActive = false;
+    };
+
+    const closeScanQrModal = async () => {
+        await stopQrScanner();
+        if (scanQrModal) {
+            scanQrModal.classList.remove('is-open');
+            scanQrModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    const startQrScanner = async (cameraId) => {
+        if (!qrScannerElement || !qrScannerStatus) return;
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode('qrScanner');
+        }
+
+        await stopQrScanner();
+
+        await html5QrCode.start(
+            cameraId,
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+            },
+            async (decodedText) => {
+                const reservationId = parseReservationId(decodedText);
+                if (!reservationId) {
+                    qrScannerStatus.textContent = 'QR scanned, but not a recognizable reservation code.';
+                    return;
+                }
+
+                qrScannerStatus.textContent = `Found reservation #${reservationId}. Looking up...`;
+                await stopQrScanner();
+
+                try {
+                    const response = await fetch(`/staff/check-ins/lookup?reservation_id=${encodeURIComponent(reservationId)}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    const body = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        qrScannerStatus.textContent = body.message || 'Reservation lookup failed.';
+                        return;
+                    }
+
+                    if (body.reservation) {
+                        if (window.staffReservationData) {
+                            window.staffReservationData[reservationId] = body.reservation;
+                        }
+                        reservationData[reservationId] = body.reservation;
+                        await closeScanQrModal();
+
+                        // Check if reservation is already checked in
+                        if (body.reservation.status === 'Checked In') {
+                            const checkOutConfirm = confirm(
+                                `Reservation #${reservationId} is already checked in.\n\nDo you want to check it out now?`
+                            );
+                            if (checkOutConfirm) {
+                                try {
+                                    const checkoutResponse = await fetch(`/staff/reservations/${reservationId}/check-out`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': csrfToken,
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                        },
+                                    });
+
+                                    const checkoutPayload = await checkoutResponse.json().catch(() => ({}));
+                                    if (!checkoutResponse.ok) {
+                                        window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
+                                    } else {
+                                        queueToast(`Reservation #${reservationId} checked out successfully.`);
+                                        window.location.reload();
+                                    }
+                                } catch (checkoutError) {
+                                    window.alert('Unable to check out this reservation. Please try again.');
+                                }
+                            } else {
+                                openReservationModal(reservationId);
+                            }
+                        } else {
+                            openReservationModal(reservationId);
+                        }
+                    } else {
+                        qrScannerStatus.textContent = 'Reservation not found for scanned QR code.';
+                    }
+                } catch (lookupError) {
+                    qrScannerStatus.textContent = 'Unable to fetch reservation details. Try again.';
+                }
+            },
+            (errorMessage) => {
+                // scanning frame callback
+            }
+        );
+
+        qrScannerActive = true;
+        qrScannerStatus.textContent = 'Scanning for QR code. Hold the QR in front of the camera.';
+    };
+
+    const openScanQrModal = async () => {
+        if (!scanQrModal || !qrScannerElement || !qrScannerStatus) return;
         scanQrModal.classList.add('is-open');
         scanQrModal.setAttribute('aria-hidden', 'false');
+        qrScannerStatus.textContent = 'Initializing camera...';
+
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode('qrScanner');
+        }
+
+        try {
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras?.length) {
+                throw new Error('No camera device found.');
+            }
+
+            populateCameraOptions(cameras);
+            const preferredCamera = cameras.find((camera) => /back|rear|environment/i.test(camera.label));
+            const externalCamera = cameras.find((camera) => !/front|integrated|face|webcam/i.test(camera.label));
+            const cameraId = qrCameraSelect?.value || preferredCamera?.id || externalCamera?.id || cameras[0].id;
+            if (qrCameraSelect) {
+                qrCameraSelect.value = cameraId;
+            }
+
+            await startQrScanner(cameraId);
+        } catch (error) {
+            qrScannerStatus.textContent = `Camera error: ${error.message || 'Unable to access camera.'}`;
+        }
     };
 
-    const closeScanQrModal = () => {
-        scanQrModal.classList.remove('is-open');
-        scanQrModal.setAttribute('aria-hidden', 'true');
-    };
+    qrCameraSelect?.addEventListener('change', async () => {
+        const cameraId = qrCameraSelect.value;
+        try {
+            await startQrScanner(cameraId);
+        } catch (error) {
+            qrScannerStatus.textContent = `Camera error: ${error.message || 'Unable to start selected camera.'}`;
+        }
+    });
 
-    scanQrBtn?.addEventListener('click', openScanQrModal);
+    scanQrBtn?.addEventListener('click', () => {
+        openScanQrModal();
+    });
+
+    stopQrBtn?.addEventListener('click', async () => {
+        await closeScanQrModal();
+    });
+
     scanQrCloseButtons.forEach(button => {
-        button.addEventListener('click', closeScanQrModal);
+        button.addEventListener('click', async () => {
+            await closeScanQrModal();
+        });
     });
 
     // Check-in modal

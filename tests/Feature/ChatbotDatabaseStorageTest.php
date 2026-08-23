@@ -34,6 +34,30 @@ class ChatbotDatabaseStorageTest extends TestCase
                 ], 200);
             }
 
+            if (str_contains($userMsg, 'weweewdsf')) {
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => "1. Analyze User Input:\n- User said \"okay\"\n- Context: I'm HinaguanBot\n\n2. Check Knowledge Base for Reservation #8 (weweewdsf):\n- Reservation #8: weweewdsf | Status: Pending\n\n3. Formulate Response:\n- 1-3 sentences max\n\nDraft:\n\"Right now, Reservation #8 under weweewdsf is pending and scheduled for October 8, 2026, during the day.\""
+                            ]
+                        ]
+                    ]
+                ], 200);
+            }
+
+            if (str_contains($userMsg, 'numbered analysis without draft')) {
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => "1. Analyze User Input:\nUser wants to know park hours.\n\n2. Check Knowledge Base:\nDaytime is 6 AM to 6 PM.\n\nOur daytime operating hours are from 6:00 AM to 6:00 PM daily."
+                            ]
+                        ]
+                    ]
+                ], 200);
+            }
+
             return Http::response([
                 'choices' => [
                     [
@@ -297,5 +321,103 @@ class ChatbotDatabaseStorageTest extends TestCase
         $this->assertStringNotContainsString('<think>', $reply);
         $this->assertStringNotContainsString('thinking process', strtolower($reply));
         $this->assertStringContainsString('Reservation #6 is due for checkout today at 12:00 PM.', $reply);
+    }
+
+    public function test_chatbot_strips_numbered_analysis_and_draft_labels()
+    {
+        $staff = StaffAccount::create([
+            'name' => 'Staff Draft Tester',
+            'email' => 'drafttester@hinaguan.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => [
+                'id' => $staff->id,
+                'name' => $staff->name,
+                'role' => 'staff',
+            ]
+        ])->postJson('/chatbot', [
+            'message' => 'tell me about reservation weweewdsf',
+            'model' => 'openrouter/free',
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertStringNotContainsString('1. Analyze', $reply);
+        $this->assertStringNotContainsString('2. Check Knowledge Base', $reply);
+        $this->assertStringNotContainsString('3. Formulate Response', $reply);
+        $this->assertStringNotContainsString('Draft:', $reply);
+        $this->assertEquals('Right now, Reservation #8 under weweewdsf is pending and scheduled for October 8, 2026, during the day.', $reply);
+    }
+
+    public function test_chatbot_strips_numbered_analysis_without_draft_labels()
+    {
+        $staff = StaffAccount::create([
+            'name' => 'Staff Analysis Tester',
+            'email' => 'analysistester@hinaguan.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => [
+                'id' => $staff->id,
+                'name' => $staff->name,
+                'role' => 'staff',
+            ]
+        ])->postJson('/chatbot', [
+            'message' => 'tell me park hours with numbered analysis without draft',
+            'model' => 'openrouter/free',
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertStringNotContainsString('1. Analyze', $reply);
+        $this->assertStringNotContainsString('2. Check Knowledge Base', $reply);
+        $this->assertEquals('Our daytime operating hours are from 6:00 AM to 6:00 PM daily.', $reply);
+    }
+
+    public function test_guest_chatbot_strips_numbered_analysis_and_draft()
+    {
+        $response = $this->postJson('/guest-chatbot', [
+            'message' => 'tell me about reservation weweewdsf',
+            'model' => 'openrouter/free',
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertStringNotContainsString('1. Analyze', $reply);
+        $this->assertStringNotContainsString('Draft:', $reply);
+        $this->assertEquals('Right now, Reservation #8 under weweewdsf is pending and scheduled for October 8, 2026, during the day.', $reply);
+    }
+
+    public function test_admin_chatbot_strips_numbered_analysis_and_draft()
+    {
+        $admin = AdminAccount::create([
+            'name' => 'Admin Draft Tester',
+            'email' => 'admindraft@hinaguan.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => [
+                'id' => $admin->id,
+                'name' => $admin->name,
+                'role' => 'admin',
+            ]
+        ])->postJson('/admin-chatbot', [
+            'message' => 'tell me about reservation weweewdsf',
+            'model' => 'openrouter/free',
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertStringNotContainsString('1. Analyze', $reply);
+        $this->assertStringNotContainsString('Draft:', $reply);
+        $this->assertEquals('Right now, Reservation #8 under weweewdsf is pending and scheduled for October 8, 2026, during the day.', $reply);
     }
 }

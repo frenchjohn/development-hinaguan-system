@@ -84,12 +84,12 @@ class AdminChatbotController extends Controller
         $adminContext = $this->getAdminContext($userMessage);
 
         $systemPrompt = "You are HinaguanBot, a friendly and professional executive intelligence assistant for administrators at Hinaguan Nature Park.\n\n"
-            . "CONVERSATION STYLE & TONE GUIDELINES:\n"
-            . "- Speak naturally in clear, professional, human-like sentences (like an intelligent operations manager briefing an executive).\n"
-            . "- Answer the specific query directly in 1 to 3 natural, conversational sentences. Blend names, numbers, and dates smoothly into the explanation.\n"
-            . "- Avoid stiff robotic outlines or dumping unrelated sections unless the administrator specifically asks for a full report or breakdown.\n"
-            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
-            . "- DO NOT include any thinking process, reasoning steps, internal analysis, notes, or prefixes (e.g. NEVER output \"Here's a thinking process:\"). Deliver ONLY the natural human response.\n\n"
+            . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
+            . "- OUTPUT ONLY THE DIRECT CONVERSATIONAL RESPONSE. Do NOT include reasoning steps, planning, internal monologue, notes, or analytical scratchpads.\n"
+            . "- NEVER output numbered analysis steps (e.g. '1. Analyze User Input:', '2. Check Knowledge Base:', '3. Formulate Response:').\n"
+            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your briefing to the administrator.\n"
+            . "- Speak naturally in clear, professional, executive-level sentences (1 to 3 concise sentences) blending names, numbers, and dates smoothly.\n"
+            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n\n"
             . "CORE KNOWLEDGE & CAPABILITIES:\n"
             . "1. AUDIT & RECENT ACTIVITIES: Pinpoint who performed check-ins, checkouts, extensions, or account actions with exact reservation IDs, staff names, and timestamps.\n"
             . "2. EXECUTIVE FINANCIALS: Provide gross revenue, collected sales, outstanding uncollected balances, today/weekly/monthly revenue, and online vs walk-in breakdowns.\n"
@@ -150,7 +150,7 @@ class AdminChatbotController extends Controller
             ])->post("https://openrouter.ai/api/v1/chat/completions", [
                 'model' => $model,
                 'messages' => $messagesPayload,
-                'max_tokens' => 350,
+                'max_tokens' => 600,
                 'temperature' => 0.2,
                 'include_reasoning' => false,
             ]);
@@ -187,7 +187,7 @@ class AdminChatbotController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Admin Chatbot Exception: ' . $e->getMessage());
-            $excReply = 'The admin assistant is temporarily unavailable. Error: ' . $e->getMessage();
+            $excReply = 'The admin intelligence assistant is temporarily unavailable. Error: ' . $e->getMessage();
             if ($userId) {
                 ChatbotMessage::create([
                     'user_type' => 'admin',
@@ -389,20 +389,79 @@ class AdminChatbotController extends Controller
     }
 
     /**
-     * Clean raw AI response to strip thinking processes, reasoning tags, and bot prefixes.
+     * Clean raw AI response to strip thinking processes, reasoning tags, numbered scratchpad steps, and draft labels.
      */
     private function cleanChatbotReply(string $reply): string
     {
-        // 1. Strip <think>...</think> tags if model outputs raw reasoning tokens
-        $reply = preg_replace('/<think>.*?<\/think>/is', '', $reply);
+        if (empty(trim($reply))) {
+            return '';
+        }
 
-        // 2. Strip "Here's a thinking process: ... \n\n" or "Thinking Process: ... \n\n"
-        $reply = preg_replace('/(?:^|\n)\s*(?:Here\'?s\s+(?:a\s+)?thinking\s+process|Thinking\s+Process|Thought\s+Process):.*?(?:\r?\n\r?\n|$)/is', '', $reply);
+        $text = trim($reply);
 
-        // 3. Strip leading bot prefix
-        $reply = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant):\s*/i', '', trim($reply));
+        // 1. Strip XML-like thinking/reasoning tags (<think>...</think>, <thought>...</thought>, etc.)
+        $text = preg_replace('/<(?:think|thought|reasoning|scratchpad|analysis|internal)>.*?<\/(?:think|thought|reasoning|scratchpad|analysis|internal)>/is', '', $text);
+        $text = preg_replace('/<(?:think|thought|reasoning|scratchpad|analysis|internal)>.*$/is', '', $text);
 
-        return trim($reply);
+        // 2. If the model outputs a draft or final answer section at the end (e.g., "Draft:\n"...", "Final Response:", "Response:"), extract only that answer!
+        if (preg_match('/(?:^|\n)\s*(?:Draft|Final\s+Response|Final\s+Answer|Actual\s+Response|Clean\s+Response|Response|Output|Assistant\s+Reply):\s*(.+)$/is', $text, $matches)) {
+            $extracted = trim($matches[1]);
+            if (!empty($extracted)) {
+                $text = $extracted;
+            }
+        }
+
+        // 3. If there is a "3. Formulate Response:" or "3. Response:" step with the final answer
+        if (preg_match('/(?:^|\n)\s*\d+\.\s*(?:Formulate|Draft|Response|Output|Answer|Final\s+Step).*?:\s*\n*(.+)$/is', $text, $matches)) {
+            $extracted = trim($matches[1]);
+            if (!empty($extracted)) {
+                $text = $extracted;
+            }
+        }
+
+        // 4. Strip block-level thinking/process headers (e.g. "Here's a thinking process:", "Thinking Process:", "Thought Process:", "Analysis:")
+        $text = preg_replace('/^(?:Here\'?s\s+(?:a\s+)?(?:thinking|reasoning)\s+process|Thinking\s+Process|Thought\s+Process|Reasoning\s+Process|Chain\s+of\s+Thought|Internal\s+Analysis|Analysis):\s*/im', '', $text);
+
+        // 5. Filter out paragraphs that are numbered chain-of-thought analysis steps
+        $paragraphs = preg_split('/\r?\n\s*\r?\n/', $text);
+        if (count($paragraphs) > 1) {
+            $filtered = [];
+            foreach ($paragraphs as $p) {
+                $trimmedP = trim($p);
+                // If paragraph starts with a chain-of-thought / scratchpad step header, discard it
+                if (preg_match('/^\d+\.\s*(?:Analyze|Analysis|Check|Retrieve|Search|Formulate|Draft|Understand|Examine|Review|Identify|Determine|Plan|Context|Task|Step|Consider|Thought|Think|Scenario|User|Intent|Input|Knowledge)/i', $trimmedP)) {
+                    continue;
+                }
+                // If paragraph is solely meta reasoning bullets like "- User said...", "- Context: ...", discard it
+                if (preg_match('/^(?:[-*•]\s+(?:User\s+said|Context:|Previous\s+turns:|The\s+|Now\s+|I\s+should|Mention\s+the|Direct\s+answer|No\s+thinking|Natural,))/i', $trimmedP)) {
+                    continue;
+                }
+                $filtered[] = $p;
+            }
+            if (!empty($filtered)) {
+                $text = implode("\n\n", $filtered);
+            }
+        }
+
+        // 6. Strip any leftover "Draft:", "Response:", "Answer:" labels at start
+        $text = preg_replace('/^(?:Draft|Final\s+Response|Final\s+Answer|Response|Output|Answer|Reply):\s*/i', '', trim($text));
+
+        // 7. Strip leading bot/role prefixes like "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
+        $text = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
+
+        // 8. Strip surrounding quotation marks if the draft was wrapped in quotes (e.g., `"Right now, ..."` or `'Right now, ...'`)
+        $text = trim($text);
+        if ((str_starts_with($text, '"') && str_ends_with($text, '"')) || (str_starts_with($text, "'") && str_ends_with($text, "'"))) {
+            if (strlen($text) >= 2) {
+                $text = trim(substr($text, 1, -1));
+            }
+        }
+        // Also strip a leading quote if the draft was cut off with an unclosed leading quote (e.g. `"Right now, ...`)
+        if (str_starts_with($text, '"') && substr_count($text, '"') === 1) {
+            $text = ltrim($text, '"');
+        }
+
+        return trim($text);
     }
 
     private function getAdminContext(string $message): string

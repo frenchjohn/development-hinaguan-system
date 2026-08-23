@@ -229,6 +229,8 @@ class ReservationPrototypeTest extends TestCase
 
     public function test_calendar_endpoint_reports_daytonight_and_nighttoday_availability(): void
     {
+        $this->travelTo('2026-08-01 09:00:00');
+
         $this->createAmenity('amenity-1');
 
         $reservation = $this->createReservation('2026-08-10');

@@ -52,8 +52,21 @@ $continuousSlotTimeline = function (string $startDate, ?string $endDate = null, 
     $end = $endDate ? \Illuminate\Support\Carbon::parse($endDate)->startOfDay() : $start->copy();
     
     // Normalize slots (clean out Aircon if present)
-    $cleanStartSlot = (str_contains($startSlot, 'DayToNight') || str_contains($startSlot, 'Daytime') || str_starts_with($startSlot, 'Day')) ? 'Daytime' : 'Nighttime';
-    $cleanEndSlot = (str_contains($endSlot, 'DayToNight') || str_contains($endSlot, 'Nighttime') || str_contains($endSlot, 'Night')) ? 'Nighttime' : 'Daytime';
+    if (str_contains($startSlot, 'NightToDay')) {
+        $cleanStartSlot = 'Nighttime';
+    } elseif (str_contains($startSlot, 'DayToNight') || str_contains($startSlot, 'Daytime') || str_starts_with($startSlot, 'Day')) {
+        $cleanStartSlot = 'Daytime';
+    } else {
+        $cleanStartSlot = 'Nighttime';
+    }
+
+    if (str_contains($endSlot, 'NightToDay')) {
+        $cleanEndSlot = 'Daytime';
+    } elseif (str_contains($endSlot, 'DayToNight') || str_contains($endSlot, 'Nighttime') || str_ends_with($endSlot, 'Night')) {
+        $cleanEndSlot = 'Nighttime';
+    } else {
+        $cleanEndSlot = 'Daytime';
+    }
 
     if ($start->gt($end)) {
         $end = $start->copy();
@@ -1494,9 +1507,158 @@ Route::post('/reservation/check-payment-status', function (Request $request, \Ap
     }
 })->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::post('/reservation/prototype', function (Request $request) {
-    return redirect()->route('reservation.create-intent');
+Route::post('/reservation/prototype', function (Request $request) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
+    $data = $request->validate([
+        'booker_name' => ['required', 'string', 'max:255'],
+        'phone' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'email', 'max:255'],
+        'number_of_guests' => ['required', 'integer', 'min:1'],
+        'amenity_id' => ['required', 'string'],
+        'pricing_type' => ['required', 'string'],
+        'price_at_booking' => ['required', 'numeric'],
+        'check_in' => ['nullable', 'date'],
+        'check_out' => ['nullable', 'date'],
+        'reservation_date' => ['nullable', 'date'],
+        'end_date' => ['nullable', 'date'],
+        'start_slot' => ['nullable', 'string'],
+        'end_slot' => ['nullable', 'string'],
+        'slot' => ['nullable', 'string'],
+    ]);
+
+    $startDate = $data['reservation_date'] ?? $data['check_in'] ?? now()->toDateString();
+    $endDate = $data['end_date'] ?? ($data['check_out'] ?? $startDate);
+    $startSlot = $data['start_slot'] ?? ($data['slot'] ?? 'Daytime');
+    $endSlot = $data['end_slot'] ?? $startSlot;
+
+    $amenityModel = Amenity::find($data['amenity_id']);
+    if (! $amenityModel) {
+        return response()->json([
+            'success' => false,
+            'message' => 'The selected amenity does not exist.',
+        ], 422);
+    }
+
+    if ($isAmenityRangeTaken($data['amenity_id'], $startDate, $endDate, $startSlot, $endSlot)) {
+        return response()->json([
+            'success' => false,
+            'message' => "{$amenityModel->amenities_name} is already booked for the selected dates/session.",
+        ], 409);
+    }
+
+    $slotCounts = $calculateContinuousSlotsCount($startDate, $endDate, $startSlot, $endSlot);
+    $totalAmount = (float) $data['price_at_booking'];
+    $depositAmount = round($totalAmount * 0.5, 2);
+    $remainingBalance = round($totalAmount - $depositAmount, 2);
+
+    $reservation = DB::transaction(function () use ($data, $startDate, $endDate, $startSlot, $endSlot, $slotCounts, $totalAmount, $depositAmount, $remainingBalance) {
+        $res = Reservation::create([
+            'booker_name' => $data['booker_name'],
+            'phone' => $data['phone'],
+            'email' => $data['email'],
+            'reservation_date' => $startDate ? now()->parse($startDate)->toDateTimeString() : null,
+            'end_date' => $endDate ? now()->parse($endDate)->toDateTimeString() : null,
+            'check_in' => $startDate,
+            'check_out' => $endDate,
+            'start_slot' => $startSlot,
+            'end_slot' => $endSlot,
+            'total_days' => $slotCounts['days_span'],
+            'number_of_guests' => $data['number_of_guests'],
+            'status' => 'Pending',
+            'total_amount' => $totalAmount,
+            'amount_paid' => $depositAmount,
+            'remaining_balance' => $remainingBalance,
+            'payment_status' => 'Partially Paid',
+            'payment_method' => 'online',
+            'reservation_type' => 'online',
+        ]);
+
+        $nameParts = explode(' ', trim((string) $data['booker_name']));
+        $firstName = array_shift($nameParts) ?: 'Guest';
+        $lastName = implode(' ', $nameParts) ?: 'Booker';
+
+        $customer = Customer::firstOrCreate(
+            [
+                'email' => $data['email'],
+            ],
+            [
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'gender' => 'Male',
+                'is_foreigner' => false,
+            ]
+        );
+
+        ReservationGuest::create([
+            'reservation_id' => $res->id,
+            'customer_id' => $customer->id,
+            'is_primary_guest' => true,
+        ]);
+
+        ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => $data['amenity_id'],
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'start_slot' => $startSlot,
+            'end_slot' => $endSlot,
+            'day_slots_count' => $slotCounts['day_count'],
+            'night_slots_count' => $slotCounts['night_count'],
+            'pricing_type' => $data['pricing_type'],
+            'price_at_booking' => $totalAmount,
+            'quantity' => 1,
+            'remarks' => 'Online reservation. Slot: ' . $startSlot,
+            'status' => 'Active',
+        ]);
+
+        return $res;
+    });
+
+    try {
+        Mail::to($data['email'])->send(new ReservationQrMail($reservation));
+    } catch (\Throwable $exception) {
+        report($exception);
+    }
+
+    ActivityLog::log(
+        activityType: 'online_reservation_created',
+        title: 'New Online Reservation',
+        description: "New online reservation #{$reservation->id} from {$reservation->booker_name} ({$reservation->number_of_guests} guests)",
+        reservationId: $reservation->id,
+        actorName: $reservation->booker_name,
+        actorRole: 'guest',
+        staffId: null,
+        metadata: [
+            'total_amount' => $reservation->total_amount,
+            'amount_paid' => $reservation->amount_paid,
+            'number_of_guests' => $reservation->number_of_guests,
+            'booker_name' => $reservation->booker_name,
+        ]
+    );
+
+    return response()->json([
+        'success' => true,
+        'reservation_id' => $reservation->id,
+        'message' => 'Prototype reservation recorded and marked partially paid.',
+    ]);
 })->name('reservation.prototype')->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::post('/paymongo/webhook', function (Request $request) use ($createReservationFromPayment) {
+    $payload = $request->all();
+    $event = $payload['data']['attributes']['type'] ?? null;
+    $paymentData = $payload['data']['attributes']['data']['attributes'] ?? [];
+
+    $paymentIntentId = $paymentData['payment_intent_id']
+        ?? ($paymentData['payment_intent']['id'] ?? null)
+        ?? ($payload['data']['attributes']['data']['id'] ?? null);
+
+    if ($paymentIntentId && in_array($event, ['payment.paid', 'payment_intent.succeeded'], true)) {
+        $createReservationFromPayment($paymentIntentId, null, $paymentData);
+    }
+
+    return response()->json(['status' => 'ok']);
+})->name('paymongo.webhook')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::post('/reservation/check-in/{reservation}', function (Request $request, Reservation $reservation) {
     // Harden: only authenticated staff/admin may check a reservation in.
@@ -4113,7 +4275,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'total_days' => $totalDays,
             'check_in' => now(),
             'number_of_guests' => $guestCount > 0 ? $guestCount : 1,
-            'reservation_type' => 'walk_in',
+            'reservation_type' => $data['reservation_type'] ?? 'walk_in',
             'status' => 'Checked In',
             'total_amount' => $grandTotal,
             'amount_paid' => $grandTotal,
