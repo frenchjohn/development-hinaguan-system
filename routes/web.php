@@ -1169,10 +1169,13 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
     if ($reservation) {
         Cache::forget("pending_reservation_{$paymentIntentId}");
 
-        try {
-            Mail::to($reservation->email)->send(new ReservationQrMail($reservation));
-        } catch (\Throwable $ex) {
-            report($ex);
+        if (!empty($reservation->email)) {
+            try {
+                Mail::to(trim($reservation->email))->send(new ReservationQrMail($reservation));
+            } catch (\Throwable $ex) {
+                \Illuminate\Support\Facades\Log::error("Failed to dispatch ReservationQrMail for reservation #{$reservation->id} to {$reservation->email}: " . $ex->getMessage(), ['exception' => $ex]);
+                report($ex);
+            }
         }
 
         ActivityLog::log(
@@ -1615,10 +1618,13 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
         return $res;
     });
 
-    try {
-        Mail::to($data['email'])->send(new ReservationQrMail($reservation));
-    } catch (\Throwable $exception) {
-        report($exception);
+    if (!empty($data['email'])) {
+        try {
+            Mail::to(trim($data['email']))->send(new ReservationQrMail($reservation));
+        } catch (\Throwable $exception) {
+            \Illuminate\Support\Facades\Log::error("Failed to dispatch prototype ReservationQrMail to {$data['email']}: " . $exception->getMessage(), ['exception' => $exception]);
+            report($exception);
+        }
     }
 
     ActivityLog::log(
