@@ -1306,6 +1306,9 @@ window.AppPage['staff_reservations'] = function () {
         // Initialize state for the multi-day reschedule calendar
         initEditCalendar(reservationId);
 
+        // Render booked amenities list for swapping and date editing
+        renderEditAmenitiesList(reservation);
+
         // Update Stay Schedule Card in edit form
         updateEditFormScheduleCard();
 
@@ -1449,11 +1452,128 @@ window.AppPage['staff_reservations'] = function () {
         return { dayCount, nightCount, totalDays };
     };
 
+    const renderEditAmenitiesList = (reservation) => {
+        const container = document.getElementById('editAmenitiesList');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const amenities = reservation?.reservation_amenities || reservation?.reservationAmenities || [];
+        const allAmenities = window.staffAmenitiesData || [];
+
+        if (!amenities.length) {
+            container.innerHTML = '<p class="text-xs text-hp-text-muted">No amenities booked for this reservation.</p>';
+            return;
+        }
+
+        const masterStart = document.getElementById('editReservationDate')?.value || formatDateForInput(reservation.reservation_date);
+        const masterEnd = document.getElementById('editEndDate')?.value || formatDateForInput(reservation.end_date) || masterStart;
+
+        amenities.forEach((ra, idx) => {
+            const raId = ra.id;
+            const currentAmenityId = String(ra.amenity_id || ra.amenity?.id || '');
+            const raStart = formatDateForInput(ra.start_date) || masterStart;
+            const raEnd = formatDateForInput(ra.end_date) || masterEnd;
+            const raStartSlot = ra.start_slot || 'Daytime';
+            const raEndSlot = ra.end_slot || raStartSlot;
+
+            let optionsHtml = '';
+            allAmenities.forEach((a) => {
+                const selected = String(a.id) === currentAmenityId ? 'selected' : '';
+                const dayP = Number(a.daytime_price || 0).toFixed(2);
+                optionsHtml += `<option value="${escapeHtml(a.id)}" ${selected}>${escapeHtml(a.amenities_name)} (₱${dayP})</option>`;
+            });
+
+            const item = document.createElement('div');
+            item.className = 'edit-amenity-item rounded-xl border border-glass-border bg-hp-cream p-3 grid gap-3 dark:bg-white/5 dark:border-white/10';
+            item.setAttribute('data-ra-id', raId);
+            item.setAttribute('data-index', idx);
+
+            item.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-hp-text dark:text-[#c8e6c8]">Booked Amenity #${idx + 1}</span>
+                    <span class="edit-amenity-price-tag text-xs font-bold text-hp-green dark:text-[#81c784]">₱${Number(ra.price_at_booking || 0).toFixed(2)}</span>
+                </div>
+                <div class="grid gap-1">
+                    <label class="text-[0.75rem] font-semibold text-hp-text">Change / Swap Amenity</label>
+                    <select class="edit-amenity-select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                        ${optionsHtml}
+                    </select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div class="grid gap-1">
+                        <label class="text-[0.72rem] font-semibold text-hp-text-muted">Amenity Check-In Date & Session</label>
+                        <div class="flex gap-1.5">
+                            <input type="date" class="edit-amenity-start-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" value="${raStart}" min="${masterStart}" max="${masterEnd}">
+                            <select class="edit-amenity-start-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                                <option value="Daytime" ${raStartSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
+                                <option value="Nighttime" ${raStartSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid gap-1">
+                        <label class="text-[0.72rem] font-semibold text-hp-text-muted">Amenity Check-Out Date & Session</label>
+                        <div class="flex gap-1.5">
+                            <input type="date" class="edit-amenity-end-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" value="${raEnd}" min="${masterStart}" max="${masterEnd}">
+                            <select class="edit-amenity-end-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                                <option value="Daytime" ${raEndSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
+                                <option value="Nighttime" ${raEndSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            item.querySelectorAll('select, input').forEach(input => {
+                input.addEventListener('change', () => {
+                    const sInput = item.querySelector('.edit-amenity-start-date');
+                    const eInput = item.querySelector('.edit-amenity-end-date');
+                    if (sInput && eInput && sInput.value > eInput.value) {
+                        eInput.value = sInput.value;
+                    }
+                    updateEditFormScheduleCard();
+                });
+            });
+
+            container.appendChild(item);
+        });
+    };
+
     const calculateReservationPricing = (startDateStr, endDateStr, startSlot, endSlot) => {
         const { dayCount, nightCount, totalDays } = calculateContinuousSlots(startDateStr, endDateStr, startSlot, endSlot);
         
         let amenityTotal = 0;
-        if (editCalState.amenities && editCalState.amenities.length > 0) {
+        const amenityItems = document.querySelectorAll('.edit-amenity-item');
+
+        if (amenityItems && amenityItems.length > 0) {
+            const allAmenities = window.staffAmenitiesData || [];
+            const origReservation = reservationData[editCalState.reservationId];
+            const origAmenities = origReservation?.reservation_amenities || origReservation?.reservationAmenities || [];
+
+            amenityItems.forEach((item) => {
+                const selectedAmenityId = item.querySelector('.edit-amenity-select')?.value;
+                const aStartDate = item.querySelector('.edit-amenity-start-date')?.value || startDateStr;
+                const aEndDate = item.querySelector('.edit-amenity-end-date')?.value || aStartDate;
+                const aStartSlot = item.querySelector('.edit-amenity-start-slot')?.value || 'Daytime';
+                const aEndSlot = item.querySelector('.edit-amenity-end-slot')?.value || 'Daytime';
+
+                const amenityModel = allAmenities.find(a => String(a.id) === String(selectedAmenityId));
+                const aCounts = calculateContinuousSlots(aStartDate, aEndDate, aStartSlot, aEndSlot);
+
+                const raId = item.dataset.raId;
+                const origRa = origAmenities.find(r => String(r.id) === String(raId));
+                const hasAircon = origRa ? String(origRa.pricing_type || '').includes('Aircon') : false;
+
+                const dayPrice = amenityModel ? (hasAircon && amenityModel.daytime_aircon_price ? Number(amenityModel.daytime_aircon_price) : Number(amenityModel.daytime_price || 0)) : 0;
+                const nightPrice = amenityModel ? (hasAircon && amenityModel.nighttime_aircon_price ? Number(amenityModel.nighttime_aircon_price) : Number(amenityModel.nighttime_price || 0)) : 0;
+                const qty = Math.max(1, Number(origRa?.quantity) || 1);
+
+                const itemPrice = ((aCounts.dayCount * dayPrice) + (aCounts.nightCount * nightPrice)) * qty;
+                amenityTotal += itemPrice;
+
+                const priceTag = item.querySelector('.edit-amenity-price-tag');
+                if (priceTag) priceTag.textContent = `₱${itemPrice.toFixed(2)}`;
+            });
+        } else if (editCalState.amenities && editCalState.amenities.length > 0) {
             editCalState.amenities.forEach((a) => {
                 const qty = Math.max(1, Number(a.quantity) || 1);
                 const dayPrice = Number(a.daytime_price) || 0;
@@ -1976,10 +2096,52 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
+        const oldMasterStart = document.getElementById('editReservationDate')?.value || editCalState.currentStartDate;
+        const newMasterStart = sDate;
+        const newMasterEnd = eDate;
+
+        let shiftDays = 0;
+        if (oldMasterStart && newMasterStart && oldMasterStart !== newMasterStart) {
+            const msOld = new Date(oldMasterStart).getTime();
+            const msNew = new Date(newMasterStart).getTime();
+            shiftDays = Math.round((msNew - msOld) / (1000 * 60 * 60 * 24));
+        }
+
         document.getElementById('editReservationDate').value = sDate;
         document.getElementById('editEndDate').value = eDate;
         document.getElementById('editStartSlot').value = sSlot;
         document.getElementById('editEndSlot').value = eSlot;
+
+        // Shift amenity dates automatically by the relative day offset
+        if (shiftDays !== 0) {
+            const amenityItems = document.querySelectorAll('.edit-amenity-item');
+            amenityItems.forEach((item) => {
+                const sInput = item.querySelector('.edit-amenity-start-date');
+                const eInput = item.querySelector('.edit-amenity-end-date');
+
+                if (sInput && sInput.value) {
+                    const [y, m, d] = sInput.value.split('-').map(Number);
+                    const dtS = new Date(y, m - 1, d + shiftDays);
+                    let shiftedS = `${dtS.getFullYear()}-${String(dtS.getMonth() + 1).padStart(2, '0')}-${String(dtS.getDate()).padStart(2, '0')}`;
+                    if (shiftedS < newMasterStart) shiftedS = newMasterStart;
+                    if (shiftedS > newMasterEnd) shiftedS = newMasterEnd;
+                    sInput.value = shiftedS;
+                    sInput.min = newMasterStart;
+                    sInput.max = newMasterEnd;
+                }
+
+                if (eInput && eInput.value) {
+                    const [y, m, d] = eInput.value.split('-').map(Number);
+                    const dtE = new Date(y, m - 1, d + shiftDays);
+                    let shiftedE = `${dtE.getFullYear()}-${String(dtE.getMonth() + 1).padStart(2, '0')}-${String(dtE.getDate()).padStart(2, '0')}`;
+                    if (shiftedE < (sInput ? sInput.value : newMasterStart)) shiftedE = sInput ? sInput.value : newMasterStart;
+                    if (shiftedE > newMasterEnd) shiftedE = newMasterEnd;
+                    eInput.value = shiftedE;
+                    if (sInput) eInput.min = sInput.value;
+                    eInput.max = newMasterEnd;
+                }
+            });
+        }
 
         updateEditFormScheduleCard();
         closeEditCalendarModal();
@@ -2054,6 +2216,15 @@ window.AppPage['staff_reservations'] = function () {
         const reservationId = formData.get('reservation_id');
         const submitButton = editReservationForm.querySelector('button[type="submit"]');
 
+        const amenitiesPayload = Array.from(document.querySelectorAll('.edit-amenity-item')).map(item => ({
+            id: item.dataset.raId,
+            amenity_id: item.querySelector('.edit-amenity-select')?.value,
+            start_date: item.querySelector('.edit-amenity-start-date')?.value,
+            end_date: item.querySelector('.edit-amenity-end-date')?.value,
+            start_slot: item.querySelector('.edit-amenity-start-slot')?.value,
+            end_slot: item.querySelector('.edit-amenity-end-slot')?.value,
+        }));
+
         showConfirmModal(
             'Save Changes',
             'Are you sure you want to save these changes to the reservation?',
@@ -2082,6 +2253,7 @@ window.AppPage['staff_reservations'] = function () {
                             end_slot: formData.get('end_slot'),
                             number_of_guests: formData.get('number_of_guests'),
                             status: formData.get('status'),
+                            amenities: amenitiesPayload,
                         }),
                     });
 

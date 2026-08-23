@@ -27,6 +27,9 @@
         'resources/js/staff_js/staff_reservations.js',
         'resources/js/staff_chatbot.js',
     ])
+    <script>
+        window.staffAmenitiesData = @json($allAmenities ?? []);
+    </script>
 </head>
 <body class="antialiased staff-portal">
     <div class="dash-layout">
@@ -376,6 +379,15 @@
                             <div id="editPriceDiffBadge" class="mt-2 text-center text-[0.72rem] font-bold text-hp-text-muted"></div>
                         </div>
                     </div>
+
+                    <!-- Booked Amenities Editor (Swap & Date Adjustment) -->
+                    <div id="editAmenitiesSection" class="guest-form__field edit-amenities-card grid gap-3 rounded-xl border border-glass-border bg-glass p-3.5 dark:border-white/10 dark:bg-white/5">
+                        <div class="flex items-center justify-between border-b border-glass-border pb-2 dark:border-white/10">
+                            <span class="text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#81c784]">Booked Amenities</span>
+                            <span class="text-[0.75rem] text-hp-text-muted font-medium">Swap amenity or edit dates within stay schedule</span>
+                        </div>
+                        <div id="editAmenitiesList" class="grid gap-3"></div>
+                    </div>
                     <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label class="guest-form__field grid gap-1.5">
                             <span class="text-sm font-semibold text-hp-text">Number of Guests</span>
@@ -471,8 +483,9 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="confirmModal" aria-hidden="true">
-        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-confirm-modal="true"></div>
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1100] hidden items-center justify-center is-open:flex" id="confirmModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)] backdrop-blur-sm" data-close-confirm-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--confirm relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
             <div class="guest-modal__confirm-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400">
                 <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -487,7 +500,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--success fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="successModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--success fixed inset-0 z-[1200] hidden items-center justify-center is-open:flex" id="successModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-success-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--success relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
             <div class="guest-modal__success-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e] dark:bg-[rgba(34,197,94,0.2)]">
