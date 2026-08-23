@@ -49,6 +49,11 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'gmail_api' => [
+            'transport' => 'gmail_api',
+            'url' => env('GMAIL_WEBHOOK_URL'),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

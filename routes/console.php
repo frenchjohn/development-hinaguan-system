@@ -11,21 +11,27 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     $toEmail = $email ?: config('mail.from.address') ?: 'parkhinaguan@gmail.com';
     $isCached = app()->configurationIsCached();
 
+    $mailer = config('mail.default');
     $this->info("=========================================");
     $this->info(" Hinaguan Mail Diagnostic Tool");
     $this->info("=========================================");
     $this->line("Config Cached: " . ($isCached ? "⚠️ YES (Cached - run 'php artisan config:clear' to apply changes!)" : "✓ NO (Live)"));
-    $this->line("Default Mailer: " . config('mail.default'));
-    $this->line("SMTP Host:      " . config('mail.mailers.smtp.host'));
-    $this->line("SMTP Port:      " . config('mail.mailers.smtp.port'));
-    $this->line("SMTP Encryption:" . (config('mail.mailers.smtp.encryption') ?: 'none'));
-    $this->line("SMTP Username:  " . config('mail.mailers.smtp.username'));
+    $this->line("Default Mailer: {$mailer}");
+    if ($mailer === 'gmail_api') {
+        $url = env('GMAIL_WEBHOOK_URL') ?: config('mail.mailers.gmail_api.url') ?: '';
+        $this->line("Gmail Webhook:  " . ($url ? substr($url, 0, 45) . '...' : '❌ NOT SET (Add GMAIL_WEBHOOK_URL in Railway!)'));
+    } else {
+        $this->line("SMTP Host:      " . config('mail.mailers.smtp.host'));
+        $this->line("SMTP Port:      " . config('mail.mailers.smtp.port'));
+        $this->line("SMTP Encryption:" . (config('mail.mailers.smtp.encryption') ?: 'none'));
+        $this->line("SMTP Username:  " . config('mail.mailers.smtp.username'));
+    }
     $this->line("From Address:   " . config('mail.from.address'));
     $this->line("Queue Driver:   " . config('queue.default'));
     $this->line("Target Recipient: {$toEmail}");
     $this->line("-----------------------------------------");
 
-    $this->comment("1. Sending raw test email via SMTP...");
+    $this->comment("1. Sending raw test email via {$mailer}...");
     try {
         \Illuminate\Support\Facades\Mail::raw('This is a test email from Hinaguan Nature Park SMTP diagnostic.', function ($message) use ($toEmail) {
             $fromAddress = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'parkhinaguan@gmail.com';
