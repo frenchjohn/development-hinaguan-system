@@ -57,6 +57,10 @@ body.staff-portal, body.admin-portal {
     --shadow-md: 0 2px 4px rgba(23, 42, 32, 0.05), 0 10px 24px rgba(23, 42, 32, 0.09);
     --shadow-lg: 0 6px 14px rgba(23, 42, 32, 0.07), 0 22px 48px rgba(23, 42, 32, 0.14);
 
+    --glass-bg: rgba(255, 255, 255, 0.90);
+    --glass-border: rgba(255, 255, 255, 0.80);
+    --glass-shadow: 0 4px 24px rgba(20, 50, 30, 0.04);
+
     --font-ui: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-display: 'Poppins', 'Montserrat', system-ui, sans-serif;
 
@@ -64,6 +68,31 @@ body.staff-portal, body.admin-portal {
     --hp-font-ui: var(--font-ui);
     --hp-font-body: var(--font-ui);
     --hp-font-display: var(--font-display);
+}
+
+body.staff-portal .bg-glass {
+    background-color: rgba(255, 255, 255, 0.90) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+[data-theme="dark"] body.staff-portal .bg-glass {
+    background-color: rgba(12, 32, 20, 0.90) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+body.staff-portal .border-glass-border {
+    border-color: rgba(255, 255, 255, 0.80) !important;
+}
+[data-theme="dark"] body.staff-portal .border-glass-border {
+    border-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+body.staff-portal .shadow-glass {
+    box-shadow: 0 4px 20px rgba(20, 50, 30, 0.04) !important;
+}
+[data-theme="dark"] body.staff-portal .shadow-glass {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
 [data-theme="dark"] body.staff-portal, [data-theme="dark"] body.admin-portal {
@@ -141,16 +170,66 @@ body.staff-portal, body.admin-portal {
     background: rgba(52, 211, 153, 0.38);
 }
 
-/* ------------------------------------------------------------
-   2. Page shell
-   ------------------------------------------------------------ */
-body.staff-portal, body.admin-portal {
+body.staff-portal {
+    background-color: #ebf3ec !important;
+    min-height: 100vh !important;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+[data-theme="dark"] body.staff-portal {
+    background-color: #06120a !important;
+}
+
+body.staff-portal .dash-layout,
+body.staff-portal .dash-content {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+body.staff-portal .dash-main {
+    background-color: #ebf3ec !important;
+    background-image: url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    min-height: 100vh !important;
+}
+
+[data-theme="dark"] body.staff-portal .dash-main {
+    background-color: #06120a !important;
+    background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+}
+
+body.staff-portal .resv-metrics {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+@media (max-width: 1024px) {
+    body.staff-portal .resv-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    body.staff-portal .resv-metrics {
+        grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+}
+
+body.admin-portal {
     background: var(--bg);
     color: var(--ink);
     font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
-    /* Guarantee no horizontal page scroll, ever. Inner tables that need to
-       scroll manage their own overflow-x on their wrappers. */
     overflow-x: hidden;
 }
 
@@ -164,7 +243,7 @@ body.staff-portal .dash-content , body.admin-portal .dash-content {
 }
 
 body.staff-portal .dash-main , body.admin-portal .dash-main {
-    background: transparent;
+    background: transparent !important;
     min-width: 0;
     /* clip (not hidden) so the y-axis stays visible per spec */
     overflow-x: clip;
@@ -204,16 +283,22 @@ body.staff-portal .reports-metric-card , body.admin-portal .reports-metric-card 
 /* ------------------------------------------------------------
    3. Header — clean professional bar
    ------------------------------------------------------------ */
-body.staff-portal .dash-header , body.admin-portal .dash-header {
+body.staff-portal .dash-header {
+    background: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    min-height: 0;
+    margin-top: -1.25rem;
+    margin-left: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));
+    margin-right: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));
+    margin-bottom: 1.25rem;
+}
+
+body.admin-portal .dash-header {
     background: var(--surface) !important;
     border-bottom: 1px solid var(--border);
     box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02), 0 6px 18px rgba(23, 42, 32, 0.04);
-    /* Compact bar instead of the tall 200px hero */
     min-height: 0;
-    /* Edge-to-edge app bar: cancel the .dash-content gutters so the header
-       spans the full width and sits flush against the very top.
-       NOTE: these negative margins must stay in sync with the .dash-content
-       padding above (and its 992px / 768px overrides further down). */
     margin-top: -1.25rem;
     margin-left: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));
     margin-right: calc(-1 * clamp(1rem, 1.6vw, 1.75rem));

@@ -119,6 +119,12 @@
     transition: background 0.3s ease, color 0.3s ease;
 }
 
+body.staff-portal .dash-layout,
+body.staff-portal .dash-content {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
 .dash-main {
     flex: 1;
     display: flex;
@@ -152,15 +158,23 @@
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     transition: background 0.3s ease, border-color 0.3s ease;
-    /* Edge-to-edge app bar: cancel the .dash-content gutters so the bar
-       spans the full width and sits flush against the very top (matches the
-       base .dash-content padding of 1.5rem; 1rem at ≤640px below). Staff
-       pages override these margins in their own stylesheet to match their
-       1rem content gutters; this base version serves the admin portal. */
     margin-top: -1.5rem;
     margin-left: -1.5rem;
     margin-right: -1.5rem;
     margin-bottom: 1.5rem;
+}
+
+body.staff-portal .dash-header {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 0 1.25rem 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    top: auto !important;
 }
 
 .dash-header__left {

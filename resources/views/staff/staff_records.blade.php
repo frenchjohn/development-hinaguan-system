@@ -17,16 +17,44 @@
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
-        'resources/css/staff_css/staff_shared.css',
         'resources/css/homepage.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/chatbot.css',
+        'resources/css/staff_css/staff_shared.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_records.js',
         'resources/js/staff_chatbot.js',
     ])
+    <style>
+        body.staff-portal {
+            background-color: #ebf3ec !important;
+        }
+        [data-theme="dark"] body.staff-portal {
+            background-color: #06120a !important;
+        }
+        body.staff-portal .dash-layout,
+        body.staff-portal .dash-content {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        body.staff-portal .dash-main {
+            background-color: #ebf3ec !important;
+            background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            min-height: 100vh;
+        }
+        [data-theme="dark"] body.staff-portal .dash-main {
+            background-color: #06120a !important;
+            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+        }
+    </style>
 </head>
 <body class="antialiased staff-portal">
     <div class="dash-layout">

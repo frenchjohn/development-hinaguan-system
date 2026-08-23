@@ -17,11 +17,11 @@
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
-        'resources/css/staff_css/staff_shared.css',
         'resources/css/homepage.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/chatbot.css',
+        'resources/css/staff_css/staff_shared.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/staff_js/staff_reservations.js',
@@ -30,6 +30,34 @@
     <script>
         window.staffAmenitiesData = @json($allAmenities ?? []);
     </script>
+    <style>
+        body.staff-portal {
+            background-color: #ebf3ec !important;
+        }
+        [data-theme="dark"] body.staff-portal {
+            background-color: #06120a !important;
+        }
+        body.staff-portal .dash-layout,
+        body.staff-portal .dash-content {
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        body.staff-portal .dash-main {
+            background-color: #ebf3ec !important;
+            background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            min-height: 100vh;
+        }
+        [data-theme="dark"] body.staff-portal .dash-main {
+            background-color: #06120a !important;
+            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+        }
+    </style>
 </head>
 <body class="antialiased staff-portal">
     <div class="dash-layout">
@@ -60,7 +88,7 @@
                     subtitle="Manage online reservations and walk-in check-ins"
                 />
 
-                <div class="resv-metrics mb-4 flex flex-wrap gap-3" data-park-settings="{{ json_encode([
+                <div class="resv-metrics mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3" data-park-settings="{{ json_encode([
                     'daytime_start' => $daytimeStart,
                     'daytime_end' => $daytimeEnd,
                     'nighttime_start' => $nighttimeStart,
@@ -72,104 +100,112 @@
                     'day_pool_fee' => $parkSettings->day_pool_fee ?? 0,
                     'night_pool_fee' => $parkSettings->night_pool_fee ?? 0,
                 ]) }}">
-                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
-                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
-                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <!-- 1. DATE -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </span>
-                        <div class="resv-metric__body flex flex-col gap-0.5">
-                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Date</p>
-                            <p class="resv-metric__value m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="resvDate">{{ now()->format('F j, Y') }}</p>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">DATE</p>
+                            <p class="m-0 text-sm sm:text-base font-bold text-[#183d28] dark:text-[#e8f5e9] truncate" id="resvDate">{{ now()->format('F j, Y') }}</p>
                         </div>
                     </article>
-                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
-                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
-                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </span>
-                        <div class="resv-metric__body flex flex-col gap-0.5">
-                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Time</p>
-                            <p class="resv-metric__value m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#c8e6c8]" id="resvTime">{{ now()->format('g:i A') }}</p>
-                        </div>
-                    </article>
-                    <article class="resv-metric flex min-w-[130px] flex-1 items-center gap-3 rounded-xl border border-glass-border bg-glass p-3.5 shadow-[0_1px_2px_rgba(13,44,29,0.04)]">
-                        <span class="resv-metric__icon flex h-[2.2rem] w-[2.2rem] shrink-0 items-center justify-center rounded-[0.6rem] bg-[rgba(26,92,60,0.1)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
-                            <svg class="h-[1.1rem] w-[1.1rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        </span>
-                        <div class="resv-metric__body flex flex-col gap-0.5">
-                            <p class="resv-metric__label m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-hp-text-muted">Session</p>
-                            <span class="resv-metric__badge resv-metric__badge--{{ strtolower($timePeriod) }} inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] {{ $timePeriod === 'Daytime' ? 'border border-glass-border bg-[rgba(255,152,0,0.15)] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d] dark:border-[rgba(255,152,0,0.4)]' : 'border border-glass-border bg-[rgba(103,58,183,0.15)] text-[#4527a0] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8] dark:border-[rgba(103,58,183,0.4)]' }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
-                        </div>
-                    </article>
-                </div>
 
-                <div class="resv-stats mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    <article class="resv-stat resv-stat--orange flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
-                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(255,152,0,0.15)] text-[#f57c00]">
-                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <!-- 2. TIME -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
-                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $pendingCount }}</p>
-                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Pending Reservations</p>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">TIME</p>
+                            <p class="m-0 text-sm sm:text-base font-bold text-[#183d28] dark:text-[#e8f5e9] truncate" id="resvTime">{{ now()->format('g:i A') }}</p>
                         </div>
                     </article>
-                    <article class="resv-stat resv-stat--green flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
-                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,92,60,0.12)] text-hp-green dark:bg-[rgba(129,199,132,0.15)] dark:text-[#81c784]">
-                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+
+                    <!-- 3. SESSION -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff8e1] text-[#f57f17] dark:bg-[rgba(255,179,0,0.2)] dark:text-[#ffca28]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
-                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $todayCheckIns }}</p>
-                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Today's Check-ins</p>
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">SESSION</p>
+                            <span class="inline-flex w-fit items-center rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide {{ $timePeriod === 'Daytime' ? 'bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]' : 'bg-[#ede7f6] text-[#6a1b9a] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8]' }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
                         </div>
                     </article>
-                    <article class="resv-stat resv-stat--blue flex items-center gap-4 rounded-[14px] border border-glass-border bg-glass p-4 shadow-[0_1px_4px_rgba(13,44,29,0.06)] transition-all duration-150 hover:-translate-y-0.5 hover:shadow-glass">
-                        <span class="resv-stat__icon flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[rgba(25,118,210,0.12)] text-[#1565c0] dark:bg-[rgba(100,181,246,0.15)] dark:text-[#64b5f6]">
-                            <svg class="h-[1.4rem] w-[1.4rem]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+
+                    <!-- 4. PENDING RESERVATIONS -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
-                        <div class="resv-stat__body flex min-w-0 flex-col gap-0.5">
-                            <p class="resv-stat__value m-0 text-[1.6rem] font-extrabold leading-none text-hp-text dark:text-[#e8f5e9]">{{ $expectedGuests }}</p>
-                            <p class="resv-stat__label m-0 text-[0.8rem] font-medium text-hp-text-muted dark:text-[#9baaa1]">Expected Guests</p>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $pendingCount }}</p>
+                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Pending Reservations</p>
+                        </div>
+                    </article>
+
+                    <!-- 5. TODAY'S CHECK-INS -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </span>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $todayCheckIns }}</p>
+                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Today's Check-ins</p>
+                        </div>
+                    </article>
+
+                    <!-- 6. EXPECTED GUESTS -->
+                    <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90">
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e3f2fd] text-[#1976d2] dark:bg-[rgba(25,118,210,0.2)] dark:text-[#64b5f6]">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </span>
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $expectedGuests }}</p>
+                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Expected Guests</p>
                         </div>
                     </article>
                 </div>
 
                 @if (session('success'))
-                    <div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
+                    <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 font-medium" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
                 @endif
 
-                <div class="resv-toolbar mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div class="resv-toolbar__left flex flex-wrap items-center gap-2">
-                        <button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2.5 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
+                <div class="resv-toolbar mb-3.5 flex flex-wrap items-center justify-between gap-3">
+                    <div class="resv-toolbar__left flex flex-wrap items-center gap-2.5">
+                        <button type="button" class="guest-filter-toggle inline-flex cursor-pointer items-center justify-between gap-2 rounded-xl border border-[#dfe5e0] bg-white px-4 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 dark:border-white/15 dark:bg-[#0c2014] dark:text-[#c8e6c8] dark:hover:bg-[#153422]" id="reservationFilterToggle" aria-expanded="false" aria-controls="reservationFilterPanel">
+                            <svg class="h-4 w-4 text-[#718076] dark:text-[#81c784]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
                             <span>Filters</span>
-                            <span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
+                            <span class="guest-filter-toggle__icon text-xs text-[#718076] dark:text-[#81c784]">▾</span>
                         </button>
-                        <div class="resv-search flex items-center gap-2 rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2.5 transition-all duration-200 focus-within:border-hp-green focus-within:shadow-glass dark:border-glass-border">
-                            <svg class="h-4 w-4 shrink-0 text-hp-text-muted dark:text-[#81c784]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                            <input type="search" id="reservationSearchInput" placeholder="Search reservations..." class="w-[220px] border-0 bg-transparent p-0 text-sm text-hp-text outline-none placeholder:text-hp-text-muted dark:text-[#c8e6c8]">
+                        <div class="resv-search flex items-center gap-2 rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 shadow-sm transition-all duration-150 focus-within:border-[#2d6a4f] dark:border-white/15 dark:bg-[#0c2014]">
+                            <svg class="h-4 w-4 shrink-0 text-[#718076] dark:text-[#81c784]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
+                            <input type="search" id="reservationSearchInput" placeholder="Search reservations..." class="w-[200px] sm:w-[260px] border-0 bg-transparent p-0 text-sm text-[#183d28] outline-none placeholder:text-[#718076] dark:text-[#c8e6c8]">
                         </div>
                     </div>
                     <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="refreshTableBtn">
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#0c2014] dark:text-[#c8e6c8] dark:hover:bg-[#153422]" id="refreshTableBtn">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             Refresh
                         </button>
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="scanQrBtn" title="Scan reservation QR">
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center justify-center rounded-xl border border-[#dfe5e0] bg-white p-2 text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#0c2014] dark:text-[#c8e6c8] dark:hover:bg-[#153422]" id="scanQrBtn" title="Scan reservation QR">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </button>
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-glass-border bg-glass px-3.5 py-2 text-sm font-semibold text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-[rgba(26,58,31,0.07)] active:scale-95 dark:border-glass-border dark:text-[#c8e6c8] dark:hover:border-[#81c784] dark:hover:bg-[#2d5a32]" id="exportCsvBtn">
+                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#0c2014] dark:text-[#c8e6c8] dark:hover:bg-[#153422]" id="exportCsvBtn">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
                             Export
                         </button>
-                        <button type="button" class="resv-tool-btn resv-tool-btn--primary inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[0.6rem] border border-hp-green bg-hp-green px-3.5 py-2 text-sm font-semibold text-white transition-all duration-150 hover:border-hp-green-dark hover:bg-hp-green-dark active:scale-95 dark:border-[#2e7d55] dark:bg-[#2e7d55] dark:hover:border-[#1c5c3c] dark:hover:bg-[#1c5c3c]" id="addWalkInBtn">
-                            <span class="resv-tool-btn__plus text-[1.1rem] font-bold leading-none">+</span>
+                        <button type="button" class="resv-tool-btn resv-tool-btn--primary inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#2d6a4f] hover:bg-[#1b4332] px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-150 active:scale-95" id="addWalkInBtn">
+                            <span class="text-base font-bold leading-none">+</span>
                             Add Walk-in
                         </button>
                     </div>
                 </div>
 
-                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3 grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-glass" id="reservationFilterPanel" hidden>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3.5 grid items-end gap-3 rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90" id="reservationFilterPanel" hidden>
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#c8e6c8]">
                         <span>Sort by</span>
-                        <select id="reservationSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+                        <select id="reservationSortSelect" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#12281c] dark:text-[#c8e6c8]">
                             <option value="date-asc">Reservation date (soonest)</option>
                             <option value="date-desc">Reservation date (latest)</option>
                             <option value="name-asc">Booker (A-Z)</option>
@@ -177,55 +213,56 @@
                             <option value="amount-desc">Amount (High-Low)</option>
                         </select>
                     </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#c8e6c8]">
                         <span>Status</span>
-                        <select id="reservationStatusFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+                        <select id="reservationStatusFilter" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#12281c] dark:text-[#c8e6c8]">
                             <option value="all">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                         </select>
                     </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#c8e6c8]">
                         <span>Reservation date from</span>
-                        <input type="date" id="reservationDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+                        <input type="date" id="reservationDateFrom" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#12281c] dark:text-[#c8e6c8]">
                     </label>
-                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+                    <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#c8e6c8]">
                         <span>Reservation date to</span>
-                        <input type="date" id="reservationDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+                        <input type="date" id="reservationDateTo" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#12281c] dark:text-[#c8e6c8]">
                     </label>
-                    <button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="reservationFiltersClear">Clear</button>
+                    <button type="button" class="guest-toolbar__clear cursor-pointer rounded-xl border border-[#dfe5e0] bg-[#f4f7f5] px-4 py-2 text-sm font-semibold text-[#183d28] transition-colors hover:bg-gray-200 dark:border-white/15 dark:bg-white/10 dark:text-[#c8e6c8]" id="reservationFiltersClear">Clear</button>
                 </div>
 
-                <div class="guest-toolbar__meta mb-3.5 text-sm text-hp-text-muted">
-                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
+                <div class="guest-toolbar__meta mb-2.5 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">
+                    <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
                 </div>
 
-                <div class="guest-table-wrap max-h-[440px] overflow-auto rounded-2xl border border-glass-border bg-glass shadow-glass" id="reservationTableWrap">
-                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent">
+                <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-white/80 bg-white/90 shadow-[0_4px_24px_rgba(20,50,30,0.04)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90" id="reservationTableWrap">
+                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent text-left">
                         <thead>
-                            <tr>
-                                <th>Booker</th>
-                                <th>Reservation date</th>
-                                <th>Session</th>
-                                <th>Guests</th>
-                                <th>Status</th>
-                                <th>Amount</th>
-                                <th>Actions</th>
+                            <tr class="border-b border-[#f0f4ef] dark:border-white/10">
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">BOOKER</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">RESERVATION DATE</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">SESSION</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] text-center">GUESTS</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] text-center">STATUS</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] text-right">AMOUNT</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] text-center">ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody id="reservationTableBody">
+                        <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] dark:divide-white/5">
                             @forelse ($reservations as $reservation)
                                 @php
                                     $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
                                     $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
                                     $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
                                         ->filter()
-                                        ->take(2)
+                                        ->take(1)
                                         ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
                                         ->implode('') ?: '?';
+                                    $totalDays = $reservation->total_days ?? (\Carbon\Carbon::parse($reservation->reservation_date)->diffInDays(\Carbon\Carbon::parse($reservation->end_date ?? $reservation->reservation_date)) + 1);
                                 @endphp
                                 <tr
-                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#153422] dark:focus-visible:bg-[#153422]"
                                     data-reservation-id="{{ $reservation->id }}"
                                     data-booker-name="{{ e($reservation->booker_name) }}"
                                     data-email="{{ e($reservation->email) }}"
@@ -239,55 +276,71 @@
                                     role="button"
                                     aria-label="View reservation details for {{ e($reservation->booker_name) }}"
                                 >
-                                    <td>
+                                    <td class="py-3.5 px-4">
                                         <div class="resv-booker flex items-center gap-3">
-                                            <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-br from-hp-green to-hp-green-mid text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:from-[#2e7d55] dark:to-[#1c5c3c]">{{ $initials }}</span>
+                                            <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
                                             <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
-                                                <div class="guest-name font-semibold text-hp-text">
+                                                <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">
                                                     {{ $reservation->booker_name }}
                                                     @if ($isToday)
-                                                        <span class="today-reservation-badge ml-2 inline-block rounded-xl bg-[#ff9800] px-2.5 py-1 text-[0.7rem] font-bold tracking-[0.05em] text-white dark:bg-[#ffb74d]">TODAY</span>
+                                                        <span class="today-reservation-badge ml-1.5 inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>
                                                     @endif
                                                 </div>
-                                                <div class="guest-meta mt-0.5 text-[0.84rem] text-hp-text-muted">{{ $reservation->email }}</div>
+                                                <div class="guest-meta text-xs text-[#718076] dark:text-[#9baaa1] truncate">{{ $reservation->email }}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="py-3.5 px-4">
                                         @if ($reservation->end_date && $reservation->end_date !== $reservation->reservation_date)
                                             <div>
-                                                <span class="font-semibold text-hp-text">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
-                                                <div class="text-[0.75rem] text-hp-text-muted">({{ $reservation->total_days ?? (\Carbon\Carbon::parse($reservation->reservation_date)->diffInDays(\Carbon\Carbon::parse($reservation->end_date)) + 1) }} Days Stay)</div>
+                                                <span class="font-bold text-xs sm:text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
+                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} {{ $totalDays > 1 ? 'Days Stay' : 'Day Stay' }})</div>
                                             </div>
                                         @else
-                                            {{ \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') }}
+                                            <div>
+                                                <span class="font-bold text-xs sm:text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }}</span>
+                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">(1 Day Stay)</div>
+                                            </div>
                                         @endif
                                     </td>
-                                    <td>
-                                        @if (!empty($timeSlots))
+                                    <td class="py-3.5 px-4">
+                                        @if ($totalDays > 1)
+                                            <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">Continuous Stay ({{ $totalDays }}D)</span>
+                                        @elseif (!empty($timeSlots))
                                             <div class="time-slot-labels flex flex-wrap gap-1.5">
                                                 @foreach ($timeSlots as $slot)
-                                                    <span class="time-slot-label time-slot-label--{{ strtolower(str_replace(' ', '', $slot)) }} inline-flex items-center rounded-full px-2.5 py-1 text-[0.75rem] font-bold capitalize tracking-[0.02em] {{ str_contains(strtolower($slot), 'night') ? 'border border-glass-border bg-[rgba(103,58,183,0.15)] text-[#673ab7] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#9575cd] dark:border-[rgba(103,58,183,0.4)]' : 'border border-glass-border bg-[rgba(255,152,0,0.15)] text-[#ff9800] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d] dark:border-[rgba(255,152,0,0.4)]' }}">{{ $slot }}</span>
+                                                    <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">{{ $slot }}</span>
                                                 @endforeach
                                             </div>
                                         @else
-                                            <span class="text-hp-text-muted">—</span>
+                                            <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784]">{{ $reservation->start_slot ?? 'Daytime' }}</span>
                                         @endif
                                     </td>
-                                    <td class="text-center">{{ $reservation->number_of_guests }}</td>
-                                    <td class="text-center">
-                                        <span class="reservation-status reservation-status--{{ strtolower($reservation->status) }} inline-flex items-center justify-center rounded-[0.4rem] px-3 py-1.5 text-[0.8rem] font-bold capitalize {{ $reservation->status === 'Pending' ? 'bg-[#fff3cd] text-[#856404] dark:bg-glass dark:text-[#ffd54f]' : 'bg-[#d4edda] text-[#155724] dark:bg-glass dark:text-[#81c784]' }}">{{ $reservation->status }}</span>
+                                    <td class="py-3.5 px-4 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ $reservation->number_of_guests }}</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        @php
+                                            $status = ucfirst(strtolower($reservation->status));
+                                            $statusClass = match($status) {
+                                                'Pending' => 'bg-[#fff3e0] text-[#e65100] border-[#ffe0b2] dark:bg-[rgba(230,81,0,0.2)] dark:text-[#ffb74d] dark:border-[#ff9800]/30',
+                                                'Confirmed' => 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#81c784] dark:border-[#81c784]/30',
+                                                'Checked In', 'Checked in' => 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
+                                                'Checked Out', 'Checked out' => 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
+                                                'Cancelled' => 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
+                                                default => 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300'
+                                            };
+                                        @endphp
+                                        <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize {{ $statusClass }}">{{ $reservation->status }}</span>
                                     </td>
-                                    <td class="text-right">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                    <td>
-                                        <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-transparent text-hp-text-muted transition-all duration-150 hover:border-hp-green hover:bg-hp-green hover:text-white dark:border-glass-border dark:text-[#81c784]" aria-label="View reservation details">
+                                    <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#81c784] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
                                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                         </button>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="guest-empty px-4 py-8 text-center text-hp-text-muted">No pending online reservations found.</td>
+                                    <td colspan="7" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
