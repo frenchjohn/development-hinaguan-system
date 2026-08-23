@@ -35,24 +35,61 @@
             background-color: #06120a !important;
         }
         body.staff-portal .dash-layout,
+        body.staff-portal .dash-main,
         body.staff-portal .dash-content {
             background: transparent !important;
             background-color: transparent !important;
+            background-image: none !important;
         }
         body.staff-portal .dash-main {
+            position: relative !important;
+            min-height: 100vh;
+            z-index: 0;
+        }
+        body.staff-portal .dash-main::before {
+            content: '' !important;
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: var(--dash-sidebar-w, 10rem) !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: auto !important;
+            height: 100vh !important;
+            z-index: -1 !important;
+            pointer-events: none !important;
             background-color: #ebf3ec !important;
             background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             background-size: 100% 100% !important;
             background-position: center center !important;
             background-repeat: no-repeat !important;
-            min-height: 100vh;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+            transition: left 0.25s ease !important;
         }
-        [data-theme="dark"] body.staff-portal .dash-main {
+        .dash-layout.sidebar-collapsed .dash-main::before {
+            left: 0 !important;
+        }
+        @media (max-width: 992px) {
+            body.staff-portal .dash-main::before {
+                left: 0 !important;
+            }
+        }
+        [data-theme="dark"] body.staff-portal .dash-main::before {
             background-color: #06120a !important;
             background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
-            background-size: 100% 100% !important;
-            background-position: center center !important;
-            background-repeat: no-repeat !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+        }
+        body.staff-portal .dash-content {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        body.staff-portal [class*="backdrop-blur"] {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
     </style>
 </head>

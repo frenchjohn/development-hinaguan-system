@@ -17,17 +17,82 @@
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     @vite([
         'resources/css/app.css',
-        'resources/css/staff_css/staff_shared.css',
-        'resources/css/admin_css/admin_shared.css',
         'resources/css/homepage.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/chatbot.css',
+        'resources/css/staff_css/staff_shared.css',
+        'resources/css/admin_css/admin_shared.css',
         'resources/components/css_js/header.js',
         'resources/components/css_js/sidemenu.js',
         'resources/js/admin_js/admin_amenitiesmanagement.js',
         'resources/js/admin_chatbot.js',
     ])
+    <style>
+        body.admin-portal {
+            background-color: #ebf3ec !important;
+        }
+        [data-theme="dark"] body.admin-portal {
+            background-color: #06120a !important;
+        }
+        body.admin-portal .dash-layout,
+        body.admin-portal .dash-main,
+        body.admin-portal .dash-content {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+        }
+        body.admin-portal .dash-main {
+            position: relative !important;
+            min-height: 100vh;
+            z-index: 0;
+        }
+        body.admin-portal .dash-main::before {
+            content: '' !important;
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: var(--dash-sidebar-w, 10rem) !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: auto !important;
+            height: 100vh !important;
+            z-index: -1 !important;
+            pointer-events: none !important;
+            background-color: #ebf3ec !important;
+            background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+            transition: left 0.25s ease !important;
+        }
+        .dash-layout.sidebar-collapsed .dash-main::before {
+            left: 0 !important;
+        }
+        @media (max-width: 992px) {
+            body.admin-portal .dash-main::before {
+                left: 0 !important;
+            }
+        }
+        [data-theme="dark"] body.admin-portal .dash-main::before {
+            background-color: #06120a !important;
+            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+        }
+        body.admin-portal .dash-content {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        body.admin-portal [class*="backdrop-blur"] {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+    </style>
 </head>
 <body class="antialiased admin-portal">
     <div class="dash-layout">

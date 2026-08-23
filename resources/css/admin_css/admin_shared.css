@@ -11,31 +11,80 @@
 /* ------------------------------------------------------------
    1. Forest backdrop — translucent panels blur this fixed layer
    ------------------------------------------------------------ */
+body.admin-portal {
+    background-color: #ebf3ec !important;
+    min-height: 100vh !important;
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+[data-theme="dark"] body.admin-portal {
+    background-color: #06120a !important;
+}
+
+body.admin-portal .dash-layout,
+body.admin-portal .dash-content {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
 body.admin-portal .dash-main {
-    position: relative;
+    position: relative !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    min-height: 100vh !important;
     z-index: 0;
-    background: transparent;
 }
 
 body.admin-portal .dash-main::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background:
-        radial-gradient(60rem 42rem at 8% -8%, rgba(140, 190, 150, 0.5), transparent 60%),
-        radial-gradient(52rem 40rem at 105% 18%, rgba(108, 168, 124, 0.42), transparent 62%),
-        radial-gradient(46rem 38rem at 55% 118%, rgba(196, 216, 178, 0.55), transparent 60%),
-        linear-gradient(158deg, #e9f3ea 0%, #dce9dd 48%, #cfe0d2 100%);
+    content: '' !important;
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: var(--dash-sidebar-w, 10rem) !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    height: 100vh !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background-color: #ebf3ec !important;
+    background-image: url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    background-size: 100% 100% !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    opacity: 1 !important;
+    transition: left 0.25s ease !important;
+}
+
+.dash-layout.sidebar-collapsed .dash-main::before {
+    left: 0 !important;
+}
+
+@media (max-width: 992px) {
+    body.admin-portal .dash-main::before {
+        left: 0 !important;
+    }
 }
 
 [data-theme="dark"] body.admin-portal .dash-main::before {
-    background:
-        radial-gradient(60rem 42rem at 8% -8%, rgba(52, 96, 66, 0.55), transparent 60%),
-        radial-gradient(52rem 40rem at 105% 18%, rgba(38, 78, 52, 0.5), transparent 62%),
-        radial-gradient(46rem 38rem at 55% 118%, rgba(26, 56, 38, 0.6), transparent 60%),
-        linear-gradient(158deg, #10241a 0%, #0c1e14 48%, #08170f 100%);
+    background-color: #06120a !important;
+    background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    opacity: 1 !important;
+}
+
+body.admin-portal [class*="backdrop-blur"],
+body.admin-portal .backdrop-blur-sm,
+body.admin-portal .backdrop-blur-md {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 /* ------------------------------------------------------------
