@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Mail::extend('gmail_api', function (array $config = []) {
-            $url = $config['url'] ?? env('GMAIL_WEBHOOK_URL') ?? '';
+            $url = $config['endpoint'] ?? $config['url'] ?? env('GMAIL_WEBHOOK_URL') ?? '';
             return new GmailWebhookTransport($url);
         });
     }

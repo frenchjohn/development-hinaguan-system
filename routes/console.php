@@ -18,7 +18,7 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     $this->line("Config Cached: " . ($isCached ? "⚠️ YES (Cached - run 'php artisan config:clear' to apply changes!)" : "✓ NO (Live)"));
     $this->line("Default Mailer: {$mailer}");
     if ($mailer === 'gmail_api') {
-        $url = env('GMAIL_WEBHOOK_URL') ?: config('mail.mailers.gmail_api.url') ?: '';
+        $url = env('GMAIL_WEBHOOK_URL') ?: config('mail.mailers.gmail_api.endpoint') ?: config('mail.mailers.gmail_api.url') ?: '';
         $this->line("Gmail Webhook:  " . ($url ? substr($url, 0, 45) . '...' : '❌ NOT SET (Add GMAIL_WEBHOOK_URL in Railway!)'));
     } else {
         $this->line("SMTP Host:      " . config('mail.mailers.smtp.host'));

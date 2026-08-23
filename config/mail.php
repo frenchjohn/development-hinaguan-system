@@ -51,7 +51,7 @@ return [
 
         'gmail_api' => [
             'transport' => 'gmail_api',
-            'url' => env('GMAIL_WEBHOOK_URL'),
+            'endpoint' => env('GMAIL_WEBHOOK_URL'),
         ],
 
         'ses' => [
