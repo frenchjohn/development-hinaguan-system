@@ -9,14 +9,40 @@ Artisan::command('inspire', function () {
 
 Artisan::command('mail:test {email?}', function (?string $email = null) {
     $toEmail = $email ?: config('mail.from.address') ?: 'parkhinaguan@gmail.com';
-    $this->info("Testing mail delivery to: {$toEmail}");
-    $this->line("Mailer: " . config('mail.default'));
-    $this->line("Host: " . config('mail.mailers.smtp.host') . ":" . config('mail.mailers.smtp.port'));
-    $this->line("Encryption: " . (config('mail.mailers.smtp.encryption') ?: 'none'));
-    $this->line("Username: " . config('mail.mailers.smtp.username'));
-    $this->line("From: " . config('mail.from.address'));
-    $this->line("Queue connection: " . config('queue.default'));
+    $isCached = app()->configurationIsCached();
 
+    $this->info("=========================================");
+    $this->info(" Hinaguan Mail Diagnostic Tool");
+    $this->info("=========================================");
+    $this->line("Config Cached: " . ($isCached ? "⚠️ YES (Cached - run 'php artisan config:clear' to apply changes!)" : "✓ NO (Live)"));
+    $this->line("Default Mailer: " . config('mail.default'));
+    $this->line("SMTP Host:      " . config('mail.mailers.smtp.host'));
+    $this->line("SMTP Port:      " . config('mail.mailers.smtp.port'));
+    $this->line("SMTP Encryption:" . (config('mail.mailers.smtp.encryption') ?: 'none'));
+    $this->line("SMTP Username:  " . config('mail.mailers.smtp.username'));
+    $this->line("From Address:   " . config('mail.from.address'));
+    $this->line("Queue Driver:   " . config('queue.default'));
+    $this->line("Target Recipient: {$toEmail}");
+    $this->line("-----------------------------------------");
+
+    $this->comment("1. Sending raw test email via SMTP...");
+    try {
+        \Illuminate\Support\Facades\Mail::raw('This is a test email from Hinaguan Nature Park SMTP diagnostic.', function ($message) use ($toEmail) {
+            $fromAddress = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'parkhinaguan@gmail.com';
+            $fromName = config('mail.from.name') ?: 'Hinaguan Nature Park';
+            $message->from($fromAddress, $fromName)
+                    ->to($toEmail)
+                    ->subject('Hinaguan SMTP Connectivity Test');
+        });
+        $this->info("✓ Success: Raw test email sent to {$toEmail}!");
+    } catch (\Throwable $e) {
+        $this->error("✗ Raw email delivery failed!");
+        $this->error("Error: " . $e->getMessage());
+        $this->error("Type: " . get_class($e));
+    }
+
+    $this->line("-----------------------------------------");
+    $this->comment("2. Sending Reservation QR Code email template...");
     try {
         $dummyRes = new \App\Models\Reservation([
             'id' => 9999,
@@ -37,9 +63,13 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
         ]);
 
         \Illuminate\Support\Facades\Mail::to($toEmail)->send(new \App\Mail\ReservationQrMail($dummyRes));
-        $this->info("✓ Success! Test reservation QR email sent to {$toEmail}.");
+        $this->info("✓ Success: Reservation QR email sent to {$toEmail}!");
     } catch (\Throwable $e) {
-        $this->error("✗ Failed to send email: " . $e->getMessage());
+        $this->error("✗ Reservation QR email delivery failed!");
+        $this->error("Error: " . $e->getMessage());
+        $this->error("Type: " . get_class($e));
     }
+
+    $this->info("=========================================");
 })->purpose('Test sending a Reservation QR confirmation email via SMTP');
 

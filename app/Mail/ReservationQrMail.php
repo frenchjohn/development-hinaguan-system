@@ -16,13 +16,18 @@ class ReservationQrMail extends Mailable
 
     public function __construct(public Reservation $reservation)
     {
-        $this->reservation->loadMissing('reservationGuests');
+        if ($this->reservation->exists) {
+            $this->reservation->loadMissing('reservationGuests');
+        }
     }
 
     public function envelope(): Envelope
     {
+        $fromAddress = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'parkhinaguan@gmail.com';
+        $fromName = config('mail.from.name') ?: 'Hinaguan Nature Park';
+
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
+            from: new Address($fromAddress, $fromName),
             subject: 'Your Hinaguan Nature Park reservation QR code',
         );
     }
