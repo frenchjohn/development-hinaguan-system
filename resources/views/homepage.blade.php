@@ -461,34 +461,40 @@
             </div>
 
             @if ($featuredFeedbacks->isNotEmpty())
-                <div class="hp-reviews-marquee" data-animate="fade-up" data-delay="100">
-                    <div class="hp-reviews-marquee__track">
-                        @foreach (range(1, 2) as $copy)
-                            <div class="hp-reviews-marquee__group" {{ $loop->last ? 'aria-hidden' : '' }}>
-                                @foreach ($featuredFeedbacks as $feedback)
-                                    <article class="hp-review-card">
-                                        <div class="hp-review-card__header">
-                                            <span class="hp-review-card__avatar" aria-hidden="true">{{ $feedback->initials }}</span>
-                                            <div>
-                                                <h3 class="hp-review-card__name">{{ $feedback->full_name }}</h3>
-                                                <time class="hp-review-card__date" datetime="{{ $feedback->created_at->toDateString() }}">{{ $feedback->created_at->format('M j, Y') }}</time>
+                @php
+                    $rawCount = $featuredFeedbacks->count();
+                    $repeatMultiplier = $rawCount >= 8 ? 1 : (int) ceil(8 / max(1, $rawCount));
+                @endphp
+                <div class="hp-reviews-running" data-animate="fade-up" data-delay="100">
+                    <div class="hp-reviews-running__track">
+                        @foreach (range(1, 2) as $trackGroup)
+                            <div class="hp-reviews-running__group" {{ $loop->last ? 'aria-hidden=true' : '' }}>
+                                @for ($rep = 0; $rep < $repeatMultiplier; $rep++)
+                                    @foreach ($featuredFeedbacks as $feedback)
+                                        <article class="hp-review-card">
+                                            <div class="hp-review-card__header">
+                                                <span class="hp-review-card__avatar" aria-hidden="true">{{ $feedback->initials }}</span>
+                                                <div class="hp-review-card__user">
+                                                    <h3 class="hp-review-card__name">{{ $feedback->full_name }}</h3>
+                                                    <time class="hp-review-card__date" datetime="{{ $feedback->created_at->toDateString() }}">{{ $feedback->created_at->format('M j, Y') }}</time>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="hp-review-card__stars" aria-label="{{ $feedback->stars }} out of 5 stars">
-                                            @for ($s = 1; $s <= 5; $s++)
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $s <= $feedback->stars ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                                            @endfor
-                                        </div>
-                                        <p class="hp-review-card__text">&ldquo;{{ $feedback->description }}&rdquo;</p>
-                                    </article>
-                                @endforeach
+                                            <div class="hp-review-card__stars" aria-label="{{ $feedback->stars }} out of 5 stars">
+                                                @for ($s = 1; $s <= 5; $s++)
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $s <= $feedback->stars ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                                @endfor
+                                            </div>
+                                            <p class="hp-review-card__text">&ldquo;{{ $feedback->description }}&rdquo;</p>
+                                        </article>
+                                    @endforeach
+                                @endfor
                             </div>
                         @endforeach
                     </div>
+                </div>
 
-                    <div class="hp-reviews-marquee__actions">
-                        <a href="{{ route('feedback') }}" class="hp-btn hp-btn--outline">See Other Reviews</a>
-                    </div>
+                <div class="hp-reviews-running__actions" data-animate="fade-up" data-delay="150">
+                    <a href="{{ route('feedback') }}" class="hp-btn hp-btn--outline">See Other Reviews</a>
                 </div>
             @else
                 <div class="hp-reviews-empty" data-animate="fade-up">

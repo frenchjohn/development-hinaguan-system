@@ -1275,7 +1275,31 @@ window.AppPage['staff_reservations'] = function () {
 
     successModalClose?.addEventListener('click', closeSuccessModal);
 
-    const openEditForm = (reservationId) => {
+    const ensureAmenitiesLoaded = async () => {
+        if (Array.isArray(window.staffAmenitiesData) && window.staffAmenitiesData.length > 0) {
+            return window.staffAmenitiesData;
+        }
+        try {
+            const res = await fetch('/staff/amenities-list', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data.amenities) && data.amenities.length > 0) {
+                    window.staffAmenitiesData = data.amenities;
+                    return window.staffAmenitiesData;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch amenities list:', e);
+        }
+        return window.staffAmenitiesData || [];
+    };
+
+    const openEditForm = async (reservationId) => {
+        if (!reservationData[reservationId] && window.staffReservationData?.[reservationId]) {
+            reservationData[reservationId] = window.staffReservationData[reservationId];
+        }
         const reservation = reservationData?.[reservationId];
         if (!reservation || !editForm) return;
 
@@ -1302,6 +1326,9 @@ window.AppPage['staff_reservations'] = function () {
         document.getElementById('editEndSlot').value = eSlot;
         document.getElementById('editGuests').value = reservation.number_of_guests || '';
         document.getElementById('editStatus').value = reservation.status || 'Pending';
+
+        // Ensure active amenities are loaded
+        await ensureAmenitiesLoaded();
 
         // Initialize state for the multi-day reschedule calendar
         initEditCalendar(reservationId);
@@ -1480,11 +1507,22 @@ window.AppPage['staff_reservations'] = function () {
             const raEndSlot = ra.end_slot || raStartSlot;
 
             let optionsHtml = '';
+            let matchedCurrent = false;
+
             allAmenities.forEach((a) => {
-                const selected = String(a.id) === currentAmenityId ? 'selected' : '';
+                const isCurrent = String(a.id) === currentAmenityId;
+                if (isCurrent) matchedCurrent = true;
+                const selected = isCurrent ? 'selected' : '';
                 const dayP = Number(a.daytime_price || 0).toFixed(2);
                 optionsHtml += `<option value="${escapeHtml(a.id)}" ${selected}>${escapeHtml(a.amenities_name)} (₱${dayP})</option>`;
             });
+
+            // If the booked amenity is not in the active list (e.g. customized or disabled), add it so user can see it
+            if (!matchedCurrent && currentAmenityId) {
+                const currentName = ra.amenity?.amenities_name || 'Booked Amenity';
+                const dayP = Number(ra.amenity?.daytime_price || ra.price_at_booking || 0).toFixed(2);
+                optionsHtml = `<option value="${escapeHtml(currentAmenityId)}" selected>${escapeHtml(currentName)} (₱${dayP})</option>` + optionsHtml;
+            }
 
             const item = document.createElement('div');
             item.className = 'edit-amenity-item rounded-xl border border-glass-border bg-hp-cream p-3 grid gap-3 dark:bg-white/5 dark:border-white/10';
@@ -1540,6 +1578,16 @@ window.AppPage['staff_reservations'] = function () {
 
             container.appendChild(item);
         });
+
+        if (!allAmenities.length) {
+            ensureAmenitiesLoaded().then((loaded) => {
+                if (loaded && loaded.length > 0) {
+                    renderEditAmenitiesList(reservation);
+                    updateAmenitySelectsAvailability();
+                    updateEditFormScheduleCard();
+                }
+            });
+        }
     };
 
     const isRangesOverlapping = (s1, e1, slotS1, slotE1, s2, e2, slotS2, slotE2) => {

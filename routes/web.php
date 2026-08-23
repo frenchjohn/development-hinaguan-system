@@ -5608,6 +5608,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.availability');
 
+    Route::get('/amenities-list', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'] ?? '', ['staff', 'admin'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $amenities = Amenity::where('status', true)->orderBy('amenities_name')->get();
+        return response()->json([
+            'success' => true,
+            'amenities' => $amenities,
+        ]);
+    })->name('amenities.list');
+
     Route::post('/reservations/{reservation}/check-amenities-availability', function (Request $request, Reservation $reservation) use ($isAmenityRangeTaken) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {

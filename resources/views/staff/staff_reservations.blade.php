@@ -125,6 +125,11 @@
                     subtitle="Manage online reservations and walk-in check-ins"
                 />
 
+                <script data-spa-data="">
+                    window.staffAmenitiesData = @json($allAmenities ?? []);
+                    window.staffReservationData = @json($reservationData ?? []);
+                </script>
+
                 <div class="resv-metrics mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3" data-park-settings="{{ json_encode([
                     'daytime_start' => $daytimeStart,
                     'daytime_end' => $daytimeEnd,
@@ -239,7 +244,7 @@
                     </div>
                 </div>
 
-                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3.5 grid items-end gap-3 rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90" id="reservationFilterPanel" hidden>
+                <div class="guest-toolbar guest-toolbar--collapsed resv-filter-panel mb-3.5 grid items-end gap-3 rounded-2xl border border-[#dfe5e0] bg-white p-4 shadow-sm dark:border-white/15 dark:bg-[#0c2014]" id="reservationFilterPanel" hidden>
                     <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#c8e6c8]">
                         <span>Sort by</span>
                         <select id="reservationSortSelect" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#12281c] dark:text-[#c8e6c8]">
@@ -273,10 +278,10 @@
                     <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
                 </div>
 
-                <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-white/80 bg-white/90 shadow-[0_4px_24px_rgba(20,50,30,0.04)] backdrop-blur-sm dark:border-white/10 dark:bg-[#0c2014]/90" id="reservationTableWrap">
-                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 bg-transparent text-left">
-                        <thead>
-                            <tr class="border-b border-[#f0f4ef] dark:border-white/10">
+                <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-sm dark:border-white/15 dark:bg-[#0c2014]" id="reservationTableWrap">
+                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 text-left">
+                        <thead class="bg-[#f7faf8] dark:bg-[#11281b]">
+                            <tr class="border-b border-[#e8eee9] dark:border-white/10">
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">BOOKER</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">RESERVATION DATE</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">SESSION</th>
@@ -286,7 +291,7 @@
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] text-center">ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] dark:divide-white/5">
+                        <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#0c2014]">
                             @forelse ($reservations as $reservation)
                                 @php
                                     $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();

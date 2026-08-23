@@ -1053,9 +1053,7 @@ body.admin-portal .guest-panel #reservationTableWrap .guest-table {
 body.staff-portal #guestTableSection .guest-table-wrap,
 body.admin-portal #guestTableSection .guest-table-wrap,
 body.staff-portal #reservationTableSection .guest-table-wrap,
-body.admin-portal #reservationTableSection .guest-table-wrap,
-#guestTableWrap,
-#reservationTableWrap {
+body.admin-portal #reservationTableSection .guest-table-wrap {
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
@@ -1067,6 +1065,75 @@ body.admin-portal #reservationTableSection .guest-table-wrap,
     overflow-x: auto !important;
     position: relative !important;
     scrollbar-width: thin;
+}
+
+body.staff-portal .guest-table-wrap,
+body.admin-portal .guest-table-wrap,
+body.staff-portal .reports-table-wrap,
+body.admin-portal .reports-table-wrap,
+body.staff-portal .users-table-wrap,
+body.admin-portal .users-table-wrap,
+body.staff-portal #reservationTableWrap,
+body.admin-portal #reservationTableWrap {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border: 1px solid #dfe5e0 !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 4px 24px rgba(20, 50, 30, 0.05) !important;
+}
+
+[data-theme="dark"] body.staff-portal .guest-table-wrap,
+[data-theme="dark"] body.admin-portal .guest-table-wrap,
+[data-theme="dark"] body.staff-portal .reports-table-wrap,
+[data-theme="dark"] body.admin-portal .reports-table-wrap,
+[data-theme="dark"] body.staff-portal .users-table-wrap,
+[data-theme="dark"] body.admin-portal .users-table-wrap,
+[data-theme="dark"] body.staff-portal #reservationTableWrap,
+[data-theme="dark"] body.admin-portal #reservationTableWrap {
+    background-color: #0c2014 !important;
+    background: #0c2014 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.staff-portal .guest-table thead,
+body.admin-portal .guest-table thead,
+body.staff-portal .guest-table thead tr,
+body.admin-portal .guest-table thead tr {
+    background-color: #f7faf8 !important;
+    background: #f7faf8 !important;
+    border-bottom: 1px solid #e8eee9 !important;
+}
+
+[data-theme="dark"] body.staff-portal .guest-table thead,
+[data-theme="dark"] body.admin-portal .guest-table thead,
+[data-theme="dark"] body.staff-portal .guest-table thead tr,
+[data-theme="dark"] body.admin-portal .guest-table thead tr {
+    background-color: #11281b !important;
+    background: #11281b !important;
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.staff-portal .guest-table tbody tr,
+body.admin-portal .guest-table tbody tr {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+}
+body.staff-portal .guest-table tbody tr:hover,
+body.admin-portal .guest-table tbody tr:hover {
+    background-color: #f2f7f4 !important;
+    background: #f2f7f4 !important;
+}
+
+[data-theme="dark"] body.staff-portal .guest-table tbody tr,
+[data-theme="dark"] body.admin-portal .guest-table tbody tr {
+    background-color: #0c2014 !important;
+    background: #0c2014 !important;
+}
+[data-theme="dark"] body.staff-portal .guest-table tbody tr:hover,
+[data-theme="dark"] body.admin-portal .guest-table tbody tr:hover {
+    background-color: #143322 !important;
+    background: #143322 !important;
 }
 
 body.staff-portal #guestTableSection .guest-table,
