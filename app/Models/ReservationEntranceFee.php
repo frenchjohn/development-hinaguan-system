@@ -14,8 +14,10 @@ class ReservationEntranceFee extends Model
     protected $fillable = [
         'reservation_id',
         'pricing_type',
+        'pool_option',
         'total_amount',
         'pool_fee',
+        'pool_access_count',
         'adult_count',
         'child_count',
     ];
@@ -23,6 +25,7 @@ class ReservationEntranceFee extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'pool_fee' => 'decimal:2',
+        'pool_access_count' => 'integer',
         'adult_count' => 'integer',
         'child_count' => 'integer',
     ];

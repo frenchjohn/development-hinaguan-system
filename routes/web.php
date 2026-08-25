@@ -4074,8 +4074,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'total_days' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['nullable', 'date'],
             'time_period' => ['nullable', 'in:daytime,nighttime,daytonight,nighttoday'],
-            // Checkboxes send "on" — Laravel's boolean rule rejects it
-            'include_pool' => ['nullable', 'in:on,1,true,0,false'],
+            'pool_option' => ['nullable', 'string', 'in:no_pool,specific,all_paid,all_free'],
+            'include_pool' => ['nullable'],
             'primary_guest' => ['nullable', 'array'],
             'primary_guest.first_name' => ['nullable', 'string', 'max:255'],
             'primary_guest.middle_name' => ['nullable', 'string', 'max:255'],
@@ -4085,6 +4085,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.is_foreigner' => ['nullable', 'boolean'],
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
+            'primary_guest.has_pool_access' => ['nullable'],
             'companions' => ['nullable', 'array'],
             // Bulk companions submit empty names (they only carry an age group),
             // so names must be nullable — but stay required when the other name
@@ -4098,6 +4099,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
+            'companions.*.has_pool_access' => ['nullable'],
             'selected_amenities' => ['nullable', 'array'],
             'selected_amenities.*.amenity_id' => ['required', 'string'],
             'selected_amenities.*.start_date' => ['nullable', 'date'],
@@ -4251,17 +4253,48 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $entranceTotal = ($adultCount * $adultRate) + ($childCount * $childRate);
 
-        $poolFee = 0;
-        if (! empty($data['include_pool'])) {
-            $dayPool = (float) ($settings->day_pool_fee ?? 0);
-            $nightPool = (float) ($settings->night_pool_fee ?? 0);
-            if ($effectivePeriod === 'nighttime') {
-                $poolFee = $nightPool;
-            } elseif ($effectivePeriod === 'daytonight') {
-                $poolFee = $dayPool + $nightPool;
-            } else {
-                $poolFee = $dayPool;
+        // Pool option & pool access determination
+        $poolOption = $data['pool_option'] ?? (! empty($data['include_pool']) ? 'all_paid' : 'no_pool');
+
+        $dayPool = (float) ($settings->day_pool_fee ?? 0);
+        $nightPool = (float) ($settings->night_pool_fee ?? 0);
+        if ($effectivePeriod === 'nighttime') {
+            $poolRate = $nightPool;
+        } elseif ($effectivePeriod === 'daytonight') {
+            $poolRate = $dayPool + $nightPool;
+        } else {
+            $poolRate = $dayPool;
+        }
+
+        $primaryHasPool = false;
+        if ($primaryGuestCount) {
+            if ($poolOption === 'all_paid' || $poolOption === 'all_free') {
+                $primaryHasPool = true;
+            } elseif ($poolOption === 'specific') {
+                $pVal = $data['primary_guest']['has_pool_access'] ?? null;
+                $primaryHasPool = in_array($pVal, ['1', 1, true, 'true', 'on'], true);
             }
+        }
+
+        $poolCount = $primaryHasPool ? 1 : 0;
+        $companionsWithPoolFlags = [];
+        foreach ($data['companions'] ?? [] as $cIdx => $companionData) {
+            $cHasPool = false;
+            if ($poolOption === 'all_paid' || $poolOption === 'all_free') {
+                $cHasPool = true;
+            } elseif ($poolOption === 'specific') {
+                $cVal = $companionData['has_pool_access'] ?? null;
+                $cHasPool = in_array($cVal, ['1', 1, true, 'true', 'on'], true);
+            }
+            if ($cHasPool) {
+                $poolCount++;
+            }
+            $companionsWithPoolFlags[$cIdx] = $cHasPool;
+        }
+
+        $poolFee = 0;
+        if ($poolOption === 'all_paid' || $poolOption === 'specific') {
+            $poolFee = round($poolCount * $poolRate, 2);
         }
 
         $grandTotal = round($entranceTotal + $poolFee + $amenityTotal, 2);
@@ -4298,8 +4331,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         \App\Models\ReservationEntranceFee::create([
             'reservation_id' => $reservation->id,
             'pricing_type' => $entrancePricingType,
+            'pool_option' => $poolOption,
             'total_amount' => round($entranceTotal + $poolFee, 2),
             'pool_fee' => round($poolFee, 2),
+            'pool_access_count' => $poolCount,
             'adult_count' => $adultCount,
             'child_count' => $childCount,
         ]);
@@ -4326,10 +4361,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_id' => $reservation->id,
                 'customer_id' => $primaryCustomer->id,
                 'is_primary_guest' => true,
+                'has_pool_access' => $primaryHasPool,
             ]);
         }
 
-        foreach ($data['companions'] ?? [] as $companionData) {
+        foreach ($data['companions'] ?? [] as $cIdx => $companionData) {
             $companionFirstName = trim((string) ($companionData['first_name'] ?? '')) ?: 'Companion';
             $companionLastName = trim((string) ($companionData['last_name'] ?? '')) ?: 'Guest';
             $companionEmail = trim((string) ($companionData['email'] ?? '')) ?: null;
@@ -4353,6 +4389,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
+                'has_pool_access' => $companionsWithPoolFlags[$cIdx] ?? false,
             ]);
         }
 
@@ -4573,26 +4610,58 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.first_name' => ['nullable', 'string', 'max:255'],
             'primary_guest.middle_name' => ['nullable', 'string', 'max:255'],
             'primary_guest.last_name' => ['nullable', 'string', 'max:255'],
-            'primary_guest.age' => ['nullable', 'string', 'max:255'],
+            'primary_guest.age' => ['nullable', 'max:255'],
             'primary_guest.gender' => ['nullable', 'in:Male,Female'],
             'primary_guest.is_foreigner' => ['nullable', 'boolean'],
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
+            'primary_guest.has_pool_access' => ['nullable'],
             'companions' => ['nullable', 'array'],
             'companions.*.customer_id' => ['nullable', 'integer', 'exists:customers,id'],
             'companions.*.first_name' => ['nullable', 'required_with:companions.*.last_name', 'string', 'max:255'],
             'companions.*.middle_name' => ['nullable', 'string', 'max:255'],
             'companions.*.last_name' => ['nullable', 'required_with:companions.*.first_name', 'string', 'max:255'],
-            'companions.*.age' => ['nullable', 'string', 'max:255'],
+            'companions.*.age' => ['nullable', 'max:255'],
             'companions.*.age_group' => ['nullable', 'string', 'max:255'],
             'companions.*.gender' => ['nullable', 'in:Male,Female'],
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
-            'include_pool' => ['nullable', 'in:on,1,true,0,false'],
+            'companions.*.has_pool_access' => ['nullable'],
+            'pool_option' => ['nullable', 'in:no_pool,specific,all_paid,all_free'],
+            'include_pool' => ['nullable'],
         ]);
 
         ReservationGuest::where('reservation_id', $reservation->id)->delete();
+
+        // Pool option & pool access determination
+        $poolOption = $data['pool_option'] ?? (! empty($data['include_pool']) ? 'all_paid' : 'no_pool');
+
+        $primaryHasPool = false;
+        if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
+            if ($poolOption === 'all_paid' || $poolOption === 'all_free') {
+                $primaryHasPool = true;
+            } elseif ($poolOption === 'specific') {
+                $pVal = $data['primary_guest']['has_pool_access'] ?? null;
+                $primaryHasPool = in_array($pVal, ['1', 1, true, 'true', 'on'], true);
+            }
+        }
+
+        $poolCount = $primaryHasPool ? 1 : 0;
+        $companionsWithPoolFlags = [];
+        foreach ($data['companions'] ?? [] as $cIdx => $companionData) {
+            $cHasPool = false;
+            if ($poolOption === 'all_paid' || $poolOption === 'all_free') {
+                $cHasPool = true;
+            } elseif ($poolOption === 'specific') {
+                $cVal = $companionData['has_pool_access'] ?? null;
+                $cHasPool = in_array($cVal, ['1', 1, true, 'true', 'on'], true);
+            }
+            if ($cHasPool) {
+                $poolCount++;
+            }
+            $companionsWithPoolFlags[$cIdx] = $cHasPool;
+        }
 
         if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
             $primaryGuestData = $data['primary_guest'];
@@ -4620,10 +4689,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_id' => $reservation->id,
                 'customer_id' => $primaryCustomer->id,
                 'is_primary_guest' => true,
+                'has_pool_access' => $primaryHasPool,
             ]);
         }
 
-        foreach ($data['companions'] ?? [] as $companionData) {
+        foreach ($data['companions'] ?? [] as $cIdx => $companionData) {
             $companionFirstName = trim((string) ($companionData['first_name'] ?? '')) ?: 'Companion';
             $companionLastName = trim((string) ($companionData['last_name'] ?? '')) ?: 'Guest';
             $companionEmail = trim((string) ($companionData['email'] ?? '')) ?: null;
@@ -4647,6 +4717,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
+                'has_pool_access' => $companionsWithPoolFlags[$cIdx] ?? false,
             ]);
         }
 
@@ -4723,18 +4794,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $entranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
 
+        $dayPool = (float) ($settings->day_pool_fee ?? 0);
+        $nightPool = (float) ($settings->night_pool_fee ?? 0);
+        if ($effectivePeriod === 'nighttime') {
+            $poolRate = $nightPool;
+        } elseif ($effectivePeriod === 'daytonight') {
+            $poolRate = $dayPool + $nightPool;
+        } else {
+            $poolRate = $dayPool;
+        }
+
         $poolTotal = 0;
-        if (! empty($data['include_pool'])) {
-            $dayPool = (float) ($settings->day_pool_fee ?? 0);
-            $nightPool = (float) ($settings->night_pool_fee ?? 0);
-            $headCount = $adultCount + $childCount;
-            if ($effectivePeriod === 'nighttime') {
-                $poolTotal = round($headCount * $nightPool, 2);
-            } elseif ($effectivePeriod === 'daytonight') {
-                $poolTotal = round($headCount * ($dayPool + $nightPool), 2);
-            } else {
-                $poolTotal = round($headCount * $dayPool, 2);
-            }
+        if ($poolOption === 'all_paid' || $poolOption === 'specific') {
+            $poolTotal = round($poolCount * $poolRate, 2);
         }
 
         $grandTotal = round($entranceTotal + $poolTotal, 2);
@@ -4743,8 +4815,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ['reservation_id' => $reservation->id],
             [
                 'pricing_type' => $hasAmenities ? null : $storedPricingType,
+                'pool_option' => $poolOption,
                 'total_amount' => $grandTotal,
                 'pool_fee' => $poolTotal,
+                'pool_access_count' => $poolCount,
                 'adult_count' => $adultCount,
                 'child_count' => $childCount,
             ]
@@ -4927,6 +5001,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
+                'has_pool_access' => ! empty($companionData['pool_access']),
             ]);
         }
 
@@ -4938,6 +5013,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $entranceFee->update([
                 'total_amount' => round((float) $entranceFee->total_amount + $newCompanionTotal, 2),
                 'pool_fee' => round((float) $entranceFee->pool_fee + $newPoolTotal, 2),
+                'pool_access_count' => ((int) ($entranceFee->pool_access_count ?? 0)) + $poolCount,
                 'adult_count' => ((int) $entranceFee->adult_count) + $adultCount,
                 'child_count' => ((int) $entranceFee->child_count) + $childCount,
             ]);
@@ -4945,8 +5021,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             \App\Models\ReservationEntranceFee::create([
                 'reservation_id' => $reservation->id,
                 'pricing_type' => null,
+                'pool_option' => $poolCount > 0 ? 'specific' : 'no_pool',
                 'total_amount' => $newCompanionTotal,
                 'pool_fee' => $newPoolTotal,
+                'pool_access_count' => $poolCount,
                 'adult_count' => $adultCount,
                 'child_count' => $childCount,
             ]);
@@ -6361,6 +6439,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'gender' => ['nullable', 'in:Male,Female'],
             'age_group' => ['nullable', 'in:0-12,13-17,18-59,60+'],
             'is_foreigner' => ['nullable', 'boolean'],
+            'pool_access_type' => ['nullable', 'in:with_pool,without_pool,any'],
         ]);
 
         // Bulk companions are detected by their generated name (they carry no
@@ -6379,19 +6458,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // Active bulk companions (still inside), oldest first so the earliest
         // check-ins leave first. The primary guest is never part of a bulk
         // group, even if their name happens to contain "companion". When a
-        // group (gender/age group/nationality) is supplied, only members of
-        // that exact group are considered.
+        // group (gender/age group/nationality/pool_access_type) is supplied,
+        // only members of that exact group are considered.
+        $poolType = $data['pool_access_type'] ?? 'any';
         $activeBulk = $reservation->reservationGuests()
             ->whereNull('checked_out_at')
             ->where('is_primary_guest', false)
             ->get()
             ->filter(fn ($rg) => $rg->customer && $isBulkName($rg->customer->first_name))
-            ->filter(function ($rg) use ($data, $ageGroupOf) {
+            ->filter(function ($rg) use ($data, $ageGroupOf, $poolType) {
                 $c = $rg->customer;
                 if (! $c) return false;
                 if ($data['gender'] && $c->gender !== $data['gender']) return false;
                 if ($data['age_group'] && $ageGroupOf($c->age) !== $data['age_group']) return false;
                 if ($data['is_foreigner'] !== null && (bool) $c->is_foreigner !== (bool) $data['is_foreigner']) return false;
+                if ($poolType === 'with_pool' && ! (bool) $rg->has_pool_access) return false;
+                if ($poolType === 'without_pool' && (bool) $rg->has_pool_access) return false;
                 return true;
             })
             ->sortBy('id')

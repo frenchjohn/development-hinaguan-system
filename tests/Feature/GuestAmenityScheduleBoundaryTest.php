@@ -55,16 +55,16 @@ class GuestAmenityScheduleBoundaryTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09123456789',
             'number_of_guests' => 2,
-            'reservation_date' => '2026-08-25',
-            'end_date' => '2026-08-30',
+            'reservation_date' => '2026-09-01',
+            'end_date' => '2026-09-06',
             'start_slot' => 'Nighttime',
             'end_slot' => 'Daytime',
             'total_days' => 6,
             'amenities' => [
                 [
                     'amenity_id' => $this->amenity->id,
-                    'start_date' => '2026-08-26',
-                    'end_date' => '2026-08-29',
+                    'start_date' => '2026-09-02',
+                    'end_date' => '2026-09-05',
                     'start_slot' => 'Daytime',
                     'end_slot' => 'Nighttime',
                     'pricing_type' => 'Daytime',
@@ -88,16 +88,16 @@ class GuestAmenityScheduleBoundaryTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09123456789',
             'number_of_guests' => 2,
-            'reservation_date' => '2026-08-25',
-            'end_date' => '2026-08-30',
+            'reservation_date' => '2026-09-01',
+            'end_date' => '2026-09-06',
             'start_slot' => 'Nighttime',
             'end_slot' => 'Daytime',
             'total_days' => 6,
             'amenities' => [
                 [
                     'amenity_id' => $this->amenity->id,
-                    'start_date' => '2026-08-24', // BEFORE reservation start!
-                    'end_date' => '2026-08-29',
+                    'start_date' => '2026-08-31', // BEFORE reservation start!
+                    'end_date' => '2026-09-05',
                     'start_slot' => 'Nighttime',
                     'end_slot' => 'Daytime',
                     'pricing_type' => 'Nighttime',
@@ -121,16 +121,16 @@ class GuestAmenityScheduleBoundaryTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09123456789',
             'number_of_guests' => 2,
-            'reservation_date' => '2026-08-25',
-            'end_date' => '2026-08-30',
+            'reservation_date' => '2026-09-01',
+            'end_date' => '2026-09-06',
             'start_slot' => 'Nighttime',
             'end_slot' => 'Daytime',
             'total_days' => 6,
             'amenities' => [
                 [
                     'amenity_id' => $this->amenity->id,
-                    'start_date' => '2026-08-26',
-                    'end_date' => '2026-08-31', // AFTER reservation end!
+                    'start_date' => '2026-09-02',
+                    'end_date' => '2026-09-07', // AFTER reservation end!
                     'start_slot' => 'Daytime',
                     'end_slot' => 'Daytime',
                     'pricing_type' => 'Daytime',
@@ -154,17 +154,17 @@ class GuestAmenityScheduleBoundaryTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09123456789',
             'number_of_guests' => 2,
-            'reservation_date' => '2026-08-25',
-            'end_date' => '2026-08-30',
-            'start_slot' => 'Nighttime', // Reservation starts Nighttime on Aug 25
+            'reservation_date' => '2026-09-01',
+            'end_date' => '2026-09-06',
+            'start_slot' => 'Nighttime', // Reservation starts Nighttime on Sep 01
             'end_slot' => 'Daytime',
             'total_days' => 6,
             'amenities' => [
                 [
                     'amenity_id' => $this->amenity->id,
-                    'start_date' => '2026-08-25',
-                    'end_date' => '2026-08-29',
-                    'start_slot' => 'Daytime', // Cannot start Daytime on Aug 25!
+                    'start_date' => '2026-09-01',
+                    'end_date' => '2026-09-05',
+                    'start_slot' => 'Daytime', // Cannot start Daytime on Sep 01!
                     'end_slot' => 'Daytime',
                     'pricing_type' => 'Daytime',
                     'price_at_booking' => 1000,
@@ -187,18 +187,18 @@ class GuestAmenityScheduleBoundaryTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09123456789',
             'number_of_guests' => 2,
-            'reservation_date' => '2026-08-25',
-            'end_date' => '2026-08-30',
+            'reservation_date' => '2026-09-01',
+            'end_date' => '2026-09-06',
             'start_slot' => 'Nighttime',
-            'end_slot' => 'Daytime', // Reservation ends Daytime on Aug 30
+            'end_slot' => 'Daytime', // Reservation ends Daytime on Sep 06
             'total_days' => 6,
             'amenities' => [
                 [
                     'amenity_id' => $this->amenity->id,
-                    'start_date' => '2026-08-26',
-                    'end_date' => '2026-08-30',
+                    'start_date' => '2026-09-02',
+                    'end_date' => '2026-09-06',
                     'start_slot' => 'Daytime',
-                    'end_slot' => 'Nighttime', // Cannot end Nighttime on Aug 30!
+                    'end_slot' => 'Nighttime', // Cannot end Nighttime on Sep 06!
                     'pricing_type' => 'Daytime',
                     'price_at_booking' => 1000,
                 ]

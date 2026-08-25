@@ -680,6 +680,19 @@
                             <input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                         </label>
                     </div>
+
+                    <div id="checkInPrimaryGuestPoolWrap" class="mt-2 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">🏊</span>
+                            <div>
+                                <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Primary Guest Pool Access</p>
+                                <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">Include pool pass for the main guest under specific pool policy</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex cursor-pointer items-center">
+                            <input type="checkbox" name="check_in_primary_guest[has_pool_access]" id="checkInPrimaryGuestHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
+                        </label>
+                    </div>
                 </div>
 
                 <div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
@@ -699,10 +712,19 @@
                         <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Entrance Fee</h4>
                         <span id="checkInEffectivePeriodBadge" class="inline-flex items-center rounded-full border border-glass-border bg-[rgba(255,152,0,0.15)] px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">—</span>
                     </div>
-                    <label class="guest-form__field inline-flex w-fit cursor-pointer items-center gap-2.5">
-                        <input type="checkbox" name="check_in_include_pool" id="checkInIncludePool" class="h-4 w-4 cursor-pointer accent-hp-green">
-                        <span class="text-sm font-semibold text-hp-text">Include Pool Access</span>
-                    </label>
+
+                    <div class="guest-form__field-group mb-1 grid gap-1.5">
+                        <label class="guest-form__label text-sm font-semibold text-hp-text" for="checkInPoolOption">Pool Access Policy</label>
+                        <select name="pool_option" id="checkInPoolOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                            <option value="no_pool" selected>No Pool Access (Default • ₱0.00)</option>
+                            <option value="specific">Specific Pool Access (Select Guests / Groups)</option>
+                            <option value="all_paid">All Pool Access (Standard Rate)</option>
+                            <option value="all_free">All Pool Access Free (Promo • ₱0.00)</option>
+                        </select>
+                        <input type="hidden" name="check_in_include_pool" id="checkInIncludePoolLegacy" value="0">
+                        <p class="m-0 text-[0.72rem] text-hp-text-muted" id="checkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
+                    </div>
+
                     <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                         <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Adults</p>
@@ -814,6 +836,20 @@
                         <input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                     </label>
                 </div>
+
+                <div id="checkInCompanionPoolWrap" class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🏊</span>
+                        <div>
+                            <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Companion Pool Access</p>
+                            <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">Include pool pass for this companion</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex cursor-pointer items-center">
+                        <input type="checkbox" name="has_pool_access" id="checkInCompanionHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
+                    </label>
+                </div>
+
                 <div class="guest-form__actions flex flex-wrap justify-end gap-3">
                     <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-companion-modal="true">Cancel</button>
                     <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
@@ -925,6 +961,22 @@
                                 <input type="number" name="quantity" id="bulkCompanionQuantity" value="1" min="1" max="50" class="m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-2xl font-semibold text-hp-green-dark [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
                                 <button type="button" id="bulkCompanionBtnPlus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl border-0 bg-black/5 text-xl text-hp-text transition-colors duration-200 hover:bg-black/10">+</button>
                             </div>
+                        </div>
+                    </div>
+
+                    <div id="checkInBulkCompanionPoolWrap" class="mt-4 flex flex-col gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🏊</span>
+                                <div>
+                                    <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Guests Wanting Pool Access</p>
+                                    <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">How many in this group want pool passes?</p>
+                                </div>
+                            </div>
+                            <span id="checkInBulkPoolMaxLabel" class="text-xs font-bold text-sky-800 dark:text-sky-300">Max: 1</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="pool_access_quantity" id="checkInBulkPoolQuantity" min="0" max="1" value="0" class="w-full rounded-xl border border-sky-500/40 bg-white/80 px-3.5 py-2 text-sm font-bold text-hp-text transition-colors duration-200 dark:bg-black/40 dark:text-white">
                         </div>
                     </div>
                 </div>

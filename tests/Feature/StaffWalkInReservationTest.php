@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Amenity;
+use App\Models\Customer;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
@@ -125,7 +126,7 @@ class StaffWalkInReservationTest extends TestCase
         $this->assertNotNull($entranceFee);
         $this->assertEquals(1, $entranceFee->adult_count);
         $this->assertEquals(1, $entranceFee->child_count);
-        $this->assertEquals(125, $entranceFee->pool_fee); // (50 day pool + 75 night pool) = 125
+        $this->assertEquals(250, $entranceFee->pool_fee); // 2 guests * (50 day pool + 75 night pool) = 250
     }
 
     public function test_cannot_book_amenity_outside_master_reservation_dates(): void
@@ -326,4 +327,448 @@ class StaffWalkInReservationTest extends TestCase
         $gazeboItem = collect($data['amenities'])->firstWhere('id', 'AMENITY-GAZEBO-TEST');
         $this->assertTrue($gazeboItem['is_available']);
     }
+
+    public function test_walk_in_with_specific_pool_access(): void
+    {
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post(route('staff.checkins.guests.store'), [
+            'guest_mode' => 'with_primary',
+            'reservation_type' => 'walk_in',
+            'start_date' => '2026-08-25',
+            'end_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'pool_option' => 'specific',
+            'primary_guest' => [
+                'first_name' => 'Mario',
+                'last_name' => 'Rossi',
+                'age' => 35,
+                'gender' => 'Male',
+                'has_pool_access' => 1, // Primary has pool
+            ],
+            'companions' => [
+                [
+                    'first_name' => 'Luigi',
+                    'last_name' => 'Rossi',
+                    'age' => 30,
+                    'gender' => 'Male',
+                    'has_pool_access' => 0, // No pool
+                ],
+                [
+                    'first_name' => 'Peach',
+                    'last_name' => 'Toadstool',
+                    'age' => 28,
+                    'gender' => 'Female',
+                    'has_pool_access' => 1, // Has pool
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('staff.checkins'));
+
+        $res = Reservation::where('booker_name', 'Mario Rossi')->first();
+        $this->assertNotNull($res);
+        $this->assertEquals(3, $res->number_of_guests);
+
+        $entranceFee = ReservationEntranceFee::where('reservation_id', $res->id)->first();
+        $this->assertNotNull($entranceFee);
+        $this->assertEquals('specific', $entranceFee->pool_option);
+        $this->assertEquals(2, $entranceFee->pool_access_count);
+        $this->assertEquals(100, $entranceFee->pool_fee); // 2 guests * 50 day_pool_fee
+
+        $guests = ReservationGuest::where('reservation_id', $res->id)->with('customer')->get();
+        $this->assertCount(3, $guests);
+
+        $marioGuest = $guests->first(fn($g) => $g->customer->first_name === 'Mario');
+        $this->assertTrue((bool) $marioGuest->has_pool_access);
+
+        $luigiGuest = $guests->first(fn($g) => $g->customer->first_name === 'Luigi');
+        $this->assertFalse((bool) $luigiGuest->has_pool_access);
+
+        $peachGuest = $guests->first(fn($g) => $g->customer->first_name === 'Peach');
+        $this->assertTrue((bool) $peachGuest->has_pool_access);
+    }
+
+    public function test_walk_in_with_free_promo_pool_access(): void
+    {
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post(route('staff.checkins.guests.store'), [
+            'guest_mode' => 'with_primary',
+            'reservation_type' => 'walk_in',
+            'start_date' => '2026-08-25',
+            'end_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'pool_option' => 'all_free',
+            'primary_guest' => [
+                'first_name' => 'Promo',
+                'last_name' => 'Guest',
+                'age' => 25,
+            ],
+            'companions' => [
+                [
+                    'first_name' => 'Promo',
+                    'last_name' => 'Companion',
+                    'age' => 22,
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('staff.checkins'));
+
+        $res = Reservation::where('booker_name', 'Promo Guest')->first();
+        $this->assertNotNull($res);
+
+        $entranceFee = ReservationEntranceFee::where('reservation_id', $res->id)->first();
+        $this->assertEquals('all_free', $entranceFee->pool_option);
+        $this->assertEquals(0, $entranceFee->pool_fee);
+        $this->assertEquals(2, $entranceFee->pool_access_count);
+
+        $guests = ReservationGuest::where('reservation_id', $res->id)->get();
+        foreach ($guests as $guest) {
+            $this->assertTrue((bool) $guest->has_pool_access);
+        }
+    }
+
+    public function test_walk_in_with_no_pool_access(): void
+    {
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post(route('staff.checkins.guests.store'), [
+            'guest_mode' => 'with_primary',
+            'reservation_type' => 'walk_in',
+            'start_date' => '2026-08-25',
+            'end_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'pool_option' => 'no_pool',
+            'primary_guest' => [
+                'first_name' => 'Standard',
+                'last_name' => 'Visitor',
+                'age' => 40,
+            ],
+        ]);
+
+        $response->assertRedirect(route('staff.checkins'));
+
+        $res = Reservation::where('booker_name', 'Standard Visitor')->first();
+        $this->assertNotNull($res);
+
+        $entranceFee = ReservationEntranceFee::where('reservation_id', $res->id)->first();
+        $this->assertEquals('no_pool', $entranceFee->pool_option);
+        $this->assertEquals(0, $entranceFee->pool_fee);
+        $this->assertEquals(0, $entranceFee->pool_access_count);
+
+        $primaryGuest = ReservationGuest::where('reservation_id', $res->id)->first();
+        $this->assertFalse((bool) $primaryGuest->has_pool_access);
+    }
+
+    public function test_online_reservation_check_in_with_specific_pool_access(): void
+    {
+        $res = Reservation::create([
+            'booker_name' => 'Online Booker',
+            'phone' => '09123456789',
+            'email' => 'booker@example.com',
+            'reservation_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'number_of_guests' => 3,
+            'status' => 'Pending',
+            'total_amount' => 500,
+            'amount_paid' => 250,
+            'remaining_balance' => 250,
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        $amenity = Amenity::create([
+            'id' => 'AMENITY-TEST-ONLINE-1',
+            'amenities_name' => 'Cottage Online',
+            'daytime_price' => 500,
+            'nighttime_price' => 600,
+            'daytime_aircon_price' => 700,
+            'nighttime_aircon_price' => 800,
+            'minimum_capacity' => 2,
+            'maximum_capacity' => 10,
+            'status' => true,
+        ]);
+
+        ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => $amenity->id,
+            'pricing_type' => 'Daytime',
+            'price_at_booking' => 500,
+            'quantity' => 1,
+            'start_date' => '2026-08-25',
+            'end_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'day_slots_count' => 1,
+            'night_slots_count' => 0,
+            'status' => 'Active',
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post("/staff/reservations/{$res->id}/check-in", [
+            'guest_mode' => 'with_primary',
+            'pool_option' => 'specific',
+            'primary_guest' => [
+                'first_name' => 'Online',
+                'last_name' => 'Booker',
+                'age' => 30,
+                'has_pool_access' => '1',
+            ],
+            'companions' => [
+                [
+                    'first_name' => 'Companion',
+                    'last_name' => 'One',
+                    'age' => 25,
+                    'has_pool_access' => '1',
+                ],
+                [
+                    'first_name' => 'Companion',
+                    'last_name' => 'Two',
+                    'age' => 10, // Child
+                    'has_pool_access' => '0',
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $res->refresh();
+        $this->assertEquals('Checked In', $res->status);
+        $this->assertEquals('Paid', $res->payment_status);
+
+        $entranceFee = ReservationEntranceFee::where('reservation_id', $res->id)->first();
+        $this->assertNotNull($entranceFee);
+        $this->assertEquals('specific', $entranceFee->pool_option);
+        $this->assertEquals(2, $entranceFee->pool_access_count);
+        // 2 adults (2 * 100) + 1 child (50) = 250 entrance. 2 pool passes (2 * 50) = 100. Total = 350.
+        $this->assertEquals(100, $entranceFee->pool_fee);
+        $this->assertEquals(350, $entranceFee->total_amount);
+
+        $guests = ReservationGuest::where('reservation_id', $res->id)->get();
+        $this->assertCount(3, $guests);
+        $poolCount = $guests->where('has_pool_access', true)->count();
+        $this->assertEquals(2, $poolCount);
+    }
+
+    public function test_online_reservation_check_in_with_promo_free_pool(): void
+    {
+        $res = Reservation::create([
+            'booker_name' => 'Promo Online',
+            'phone' => '09123456789',
+            'email' => 'promo@example.com',
+            'reservation_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'number_of_guests' => 2,
+            'status' => 'Pending',
+            'total_amount' => 300,
+            'amount_paid' => 300,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post("/staff/reservations/{$res->id}/check-in", [
+            'guest_mode' => 'with_primary',
+            'pool_option' => 'all_free',
+            'primary_guest' => [
+                'first_name' => 'Promo',
+                'last_name' => 'Online',
+                'age' => 28,
+            ],
+            'companions' => [
+                [
+                    'first_name' => 'Promo',
+                    'last_name' => 'Companion',
+                    'age' => 27,
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $entranceFee = ReservationEntranceFee::where('reservation_id', $res->id)->first();
+        $this->assertEquals('all_free', $entranceFee->pool_option);
+        $this->assertEquals(0, $entranceFee->pool_fee);
+        $this->assertEquals(2, $entranceFee->pool_access_count);
+
+        $guests = ReservationGuest::where('reservation_id', $res->id)->get();
+        foreach ($guests as $guest) {
+            $this->assertTrue((bool) $guest->has_pool_access);
+        }
+    }
+
+    public function test_online_reservation_check_in_with_boolean_false_companions(): void
+    {
+        $res = Reservation::create([
+            'booker_name' => 'John Doe',
+            'phone' => '09930457138',
+            'email' => 'john@example.com',
+            'reservation_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'number_of_guests' => 4,
+            'status' => 'Pending',
+            'total_amount' => 4200,
+            'amount_paid' => 0,
+            'remaining_balance' => 4200,
+            'payment_status' => 'Unpaid',
+        ]);
+
+        $response = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post("/staff/reservations/{$res->id}/check-in", [
+            'guest_mode' => 'with_primary',
+            'pool_option' => 'specific',
+            'primary_guest' => [
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'age' => 23,
+                'gender' => 'Male',
+                'is_foreigner' => false,
+                'phone' => '09930457138',
+                'email' => 'john@example.com',
+                'has_pool_access' => true,
+            ],
+            'companions' => [
+                [
+                    'first_name' => 'Companion',
+                    'last_name' => 'A',
+                    'age' => '20',
+                    'gender' => 'Female',
+                    'is_foreigner' => false,
+                    'has_pool_access' => true,
+                ],
+                [
+                    'first_name' => 'Companion',
+                    'last_name' => 'B',
+                    'age' => '22',
+                    'gender' => 'Male',
+                    'is_foreigner' => false,
+                    'has_pool_access' => false,
+                ],
+                [
+                    'first_name' => 'Companion',
+                    'last_name' => 'C',
+                    'age' => '25',
+                    'gender' => 'Female',
+                    'is_foreigner' => false,
+                    'has_pool_access' => false,
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $res->refresh();
+        $this->assertEquals('Checked In', $res->status);
+    }
+
+    public function test_bulk_companions_separate_pool_and_non_pool_checkout(): void
+    {
+        $res = Reservation::create([
+            'booker_name' => 'Bulk Tester',
+            'phone' => '09930457138',
+            'email' => 'bulktester@example.com',
+            'number_of_guests' => 5,
+            'reservation_date' => '2026-08-25',
+            'end_date' => '2026-08-25',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'status' => 'Checked In',
+            'reservation_type' => 'walk_in',
+            'payment_status' => 'Paid',
+            'total_amount' => 1500,
+            'amount_paid' => 1500,
+            'remaining_balance' => 0,
+        ]);
+
+        $primaryCustomer = Customer::create([
+            'first_name' => 'Bulk',
+            'last_name' => 'Leader',
+            'age' => 30,
+            'gender' => 'Male',
+            'is_foreigner' => false,
+            'phone' => '09930457138',
+            'email' => 'bulktester@example.com',
+        ]);
+
+        ReservationGuest::create([
+            'reservation_id' => $res->id,
+            'customer_id' => $primaryCustomer->id,
+            'is_primary_guest' => true,
+            'has_pool_access' => true,
+        ]);
+
+        // Create 2 pool bulk companions and 2 no-pool bulk companions
+        for ($i = 1; $i <= 4; $i++) {
+            $c = Customer::create([
+                'first_name' => 'Companion',
+                'last_name' => (string) $i,
+                'age' => 30,
+                'gender' => 'Male',
+                'is_foreigner' => false,
+            ]);
+            ReservationGuest::create([
+                'reservation_id' => $res->id,
+                'customer_id' => $c->id,
+                'is_primary_guest' => false,
+                'has_pool_access' => $i <= 2, // 1,2 have pool; 3,4 do not
+            ]);
+        }
+
+        // Check out 1 pool companion
+        $poolCheckoutResp = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->postJson("/staff/reservations/{$res->id}/bulk-companions/check-out", [
+            'count' => 1,
+            'pool_access_type' => 'with_pool',
+            'gender' => 'Male',
+            'age_group' => '18-59',
+            'is_foreigner' => false,
+        ]);
+
+        $poolCheckoutResp->assertOk();
+        $this->assertEquals(1, $poolCheckoutResp->json('checked_out'));
+
+        // Verify that only 1 companion with pool access was checked out
+        $activePool = $res->reservationGuests()->where('is_primary_guest', false)->where('has_pool_access', true)->whereNull('checked_out_at')->count();
+        $this->assertEquals(1, $activePool);
+
+        $activeNoPool = $res->reservationGuests()->where('is_primary_guest', false)->where('has_pool_access', false)->whereNull('checked_out_at')->count();
+        $this->assertEquals(2, $activeNoPool);
+
+        // Check out 2 no-pool companions
+        $noPoolCheckoutResp = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->postJson("/staff/reservations/{$res->id}/bulk-companions/check-out", [
+            'count' => 2,
+            'pool_access_type' => 'without_pool',
+            'gender' => 'Male',
+            'age_group' => '18-59',
+            'is_foreigner' => false,
+        ]);
+
+        $noPoolCheckoutResp->assertOk();
+        $this->assertEquals(2, $noPoolCheckoutResp->json('checked_out'));
+
+        $activeNoPoolAfter = $res->reservationGuests()->where('is_primary_guest', false)->where('has_pool_access', false)->whereNull('checked_out_at')->count();
+        $this->assertEquals(0, $activeNoPoolAfter);
+    }
 }
+
+

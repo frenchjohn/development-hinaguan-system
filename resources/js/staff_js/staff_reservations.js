@@ -152,34 +152,158 @@ window.AppPage['staff_reservations'] = function () {
     let companionCount = 0;
     let bulkCompanionGroups = [];
 
+    const checkInPoolOption = document.getElementById('checkInPoolOption');
+    const checkInPoolOptionHelp = document.getElementById('checkInPoolOptionHelp');
+    const checkInPrimaryGuestPoolWrap = document.getElementById('checkInPrimaryGuestPoolWrap');
+    const checkInPrimaryGuestHasPool = document.getElementById('checkInPrimaryGuestHasPool');
+    const checkInCompanionPoolWrap = document.getElementById('checkInCompanionPoolWrap');
+    const checkInCompanionHasPool = document.getElementById('checkInCompanionHasPool');
+    const checkInBulkCompanionPoolWrap = document.getElementById('checkInBulkCompanionPoolWrap');
+    const checkInBulkPoolQuantity = document.getElementById('checkInBulkPoolQuantity');
+    const checkInBulkPoolMaxLabel = document.getElementById('checkInBulkPoolMaxLabel');
+    const bulkCompanionQuantity = document.getElementById('bulkCompanionQuantity');
+
+    const syncCheckInPoolOptionUI = () => {
+        const opt = checkInPoolOption?.value || 'no_pool';
+        const isSpecific = opt === 'specific';
+        const isAllPaid = opt === 'all_paid';
+        const isAllFree = opt === 'all_free';
+        const isNoPool = opt === 'no_pool';
+
+        if (checkInPrimaryGuestPoolWrap) {
+            checkInPrimaryGuestPoolWrap.style.display = isSpecific ? 'flex' : 'none';
+        }
+        if (checkInCompanionPoolWrap) {
+            checkInCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
+        }
+        if (checkInBulkCompanionPoolWrap) {
+            checkInBulkCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
+        }
+
+        if (checkInPoolOptionHelp) {
+            if (isNoPool) {
+                checkInPoolOptionHelp.textContent = 'No pool fee will be charged for any guest in this reservation.';
+            } else if (isSpecific) {
+                checkInPoolOptionHelp.textContent = 'Pool fee will only be charged for individual guests or bulk group counts selected below.';
+            } else if (isAllPaid) {
+                checkInPoolOptionHelp.textContent = 'Standard pool fee will be applied to all guests in this reservation.';
+            } else if (isAllFree) {
+                checkInPoolOptionHelp.textContent = 'All guests receive complimentary pool access at no additional charge (Promo • ₱0.00).';
+            }
+        }
+
+        const legacyInput = document.getElementById('checkInIncludePoolLegacy');
+        if (legacyInput) {
+            legacyInput.value = (isAllPaid || isAllFree || isSpecific) ? '1' : '0';
+        }
+    };
+
+    const syncCheckInBulkPoolMax = () => {
+        if (!bulkCompanionQuantity || !checkInBulkPoolQuantity) return;
+        const maxVal = parseInt(bulkCompanionQuantity.value, 10) || 1;
+        checkInBulkPoolQuantity.max = maxVal;
+        if (checkInBulkPoolMaxLabel) {
+            checkInBulkPoolMaxLabel.textContent = `Max: ${maxVal}`;
+        }
+        if (parseInt(checkInBulkPoolQuantity.value, 10) > maxVal) {
+            checkInBulkPoolQuantity.value = maxVal;
+        }
+    };
+
+    bulkCompanionQuantity?.addEventListener('input', syncCheckInBulkPoolMax);
+    bulkCompanionQuantity?.addEventListener('change', syncCheckInBulkPoolMax);
+    document.getElementById('bulkCompanionBtnMinus')?.addEventListener('click', () => {
+        const cur = parseInt(bulkCompanionQuantity.value, 10) || 1;
+        if (cur > 1) {
+            bulkCompanionQuantity.value = cur - 1;
+            syncCheckInBulkPoolMax();
+        }
+    });
+    document.getElementById('bulkCompanionBtnPlus')?.addEventListener('click', () => {
+        const cur = parseInt(bulkCompanionQuantity.value, 10) || 1;
+        if (cur < 50) {
+            bulkCompanionQuantity.value = cur + 1;
+            syncCheckInBulkPoolMax();
+        }
+    });
+
+    const getAgeFromGroup = (ageGroup) => {
+        const ageMap = {
+            '0-12': 6,
+            '13-17': 15,
+            '18-59': 30,
+            '60+': 65
+        };
+        return ageMap[ageGroup] || 30;
+    };
+
+    // Merges individually-added companions with bulk groups expanded into
+    // individual companion records (used both for the summary UI hidden fields
+    // and for the check-in payload).
+    const getAllCheckInCompanions = () => {
+        const opt = checkInPoolOption?.value || 'no_pool';
+        const allCompanions = [];
+
+        checkInCompanions.forEach((c) => {
+            const hasPool = (opt === 'all_paid' || opt === 'all_free') ? true : (opt === 'specific' ? !!c.has_pool_access : false);
+            allCompanions.push({
+                ...c,
+                has_pool_access: hasPool,
+            });
+        });
+
+        bulkCompanionGroups.forEach((group) => {
+            const poolLimit = (opt === 'all_paid' || opt === 'all_free') ? group.quantity : (opt === 'specific' ? (group.pool_quantity || 0) : 0);
+            for (let i = 0; i < group.quantity; i++) {
+                allCompanions.push({
+                    first_name: 'Companion',
+                    middle_name: '',
+                    last_name: `C${allCompanions.length + 1}`,
+                    age: String(getAgeFromGroup(group.age_group)),
+                    age_group: group.age_group,
+                    gender: group.gender,
+                    is_foreigner: !!group.is_foreigner,
+                    phone: '',
+                    email: '',
+                    has_pool_access: i < poolLimit,
+                });
+            }
+        });
+        return allCompanions;
+    };
+
     const renderCheckInCompanions = () => {
         checkInCompanionList.innerHTML = '';
         checkInCompanionHiddenFields.innerHTML = '';
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
 
         // Render individual companions (single additions)
         if (checkInCompanions.length > 0) {
             checkInCompanions.forEach((companion, index) => {
                 const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+                const parsedAge = parseInt(companion.age, 10);
+                const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
+
+                let poolBadgeHtml = '';
+                if (currentPoolOpt === 'all_paid') {
+                    poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Pool Pass</span>';
+                } else if (currentPoolOpt === 'all_free') {
+                    poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Free Pool</span>';
+                } else if (currentPoolOpt === 'specific') {
+                    poolBadgeHtml = companion.has_pool_access
+                        ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access">🏊 Pool Pass ✓</button>`
+                        : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
+                }
+
                 const item = document.createElement('div');
-                item.className = 'guest-companion-pill';
-                item.style.display = 'flex';
-                item.style.alignItems = 'center';
-                item.style.gap = '0.5rem';
-
-                const infoSpan = document.createElement('span');
-                infoSpan.textContent = `${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age || 'N/A'} - ${companion.gender}`;
-                item.appendChild(infoSpan);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.className = 'guest-companion-pill__delete';
-                deleteBtn.textContent = '×';
-                deleteBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    checkInCompanions.splice(index, 1);
-                    renderCheckInCompanions();
-                });
-                item.appendChild(deleteBtn);
+                item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
+                        ${poolBadgeHtml}
+                    </div>
+                    <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-companion-index="${index}">Remove</button>
+                `;
                 checkInCompanionList.appendChild(item);
             });
         }
@@ -188,50 +312,40 @@ window.AppPage['staff_reservations'] = function () {
         if (bulkCompanionGroups.length > 0) {
             bulkCompanionGroups.forEach((group, index) => {
                 const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+                const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
+
+                let bulkPoolBadgeHtml = '';
+                if (currentPoolOpt === 'all_paid') {
+                    bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} with Pool</span>`;
+                } else if (currentPoolOpt === 'all_free') {
+                    bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} Free Pool</span>`;
+                } else if (currentPoolOpt === 'specific') {
+                    const pQty = group.pool_quantity || 0;
+                    bulkPoolBadgeHtml = `
+                        <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
+                            <span>🏊 Pool:</span>
+                            <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${index}" title="Decrease pool access quantity">−</button>
+                            <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
+                            <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${index}" title="Increase pool access quantity">+</button>
+                        </div>
+                    `;
+                }
+
                 const item = document.createElement('div');
-                item.className = 'guest-companion-pill';
-                item.style.display = 'flex';
-                item.style.alignItems = 'center';
-                item.style.gap = '0.5rem';
-
-                const infoSpan = document.createElement('span');
-                infoSpan.textContent = `${group.gender} - ${nationality} - ${group.age_group} - `;
-                item.appendChild(infoSpan);
-
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'number';
-                quantityInput.min = '1';
-                quantityInput.max = '500';
-                quantityInput.value = group.quantity;
-                quantityInput.style.width = '60px';
-                quantityInput.style.padding = '0.25rem';
-                quantityInput.style.border = '1px solid #ccc';
-                quantityInput.style.borderRadius = '0.25rem';
-                quantityInput.addEventListener('change', (e) => {
-                    const newQuantity = parseInt(e.target.value, 10) || 1;
-                    group.quantity = Math.min(Math.max(newQuantity, 1), 500);
-                    e.target.value = group.quantity;
-                    renderCheckInCompanions();
-                });
-                item.appendChild(quantityInput);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.className = 'guest-companion-pill__delete';
-                deleteBtn.textContent = '×';
-                deleteBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    bulkCompanionGroups.splice(index, 1);
-                    renderCheckInCompanions();
-                });
-                item.appendChild(deleteBtn);
+                item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
+                        ${bulkPoolBadgeHtml}
+                    </div>
+                    <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-bulk-index="${index}">Remove</button>
+                `;
                 checkInCompanionList.appendChild(item);
             });
         }
 
         if (checkInCompanions.length === 0 && bulkCompanionGroups.length === 0) {
-            checkInCompanionList.innerHTML = '<p class="guest-empty">No companions added yet.</p>';
-            return;
+            checkInCompanionList.innerHTML = '<p class="guest-empty text-xs text-hp-text-muted italic py-2">No companions added yet.</p>';
         }
 
         // Generate individual companions from bulk groups for form submission
@@ -242,7 +356,7 @@ window.AppPage['staff_reservations'] = function () {
                 const field = document.createElement('input');
                 field.type = 'hidden';
                 field.name = `check_in_companions[${index}][${key}]`;
-                field.value = value;
+                field.value = (typeof value === 'boolean') ? (value ? '1' : '0') : (value ?? '');
                 checkInCompanionHiddenFields.appendChild(field);
             });
         });
@@ -252,6 +366,7 @@ window.AppPage['staff_reservations'] = function () {
 
     const openCheckInCompanionModal = () => {
         checkInCompanionForm.reset();
+        syncCheckInPoolOptionUI();
         if (checkInCompanionModal) {
             checkInCompanionModal.classList.add('is-open');
             checkInCompanionModal.setAttribute('aria-hidden', 'false');
@@ -267,6 +382,8 @@ window.AppPage['staff_reservations'] = function () {
 
     const openBulkCompanionModal = () => {
         bulkCompanionForm.reset();
+        syncCheckInPoolOptionUI();
+        syncCheckInBulkPoolMax();
         if (bulkCompanionModal) {
             bulkCompanionModal.classList.add('is-open');
             bulkCompanionModal.setAttribute('aria-hidden', 'false');
@@ -287,14 +404,21 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
+        const opt = checkInPoolOption?.value || 'no_pool';
         let html = '<div style="margin-bottom: 1rem;"><h4>Companion Groups:</h4>';
         let totalCompanions = 0;
 
         bulkCompanionGroups.forEach(group => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            let poolGroupNote = '';
+            if (opt === 'all_paid' || opt === 'all_free') {
+                poolGroupNote = ` | <strong>Pool:</strong> All ${group.quantity}`;
+            } else if (opt === 'specific') {
+                poolGroupNote = ` | <strong>Pool:</strong> ${group.pool_quantity || 0} of ${group.quantity}`;
+            }
             html += `
                 <div style="padding: 0.5rem; background-color: #e5e5e5; border: 1px solid #d4d4d4; border-radius: 0.25rem; margin-bottom: 0.5rem; color: #000;">
-                    <p><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}</p>
+                    <p><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}${poolGroupNote}</p>
                 </div>
             `;
             totalCompanions += group.quantity;
@@ -331,10 +455,16 @@ window.AppPage['staff_reservations'] = function () {
 
         const isToday = reservationDate === today;
 
-        const { adultCount, childCount, adultRate, childRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
+        const { adultCount, childCount, adultRate, childRate, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
         const balance = Number(currentReservationData?.remaining_balance || 0);
-        const poolChecked = document.getElementById('checkInIncludePool')?.checked || false;
         const grandTotal = total + balance;
+
+        let poolText = 'Not included (₱0.00)';
+        if (poolOpt === 'all_free') {
+            poolText = `Free Promo (${poolCount} guests • ₱0.00)`;
+        } else if (poolOpt === 'all_paid' || poolOpt === 'specific') {
+            poolText = `${poolCount} guest${poolCount === 1 ? '' : 's'} × ₱${poolRate.toFixed(2)} = ₱${poolTotal.toFixed(2)}`;
+        }
 
         let html = `<p>Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
 
@@ -351,7 +481,7 @@ window.AppPage['staff_reservations'] = function () {
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
                     <span style="font-size: 0.85rem;">Pool access</span>
-                    <strong style="font-size: 0.85rem;">${poolChecked ? `₱${poolTotal.toFixed(2)}` : 'Not included'}</strong>
+                    <strong style="font-size: 0.85rem;">${poolText}</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
                     <span style="font-size: 0.85rem;">Remaining reservation balance</span>
@@ -362,7 +492,7 @@ window.AppPage['staff_reservations'] = function () {
                     <strong style="font-size: 0.95rem; color: #16a34a;">₱${grandTotal.toFixed(2)}</strong>
                 </div>
             </div>
-            <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation is partially paid. Paying this total settles the remaining balance and marks the reservation as <strong>Paid</strong>.</p>
+            <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation will be marked as <strong>Checked In</strong> and paid.</p>
         `;
 
         if (!isToday && reservationDate) {
@@ -419,11 +549,6 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     // ── Entrance fee computation for online reservation check-in ──────────
-    // Mirrors the server-side logic on the check-ins page: adult = over 12,
-    // child = 12 and below. The entrance period follows the reservation's
-    // first amenity (amenities carry their own pricing_type) and falls back
-    // to the current park session when there are no amenities. Pool access is
-    // a one-time fee per reservation, matching the server computation.
     let checkInParkSettings = {
         daytime_adult_entrance_fee: 0,
         daytime_child_entrance_fee: 0,
@@ -492,21 +617,44 @@ window.AppPage['staff_reservations'] = function () {
 
         let adultCount = 0;
         let childCount = 0;
+        let poolCount = 0;
+
+        const poolOpt = checkInPoolOption?.value || 'no_pool';
         const guestMode = checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value;
-        if (guestMode === 'with_primary') {
+        const hasPrimary = guestMode === 'with_primary';
+
+        if (hasPrimary) {
             const primaryAge = parseInt(checkInForm?.querySelector('input[name="check_in_primary_guest[age]"]')?.value, 10);
             if (!isNaN(primaryAge) && primaryAge <= 12) childCount += 1;
             else adultCount += 1;
+
+            if (poolOpt === 'all_paid' || poolOpt === 'all_free') {
+                poolCount += 1;
+            } else if (poolOpt === 'specific') {
+                if (checkInPrimaryGuestHasPool?.checked) {
+                    poolCount += 1;
+                }
+            }
         }
-        getAllCheckInCompanions().forEach((companion) => {
+
+        const companions = getAllCheckInCompanions();
+        companions.forEach((companion) => {
             const companionAge = parseInt(companion.age, 10);
             if (!isNaN(companionAge) && companionAge <= 12) childCount += 1;
             else adultCount += 1;
+
+            if (companion.has_pool_access) {
+                poolCount += 1;
+            }
         });
 
         const entranceTotal = adultCount * adultRate + childCount * childRate;
-        const poolChecked = document.getElementById('checkInIncludePool')?.checked || false;
-        const poolTotal = poolChecked ? poolRate : 0;
+        let poolTotal = 0;
+        if (poolOpt === 'all_paid' || poolOpt === 'specific') {
+            poolTotal = poolCount * poolRate;
+        } else {
+            poolTotal = 0;
+        }
 
         return {
             period,
@@ -514,6 +662,9 @@ window.AppPage['staff_reservations'] = function () {
             childCount,
             adultRate,
             childRate,
+            poolOpt,
+            poolCount,
+            poolRate,
             poolTotal,
             entranceTotal,
             total: entranceTotal + poolTotal,
@@ -521,7 +672,7 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const updateCheckInFeeSummary = () => {
-        const { period, adultCount, childCount, adultRate, childRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
+        const { period, adultCount, childCount, adultRate, childRate, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
         const balance = Number(currentReservationData?.remaining_balance || 0);
 
         const badge = document.getElementById('checkInEffectivePeriodBadge');
@@ -532,45 +683,21 @@ window.AppPage['staff_reservations'] = function () {
         const childEl = document.getElementById('checkInChildSummary');
         if (childEl) childEl.textContent = `${childCount} × ₱${childRate.toFixed(2)}`;
         const poolEl = document.getElementById('checkInPoolSummary');
-        if (poolEl) poolEl.textContent = `₱${poolTotal.toFixed(2)}`;
+        if (poolEl) {
+            if (poolOpt === 'no_pool') {
+                poolEl.textContent = '₱0.00';
+            } else if (poolOpt === 'all_free') {
+                poolEl.textContent = '₱0.00 (Promo)';
+            } else {
+                poolEl.textContent = `₱${poolTotal.toFixed(2)} (${poolCount} pool pass${poolCount === 1 ? '' : 'es'})`;
+            }
+        }
         const entranceEl = document.getElementById('checkInEntranceTotal');
-        if (entranceEl) entranceEl.textContent = `₱${entranceTotal.toFixed(2)}`;
+        if (entranceEl) entranceEl.textContent = `₱${(entranceTotal + poolTotal).toFixed(2)}`;
         const balanceEl = document.getElementById('checkInReservationBalance');
         if (balanceEl) balanceEl.textContent = `₱${balance.toFixed(2)}`;
         const grandEl = document.getElementById('checkInGrandTotal');
         if (grandEl) grandEl.textContent = `₱${(total + balance).toFixed(2)}`;
-    };
-
-    const getAgeFromGroup = (ageGroup) => {
-        const ageMap = {
-            '0-12': 6,
-            '13-17': 15,
-            '18-59': 30,
-            '60+': 65
-        };
-        return ageMap[ageGroup] || 30;
-    };
-
-    // Merges individually-added companions with bulk groups expanded into
-    // individual companion records (used both for the summary UI hidden fields
-    // and for the check-in payload — previously bulk groups were never sent).
-    const getAllCheckInCompanions = () => {
-        const allCompanions = [...checkInCompanions];
-        bulkCompanionGroups.forEach((group) => {
-            for (let i = 0; i < group.quantity; i++) {
-                allCompanions.push({
-                    first_name: 'Companion',
-                    middle_name: '',
-                    last_name: `C${allCompanions.length}`,
-                    age: String(getAgeFromGroup(group.age_group)),
-                    gender: group.gender,
-                    is_foreigner: !!group.is_foreigner,
-                    phone: '',
-                    email: '',
-                });
-            }
-        });
-        return allCompanions;
     };
 
     const fillFormWithGuestData = (guestData, namePrefix) => {
@@ -615,15 +742,21 @@ window.AppPage['staff_reservations'] = function () {
         }
     });
 
-    // Live entrance-fee totals as the staff edits the primary guest's age or
-    // toggles pool access.
     checkInForm?.addEventListener('input', (e) => {
         if (e.target.name === 'check_in_primary_guest[age]') {
             updateCheckInFeeSummary();
         }
     });
 
-    document.getElementById('checkInIncludePool')?.addEventListener('change', updateCheckInFeeSummary);
+    checkInPoolOption?.addEventListener('change', () => {
+        syncCheckInPoolOptionUI();
+        renderCheckInCompanions();
+        updateCheckInFeeSummary();
+    });
+
+    checkInPrimaryGuestHasPool?.addEventListener('change', () => {
+        updateCheckInFeeSummary();
+    });
 
     checkInAddCompanionBtn?.addEventListener('click', (e) => {
         e.preventDefault();
@@ -656,6 +789,15 @@ window.AppPage['staff_reservations'] = function () {
         const isForeigner = formData.get('is_foreigner') === '1';
         const ageGroup = formData.get('age_group');
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+
+        const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
+        let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
+        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+            poolQty = quantity;
+        } else if (currentPoolOpt === 'no_pool') {
+            poolQty = 0;
+        }
 
         // Check for duplicates
         const duplicateIndex = bulkCompanionGroups.findIndex(
@@ -665,7 +807,6 @@ window.AppPage['staff_reservations'] = function () {
         );
 
         if (duplicateIndex !== -1) {
-            // Show duplicate modal
             alert('This companion group already exists. Please edit the existing group instead.');
             closeBulkCompanionModal();
             return;
@@ -677,6 +818,7 @@ window.AppPage['staff_reservations'] = function () {
             is_foreigner: isForeigner,
             age_group: ageGroup,
             quantity,
+            pool_quantity: poolQty,
         });
 
         renderCheckInCompanions();
@@ -696,19 +838,85 @@ window.AppPage['staff_reservations'] = function () {
     checkInCompanionForm?.addEventListener('submit', (e) => {
         e.preventDefault();
         const formData = new FormData(checkInCompanionForm);
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+
+        const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
+            ? true
+            : (currentPoolOpt === 'specific' ? (formData.get('has_pool_access') === '1' || checkInCompanionHasPool?.checked) : false);
+
         const companion = {
-            first_name: formData.get('first_name'),
+            first_name: formData.get('first_name') || 'Companion',
             middle_name: formData.get('middle_name'),
-            last_name: formData.get('last_name'),
+            last_name: formData.get('last_name') || 'Guest',
             age: formData.get('age'),
-            gender: formData.get('gender'),
+            gender: formData.get('gender') || 'Male',
             is_foreigner: formData.get('is_foreigner') === '1',
             phone: formData.get('phone'),
             email: formData.get('email'),
+            has_pool_access: companionHasPool,
         };
         checkInCompanions.push(companion);
         renderCheckInCompanions();
         closeCheckInCompanionModal();
+    });
+
+    // Companion list interaction: remove and toggle/stepper controls
+    checkInCompanionList?.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.guest-companion-pill__delete');
+        if (removeBtn) {
+            const index = removeBtn.dataset.companionIndex;
+            const bulkIndex = removeBtn.dataset.bulkIndex;
+
+            if (index !== undefined && index !== null && index !== '') {
+                checkInCompanions.splice(parseInt(index, 10), 1);
+            } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
+                bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
+            }
+
+            renderCheckInCompanions();
+            return;
+        }
+
+        // Toggle single companion pool pass
+        const togglePoolBtn = e.target.closest('[data-toggle-companion-pool]');
+        if (togglePoolBtn) {
+            const cIdx = parseInt(togglePoolBtn.dataset.toggleCompanionPool, 10);
+            if (!isNaN(cIdx) && checkInCompanions[cIdx]) {
+                checkInCompanions[cIdx].has_pool_access = !checkInCompanions[cIdx].has_pool_access;
+                renderCheckInCompanions();
+            }
+            return;
+        }
+
+        // Increment bulk group pool count
+        const bulkIncBtn = e.target.closest('[data-bulk-pool-inc]');
+        if (bulkIncBtn) {
+            const bIdx = parseInt(bulkIncBtn.dataset.bulkPoolInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur < group.quantity) {
+                    group.pool_quantity = cur + 1;
+                    renderCheckInCompanions();
+                }
+            }
+            return;
+        }
+
+        // Decrement bulk group pool count
+        const bulkDecBtn = e.target.closest('[data-bulk-pool-dec]');
+        if (bulkDecBtn) {
+            const bIdx = parseInt(bulkDecBtn.dataset.bulkPoolDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur > 0) {
+                    group.pool_quantity = cur - 1;
+                    renderCheckInCompanions();
+                }
+            }
+            return;
+        }
     });
 
     checkInCompanionCloseButtons.forEach((button) => {
@@ -742,6 +950,14 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         checkInForm.reset();
+
+        if (checkInPoolOption) {
+            checkInPoolOption.value = 'no_pool';
+        }
+        if (checkInPrimaryGuestHasPool) {
+            checkInPrimaryGuestHasPool.checked = false;
+        }
+        syncCheckInPoolOptionUI();
 
         // Always use the booker info as the main guest (booker is the primary)
         if (reservation) {
@@ -2713,6 +2929,11 @@ window.AppPage['staff_reservations'] = function () {
 
         const formData = new FormData(checkInForm);
         const guestMode = formData.get('check_in_guest_mode');
+        const poolOpt = checkInPoolOption?.value || 'no_pool';
+        const primaryHasPool = (poolOpt === 'all_paid' || poolOpt === 'all_free')
+            ? true
+            : (poolOpt === 'specific' ? !!checkInPrimaryGuestHasPool?.checked : false);
+
         const primaryGuest = guestMode === 'with_primary' ? {
             first_name: formData.get('check_in_primary_guest[first_name]'),
             middle_name: formData.get('check_in_primary_guest[middle_name]'),
@@ -2722,6 +2943,7 @@ window.AppPage['staff_reservations'] = function () {
             is_foreigner: formData.get('check_in_primary_guest[is_foreigner]') === '1',
             phone: formData.get('check_in_primary_guest[phone]'),
             email: formData.get('check_in_primary_guest[email]'),
+            has_pool_access: primaryHasPool,
         } : null;
 
         try {
@@ -2738,7 +2960,8 @@ window.AppPage['staff_reservations'] = function () {
                     primary_guest: primaryGuest,
                     primary_guest_id: primaryGuestToUpdate?.customer_id || null,
                     companions: getAllCheckInCompanions(),
-                    include_pool: formData.get('check_in_include_pool') || '0',
+                    pool_option: poolOpt,
+                    include_pool: (poolOpt === 'all_paid' || poolOpt === 'specific' || poolOpt === 'all_free') ? '1' : '0',
                 }),
             });
 

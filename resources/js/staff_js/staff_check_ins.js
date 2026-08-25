@@ -2506,35 +2506,88 @@ window.AppPage['staff_check_ins'] = function () {
     const bulkManageResIdEl = document.getElementById('bulkManageResId');
     const bulkManageActiveCountEl = document.getElementById('bulkManageActiveCount');
     const bulkManageTotalCountEl = document.getElementById('bulkManageTotalCount');
-    const btnDecrease = document.getElementById('bulkManageBtnDecrease');
-    const btnIncrease = document.getElementById('bulkManageBtnIncrease');
 
-    const openBulkManageModal = (resId, active, total, demoText = '', bulkGender = '', bulkAgeGroup = '', bulkNationality = '') => {
+    // Dual pool counters & checkouter elements
+    const bulkManagePoolActiveCountEl = document.getElementById('bulkManagePoolActiveCount');
+    const bulkManagePoolTotalCountEl = document.getElementById('bulkManagePoolTotalCount');
+    const bulkManagePoolQtyInput = document.getElementById('bulkManagePoolQtyInput');
+    const bulkManagePoolQtyMinus = document.getElementById('bulkManagePoolQtyMinus');
+    const bulkManagePoolQtyPlus = document.getElementById('bulkManagePoolQtyPlus');
+    const bulkManagePoolBtnDecrease = document.getElementById('bulkManagePoolBtnDecrease');
+    const bulkManagePoolCheckOutBtn = document.getElementById('bulkManagePoolCheckOutBtn');
+    const bulkManagePoolControls = document.getElementById('bulkManagePoolControls');
+    const bulkManagePoolEmptyMsg = document.getElementById('bulkManagePoolEmptyMsg');
+
+    const bulkManageNoPoolActiveCountEl = document.getElementById('bulkManageNoPoolActiveCount');
+    const bulkManageNoPoolTotalCountEl = document.getElementById('bulkManageNoPoolTotalCount');
+    const bulkManageNoPoolQtyInput = document.getElementById('bulkManageNoPoolQtyInput');
+    const bulkManageNoPoolQtyMinus = document.getElementById('bulkManageNoPoolQtyMinus');
+    const bulkManageNoPoolQtyPlus = document.getElementById('bulkManageNoPoolQtyPlus');
+    const bulkManageNoPoolBtnDecrease = document.getElementById('bulkManageNoPoolBtnDecrease');
+    const bulkManageNoPoolCheckOutBtn = document.getElementById('bulkManageNoPoolCheckOutBtn');
+    const bulkManageNoPoolControls = document.getElementById('bulkManageNoPoolControls');
+    const bulkManageNoPoolEmptyMsg = document.getElementById('bulkManageNoPoolEmptyMsg');
+
+    const openBulkManageModal = (
+        resId,
+        active,
+        total,
+        demoText = '',
+        bulkGender = '',
+        bulkAgeGroup = '',
+        bulkNationality = '',
+        activePool = 0,
+        totalPool = 0,
+        activeNoPool = 0,
+        totalNoPool = 0
+    ) => {
         currentBulkResId = resId;
         currentBulkGender = bulkGender || '';
         currentBulkAgeGroup = bulkAgeGroup || '';
         currentBulkIsForeigner = bulkNationality === 'Foreigner' ? true : (bulkNationality ? false : null);
-        bulkManageResIdEl.textContent = resId;
-        bulkManageActiveCountEl.textContent = active;
-        bulkManageTotalCountEl.textContent = total;
 
-        // Reset the quantity stepper for the next use.
-        const qtyInput = document.getElementById('bulkManageQtyInput');
-        if (qtyInput) {
-            qtyInput.value = 1;
-            qtyInput.max = Math.max(active, 1);
+        const actP = parseInt(activePool, 10) || 0;
+        const totP = parseInt(totalPool, 10) || 0;
+        const actNP = parseInt(activeNoPool, 10) || 0;
+        const totNP = parseInt(totalNoPool, 10) || 0;
+        const actTotal = parseInt(active, 10) || (actP + actNP);
+        const totTotal = parseInt(total, 10) || (totP + totNP);
+
+        if (bulkManageResIdEl) bulkManageResIdEl.textContent = resId;
+        if (bulkManageActiveCountEl) bulkManageActiveCountEl.textContent = actTotal;
+        if (bulkManageTotalCountEl) bulkManageTotalCountEl.textContent = totTotal;
+
+        // Populate Pool Pass section
+        if (bulkManagePoolActiveCountEl) bulkManagePoolActiveCountEl.textContent = actP;
+        if (bulkManagePoolTotalCountEl) bulkManagePoolTotalCountEl.textContent = totP;
+        if (bulkManagePoolQtyInput) {
+            bulkManagePoolQtyInput.value = actP > 0 ? 1 : 0;
+            bulkManagePoolQtyInput.max = Math.max(actP, 1);
         }
+        if (bulkManagePoolControls) bulkManagePoolControls.style.display = actP > 0 ? 'block' : 'none';
+        if (bulkManagePoolEmptyMsg) bulkManagePoolEmptyMsg.style.display = actP === 0 ? 'block' : 'none';
+        if (bulkManagePoolCheckOutBtn) bulkManagePoolCheckOutBtn.disabled = actP === 0;
+        if (bulkManagePoolBtnDecrease) bulkManagePoolBtnDecrease.disabled = actP === 0;
 
-        // The row/dropdown trigger already knows this group's demographics —
-        // use them directly (falling back to the reservation's first bulk
-        // guest when no group was specified).
+        // Populate Standard (No Pool) section
+        if (bulkManageNoPoolActiveCountEl) bulkManageNoPoolActiveCountEl.textContent = actNP;
+        if (bulkManageNoPoolTotalCountEl) bulkManageNoPoolTotalCountEl.textContent = totNP;
+        if (bulkManageNoPoolQtyInput) {
+            bulkManageNoPoolQtyInput.value = actNP > 0 ? 1 : 0;
+            bulkManageNoPoolQtyInput.max = Math.max(actNP, 1);
+        }
+        if (bulkManageNoPoolControls) bulkManageNoPoolControls.style.display = actNP > 0 ? 'block' : 'none';
+        if (bulkManageNoPoolEmptyMsg) bulkManageNoPoolEmptyMsg.style.display = actNP === 0 ? 'block' : 'none';
+        if (bulkManageNoPoolCheckOutBtn) bulkManageNoPoolCheckOutBtn.disabled = actNP === 0;
+        if (bulkManageNoPoolBtnDecrease) bulkManageNoPoolBtnDecrease.disabled = actNP === 0;
+
         let demoHtml = demoText
-            ? `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${demoText}</div>`
+            ? `<div style="font-size: 0.8rem; color: var(--hp-text-muted);">${demoText}</div>`
             : '';
         if (!demoHtml) {
             const res = reservationData[resId];
             if (res) {
-                const bulkGuest = res.reservation_guests.find(rg => {
+                const bulkGuest = res.reservation_guests?.find(rg => {
                     const fn = (rg.customer?.first_name || '').toLowerCase();
                     return fn.startsWith('bulk') || fn.includes('companion');
                 });
@@ -2542,7 +2595,7 @@ window.AppPage['staff_check_ins'] = function () {
                     const c = bulkGuest.customer;
                     const gender = c.gender || 'N/A';
                     const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
-                    demoHtml = `<div style="font-size: 0.8rem; color: var(--hp-text-muted); margin-bottom: 1rem;">${gender} &bull; ${ageGroupLabel(c.age)} &bull; ${nationality}</div>`;
+                    demoHtml = `<div style="font-size: 0.8rem; color: var(--hp-text-muted);">${gender} &bull; ${ageGroupLabel(c.age)} &bull; ${nationality}</div>`;
                 }
             }
         }
@@ -2552,37 +2605,49 @@ window.AppPage['staff_check_ins'] = function () {
             demoEl.innerHTML = demoHtml;
         }
 
-        bulkGroupManageModal.classList.add('is-open');
-        bulkGroupManageModal.setAttribute('aria-hidden', 'false');
+        if (bulkGroupManageModal) {
+            bulkGroupManageModal.classList.add('is-open');
+            bulkGroupManageModal.setAttribute('aria-hidden', 'false');
+        }
     };
 
     const closeBulkManageModal = () => {
         currentBulkResId = null;
-        bulkGroupManageModal.classList.remove('is-open');
-        bulkGroupManageModal.setAttribute('aria-hidden', 'true');
+        if (bulkGroupManageModal) {
+            bulkGroupManageModal.classList.remove('is-open');
+            bulkGroupManageModal.setAttribute('aria-hidden', 'true');
+        }
     };
 
     document.querySelectorAll('[data-close-bulk-manage-modal="true"]').forEach(btn => {
         btn.addEventListener('click', closeBulkManageModal);
     });
 
-    // Check out one or several bulk companions at once. Shared by the minus
-    // button (1x) and the quantity stepper + Check Out button (Nx). Shows a
-    // toast on success instead of silently reloading.
-    const bulkCheckOut = async (count) => {
+    // Check out bulk companions by pool access category ('with_pool' or 'without_pool')
+    const bulkCheckOut = async (count, poolAccessType = 'any') => {
         if (!currentBulkResId) return;
-        const activeCount = Number(bulkManageActiveCountEl?.textContent || 0);
+
+        let activeCount = 0;
+        if (poolAccessType === 'with_pool') {
+            activeCount = Number(bulkManagePoolActiveCountEl?.textContent || 0);
+        } else if (poolAccessType === 'without_pool') {
+            activeCount = Number(bulkManageNoPoolActiveCountEl?.textContent || 0);
+        } else {
+            activeCount = Number(bulkManageActiveCountEl?.textContent || 0);
+        }
+
         if (activeCount === 0) {
-            showToast('All bulk companions are already checked out.', 'error');
+            showToast('No active companions remaining in this group.', 'error');
             return;
         }
 
         const qty = Math.min(Math.max(parseInt(count, 10) || 1, 1), activeCount);
-        if (!confirm(`Check out ${qty} companion${qty === 1 ? '' : 's'} from this bulk group?`)) {
+        const groupLabel = poolAccessType === 'with_pool' ? 'with pool pass' : (poolAccessType === 'without_pool' ? 'without pool pass' : '');
+        if (!confirm(`Check out ${qty} companion${qty === 1 ? '' : 's'} ${groupLabel} from this bulk group?`)) {
             return;
         }
 
-        const submitBtn = document.getElementById('bulkManageCheckOutBtn');
+        const submitBtn = poolAccessType === 'with_pool' ? bulkManagePoolCheckOutBtn : (poolAccessType === 'without_pool' ? bulkManageNoPoolCheckOutBtn : null);
         if (submitBtn) {
             submitBtn.disabled = true;
             submitBtn.textContent = 'Checking out...';
@@ -2594,6 +2659,7 @@ window.AppPage['staff_check_ins'] = function () {
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify({
                     count: qty,
+                    pool_access_type: poolAccessType,
                     gender: currentBulkGender || null,
                     age_group: currentBulkAgeGroup || null,
                     is_foreigner: currentBulkIsForeigner,
@@ -2607,8 +2673,8 @@ window.AppPage['staff_check_ins'] = function () {
             const done = payload.checked_out ?? qty;
             const remaining = payload.remaining ?? 0;
             const message = remaining > 0
-                ? `${done} bulk companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
-                : `${done} bulk companion${done === 1 ? '' : 's'} checked out successfully.`;
+                ? `${done} companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
+                : `${done} companion${done === 1 ? '' : 's'} checked out successfully.`;
             queueToast(message);
             window.location.reload();
         } catch (err) {
@@ -2616,38 +2682,62 @@ window.AppPage['staff_check_ins'] = function () {
             showToast(err.message || 'Unable to check out companions.', 'error');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Check Out';
+                submitBtn.textContent = poolAccessType === 'with_pool' ? 'Check Out Pool' : 'Check Out Standard';
             }
         }
     };
 
-    btnDecrease?.addEventListener('click', () => bulkCheckOut(1));
-
-    const bulkManageQtyMinus = document.getElementById('bulkManageQtyMinus');
-    const bulkManageQtyPlus = document.getElementById('bulkManageQtyPlus');
-    const bulkManageQtyInput = document.getElementById('bulkManageQtyInput');
-    const bulkManageCheckOutBtn = document.getElementById('bulkManageCheckOutBtn');
-
-    bulkManageQtyMinus?.addEventListener('click', () => {
-        if (!bulkManageQtyInput) return;
-        const val = parseInt(bulkManageQtyInput.value, 10) || 1;
-        if (val > 1) bulkManageQtyInput.value = val - 1;
+    // Pool pass checkouter events
+    bulkManagePoolBtnDecrease?.addEventListener('click', () => bulkCheckOut(1, 'with_pool'));
+    bulkManagePoolCheckOutBtn?.addEventListener('click', () => {
+        bulkCheckOut(bulkManagePoolQtyInput?.value || 1, 'with_pool');
     });
-    bulkManageQtyPlus?.addEventListener('click', () => {
-        if (!bulkManageQtyInput) return;
-        const val = parseInt(bulkManageQtyInput.value, 10) || 1;
-        const max = parseInt(bulkManageQtyInput.max || '50', 10) || 50;
-        if (val < max) bulkManageQtyInput.value = val + 1;
+    bulkManagePoolQtyMinus?.addEventListener('click', () => {
+        if (!bulkManagePoolQtyInput) return;
+        const val = parseInt(bulkManagePoolQtyInput.value, 10) || 1;
+        if (val > 1) bulkManagePoolQtyInput.value = val - 1;
     });
-    bulkManageCheckOutBtn?.addEventListener('click', () => {
-        bulkCheckOut(bulkManageQtyInput?.value || 1);
+    bulkManagePoolQtyPlus?.addEventListener('click', () => {
+        if (!bulkManagePoolQtyInput) return;
+        const val = parseInt(bulkManagePoolQtyInput.value, 10) || 1;
+        const max = parseInt(bulkManagePoolQtyInput.max || '50', 10) || 50;
+        if (val < max) bulkManagePoolQtyInput.value = val + 1;
+    });
+
+    // Standard (no pool) checkouter events
+    bulkManageNoPoolBtnDecrease?.addEventListener('click', () => bulkCheckOut(1, 'without_pool'));
+    bulkManageNoPoolCheckOutBtn?.addEventListener('click', () => {
+        bulkCheckOut(bulkManageNoPoolQtyInput?.value || 1, 'without_pool');
+    });
+    bulkManageNoPoolQtyMinus?.addEventListener('click', () => {
+        if (!bulkManageNoPoolQtyInput) return;
+        const val = parseInt(bulkManageNoPoolQtyInput.value, 10) || 1;
+        if (val > 1) bulkManageNoPoolQtyInput.value = val - 1;
+    });
+    bulkManageNoPoolQtyPlus?.addEventListener('click', () => {
+        if (!bulkManageNoPoolQtyInput) return;
+        const val = parseInt(bulkManageNoPoolQtyInput.value, 10) || 1;
+        const max = parseInt(bulkManageNoPoolQtyInput.max || '50', 10) || 50;
+        if (val < max) bulkManageNoPoolQtyInput.value = val + 1;
     });
 
     guestRows.forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('.btn-expand-row')) return;
             if (row.dataset.bulkGroup === 'true') {
-                openBulkManageModal(row.dataset.reservationId, row.dataset.bulkActive, row.dataset.bulkTotal, row.dataset.bulkDemo, row.dataset.bulkGender, row.dataset.bulkAgeGroup, row.dataset.bulkNationality);
+                openBulkManageModal(
+                    row.dataset.reservationId,
+                    row.dataset.bulkActive,
+                    row.dataset.bulkTotal,
+                    row.dataset.bulkDemo,
+                    row.dataset.bulkGender,
+                    row.dataset.bulkAgeGroup,
+                    row.dataset.bulkNationality,
+                    row.dataset.bulkActivePool,
+                    row.dataset.bulkTotalPool,
+                    row.dataset.bulkActiveNoPool,
+                    row.dataset.bulkTotalNoPool
+                );
                 return;
             }
             const customerId = row.dataset.customerId;
@@ -3038,11 +3128,97 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
-    // Calculate entrance fee based on main guest, companions, and age types
+    // Pool Policy UI Controls
+    const walkInPoolOption = document.getElementById('walkInPoolOption');
+    const walkInPoolOptionHelp = document.getElementById('walkInPoolOptionHelp');
+    const primaryGuestPoolWrap = document.getElementById('primaryGuestPoolWrap');
+    const primaryHasPoolInput = document.getElementById('primary_has_pool_access');
+    const primaryGuestPoolBadge = document.getElementById('primaryGuestPoolBadge');
+    const singleCompanionPoolWrap = document.getElementById('singleCompanionPoolWrap');
+    const companionHasPoolInput = document.getElementById('companion_has_pool_access');
+    const bulkCompanionPoolWrap = document.getElementById('bulkCompanionPoolWrap');
+    const bulkCompanionPoolQty = document.getElementById('bulk_companion_pool_quantity');
+    const bulkCompanionQtyInput = document.getElementById('bulk_companion_quantity');
+    const bulkPoolQtyHint = document.getElementById('bulkPoolQtyHint');
+
+    const syncPoolOptionUI = () => {
+        const opt = walkInPoolOption?.value || 'no_pool';
+        const isSpecific = opt === 'specific';
+        const isAllPaid = opt === 'all_paid';
+        const isAllFree = opt === 'all_free';
+
+        if (primaryGuestPoolWrap) {
+            primaryGuestPoolWrap.style.display = isSpecific ? 'block' : 'none';
+        }
+
+        if (singleCompanionPoolWrap) {
+            singleCompanionPoolWrap.style.display = isSpecific ? 'block' : 'none';
+        }
+
+        if (bulkCompanionPoolWrap) {
+            bulkCompanionPoolWrap.style.display = isSpecific ? 'grid' : 'none';
+        }
+
+        if (walkInPoolOptionHelp) {
+            if (opt === 'no_pool') {
+                walkInPoolOptionHelp.textContent = 'No pool fee will be charged for any guest in this reservation.';
+            } else if (isSpecific) {
+                walkInPoolOptionHelp.textContent = 'Custom: specify which primary guest, companions, and group counts have pool access.';
+            } else if (isAllPaid) {
+                walkInPoolOptionHelp.textContent = 'Standard rate: all guests in this reservation will be charged for pool access.';
+            } else if (isAllFree) {
+                walkInPoolOptionHelp.textContent = 'Free Promo: all guests are granted pool access without additional charge.';
+            }
+        }
+
+        if (primaryGuestPoolBadge) {
+            if (isAllPaid) {
+                primaryGuestPoolBadge.classList.remove('hidden');
+                primaryGuestPoolBadge.textContent = '🏊 Pool Pass (All)';
+            } else if (isAllFree) {
+                primaryGuestPoolBadge.classList.remove('hidden');
+                primaryGuestPoolBadge.textContent = '🏊 Free Promo Pool';
+            } else if (isSpecific && primaryHasPoolInput?.checked) {
+                primaryGuestPoolBadge.classList.remove('hidden');
+                primaryGuestPoolBadge.textContent = '🏊 Pool Pass';
+            } else {
+                primaryGuestPoolBadge.classList.add('hidden');
+            }
+        }
+
+        const legacyInput = document.getElementById('include_pool_legacy');
+        if (legacyInput) {
+            legacyInput.value = (isAllPaid || isSpecific) ? '1' : '0';
+        }
+
+        renderCompanions();
+        updateGrandTotal();
+    };
+
+    walkInPoolOption?.addEventListener('change', syncPoolOptionUI);
+    primaryHasPoolInput?.addEventListener('change', syncPoolOptionUI);
+
+    const syncBulkPoolQuantityMax = () => {
+        if (!bulkCompanionQtyInput || !bulkCompanionPoolQty) return;
+        const total = Math.max(1, parseInt(bulkCompanionQtyInput.value, 10) || 1);
+        bulkCompanionPoolQty.max = total;
+        let currentPool = parseInt(bulkCompanionPoolQty.value, 10) || 0;
+        if (currentPool > total) {
+            currentPool = total;
+            bulkCompanionPoolQty.value = total;
+        }
+        if (bulkPoolQtyHint) {
+            bulkPoolQtyHint.textContent = `${currentPool} of ${total} with pool access`;
+        }
+    };
+    bulkCompanionQtyInput?.addEventListener('input', syncBulkPoolQuantityMax);
+    bulkCompanionPoolQty?.addEventListener('input', syncBulkPoolQuantityMax);
+
+    // Calculate entrance fee based on main guest, companions, and pool policies
     const calculateEntranceFee = () => {
         const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
         const timeType = counts.nightCount > 0 && counts.dayCount > 0 ? 'daytonight' : (counts.nightCount > 0 ? 'nighttime' : 'daytime');
-        const includePoolChecked = includePool?.checked || false;
+        const poolOpt = walkInPoolOption?.value || 'no_pool';
 
         const dayAdult = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
         const dayChild = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
@@ -3098,15 +3274,43 @@ window.AppPage['staff_check_ins'] = function () {
         const totalGuests = adultCount + childCount;
         const totalAdultFee = adultCount * adultRate;
         const totalChildFee = childCount * childRate;
-        const totalPoolFee = includePoolChecked ? totalGuests * poolRate : 0;
+
+        // Pool Access Count calculation
+        let poolCount = 0;
+        if (poolOpt === 'all_paid' || poolOpt === 'all_free') {
+            poolCount = totalGuests;
+        } else if (poolOpt === 'specific') {
+            const primaryPool = (primaryHasPoolInput?.checked) ? 1 : 0;
+            const singleCompanionsPool = companions.filter(c => c.has_pool_access).length;
+            const bulkCompanionsPool = bulkCompanionGroups.reduce((acc, g) => acc + (parseInt(g.pool_quantity) || 0), 0);
+            poolCount = primaryPool + singleCompanionsPool + bulkCompanionsPool;
+        } else {
+            poolCount = 0;
+        }
+
+        let totalPoolFee = 0;
+        if (poolOpt === 'all_paid' || poolOpt === 'specific') {
+            totalPoolFee = poolCount * poolRate;
+        }
+
         const totalEntrance = totalAdultFee + totalChildFee + totalPoolFee;
 
         if (adultEntranceFee) adultEntranceFee.textContent = `₱${totalAdultFee.toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
         if (childEntranceFee) childEntranceFee.textContent = `₱${totalChildFee.toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
-        if (poolFee) poolFee.textContent = includePoolChecked ? `₱${totalPoolFee.toFixed(2)} (${totalGuests} × ₱${poolRate.toFixed(2)})` : '₱0.00';
+        if (poolFee) {
+            if (poolOpt === 'no_pool') {
+                poolFee.textContent = '₱0.00 (No pool access)';
+            } else if (poolOpt === 'all_free') {
+                poolFee.textContent = `₱0.00 (Free Promo • All ${totalGuests} guests)`;
+            } else if (poolOpt === 'all_paid') {
+                poolFee.textContent = `₱${totalPoolFee.toFixed(2)} (${poolCount} × ₱${poolRate.toFixed(2)})`;
+            } else {
+                poolFee.textContent = `₱${totalPoolFee.toFixed(2)} (${poolCount} of ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+            }
+        }
         if (totalEntranceFee) totalEntranceFee.textContent = `₱${totalEntrance.toFixed(2)}`;
 
-        return { totalEntrance, adultCount, childCount, totalPoolFee };
+        return { totalEntrance, adultCount, childCount, totalPoolFee, poolCount, poolOption: poolOpt, poolRate };
     };
 
     // Calculate Grand Total (Entrance + Pool + Amenities)
@@ -3133,8 +3337,6 @@ window.AppPage['staff_check_ins'] = function () {
 
         return { entranceFeeTotal: totalEntrance, amenitiesTotal, grandTotal };
     };
-
-    includePool?.addEventListener('change', updateGrandTotal);
 
     const primaryAgeInput = document.getElementById('primary_age');
     const primaryAgeBadge = document.getElementById('primaryAgeBadge');
@@ -3211,30 +3413,24 @@ window.AppPage['staff_check_ins'] = function () {
 
         const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
         const timeType = counts.nightCount > 0 && counts.dayCount > 0 ? 'daytonight' : (counts.nightCount > 0 ? 'nighttime' : 'daytime');
-        const includePoolChecked = includePool?.checked || false;
 
         const dayAdult = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
         const dayChild = parseFloat(parkSettings.daytime_child_entrance_fee) || 0;
         const nightAdult = parseFloat(parkSettings.nighttime_adult_entrance_fee) || 0;
         const nightChild = parseFloat(parkSettings.nighttime_child_entrance_fee) || 0;
-        const dayPool = parseFloat(parkSettings.day_pool_fee) || 0;
-        const nightPool = parseFloat(parkSettings.night_pool_fee) || 0;
 
         let adultRate = dayAdult;
         let childRate = dayChild;
-        let poolRate = dayPool;
 
         if (timeType === 'nighttime') {
             adultRate = nightAdult;
             childRate = nightChild;
-            poolRate = nightPool;
         } else if (timeType === 'daytonight') {
             adultRate = dayAdult + nightAdult;
             childRate = dayChild + nightChild;
-            poolRate = dayPool + nightPool;
         }
 
-        const { totalEntrance, adultCount, childCount, totalPoolFee } = calculateEntranceFee();
+        const { totalEntrance, adultCount, childCount, totalPoolFee, poolCount, poolOption: poolOpt, poolRate } = calculateEntranceFee();
         const totalGuests = adultCount + childCount;
 
         // 1. Expected Check-Out
@@ -3286,7 +3482,17 @@ window.AppPage['staff_check_ins'] = function () {
 
         if (payConfirmAdultFee) payConfirmAdultFee.textContent = `₱${(adultCount * adultRate).toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
         if (payConfirmChildFee) payConfirmChildFee.textContent = `₱${(childCount * childRate).toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
-        if (payConfirmPoolFee) payConfirmPoolFee.textContent = includePoolChecked ? `₱${totalPoolFee.toFixed(2)} (${totalGuests} × ₱${poolRate.toFixed(2)})` : '₱0.00 (No pool access)';
+        if (payConfirmPoolFee) {
+            if (poolOpt === 'no_pool') {
+                payConfirmPoolFee.textContent = '₱0.00 (No pool access)';
+            } else if (poolOpt === 'all_free') {
+                payConfirmPoolFee.textContent = `₱0.00 (Free Promo • All ${totalGuests} guests)`;
+            } else if (poolOpt === 'all_paid') {
+                payConfirmPoolFee.textContent = `₱${totalPoolFee.toFixed(2)} (All ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+            } else {
+                payConfirmPoolFee.textContent = `₱${totalPoolFee.toFixed(2)} (Specific: ${poolCount} of ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+            }
+        }
         if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${totalEntrance.toFixed(2)}`;
 
         // 4. Amenities
@@ -3427,6 +3633,8 @@ window.AppPage['staff_check_ins'] = function () {
         companionModal.classList.remove('hidden');
         companionModal.setAttribute('aria-hidden', 'false');
         syncCompanionAgeBadge();
+        syncBulkPoolQuantityMax();
+        syncPoolOptionUI();
     };
 
     const closeCompanionModal = () => {
@@ -3436,6 +3644,7 @@ window.AppPage['staff_check_ins'] = function () {
         companionForm?.reset();
         syncCompanionAgeBadge();
         bulkCompanionForm?.reset();
+        syncBulkPoolQuantityMax();
     };
 
     addCompanionBtn?.addEventListener('click', openCompanionModal);
@@ -3479,18 +3688,36 @@ window.AppPage['staff_check_ins'] = function () {
     const renderCompanions = () => {
         companionList.innerHTML = '';
         companionHiddenFields.innerHTML = '';
+        const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
 
         // Render individual companions
         companions.forEach((companion, index) => {
             const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = companion.age_type === 'child' ? 'Child' : 'Adult';
+            
+            let poolBadgeHtml = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Pool Pass</span>';
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Free Pool</span>';
+            } else if (currentPoolOpt === 'specific') {
+                poolBadgeHtml = companion.has_pool_access
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access">🏊 Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
-                <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
-                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer" data-companion-index="${index}">Remove</button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
+                    ${poolBadgeHtml}
+                </div>
+                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-companion-index="${index}">Remove</button>
             `;
             companionList.appendChild(item);
+
+            const hasPoolFlag = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') ? '1' : (companion.has_pool_access ? '1' : '0');
 
             // Add hidden fields
             companionHiddenFields.insertAdjacentHTML('beforeend', `
@@ -3503,6 +3730,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="companions[${index}][is_foreigner]" value="${companion.is_foreigner ? '1' : '0'}">
                 <input type="hidden" name="companions[${index}][phone]" value="${companion.phone || ''}">
                 <input type="hidden" name="companions[${index}][email]" value="${companion.email || ''}">
+                <input type="hidden" name="companions[${index}][has_pool_access]" value="${hasPoolFlag}">
             `);
         });
 
@@ -3510,17 +3738,40 @@ window.AppPage['staff_check_ins'] = function () {
         bulkCompanionGroups.forEach((group, groupIndex) => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
+            
+            let bulkPoolBadgeHtml = '';
+            if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} with Pool</span>`;
+            } else if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} Free Pool</span>`;
+            } else if (currentPoolOpt === 'specific') {
+                const pQty = group.pool_quantity || 0;
+                bulkPoolBadgeHtml = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
+                        <span>🏊 Pool:</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${groupIndex}" title="Decrease pool access quantity">−</button>
+                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${groupIndex}" title="Increase pool access quantity">+</button>
+                    </div>
+                `;
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
-                <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
-                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer" data-bulk-index="${groupIndex}">Remove</button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
+                    ${bulkPoolBadgeHtml}
+                </div>
+                <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-bulk-index="${groupIndex}">Remove</button>
             `;
             companionList.appendChild(item);
 
             // Add hidden fields for each companion in the group
             for (let i = 0; i < group.quantity; i++) {
                 const companionIndex = companions.length + groupIndex * 1000 + i;
+                const personHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') || (currentPoolOpt === 'specific' && i < (group.pool_quantity || 0));
+
                 companionHiddenFields.insertAdjacentHTML('beforeend', `
                     <input type="hidden" name="companions[${companionIndex}][first_name]" value="Companion">
                     <input type="hidden" name="companions[${companionIndex}][middle_name]" value="">
@@ -3531,6 +3782,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <input type="hidden" name="companions[${companionIndex}][is_foreigner]" value="${group.is_foreigner ? '1' : '0'}">
                     <input type="hidden" name="companions[${companionIndex}][phone]" value="">
                     <input type="hidden" name="companions[${companionIndex}][email]" value="">
+                    <input type="hidden" name="companions[${companionIndex}][has_pool_access]" value="${personHasPool ? '1' : '0'}">
                 `);
             }
         });
@@ -3548,6 +3800,11 @@ window.AppPage['staff_check_ins'] = function () {
         const ageVal = formData.get('age');
         const parsedAge = parseInt(ageVal, 10);
         const autoAgeType = (!isNaN(parsedAge) && parsedAge <= 12) ? 'child' : 'adult';
+        const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+
+        const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
+            ? true
+            : (currentPoolOpt === 'specific' ? (formData.get('has_pool_access') === '1' || companionHasPoolInput?.checked) : false);
 
         const companionData = {
             first_name: formData.get('first_name') || 'Companion',
@@ -3559,6 +3816,7 @@ window.AppPage['staff_check_ins'] = function () {
             is_foreigner: formData.get('is_foreigner') === '1',
             phone: formData.get('phone'),
             email: formData.get('email'),
+            has_pool_access: companionHasPool,
         };
 
         companions.push(companionData);
@@ -3578,6 +3836,15 @@ window.AppPage['staff_check_ins'] = function () {
         const isForeigner = formData.get('is_foreigner') === '1';
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
         const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
+        const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+
+        const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
+        let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
+        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+            poolQty = quantity;
+        } else if (currentPoolOpt === 'no_pool') {
+            poolQty = 0;
+        }
 
         bulkCompanionGroups.push({
             gender,
@@ -3585,30 +3852,77 @@ window.AppPage['staff_check_ins'] = function () {
             age_type: ageType,
             is_foreigner: isForeigner,
             quantity: quantity,
+            pool_quantity: poolQty,
         });
 
         renderCompanions();
         updateGrandTotal();
         bulkCompanionForm.reset();
+        syncBulkPoolQuantityMax();
         closeCompanionModal();
     });
 
-    // Delete companion handlers (both single & bulk)
+    // Delete / Toggle companion handlers (both single & bulk)
     companionList?.addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.guest-companion-pill__delete');
-        if (!removeBtn) return;
+        if (removeBtn) {
+            const index = removeBtn.dataset.companionIndex;
+            const bulkIndex = removeBtn.dataset.bulkIndex;
 
-        const index = removeBtn.dataset.companionIndex;
-        const bulkIndex = removeBtn.dataset.bulkIndex;
+            if (index !== undefined && index !== null && index !== '') {
+                companions.splice(parseInt(index, 10), 1);
+            } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
+                bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
+            }
 
-        if (index !== undefined && index !== null && index !== '') {
-            companions.splice(parseInt(index, 10), 1);
-        } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
-            bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
+            renderCompanions();
+            updateGrandTotal();
+            return;
         }
 
-        renderCompanions();
-        updateGrandTotal();
+        // Click-to-toggle pool pass on single companion pill
+        const togglePoolBtn = e.target.closest('[data-toggle-companion-pool]');
+        if (togglePoolBtn) {
+            const cIdx = parseInt(togglePoolBtn.dataset.toggleCompanionPool, 10);
+            if (!isNaN(cIdx) && companions[cIdx]) {
+                companions[cIdx].has_pool_access = !companions[cIdx].has_pool_access;
+                renderCompanions();
+                updateGrandTotal();
+            }
+            return;
+        }
+
+        // Click-to-increase bulk pool access
+        const bulkIncBtn = e.target.closest('[data-bulk-pool-inc]');
+        if (bulkIncBtn) {
+            const bIdx = parseInt(bulkIncBtn.dataset.bulkPoolInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur < group.quantity) {
+                    group.pool_quantity = cur + 1;
+                    renderCompanions();
+                    updateGrandTotal();
+                }
+            }
+            return;
+        }
+
+        // Click-to-decrease bulk pool access
+        const bulkDecBtn = e.target.closest('[data-bulk-pool-dec]');
+        if (bulkDecBtn) {
+            const bIdx = parseInt(bulkDecBtn.dataset.bulkPoolDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur > 0) {
+                    group.pool_quantity = cur - 1;
+                    renderCompanions();
+                    updateGrandTotal();
+                }
+            }
+            return;
+        }
     });
     primaryAgeInput?.addEventListener('change', updateGrandTotal);
 

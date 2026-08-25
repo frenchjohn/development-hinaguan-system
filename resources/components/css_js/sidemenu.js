@@ -559,6 +559,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Immediate preload on hover/touch
     const handlePreloadTrigger = (e) => {
+        if (!e || !e.target || typeof e.target.closest !== 'function') return;
         const anchor = e.target.closest('.dash-sidebar__link[href], .dash-sidebar__profile-item[href], [data-page-transition][href], #dashSidebar a[href]');
         if (!anchor || anchor.dataset.preloaded) return;
         anchor.dataset.preloaded = '1';

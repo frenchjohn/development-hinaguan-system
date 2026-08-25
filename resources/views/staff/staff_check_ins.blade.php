@@ -859,6 +859,10 @@
 										// "Seniors" group).
 										$totalBulk = 0;
 										$activeBulk = 0;
+										$totalPool = 0;
+										$activePool = 0;
+										$totalNoPool = 0;
+										$activeNoPool = 0;
 										$bulkGender = '';
 										$bulkAgeGroup = '';
 										$bulkNationality = '';
@@ -897,6 +901,10 @@
 
 											$totalBulk = $groupBulk->count();
 											$activeBulk = $groupBulk->whereNull('checked_out_at')->count();
+											$totalPool = $groupBulk->where('has_pool_access', true)->count();
+											$activePool = $groupBulk->where('has_pool_access', true)->whereNull('checked_out_at')->count();
+											$totalNoPool = $groupBulk->where('has_pool_access', false)->count();
+											$activeNoPool = $groupBulk->where('has_pool_access', false)->whereNull('checked_out_at')->count();
 											if ($activeBulk === 0) continue;
 
 											$customer->first_name = "Bulk Companions (#$resId)";
@@ -905,6 +913,28 @@
 											$customer->age = $bulkAgeGroup;
 											$customer->gender = $bulkGender;
 											$customer->is_foreigner = $bulkNationality === 'Foreigner' ? true : false;
+										}
+
+										$currentRes = $reservationEntry?->reservation;
+										$hasAmenity = (bool) ($currentRes && $currentRes->reservationAmenities->isNotEmpty());
+										$hasPool = false;
+										if ($isBulk) {
+											$hasPool = $totalPool > 0;
+										} else {
+											$hasPool = (bool) ($reservationEntry?->has_pool_access ?? false);
+										}
+
+										$glowClass = '';
+										$glowTitle = '';
+										if ($hasPool && $hasAmenity) {
+											$glowClass = 'guest-avatar-glow--both';
+											$glowTitle = 'Pool Pass + Amenity Booked';
+										} elseif ($hasPool) {
+											$glowClass = 'guest-avatar-glow--pool';
+											$glowTitle = 'Pool Pass Active';
+										} elseif ($hasAmenity) {
+											$glowClass = 'guest-avatar-glow--amenity';
+											$glowTitle = 'Amenity Booked';
 										}
 									@endphp
 									<tr
@@ -916,6 +946,12 @@
 										data-bulk-group="{{ $isBulk ? 'true' : 'false' }}"
 										data-bulk-total="{{ $totalBulk }}"
 										data-bulk-active="{{ $activeBulk }}"
+										data-bulk-total-pool="{{ $totalPool }}"
+										data-bulk-active-pool="{{ $activePool }}"
+										data-bulk-total-no-pool="{{ $totalNoPool }}"
+										data-bulk-active-no-pool="{{ $activeNoPool }}"
+										data-has-pool="{{ $hasPool ? 'true' : 'false' }}"
+										data-has-amenity="{{ $hasAmenity ? 'true' : 'false' }}"
 										data-bulk-demo="{{ $isBulk ? ($bulkGender . ' · ' . $bulkAgeGroup . ' · ' . $bulkNationality) : '' }}"
 										data-bulk-gender="{{ $isBulk ? $bulkGender : '' }}"
 										data-bulk-age-group="{{ $isBulk ? $bulkAgeGroup : '' }}"
@@ -937,7 +973,7 @@
 									>
 										<td>
 											<div class="cell-person flex min-w-0 items-center gap-2.5">
-												<span class="cell-person__avatar flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
+												<span class="cell-person__avatar {{ $glowClass }} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $glowTitle ? ($glowTitle . ' • ') : '' }}{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
 													@if($isBulk)
 														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
 													@elseif($isPrimary)
@@ -952,8 +988,15 @@
 													</button>
 												@endif
 												<div class="cell-person__body min-w-0">
-													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
+													<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
 														<span>{{ $isBulk ? $customer->first_name : trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</span>
+														@if($hasPool && $hasAmenity)
+															<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked">🏊 Pool + 🏡</span>
+														@elseif($hasPool)
+															<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active">🏊 Pool</span>
+														@elseif($hasAmenity)
+															<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">🏡 Amenity</span>
+														@endif
 														@if($isStray)
 															<span class="rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.6rem] font-semibold text-white">Stray</span>
 														@endif
@@ -966,6 +1009,9 @@
 													<div class="guest-meta mt-0.5 flex items-center gap-2 text-[0.72rem] leading-tight text-hp-text-muted">
 														@if($isBulk)
 															<span>{{ $customer->middle_name }}</span>
+															@if($totalPool > 0)
+																<span class="text-sky-700 dark:text-sky-400 font-medium">({{ $activePool }}/{{ $totalPool }} with pool)</span>
+															@endif
 														@else
 															<span>ID: {{ $customer->id }}</span>
 														@endif
@@ -1373,11 +1419,17 @@
 										</button>
 									</div>
 
+									<!-- Pool Access Policy Selector -->
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
-											<input type="checkbox" name="include_pool" id="include_pool" class="h-4 w-4 accent-hp-green">
-											<span>Include Pool Access</span>
-										</label>
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInPoolOption">Pool Access Policy</label>
+										<select name="pool_option" id="walkInPoolOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="no_pool" selected>No Pool Access (Default • ₱0.00)</option>
+											<option value="specific">Specific Pool Access (Select Guests / Groups)</option>
+											<option value="all_paid">All Pool Access (Standard Rate)</option>
+											<option value="all_free">All Pool Access Free (Promo • ₱0.00)</option>
+										</select>
+										<input type="hidden" name="include_pool" id="include_pool_legacy" value="0">
+										<p class="m-0 text-[0.72rem] text-hp-text-muted" id="walkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
 									</div>
 
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
@@ -1416,8 +1468,9 @@
 								</div>
 
 								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
-									<div class="guest-form__section-header mb-2">
+									<div class="guest-form__section-header mb-2 flex items-center justify-between">
 										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest</h4>
+										<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300">🏊 Pool Pass</span>
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_first_name">First name</label>
@@ -1455,7 +1508,7 @@
 											<option value="1">Foreigner</option>
 										</select>
 									</div>
-									<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+									<div class="guest-form__row guest-form__row--two mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
 										<div class="guest-form__field-group grid gap-1.5">
 											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_phone">Phone</label>
 											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
@@ -1464,6 +1517,16 @@
 											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_email">Email</label>
 											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
+									</div>
+									<!-- Primary Guest Specific Pool Toggle -->
+									<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
+										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+											<div class="flex items-center gap-2">
+												<span class="text-base">🏊</span>
+												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for Primary Guest</span>
+											</div>
+											<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+										</label>
 									</div>
 								</div>
 							</div>
@@ -1749,6 +1812,15 @@
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
 									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+										<div class="flex items-center gap-2">
+											<span class="text-base">🏊</span>
+											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for this Companion</span>
+										</div>
+										<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+									</label>
+								</div>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
 								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
@@ -1784,8 +1856,18 @@
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity</label>
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity (Total in Group)</label>
 									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-3" id="bulkCompanionPoolWrap">
+									<div class="flex items-center justify-between">
+										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_pool_quantity">
+											<span>🏊</span> Pool Access Quantity
+										</label>
+										<span class="text-[0.72rem] text-hp-text-muted" id="bulkPoolQtyHint">0 of 1 with pool access</span>
+									</div>
+									<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									<p class="m-0 text-[0.7rem] text-hp-text-muted">Specify how many people in this bulk group want pool access (e.g. 3 of 5).</p>
 								</div>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
@@ -2380,61 +2462,106 @@
 				{{-- Bulk Group Manage Modal --}}
 				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-bulk-manage-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
+					<div class="guest-modal__content relative z-[1] w-full max-w-[640px] max-h-[min(88vh,820px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-manage-modal="true" aria-label="Close form">&times;</button>
 
-						<div class="guest-modal__header flex flex-col items-center gap-1 border-b-0 p-8 pb-4 text-center">
-							<div class="guest-modal__icon-wrap mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#6e9f54] to-[#2e7d55] text-white shadow-[0_4px_15px_rgba(46,125,85,0.3)]">
-								<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+						<div class="guest-modal__header flex flex-col items-center gap-1 border-b-0 p-6 pb-3 text-center">
+							<div class="guest-modal__icon-wrap mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#6e9f54] to-[#2e7d55] text-white shadow-[0_4px_15px_rgba(46,125,85,0.3)]">
+								<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
 								</svg>
 							</div>
-							<h3 id="bulkGroupManageTitle" class="guest-modal__title m-0 text-xl font-bold text-hp-text">Manage Bulk Companions</h3>
-							<div class="mt-2 flex items-center justify-center gap-2 text-sm text-hp-text-muted">
+							<h3 id="bulkGroupManageTitle" class="guest-modal__title m-0 text-lg font-bold text-hp-text">Manage Bulk Companions</h3>
+							<div class="mt-1 flex items-center justify-center gap-2 text-xs text-hp-text-muted">
 								<span>Reservation</span>
-								<span id="bulkManageResId" class="rounded-xl border border-glass-border bg-glass-hover px-2.5 py-1 font-semibold text-hp-text">#</span>
+								<span id="bulkManageResId" class="rounded-lg border border-glass-border bg-glass-hover px-2 py-0.5 font-semibold text-hp-text">#</span>
 							</div>
 						</div>
 
-						<div class="guest-modal__body p-8 pt-0 text-center">
-							<div id="bulkManageDemographics" class="mb-8 inline-flex items-center gap-2 rounded-full border border-dashed border-[rgba(46,125,85,0.3)] bg-hp-cream px-5 py-3 font-medium text-hp-green-mid dark:bg-white/5">
-								<!-- Rendered dynamically via JS -->
+						<div class="guest-modal__body p-6 pt-0 text-center">
+							<div class="mb-4 flex flex-wrap items-center justify-center gap-2">
+								<div id="bulkManageDemographics" class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[rgba(46,125,85,0.3)] bg-hp-cream px-3.5 py-1.5 text-xs font-semibold text-hp-green-mid dark:bg-white/5">
+									<!-- Rendered dynamically via JS -->
+								</div>
+								<div class="inline-flex items-center gap-1 rounded-full border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text-muted">
+									<span>Total Inside:</span>
+									<strong id="bulkManageActiveCount" class="text-hp-text">0</strong>
+									<span>/</span>
+									<span id="bulkManageTotalCount">0</span>
+								</div>
 							</div>
 
-							<div class="mb-6 flex items-center justify-center gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-[0_2px_8px_rgba(0,0,0,0.02)] dark:bg-glass">
-								<button type="button" id="bulkManageBtnDecrease" aria-label="Check out one companion" class="flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/15 text-rose-500 dark:text-rose-400 transition-all duration-200 hover:bg-rose-500/25">
-									<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
-								</button>
+							{{-- 2 Separate Checkouters (Pool vs No Pool) --}}
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+								{{-- Section 1: Companions WITH Pool Access --}}
+								<div class="rounded-2xl border border-sky-500/25 bg-sky-500/5 p-4 text-center flex flex-col justify-between dark:bg-sky-950/20">
+									<div>
+										<div class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2.5 py-1 text-xs font-bold text-sky-700 dark:text-sky-300 mb-2">
+											<span>🏊 With Pool Pass</span>
+										</div>
 
-								<div class="flex flex-col items-center">
-									<span id="bulkManageActiveCount" class="font-['Montserrat',sans-serif] text-[3.5rem] font-extrabold leading-none text-hp-text">0</span>
-									<div class="mt-2 flex items-center gap-1 rounded-xl bg-glass-strong px-3 py-1 text-[0.8rem] text-hp-text-muted">
-										<span>out of</span>
-										<span id="bulkManageTotalCount" class="font-bold text-hp-text">0</span>
-										<span>inside</span>
+										<div class="my-2">
+											<span id="bulkManagePoolActiveCount" class="font-['Montserrat',sans-serif] text-3xl font-extrabold leading-none text-sky-600 dark:text-sky-400">0</span>
+											<div class="text-[0.75rem] text-hp-text-muted mt-1">
+												<span>out of <strong id="bulkManagePoolTotalCount" class="text-hp-text">0</strong> inside</span>
+											</div>
+										</div>
 									</div>
+
+									<div id="bulkManagePoolControls" class="mt-3 pt-3 border-t border-sky-500/20">
+										<div class="flex items-center justify-center gap-1.5 mb-2">
+											<button type="button" id="bulkManagePoolQtyMinus" aria-label="Decrease quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-sky-500/30 bg-glass text-base text-hp-text hover:bg-sky-500/20 transition-colors">−</button>
+											<input type="number" id="bulkManagePoolQtyInput" value="1" min="1" max="50" class="bulk-stepper__input h-8 w-14 border border-sky-500/30 rounded-lg bg-glass text-center text-sm font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label="Pool companions to check out">
+											<button type="button" id="bulkManagePoolQtyPlus" aria-label="Increase quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-sky-500/30 bg-glass text-base text-hp-text hover:bg-sky-500/20 transition-colors">+</button>
+										</div>
+										<div class="flex items-center gap-2">
+											<button type="button" id="bulkManagePoolBtnDecrease" title="Quick check out 1 pool companion" class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-700 dark:text-sky-300 font-bold hover:bg-sky-500/25 transition-colors">−1</button>
+											<button type="button" id="bulkManagePoolCheckOutBtn" class="flex-1 flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border-0 bg-sky-600 px-3 text-xs font-bold text-white transition-colors hover:bg-sky-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+												Check Out Pool
+											</button>
+										</div>
+									</div>
+									<div id="bulkManagePoolEmptyMsg" class="hidden text-xs text-hp-text-muted italic py-3">All pool companions checked out</div>
+								</div>
+
+								{{-- Section 2: Companions WITHOUT Pool Access --}}
+								<div class="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-center flex flex-col justify-between dark:bg-amber-950/20">
+									<div>
+										<div class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
+											<span>🚶 Standard (No Pool)</span>
+										</div>
+
+										<div class="my-2">
+											<span id="bulkManageNoPoolActiveCount" class="font-['Montserrat',sans-serif] text-3xl font-extrabold leading-none text-amber-700 dark:text-amber-400">0</span>
+											<div class="text-[0.75rem] text-hp-text-muted mt-1">
+												<span>out of <strong id="bulkManageNoPoolTotalCount" class="text-hp-text">0</strong> inside</span>
+											</div>
+										</div>
+									</div>
+
+									<div id="bulkManageNoPoolControls" class="mt-3 pt-3 border-t border-amber-500/20">
+										<div class="flex items-center justify-center gap-1.5 mb-2">
+											<button type="button" id="bulkManageNoPoolQtyMinus" aria-label="Decrease quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-glass text-base text-hp-text hover:bg-amber-500/20 transition-colors">−</button>
+											<input type="number" id="bulkManageNoPoolQtyInput" value="1" min="1" max="50" class="bulk-stepper__input h-8 w-14 border border-amber-500/30 rounded-lg bg-glass text-center text-sm font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label="Standard companions to check out">
+											<button type="button" id="bulkManageNoPoolQtyPlus" aria-label="Increase quantity" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-amber-500/30 bg-glass text-base text-hp-text hover:bg-amber-500/20 transition-colors">+</button>
+										</div>
+										<div class="flex items-center gap-2">
+											<button type="button" id="bulkManageNoPoolBtnDecrease" title="Quick check out 1 standard companion" class="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold hover:bg-amber-500/25 transition-colors">−1</button>
+											<button type="button" id="bulkManageNoPoolCheckOutBtn" class="flex-1 flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-xl border-0 bg-amber-600 px-3 text-xs font-bold text-white transition-colors hover:bg-amber-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+												Check Out Standard
+											</button>
+										</div>
+									</div>
+									<div id="bulkManageNoPoolEmptyMsg" class="hidden text-xs text-hp-text-muted italic py-3">All standard companions checked out</div>
 								</div>
 							</div>
 
-							{{-- Check out several companions at once --}}
-							<div class="mb-4 rounded-2xl border border-glass-border bg-glass p-4 dark:bg-glass">
-								<p class="mb-3 text-center text-[0.72rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Check out multiple at once</p>
-								<div class="flex items-center justify-center gap-2.5">
-									<button type="button" id="bulkManageQtyMinus" aria-label="Decrease quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">−</button>
-									<input type="number" id="bulkManageQtyInput" value="1" min="1" max="50" class="bulk-stepper__input h-11 w-16 border-x-0 border border-glass-border bg-transparent text-center text-lg font-bold text-hp-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" aria-label="Number of companions to check out">
-									<button type="button" id="bulkManageQtyPlus" aria-label="Increase quantity" class="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-lg text-hp-text transition-colors duration-200 hover:bg-glass-hover">+</button>
-									<button type="button" id="bulkManageCheckOutBtn" class="ml-1 flex h-11 cursor-pointer items-center gap-2 rounded-xl border-0 bg-rose-600 px-5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-rose-700 shadow-[0_2px_8px_rgba(225,29,72,0.25)]">
-										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" /></svg>
-										Check Out
-									</button>
-								</div>
-							</div>
-
-							<div class="flex items-center justify-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-left text-[0.8rem] leading-[1.4] text-rose-600 dark:text-rose-400">
-								<svg class="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-								<span>Click the <strong>minus button</strong> to check out one, or set a quantity and press <strong>Check Out</strong> to check out several at once.</span>
+							<div class="flex items-center justify-center gap-2 rounded-xl border border-glass-border bg-glass p-2.5 text-left text-[0.75rem] leading-[1.4] text-hp-text-muted">
+								<svg class="h-4 w-4 shrink-0 text-hp-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+								<span>Check out companions with pool passes or standard companions separately by specifying quantity and clicking the corresponding checkout button.</span>
 							</div>
 						</div>
+					</div>
 					</div>
 				</div>
 
