@@ -1273,12 +1273,38 @@
 										</td>
 										<td>
 											@if ($primaryGuest)
+												@php
+													$resHasAmenity = (bool) $reservation->reservationAmenities->isNotEmpty();
+													$primaryGuestObj = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
+													$primaryHasPool = (bool) ($primaryGuestObj?->has_pool_access ?? false);
+													$resGlowClass = '';
+													$resGlowTitle = '';
+													if ($primaryHasPool && $resHasAmenity) {
+														$resGlowClass = 'guest-avatar-glow--both';
+														$resGlowTitle = 'Pool Pass + Amenity Booked';
+													} elseif ($primaryHasPool) {
+														$resGlowClass = 'guest-avatar-glow--pool';
+														$resGlowTitle = 'Pool Pass Active';
+													} elseif ($resHasAmenity) {
+														$resGlowClass = 'guest-avatar-glow--amenity';
+														$resGlowTitle = 'Amenity Booked';
+													}
+												@endphp
 												<div class="cell-person flex min-w-0 items-center gap-2.5">
-													<span class="cell-person__avatar cell-person__avatar--star flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm" title="Main Guest">
+													<span class="cell-person__avatar cell-person__avatar--star {{ $resGlowClass }} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm" title="{{ $resGlowTitle ? ($resGlowTitle . ' • ') : '' }}Main Guest">
 														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
 													</span>
 													<div class="cell-person__body min-w-0">
-														<div class="guest-name truncate text-[0.82rem] font-semibold leading-tight text-hp-text">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</div>
+														<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
+															<span class="truncate">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</span>
+															@if($primaryHasPool && $resHasAmenity)
+																<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked">🏊 Pool + 🏡</span>
+															@elseif($primaryHasPool)
+																<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active">🏊 Pool</span>
+															@elseif($resHasAmenity)
+																<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">🏡 Amenity</span>
+															@endif
+														</div>
 													</div>
 												</div>
 											@else

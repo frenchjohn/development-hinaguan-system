@@ -3566,6 +3566,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'id' => $guestEntry->id,
                         'customer_id' => $customer?->id,
                         'is_primary_guest' => (bool) $guestEntry->is_primary_guest,
+                        'has_pool_access' => (bool) $guestEntry->has_pool_access,
                         'checked_out_at' => $guestEntry->checked_out_at,
                         'customer' => [
                             'first_name' => $customer?->first_name,
@@ -3660,6 +3661,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'id' => $reservationGuest->id,
                         'checked_out_at' => $reservationGuest->checked_out_at,
                         'is_primary_guest' => (bool) $reservationGuest->is_primary_guest,
+                        'has_pool_access' => (bool) $reservationGuest->has_pool_access,
                         'reservation' => $reservationGuest->reservation ? [
                             'id' => $reservationGuest->reservation->id,
                             'reservation_type' => $reservationGuest->reservation->reservation_type,
@@ -3683,6 +3685,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'reservation_guests' => $reservationGuest->reservation->reservationGuests->map(function ($guestEntry) {
                                 return [
                                     'is_primary_guest' => (bool) $guestEntry->is_primary_guest,
+                                    'has_pool_access' => (bool) $guestEntry->has_pool_access,
                                     'customer' => [
                                         'first_name' => $guestEntry->customer?->first_name,
                                         'last_name' => $guestEntry->customer?->last_name,
@@ -3747,6 +3750,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'id' => $guestEntry->id,
                         'customer_id' => $guestEntry->customer_id,
                         'is_primary_guest' => (bool) $guestEntry->is_primary_guest,
+                        'has_pool_access' => (bool) $guestEntry->has_pool_access,
                         'checked_out_at' => $guestEntry->checked_out_at,
                         'customer' => [
                             'first_name' => $customer?->first_name,

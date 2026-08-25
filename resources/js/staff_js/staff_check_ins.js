@@ -291,6 +291,11 @@ window.AppPage['staff_check_ins'] = function () {
         const primaryGuest = guestsList.find(g => g.is_primary_guest);
         const companions = guestsList.filter(g => !g.is_primary_guest);
 
+        const totalResGuests = guestsList.length || parseInt(reservation.number_of_guests || 0, 10);
+        const activeResGuests = guestsList.filter(g => !g.checked_out_at).length;
+        const totalPoolGuests = guestsList.filter(g => Boolean(g.has_pool_access)).length;
+        const activePoolGuests = guestsList.filter(g => Boolean(g.has_pool_access) && !g.checked_out_at).length;
+
         // Does this reservation cover multiple amenity time periods?
         // (Daytime vs Daytime Aircon = same time; strip Aircon before comparing.)
         const validAmenities = (reservation.reservation_amenities || []).filter(a => a.price > 0 || a.price_at_booking > 0 || a.amenity_name || a.amenity);
@@ -332,7 +337,31 @@ window.AppPage['staff_check_ins'] = function () {
                 </div>
                 <div class="ci-col ci-border-left">
                     <span class="ci-label">GUESTS</span>
-                    <div class="ci-value">${reservation.number_of_guests || (reservation.reservation_guests ? reservation.reservation_guests.length : 0)}</div>
+                    <div class="ci-value">${totalResGuests}</div>
+                </div>
+            </div>
+
+            <!-- Guests & Pool Attendance Breakdown Stats Card -->
+            <div class="ci-design-box" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem;">
+                <div class="ci-col" style="background: rgba(23,138,82,0.06); border: 1px solid rgba(23,138,82,0.2); border-radius: 0.75rem; padding: 0.75rem;">
+                    <span class="ci-label" style="color: #0e5c37; font-weight: 700;">TOTAL GUESTS</span>
+                    <div class="ci-value-lg" style="color: #0e5c37; font-size: 1.3rem;">${totalResGuests}</div>
+                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Total of reservation</div>
+                </div>
+                <div class="ci-col" style="background: rgba(23,138,82,0.06); border: 1px solid rgba(23,138,82,0.2); border-radius: 0.75rem; padding: 0.75rem;">
+                    <span class="ci-label" style="color: #0e5c37; font-weight: 700;">CURRENT GUESTS</span>
+                    <div class="ci-value-lg" style="color: #0e5c37; font-size: 1.3rem;">${activeResGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalResGuests}</span></div>
+                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Currently inside</div>
+                </div>
+                <div class="ci-col" style="background: rgba(14,165,233,0.08); border: 1px solid rgba(14,165,233,0.25); border-radius: 0.75rem; padding: 0.75rem;">
+                    <span class="ci-label" style="color: #0284c7; font-weight: 700;">TOTAL POOL PASSES</span>
+                    <div class="ci-value-lg" style="color: #0284c7; font-size: 1.3rem;">${totalPoolGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalResGuests}</span></div>
+                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">With pool pass</div>
+                </div>
+                <div class="ci-col" style="background: rgba(14,165,233,0.08); border: 1px solid rgba(14,165,233,0.25); border-radius: 0.75rem; padding: 0.75rem;">
+                    <span class="ci-label" style="color: #0284c7; font-weight: 700;">CURRENT POOL GUESTS</span>
+                    <div class="ci-value-lg" style="color: #0284c7; font-size: 1.3rem;">${activePoolGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalPoolGuests}</span></div>
+                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Active pool inside</div>
                 </div>
             </div>
 
@@ -435,10 +464,15 @@ window.AppPage['staff_check_ins'] = function () {
                 const age = c.customer.age || 'Unknown';
                 const key = `${gender}/${status}/${age}`;
                 if (!bulkGroups[key]) {
-                    bulkGroups[key] = { gender, status, age, count: 0 };
+                    bulkGroups[key] = { gender, status, age, count: 0, poolCount: 0 };
                 }
                 bulkGroups[key].count++;
+                if (c.has_pool_access) bulkGroups[key].poolCount++;
             });
+
+            const hasAmenity = validAmenities.length > 0;
+            const primaryHasPool = Boolean(primaryGuest?.has_pool_access);
+            const primaryGlow = primaryHasPool && hasAmenity ? 'guest-avatar-glow--both' : (primaryHasPool ? 'guest-avatar-glow--pool' : (hasAmenity ? 'guest-avatar-glow--amenity' : ''));
 
             html += `
                 <div style="margin-top:1.5rem;">
@@ -446,11 +480,14 @@ window.AppPage['staff_check_ins'] = function () {
                     <div class="ci-guest-grid">
                         ${primaryGuest && primaryGuest.customer ? `
                             <div class="ci-guest-card">
-                                <div class="ci-guest-icon">
+                                <div class="ci-guest-icon ${primaryGlow}">
                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                                 </div>
                                 <div class="ci-guest-info">
-                                    <div class="ci-guest-role">PRIMARY GUEST</div>
+                                    <div class="ci-guest-role flex items-center gap-1.5">
+                                        <span>PRIMARY GUEST</span>
+                                        ${primaryHasPool && hasAmenity ? '<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏊 Pool + 🏡</span>' : (primaryHasPool ? '<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏊 Pool Pass</span>' : (hasAmenity ? '<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏡 Amenity</span>' : '<span style="font-size: 0.62rem; background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); color: #475569; padding: 1px 6px; border-radius: 8px; font-weight: 700;">Standard</span>'))}
+                                    </div>
                                     <div class="ci-guest-name">${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</div>
                                     <div class="ci-guest-meta">${primaryGuest.customer.age || 'N/A'} yrs - ${primaryGuest.customer.gender || 'N/A'} - ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                                 </div>
@@ -461,20 +498,25 @@ window.AppPage['staff_check_ins'] = function () {
             if (bulkCompanions.length > 0 || individualCompanions.length > 0) {
                 const totalCompanions = bulkCompanions.length + individualCompanions.length;
                 const singleCount = individualCompanions.length;
+                const singlePoolCount = individualCompanions.filter(c => Boolean(c.has_pool_access)).length;
                 const bulkCount = bulkCompanions.length;
+                const bulkPoolCount = bulkCompanions.filter(c => Boolean(c.has_pool_access)).length;
                 let summaryLines = '';
                 if (singleCount > 0) {
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single companions: <strong>${singleCount}</strong></div>`;
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single companions: <strong>${singleCount}</strong> (${singlePoolCount} with pool)</div>`;
                 }
                 if (bulkCount > 0) {
                     const groupSummary = Object.values(bulkGroups)
-                        .map(g => `${g.gender} · ${ageGroupLabel(g.age)} ×${g.count}`)
+                        .map(g => `${g.gender} · ${ageGroupLabel(g.age)} ×${g.count} (${g.poolCount} pool)`)
                         .join(' · ');
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companions: <strong>${bulkCount}</strong>${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">(${groupSummary})</span>` : ''}</div>`;
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companions: <strong>${bulkCount}</strong> (${bulkPoolCount} with pool)${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">— ${groupSummary}</span>` : ''}</div>`;
                 }
+                const companionsHasPool = singlePoolCount > 0 || bulkPoolCount > 0;
+                const companionsGlow = companionsHasPool && hasAmenity ? 'guest-avatar-glow--both' : (companionsHasPool ? 'guest-avatar-glow--pool' : (hasAmenity ? 'guest-avatar-glow--amenity' : ''));
+
                 html += `
                     <div class="ci-guest-card" style="align-items: flex-start;">
-                        <div class="ci-guest-icon" style="margin-top: 0.2rem;">
+                        <div class="ci-guest-icon ${companionsGlow}" style="margin-top: 0.2rem;">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                         </div>
                         <div class="ci-guest-info" style="width: 100%;">
@@ -2795,12 +2837,29 @@ window.AppPage['staff_check_ins'] = function () {
                             const pill = g.is_primary_guest
                                 ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
                                 : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
+
+                            const gHasPool = Boolean(g.has_pool_access);
+                            const gHasAmenity = Boolean(reservation.reservation_amenities && reservation.reservation_amenities.length > 0);
+                            const gGlowClass = gHasPool && gHasAmenity ? 'guest-avatar-glow--both' : (gHasPool ? 'guest-avatar-glow--pool' : (gHasAmenity ? 'guest-avatar-glow--amenity' : ''));
+                            let poolBadge = '';
+                            if (gHasPool && gHasAmenity) {
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool + 🏡</span>`;
+                            } else if (gHasPool) {
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool</span>`;
+                            } else if (gHasAmenity) {
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏡 Amenity</span>`;
+                            }
+
                             // Clicking a guest (main or single companion) opens
                             // the same detail modal as the guest table.
-                            guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 4px 0; cursor: pointer; border-radius: 6px; transition: background 0.15s ease;">
-                                <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: ${g.is_primary_guest ? 'var(--hp-gold)' : 'var(--hp-green)'};"></span>
-                                ${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name} ${pill}
-                                <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
+                            guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 6px 8px; cursor: pointer; border-radius: 8px; transition: background 0.15s ease;" class="hover:bg-black/5 dark:hover:bg-white/5">
+                                <span class="nested-guest-avatar ${gGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: ${g.is_primary_guest ? 'linear-gradient(135deg, #178a52, #0e5c37)' : 'linear-gradient(135deg, #2f6f45, #178a52)'}; color: #fff; font-size: 0.6rem; font-weight: bold;">
+                                    ${g.is_primary_guest ? '★' : '•'}
+                                </span>
+                                <span>${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name}</span>
+                                ${pill}
+                                ${poolBadge}
+                                <span style="color: var(--hp-text-muted); font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
                              </div>`;
                         });
 
@@ -2822,15 +2881,52 @@ window.AppPage['staff_check_ins'] = function () {
                             });
 
                             Object.values(bulkGroupMap).forEach(group => {
+                                const totalBulk = group.members.length;
                                 const activeBulk = group.members.filter(g => !g.checked_out_at).length;
+                                const totalPool = group.members.filter(g => Boolean(g.has_pool_access)).length;
+                                const activePool = group.members.filter(g => Boolean(g.has_pool_access) && !g.checked_out_at).length;
+                                const totalNoPool = group.members.filter(g => !g.has_pool_access).length;
+                                const activeNoPool = group.members.filter(g => !g.has_pool_access && !g.checked_out_at).length;
+
                                 // Fully checked-out groups disappear from the
                                 // dropdown — never show an empty group.
                                 if (activeBulk === 0) return;
+
+                                const groupHasPool = totalPool > 0;
+                                const groupHasAmenity = Boolean(reservation.reservation_amenities && reservation.reservation_amenities.length > 0);
+                                const groupGlowClass = groupHasPool && groupHasAmenity ? 'guest-avatar-glow--both' : (groupHasPool ? 'guest-avatar-glow--pool' : (groupHasAmenity ? 'guest-avatar-glow--amenity' : ''));
+
+                                let poolBadge = '';
+                                if (groupHasPool && groupHasAmenity) {
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool + 🏡</span>`;
+                                } else if (groupHasPool) {
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool (${activePool}/${totalPool})</span>`;
+                                } else if (groupHasAmenity) {
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏡 Amenity</span>`;
+                                }
+
                                 const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
-                                guestsHtml += `<div class="bulk-group-row-trigger" data-res-id="${resId}" data-bulk-active="${activeBulk}" data-bulk-total="${group.members.length}" data-bulk-demo="${demo}" data-bulk-gender="${group.gender}" data-bulk-age-group="${group.ageGroup}" data-bulk-nationality="${group.nationality}" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 4px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; color: var(--hp-green);">
-                                    <span style="width: 0.55rem; height: 0.55rem; border-radius: 50%; margin-right: 0.5rem; flex-shrink: 0; background: #0e7490;"></span>
-                                    Bulk Companions (#${resId}) <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${group.members.length} Checked In</span>
-                                    <span style="color: #888; font-size: 0.75rem; margin-left: auto;">${demo}</span>
+                                guestsHtml += `<div class="bulk-group-row-trigger hover:bg-black/5 dark:hover:bg-white/5"
+                                    data-res-id="${resId}"
+                                    data-bulk-active="${activeBulk}"
+                                    data-bulk-total="${totalBulk}"
+                                    data-bulk-active-pool="${activePool}"
+                                    data-bulk-total-pool="${totalPool}"
+                                    data-bulk-active-no-pool="${activeNoPool}"
+                                    data-bulk-total-no-pool="${totalNoPool}"
+                                    data-bulk-demo="${demo}"
+                                    data-bulk-gender="${group.gender}"
+                                    data-bulk-age-group="${group.ageGroup}"
+                                    data-bulk-nationality="${group.nationality}"
+                                    style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 6px 8px; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; border-radius: 8px; transition: background 0.15s ease; color: var(--hp-green);"
+                                >
+                                    <span class="nested-guest-avatar ${groupGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0e7490, #155e75); color: #fff; font-size: 0.6rem; font-weight: bold;">
+                                        👥
+                                    </span>
+                                    <span>Bulk Companions (#${resId})</span>
+                                    <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${totalBulk} Checked In</span>
+                                    ${poolBadge}
+                                    <span style="color: var(--hp-text-muted); font-size: 0.75rem; margin-left: auto;">${demo}</span>
                                  </div>`;
                             });
                         }
@@ -2855,7 +2951,19 @@ window.AppPage['staff_check_ins'] = function () {
     document.addEventListener('click', (e) => {
         const bulkTrigger = e.target.closest('.bulk-group-row-trigger');
         if (bulkTrigger) {
-            openBulkManageModal(bulkTrigger.dataset.resId, bulkTrigger.dataset.bulkActive, bulkTrigger.dataset.bulkTotal, bulkTrigger.dataset.bulkDemo, bulkTrigger.dataset.bulkGender, bulkTrigger.dataset.bulkAgeGroup, bulkTrigger.dataset.bulkNationality);
+            openBulkManageModal(
+                bulkTrigger.dataset.resId,
+                bulkTrigger.dataset.bulkActive,
+                bulkTrigger.dataset.bulkTotal,
+                bulkTrigger.dataset.bulkDemo,
+                bulkTrigger.dataset.bulkGender,
+                bulkTrigger.dataset.bulkAgeGroup,
+                bulkTrigger.dataset.bulkNationality,
+                bulkTrigger.dataset.bulkActivePool,
+                bulkTrigger.dataset.bulkTotalPool,
+                bulkTrigger.dataset.bulkActiveNoPool,
+                bulkTrigger.dataset.bulkTotalNoPool
+            );
             return;
         }
         // Guest rows inside an expanded reservation: main guest + single
