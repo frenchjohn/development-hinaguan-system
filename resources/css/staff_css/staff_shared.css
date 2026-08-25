@@ -11,7 +11,8 @@
    1. Design tokens (also refreshes the --hp-* tokens the
    page-specific stylesheets rely on)
    ------------------------------------------------------------ */
-body.staff-portal, body.admin-portal {
+body.staff-portal,
+body.admin-portal {
     /* Legacy token names used by page CSS */
     --hp-green-darkest: #0c2015;
     --hp-green-dark: #14402b;
@@ -77,6 +78,7 @@ body.admin-portal .bg-glass {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
+
 [data-theme="dark"] body.staff-portal .bg-glass,
 [data-theme="dark"] body.admin-portal .bg-glass {
     background-color: rgba(24, 27, 25, 0.90) !important;
@@ -87,6 +89,7 @@ body.admin-portal .bg-glass {
 body.staff-portal .border-glass-border {
     border-color: rgba(255, 255, 255, 0.80) !important;
 }
+
 [data-theme="dark"] body.staff-portal .border-glass-border {
     border-color: rgba(255, 255, 255, 0.08) !important;
 }
@@ -94,11 +97,13 @@ body.staff-portal .border-glass-border {
 body.staff-portal .shadow-glass {
     box-shadow: 0 4px 20px rgba(20, 50, 30, 0.04) !important;
 }
+
 [data-theme="dark"] body.staff-portal .shadow-glass {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
 }
 
-[data-theme="dark"] body.staff-portal, [data-theme="dark"] body.admin-portal {
+[data-theme="dark"] body.staff-portal,
+[data-theme="dark"] body.admin-portal {
     /* Sleek modern dark mode: Deep charcoal canvas, clean neutral dark cards,
        crisp light typography, and subtle neutral borders that eliminate any neon green glow. */
     --hp-green-darkest: #0f1110;
@@ -232,6 +237,7 @@ body.admin-portal .dash-main::before {
 }
 
 @media (max-width: 992px) {
+
     body.staff-portal .dash-main::before,
     body.admin-portal .dash-main::before {
         left: 0 !important;
@@ -294,14 +300,16 @@ body.admin-portal {
 
 /* Content: fills the FULL available width — no centering cap, no big side
    gutters. Only modest balanced padding remains. */
-body.staff-portal .dash-content , body.admin-portal .dash-content {
+body.staff-portal .dash-content,
+body.admin-portal .dash-content {
     max-width: none;
     margin: 0;
     min-width: 0;
     padding: 1.25rem clamp(1rem, 1.6vw, 1.75rem) 2.75rem;
 }
 
-body.staff-portal .dash-main , body.admin-portal .dash-main {
+body.staff-portal .dash-main,
+body.admin-portal .dash-main {
     background: transparent !important;
     min-width: 0;
     /* clip (not hidden) so the y-axis stays visible per spec */
@@ -310,31 +318,52 @@ body.staff-portal .dash-main , body.admin-portal .dash-main {
 
 /* Let grid/flex children shrink below their content width so nowrap text,
    badges and charts can never force the page wider than the viewport. */
-body.staff-portal .dash-stats>*, body.admin-portal .dash-stats>*,
-body.staff-portal .dash-charts>*, body.admin-portal .dash-charts>*,
-body.staff-portal .dash-grid-3>*, body.admin-portal .dash-grid-3>*,
-body.staff-portal .reports-metrics>*, body.admin-portal .reports-metrics>*,
-body.staff-portal .records-summary>*, body.admin-portal .records-summary>*,
-body.staff-portal .reports-charts>*, body.admin-portal .reports-charts>*,
-body.staff-portal .reports-filters>* , body.admin-portal .reports-filters>* {
+body.staff-portal .dash-stats>*,
+body.admin-portal .dash-stats>*,
+body.staff-portal .dash-charts>*,
+body.admin-portal .dash-charts>*,
+body.staff-portal .dash-grid-3>*,
+body.admin-portal .dash-grid-3>*,
+body.staff-portal .reports-metrics>*,
+body.admin-portal .reports-metrics>*,
+body.staff-portal .records-summary>*,
+body.admin-portal .records-summary>*,
+body.staff-portal .reports-charts>*,
+body.admin-portal .reports-charts>*,
+body.staff-portal .reports-filters>*,
+body.admin-portal .reports-filters>* {
     min-width: 0;
 }
 
 /* Smooth theme switching on key surfaces */
-body.staff-portal .dash-panel, body.admin-portal .dash-panel,
-body.staff-portal .dash-stat-card, body.admin-portal .dash-stat-card,
-body.staff-portal .guest-table-wrap, body.admin-portal .guest-table-wrap,
-body.staff-portal .reports-table-wrap, body.admin-portal .reports-table-wrap,
-body.staff-portal .users-table-wrap, body.admin-portal .users-table-wrap,
-body.staff-portal .guest-panel, body.admin-portal .guest-panel,
-body.staff-portal .settings-panel, body.admin-portal .settings-panel,
-body.staff-portal .occupancy-card__content, body.admin-portal .occupancy-card__content,
-body.staff-portal .guest-form__section, body.admin-portal .guest-form__section,
-body.staff-portal .occupancy-monitor__filter-panel, body.admin-portal .occupancy-monitor__filter-panel,
-body.staff-portal .guest-modal__content, body.admin-portal .guest-modal__content,
-body.staff-portal .modal__panel, body.admin-portal .modal__panel,
-body.staff-portal .logout-modal__content, body.admin-portal .logout-modal__content,
-body.staff-portal .reports-metric-card , body.admin-portal .reports-metric-card {
+body.staff-portal .dash-panel,
+body.admin-portal .dash-panel,
+body.staff-portal .dash-stat-card,
+body.admin-portal .dash-stat-card,
+body.staff-portal .guest-table-wrap,
+body.admin-portal .guest-table-wrap,
+body.staff-portal .reports-table-wrap,
+body.admin-portal .reports-table-wrap,
+body.staff-portal .users-table-wrap,
+body.admin-portal .users-table-wrap,
+body.staff-portal .guest-panel,
+body.admin-portal .guest-panel,
+body.staff-portal .settings-panel,
+body.admin-portal .settings-panel,
+body.staff-portal .occupancy-card__content,
+body.admin-portal .occupancy-card__content,
+body.staff-portal .guest-form__section,
+body.admin-portal .guest-form__section,
+body.staff-portal .occupancy-monitor__filter-panel,
+body.admin-portal .occupancy-monitor__filter-panel,
+body.staff-portal .guest-modal__content,
+body.admin-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.admin-portal .modal__panel,
+body.staff-portal .logout-modal__content,
+body.admin-portal .logout-modal__content,
+body.staff-portal .reports-metric-card,
+body.admin-portal .reports-metric-card {
     transition: background-color 0.25s ease, border-color 0.25s ease,
         box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -353,30 +382,36 @@ body.admin-portal .dash-header {
     padding: 0 !important;
 }
 
-body.staff-portal .dash-header__overlay , body.admin-portal .dash-header__overlay {
+body.staff-portal .dash-header__overlay,
+body.admin-portal .dash-header__overlay {
     background: transparent !important;
 }
 
 /* Let the header content wrap instead of overflowing/clipping on narrow
    screens (this was a source of horizontal overflow). */
-body.staff-portal .dash-header__content , body.admin-portal .dash-header__content {
+body.staff-portal .dash-header__content,
+body.admin-portal .dash-header__content {
     flex-wrap: wrap;
     padding: 1rem 1.4rem;
 }
 
-body.staff-portal .dash-header__left , body.admin-portal .dash-header__left {
+body.staff-portal .dash-header__left,
+body.admin-portal .dash-header__left {
     max-width: none;
 }
 
-body.staff-portal .dash-header__right , body.admin-portal .dash-header__right {
+body.staff-portal .dash-header__right,
+body.admin-portal .dash-header__right {
     flex-wrap: wrap;
 }
 
-body.staff-portal .dash-header__weather , body.admin-portal .dash-header__weather {
+body.staff-portal .dash-header__weather,
+body.admin-portal .dash-header__weather {
     flex-wrap: wrap;
 }
 
-body.staff-portal .dash-header__date-time , body.admin-portal .dash-header__date-time {
+body.staff-portal .dash-header__date-time,
+body.admin-portal .dash-header__date-time {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -384,7 +419,8 @@ body.staff-portal .dash-header__date-time , body.admin-portal .dash-header__date
     backdrop-filter: none;
 }
 
-body.staff-portal .dash-header__weather , body.admin-portal .dash-header__weather {
+body.staff-portal .dash-header__weather,
+body.admin-portal .dash-header__weather {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -392,7 +428,8 @@ body.staff-portal .dash-header__weather , body.admin-portal .dash-header__weathe
     backdrop-filter: none;
 }
 
-body.staff-portal .dash-header__title , body.admin-portal .dash-header__title {
+body.staff-portal .dash-header__title,
+body.admin-portal .dash-header__title {
     font-family: var(--font-display);
     font-size: clamp(1.15rem, 1.8vw, 1.45rem);
     font-weight: 600;
@@ -400,25 +437,29 @@ body.staff-portal .dash-header__title , body.admin-portal .dash-header__title {
     color: var(--ink);
 }
 
-body.staff-portal .dash-header__subtitle , body.admin-portal .dash-header__subtitle {
+body.staff-portal .dash-header__subtitle,
+body.admin-portal .dash-header__subtitle {
     color: var(--ink-muted);
     font-weight: 500;
     font-size: 0.82rem;
 }
 
-body.staff-portal .dash-header__toggle , body.admin-portal .dash-header__toggle {
+body.staff-portal .dash-header__toggle,
+body.admin-portal .dash-header__toggle {
     background: var(--surface-2);
     border: 1px solid var(--border);
     color: var(--ink);
     box-shadow: none;
 }
 
-body.staff-portal .dash-header__toggle:hover , body.admin-portal .dash-header__toggle:hover {
+body.staff-portal .dash-header__toggle:hover,
+body.admin-portal .dash-header__toggle:hover {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .dash-header__date-time-item , body.admin-portal .dash-header__date-time-item {
+body.staff-portal .dash-header__date-time-item,
+body.admin-portal .dash-header__date-time-item {
     padding: 0.4rem 0.85rem;
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -426,54 +467,65 @@ body.staff-portal .dash-header__date-time-item , body.admin-portal .dash-header_
     box-shadow: none;
 }
 
-body.staff-portal .dash-header__date-label, body.admin-portal .dash-header__date-label,
-body.staff-portal .dash-header__time-label , body.admin-portal .dash-header__time-label {
+body.staff-portal .dash-header__date-label,
+body.admin-portal .dash-header__date-label,
+body.staff-portal .dash-header__time-label,
+body.admin-portal .dash-header__time-label {
     color: var(--ink-faint);
     font-weight: 700;
 }
 
-body.staff-portal .dash-header__date, body.admin-portal .dash-header__date,
-body.staff-portal .dash-header__time , body.admin-portal .dash-header__time {
+body.staff-portal .dash-header__date,
+body.admin-portal .dash-header__date,
+body.staff-portal .dash-header__time,
+body.admin-portal .dash-header__time {
     color: var(--ink);
     font-weight: 700;
     font-size: 0.85rem;
 }
 
-body.staff-portal .dash-header__period-indicator , body.admin-portal .dash-header__period-indicator {
+body.staff-portal .dash-header__period-indicator,
+body.admin-portal .dash-header__period-indicator {
     width: 28px;
     height: 28px;
     border-radius: 9px;
 }
 
-body.staff-portal .dash-header__period-indicator.is-daytime , body.admin-portal .dash-header__period-indicator.is-daytime {
+body.staff-portal .dash-header__period-indicator.is-daytime,
+body.admin-portal .dash-header__period-indicator.is-daytime {
     background: var(--green-soft);
     color: var(--green-deep);
     box-shadow: none;
 }
 
-body.staff-portal .dash-header__period-indicator.is-nighttime , body.admin-portal .dash-header__period-indicator.is-nighttime {
+body.staff-portal .dash-header__period-indicator.is-nighttime,
+body.admin-portal .dash-header__period-indicator.is-nighttime {
     background: #e7edf7;
     color: #3d5a8c;
     box-shadow: none;
 }
 
-[data-theme="dark"] body.staff-portal .dash-header__period-indicator.is-nighttime , [data-theme="dark"] body.admin-portal .dash-header__period-indicator.is-nighttime {
+[data-theme="dark"] body.staff-portal .dash-header__period-indicator.is-nighttime,
+[data-theme="dark"] body.admin-portal .dash-header__period-indicator.is-nighttime {
     background: #1d2a3d;
     color: #9db4dd;
 }
 
-body.staff-portal .dash-header__time-period , body.admin-portal .dash-header__time-period {
+body.staff-portal .dash-header__time-period,
+body.admin-portal .dash-header__time-period {
     font-weight: 700;
     font-size: 0.76rem;
     color: var(--ink);
 }
 
-body.staff-portal .dash-header__time-period-countdown , body.admin-portal .dash-header__time-period-countdown {
+body.staff-portal .dash-header__time-period-countdown,
+body.admin-portal .dash-header__time-period-countdown {
     font-size: 0.64rem;
     color: var(--ink-faint);
 }
 
-body.staff-portal .dash-header__weather-item , body.admin-portal .dash-header__weather-item {
+body.staff-portal .dash-header__weather-item,
+body.admin-portal .dash-header__weather-item {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -481,26 +533,31 @@ body.staff-portal .dash-header__weather-item , body.admin-portal .dash-header__w
     box-shadow: none;
 }
 
-body.staff-portal .dash-header__weather-item:hover , body.admin-portal .dash-header__weather-item:hover {
+body.staff-portal .dash-header__weather-item:hover,
+body.admin-portal .dash-header__weather-item:hover {
     background: var(--green-tint);
 }
 
-body.staff-portal .dash-header__weather-item.is-today , body.admin-portal .dash-header__weather-item.is-today {
+body.staff-portal .dash-header__weather-item.is-today,
+body.admin-portal .dash-header__weather-item.is-today {
     background: var(--green-soft);
     border-color: rgba(23, 138, 82, 0.35);
 }
 
-body.staff-portal .dash-header__weather-day , body.admin-portal .dash-header__weather-day {
+body.staff-portal .dash-header__weather-day,
+body.admin-portal .dash-header__weather-day {
     color: var(--ink-faint);
     font-weight: 700;
 }
 
-body.staff-portal .dash-header__weather-temp , body.admin-portal .dash-header__weather-temp {
+body.staff-portal .dash-header__weather-temp,
+body.admin-portal .dash-header__weather-temp {
     color: var(--ink);
     font-weight: 700;
 }
 
-body.staff-portal .dash-header__welcome , body.admin-portal .dash-header__welcome {
+body.staff-portal .dash-header__welcome,
+body.admin-portal .dash-header__welcome {
     background: var(--green-soft);
     border: 1px solid rgba(23, 138, 82, 0.25);
     border-radius: 999px;
@@ -512,7 +569,8 @@ body.staff-portal .dash-header__welcome , body.admin-portal .dash-header__welcom
     animation: none;
 }
 
-body.staff-portal .dash-header__divider , body.admin-portal .dash-header__divider {
+body.staff-portal .dash-header__divider,
+body.admin-portal .dash-header__divider {
     background: var(--border);
 }
 
@@ -615,12 +673,14 @@ body.staff-portal .dash-header__divider , body.admin-portal .dash-header__divide
 /* ------------------------------------------------------------
    5. Stat cards
    ------------------------------------------------------------ */
-body.staff-portal .dash-stats , body.admin-portal .dash-stats {
+body.staff-portal .dash-stats,
+body.admin-portal .dash-stats {
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
 }
 
-body.staff-portal .dash-stat-card , body.admin-portal .dash-stat-card {
+body.staff-portal .dash-stat-card,
+body.admin-portal .dash-stat-card {
     display: flex;
     align-items: center;
     gap: 0.9rem;
@@ -631,13 +691,15 @@ body.staff-portal .dash-stat-card , body.admin-portal .dash-stat-card {
     box-shadow: var(--shadow-xs);
 }
 
-body.staff-portal .dash-stat-card:hover , body.admin-portal .dash-stat-card:hover {
+body.staff-portal .dash-stat-card:hover,
+body.admin-portal .dash-stat-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
     border-color: var(--border-strong);
 }
 
-body.staff-portal .dash-stat-card__icon , body.admin-portal .dash-stat-card__icon {
+body.staff-portal .dash-stat-card__icon,
+body.admin-portal .dash-stat-card__icon {
     width: 46px;
     height: 46px;
     flex-shrink: 0;
@@ -651,26 +713,31 @@ body.staff-portal .dash-stat-card__icon , body.admin-portal .dash-stat-card__ico
     transition: transform 0.2s ease, background 0.2s ease;
 }
 
-body.staff-portal .dash-stat-card:hover .dash-stat-card__icon , body.admin-portal .dash-stat-card:hover .dash-stat-card__icon {
+body.staff-portal .dash-stat-card:hover .dash-stat-card__icon,
+body.admin-portal .dash-stat-card:hover .dash-stat-card__icon {
     transform: scale(1.06);
 }
 
-body.staff-portal .dash-stat-card__icon svg , body.admin-portal .dash-stat-card__icon svg {
+body.staff-portal .dash-stat-card__icon svg,
+body.admin-portal .dash-stat-card__icon svg {
     width: 23px;
     height: 23px;
     stroke-width: 1.9;
 }
 
-body.staff-portal .dash-stat-card--accent .dash-stat-card__icon , body.admin-portal .dash-stat-card--accent .dash-stat-card__icon {
+body.staff-portal .dash-stat-card--accent .dash-stat-card__icon,
+body.admin-portal .dash-stat-card--accent .dash-stat-card__icon {
     background: var(--green);
     color: #fff;
 }
 
-body.staff-portal .dash-stat-card__body , body.admin-portal .dash-stat-card__body {
+body.staff-portal .dash-stat-card__body,
+body.admin-portal .dash-stat-card__body {
     min-width: 0;
 }
 
-body.staff-portal .dash-stat-card__label , body.admin-portal .dash-stat-card__label {
+body.staff-portal .dash-stat-card__label,
+body.admin-portal .dash-stat-card__label {
     margin: 0 0 0.15rem;
     font-size: 0.68rem;
     font-weight: 700;
@@ -679,7 +746,8 @@ body.staff-portal .dash-stat-card__label , body.admin-portal .dash-stat-card__la
     color: var(--ink-muted);
 }
 
-body.staff-portal .dash-stat-card__value , body.admin-portal .dash-stat-card__value {
+body.staff-portal .dash-stat-card__value,
+body.admin-portal .dash-stat-card__value {
     margin: 0 0 0.15rem;
     font-family: var(--font-display);
     font-size: 1.5rem;
@@ -688,7 +756,8 @@ body.staff-portal .dash-stat-card__value , body.admin-portal .dash-stat-card__va
     color: var(--ink);
 }
 
-body.staff-portal .dash-stat-card__hint , body.admin-portal .dash-stat-card__hint {
+body.staff-portal .dash-stat-card__hint,
+body.admin-portal .dash-stat-card__hint {
     margin: 0;
     font-size: 0.71rem;
     line-height: 1.45;
@@ -698,25 +767,35 @@ body.staff-portal .dash-stat-card__hint , body.admin-portal .dash-stat-card__hin
 /* ------------------------------------------------------------
    6. Panels
    ------------------------------------------------------------ */
-body.staff-portal .dash-panel, body.admin-portal .dash-panel,
-body.staff-portal .reports-panel, body.admin-portal .reports-panel,
-body.staff-portal .settings-panel, body.admin-portal .settings-panel,
-body.staff-portal .guest-panel, body.admin-portal .guest-panel,
-body.staff-portal .occupancy-card__content, body.admin-portal .occupancy-card__content,
-body.staff-portal .reports-metric-card , body.admin-portal .reports-metric-card {
+body.staff-portal .dash-panel,
+body.admin-portal .dash-panel,
+body.staff-portal .reports-panel,
+body.admin-portal .reports-panel,
+body.staff-portal .settings-panel,
+body.admin-portal .settings-panel,
+body.staff-portal .guest-panel,
+body.admin-portal .guest-panel,
+body.staff-portal .occupancy-card__content,
+body.admin-portal .occupancy-card__content,
+body.staff-portal .reports-metric-card,
+body.admin-portal .reports-metric-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xs);
 }
 
-body.staff-portal .dash-panel:hover, body.admin-portal .dash-panel:hover,
-body.staff-portal .reports-panel:hover , body.admin-portal .reports-panel:hover {
+body.staff-portal .dash-panel:hover,
+body.admin-portal .dash-panel:hover,
+body.staff-portal .reports-panel:hover,
+body.admin-portal .reports-panel:hover {
     border-color: var(--border-strong);
 }
 
-body.staff-portal .dash-panel__head, body.admin-portal .dash-panel__head,
-body.staff-portal .reports-panel__head , body.admin-portal .reports-panel__head {
+body.staff-portal .dash-panel__head,
+body.admin-portal .dash-panel__head,
+body.staff-portal .reports-panel__head,
+body.admin-portal .reports-panel__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -727,11 +806,13 @@ body.staff-portal .reports-panel__head , body.admin-portal .reports-panel__head 
     padding: 1rem 1.25rem;
 }
 
-body.staff-portal .reports-panel__head>div , body.admin-portal .reports-panel__head>div {
+body.staff-portal .reports-panel__head>div,
+body.admin-portal .reports-panel__head>div {
     min-width: 0;
 }
 
-body.staff-portal .reports-charts , body.admin-portal .reports-charts {
+body.staff-portal .reports-charts,
+body.admin-portal .reports-charts {
     display: grid;
     grid-template-columns: 3fr 2fr;
     gap: 1rem;
@@ -739,26 +820,33 @@ body.staff-portal .reports-charts , body.admin-portal .reports-charts {
 }
 
 @media (max-width: 992px) {
-    body.staff-portal .reports-charts , body.admin-portal .reports-charts {
+
+    body.staff-portal .reports-charts,
+    body.admin-portal .reports-charts {
         grid-template-columns: 1fr;
     }
 }
 
-body.staff-portal .dash-panel__title, body.admin-portal .dash-panel__title,
-body.staff-portal .reports-panel__title , body.admin-portal .reports-panel__title {
+body.staff-portal .dash-panel__title,
+body.admin-portal .dash-panel__title,
+body.staff-portal .reports-panel__title,
+body.admin-portal .reports-panel__title {
     font-family: var(--font-display);
     font-size: 0.98rem;
     font-weight: 600;
     color: var(--ink);
 }
 
-body.staff-portal .dash-panel__subtitle , body.admin-portal .dash-panel__subtitle {
+body.staff-portal .dash-panel__subtitle,
+body.admin-portal .dash-panel__subtitle {
     font-size: 0.8rem;
     color: var(--ink-muted);
 }
 
-body.staff-portal .dash-panel__meta, body.admin-portal .dash-panel__meta,
-body.staff-portal .reports-panel__meta , body.admin-portal .reports-panel__meta {
+body.staff-portal .dash-panel__meta,
+body.admin-portal .dash-panel__meta,
+body.staff-portal .reports-panel__meta,
+body.admin-portal .reports-panel__meta {
     color: var(--ink-faint);
     font-size: 0.78rem;
 }
@@ -766,112 +854,136 @@ body.staff-portal .reports-panel__meta , body.admin-portal .reports-panel__meta 
 /* ------------------------------------------------------------
    7. Charts
    ------------------------------------------------------------ */
-body.staff-portal .dash-charts , body.admin-portal .dash-charts {
+body.staff-portal .dash-charts,
+body.admin-portal .dash-charts {
     gap: 1rem;
 }
 
-body.staff-portal .dash-grid-3 , body.admin-portal .dash-grid-3 {
+body.staff-portal .dash-grid-3,
+body.admin-portal .dash-grid-3 {
     gap: 1rem;
 }
 
-body.staff-portal .dash-chart__legend, body.admin-portal .dash-chart__legend,
-body.staff-portal .dash-donut__legend , body.admin-portal .dash-donut__legend {
+body.staff-portal .dash-chart__legend,
+body.admin-portal .dash-chart__legend,
+body.staff-portal .dash-donut__legend,
+body.admin-portal .dash-donut__legend {
     font-size: 0.78rem;
     color: var(--ink-muted);
 }
 
-body.staff-portal .dash-chart__empty , body.admin-portal .dash-chart__empty {
+body.staff-portal .dash-chart__empty,
+body.admin-portal .dash-chart__empty {
     color: var(--ink-faint);
     text-align: center;
     padding: 2.2rem 1rem;
 }
 
-body.staff-portal .dash-barchart__bar , body.admin-portal .dash-barchart__bar {
+body.staff-portal .dash-barchart__bar,
+body.admin-portal .dash-barchart__bar {
     border-radius: 7px 7px 2px 2px;
 }
 
-body.staff-portal .dash-barchart__bar--count , body.admin-portal .dash-barchart__bar--count {
+body.staff-portal .dash-barchart__bar--count,
+body.admin-portal .dash-barchart__bar--count {
     background: linear-gradient(180deg, #2e9d68 0%, var(--green-deep) 100%);
 }
 
-body.staff-portal .dash-barchart__bar--revenue , body.admin-portal .dash-barchart__bar--revenue {
+body.staff-portal .dash-barchart__bar--revenue,
+body.admin-portal .dash-barchart__bar--revenue {
     background: linear-gradient(180deg, #7fa08e 0%, #55715f 100%);
 }
 
-body.staff-portal .dash-barchart__value , body.admin-portal .dash-barchart__value {
+body.staff-portal .dash-barchart__value,
+body.admin-portal .dash-barchart__value {
     font-weight: 700;
     font-size: 0.75rem;
     color: var(--ink);
 }
 
-body.staff-portal .dash-barchart__label , body.admin-portal .dash-barchart__label {
+body.staff-portal .dash-barchart__label,
+body.admin-portal .dash-barchart__label {
     font-size: 0.72rem;
     font-weight: 600;
     color: var(--ink-muted);
 }
 
-body.staff-portal .dash-donut , body.admin-portal .dash-donut {
+body.staff-portal .dash-donut,
+body.admin-portal .dash-donut {
     box-shadow: 0 0 0 8px var(--surface), 0 10px 26px rgba(23, 42, 32, 0.12);
 }
 
-body.staff-portal .dash-donut__hole , body.admin-portal .dash-donut__hole {
+body.staff-portal .dash-donut__hole,
+body.admin-portal .dash-donut__hole {
     background: var(--surface);
 }
 
-body.staff-portal .dash-donut__total , body.admin-portal .dash-donut__total {
+body.staff-portal .dash-donut__total,
+body.admin-portal .dash-donut__total {
     color: var(--ink);
     font-family: var(--font-display);
 }
 
-body.staff-portal .dash-donut__legend li , body.admin-portal .dash-donut__legend li {
+body.staff-portal .dash-donut__legend li,
+body.admin-portal .dash-donut__legend li {
     color: var(--ink-muted);
     font-size: 0.78rem;
 }
 
-body.staff-portal .dash-donut__legend strong , body.admin-portal .dash-donut__legend strong {
+body.staff-portal .dash-donut__legend strong,
+body.admin-portal .dash-donut__legend strong {
     color: var(--ink);
 }
 
-body.staff-portal .dash-hbar__track , body.admin-portal .dash-hbar__track {
+body.staff-portal .dash-hbar__track,
+body.admin-portal .dash-hbar__track {
     height: 0.5rem;
     background: var(--surface-2);
     border-radius: 999px;
     box-shadow: inset 0 1px 2px rgba(23, 42, 32, 0.06);
 }
 
-body.staff-portal .dash-hbar__fill , body.admin-portal .dash-hbar__fill {
+body.staff-portal .dash-hbar__fill,
+body.admin-portal .dash-hbar__fill {
     background: linear-gradient(90deg, var(--green) 0%, #4fbd85 100%);
     border-radius: 999px;
 }
 
-body.staff-portal .dash-hbar__row strong , body.admin-portal .dash-hbar__row strong {
+body.staff-portal .dash-hbar__row strong,
+body.admin-portal .dash-hbar__row strong {
     color: var(--ink);
     font-family: var(--font-display);
 }
 
-body.staff-portal .dash-arrival__name , body.admin-portal .dash-arrival__name {
+body.staff-portal .dash-arrival__name,
+body.admin-portal .dash-arrival__name {
     font-weight: 700;
     color: var(--ink);
     font-size: 0.9rem;
 }
 
-body.staff-portal .dash-arrival__meta, body.admin-portal .dash-arrival__meta,
-body.staff-portal .dash-activity__time , body.admin-portal .dash-activity__time {
+body.staff-portal .dash-arrival__meta,
+body.admin-portal .dash-arrival__meta,
+body.staff-portal .dash-activity__time,
+body.admin-portal .dash-activity__time {
     color: var(--ink-muted);
     font-size: 0.76rem;
 }
 
-body.staff-portal .dash-arrival__dot , body.admin-portal .dash-arrival__dot {
+body.staff-portal .dash-arrival__dot,
+body.admin-portal .dash-arrival__dot {
     background: var(--green-mid, var(--green));
     box-shadow: 0 0 0 4px var(--green-soft);
 }
 
-body.staff-portal .dash-activity__dot , body.admin-portal .dash-activity__dot {
+body.staff-portal .dash-activity__dot,
+body.admin-portal .dash-activity__dot {
     background: var(--success);
     box-shadow: 0 0 0 4px var(--green-soft);
 }
 
-body.staff-portal .dash-activity__text , body.admin-portal .dash-activity__text {
+body.staff-portal .dash-activity__text,
+body.admin-portal .dash-activity__text {
     color: var(--ink);
     font-size: 0.85rem;
 }
@@ -880,14 +992,16 @@ body.staff-portal .dash-activity__text , body.admin-portal .dash-activity__text 
    7b. Chart layout (shared — also lets the Reports page render
    bars/donut without loading staff_dashboard.css)
    ------------------------------------------------------------ */
-body.staff-portal .dash-barchart , body.admin-portal .dash-barchart {
+body.staff-portal .dash-barchart,
+body.admin-portal .dash-barchart {
     display: flex;
     align-items: stretch;
     gap: 0.75rem;
     padding: 1.25rem 1.25rem 1rem;
 }
 
-body.staff-portal .dash-barchart__col , body.admin-portal .dash-barchart__col {
+body.staff-portal .dash-barchart__col,
+body.admin-portal .dash-barchart__col {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -896,7 +1010,8 @@ body.staff-portal .dash-barchart__col , body.admin-portal .dash-barchart__col {
     gap: 0.45rem;
 }
 
-body.staff-portal .dash-barchart__bars , body.admin-portal .dash-barchart__bars {
+body.staff-portal .dash-barchart__bars,
+body.admin-portal .dash-barchart__bars {
     width: 100%;
     height: 170px;
     display: flex;
@@ -906,7 +1021,8 @@ body.staff-portal .dash-barchart__bars , body.admin-portal .dash-barchart__bars 
     border-bottom: 1px dashed var(--border);
 }
 
-body.staff-portal .dash-barchart__bar , body.admin-portal .dash-barchart__bar {
+body.staff-portal .dash-barchart__bar,
+body.admin-portal .dash-barchart__bar {
     width: 40%;
     max-width: 1.6rem;
     border-radius: 7px 7px 2px 2px;
@@ -915,25 +1031,29 @@ body.staff-portal .dash-barchart__bar , body.admin-portal .dash-barchart__bar {
 
 /* Dashboard: staff_dashboard.js adds .is-animated to grow the bars. This rule
    must out-specify the generic height:0 above (and the dashboard's own rule). */
-body.staff-portal .dash-barchart__bar.is-animated , body.admin-portal .dash-barchart__bar.is-animated {
+body.staff-portal .dash-barchart__bar.is-animated,
+body.admin-portal .dash-barchart__bar.is-animated {
     height: var(--val, 0%);
     transition: height 0.55s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
 /* Reports page: no dashboard JS here, so bars show directly */
-body.staff-portal .reports-charts .dash-barchart__bar , body.admin-portal .reports-charts .dash-barchart__bar {
+body.staff-portal .reports-charts .dash-barchart__bar,
+body.admin-portal .reports-charts .dash-barchart__bar {
     height: var(--val, 0%);
     transition: height 0.55s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
-body.staff-portal .dash-donut-wrap , body.admin-portal .dash-donut-wrap {
+body.staff-portal .dash-donut-wrap,
+body.admin-portal .dash-donut-wrap {
     display: flex;
     align-items: center;
     gap: 1.25rem;
     padding: 1.25rem;
 }
 
-body.staff-portal .dash-donut , body.admin-portal .dash-donut {
+body.staff-portal .dash-donut,
+body.admin-portal .dash-donut {
     width: 132px;
     height: 132px;
     border-radius: 50%;
@@ -943,7 +1063,8 @@ body.staff-portal .dash-donut , body.admin-portal .dash-donut {
     justify-content: center;
 }
 
-body.staff-portal .dash-donut__hole , body.admin-portal .dash-donut__hole {
+body.staff-portal .dash-donut__hole,
+body.admin-portal .dash-donut__hole {
     width: 78px;
     height: 78px;
     border-radius: 50%;
@@ -953,7 +1074,8 @@ body.staff-portal .dash-donut__hole , body.admin-portal .dash-donut__hole {
     justify-content: center;
 }
 
-body.staff-portal .dash-donut__hole small , body.admin-portal .dash-donut__hole small {
+body.staff-portal .dash-donut__hole small,
+body.admin-portal .dash-donut__hole small {
     margin-top: 0.2rem;
     font-size: 0.625rem;
     text-transform: uppercase;
@@ -961,7 +1083,8 @@ body.staff-portal .dash-donut__hole small , body.admin-portal .dash-donut__hole 
     color: var(--ink-muted);
 }
 
-body.staff-portal .dash-donut__legend , body.admin-portal .dash-donut__legend {
+body.staff-portal .dash-donut__legend,
+body.admin-portal .dash-donut__legend {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -970,13 +1093,15 @@ body.staff-portal .dash-donut__legend , body.admin-portal .dash-donut__legend {
     gap: 0.5rem;
 }
 
-body.staff-portal .dash-donut__legend li , body.admin-portal .dash-donut__legend li {
+body.staff-portal .dash-donut__legend li,
+body.admin-portal .dash-donut__legend li {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-body.staff-portal .dash-donut__legend i , body.admin-portal .dash-donut__legend i {
+body.staff-portal .dash-donut__legend i,
+body.admin-portal .dash-donut__legend i {
     width: 0.7rem;
     height: 0.7rem;
     border-radius: 50%;
@@ -984,17 +1109,20 @@ body.staff-portal .dash-donut__legend i , body.admin-portal .dash-donut__legend 
     display: inline-block;
 }
 
-body.staff-portal .dash-donut__legend strong , body.admin-portal .dash-donut__legend strong {
+body.staff-portal .dash-donut__legend strong,
+body.admin-portal .dash-donut__legend strong {
     margin-left: auto;
 }
 
-body.staff-portal .dash-hbars , body.admin-portal .dash-hbars {
+body.staff-portal .dash-hbars,
+body.admin-portal .dash-hbars {
     padding: 1.25rem;
     display: grid;
     gap: 1rem;
 }
 
-body.staff-portal .dash-hbar__row , body.admin-portal .dash-hbar__row {
+body.staff-portal .dash-hbar__row,
+body.admin-portal .dash-hbar__row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -1003,26 +1131,32 @@ body.staff-portal .dash-hbar__row , body.admin-portal .dash-hbar__row {
     color: var(--ink);
 }
 
-body.staff-portal .dash-hbar__track , body.admin-portal .dash-hbar__track {
+body.staff-portal .dash-hbar__track,
+body.admin-portal .dash-hbar__track {
     overflow: hidden;
 }
 
-body.staff-portal .dash-hbar__fill , body.admin-portal .dash-hbar__fill {
+body.staff-portal .dash-hbar__fill,
+body.admin-portal .dash-hbar__fill {
     height: 100%;
     width: 0;
     transition: width 0.6s cubic-bezier(0.22, 0.8, 0.32, 1);
 }
 
-body.staff-portal .dash-hbar__fill.is-animated , body.admin-portal .dash-hbar__fill.is-animated {
+body.staff-portal .dash-hbar__fill.is-animated,
+body.admin-portal .dash-hbar__fill.is-animated {
     width: var(--val, 0%);
 }
 
 /* ------------------------------------------------------------
    8. Tables
    ------------------------------------------------------------ */
-body.staff-portal .guest-table-wrap, body.admin-portal .guest-table-wrap,
-body.staff-portal .reports-table-wrap, body.admin-portal .reports-table-wrap,
-body.staff-portal .users-table-wrap , body.admin-portal .users-table-wrap {
+body.staff-portal .guest-table-wrap,
+body.admin-portal .guest-table-wrap,
+body.staff-portal .reports-table-wrap,
+body.admin-portal .reports-table-wrap,
+body.staff-portal .users-table-wrap,
+body.admin-portal .users-table-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -1041,6 +1175,7 @@ body.staff-portal .guest-panel #guestTableWrap .guest-table,
 body.admin-portal .guest-panel #guestTableWrap .guest-table {
     min-width: 1080px;
 }
+
 body.staff-portal .records-content #reservationTableWrap .guest-table,
 body.admin-portal .records-content #reservationTableWrap .guest-table,
 body.staff-portal .guest-panel #reservationTableWrap .guest-table,
@@ -1118,6 +1253,7 @@ body.admin-portal .guest-table tbody tr {
     background-color: #ffffff !important;
     background: #ffffff !important;
 }
+
 body.staff-portal .guest-table tbody tr:hover,
 body.admin-portal .guest-table tbody tr:hover {
     background-color: #f2f7f4 !important;
@@ -1129,6 +1265,7 @@ body.admin-portal .guest-table tbody tr:hover {
     background-color: #181b19 !important;
     background: #181b19 !important;
 }
+
 [data-theme="dark"] body.staff-portal .guest-table tbody tr:hover,
 [data-theme="dark"] body.admin-portal .guest-table tbody tr:hover {
     background-color: #242a26 !important;
@@ -1232,11 +1369,13 @@ body.admin-portal .guest-panel .guest-table thead th {
     background: var(--surface-2);
     cursor: default;
 }
+
 body.staff-portal .guest-panel .guest-table thead th.sortable,
 body.admin-portal .guest-panel .guest-table thead th.sortable {
     cursor: pointer;
     user-select: none;
 }
+
 body.staff-portal .guest-panel .guest-table thead th.sortable::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable::after {
     content: '\2195';
@@ -1244,12 +1383,14 @@ body.admin-portal .guest-panel .guest-table thead th.sortable::after {
     font-size: 0.62rem;
     opacity: 0.45;
 }
+
 body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after {
     content: '\2191';
     opacity: 1;
     color: var(--green);
 }
+
 body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after {
     content: '\2193';
@@ -1257,17 +1398,23 @@ body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::af
     color: var(--green);
 }
 
-body.staff-portal .guest-table, body.admin-portal .guest-table,
-body.staff-portal .reports-table, body.admin-portal .reports-table,
-body.staff-portal .users-table , body.admin-portal .users-table {
+body.staff-portal .guest-table,
+body.admin-portal .guest-table,
+body.staff-portal .reports-table,
+body.admin-portal .reports-table,
+body.staff-portal .users-table,
+body.admin-portal .users-table {
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
 }
 
-body.staff-portal .guest-table thead th, body.admin-portal .guest-table thead th,
-body.staff-portal .reports-table thead th, body.admin-portal .reports-table thead th,
-body.staff-portal .users-table thead th , body.admin-portal .users-table thead th {
+body.staff-portal .guest-table thead th,
+body.admin-portal .guest-table thead th,
+body.staff-portal .reports-table thead th,
+body.admin-portal .reports-table thead th,
+body.staff-portal .users-table thead th,
+body.admin-portal .users-table thead th {
     font-size: 0.66rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1279,9 +1426,12 @@ body.staff-portal .users-table thead th , body.admin-portal .users-table thead t
     white-space: nowrap;
 }
 
-body.staff-portal .guest-table tbody td, body.admin-portal .guest-table tbody td,
-body.staff-portal .reports-table tbody td, body.admin-portal .reports-table tbody td,
-body.staff-portal .users-table tbody td , body.admin-portal .users-table tbody td {
+body.staff-portal .guest-table tbody td,
+body.admin-portal .guest-table tbody td,
+body.staff-portal .reports-table tbody td,
+body.admin-portal .reports-table tbody td,
+body.staff-portal .users-table tbody td,
+body.admin-portal .users-table tbody td {
     border-bottom: 1px solid var(--border);
     padding: 0.8rem 1rem;
     color: var(--ink);
@@ -1289,36 +1439,49 @@ body.staff-portal .users-table tbody td , body.admin-portal .users-table tbody t
     vertical-align: middle;
 }
 
-body.staff-portal .guest-table tbody tr:last-child td, body.admin-portal .guest-table tbody tr:last-child td,
-body.staff-portal .reports-table tbody tr:last-child td, body.admin-portal .reports-table tbody tr:last-child td,
-body.staff-portal .users-table tbody tr:last-child td , body.admin-portal .users-table tbody tr:last-child td {
+body.staff-portal .guest-table tbody tr:last-child td,
+body.admin-portal .guest-table tbody tr:last-child td,
+body.staff-portal .reports-table tbody tr:last-child td,
+body.admin-portal .reports-table tbody tr:last-child td,
+body.staff-portal .users-table tbody tr:last-child td,
+body.admin-portal .users-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-body.staff-portal .guest-table tbody tr, body.admin-portal .guest-table tbody tr,
-body.staff-portal .reports-table tbody tr, body.admin-portal .reports-table tbody tr,
-body.staff-portal .users-table .user-row , body.admin-portal .users-table .user-row {
+body.staff-portal .guest-table tbody tr,
+body.admin-portal .guest-table tbody tr,
+body.staff-portal .reports-table tbody tr,
+body.admin-portal .reports-table tbody tr,
+body.staff-portal .users-table .user-row,
+body.admin-portal .users-table .user-row {
     transition: background 0.14s ease;
 }
 
-body.staff-portal .guest-table tbody tr:hover, body.admin-portal .guest-table tbody tr:hover,
-body.staff-portal .reports-table tbody tr:hover, body.admin-portal .reports-table tbody tr:hover,
-body.staff-portal .users-table .user-row:hover , body.admin-portal .users-table .user-row:hover {
+body.staff-portal .guest-table tbody tr:hover,
+body.admin-portal .guest-table tbody tr:hover,
+body.staff-portal .reports-table tbody tr:hover,
+body.admin-portal .reports-table tbody tr:hover,
+body.staff-portal .users-table .user-row:hover,
+body.admin-portal .users-table .user-row:hover {
     background: var(--green-tint);
 }
 
-body.staff-portal .guest-name , body.admin-portal .guest-name {
+body.staff-portal .guest-name,
+body.admin-portal .guest-name {
     font-weight: 700;
     color: var(--ink);
 }
 
-body.staff-portal .guest-meta , body.admin-portal .guest-meta {
+body.staff-portal .guest-meta,
+body.admin-portal .guest-meta {
     color: var(--ink-muted);
     font-size: 0.74rem;
 }
 
-body.staff-portal .guest-empty, body.admin-portal .guest-empty,
-body.staff-portal .reports-table-empty , body.admin-portal .reports-table-empty {
+body.staff-portal .guest-empty,
+body.admin-portal .guest-empty,
+body.staff-portal .reports-table-empty,
+body.admin-portal .reports-table-empty {
     color: var(--ink-faint);
     text-align: center;
     padding: 2.5rem 1rem;
@@ -1327,8 +1490,10 @@ body.staff-portal .reports-table-empty , body.admin-portal .reports-table-empty 
 /* ------------------------------------------------------------
    9. Status pills & badges
    ------------------------------------------------------------ */
-body.staff-portal .status-pill, body.admin-portal .status-pill,
-body.staff-portal .guest-pill , body.admin-portal .guest-pill {
+body.staff-portal .status-pill,
+body.admin-portal .status-pill,
+body.staff-portal .guest-pill,
+body.admin-portal .guest-pill {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -1340,69 +1505,86 @@ body.staff-portal .guest-pill , body.admin-portal .guest-pill {
     white-space: nowrap;
 }
 
-body.staff-portal .status-pill--pending, body.admin-portal .status-pill--pending,
-body.staff-portal .dash-arrival__badge--pending , body.admin-portal .dash-arrival__badge--pending {
+body.staff-portal .status-pill--pending,
+body.admin-portal .status-pill--pending,
+body.staff-portal .dash-arrival__badge--pending,
+body.admin-portal .dash-arrival__badge--pending {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .status-pill--confirmed, body.admin-portal .status-pill--confirmed,
-body.staff-portal .dash-arrival__badge--confirmed , body.admin-portal .dash-arrival__badge--confirmed {
+body.staff-portal .status-pill--confirmed,
+body.admin-portal .status-pill--confirmed,
+body.staff-portal .dash-arrival__badge--confirmed,
+body.admin-portal .dash-arrival__badge--confirmed {
     background: rgba(46, 125, 85, 0.13);
     color: var(--green-deep);
 }
 
-body.staff-portal .status-pill--checked-in, body.admin-portal .status-pill--checked-in,
-body.staff-portal .dash-arrival__badge--checked-in , body.admin-portal .dash-arrival__badge--checked-in {
+body.staff-portal .status-pill--checked-in,
+body.admin-portal .status-pill--checked-in,
+body.staff-portal .dash-arrival__badge--checked-in,
+body.admin-portal .dash-arrival__badge--checked-in {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .status-pill--checked-out, body.admin-portal .status-pill--checked-out,
-body.staff-portal .dash-arrival__badge--checked-out , body.admin-portal .dash-arrival__badge--checked-out {
+body.staff-portal .status-pill--checked-out,
+body.admin-portal .status-pill--checked-out,
+body.staff-portal .dash-arrival__badge--checked-out,
+body.admin-portal .dash-arrival__badge--checked-out {
     background: rgba(120, 130, 122, 0.13);
     color: var(--ink-muted);
 }
 
-body.staff-portal .status-pill--cancelled, body.admin-portal .status-pill--cancelled,
-body.staff-portal .dash-arrival__badge--cancelled , body.admin-portal .dash-arrival__badge--cancelled {
+body.staff-portal .status-pill--cancelled,
+body.admin-portal .status-pill--cancelled,
+body.staff-portal .dash-arrival__badge--cancelled,
+body.admin-portal .dash-arrival__badge--cancelled {
     background: var(--danger-soft);
     color: var(--danger);
 }
 
-body.staff-portal .status-pill--paid , body.admin-portal .status-pill--paid {
+body.staff-portal .status-pill--paid,
+body.admin-portal .status-pill--paid {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .status-pill--partially-paid , body.admin-portal .status-pill--partially-paid {
+body.staff-portal .status-pill--partially-paid,
+body.admin-portal .status-pill--partially-paid {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .status-pill--unpaid , body.admin-portal .status-pill--unpaid {
+body.staff-portal .status-pill--unpaid,
+body.admin-portal .status-pill--unpaid {
     background: var(--danger-soft);
     color: var(--danger);
 }
 
-body.staff-portal .dash-arrival__badge , body.admin-portal .dash-arrival__badge {
+body.staff-portal .dash-arrival__badge,
+body.admin-portal .dash-arrival__badge {
     border-radius: 999px;
     font-size: 0.66rem;
     font-weight: 700;
     padding: 0.24rem 0.6rem;
 }
 
-body.staff-portal .badge , body.admin-portal .badge {
+body.staff-portal .badge,
+body.admin-portal .badge {
     border-radius: 999px;
     font-weight: 600;
 }
 
-body.staff-portal .badge--enabled , body.admin-portal .badge--enabled {
+body.staff-portal .badge--enabled,
+body.admin-portal .badge--enabled {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .badge--disabled , body.admin-portal .badge--disabled {
+body.staff-portal .badge--disabled,
+body.admin-portal .badge--disabled {
     background: var(--danger-soft);
     color: var(--danger);
 }
@@ -1410,54 +1592,74 @@ body.staff-portal .badge--disabled , body.admin-portal .badge--disabled {
 /* ------------------------------------------------------------
    10. Buttons
    ------------------------------------------------------------ */
-body.staff-portal .btn, body.admin-portal .btn,
-body.staff-portal .guest-panel__button, body.admin-portal .guest-panel__button,
-body.staff-portal .guest-form__button, body.admin-portal .guest-form__button,
-body.staff-portal .reports-print-btn, body.admin-portal .reports-print-btn,
-body.staff-portal .filter-panel__secondary , body.admin-portal .filter-panel__secondary {
+body.staff-portal .btn,
+body.admin-portal .btn,
+body.staff-portal .guest-panel__button,
+body.admin-portal .guest-panel__button,
+body.staff-portal .guest-form__button,
+body.admin-portal .guest-form__button,
+body.staff-portal .reports-print-btn,
+body.admin-portal .reports-print-btn,
+body.staff-portal .filter-panel__secondary,
+body.admin-portal .filter-panel__secondary {
     border-radius: var(--radius-sm);
     font-weight: 600;
     transition: transform 0.15s ease, box-shadow 0.2s ease,
         background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-body.staff-portal .btn:hover, body.admin-portal .btn:hover,
-body.staff-portal .guest-panel__button:hover, body.admin-portal .guest-panel__button:hover,
-body.staff-portal .guest-form__button:hover , body.admin-portal .guest-form__button:hover {
+body.staff-portal .btn:hover,
+body.admin-portal .btn:hover,
+body.staff-portal .guest-panel__button:hover,
+body.admin-portal .guest-panel__button:hover,
+body.staff-portal .guest-form__button:hover,
+body.admin-portal .guest-form__button:hover {
     transform: translateY(-1px);
 }
 
-body.staff-portal .btn:active, body.admin-portal .btn:active,
-body.staff-portal .guest-panel__button:active, body.admin-portal .guest-panel__button:active,
-body.staff-portal .guest-form__button:active , body.admin-portal .guest-form__button:active {
+body.staff-portal .btn:active,
+body.admin-portal .btn:active,
+body.staff-portal .guest-panel__button:active,
+body.admin-portal .guest-panel__button:active,
+body.staff-portal .guest-form__button:active,
+body.admin-portal .guest-form__button:active {
     transform: translateY(0) scale(0.98);
 }
 
-body.staff-portal .btn--primary, body.admin-portal .btn--primary,
-body.staff-portal .guest-form__button--primary, body.admin-portal .guest-form__button--primary,
-body.staff-portal .guest-panel__button--primary , body.admin-portal .guest-panel__button--primary {
+body.staff-portal .btn--primary,
+body.admin-portal .btn--primary,
+body.staff-portal .guest-form__button--primary,
+body.admin-portal .guest-form__button--primary,
+body.staff-portal .guest-panel__button--primary,
+body.admin-portal .guest-panel__button--primary {
     background: var(--green);
     color: #fff;
     border-color: transparent;
     box-shadow: 0 6px 16px rgba(23, 138, 82, 0.22);
 }
 
-body.staff-portal .btn--primary:hover, body.admin-portal .btn--primary:hover,
-body.staff-portal .guest-form__button--primary:hover, body.admin-portal .guest-form__button--primary:hover,
-body.staff-portal .guest-panel__button--primary:hover , body.admin-portal .guest-panel__button--primary:hover {
+body.staff-portal .btn--primary:hover,
+body.admin-portal .btn--primary:hover,
+body.staff-portal .guest-form__button--primary:hover,
+body.admin-portal .guest-form__button--primary:hover,
+body.staff-portal .guest-panel__button--primary:hover,
+body.admin-portal .guest-panel__button--primary:hover {
     background: var(--green-deep);
     box-shadow: 0 8px 20px rgba(15, 92, 56, 0.28);
 }
 
-body.staff-portal .btn--primary:disabled, body.admin-portal .btn--primary:disabled,
-body.staff-portal .guest-form__button--primary:disabled , body.admin-portal .guest-form__button--primary:disabled {
+body.staff-portal .btn--primary:disabled,
+body.admin-portal .btn--primary:disabled,
+body.staff-portal .guest-form__button--primary:disabled,
+body.admin-portal .guest-form__button--primary:disabled {
     opacity: 0.55;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-body.staff-portal .reports-print-btn , body.admin-portal .reports-print-btn {
+body.staff-portal .reports-print-btn,
+body.admin-portal .reports-print-btn {
     background: var(--surface-2);
     border: 1px solid var(--border-strong);
     color: var(--ink);
@@ -1467,7 +1669,8 @@ body.staff-portal .reports-print-btn , body.admin-portal .reports-print-btn {
     cursor: pointer;
 }
 
-body.staff-portal .reports-print-btn:hover , body.admin-portal .reports-print-btn:hover {
+body.staff-portal .reports-print-btn:hover,
+body.admin-portal .reports-print-btn:hover {
     background: var(--green-soft);
     color: var(--green-deep);
     border-color: rgba(23, 138, 82, 0.35);
@@ -1476,15 +1679,24 @@ body.staff-portal .reports-print-btn:hover , body.admin-portal .reports-print-bt
 /* ------------------------------------------------------------
    11. Inputs
    ------------------------------------------------------------ */
-body.staff-portal input[type="text"], body.admin-portal input[type="text"],
-body.staff-portal input[type="email"], body.admin-portal input[type="email"],
-body.staff-portal input[type="password"], body.admin-portal input[type="password"],
-body.staff-portal input[type="number"], body.admin-portal input[type="number"],
-body.staff-portal input[type="date"], body.admin-portal input[type="date"],
-body.staff-portal input[type="time"], body.admin-portal input[type="time"],
-body.staff-portal input[type="search"], body.admin-portal input[type="search"],
-body.staff-portal select, body.admin-portal select,
-body.staff-portal textarea , body.admin-portal textarea {
+body.staff-portal input[type="text"],
+body.admin-portal input[type="text"],
+body.staff-portal input[type="email"],
+body.admin-portal input[type="email"],
+body.staff-portal input[type="password"],
+body.admin-portal input[type="password"],
+body.staff-portal input[type="number"],
+body.admin-portal input[type="number"],
+body.staff-portal input[type="date"],
+body.admin-portal input[type="date"],
+body.staff-portal input[type="time"],
+body.admin-portal input[type="time"],
+body.staff-portal input[type="search"],
+body.admin-portal input[type="search"],
+body.staff-portal select,
+body.admin-portal select,
+body.staff-portal textarea,
+body.admin-portal textarea {
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-strong);
     background: var(--surface);
@@ -1493,17 +1705,22 @@ body.staff-portal textarea , body.admin-portal textarea {
     transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 
-body.staff-portal input:focus, body.admin-portal input:focus,
-body.staff-portal select:focus, body.admin-portal select:focus,
-body.staff-portal textarea:focus , body.admin-portal textarea:focus {
+body.staff-portal input:focus,
+body.admin-portal input:focus,
+body.staff-portal select:focus,
+body.admin-portal select:focus,
+body.staff-portal textarea:focus,
+body.admin-portal textarea:focus {
     outline: none;
     border-color: var(--green);
     background: var(--surface);
     box-shadow: 0 0 0 3px rgba(23, 138, 82, 0.14);
 }
 
-body.staff-portal .settings-form__field label, body.admin-portal .settings-form__field label,
-body.staff-portal .guest-form__label , body.admin-portal .guest-form__label {
+body.staff-portal .settings-form__field label,
+body.admin-portal .settings-form__field label,
+body.staff-portal .guest-form__label,
+body.admin-portal .guest-form__label {
     color: var(--ink-muted);
     font-size: 0.76rem;
     font-weight: 600;
@@ -1512,11 +1729,16 @@ body.staff-portal .guest-form__label , body.admin-portal .guest-form__label {
 /* ------------------------------------------------------------
    12. Tabs & filters
    ------------------------------------------------------------ */
-body.staff-portal .records-tab-btn, body.admin-portal .records-tab-btn,
-body.staff-portal .guest-filter-toggle, body.admin-portal .guest-filter-toggle,
-body.staff-portal .guest-form__tab, body.admin-portal .guest-form__tab,
-body.staff-portal .filter-toggle-btn, body.admin-portal .filter-toggle-btn,
-body.staff-portal .occupancy-monitor__filter-toggle .filter-toggle-btn , body.admin-portal .occupancy-monitor__filter-toggle .filter-toggle-btn {
+body.staff-portal .records-tab-btn,
+body.admin-portal .records-tab-btn,
+body.staff-portal .guest-filter-toggle,
+body.admin-portal .guest-filter-toggle,
+body.staff-portal .guest-form__tab,
+body.admin-portal .guest-form__tab,
+body.staff-portal .filter-toggle-btn,
+body.admin-portal .filter-toggle-btn,
+body.staff-portal .occupancy-monitor__filter-toggle .filter-toggle-btn,
+body.admin-portal .occupancy-monitor__filter-toggle .filter-toggle-btn {
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -1526,30 +1748,37 @@ body.staff-portal .occupancy-monitor__filter-toggle .filter-toggle-btn , body.ad
         border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
 }
 
-body.staff-portal .records-tab-btn:hover, body.admin-portal .records-tab-btn:hover,
-body.staff-portal .guest-filter-toggle:hover, body.admin-portal .guest-filter-toggle:hover,
-body.staff-portal .guest-form__tab:hover, body.admin-portal .guest-form__tab:hover,
-body.staff-portal .filter-toggle-btn:hover , body.admin-portal .filter-toggle-btn:hover {
+body.staff-portal .records-tab-btn:hover,
+body.admin-portal .records-tab-btn:hover,
+body.staff-portal .guest-filter-toggle:hover,
+body.admin-portal .guest-filter-toggle:hover,
+body.staff-portal .guest-form__tab:hover,
+body.admin-portal .guest-form__tab:hover,
+body.staff-portal .filter-toggle-btn:hover,
+body.admin-portal .filter-toggle-btn:hover {
     border-color: rgba(23, 138, 82, 0.45);
     color: var(--green-deep);
     transform: translateY(-1px);
 }
 
-body.staff-portal .records-tab-btn--active , body.admin-portal .records-tab-btn--active {
+body.staff-portal .records-tab-btn--active,
+body.admin-portal .records-tab-btn--active {
     background: var(--green);
     border-color: transparent;
     color: #fff;
     box-shadow: 0 5px 14px rgba(23, 138, 82, 0.24);
 }
 
-body.staff-portal .occupancy-monitor__filter-panel , body.admin-portal .occupancy-monitor__filter-panel {
+body.staff-portal .occupancy-monitor__filter-panel,
+body.admin-portal .occupancy-monitor__filter-panel {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
 }
 
-body.staff-portal .guest-toolbar__field>span , body.admin-portal .guest-toolbar__field>span {
+body.staff-portal .guest-toolbar__field>span,
+body.admin-portal .guest-toolbar__field>span {
     color: var(--ink-muted);
     font-size: 0.74rem;
     font-weight: 600;
@@ -1558,19 +1787,22 @@ body.staff-portal .guest-toolbar__field>span , body.admin-portal .guest-toolbar_
 /* ------------------------------------------------------------
    13. Forms
    ------------------------------------------------------------ */
-body.staff-portal .guest-form__section , body.admin-portal .guest-form__section {
+body.staff-portal .guest-form__section,
+body.admin-portal .guest-form__section {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
-body.staff-portal .guest-form__section-title , body.admin-portal .guest-form__section-title {
+body.staff-portal .guest-form__section-title,
+body.admin-portal .guest-form__section-title {
     font-family: var(--font-display);
     font-weight: 600;
     color: var(--ink);
 }
 
-body.staff-portal .guest-form__fee-item strong , body.admin-portal .guest-form__fee-item strong {
+body.staff-portal .guest-form__fee-item strong,
+body.admin-portal .guest-form__fee-item strong {
     color: var(--green-deep);
 }
 
@@ -1589,10 +1821,14 @@ body.staff-portal .guest-form__fee-item strong , body.admin-portal .guest-form__
     }
 }
 
-body.staff-portal .guest-modal__content, body.admin-portal .guest-modal__content,
-body.staff-portal .modal__panel, body.admin-portal .modal__panel,
-body.staff-portal .logout-modal__content, body.admin-portal .logout-modal__content,
-body.staff-portal .app-nav-guard__panel , body.admin-portal .app-nav-guard__panel {
+body.staff-portal .guest-modal__content,
+body.admin-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.admin-portal .modal__panel,
+body.staff-portal .logout-modal__content,
+body.admin-portal .logout-modal__content,
+body.staff-portal .app-nav-guard__panel,
+body.admin-portal .app-nav-guard__panel {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
@@ -1614,10 +1850,14 @@ body.staff-portal .app-nav-guard__panel , body.admin-portal .app-nav-guard__pane
     color: #f3f4f6 !important;
 }
 
-body.staff-portal .guest-modal__backdrop, body.admin-portal .guest-modal__backdrop,
-body.staff-portal .modal__backdrop, body.admin-portal .modal__backdrop,
-body.staff-portal .logout-modal__backdrop, body.admin-portal .logout-modal__backdrop,
-body.staff-portal .app-nav-guard__backdrop , body.admin-portal .app-nav-guard__backdrop {
+body.staff-portal .guest-modal__backdrop,
+body.admin-portal .guest-modal__backdrop,
+body.staff-portal .modal__backdrop,
+body.admin-portal .modal__backdrop,
+body.staff-portal .logout-modal__backdrop,
+body.admin-portal .logout-modal__backdrop,
+body.staff-portal .app-nav-guard__backdrop,
+body.admin-portal .app-nav-guard__backdrop {
     background: rgba(12, 22, 16, 0.5);
     backdrop-filter: blur(3px);
 }
@@ -1634,9 +1874,12 @@ body.staff-portal .app-nav-guard__backdrop , body.admin-portal .app-nav-guard__b
     backdrop-filter: blur(4px) !important;
 }
 
-body.staff-portal .guest-modal__header, body.admin-portal .guest-modal__header,
-body.staff-portal .modal__header, body.admin-portal .modal__header,
-body.staff-portal .logout-modal__header , body.admin-portal .logout-modal__header {
+body.staff-portal .guest-modal__header,
+body.admin-portal .guest-modal__header,
+body.staff-portal .modal__header,
+body.admin-portal .modal__header,
+body.staff-portal .logout-modal__header,
+body.admin-portal .logout-modal__header {
     border-bottom: 1px solid var(--border);
 }
 
@@ -1649,54 +1892,66 @@ body.staff-portal .logout-modal__header , body.admin-portal .logout-modal__heade
     border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-body.staff-portal .guest-modal__title, body.admin-portal .guest-modal__title,
-body.staff-portal .modal__header h3, body.admin-portal .modal__header h3,
-body.staff-portal .logout-modal__title, body.admin-portal .logout-modal__title,
-body.staff-portal .app-nav-guard__panel h3 , body.admin-portal .app-nav-guard__panel h3 {
+body.staff-portal .guest-modal__title,
+body.admin-portal .guest-modal__title,
+body.staff-portal .modal__header h3,
+body.admin-portal .modal__header h3,
+body.staff-portal .logout-modal__title,
+body.admin-portal .logout-modal__title,
+body.staff-portal .app-nav-guard__panel h3,
+body.admin-portal .app-nav-guard__panel h3 {
     font-family: var(--font-display);
     font-weight: 600;
     color: var(--ink);
 }
 
-body.staff-portal .guest-modal__close , body.admin-portal .guest-modal__close {
+body.staff-portal .guest-modal__close,
+body.admin-portal .guest-modal__close {
     border-radius: 9px;
     transition: background 0.16s ease, transform 0.16s ease;
 }
 
-body.staff-portal .guest-modal__close:hover , body.admin-portal .guest-modal__close:hover {
+body.staff-portal .guest-modal__close:hover,
+body.admin-portal .guest-modal__close:hover {
     background: var(--green-soft);
     color: var(--green-deep);
     transform: rotate(90deg);
 }
 
-body.staff-portal .app-nav-guard__panel p , body.admin-portal .app-nav-guard__panel p {
+body.staff-portal .app-nav-guard__panel p,
+body.admin-portal .app-nav-guard__panel p {
     color: var(--ink-muted);
 }
 
-body.staff-portal .app-nav-guard__icon , body.admin-portal .app-nav-guard__icon {
+body.staff-portal .app-nav-guard__icon,
+body.admin-portal .app-nav-guard__icon {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .app-nav-guard__btn--ghost , body.admin-portal .app-nav-guard__btn--ghost {
+body.staff-portal .app-nav-guard__btn--ghost,
+body.admin-portal .app-nav-guard__btn--ghost {
     background: var(--surface-2);
     color: var(--ink);
     border: 1px solid var(--border-strong);
 }
 
-body.staff-portal .app-nav-guard__btn--danger , body.admin-portal .app-nav-guard__btn--danger {
+body.staff-portal .app-nav-guard__btn--danger,
+body.admin-portal .app-nav-guard__btn--danger {
     background: var(--danger);
     color: #fff;
     box-shadow: 0 6px 16px rgba(207, 75, 71, 0.3);
 }
 
-body.staff-portal .guest-card , body.admin-portal .guest-card {
+body.staff-portal .guest-card,
+body.admin-portal .guest-card {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
 }
 
-body.staff-portal .guest-label , body.admin-portal .guest-label {
+body.staff-portal .guest-label,
+body.admin-portal .guest-label {
     color: var(--ink-faint);
     font-size: 0.7rem;
     font-weight: 700;
@@ -1704,41 +1959,49 @@ body.staff-portal .guest-label , body.admin-portal .guest-label {
     text-transform: uppercase;
 }
 
-body.staff-portal .guest-value , body.admin-portal .guest-value {
+body.staff-portal .guest-value,
+body.admin-portal .guest-value {
     color: var(--ink);
 }
 
 /* ------------------------------------------------------------
    15. Occupancy cards
    ------------------------------------------------------------ */
-body.staff-portal .occupancy-card__name , body.admin-portal .occupancy-card__name {
+body.staff-portal .occupancy-card__name,
+body.admin-portal .occupancy-card__name {
     font-family: var(--font-display);
     color: var(--ink);
 }
 
-body.staff-portal .occupancy-card__status-slot , body.admin-portal .occupancy-card__status-slot {
+body.staff-portal .occupancy-card__status-slot,
+body.admin-portal .occupancy-card__status-slot {
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.04em;
 }
 
-body.staff-portal .occupancy-card__overlay , body.admin-portal .occupancy-card__overlay {
+body.staff-portal .occupancy-card__overlay,
+body.admin-portal .occupancy-card__overlay {
     background: linear-gradient(to top, rgba(12, 26, 17, 0.55) 0%, transparent 55%);
 }
 
-body.staff-portal .occupancy-card__status-overlay--occupied , body.admin-portal .occupancy-card__status-overlay--occupied {
+body.staff-portal .occupancy-card__status-overlay--occupied,
+body.admin-portal .occupancy-card__status-overlay--occupied {
     background: rgba(207, 75, 71, 0.88);
 }
 
-body.staff-portal .occupancy-card__status-overlay--reserved , body.admin-portal .occupancy-card__status-overlay--reserved {
+body.staff-portal .occupancy-card__status-overlay--reserved,
+body.admin-portal .occupancy-card__status-overlay--reserved {
     background: rgba(168, 122, 21, 0.9);
 }
 
 /* ------------------------------------------------------------
    16. KPI / summary cards (records + reports)
    ------------------------------------------------------------ */
-body.staff-portal .reports-metric-card, body.admin-portal .reports-metric-card,
-body.staff-portal .records-summary-card , body.admin-portal .records-summary-card {
+body.staff-portal .reports-metric-card,
+body.admin-portal .reports-metric-card,
+body.staff-portal .records-summary-card,
+body.admin-portal .records-summary-card {
     display: flex;
     align-items: center;
     gap: 0.85rem;
@@ -1750,15 +2013,19 @@ body.staff-portal .records-summary-card , body.admin-portal .records-summary-car
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-body.staff-portal .reports-metric-card:hover, body.admin-portal .reports-metric-card:hover,
-body.staff-portal .records-summary-card:hover , body.admin-portal .records-summary-card:hover {
+body.staff-portal .reports-metric-card:hover,
+body.admin-portal .reports-metric-card:hover,
+body.staff-portal .records-summary-card:hover,
+body.admin-portal .records-summary-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
     border-color: var(--border-strong);
 }
 
-body.staff-portal .reports-metric-card__icon, body.admin-portal .reports-metric-card__icon,
-body.staff-portal .records-summary-card__icon , body.admin-portal .records-summary-card__icon {
+body.staff-portal .reports-metric-card__icon,
+body.admin-portal .reports-metric-card__icon,
+body.staff-portal .records-summary-card__icon,
+body.admin-portal .records-summary-card__icon {
     width: 42px;
     height: 42px;
     flex-shrink: 0;
@@ -1770,15 +2037,19 @@ body.staff-portal .records-summary-card__icon , body.admin-portal .records-summa
     color: var(--green-deep);
 }
 
-body.staff-portal .reports-metric-card__icon svg, body.admin-portal .reports-metric-card__icon svg,
-body.staff-portal .records-summary-card__icon svg , body.admin-portal .records-summary-card__icon svg {
+body.staff-portal .reports-metric-card__icon svg,
+body.admin-portal .reports-metric-card__icon svg,
+body.staff-portal .records-summary-card__icon svg,
+body.admin-portal .records-summary-card__icon svg {
     width: 21px;
     height: 21px;
     stroke-width: 1.9;
 }
 
-body.staff-portal .reports-metric-card__label, body.admin-portal .reports-metric-card__label,
-body.staff-portal .records-summary-card__label , body.admin-portal .records-summary-card__label {
+body.staff-portal .reports-metric-card__label,
+body.admin-portal .reports-metric-card__label,
+body.staff-portal .records-summary-card__label,
+body.admin-portal .records-summary-card__label {
     margin: 0 0 0.15rem;
     font-size: 0.68rem;
     font-weight: 700;
@@ -1787,8 +2058,10 @@ body.staff-portal .records-summary-card__label , body.admin-portal .records-summ
     color: var(--ink-muted);
 }
 
-body.staff-portal .reports-metric-card__value, body.admin-portal .reports-metric-card__value,
-body.staff-portal .records-summary-card__value , body.admin-portal .records-summary-card__value {
+body.staff-portal .reports-metric-card__value,
+body.admin-portal .reports-metric-card__value,
+body.staff-portal .records-summary-card__value,
+body.admin-portal .records-summary-card__value {
     margin: 0;
     font-family: var(--font-display);
     font-size: 1.35rem;
@@ -1797,15 +2070,18 @@ body.staff-portal .records-summary-card__value , body.admin-portal .records-summ
     color: var(--ink);
 }
 
-body.staff-portal .reports-metrics, body.admin-portal .reports-metrics,
-body.staff-portal .records-summary , body.admin-portal .records-summary {
+body.staff-portal .reports-metrics,
+body.admin-portal .reports-metrics,
+body.staff-portal .records-summary,
+body.admin-portal .records-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: 1.25rem;
 }
 
-body.staff-portal .reports-filters , body.admin-portal .reports-filters {
+body.staff-portal .reports-filters,
+body.admin-portal .reports-filters {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -1815,7 +2091,8 @@ body.staff-portal .reports-filters , body.admin-portal .reports-filters {
     box-shadow: var(--shadow-xs);
 }
 
-body.staff-portal .reports-filter-group label , body.admin-portal .reports-filter-group label {
+body.staff-portal .reports-filter-group label,
+body.admin-portal .reports-filter-group label {
     color: var(--ink-muted);
     font-size: 0.74rem;
     font-weight: 600;
@@ -1824,19 +2101,23 @@ body.staff-portal .reports-filter-group label , body.admin-portal .reports-filte
 /* ------------------------------------------------------------
    17. Alerts
    ------------------------------------------------------------ */
-body.staff-portal .guest-alert, body.admin-portal .guest-alert,
-body.staff-portal .alert , body.admin-portal .alert {
+body.staff-portal .guest-alert,
+body.admin-portal .guest-alert,
+body.staff-portal .alert,
+body.admin-portal .alert {
     border-radius: var(--radius-md);
     border: 1px solid transparent;
 }
 
-body.staff-portal .alert--success , body.admin-portal .alert--success {
+body.staff-portal .alert--success,
+body.admin-portal .alert--success {
     background: var(--green-soft);
     border-color: rgba(23, 138, 82, 0.25);
     color: var(--green-deep);
 }
 
-body.staff-portal .alert--error , body.admin-portal .alert--error {
+body.staff-portal .alert--error,
+body.admin-portal .alert--error {
     background: var(--danger-soft);
     border-color: rgba(207, 75, 71, 0.25);
     color: var(--danger);
@@ -1847,7 +2128,8 @@ body.staff-portal .alert--error , body.admin-portal .alert--error {
    The toggle's gold-ring design and pulse animation live in
    resources/css/chatbot.css; keep only portal refinements here.
    ------------------------------------------------------------ */
-body.staff-portal .chatbot-toggle , body.admin-portal .chatbot-toggle {
+body.staff-portal .chatbot-toggle,
+body.admin-portal .chatbot-toggle {
     border: 2px solid rgba(200, 164, 93, 0.55);
 }
 
@@ -1856,37 +2138,50 @@ body.staff-portal .chatbot-toggle , body.admin-portal .chatbot-toggle {
    ------------------------------------------------------------ */
 @media print {
 
-    body.staff-portal .dash-sidebar, body.admin-portal .dash-sidebar,
-    body.staff-portal .dash-header, body.admin-portal .dash-header,
-    body.staff-portal .reports-filters, body.admin-portal .reports-filters,
-    body.staff-portal .reports-metrics, body.admin-portal .reports-metrics,
-    body.staff-portal .reports-charts, body.admin-portal .reports-charts,
-    body.staff-portal .reports-print-btn, body.admin-portal .reports-print-btn,
-    body.staff-portal .chatbot-toggle, body.admin-portal .chatbot-toggle,
-    body.staff-portal .chatbot-widget , body.admin-portal .chatbot-widget {
+    body.staff-portal .dash-sidebar,
+    body.admin-portal .dash-sidebar,
+    body.staff-portal .dash-header,
+    body.admin-portal .dash-header,
+    body.staff-portal .reports-filters,
+    body.admin-portal .reports-filters,
+    body.staff-portal .reports-metrics,
+    body.admin-portal .reports-metrics,
+    body.staff-portal .reports-charts,
+    body.admin-portal .reports-charts,
+    body.staff-portal .reports-print-btn,
+    body.admin-portal .reports-print-btn,
+    body.staff-portal .chatbot-toggle,
+    body.admin-portal .chatbot-toggle,
+    body.staff-portal .chatbot-widget,
+    body.admin-portal .chatbot-widget {
         display: none !important;
     }
 
-    body.staff-portal .dash-main , body.admin-portal .dash-main {
+    body.staff-portal .dash-main,
+    body.admin-portal .dash-main {
         margin-left: 0 !important;
     }
 
-    body.staff-portal .dash-content , body.admin-portal .dash-content {
+    body.staff-portal .dash-content,
+    body.admin-portal .dash-content {
         padding: 0 !important;
         max-width: none;
     }
 
-    body.staff-portal .reports-print-summary , body.admin-portal .reports-print-summary {
+    body.staff-portal .reports-print-summary,
+    body.admin-portal .reports-print-summary {
         display: block !important;
     }
 
-    body.staff-portal .reports-table-wrap , body.admin-portal .reports-table-wrap {
+    body.staff-portal .reports-table-wrap,
+    body.admin-portal .reports-table-wrap {
         border: 1px solid #bbb;
         border-radius: 0;
         box-shadow: none;
     }
 
-    body.staff-portal .reports-table thead th , body.admin-portal .reports-table thead th {
+    body.staff-portal .reports-table thead th,
+    body.admin-portal .reports-table thead th {
         background: #f0f0f0 !important;
         color: #000 !important;
         -webkit-print-color-adjust: exact;
@@ -1899,49 +2194,65 @@ body.staff-portal .chatbot-toggle , body.admin-portal .chatbot-toggle {
    ------------------------------------------------------------ */
 @media (max-width: 1200px) {
 
-    body.staff-portal .dash-stats, body.admin-portal .dash-stats,
-    body.staff-portal .reports-metrics, body.admin-portal .reports-metrics,
-    body.staff-portal .records-summary , body.admin-portal .records-summary {
+    body.staff-portal .dash-stats,
+    body.admin-portal .dash-stats,
+    body.staff-portal .reports-metrics,
+    body.admin-portal .reports-metrics,
+    body.staff-portal .records-summary,
+    body.admin-portal .records-summary {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 992px) {
-    body.staff-portal .dash-content , body.admin-portal .dash-content {
+
+    body.staff-portal .dash-content,
+    body.admin-portal .dash-content {
         padding: 1.15rem 1.15rem 2.2rem;
     }
 
-    body.staff-portal .dash-header , body.admin-portal .dash-header {
+    body.staff-portal .dash-header,
+    body.admin-portal .dash-header {
         margin: 0 0 1.25rem 0 !important;
     }
 
-    body.staff-portal .dash-header__date-time , body.admin-portal .dash-header__date-time {
+    body.staff-portal .dash-header__date-time,
+    body.admin-portal .dash-header__date-time {
         display: none;
     }
 
-    body.staff-portal .dash-header__weather , body.admin-portal .dash-header__weather {
+    body.staff-portal .dash-header__weather,
+    body.admin-portal .dash-header__weather {
         display: none;
     }
 }
 
 @media (max-width: 600px) {
-    body.staff-portal .reports-charts .dash-barchart__value , body.admin-portal .reports-charts .dash-barchart__value {
+
+    body.staff-portal .reports-charts .dash-barchart__value,
+    body.admin-portal .reports-charts .dash-barchart__value {
         display: none;
     }
 }
 
 @media (max-width: 768px) {
-    body.staff-portal .dash-content , body.admin-portal .dash-content {
+
+    body.staff-portal .dash-content,
+    body.admin-portal .dash-content {
         padding: 1rem 1rem 1.8rem;
     }
 
-    body.staff-portal .dash-header , body.admin-portal .dash-header {
+    body.staff-portal .dash-header,
+    body.admin-portal .dash-header {
         margin: 0 0 1rem 0 !important;
     }
 
-    body.staff-portal .dash-stats, body.admin-portal .dash-stats,
-    body.staff-portal .reports-metrics, body.admin-portal .reports-metrics,
-    body.staff-portal .records-summary , body.admin-portal .records-summary {
+    body.staff-portal .dash-stats,
+    body.admin-portal .dash-stats,
+    body.staff-portal .reports-metrics,
+    body.admin-portal .reports-metrics,
+    body.staff-portal .records-summary,
+    body.admin-portal .records-summary {
         grid-template-columns: 1fr;
     }
 
@@ -1962,233 +2273,310 @@ body.staff-portal .chatbot-toggle , body.admin-portal .chatbot-toggle {
    ============================================================ */
 
 /* Neutral card surfaces (dark-green containers -> neutral) */
-body.staff-portal .resv-metric, body.admin-portal .resv-metric,
-body.staff-portal .resv-stat, body.admin-portal .resv-stat,
-body.staff-portal .resv-weather, body.admin-portal .resv-weather,
-body.staff-portal .resv-search, body.admin-portal .resv-search,
-body.staff-portal .guest-toolbar, body.admin-portal .guest-toolbar,
-body.staff-portal .guest-summary-card, body.admin-portal .guest-summary-card,
-body.staff-portal .guest-card, body.admin-portal .guest-card,
-body.staff-portal .guest-relationship-item, body.admin-portal .guest-relationship-item,
-body.staff-portal .occupancy-card, body.admin-portal .occupancy-card,
-body.staff-portal .occupancy-card__content, body.admin-portal .occupancy-card__content,
-body.staff-portal .occupancy-monitor__filter-panel , body.admin-portal .occupancy-monitor__filter-panel {
+body.staff-portal .resv-metric,
+body.admin-portal .resv-metric,
+body.staff-portal .resv-stat,
+body.admin-portal .resv-stat,
+body.staff-portal .resv-weather,
+body.admin-portal .resv-weather,
+body.staff-portal .resv-search,
+body.admin-portal .resv-search,
+body.staff-portal .guest-toolbar,
+body.admin-portal .guest-toolbar,
+body.staff-portal .guest-summary-card,
+body.admin-portal .guest-summary-card,
+body.staff-portal .guest-card,
+body.admin-portal .guest-card,
+body.staff-portal .guest-relationship-item,
+body.admin-portal .guest-relationship-item,
+body.staff-portal .occupancy-card,
+body.admin-portal .occupancy-card,
+body.staff-portal .occupancy-card__content,
+body.admin-portal .occupancy-card__content,
+body.staff-portal .occupancy-monitor__filter-panel,
+body.admin-portal .occupancy-monitor__filter-panel {
     background: var(--surface);
     border-color: var(--border);
     box-shadow: var(--shadow-xs);
 }
 
-body.staff-portal .guest-relationship-item--main , body.admin-portal .guest-relationship-item--main {
+body.staff-portal .guest-relationship-item--main,
+body.admin-portal .guest-relationship-item--main {
     background: var(--warn-soft);
     border-color: rgba(168, 122, 21, 0.3);
 }
 
 /* Neutral inputs (kills #0d2812 dark fields) */
-body.staff-portal .guest-toolbar__field input, body.admin-portal .guest-toolbar__field input,
-body.staff-portal .guest-toolbar__field select, body.admin-portal .guest-toolbar__field select,
-body.staff-portal .guest-form__field input, body.admin-portal .guest-form__field input,
-body.staff-portal .guest-form__field select, body.admin-portal .guest-form__field select,
-body.staff-portal .guest-form__input, body.admin-portal .guest-form__input,
-body.staff-portal .guest-form__select, body.admin-portal .guest-form__select,
-body.staff-portal .filter-panel__field input, body.admin-portal .filter-panel__field input,
-body.staff-portal .filter-panel__field select , body.admin-portal .filter-panel__field select {
+body.staff-portal .guest-toolbar__field input,
+body.admin-portal .guest-toolbar__field input,
+body.staff-portal .guest-toolbar__field select,
+body.admin-portal .guest-toolbar__field select,
+body.staff-portal .guest-form__field input,
+body.admin-portal .guest-form__field input,
+body.staff-portal .guest-form__field select,
+body.admin-portal .guest-form__field select,
+body.staff-portal .guest-form__input,
+body.admin-portal .guest-form__input,
+body.staff-portal .guest-form__select,
+body.admin-portal .guest-form__select,
+body.staff-portal .filter-panel__field input,
+body.admin-portal .filter-panel__field input,
+body.staff-portal .filter-panel__field select,
+body.admin-portal .filter-panel__field select {
     background: var(--surface);
     border-color: var(--border-strong);
     color: var(--ink);
 }
 
 /* Muted label / meta text (kills #81c784) */
-body.staff-portal .guest-meta, body.admin-portal .guest-meta,
-body.staff-portal .guest-empty, body.admin-portal .guest-empty,
-body.staff-portal .guest-toolbar__meta, body.admin-portal .guest-toolbar__meta,
-body.staff-portal .guest-toolbar__field span, body.admin-portal .guest-toolbar__field span,
-body.staff-portal .guest-summary-card span, body.admin-portal .guest-summary-card span,
-body.staff-portal .resv-metric__label, body.admin-portal .resv-metric__label,
-body.staff-portal .resv-stat__label, body.admin-portal .resv-stat__label,
-body.staff-portal .resv-weather__label, body.admin-portal .resv-weather__label,
-body.staff-portal .resv-weather__cond, body.admin-portal .resv-weather__cond,
-body.staff-portal .resv-weather__metric-label, body.admin-portal .resv-weather__metric-label,
-body.staff-portal .resv-header__subtitle, body.admin-portal .resv-header__subtitle,
-body.staff-portal .occupancy-monitor__subtitle , body.admin-portal .occupancy-monitor__subtitle {
+body.staff-portal .guest-meta,
+body.admin-portal .guest-meta,
+body.staff-portal .guest-empty,
+body.admin-portal .guest-empty,
+body.staff-portal .guest-toolbar__meta,
+body.admin-portal .guest-toolbar__meta,
+body.staff-portal .guest-toolbar__field span,
+body.admin-portal .guest-toolbar__field span,
+body.staff-portal .guest-summary-card span,
+body.admin-portal .guest-summary-card span,
+body.staff-portal .resv-metric__label,
+body.admin-portal .resv-metric__label,
+body.staff-portal .resv-stat__label,
+body.admin-portal .resv-stat__label,
+body.staff-portal .resv-weather__label,
+body.admin-portal .resv-weather__label,
+body.staff-portal .resv-weather__cond,
+body.admin-portal .resv-weather__cond,
+body.staff-portal .resv-weather__metric-label,
+body.admin-portal .resv-weather__metric-label,
+body.staff-portal .resv-header__subtitle,
+body.admin-portal .resv-header__subtitle,
+body.staff-portal .occupancy-monitor__subtitle,
+body.admin-portal .occupancy-monitor__subtitle {
     color: var(--ink-muted);
 }
 
 /* Primary text (kills #c8e6c8 / #e8f5e9) */
-body.staff-portal .guest-name, body.admin-portal .guest-name,
-body.staff-portal .guest-value, body.admin-portal .guest-value,
-body.staff-portal .guest-summary-card strong, body.admin-portal .guest-summary-card strong,
-body.staff-portal .resv-metric__value, body.admin-portal .resv-metric__value,
-body.staff-portal .resv-stat__value, body.admin-portal .resv-stat__value,
-body.staff-portal .resv-weather__temp, body.admin-portal .resv-weather__temp,
-body.staff-portal .resv-weather__metric-value, body.admin-portal .resv-weather__metric-value,
-body.staff-portal .resv-header__title, body.admin-portal .resv-header__title,
-body.staff-portal .occupancy-monitor__title, body.admin-portal .occupancy-monitor__title,
-body.staff-portal .occupancy-card__name , body.admin-portal .occupancy-card__name {
+body.staff-portal .guest-name,
+body.admin-portal .guest-name,
+body.staff-portal .guest-value,
+body.admin-portal .guest-value,
+body.staff-portal .guest-summary-card strong,
+body.admin-portal .guest-summary-card strong,
+body.staff-portal .resv-metric__value,
+body.admin-portal .resv-metric__value,
+body.staff-portal .resv-stat__value,
+body.admin-portal .resv-stat__value,
+body.staff-portal .resv-weather__temp,
+body.admin-portal .resv-weather__temp,
+body.staff-portal .resv-weather__metric-value,
+body.admin-portal .resv-weather__metric-value,
+body.staff-portal .resv-header__title,
+body.admin-portal .resv-header__title,
+body.staff-portal .occupancy-monitor__title,
+body.admin-portal .occupancy-monitor__title,
+body.staff-portal .occupancy-card__name,
+body.admin-portal .occupancy-card__name {
     color: var(--ink);
 }
 
 /* Guest table cells (kills #1a3d1e / #1a2e1d) */
-body.staff-portal .guest-table td , body.admin-portal .guest-table td {
+body.staff-portal .guest-table td,
+body.admin-portal .guest-table td {
     background: transparent;
     border-top-color: var(--border);
     color: var(--ink);
 }
 
-body.staff-portal .guest-row:hover, body.admin-portal .guest-row:hover,
-body.staff-portal .guest-table tbody tr:hover , body.admin-portal .guest-table tbody tr:hover {
+body.staff-portal .guest-row:hover,
+body.admin-portal .guest-row:hover,
+body.staff-portal .guest-table tbody tr:hover,
+body.admin-portal .guest-table tbody tr:hover {
     background: var(--green-tint);
 }
 
-body.staff-portal .guest-row:hover td, body.admin-portal .guest-row:hover td,
-body.staff-portal .guest-row:hover .guest-name, body.admin-portal .guest-row:hover .guest-name,
-body.staff-portal .guest-row:hover .guest-meta , body.admin-portal .guest-row:hover .guest-meta {
+body.staff-portal .guest-row:hover td,
+body.admin-portal .guest-row:hover td,
+body.staff-portal .guest-row:hover .guest-name,
+body.admin-portal .guest-row:hover .guest-name,
+body.staff-portal .guest-row:hover .guest-meta,
+body.admin-portal .guest-row:hover .guest-meta {
     color: var(--ink);
 }
 
 /* Status pills / badges (kills neon green fills) */
-body.staff-portal .reservation-status--pending , body.admin-portal .reservation-status--pending {
+body.staff-portal .reservation-status--pending,
+body.admin-portal .reservation-status--pending {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .reservation-status--confirmed , body.admin-portal .reservation-status--confirmed {
+body.staff-portal .reservation-status--confirmed,
+body.admin-portal .reservation-status--confirmed {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .reservation-status--checked_in , body.admin-portal .reservation-status--checked_in {
+body.staff-portal .reservation-status--checked_in,
+body.admin-portal .reservation-status--checked_in {
     background: rgba(59, 130, 246, 0.12);
     color: #3b82f6;
 }
 
-body.staff-portal .reservation-status--checked_out , body.admin-portal .reservation-status--checked_out {
+body.staff-portal .reservation-status--checked_out,
+body.admin-portal .reservation-status--checked_out {
     background: var(--surface-2);
     color: var(--ink-muted);
 }
 
-body.staff-portal .guest-pill, body.admin-portal .guest-pill,
-body.staff-portal .guest-modal__role-badge, body.admin-portal .guest-modal__role-badge,
-body.staff-portal .guest-summary-card__count , body.admin-portal .guest-summary-card__count {
+body.staff-portal .guest-pill,
+body.admin-portal .guest-pill,
+body.staff-portal .guest-modal__role-badge,
+body.admin-portal .guest-modal__role-badge,
+body.staff-portal .guest-summary-card__count,
+body.admin-portal .guest-summary-card__count {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
 /* Icon chips (kills #81c784 icons) */
-body.staff-portal .resv-metric__icon, body.admin-portal .resv-metric__icon,
-body.staff-portal .resv-stat--green .resv-stat__icon , body.admin-portal .resv-stat--green .resv-stat__icon {
+body.staff-portal .resv-metric__icon,
+body.admin-portal .resv-metric__icon,
+body.staff-portal .resv-stat--green .resv-stat__icon,
+body.admin-portal .resv-stat--green .resv-stat__icon {
     background: var(--green-soft);
     color: var(--green-deep);
 }
 
-body.staff-portal .resv-stat--orange .resv-stat__icon , body.admin-portal .resv-stat--orange .resv-stat__icon {
+body.staff-portal .resv-stat--orange .resv-stat__icon,
+body.admin-portal .resv-stat--orange .resv-stat__icon {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .resv-stat--blue .resv-stat__icon , body.admin-portal .resv-stat--blue .resv-stat__icon {
+body.staff-portal .resv-stat--blue .resv-stat__icon,
+body.admin-portal .resv-stat--blue .resv-stat__icon {
     background: rgba(59, 130, 246, 0.12);
     color: #3b82f6;
 }
 
-body.staff-portal .resv-search svg , body.admin-portal .resv-search svg {
+body.staff-portal .resv-search svg,
+body.admin-portal .resv-search svg {
     color: var(--ink-faint);
 }
 
 /* Buttons & controls (kills dark-green fills) */
-body.staff-portal .resv-tool-btn , body.admin-portal .resv-tool-btn {
+body.staff-portal .resv-tool-btn,
+body.admin-portal .resv-tool-btn {
     background: var(--surface);
     border-color: var(--border-strong);
     color: var(--ink);
 }
 
-body.staff-portal .resv-tool-btn:hover , body.admin-portal .resv-tool-btn:hover {
+body.staff-portal .resv-tool-btn:hover,
+body.admin-portal .resv-tool-btn:hover {
     background: var(--surface-2);
     border-color: var(--green);
     color: var(--green-deep);
 }
 
-body.staff-portal .resv-row-action , body.admin-portal .resv-row-action {
+body.staff-portal .resv-row-action,
+body.admin-portal .resv-row-action {
     border-color: var(--border);
     color: var(--ink-muted);
 }
 
-body.staff-portal .guest-toolbar__clear , body.admin-portal .guest-toolbar__clear {
+body.staff-portal .guest-toolbar__clear,
+body.admin-portal .guest-toolbar__clear {
     background: var(--surface);
     border-color: var(--border-strong);
     color: var(--ink);
 }
 
-body.staff-portal .guest-toolbar__clear:hover , body.admin-portal .guest-toolbar__clear:hover {
+body.staff-portal .guest-toolbar__clear:hover,
+body.admin-portal .guest-toolbar__clear:hover {
     background: var(--warn-soft);
     border-color: var(--warn);
     color: var(--warn);
 }
 
-body.staff-portal .guest-form__secondary , body.admin-portal .guest-form__secondary {
+body.staff-portal .guest-form__secondary,
+body.admin-portal .guest-form__secondary {
     background: var(--surface-2);
     border-color: var(--border-strong);
     color: var(--ink);
 }
 
-body.staff-portal .guest-form__button , body.admin-portal .guest-form__button {
+body.staff-portal .guest-form__button,
+body.admin-portal .guest-form__button {
     background: var(--green);
     color: #fff;
 }
 
 /* Keep the theme's intended two-tone layering (form sections sit one step deeper) */
-body.staff-portal .guest-form__section , body.admin-portal .guest-form__section {
+body.staff-portal .guest-form__section,
+body.admin-portal .guest-form__section {
     background: var(--surface-2);
     border-color: var(--border);
 }
 
-body.staff-portal .guest-form__chip span , body.admin-portal .guest-form__chip span {
+body.staff-portal .guest-form__chip span,
+body.admin-portal .guest-form__chip span {
     background: var(--surface-2);
     border-color: var(--border-strong);
     color: var(--ink);
 }
 
-body.staff-portal .guest-form__chip:has(input:checked) span , body.admin-portal .guest-form__chip:has(input:checked) span {
+body.staff-portal .guest-form__chip:has(input:checked) span,
+body.admin-portal .guest-form__chip:has(input:checked) span {
     background: var(--green-soft);
     border-color: var(--green);
     color: var(--green-deep);
 }
 
 /* Alerts & feedback */
-body.staff-portal .guest-alert , body.admin-portal .guest-alert {
+body.staff-portal .guest-alert,
+body.admin-portal .guest-alert {
     background: var(--green-soft);
     border-color: rgba(23, 138, 82, 0.25);
     color: var(--green-deep);
 }
 
-body.staff-portal .guest-modal__success-icon , body.admin-portal .guest-modal__success-icon {
+body.staff-portal .guest-modal__success-icon,
+body.admin-portal .guest-modal__success-icon {
     background: var(--green-soft);
     color: var(--green);
 }
 
-body.staff-portal .guest-modal__title--success , body.admin-portal .guest-modal__title--success {
+body.staff-portal .guest-modal__title--success,
+body.admin-portal .guest-modal__title--success {
     color: var(--green);
 }
 
 /* Soften the loud yellow "today" row */
-body.staff-portal .today-reservation , body.admin-portal .today-reservation {
+body.staff-portal .today-reservation,
+body.admin-portal .today-reservation {
     background: linear-gradient(135deg, rgba(255, 193, 7, 0.14) 0%, rgba(255, 152, 0, 0.08) 100%) !important;
     border-left: none !important;
     box-shadow: inset 3px 0 0 #f0a63a, var(--shadow-sm) !important;
 }
 
-[data-theme="dark"] body.staff-portal .today-reservation , [data-theme="dark"] body.admin-portal .today-reservation {
+[data-theme="dark"] body.staff-portal .today-reservation,
+[data-theme="dark"] body.admin-portal .today-reservation {
     background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.06) 100%) !important;
     box-shadow: inset 3px 0 0 #f0a63a, var(--shadow-sm) !important;
 }
 
 /* Skeleton shimmer (kills the greenish dark gradient) */
-body.staff-portal .skeleton , body.admin-portal .skeleton {
+body.staff-portal .skeleton,
+body.admin-portal .skeleton {
     background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
     background-size: 200% 100%;
 }
 
 /* Records tab active state stays green in dark mode (kills gold !important) */
-[data-theme="dark"] body.staff-portal .records-tab-btn--active , [data-theme="dark"] body.admin-portal .records-tab-btn--active {
+[data-theme="dark"] body.staff-portal .records-tab-btn--active,
+[data-theme="dark"] body.admin-portal .records-tab-btn--active {
     background: var(--green) !important;
     border-color: transparent !important;
     color: #fff !important;
@@ -2203,120 +2591,173 @@ body.staff-portal .skeleton , body.admin-portal .skeleton {
    ============================================================ */
 
 /* --- 3D card tilt & lift --- */
-body.staff-portal .dash-stat-card, body.admin-portal .dash-stat-card,
-body.staff-portal .reports-metric-card, body.admin-portal .reports-metric-card,
-body.staff-portal .records-summary-card, body.admin-portal .records-summary-card,
-body.staff-portal .guest-summary-card, body.admin-portal .guest-summary-card,
-body.staff-portal .resv-stat, body.admin-portal .resv-stat,
-body.staff-portal .resv-metric, body.admin-portal .resv-metric,
-body.staff-portal .occupancy-card , body.admin-portal .occupancy-card {
+body.staff-portal .dash-stat-card,
+body.admin-portal .dash-stat-card,
+body.staff-portal .reports-metric-card,
+body.admin-portal .reports-metric-card,
+body.staff-portal .records-summary-card,
+body.admin-portal .records-summary-card,
+body.staff-portal .guest-summary-card,
+body.admin-portal .guest-summary-card,
+body.staff-portal .resv-stat,
+body.admin-portal .resv-stat,
+body.staff-portal .resv-metric,
+body.admin-portal .resv-metric,
+body.staff-portal .occupancy-card,
+body.admin-portal .occupancy-card {
     position: relative;
     transform-style: preserve-3d;
     transform-origin: center bottom;
 }
 
-body.staff-portal .dash-panel , body.admin-portal .dash-panel {
+body.staff-portal .dash-panel,
+body.admin-portal .dash-panel {
     position: relative;
 }
 
-body.staff-portal .dash-stat-card:hover, body.admin-portal .dash-stat-card:hover,
-body.staff-portal .reports-metric-card:hover, body.admin-portal .reports-metric-card:hover,
-body.staff-portal .records-summary-card:hover, body.admin-portal .records-summary-card:hover,
-body.staff-portal .guest-summary-card:hover, body.admin-portal .guest-summary-card:hover,
-body.staff-portal .resv-stat:hover, body.admin-portal .resv-stat:hover,
-body.staff-portal .resv-metric:hover, body.admin-portal .resv-metric:hover,
-body.staff-portal .occupancy-card:hover , body.admin-portal .occupancy-card:hover {
+body.staff-portal .dash-stat-card:hover,
+body.admin-portal .dash-stat-card:hover,
+body.staff-portal .reports-metric-card:hover,
+body.admin-portal .reports-metric-card:hover,
+body.staff-portal .records-summary-card:hover,
+body.admin-portal .records-summary-card:hover,
+body.staff-portal .guest-summary-card:hover,
+body.admin-portal .guest-summary-card:hover,
+body.staff-portal .resv-stat:hover,
+body.admin-portal .resv-stat:hover,
+body.staff-portal .resv-metric:hover,
+body.admin-portal .resv-metric:hover,
+body.staff-portal .occupancy-card:hover,
+body.admin-portal .occupancy-card:hover {
     transform: perspective(950px) translateY(-4px) rotateX(3deg);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), var(--shadow-lg);
     border-color: var(--border-strong);
 }
 
-[data-theme="dark"] body.staff-portal .dash-stat-card:hover, [data-theme="dark"] body.admin-portal .dash-stat-card:hover,
-[data-theme="dark"] body.staff-portal .reports-metric-card:hover, [data-theme="dark"] body.admin-portal .reports-metric-card:hover,
-[data-theme="dark"] body.staff-portal .records-summary-card:hover, [data-theme="dark"] body.admin-portal .records-summary-card:hover,
-[data-theme="dark"] body.staff-portal .guest-summary-card:hover, [data-theme="dark"] body.admin-portal .guest-summary-card:hover,
-[data-theme="dark"] body.staff-portal .resv-stat:hover, [data-theme="dark"] body.admin-portal .resv-stat:hover,
-[data-theme="dark"] body.staff-portal .resv-metric:hover, [data-theme="dark"] body.admin-portal .resv-metric:hover,
-[data-theme="dark"] body.staff-portal .occupancy-card:hover , [data-theme="dark"] body.admin-portal .occupancy-card:hover {
+[data-theme="dark"] body.staff-portal .dash-stat-card:hover,
+[data-theme="dark"] body.admin-portal .dash-stat-card:hover,
+[data-theme="dark"] body.staff-portal .reports-metric-card:hover,
+[data-theme="dark"] body.admin-portal .reports-metric-card:hover,
+[data-theme="dark"] body.staff-portal .records-summary-card:hover,
+[data-theme="dark"] body.admin-portal .records-summary-card:hover,
+[data-theme="dark"] body.staff-portal .guest-summary-card:hover,
+[data-theme="dark"] body.admin-portal .guest-summary-card:hover,
+[data-theme="dark"] body.staff-portal .resv-stat:hover,
+[data-theme="dark"] body.admin-portal .resv-stat:hover,
+[data-theme="dark"] body.staff-portal .resv-metric:hover,
+[data-theme="dark"] body.admin-portal .resv-metric:hover,
+[data-theme="dark"] body.staff-portal .occupancy-card:hover,
+[data-theme="dark"] body.admin-portal .occupancy-card:hover {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), var(--shadow-lg);
 }
 
-body.staff-portal .dash-panel:hover, body.admin-portal .dash-panel:hover,
-body.staff-portal .reports-panel:hover , body.admin-portal .reports-panel:hover {
+body.staff-portal .dash-panel:hover,
+body.admin-portal .dash-panel:hover,
+body.staff-portal .reports-panel:hover,
+body.admin-portal .reports-panel:hover {
     transform: perspective(950px) translateY(-2px);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), var(--shadow-md);
 }
 
-[data-theme="dark"] body.staff-portal .dash-panel:hover, [data-theme="dark"] body.admin-portal .dash-panel:hover,
-[data-theme="dark"] body.staff-portal .reports-panel:hover , [data-theme="dark"] body.admin-portal .reports-panel:hover {
+[data-theme="dark"] body.staff-portal .dash-panel:hover,
+[data-theme="dark"] body.admin-portal .dash-panel:hover,
+[data-theme="dark"] body.staff-portal .reports-panel:hover,
+[data-theme="dark"] body.admin-portal .reports-panel:hover {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-md);
 }
 
 /* --- 3D key-press primary buttons --- */
-body.staff-portal .btn--primary, body.admin-portal .btn--primary,
-body.staff-portal .guest-form__button, body.admin-portal .guest-form__button,
-body.staff-portal .guest-panel__button--primary, body.admin-portal .guest-panel__button--primary,
-body.staff-portal .resv-tool-btn--primary, body.admin-portal .resv-tool-btn--primary,
-body.staff-portal .records-tab-btn--active , body.admin-portal .records-tab-btn--active {
+body.staff-portal .btn--primary,
+body.admin-portal .btn--primary,
+body.staff-portal .guest-form__button,
+body.admin-portal .guest-form__button,
+body.staff-portal .guest-panel__button--primary,
+body.admin-portal .guest-panel__button--primary,
+body.staff-portal .resv-tool-btn--primary,
+body.admin-portal .resv-tool-btn--primary,
+body.staff-portal .records-tab-btn--active,
+body.admin-portal .records-tab-btn--active {
     box-shadow: 0 3px 0 var(--green-edge), 0 6px 16px rgba(23, 138, 82, 0.22);
 }
 
-body.staff-portal .btn--primary:hover, body.admin-portal .btn--primary:hover,
-body.staff-portal .guest-form__button:hover, body.admin-portal .guest-form__button:hover,
-body.staff-portal .guest-panel__button--primary:hover, body.admin-portal .guest-panel__button--primary:hover,
-body.staff-portal .resv-tool-btn--primary:hover, body.admin-portal .resv-tool-btn--primary:hover,
-body.staff-portal .records-tab-btn--active:hover , body.admin-portal .records-tab-btn--active:hover {
+body.staff-portal .btn--primary:hover,
+body.admin-portal .btn--primary:hover,
+body.staff-portal .guest-form__button:hover,
+body.admin-portal .guest-form__button:hover,
+body.staff-portal .guest-panel__button--primary:hover,
+body.admin-portal .guest-panel__button--primary:hover,
+body.staff-portal .resv-tool-btn--primary:hover,
+body.admin-portal .resv-tool-btn--primary:hover,
+body.staff-portal .records-tab-btn--active:hover,
+body.admin-portal .records-tab-btn--active:hover {
     box-shadow: 0 4px 0 var(--green-edge), 0 8px 20px rgba(23, 138, 82, 0.28);
     transform: translateY(-1px);
     background: var(--green-hover);
     color: #fff;
 }
 
-body.staff-portal .btn--primary:active, body.admin-portal .btn--primary:active,
-body.staff-portal .guest-form__button:active, body.admin-portal .guest-form__button:active,
-body.staff-portal .guest-panel__button--primary:active, body.admin-portal .guest-panel__button--primary:active,
-body.staff-portal .resv-tool-btn--primary:active, body.admin-portal .resv-tool-btn--primary:active,
-body.staff-portal .records-tab-btn--active:active , body.admin-portal .records-tab-btn--active:active {
+body.staff-portal .btn--primary:active,
+body.admin-portal .btn--primary:active,
+body.staff-portal .guest-form__button:active,
+body.admin-portal .guest-form__button:active,
+body.staff-portal .guest-panel__button--primary:active,
+body.admin-portal .guest-panel__button--primary:active,
+body.staff-portal .resv-tool-btn--primary:active,
+body.admin-portal .resv-tool-btn--primary:active,
+body.staff-portal .records-tab-btn--active:active,
+body.admin-portal .records-tab-btn--active:active {
     box-shadow: 0 1px 0 var(--green-edge), 0 2px 6px rgba(23, 138, 82, 0.2);
     transform: translateY(2px);
 }
 
 /* Dark mode: hover sinks to a slightly deeper green (not pale mint) */
-[data-theme="dark"] body.staff-portal .btn--primary:hover, [data-theme="dark"] body.admin-portal .btn--primary:hover,
-[data-theme="dark"] body.staff-portal .guest-form__button:hover, [data-theme="dark"] body.admin-portal .guest-form__button:hover,
-[data-theme="dark"] body.staff-portal .guest-panel__button--primary:hover, [data-theme="dark"] body.admin-portal .guest-panel__button--primary:hover,
-[data-theme="dark"] body.staff-portal .resv-tool-btn--primary:hover, [data-theme="dark"] body.admin-portal .resv-tool-btn--primary:hover,
-[data-theme="dark"] body.staff-portal .records-tab-btn--active:hover , [data-theme="dark"] body.admin-portal .records-tab-btn--active:hover {
+[data-theme="dark"] body.staff-portal .btn--primary:hover,
+[data-theme="dark"] body.admin-portal .btn--primary:hover,
+[data-theme="dark"] body.staff-portal .guest-form__button:hover,
+[data-theme="dark"] body.admin-portal .guest-form__button:hover,
+[data-theme="dark"] body.staff-portal .guest-panel__button--primary:hover,
+[data-theme="dark"] body.admin-portal .guest-panel__button--primary:hover,
+[data-theme="dark"] body.staff-portal .resv-tool-btn--primary:hover,
+[data-theme="dark"] body.admin-portal .resv-tool-btn--primary:hover,
+[data-theme="dark"] body.staff-portal .records-tab-btn--active:hover,
+[data-theme="dark"] body.admin-portal .records-tab-btn--active:hover {
     background: var(--green-hover);
     color: #fff;
 }
 
 /* --- Glossy 3D bars (hbar fills + bar charts) --- */
-body.staff-portal .dash-hbar__fill, body.admin-portal .dash-hbar__fill,
-body.staff-portal .dash-barchart__bar , body.admin-portal .dash-barchart__bar {
+body.staff-portal .dash-hbar__fill,
+body.admin-portal .dash-hbar__fill,
+body.staff-portal .dash-barchart__bar,
+body.admin-portal .dash-barchart__bar {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* Bar gradient end must stay a deep green in dark mode (--green-deep goes pale) */
-body.staff-portal .dash-barchart__bar--count , body.admin-portal .dash-barchart__bar--count {
+body.staff-portal .dash-barchart__bar--count,
+body.admin-portal .dash-barchart__bar--count {
     background: linear-gradient(180deg, #2f9d68 0%, var(--green-edge) 100%);
 }
 
 /* --- 3D donut ring --- */
-body.staff-portal .dash-donut , body.admin-portal .dash-donut {
+body.staff-portal .dash-donut,
+body.admin-portal .dash-donut {
     box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.35), 0 0 0 8px var(--surface), 0 10px 26px rgba(23, 42, 32, 0.12);
 }
 
-[data-theme="dark"] body.staff-portal .dash-donut , [data-theme="dark"] body.admin-portal .dash-donut {
+[data-theme="dark"] body.staff-portal .dash-donut,
+[data-theme="dark"] body.admin-portal .dash-donut {
     box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.06), 0 0 0 8px var(--surface), 0 10px 26px rgba(0, 0, 0, 0.35);
 }
 
 /* --- 3D avatar coins --- */
-body.staff-portal .resv-avatar , body.admin-portal .resv-avatar {
+body.staff-portal .resv-avatar,
+body.admin-portal .resv-avatar {
     box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.35), inset 0 -2px 4px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(23, 42, 32, 0.18);
 }
 
-body.staff-portal .dash-sidebar__profile-avatar , body.admin-portal .dash-sidebar__profile-avatar {
+body.staff-portal .dash-sidebar__profile-avatar,
+body.admin-portal .dash-sidebar__profile-avatar {
     box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -2333,52 +2774,79 @@ body.staff-portal .dash-sidebar__profile-avatar , body.admin-portal .dash-sideba
     }
 }
 
-body.staff-portal .guest-modal__content, body.admin-portal .guest-modal__content,
-body.staff-portal .modal__panel, body.admin-portal .modal__panel,
-body.staff-portal .logout-modal__content , body.admin-portal .logout-modal__content {
+body.staff-portal .guest-modal__content,
+body.admin-portal .guest-modal__content,
+body.staff-portal .modal__panel,
+body.admin-portal .modal__panel,
+body.staff-portal .logout-modal__content,
+body.admin-portal .logout-modal__content {
     backface-visibility: hidden;
 }
 
 /* --- Table row hover: inset left accent = "raised" feel --- */
-body.staff-portal .guest-table tbody tr:hover, body.admin-portal .guest-table tbody tr:hover,
-body.staff-portal .reports-table tbody tr:hover, body.admin-portal .reports-table tbody tr:hover,
-body.staff-portal .users-table .user-row:hover, body.admin-portal .users-table .user-row:hover,
-body.staff-portal .guest-row:hover , body.admin-portal .guest-row:hover {
+body.staff-portal .guest-table tbody tr:hover,
+body.admin-portal .guest-table tbody tr:hover,
+body.staff-portal .reports-table tbody tr:hover,
+body.admin-portal .reports-table tbody tr:hover,
+body.staff-portal .users-table .user-row:hover,
+body.admin-portal .users-table .user-row:hover,
+body.staff-portal .guest-row:hover,
+body.admin-portal .guest-row:hover {
     box-shadow: inset 3px 0 0 var(--green);
 }
 
 /* --- Pills & tags get a lit top edge --- */
-body.staff-portal .status-pill, body.admin-portal .status-pill,
-body.staff-portal .guest-pill, body.admin-portal .guest-pill,
-body.staff-portal .time-slot-label, body.admin-portal .time-slot-label,
-body.staff-portal .resv-metric__badge, body.admin-portal .resv-metric__badge,
-body.staff-portal .reservation-status , body.admin-portal .reservation-status {
+body.staff-portal .status-pill,
+body.admin-portal .status-pill,
+body.staff-portal .guest-pill,
+body.admin-portal .guest-pill,
+body.staff-portal .time-slot-label,
+body.admin-portal .time-slot-label,
+body.staff-portal .resv-metric__badge,
+body.admin-portal .resv-metric__badge,
+body.staff-portal .reservation-status,
+body.admin-portal .reservation-status {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-[data-theme="dark"] body.staff-portal .status-pill, [data-theme="dark"] body.admin-portal .status-pill,
-[data-theme="dark"] body.staff-portal .guest-pill, [data-theme="dark"] body.admin-portal .guest-pill,
-[data-theme="dark"] body.staff-portal .time-slot-label, [data-theme="dark"] body.admin-portal .time-slot-label,
-[data-theme="dark"] body.staff-portal .resv-metric__badge, [data-theme="dark"] body.admin-portal .resv-metric__badge,
-[data-theme="dark"] body.staff-portal .reservation-status , [data-theme="dark"] body.admin-portal .reservation-status {
+[data-theme="dark"] body.staff-portal .status-pill,
+[data-theme="dark"] body.admin-portal .status-pill,
+[data-theme="dark"] body.staff-portal .guest-pill,
+[data-theme="dark"] body.admin-portal .guest-pill,
+[data-theme="dark"] body.staff-portal .time-slot-label,
+[data-theme="dark"] body.admin-portal .time-slot-label,
+[data-theme="dark"] body.staff-portal .resv-metric__badge,
+[data-theme="dark"] body.admin-portal .resv-metric__badge,
+[data-theme="dark"] body.staff-portal .reservation-status,
+[data-theme="dark"] body.admin-portal .reservation-status {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* --- Inputs: recessed 3D well --- */
-body.staff-portal input[type="text"], body.admin-portal input[type="text"],
-body.staff-portal input[type="email"], body.admin-portal input[type="email"],
-body.staff-portal input[type="password"], body.admin-portal input[type="password"],
-body.staff-portal input[type="number"], body.admin-portal input[type="number"],
-body.staff-portal input[type="date"], body.admin-portal input[type="date"],
-body.staff-portal input[type="time"], body.admin-portal input[type="time"],
-body.staff-portal input[type="search"], body.admin-portal input[type="search"],
-body.staff-portal select, body.admin-portal select,
-body.staff-portal textarea , body.admin-portal textarea {
+body.staff-portal input[type="text"],
+body.admin-portal input[type="text"],
+body.staff-portal input[type="email"],
+body.admin-portal input[type="email"],
+body.staff-portal input[type="password"],
+body.admin-portal input[type="password"],
+body.staff-portal input[type="number"],
+body.admin-portal input[type="number"],
+body.staff-portal input[type="date"],
+body.admin-portal input[type="date"],
+body.staff-portal input[type="time"],
+body.admin-portal input[type="time"],
+body.staff-portal input[type="search"],
+body.admin-portal input[type="search"],
+body.staff-portal select,
+body.admin-portal select,
+body.staff-portal textarea,
+body.admin-portal textarea {
     box-shadow: inset 0 1px 2px rgba(23, 42, 32, 0.06);
 }
 
 /* --- Sidebar active link: raised 3D pill, green glow removed --- */
-body.staff-portal .dash-sidebar__link.is-active , body.admin-portal .dash-sidebar__link.is-active {
+body.staff-portal .dash-sidebar__link.is-active,
+body.admin-portal .dash-sidebar__link.is-active {
     box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.12),
         inset 0 2px 3px rgba(255, 255, 255, 0.22), inset 0 -3px 5px rgba(0, 0, 0, 0.22) !important;
 }
@@ -2388,14 +2856,16 @@ body.staff-portal .dash-sidebar__link.is-active , body.admin-portal .dash-sideba
    ============================================================ */
 
 /* Person cells (initials avatar + name/meta) */
-body.staff-portal .cell-person , body.admin-portal .cell-person {
+body.staff-portal .cell-person,
+body.admin-portal .cell-person {
     display: flex;
     align-items: center;
     gap: 0.7rem;
     min-width: 0;
 }
 
-body.staff-portal .cell-person__avatar , body.admin-portal .cell-person__avatar {
+body.staff-portal .cell-person__avatar,
+body.admin-portal .cell-person__avatar {
     width: 2.1rem;
     height: 2.1rem;
     flex-shrink: 0;
@@ -2412,16 +2882,19 @@ body.staff-portal .cell-person__avatar , body.admin-portal .cell-person__avatar 
         0 2px 6px rgba(23, 42, 32, 0.14);
 }
 
-body.staff-portal .cell-person__avatar--hash , body.admin-portal .cell-person__avatar--hash {
+body.staff-portal .cell-person__avatar--hash,
+body.admin-portal .cell-person__avatar--hash {
     background: linear-gradient(135deg, #3f5c8f 0%, #2b3f68 100%);
 }
 
-body.staff-portal .cell-person__body , body.admin-portal .cell-person__body {
+body.staff-portal .cell-person__body,
+body.admin-portal .cell-person__body {
     min-width: 0;
 }
 
 /* Numeric cells (amounts) */
-body.staff-portal td.num-cell , body.admin-portal td.num-cell {
+body.staff-portal td.num-cell,
+body.admin-portal td.num-cell {
     text-align: right;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
@@ -2429,57 +2902,85 @@ body.staff-portal td.num-cell , body.admin-portal td.num-cell {
 }
 
 /* Timestamp cells */
-body.staff-portal td.mono-cell , body.admin-portal td.mono-cell {
+body.staff-portal td.mono-cell,
+body.admin-portal td.mono-cell {
     white-space: nowrap;
     font-size: 0.8rem;
     color: var(--ink-muted);
 }
 
 /* Reservation type pills */
-body.staff-portal .status-pill--walk-in , body.admin-portal .status-pill--walk-in {
+body.staff-portal .status-pill--walk-in,
+body.admin-portal .status-pill--walk-in {
     background: var(--warn-soft);
     color: var(--warn);
 }
 
-body.staff-portal .status-pill--online , body.admin-portal .status-pill--online {
+body.staff-portal .status-pill--online,
+body.admin-portal .status-pill--online {
     background: rgba(59, 130, 246, 0.12);
     color: #3b82f6;
 }
 
 /* --- Respect reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
-    body.staff-portal .dash-stat-card:hover, body.admin-portal .dash-stat-card:hover,
-    body.staff-portal .reports-metric-card:hover, body.admin-portal .reports-metric-card:hover,
-    body.staff-portal .records-summary-card:hover, body.admin-portal .records-summary-card:hover,
-    body.staff-portal .guest-summary-card:hover, body.admin-portal .guest-summary-card:hover,
-    body.staff-portal .resv-stat:hover, body.admin-portal .resv-stat:hover,
-    body.staff-portal .resv-metric:hover, body.admin-portal .resv-metric:hover,
-    body.staff-portal .occupancy-card:hover, body.admin-portal .occupancy-card:hover,
-    body.staff-portal .dash-panel:hover, body.admin-portal .dash-panel:hover,
-    body.staff-portal .reports-panel:hover, body.admin-portal .reports-panel:hover,
-    body.staff-portal .btn--primary:hover, body.admin-portal .btn--primary:hover,
-    body.staff-portal .guest-form__button:hover, body.admin-portal .guest-form__button:hover,
-    body.staff-portal .guest-panel__button--primary:hover, body.admin-portal .guest-panel__button--primary:hover,
-    body.staff-portal .resv-tool-btn--primary:hover, body.admin-portal .resv-tool-btn--primary:hover,
-    body.staff-portal .records-tab-btn--active:hover, body.admin-portal .records-tab-btn--active:hover,
-    body.staff-portal .btn--primary:active, body.admin-portal .btn--primary:active,
-    body.staff-portal .guest-form__button:active, body.admin-portal .guest-form__button:active,
-    body.staff-portal .guest-panel__button--primary:active, body.admin-portal .guest-panel__button--primary:active,
-    body.staff-portal .resv-tool-btn--primary:active, body.admin-portal .resv-tool-btn--primary:active,
-    body.staff-portal .records-tab-btn--active:active , body.admin-portal .records-tab-btn--active:active {
+
+    body.staff-portal .dash-stat-card:hover,
+    body.admin-portal .dash-stat-card:hover,
+    body.staff-portal .reports-metric-card:hover,
+    body.admin-portal .reports-metric-card:hover,
+    body.staff-portal .records-summary-card:hover,
+    body.admin-portal .records-summary-card:hover,
+    body.staff-portal .guest-summary-card:hover,
+    body.admin-portal .guest-summary-card:hover,
+    body.staff-portal .resv-stat:hover,
+    body.admin-portal .resv-stat:hover,
+    body.staff-portal .resv-metric:hover,
+    body.admin-portal .resv-metric:hover,
+    body.staff-portal .occupancy-card:hover,
+    body.admin-portal .occupancy-card:hover,
+    body.staff-portal .dash-panel:hover,
+    body.admin-portal .dash-panel:hover,
+    body.staff-portal .reports-panel:hover,
+    body.admin-portal .reports-panel:hover,
+    body.staff-portal .btn--primary:hover,
+    body.admin-portal .btn--primary:hover,
+    body.staff-portal .guest-form__button:hover,
+    body.admin-portal .guest-form__button:hover,
+    body.staff-portal .guest-panel__button--primary:hover,
+    body.admin-portal .guest-panel__button--primary:hover,
+    body.staff-portal .resv-tool-btn--primary:hover,
+    body.admin-portal .resv-tool-btn--primary:hover,
+    body.staff-portal .records-tab-btn--active:hover,
+    body.admin-portal .records-tab-btn--active:hover,
+    body.staff-portal .btn--primary:active,
+    body.admin-portal .btn--primary:active,
+    body.staff-portal .guest-form__button:active,
+    body.admin-portal .guest-form__button:active,
+    body.staff-portal .guest-panel__button--primary:active,
+    body.admin-portal .guest-panel__button--primary:active,
+    body.staff-portal .resv-tool-btn--primary:active,
+    body.admin-portal .resv-tool-btn--primary:active,
+    body.staff-portal .records-tab-btn--active:active,
+    body.admin-portal .records-tab-btn--active:active {
         transform: none;
     }
 
-    body.staff-portal .dash-sidebar__link , body.admin-portal .dash-sidebar__link {
+    body.staff-portal .dash-sidebar__link,
+    body.admin-portal .dash-sidebar__link {
         transform: none !important;
     }
 
-    body.staff-portal .guest-modal__content, body.admin-portal .guest-modal__content,
-    body.staff-portal .modal__panel, body.admin-portal .modal__panel,
-    body.staff-portal .logout-modal__content , body.admin-portal .logout-modal__content {
+    body.staff-portal .guest-modal__content,
+    body.admin-portal .guest-modal__content,
+    body.staff-portal .modal__panel,
+    body.admin-portal .modal__panel,
+    body.staff-portal .logout-modal__content,
+    body.admin-portal .logout-modal__content {
         animation: none;
     }
 }
+
 /* ============================================================
    24. Portal ambient art — nature backdrop + leaf overlays
    The pages render a blurred, darkened nature photo behind the
@@ -2494,7 +2995,8 @@ body.staff-portal .status-pill--online , body.admin-portal .status-pill--online 
 .portal-art {
     position: fixed;
     inset: 0;
-    z-index: 40; /* above content, below sidebar(50) / dropdowns(100+) / modals */
+    z-index: 40;
+    /* above content, below sidebar(50) / dropdowns(100+) / modals */
     pointer-events: none;
     overflow: hidden;
 }
@@ -2543,8 +3045,13 @@ body.staff-portal .status-pill--online , body.admin-portal .status-pill--online 
 }
 
 @keyframes portal-leaf-float {
-    from { translate: 0 0; }
-    to   { translate: 0 -14px; }
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -14px;
+    }
 }
 
 @media (max-width: 640px) {
@@ -2552,19 +3059,23 @@ body.staff-portal .status-pill--online , body.admin-portal .status-pill--online 
         width: 78vw;
         opacity: 0.42;
     }
+
     .portal-art__leaf {
         width: 36vw;
         opacity: 0.4;
     }
+
     [data-theme="dark"] .portal-art__leaves {
         opacity: 0.3;
     }
+
     [data-theme="dark"] .portal-art__leaf {
         opacity: 0.3;
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .portal-art__leaves,
     .portal-art__leaf {
         animation: none;
@@ -2579,7 +3090,8 @@ body.staff-portal .status-pill--online , body.admin-portal .status-pill--online 
 
 /* Token additions: page CSS references these legacy aliases /
    reports + pastel palettes. Light + dark. */
-body.staff-portal, body.admin-portal {
+body.staff-portal,
+body.admin-portal {
     --hp-text-color: var(--ink);
     --hp-bg: var(--bg);
 
@@ -2598,7 +3110,8 @@ body.staff-portal, body.admin-portal {
     --pastel-purple-text: #6d4b8e;
 }
 
-[data-theme="dark"] body.staff-portal, [data-theme="dark"] body.admin-portal {
+[data-theme="dark"] body.staff-portal,
+[data-theme="dark"] body.admin-portal {
     --reports-bg: transparent;
     --reports-card-bg: #14211a;
     --reports-border: #26362d;
@@ -2612,6 +3125,7 @@ body.staff-portal, body.admin-portal {
     --pastel-purple-bg: #2b1f33;
     --pastel-purple-text: #a889c4;
 }
+
 /* Check Ins specific styles */
 
 /* Animated Background */
@@ -2919,7 +3433,7 @@ td.mono-cell {
     justify-content: center;
     width: 2.6rem;
     height: 2.6rem;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     background: #fff;
     color: var(--hp-green-dark);
@@ -2933,7 +3447,7 @@ td.mono-cell {
 }
 
 .btn-icon:hover {
-    background: rgba(0,0,0,0.03);
+    background: rgba(0, 0, 0, 0.03);
 }
 
 [data-theme="dark"] .btn-icon:hover {
@@ -3022,6 +3536,7 @@ td.mono-cell {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
 @media (max-width: 640px) {
     .dashboard-top-row {
         grid-template-columns: 1fr;
@@ -3039,7 +3554,7 @@ td.mono-cell {
     gap: 0.8rem;
     margin-bottom: 1.2rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .widget-icon {
@@ -3050,10 +3565,26 @@ td.mono-cell {
     height: 2.2rem;
     border-radius: 50%;
 }
-.widget-icon svg { width: 1.2rem; height: 1.2rem; }
-.widget-icon--green { background: var(--hp-green); color: white; }
-.widget-icon--blue { background: #e0f2fe; color: #0ea5e9; }
-.widget-icon--orange { background: #ffedd5; color: #ea580c; }
+
+.widget-icon svg {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+.widget-icon--green {
+    background: var(--hp-green);
+    color: white;
+}
+
+.widget-icon--blue {
+    background: #e0f2fe;
+    color: #0ea5e9;
+}
+
+.widget-icon--orange {
+    background: #ffedd5;
+    color: #ea580c;
+}
 
 .premium-widget__header svg {
     color: var(--hp-green-mid);
@@ -3077,9 +3608,18 @@ td.mono-cell {
     display: grid;
     gap: 1.2rem;
 }
-.premium-widget__grid.cols-3 { grid-template-columns: 1fr 1fr 1.5fr; }
-.premium-widget__grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.premium-widget__grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+.premium-widget__grid.cols-3 {
+    grid-template-columns: 1fr 1fr 1.5fr;
+}
+
+.premium-widget__grid.cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.premium-widget__grid.cols-5 {
+    grid-template-columns: repeat(5, 1fr);
+}
 
 .premium-stat {
     display: flex;
@@ -3110,14 +3650,42 @@ td.mono-cell {
     font-weight: 600;
     margin-top: 0.15rem;
 }
-.trend-up { color: #16a34a; }
-.trend-blue { color: #2563eb; }
-.stat-link { color: #6b7280; text-decoration: none; font-size: 0.7rem; font-weight: 500; margin-top: 0.15rem; }
-.stat-link:hover { color: #374151; text-decoration: underline; }
 
-.premium-stat.stat-due strong { color: #ea580c; }
-.premium-stat.stat-due-sub strong { font-size: clamp(1rem, 1.4vw, 1.25rem); color: #ea580c; opacity: 0.9; }
-.premium-stat.stat-near strong { color: #f59e0b; }
+.trend-up {
+    color: #16a34a;
+}
+
+.trend-blue {
+    color: #2563eb;
+}
+
+.stat-link {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-top: 0.15rem;
+}
+
+.stat-link:hover {
+    color: #374151;
+    text-decoration: underline;
+}
+
+.premium-stat.stat-due strong {
+    color: #ea580c;
+}
+
+.premium-stat.stat-due-sub strong {
+    font-size: clamp(1rem, 1.4vw, 1.25rem);
+    color: #ea580c;
+    opacity: 0.9;
+}
+
+.premium-stat.stat-near strong {
+    color: #f59e0b;
+}
+
 .text-gradient-green {
     background: linear-gradient(135deg, var(--hp-green), var(--hp-green-dark));
     -webkit-background-clip: text;
@@ -3181,16 +3749,35 @@ td.mono-cell {
     border-color: var(--glass-border);
     box-shadow: var(--glass-shadow);
 }
+
 [data-theme="dark"] .premium-widget--alert {
     background: rgba(20, 33, 24, 0.75);
     border-color: rgba(251, 191, 36, 0.2);
 }
-[data-theme="dark"] .premium-widget__header { border-bottom-color: rgba(255,255,255,0.08); }
-[data-theme="dark"] .premium-widget__header h4 { color: var(--hp-text); }
-[data-theme="dark"] .premium-stat span { color: var(--hp-text-muted); }
-[data-theme="dark"] .premium-stat strong { color: var(--hp-text); }
-[data-theme="dark"] .premium-stat.stat-due strong { color: #f87171; }
-[data-theme="dark"] .premium-stat.stat-near strong { color: #fbbf24; }
+
+[data-theme="dark"] .premium-widget__header {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .premium-widget__header h4 {
+    color: var(--hp-text);
+}
+
+[data-theme="dark"] .premium-stat span {
+    color: var(--hp-text-muted);
+}
+
+[data-theme="dark"] .premium-stat strong {
+    color: var(--hp-text);
+}
+
+[data-theme="dark"] .premium-stat.stat-due strong {
+    color: #f87171;
+}
+
+[data-theme="dark"] .premium-stat.stat-near strong {
+    color: #fbbf24;
+}
 
 /* Table Header Flex */
 .table-header-flex {
@@ -3206,6 +3793,7 @@ td.mono-cell {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
+
 .table-header-left {
     display: flex;
     flex-direction: column;
@@ -3422,7 +4010,8 @@ td.mono-cell {
     vertical-align: middle;
 }
 
-.guest-row, .reservation-row {
+.guest-row,
+.reservation-row {
     cursor: pointer;
 }
 
@@ -3514,12 +4103,15 @@ body.admin-portal .guest-row--companion td:first-child {
 .row-checkout-due td {
     background-color: rgba(239, 68, 68, 0.08) !important;
 }
+
 .row-checkout-due:hover td {
     background-color: rgba(239, 68, 68, 0.12) !important;
 }
+
 [data-theme="dark"] .row-checkout-due td {
     background-color: rgba(239, 68, 68, 0.15) !important;
 }
+
 [data-theme="dark"] .row-checkout-due:hover td {
     background-color: rgba(239, 68, 68, 0.2) !important;
 }
@@ -3527,12 +4119,15 @@ body.admin-portal .guest-row--companion td:first-child {
 .row-checkout-near td {
     background-color: rgba(245, 158, 11, 0.1) !important;
 }
+
 .row-checkout-near:hover td {
     background-color: rgba(245, 158, 11, 0.15) !important;
 }
+
 [data-theme="dark"] .row-checkout-near td {
     background-color: rgba(245, 158, 11, 0.15) !important;
 }
+
 [data-theme="dark"] .row-checkout-near:hover td {
     background-color: rgba(245, 158, 11, 0.2) !important;
 }
@@ -3542,6 +4137,7 @@ body.admin-portal .guest-row--companion td:first-child {
     border: 1px solid rgba(239, 68, 68, 0.3);
     background: rgba(239, 68, 68, 0.05);
 }
+
 .guest-summary-card--near {
     border: 1px solid rgba(245, 158, 11, 0.3);
     background: rgba(245, 158, 11, 0.05);
@@ -4202,21 +4798,24 @@ body.admin-portal .guest-row--companion td:first-child {
 }
 
 /* Bulk Modal Enhancements */
-.bulk-segment__btn input:checked + span {
+.bulk-segment__btn input:checked+span {
     background: var(--hp-green-mid);
     color: white;
     box-shadow: 0 2px 4px rgba(46, 125, 85, 0.2);
 }
-.bulk-segment__btn:hover input:not(:checked) + span {
+
+.bulk-segment__btn:hover input:not(:checked)+span {
     background: var(--glass-bg-strong);
 }
-[data-theme="dark"] .bulk-segment__btn input:checked + span {
+
+[data-theme="dark"] .bulk-segment__btn input:checked+span {
     background: var(--green);
 }
 
 .bulk-stepper__btn:hover {
     background: rgba(0, 0, 0, 0.05) !important;
 }
+
 [data-theme="dark"] .bulk-stepper__btn:hover {
     background: rgba(255, 255, 255, 0.05) !important;
 }
@@ -4225,6 +4824,7 @@ body.admin-portal .guest-row--companion td:first-child {
     background: rgba(239, 68, 68, 0.2) !important;
     transform: scale(1.05);
 }
+
 #bulkManageBtnDecrease:active {
     transform: scale(0.95);
 }
@@ -4424,6 +5024,7 @@ body.admin-portal .guest-row--companion td:first-child {
     align-items: stretch;
     gap: 0;
 }
+
 .sidebar-summary-grid .top-stat-card {
     min-height: unset;
     padding: 1.25rem;
@@ -4431,25 +5032,62 @@ body.admin-portal .guest-row--companion td:first-child {
     box-shadow: none;
     background: var(--hp-cream);
 }
+
 .sidebar-summary-grid .top-stat-card__icon {
     background: transparent !important;
 }
 
-.card-theme-green { background-color: #e6f4ea !important; }
-.card-theme-green .top-stat-card__icon svg { color: #16a34a; }
-.card-theme-green .stat-trend { color: #16a34a; font-weight: 600; }
+.card-theme-green {
+    background-color: #e6f4ea !important;
+}
 
-.card-theme-blue { background-color: #e8f0fe !important; }
-.card-theme-blue .top-stat-card__icon svg { color: #2563eb; }
-.card-theme-blue .stat-trend { color: #16a34a; font-weight: 600; }
+.card-theme-green .top-stat-card__icon svg {
+    color: #16a34a;
+}
 
-.card-theme-orange { background-color: #fef0e6 !important; }
-.card-theme-orange .top-stat-card__icon svg { color: #ea580c; }
-.card-theme-orange .stat-trend { color: #6b7280; font-weight: 600; }
+.card-theme-green .stat-trend {
+    color: #16a34a;
+    font-weight: 600;
+}
 
-.card-theme-purple { background-color: #f3e8ff !important; }
-.card-theme-purple .top-stat-card__icon svg { color: #a855f7; }
-.card-theme-purple .stat-trend { color: #6b7280; font-weight: 600; }
+.card-theme-blue {
+    background-color: #e8f0fe !important;
+}
+
+.card-theme-blue .top-stat-card__icon svg {
+    color: #2563eb;
+}
+
+.card-theme-blue .stat-trend {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.card-theme-orange {
+    background-color: #fef0e6 !important;
+}
+
+.card-theme-orange .top-stat-card__icon svg {
+    color: #ea580c;
+}
+
+.card-theme-orange .stat-trend {
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.card-theme-purple {
+    background-color: #f3e8ff !important;
+}
+
+.card-theme-purple .top-stat-card__icon svg {
+    color: #a855f7;
+}
+
+.card-theme-purple .stat-trend {
+    color: #6b7280;
+    font-weight: 600;
+}
 
 .sidebar-data-card {
     border: 1px solid var(--glass-border);
@@ -4950,7 +5588,7 @@ body.admin-portal .guest-row--companion td:first-child {
     .guest-modal__content {
         padding: 1.25rem;
     }
-    
+
     .ci-rel-item {
         padding: 0.6rem 0.7rem;
     }
@@ -5577,13 +6215,15 @@ body.admin-portal .guest-row--companion td:first-child {
     position: static;
     transform: none;
     margin-top: 0.35rem;
-}/* --- NEW FRESH DESIGN STYLES --- */
+}
+
+/* --- NEW FRESH DESIGN STYLES --- */
 .checkins-card {
     background: #ffffff;
     border-radius: 16px;
     padding: 1.5rem 1.5rem 2rem;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
-    border: 1px solid rgba(0,0,0,0.03);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.03);
     margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
@@ -5601,7 +6241,7 @@ body.admin-portal .guest-row--companion td:first-child {
     align-items: center;
     padding-bottom: 1.5rem;
     margin-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="dark"] .checkins-card-header {
@@ -5668,7 +6308,7 @@ body.admin-portal .guest-row--companion td:first-child {
 }
 
 [data-theme="dark"] .ci-btn-icon {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     color: var(--hp-text-muted);
 }
 
@@ -5679,9 +6319,10 @@ body.admin-portal .guest-row--companion td:first-child {
 }
 
 [data-theme="dark"] .ci-btn-icon:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: var(--hp-text);
 }
+
 /* --- GRID LAYOUT & SIDEBAR STYLES --- */
 .checkins-grid-layout {
     display: grid;
@@ -5843,10 +6484,21 @@ body.admin-portal .guest-row--companion td:first-child {
     display: inline-block;
 }
 
-.dot-blue { background: #3b82f6; }
-.dot-green { background: #10b981; }
-.dot-orange { background: #f97316; }
-.dot-purple { background: #a855f7; }
+.dot-blue {
+    background: #3b82f6;
+}
+
+.dot-green {
+    background: #10b981;
+}
+
+.dot-orange {
+    background: #f97316;
+}
+
+.dot-purple {
+    background: #a855f7;
+}
 
 /* --- TWO COLUMN LAYOUT --- */
 .checkins-layout-grid {
@@ -5879,7 +6531,7 @@ body.admin-portal .guest-row--companion td:first-child {
     color: var(--hp-text);
     margin: 0 0 1.25rem 0;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="dark"] .sidebar-data-title {
@@ -5915,8 +6567,10 @@ body.admin-portal .guest-row--companion td:first-child {
 }
 
 [data-theme="dark"] .sidebar-data-item .data-value {
-    color: #34d399; /* Bright emerald for dark mode */
+    color: #34d399;
+    /* Bright emerald for dark mode */
 }
+
 /* --- SIDEBAR PROGRESS BARS --- */
 .sidebar-data-item {
     display: flex;
@@ -5924,43 +6578,52 @@ body.admin-portal .guest-row--companion td:first-child {
     align-items: stretch;
     gap: 0.5rem;
 }
+
 .data-item-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
+
 .data-progress-bg {
     height: 6px;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 99px;
     overflow: hidden;
 }
+
 [data-theme="dark"] .data-progress-bg {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
+
 .data-progress-fill {
     height: 100%;
     background: var(--hp-green-mid);
     border-radius: 99px;
     transition: width 0.5s ease-out;
 }
+
 [data-theme="dark"] .data-progress-fill {
     background: #34d399;
 }
+
 /* --- SCROLLABLE TABLE CONTAINER --- */
 .guest-table-wrap {
     max-height: 60vh;
     overflow-y: auto;
 }
+
 .guest-table thead th {
     position: sticky;
     top: 0;
     z-index: 10;
     background: inherit;
 }
+
 [data-theme="dark"] .guest-table thead th {
     background: var(--glass-bg);
 }
+
 .guest-table thead th::after {
     content: '';
     position: absolute;
@@ -5968,8 +6631,9 @@ body.admin-portal .guest-row--companion td:first-child {
     left: 0;
     right: 0;
     height: 1px;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
 }
+
 [data-theme="dark"] .guest-table thead th::after {
     background: var(--border);
 }
@@ -5983,6 +6647,7 @@ body.admin-portal .guest-row--companion td:first-child {
     padding: 3rem 1rem;
     text-align: center;
 }
+
 .empty-state-icon {
     width: 90px;
     height: 90px;
@@ -5994,19 +6659,23 @@ body.admin-portal .guest-row--companion td:first-child {
     margin-bottom: 1.5rem;
     color: var(--hp-green-mid);
 }
+
 [data-theme="dark"] .empty-state-icon {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
 }
+
 .empty-state-icon svg {
     width: 48px;
     height: 48px;
 }
+
 .empty-state-title {
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--hp-text);
     margin: 0 0 0.5rem 0;
 }
+
 .empty-state-desc {
     font-size: 0.95rem;
     color: var(--hp-text-muted);
@@ -6028,56 +6697,199 @@ body.admin-portal .guest-row--companion td:first-child {
     transition: all 0.2s ease;
     margin-right: 0.5rem;
     position: relative;
-    z-index: 2; /* Keep above row click */
+    z-index: 2;
+    /* Keep above row click */
 }
+
 .btn-expand-row:hover {
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     color: var(--hp-text);
 }
+
 [data-theme="dark"] .btn-expand-row:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
 }
+
 .btn-expand-row svg {
     width: 1.25rem;
     height: 1.25rem;
-    pointer-events: none; /* Prevent click on SVG */
+    pointer-events: none;
+    /* Prevent click on SVG */
     transition: transform 0.2s ease;
 }
+
 .btn-expand-row.expanded {
     color: var(--hp-green-mid);
     background: rgba(34, 197, 94, 0.1);
 }
+
 [data-theme="dark"] .btn-expand-row.expanded {
     background: rgba(34, 197, 94, 0.2);
     color: #4ade80;
 }
 
 /* Modal Redesign specific classes */
-.ci-design-box { border: 1px solid var(--glass-border); border-radius: 0.5rem; padding: 1.25rem; background: var(--hp-cream); display: flex; flex-wrap: wrap; margin-bottom: 1rem; }
-[data-theme='dark'] .ci-design-box { background: var(--glass-bg); border-color: var(--border-strong); }
-.ci-col { flex: 1; display: flex; flex-direction: column; padding: 0 1rem; min-width: 140px; margin-bottom: 0.5rem; }
-.ci-col:first-child { padding-left: 0; }
-.ci-col:last-child { padding-right: 0; }
-@media (min-width: 640px) { .ci-border-left { border-left: 1px solid rgba(0,0,0,0.1); } [data-theme='dark'] .ci-border-left { border-left-color: var(--border-strong); } }
-.ci-label { font-size: 0.75rem; text-transform: uppercase; color: var(--hp-text-muted); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.02em; }
-.ci-value { font-weight: 600; font-size: 0.95rem; color: var(--hp-text); }
-.ci-value-lg { font-weight: 700; font-size: 1.25rem; color: var(--hp-text); }
-.ci-pill { padding: 0.35rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
-.ci-pill-orange { background-color: rgba(234, 88, 12, 0.15); color: #ea580c; }
-.ci-pill-green { background-color: rgba(22, 163, 74, 0.15); color: #16a34a; }
-.ci-section-title { font-size: 0.85rem; text-transform: uppercase; font-weight: 600; color: var(--hp-text-muted); margin-bottom: 0.75rem; }
-.ci-guest-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-.ci-guest-card { display: flex; align-items: center; border: 1px solid var(--glass-border); border-radius: 0.5rem; padding: 1rem; background: var(--hp-cream); gap: 1rem; }
-[data-theme='dark'] .ci-guest-card { background: var(--glass-bg); }
-.ci-guest-icon { width: 48px; height: 48px; border-radius: 50%; background-color: rgba(0,0,0,0.05); display: flex; justify-content: center; align-items: center; color: var(--hp-text-muted); flex-shrink: 0; }
-[data-theme='dark'] .ci-guest-icon { background-color: rgba(255,255,255,0.05); }
-.ci-guest-icon svg { width: 28px; height: 28px; }
-.ci-guest-info { display: flex; flex-direction: column; }
-.ci-guest-role { font-size: 0.7rem; text-transform: uppercase; color: var(--hp-text-muted); font-weight: 600; }
-.ci-guest-name { font-weight: 600; font-size: 1rem; color: var(--hp-text); }
-.ci-guest-meta { font-size: 0.85rem; color: var(--hp-text-muted); }
-.ci-guest-bulk-list { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem; }
+.ci-design-box {
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+    background: var(--hp-cream);
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .ci-design-box {
+    background: var(--glass-bg);
+    border-color: var(--border-strong);
+}
+
+.ci-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 1rem;
+    min-width: 140px;
+    margin-bottom: 0.5rem;
+}
+
+.ci-col:first-child {
+    padding-left: 0;
+}
+
+.ci-col:last-child {
+    padding-right: 0;
+}
+
+@media (min-width: 640px) {
+    .ci-border-left {
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    [data-theme='dark'] .ci-border-left {
+        border-left-color: var(--border-strong);
+    }
+}
+
+.ci-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--hp-text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.ci-value {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--hp-text);
+}
+
+.ci-value-lg {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--hp-text);
+}
+
+.ci-pill {
+    padding: 0.35rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+
+.ci-pill-orange {
+    background-color: rgba(234, 88, 12, 0.15);
+    color: #ea580c;
+}
+
+.ci-pill-green {
+    background-color: rgba(22, 163, 74, 0.15);
+    color: #16a34a;
+}
+
+.ci-section-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--hp-text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.ci-guest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.ci-guest-card {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--hp-cream);
+    gap: 1rem;
+}
+
+[data-theme='dark'] .ci-guest-card {
+    background: var(--glass-bg);
+}
+
+.ci-guest-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--hp-text-muted);
+    flex-shrink: 0;
+}
+
+[data-theme='dark'] .ci-guest-icon {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.ci-guest-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.ci-guest-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.ci-guest-role {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--hp-text-muted);
+    font-weight: 600;
+}
+
+.ci-guest-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--hp-text);
+}
+
+.ci-guest-meta {
+    font-size: 0.85rem;
+    color: var(--hp-text-muted);
+}
+
+.ci-guest-bulk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+}
+
 /* Records summary cards (shared portal component) */
 .records-summary {
     display: grid;
@@ -7463,6 +8275,7 @@ td.mono-cell {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -7595,24 +8408,29 @@ td.mono-cell {
     position: relative;
     z-index: 2;
 }
+
 .btn-expand-row:hover {
-    background: rgba(0,0,0,0.05);
+    background: rgba(0, 0, 0, 0.05);
     color: var(--hp-text);
 }
+
 [data-theme="dark"] .btn-expand-row:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
 }
+
 .btn-expand-row svg {
     width: 1.25rem;
     height: 1.25rem;
     pointer-events: none;
     transition: transform 0.2s ease;
 }
+
 .btn-expand-row.expanded {
     color: var(--hp-green-mid);
     background: rgba(34, 197, 94, 0.1);
 }
+
 [data-theme="dark"] .btn-expand-row.expanded {
     background: rgba(34, 197, 94, 0.2);
     color: #4ade80;
@@ -7623,33 +8441,41 @@ td.mono-cell {
     background-color: rgba(0, 0, 0, 0.015);
     transition: all 0.2s ease;
 }
+
 [data-theme="dark"] .companion-row {
     background-color: rgba(255, 255, 255, 0.015);
 }
+
 .companion-row:hover {
     background-color: rgba(0, 0, 0, 0.03) !important;
 }
+
 [data-theme="dark"] .companion-row:hover {
     background-color: rgba(255, 255, 255, 0.03) !important;
 }
+
 .companion-row td {
     padding-top: 0.75rem !important;
     padding-bottom: 0.75rem !important;
     border-bottom: 1px dashed var(--glass-border) !important;
     font-size: 0.85rem;
 }
+
 .cell-person--companion {
     padding-left: 2.5rem;
 }
+
 .cell-person--companion .cell-person__avatar {
     width: 1.75rem;
     height: 1.75rem;
     font-size: 0.55rem;
     background: linear-gradient(135deg, #8a9a92 0%, #6b7a72 100%);
 }
+
 .companion-row .guest-name {
     font-size: 0.85rem;
 }
+
 /* Buttons (shared portal component) */
 .btn {
     display: inline-flex;
@@ -8145,9 +8971,17 @@ td.mono-cell {
 }
 
 @keyframes occupancyPulse {
-    0% { box-shadow: var(--glass-shadow); }
-    70% { box-shadow: var(--glass-shadow); }
-    100% { box-shadow: var(--glass-shadow); }
+    0% {
+        box-shadow: var(--glass-shadow);
+    }
+
+    70% {
+        box-shadow: var(--glass-shadow);
+    }
+
+    100% {
+        box-shadow: var(--glass-shadow);
+    }
 }
 
 .occupancy-legend__item {
@@ -8163,9 +8997,17 @@ td.mono-cell {
     border-radius: 50%;
 }
 
-.occupancy-legend__dot--occupied { background: var(--danger); }
-.occupancy-legend__dot--reserved { background: var(--warn); }
-.occupancy-legend__dot--available { background: var(--green); }
+.occupancy-legend__dot--occupied {
+    background: var(--danger);
+}
+
+.occupancy-legend__dot--reserved {
+    background: var(--warn);
+}
+
+.occupancy-legend__dot--available {
+    background: var(--green);
+}
 
 .occupancy-legend__hint {
     margin-left: auto;
@@ -8334,9 +9176,17 @@ td.mono-cell {
     background: rgba(255, 255, 255, 0.9);
 }
 
-.occupancy-card__badge--available { background: rgba(23, 138, 82, 0.92); }
-.occupancy-card__badge--occupied { background: rgba(207, 75, 71, 0.92); }
-.occupancy-card__badge--reserved { background: rgba(168, 122, 21, 0.92); }
+.occupancy-card__badge--available {
+    background: rgba(23, 138, 82, 0.92);
+}
+
+.occupancy-card__badge--occupied {
+    background: rgba(207, 75, 71, 0.92);
+}
+
+.occupancy-card__badge--reserved {
+    background: rgba(168, 122, 21, 0.92);
+}
 
 /* Compact status overlays inside the image */
 .occupancy-card__status-overlay {
@@ -8618,6 +9468,7 @@ td.mono-cell {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -8942,6 +9793,7 @@ td.mono-cell {
 [data-theme="dark"] .modal__footer {
     border-top-color: var(--border-strong);
 }
+
 /* Buttons (shared portal component) */
 .btn {
     display: inline-flex;
@@ -9347,7 +10199,7 @@ td.mono-cell {
     color: var(--hp-text);
 }
 
-.guest-list li + li {
+.guest-list li+li {
     margin-top: 0.25rem;
 }
 
@@ -9500,19 +10352,53 @@ td.mono-cell {
     background: var(--glass-bg);
 }
 
-.guest-table td:nth-child(1) { text-align: left; }
-.guest-table td:nth-child(2) { text-align: left; }
-.guest-table td:nth-child(3) { text-align: left; }
-.guest-table td:nth-child(4) { text-align: center; }
-.guest-table td:nth-child(5) { text-align: center; }
-.guest-table td:nth-child(6) { text-align: right; }
+.guest-table td:nth-child(1) {
+    text-align: left;
+}
 
-.guest-table th:nth-child(1) { text-align: left; }
-.guest-table th:nth-child(2) { text-align: left; }
-.guest-table th:nth-child(3) { text-align: left; }
-.guest-table th:nth-child(4) { text-align: center; }
-.guest-table th:nth-child(5) { text-align: center; }
-.guest-table th:nth-child(6) { text-align: right; }
+.guest-table td:nth-child(2) {
+    text-align: left;
+}
+
+.guest-table td:nth-child(3) {
+    text-align: left;
+}
+
+.guest-table td:nth-child(4) {
+    text-align: center;
+}
+
+.guest-table td:nth-child(5) {
+    text-align: center;
+}
+
+.guest-table td:nth-child(6) {
+    text-align: right;
+}
+
+.guest-table th:nth-child(1) {
+    text-align: left;
+}
+
+.guest-table th:nth-child(2) {
+    text-align: left;
+}
+
+.guest-table th:nth-child(3) {
+    text-align: left;
+}
+
+.guest-table th:nth-child(4) {
+    text-align: center;
+}
+
+.guest-table th:nth-child(5) {
+    text-align: center;
+}
+
+.guest-table th:nth-child(6) {
+    text-align: right;
+}
 
 .guest-row {
     transition: all 0.2s ease;
@@ -9621,7 +10507,7 @@ td.mono-cell {
 
 .guest-filter-toggle--secondary {
     background: rgba(26, 58, 31, 0.15);
-    border-color:transparent;
+    border-color: transparent;
     color: var(--hp-green);
 }
 
@@ -9898,6 +10784,7 @@ td.mono-cell {
 }
 
 @media (max-width: 768px) {
+
     .guest-form__row--two,
     .guest-form__row--three {
         grid-template-columns: 1fr;
@@ -10225,6 +11112,7 @@ td.mono-cell {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -10732,7 +11620,7 @@ td.mono-cell {
 .resv-header__toggle {
     display: none;
     padding: 0.5rem;
-    border: 1px solid var(--border, rgba(13,44,29,0.15));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.15));
     border-radius: var(--radius-sm, 0.5rem);
     background: var(--surface, #fff);
     color: var(--ink, #1c2b22);
@@ -10796,9 +11684,9 @@ td.mono-cell {
     gap: 0.5rem;
     padding: 0.85rem 1.1rem;
     background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(13,44,29,0.1));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.1));
     border-radius: var(--radius-md, 0.75rem);
-    box-shadow: var(--shadow-sm, 0 1px 4px rgba(13,44,29,0.06));
+    box-shadow: var(--shadow-sm, 0 1px 4px rgba(13, 44, 29, 0.06));
     min-width: 180px;
     flex-shrink: 0;
 }
@@ -10876,7 +11764,7 @@ td.mono-cell {
     display: flex;
     gap: 0.75rem;
     padding-top: 0.4rem;
-    border-top: 1px solid var(--border, rgba(13,44,29,0.08));
+    border-top: 1px solid var(--border, rgba(13, 44, 29, 0.08));
 }
 
 [data-theme="dark"] .resv-weather__meta {
@@ -10924,9 +11812,9 @@ td.mono-cell {
     gap: 0.75rem;
     padding: 0.85rem 1.1rem;
     background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(13,44,29,0.1));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.1));
     border-radius: var(--radius-md, 0.75rem);
-    box-shadow: var(--shadow-xs, 0 1px 2px rgba(13,44,29,0.04));
+    box-shadow: var(--shadow-xs, 0 1px 2px rgba(13, 44, 29, 0.04));
     flex: 1;
     min-width: 130px;
 }
@@ -11050,9 +11938,9 @@ td.mono-cell {
     gap: 1rem;
     padding: 1rem 1.25rem;
     background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(13,44,29,0.1));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.1));
     border-radius: var(--radius-lg, 0.85rem);
-    box-shadow: var(--shadow-sm, 0 1px 4px rgba(13,44,29,0.06));
+    box-shadow: var(--shadow-sm, 0 1px 4px rgba(13, 44, 29, 0.06));
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -11161,7 +12049,7 @@ td.mono-cell {
     gap: 0.5rem;
     padding: 0.45rem 0.85rem;
     background: var(--surface, #fff);
-    border: 1px solid var(--border, rgba(13,44,29,0.15));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.15));
     border-radius: var(--radius-sm, 0.6rem);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -11211,7 +12099,7 @@ td.mono-cell {
     align-items: center;
     gap: 0.4rem;
     padding: 0.48rem 0.9rem;
-    border: 1px solid var(--border, rgba(13,44,29,0.15));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.15));
     border-radius: var(--radius-sm, 0.6rem);
     background: var(--surface, #fff);
     color: var(--hp-text, #1c2b22);
@@ -11323,7 +12211,7 @@ td.mono-cell {
     justify-content: center;
     width: 2rem;
     height: 2rem;
-    border: 1px solid var(--border, rgba(13,44,29,0.12));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.12));
     border-radius: 0.5rem;
     background: transparent;
     color: var(--hp-text-muted, #5c6b62);
@@ -11534,7 +12422,9 @@ td.mono-cell {
 }
 
 @keyframes edit-calendar-spin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
 }
 
 .edit-calendar__day {
@@ -11834,6 +12724,7 @@ td.mono-cell {
     border-color: rgba(255, 255, 255, 0.12);
     color: #c8e6c8;
 }
+
 /* Alerts & badges (shared portal component) */
 .alert {
     padding: 0.85rem 1.1rem;
@@ -12042,16 +12933,57 @@ td.mono-cell {
     justify-content: center;
     z-index: 1000;
 }
-.modal.is-open { display: flex; }
-.modal__backdrop { position: absolute; inset: 0; background: rgba(13,44,29,.45); }
-.modal__panel { position: relative; width: min(520px, calc(100vw - 2rem)); background: var(--glass-bg);
+
+.modal.is-open {
+    display: flex;
+}
+
+.modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 44, 29, .45);
+}
+
+.modal__panel {
+    position: relative;
+    width: min(520px, calc(100vw - 2rem));
+    background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur); border-radius: 1rem; padding: 1rem; box-shadow: var(--glass-shadow); z-index: 1; transition: background 0.3s ease; }
-[data-theme="dark"] .modal__panel { background: rgba(30, 30, 30, 0.95); }
-.modal__header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; }
-.modal__close { border:0; background:transparent; font-size:1.2rem; cursor:pointer; color: var(--hp-text); }
-.modal__body p { margin: .25rem 0 1rem; color: var(--hp-text-muted); }
-.modal__body .otp-form { margin-top: 0; }
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: var(--glass-shadow);
+    z-index: 1;
+    transition: background 0.3s ease;
+}
+
+[data-theme="dark"] .modal__panel {
+    background: rgba(30, 30, 30, 0.95);
+}
+
+.modal__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .75rem;
+}
+
+.modal__close {
+    border: 0;
+    background: transparent;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--hp-text);
+}
+
+.modal__body p {
+    margin: .25rem 0 1rem;
+    color: var(--hp-text-muted);
+}
+
+.modal__body .otp-form {
+    margin-top: 0;
+}
 
 @media (max-width: 992px) {
     .settings-form__grid {
@@ -12163,6 +13095,7 @@ td.mono-cell {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -12278,6 +13211,7 @@ td.mono-cell {
         grid-template-columns: 1fr;
     }
 }
+
 /* ============================================================
    GREETING BANNER — matches screenshot
    ============================================================ */
@@ -12511,9 +13445,11 @@ td.mono-cell {
     0% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
     }
+
     70% {
         box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
     }
+
     100% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
     }
@@ -13114,6 +14050,7 @@ td.mono-cell {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -13281,11 +14218,13 @@ td.mono-cell {
         font-size: 1.2rem;
     }
 }
+
 .preset-chip:hover {
     background: var(--pastel-green-bg);
     color: var(--pastel-green-text);
     border-color: transparent;
 }
+
 .preset-chip.is-active {
     background: var(--hp-green-mid);
     color: #fff;
@@ -13404,6 +14343,7 @@ td.mono-cell {
     font-weight: 600;
     transition: color 0.2s ease;
 }
+
 .reports-panel__link:hover {
     color: var(--hp-green-dark);
 }
@@ -13467,10 +14407,22 @@ td.mono-cell {
     background: var(--hp-green-mid);
     border-radius: 3px;
 }
-.reports-bar-item:nth-child(2) .reports-bar-item__fill { background: #4b8022; }
-.reports-bar-item:nth-child(3) .reports-bar-item__fill { background: #2a6a8f; }
-.reports-bar-item:nth-child(4) .reports-bar-item__fill { background: #6d4b8e; }
-.reports-bar-item:nth-child(5) .reports-bar-item__fill { background: #d3a94e; }
+
+.reports-bar-item:nth-child(2) .reports-bar-item__fill {
+    background: #4b8022;
+}
+
+.reports-bar-item:nth-child(3) .reports-bar-item__fill {
+    background: #2a6a8f;
+}
+
+.reports-bar-item:nth-child(4) .reports-bar-item__fill {
+    background: #6d4b8e;
+}
+
+.reports-bar-item:nth-child(5) .reports-bar-item__fill {
+    background: #d3a94e;
+}
 
 /* Buttons */
 .btn {
@@ -13485,13 +14437,18 @@ td.mono-cell {
     transition: all 0.2s ease;
     border: 1px solid transparent;
 }
-.btn svg { width: 16px; height: 16px; }
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+}
 
 .btn--outline {
     background: transparent;
     border-color: var(--reports-border);
     color: var(--hp-text);
 }
+
 .btn--outline:hover {
     background: var(--reports-bg);
 }
@@ -13500,19 +14457,37 @@ td.mono-cell {
     background: var(--hp-green-mid);
     color: #fff;
 }
+
 .btn--primary:hover {
     background: var(--hp-green-dark);
 }
 
 @media (max-width: 1200px) {
-    .reports-filters__grid { grid-template-columns: repeat(2, 1fr); }
-    .reports-kpi-row { grid-template-columns: repeat(2, 1fr); }
-    .reports-charts-row { grid-template-columns: 1fr; }
-    .reports-charts-row--bottom { grid-template-columns: 1fr; }
+    .reports-filters__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .reports-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .reports-charts-row {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-charts-row--bottom {
+        grid-template-columns: 1fr;
+    }
 }
+
 @media (max-width: 768px) {
-    .reports-filters__grid { grid-template-columns: 1fr; }
-    .reports-kpi-row { grid-template-columns: 1fr; }
+    .reports-filters__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reports-kpi-row {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Avatar role colors — easy to tell main guest (ochre), single companion
@@ -13521,10 +14496,12 @@ body.staff-portal .cell-person__avatar--main,
 body.admin-portal .cell-person__avatar--main {
     background: #c2921d;
 }
+
 body.staff-portal .cell-person__avatar--companion,
 body.admin-portal .cell-person__avatar--companion {
     background: #0b381a;
 }
+
 body.staff-portal .cell-person__avatar--bulk,
 body.admin-portal .cell-person__avatar--bulk {
     background: #0e7490;
@@ -13535,8 +14512,8 @@ body.admin-portal .cell-person__avatar--bulk {
    ------------------------------------------------------------ */
 .session-pill-btn {
     cursor: pointer;
-    border: 1px solid var(--border, rgba(13,44,29,0.15));
-    background: var(--surface, rgba(255,255,255,0.7));
+    border: 1px solid var(--border, rgba(13, 44, 29, 0.15));
+    background: var(--surface, rgba(255, 255, 255, 0.7));
     color: var(--hp-text, #172a20);
     font-size: 0.78rem;
     font-weight: 700;
@@ -13696,4 +14673,3 @@ body.admin-portal .cell-person__avatar--bulk {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.1);
 }
-

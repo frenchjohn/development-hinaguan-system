@@ -3213,6 +3213,219 @@ body:has(.rp-modal.is-open) .rp-footer {
     gap: 0.35rem;
 }
 
+.rp-modal__panel--success {
+    width: 100%;
+    max-width: 500px;
+    max-height: min(88vh, 620px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.85rem 1.75rem 1.4rem;
+    text-align: center;
+    background: rgba(11, 36, 24, 0.98);
+    border: 1px solid rgba(200, 164, 93, 0.4);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+    border-radius: 1.25rem;
+}
+
+.rp-modal__success-icon {
+    flex: 0 0 auto;
+    width: 3.75rem;
+    height: 3.75rem;
+    margin: 0 auto 0.85rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.3), rgba(13, 44, 29, 0.8));
+    border: 2px solid var(--rp-gold);
+    display: grid;
+    place-items: center;
+    color: var(--rp-gold);
+    box-shadow: 0 0 20px rgba(200, 164, 93, 0.3);
+}
+
+.rp-modal__success-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.rp-modal__success-content h2 {
+    flex: 0 0 auto;
+    font-family: var(--rp-font-display);
+    font-size: 1.35rem;
+    color: #fff;
+    margin: 0 0 0.85rem;
+    line-height: 1.3;
+}
+
+.rp-modal__success-scroll-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    max-height: 230px;
+    padding-right: 0.35rem;
+    margin-bottom: 0.65rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(200, 164, 93, 0.5) rgba(0, 0, 0, 0.25);
+}
+
+.rp-modal__success-scroll-wrap::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rp-modal__success-scroll-wrap::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 4px;
+}
+
+.rp-modal__success-scroll-wrap::-webkit-scrollbar-thumb {
+    background: rgba(200, 164, 93, 0.5);
+    border-radius: 4px;
+}
+
+.rp-modal__success-scroll-wrap::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 164, 93, 0.8);
+}
+
+.rp-modal__success-details {
+    display: grid;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.rp-modal__success-notice {
+    padding: 0.9rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(200, 164, 93, 0.3);
+    color: rgba(255, 255, 255, 0.88);
+    font-size: 0.845rem;
+    line-height: 1.55;
+}
+
+.rp-modal__success-notice strong {
+    color: var(--rp-gold);
+}
+
+.rp-modal__success-sub {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.rp-modal__scroll-hint {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #fde047;
+    background: rgba(234, 179, 8, 0.14);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    margin: 0.2rem auto 0.75rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    user-select: none;
+    animation: rp-hint-bounce 1.4s ease-in-out infinite;
+}
+
+.rp-modal__scroll-hint:hover {
+    background: rgba(234, 179, 8, 0.22);
+    border-color: rgba(234, 179, 8, 0.6);
+}
+
+.rp-modal__scroll-hint.is-completed {
+    background: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.4);
+    color: #86efac;
+    animation: none;
+    cursor: default;
+}
+
+.rp-scroll-arrow-down {
+    animation: rp-arrow-bob 1s ease-in-out infinite;
+}
+
+@keyframes rp-hint-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(3px);
+    }
+}
+
+@keyframes rp-arrow-bob {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(2.5px);
+    }
+}
+
+@keyframes rp-btn-unlocked {
+    0% {
+        transform: scale(0.97);
+    }
+    50% {
+        transform: scale(1.02);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.rp-modal__success-actions {
+    flex: 0 0 auto;
+    width: 100%;
+}
+
+.rp-modal__success-actions button {
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--rp-gold-light), var(--rp-gold-dark));
+    color: var(--rp-green-dark);
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.rp-modal__success-actions button:not(:disabled) {
+    animation: rp-btn-unlocked 0.35s ease;
+    box-shadow: 0 4px 18px rgba(200, 164, 93, 0.4);
+}
+
+.rp-modal__success-actions button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e2c27c, var(--rp-gold));
+    transform: translateY(-1px);
+}
+
+.rp-modal__success-actions button:disabled {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 .rp-card-form__field label {
     font-size: 0.8125rem;
     color: rgba(255, 255, 255, 0.85);

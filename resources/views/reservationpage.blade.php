@@ -1741,7 +1741,7 @@
 
                 <div class="rp-modal__success-icon">
 
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
 
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 
@@ -1753,21 +1753,46 @@
 
                     <h2>Reservation Confirmed &amp; Deposit Paid!</h2>
 
-                    <div class="rp-modal__success-details">
+                    <div class="rp-modal__success-scroll-wrap" id="successModalScrollBody">
 
-                        <p class="rp-modal__success-notice">
+                        <div class="rp-modal__success-details">
 
-                            <strong>QR Code Sent:</strong> We have sent your booking QR code to your email. Please present it at the park entrance on your visit date.
+                            <div class="rp-modal__success-notice">
 
-                        </p>
+                                <strong>📩 All Booking Details &amp; QR Pass Sent to Your Email!</strong>
+                                We have emailed your <strong>official entry QR code</strong>, <strong>scheduled arrival time &amp; date</strong>, <strong>availed amenities</strong>, and <strong>complete billing breakdown</strong> to your email address. Everything you need for your visit has been sent — please check your inbox (or spam folder)!
 
-                        <p class="rp-modal__success-sub">Your 50% deposit has been processed. The remaining balance can be settled at check-in.</p>
+                            </div>
+
+                            <div class="rp-modal__success-notice" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.5); text-align: left;">
+
+                                <strong style="color: #fde047; margin-bottom: 0.35rem;">⚠️ IMPORTANT CHECK-IN NOTICE:</strong>
+                                Please <strong>bring your Entry QR Code</strong> (on your phone or printed). It is <strong>required upon arrival</strong> to automatically verify your identity and confirm that you are the rightful owner of this reservation for express check-in.
+
+                            </div>
+
+                            <p class="rp-modal__success-sub">Your deposit has been successfully processed. Any remaining balance can be settled at the park counter upon check-in.</p>
+
+                        </div>
+
+                    </div>
+
+                    <div class="rp-modal__scroll-hint" id="successModalScrollHint" role="button" tabindex="0" title="Scroll down to unlock">
+
+                        <span id="successModalScrollHintText">Scroll down to review all notices</span>
+                        <svg class="rp-scroll-arrow-down" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+
+                        </svg>
 
                     </div>
 
                     <div class="rp-modal__success-actions">
 
-                        <button type="button" id="successConfirmBtn" class="rp-booking-form__button rp-booking-form__button--primary">Got it!</button>
+                        <button type="button" id="successConfirmBtn" class="rp-booking-form__button rp-booking-form__button--primary" disabled>
+                            <span id="successConfirmBtnText">Scroll down to unlock (Got it!)</span>
+                        </button>
 
                     </div>
 

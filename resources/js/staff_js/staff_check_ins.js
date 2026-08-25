@@ -1,4 +1,4 @@
-﻿import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
 let activeStaffCheckInsHandlers = null;
@@ -4562,7 +4562,15 @@ window.AppPage['staff_check_ins'] = function () {
             cameraId,
             {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
+                // Adaptive QR box: a fixed 250x250 box throws "QR box size
+                // provided is larger than the viewfinder size" whenever the
+                // scanner container renders narrower than 250px (small
+                // windows/narrow layouts), which kills the scanner entirely.
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                    const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+                    const side = Math.min(250, Math.max(100, Math.floor(minDimension * 0.75)));
+                    return { width: side, height: side };
+                },
                 experimentalFeatures: { useBarCodeDetectorIfSupported: true },
             },
             async (decodedText) => {
@@ -4655,6 +4663,13 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         try {
+            // getUserMedia (and therefore Html5Qrcode.getCameras) only exists
+            // in secure contexts. Surface a clear message instead of a cryptic
+            // failure when the app is served over plain HTTP.
+            if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+                throw new Error('Camera access requires HTTPS or localhost. Open the app via http://localhost and allow camera permission.');
+            }
+
             const cameras = await Html5Qrcode.getCameras();
             if (!cameras?.length) {
                 throw new Error('No camera device found.');
@@ -4674,28 +4689,40 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
-    qrCameraSelect?.addEventListener('change', async () => {
-        const cameraId = qrCameraSelect.value;
-        try {
-            await startQrScanner(cameraId);
-        } catch (error) {
-            qrScannerStatus.textContent = `Camera error: ${error.message || 'Unable to start selected camera.'}`;
-        }
-    });
+    // Both this script and its sibling page script can be loaded on the same
+    // page (the check-ins page loads both), and both wire up the same
+    // #scanQrBtn/#qrScanner elements. Two Html5Qrcode instances racing for
+    // the same camera and container break scanning (duplicate video
+    // elements, double lookups, stacked modals), so only the first
+    // initializer may bind the QR controls. The claim is stored on the
+    // element itself, so SPA navigations - which swap in a fresh DOM -
+    // re-initialize correctly.
+    if (scanQrBtn && scanQrBtn.dataset.qrScannerBound !== 'true') {
+        scanQrBtn.dataset.qrScannerBound = 'true';
 
-    scanQrBtn?.addEventListener('click', () => {
-        openScanQrModal();
-    });
+        qrCameraSelect?.addEventListener('change', async () => {
+            const cameraId = qrCameraSelect.value;
+            try {
+                await startQrScanner(cameraId);
+            } catch (error) {
+                qrScannerStatus.textContent = `Camera error: ${error.message || 'Unable to start selected camera.'}`;
+            }
+        });
 
-    stopQrBtn?.addEventListener('click', async () => {
-        await closeScanQrModal();
-    });
+        scanQrBtn.addEventListener('click', () => {
+            openScanQrModal();
+        });
 
-    scanQrCloseButtons.forEach(button => {
-        button.addEventListener('click', async () => {
+        stopQrBtn?.addEventListener('click', async () => {
             await closeScanQrModal();
         });
-    });
+
+        scanQrCloseButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                await closeScanQrModal();
+            });
+        });
+    }
 
     // Check-in modal
     const checkInModal = document.getElementById('checkInModal');

@@ -1,4 +1,4 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['staff_dashboard'] = function () {
     // Animate horizontal bar fills with stagger.
     const animated = Array.from(document.querySelectorAll('.dash-hbar__fill'));

@@ -4044,22 +4044,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    // Success modal functionality
-
+    // Success modal functionality & Scroll-gated unlock
     const successModal = document.getElementById('reservationSuccessModal');
-
+    const successScrollWrap = document.getElementById('successModalScrollBody');
+    const successScrollHint = document.getElementById('successModalScrollHint');
+    const successScrollHintText = document.getElementById('successModalScrollHintText');
     const successConfirmBtn = document.getElementById('successConfirmBtn');
+    const successConfirmBtnText = document.getElementById('successConfirmBtnText');
 
-    const successCloseButtons = document.querySelectorAll('[data-close-success-modal]');
+    let successModalUnlocked = false;
 
+    const unlockSuccessModal = () => {
+        if (successModalUnlocked) return;
+        successModalUnlocked = true;
+        if (successConfirmBtn) {
+            successConfirmBtn.disabled = false;
+        }
+        if (successConfirmBtnText) {
+            successConfirmBtnText.textContent = 'Got it!';
+        }
+        if (successScrollHint) {
+            successScrollHint.classList.add('is-completed');
+            if (successScrollHintText) {
+                successScrollHintText.textContent = '✓ All notices reviewed';
+            }
+        }
+    };
 
+    const checkSuccessScroll = () => {
+        if (!successScrollWrap || successModalUnlocked) return;
+        const scrollBottom = successScrollWrap.scrollHeight - successScrollWrap.scrollTop;
+        const isAtBottom = scrollBottom <= successScrollWrap.clientHeight + 16;
+        if (isAtBottom) {
+            unlockSuccessModal();
+        }
+    };
 
-    const handleSuccessConfirm = () => {
+    const resetSuccessModalState = () => {
+        successModalUnlocked = false;
+        if (successScrollWrap) {
+            successScrollWrap.scrollTop = 0;
+            // If content doesn't overflow (e.g. huge screen), unlock immediately
+            if (successScrollWrap.scrollHeight <= successScrollWrap.clientHeight + 10) {
+                unlockSuccessModal();
+                if (successScrollHint) successScrollHint.style.display = 'none';
+                return;
+            }
+        }
+
         if (successConfirmBtn) {
             successConfirmBtn.disabled = true;
-            successConfirmBtn.innerHTML = '<span class="rp-btn-spinner"></span> Refreshing page…';
         }
-        window.location.reload();
+        if (successConfirmBtnText) {
+            successConfirmBtnText.textContent = 'Scroll down to unlock (Got it!)';
+        }
+        if (successScrollHint) {
+            successScrollHint.style.display = 'inline-flex';
+            successScrollHint.classList.remove('is-completed');
+            if (successScrollHintText) {
+                successScrollHintText.textContent = 'Scroll down to review all notices';
+            }
+        }
+    };
+
+    if (successScrollWrap) {
+        successScrollWrap.addEventListener('scroll', checkSuccessScroll, { passive: true });
+    }
+
+    if (successScrollHint && successScrollWrap) {
+        successScrollHint.addEventListener('click', () => {
+            successScrollWrap.scrollTo({ top: successScrollWrap.scrollHeight, behavior: 'smooth' });
+        });
+        successScrollHint.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                successScrollWrap.scrollTo({ top: successScrollWrap.scrollHeight, behavior: 'smooth' });
+            }
+        });
+    }
+
+    if (successModal) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (successModal.classList.contains('is-open')) {
+                        setTimeout(resetSuccessModalState, 50);
+                    }
+                }
+            });
+        });
+        observer.observe(successModal, { attributes: true });
+    }
+
+    const handleSuccessConfirm = () => {
+        if (successConfirmBtn && !successConfirmBtn.disabled) {
+            successConfirmBtn.disabled = true;
+            successConfirmBtn.innerHTML = '<span class="rp-btn-spinner"></span> Refreshing page…';
+            window.location.reload();
+        }
     };
 
     if (successConfirmBtn) {
