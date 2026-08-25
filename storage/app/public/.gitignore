@@ -1,2 +1,6 @@
 *
 !.gitignore
+!design_images/
+!design_images/**
+!amenities_images/
+!amenities_images/**

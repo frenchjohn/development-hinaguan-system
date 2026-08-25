@@ -6542,3 +6542,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         return redirect()->route('staff.settings')->with('success', 'Your account details were updated successfully.');
     })->name('settings.verify');
 });
+
+// Fallback route to serve files under /storage/* if the public/storage symlink is missing or unresolved
+Route::get('/storage/{path}', function (string $path) {
+    $storagePath = storage_path('app/public/' . $path);
+    if (file_exists($storagePath) && is_file($storagePath)) {
+        return response()->file($storagePath);
+    }
+    abort(404);
+})->where('path', '.*');
+

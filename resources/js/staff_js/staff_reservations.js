@@ -117,6 +117,9 @@ window.AppPage['staff_reservations'] = function () {
             return escapeHtml(sFormatted);
         };
         return `
+                <td class="py-3.5 px-3 w-20 whitespace-nowrap">
+                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784]">#${escapeHtml(reservation.id)}</span>
+                </td>
                 <td>
                     <div class="resv-booker">
                         <span class="resv-avatar">${escapeHtml(getInitials(reservation.booker_name))}</span>
@@ -162,11 +165,11 @@ window.AppPage['staff_reservations'] = function () {
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
                 item.style.gap = '0.5rem';
-                
+
                 const infoSpan = document.createElement('span');
                 infoSpan.textContent = `${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age || 'N/A'} - ${companion.gender}`;
                 item.appendChild(infoSpan);
-                
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.type = 'button';
                 deleteBtn.className = 'guest-companion-pill__delete';
@@ -190,11 +193,11 @@ window.AppPage['staff_reservations'] = function () {
                 item.style.display = 'flex';
                 item.style.alignItems = 'center';
                 item.style.gap = '0.5rem';
-                
+
                 const infoSpan = document.createElement('span');
                 infoSpan.textContent = `${group.gender} - ${nationality} - ${group.age_group} - `;
                 item.appendChild(infoSpan);
-                
+
                 const quantityInput = document.createElement('input');
                 quantityInput.type = 'number';
                 quantityInput.min = '1';
@@ -211,7 +214,7 @@ window.AppPage['staff_reservations'] = function () {
                     renderCheckInCompanions();
                 });
                 item.appendChild(quantityInput);
-                
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.type = 'button';
                 deleteBtn.className = 'guest-companion-pill__delete';
@@ -286,7 +289,7 @@ window.AppPage['staff_reservations'] = function () {
 
         let html = '<div style="margin-bottom: 1rem;"><h4>Companion Groups:</h4>';
         let totalCompanions = 0;
-        
+
         bulkCompanionGroups.forEach(group => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             html += `
@@ -296,10 +299,10 @@ window.AppPage['staff_reservations'] = function () {
             `;
             totalCompanions += group.quantity;
         });
-        
+
         html += `<p><strong>Total Companions:</strong> ${totalCompanions}</p></div>`;
         html += '<p style="color: #666; font-size: 0.875rem;">Please review the companion groups above before checking in.</p>';
-        
+
         companionSummaryBody.innerHTML = html;
         if (companionSummaryModal) {
             companionSummaryModal.classList.add('is-open');
@@ -320,20 +323,20 @@ window.AppPage['staff_reservations'] = function () {
             clearInterval(countdownTimer);
             countdownTimer = null;
         }
-        
+
         // Check if reservation date is today
         const today = new Date().toISOString().split('T')[0];
-        const reservationDate = currentReservationData?.reservation_date ? 
+        const reservationDate = currentReservationData?.reservation_date ?
             new Date(currentReservationData.reservation_date).toISOString().split('T')[0] : null;
-        
+
         const isToday = reservationDate === today;
-        
+
         const { adultCount, childCount, adultRate, childRate, poolTotal, entranceTotal, total } = computeCheckInEntrance();
         const balance = Number(currentReservationData?.remaining_balance || 0);
         const poolChecked = document.getElementById('checkInIncludePool')?.checked || false;
         const grandTotal = total + balance;
-        
-        let html = '<p>Are you sure you want to check in this reservation now?</p>';
+
+        let html = `<p>Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
 
         html += `
             <div style="margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; overflow: hidden;">
@@ -361,7 +364,7 @@ window.AppPage['staff_reservations'] = function () {
             </div>
             <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation is partially paid. Paying this total settles the remaining balance and marks the reservation as <strong>Paid</strong>.</p>
         `;
-        
+
         if (!isToday && reservationDate) {
             html += `
                 <div style="margin-top: 1rem; padding: 0.75rem; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 0.25rem; color: #856404;">
@@ -371,15 +374,15 @@ window.AppPage['staff_reservations'] = function () {
                 </div>
             `;
         }
-        
+
         checkInConfirmationBody.innerHTML = html;
-        
+
         // Handle button cooldown for non-today reservations
         if (!isToday && reservationDate && confirmCheckInBtn) {
             confirmCheckInBtn.disabled = true;
             let countdown = 10;
             confirmCheckInBtn.textContent = `Please wait ${countdown}s...`;
-            
+
             countdownTimer = setInterval(() => {
                 countdown--;
                 if (countdown > 0) {
@@ -395,7 +398,7 @@ window.AppPage['staff_reservations'] = function () {
             confirmCheckInBtn.disabled = false;
             confirmCheckInBtn.textContent = 'Yes, Check In';
         }
-        
+
         if (checkInConfirmationModal) {
             checkInConfirmationModal.classList.add('is-open');
             checkInConfirmationModal.setAttribute('aria-hidden', 'false');
@@ -408,7 +411,7 @@ window.AppPage['staff_reservations'] = function () {
             clearInterval(countdownTimer);
             countdownTimer = null;
         }
-        
+
         if (checkInConfirmationModal) {
             checkInConfirmationModal.classList.remove('is-open');
             checkInConfirmationModal.setAttribute('aria-hidden', 'true');
@@ -587,11 +590,11 @@ window.AppPage['staff_reservations'] = function () {
         if (lastNameInput) lastNameInput.value = guestData.last_name || '';
         if (ageInput) ageInput.value = guestData.age || '';
         if (genderSelect) genderSelect.value = guestData.gender || 'Male';
-        
+
         if (isForeignerSelect) {
             isForeignerSelect.value = guestData.is_foreigner ? '1' : '0';
         }
-        
+
         if (phoneInput) phoneInput.value = guestData.phone || '';
         if (emailInput) emailInput.value = guestData.email || '';
     };
@@ -656,9 +659,9 @@ window.AppPage['staff_reservations'] = function () {
 
         // Check for duplicates
         const duplicateIndex = bulkCompanionGroups.findIndex(
-            group => group.gender === gender && 
-                    group.is_foreigner === isForeigner && 
-                    group.age_group === ageGroup
+            group => group.gender === gender &&
+                group.is_foreigner === isForeigner &&
+                group.age_group === ageGroup
         );
 
         if (duplicateIndex !== -1) {
@@ -710,17 +713,24 @@ window.AppPage['staff_reservations'] = function () {
 
     checkInCompanionCloseButtons.forEach((button) => {
         button.addEventListener('click', closeCheckInCompanionModal);
-    });        const openCheckInModal = (reservationId) => {
+    });
+
+    const openCheckInModal = (reservationId) => {
         pendingReservationId = reservationId;
         checkInCompanions = [];
         bulkCompanionGroups = [];
         primaryGuestToUpdate = null;
         existingReservationGuests = [];
 
+        const checkInTitle = document.getElementById('checkInModalTitle');
+        if (checkInTitle) {
+            checkInTitle.textContent = `Check In Reservation #${reservationId}`;
+        }
+
         // Get reservation data
         const reservation = reservationData[reservationId];
         currentReservationData = reservation;
-        
+
         if (reservation && reservation.reservation_guests) {
             existingReservationGuests = [...reservation.reservation_guests];
 
@@ -732,7 +742,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         checkInForm.reset();
-        
+
         // Always use the booker info as the main guest (booker is the primary)
         if (reservation) {
             const bookerData = {
@@ -977,6 +987,11 @@ window.AppPage['staff_reservations'] = function () {
         // Store current reservation ID for edit functionality
         currentModalReservationId = reservationId;
 
+        const resvModalTitle = document.getElementById('reservationModalTitle');
+        if (resvModalTitle) {
+            resvModalTitle.textContent = `Reservation Details #${reservation.id}`;
+        }
+
         // Ensure modal body is visible and edit form is hidden
         modalBody.hidden = false;
         const editForm = document.getElementById('reservationModalEditForm');
@@ -1013,7 +1028,7 @@ window.AppPage['staff_reservations'] = function () {
 
         const formatExpectedCheckout = (res) => {
             if (!res) return { date: 'N/A', session: 'Daytime', time: '', fullText: 'N/A' };
-            
+
             let session = res.end_slot || res.start_slot;
             if (!session && res.reservation_amenities && res.reservation_amenities.length > 0) {
                 const lastAmenity = res.reservation_amenities[res.reservation_amenities.length - 1];
@@ -1076,8 +1091,8 @@ window.AppPage['staff_reservations'] = function () {
             const eSlot = amenity.end_slot || reservation.end_slot || sSlot;
             const hasRange = sDate && eDate && sDate !== eDate;
             const pricingType = amenity.pricing_type || (hasRange ? `Continuous Stay (${reservation.total_days || 1}D)` : sSlot);
-            const scheduleBadge = hasRange 
-                ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(formatDate(sDate))} (${escapeHtml(sSlot)}) – ${escapeHtml(formatDate(eDate))} (${escapeHtml(eSlot)})</span>` 
+            const scheduleBadge = hasRange
+                ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(formatDate(sDate))} (${escapeHtml(sSlot)}) – ${escapeHtml(formatDate(eDate))} (${escapeHtml(eSlot)})</span>`
                 : (sSlot ? `<span style="font-size:0.75rem;padding:2px 6px;border-radius:4px;background:rgba(26,92,60,0.1);color:#1a5c3c;font-weight:600;margin-left:4px;">${escapeHtml(sSlot)}</span>` : '');
             const slotCountBadge = (amenity.day_slots_count || amenity.night_slots_count) ? `<span style="font-size:0.75rem;color:#666;margin-left:4px;">(${amenity.day_slots_count || 0}D ${amenity.night_slots_count || 0}N)</span>` : '';
 
@@ -1091,6 +1106,10 @@ window.AppPage['staff_reservations'] = function () {
         modalBody.innerHTML = `
             <div class="guest-card">
                 <div class="guest-card__grid">
+                    <div>
+                        <span class="guest-label">Reservation ID</span>
+                        <div class="guest-value"><span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784]">#${escapeHtml(reservation.id)}</span></div>
+                    </div>
                     <div>
                         <span class="guest-label">Booker</span>
                         <div class="guest-value">${escapeHtml(reservation.booker_name || 'N/A')}</div>
@@ -1141,6 +1160,10 @@ window.AppPage['staff_reservations'] = function () {
     const closeModal = () => {
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
+        const resvModalTitle = document.getElementById('reservationModalTitle');
+        if (resvModalTitle) {
+            resvModalTitle.textContent = 'Reservation Details';
+        }
         const editForm = document.getElementById('reservationModalEditForm');
         if (editForm) {
             editForm.hidden = true;
@@ -1164,10 +1187,10 @@ window.AppPage['staff_reservations'] = function () {
             row.setAttribute('data-status', reservation.status.toLowerCase());
             row.setAttribute('data-guests', reservation.number_of_guests);
             row.setAttribute('data-total-amount', reservation.total_amount);
-            row.setAttribute('data-search', `${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()}`);
+            row.setAttribute('data-search', `${reservation.id} #${reservation.id} ${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()}`);
             row.setAttribute('tabindex', '0');
             row.setAttribute('role', 'button');
-            row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name}`);
+            row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name} (#${reservation.id})`);
 
             // Format date to readable format (e.g., September 2, 2023)
             const formatDate = (dateStr) => {
@@ -1177,11 +1200,11 @@ window.AppPage['staff_reservations'] = function () {
                 const options = { year: 'numeric', month: 'long', day: 'numeric' };
                 return date.toLocaleDateString('en-US', options);
             };
-            
+
             row.innerHTML = buildRowCells(reservation);
-            
+
             tableBody.appendChild(row);
-            
+
             // Add click event listener
             row.addEventListener('click', () => openModal(reservation.id));
             row.addEventListener('keydown', (event) => {
@@ -1715,7 +1738,7 @@ window.AppPage['staff_reservations'] = function () {
 
     const calculateReservationPricing = (startDateStr, endDateStr, startSlot, endSlot) => {
         const { dayCount, nightCount, totalDays } = calculateContinuousSlots(startDateStr, endDateStr, startSlot, endSlot);
-        
+
         let amenityTotal = 0;
         const amenityItems = document.querySelectorAll('.edit-amenity-item');
 
@@ -2566,7 +2589,7 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             const data = await response.json();
-            
+
             if (data.reservations) {
                 Object.assign(reservationData, data.reservations);
                 renderTableFromData(reservationData);
@@ -2844,15 +2867,15 @@ window.AppPage['staff_reservations'] = function () {
             window.alert('No reservations to export.');
             return;
         }
-        const header = ['Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Checkout', 'Amount'];
+        const header = ['Reservation ID', 'Booker', 'Email', 'Reservation Date', 'Session', 'Guests', 'Status', 'Amount'];
         const body = visibleRows.map(row => {
             const cells = row.querySelectorAll('td');
             return [
+                `#${row.dataset.reservationId || ''}`,
                 row.dataset.bookerName || '',
                 row.dataset.email || '',
-                cells[1]?.textContent.trim() || '',
-                (cells[2]?.textContent || '').replace(/\s+/g, ' ').trim(),
-                cells[3]?.textContent.trim() || '',
+                cells[2]?.textContent.trim() || '',
+                (cells[3]?.textContent || '').replace(/\s+/g, ' ').trim(),
                 cells[4]?.textContent.trim() || '',
                 cells[5]?.textContent.trim() || '',
                 cells[6]?.textContent.trim() || '',

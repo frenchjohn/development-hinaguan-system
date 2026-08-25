@@ -3919,8 +3919,8 @@ window.AppPage['staff_check_ins'] = function () {
 
                 const card = document.createElement('div');
                 card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
-                        ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/5' : 'border-glass-border bg-glass hover:border-hp-green')
-                        : 'border-red-300/40 bg-red-50/20 opacity-60 dark:border-red-500/20 dark:bg-red-500/5'
+                    ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/5' : 'border-glass-border bg-glass hover:border-hp-green')
+                    : 'border-red-300/40 bg-red-50/20 opacity-60 dark:border-red-500/20 dark:bg-red-500/5'
                     }`;
                 card.dataset.amenityId = amenity.id;
 
@@ -4537,7 +4537,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
         try {
             html5QrCode.clear();
-        } catch (e) {}
+        } catch (e) { }
         qrScannerActive = false;
     };
 

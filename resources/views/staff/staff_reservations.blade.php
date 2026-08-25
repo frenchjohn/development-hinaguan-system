@@ -282,6 +282,7 @@
                     <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 text-left">
                         <thead class="bg-[#f7faf8] dark:bg-[#11281b]">
                             <tr class="border-b border-[#e8eee9] dark:border-white/10">
+                                <th class="py-3.5 px-3 w-20 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784] whitespace-nowrap">ID</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">BOOKER</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">RESERVATION DATE</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#81c784]">SESSION</th>
@@ -313,11 +314,14 @@
                                     data-status="{{ strtolower($reservation->status) }}"
                                     data-guests="{{ $reservation->number_of_guests }}"
                                     data-total-amount="{{ (float) $reservation->total_amount }}"
-                                    data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? ''))) }}"
+                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? ''))) }}"
                                     tabindex="0"
                                     role="button"
-                                    aria-label="View reservation details for {{ e($reservation->booker_name) }}"
+                                    aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
                                 >
+                                    <td class="py-3.5 px-3 w-20 whitespace-nowrap">
+                                        <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784]">#{{ $reservation->id }}</span>
+                                    </td>
                                     <td class="py-3.5 px-4">
                                         <div class="resv-booker flex items-center gap-3">
                                             <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
@@ -382,7 +386,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
+                                    <td colspan="8" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>

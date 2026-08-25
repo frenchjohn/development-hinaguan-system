@@ -88,8 +88,11 @@ class StaffReservationsPageTest extends TestCase
         $response = $this->get('/staff/reservations');
 
         $response->assertOk();
-        $response->assertViewHas('reservations', function ($reservations) {
-            return $reservations->count() === 1 && $reservations->first()->booker_name === 'Online Booker';
+        $response->assertSee('ID');
+        $response->assertViewHas('reservations', function ($reservations) use ($response) {
+            $first = $reservations->first();
+            $response->assertSee('#' . $first->id);
+            return $reservations->count() === 1 && $first->booker_name === 'Online Booker';
         });
     }
 
