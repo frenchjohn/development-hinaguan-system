@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['staff_records'] = function () {
 
     // =====================
@@ -113,7 +113,7 @@ window.AppPage['staff_records'] = function () {
             if (isActive) {
                 button.className = 'records-tab-btn records-tab-btn--active cursor-pointer rounded-full border border-transparent bg-[#178a52] px-6 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#126e41] focus:outline-none';
             } else {
-                button.className = 'records-tab-btn cursor-pointer rounded-full border border-[#dbe3de] dark:border-[#1a3d2a] bg-white dark:bg-[#0d2116] px-6 py-2 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#12281c] focus:outline-none';
+                button.className = 'records-tab-btn cursor-pointer rounded-full border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-6 py-2 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] focus:outline-none';
             }
             button.setAttribute('aria-selected', isActive ? 'true' : 'false');
             button.setAttribute('tabindex', isActive ? '0' : '-1');
@@ -186,7 +186,7 @@ window.AppPage['staff_records'] = function () {
 
             const primaryGuestMarkup = primaryGuest?.customer
                 ? `
-                    <div class="p-3 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a]">
+                    <div class="p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29]">
                         <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(primaryName)}</div>
                         ${(primaryEmail || primaryPhone) ? `<div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">${primaryEmail ? `Email: ${escapeHtml(primaryEmail)}` : ''}${primaryEmail && primaryPhone ? ' · ' : ''}${primaryPhone ? `Phone: ${escapeHtml(primaryPhone)}` : ''}</div>` : ''}
                     </div>
@@ -194,7 +194,7 @@ window.AppPage['staff_records'] = function () {
                 : '';
 
             return `
-                <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#0e2418] border border-[#dbe3de] dark:border-[#1a3d2a] space-y-3">
+                <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-[0.7rem] font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Reservation Reference</span>
                         <span class="font-bold text-xs text-[#178a52] dark:text-[#8fd0ab]">#${escapeHtml(reservation?.id ?? 'N/A')}</span>
@@ -222,7 +222,7 @@ window.AppPage['staff_records'] = function () {
         }).join('');
 
         modalBody.innerHTML = `
-            <div class="flex items-center gap-3 pb-3 border-b border-[#e5e9e6] dark:border-[#1a3d2a]">
+            <div class="flex items-center gap-3 pb-3 border-b border-[#e5e9e6] dark:border-[#282c29]">
                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#178a52] text-white font-bold text-base shadow-sm">
                     ${escapeHtml(customerData.first_name ? customerData.first_name[0] : 'G')}
                 </div>
@@ -231,7 +231,7 @@ window.AppPage['staff_records'] = function () {
                     <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Customer ID #${escapeHtml(customerData.id)} · ${customerData.is_foreigner ? 'Foreigner' : 'Filipino'}</p>
                 </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Age</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(customerData.age ?? 'N/A')}</span>
@@ -274,7 +274,7 @@ window.AppPage['staff_records'] = function () {
         const members = group.members || [];
         const membersHtml = members.length
             ? members.map((m, idx) => `
-                <div class="flex items-center justify-between p-2.5 rounded-lg bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] text-xs">
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
                     <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">Member #${idx + 1} (Customer #${escapeHtml(m.customer_id)})</span>
                     <span class="text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">${m.checked_out_at ? formatDateTime(m.checked_out_at) : 'Checked Out'}</span>
                 </div>
@@ -282,7 +282,7 @@ window.AppPage['staff_records'] = function () {
             : '<p class="text-xs text-[#889b8a]">No individual member records.</p>';
 
         modalBody.innerHTML = `
-            <div class="flex items-center gap-3 pb-3 border-b border-[#e5e9e6] dark:border-[#1a3d2a]">
+            <div class="flex items-center gap-3 pb-3 border-b border-[#e5e9e6] dark:border-[#282c29]">
                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#178a52] text-white shadow-sm">
                     <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /></svg>
                 </div>
@@ -291,7 +291,7 @@ window.AppPage['staff_records'] = function () {
                     <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation #${escapeHtml(group.reservation_id)} · Bulk Companion Group</p>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] text-xs">
+            <div class="grid grid-cols-3 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Age Group</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.age_group)}</span>
@@ -331,7 +331,7 @@ window.AppPage['staff_records'] = function () {
             btn.textContent = page;
             btn.className = page === current
                 ? 'cursor-pointer rounded-lg bg-[#178a52] px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-[#126e41] border-0 shadow-sm'
-                : 'cursor-pointer rounded-lg border border-[#dbe3de] dark:border-[#1a3d2a] bg-white dark:bg-[#0d2116] px-2.5 py-1 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#12281c] shadow-sm';
+                : 'cursor-pointer rounded-lg border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-2.5 py-1 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#141715] shadow-sm';
             btn.addEventListener('click', () => onSelect(page));
             return btn;
         };
@@ -642,9 +642,9 @@ window.AppPage['staff_records'] = function () {
         const companions = (reservation.reservation_guests || []).filter(g => !g.is_primary_guest && g.checked_out_at);
 
         let html = `
-            <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] space-y-2">
+            <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
                 <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Main Booker / Primary Guest</h4>
-                <div class="p-3 rounded-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a]">
+                <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                     ${primaryGuest && primaryGuest.customer ? `
                         <div class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(primaryGuest.customer.first_name)} ${escapeHtml(primaryGuest.customer.middle_name || '')} ${escapeHtml(primaryGuest.customer.last_name)}</div>
                         <div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">Age: ${escapeHtml(primaryGuest.customer.age || 'N/A')} · Gender: ${escapeHtml(primaryGuest.customer.gender || 'N/A')} · ${escapeHtml(primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino')}</div>
@@ -675,11 +675,11 @@ window.AppPage['staff_records'] = function () {
             const groupEntries = Object.entries(companionGroups);
             if (groupEntries.length > 0) {
                 html += `
-                    <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] space-y-2">
+                    <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
                         <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Companions (${companions.length})</h4>
                         <div class="space-y-2 max-h-48 overflow-y-auto">
                             ${groupEntries.map(([key, group]) => `
-                                <div class="p-2.5 rounded-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a] text-xs">
+                                <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] text-xs">
                                     <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.nationality)} · ${escapeHtml(group.gender)} (${escapeHtml(group.age)}) <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-[#eaf5ee] text-[#178a52]">${group.count}x</span></div>
                                 </div>
                             `).join('')}
@@ -691,11 +691,11 @@ window.AppPage['staff_records'] = function () {
 
         if (reservation.reservation_amenities && reservation.reservation_amenities.length > 0) {
             html += `
-                <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#12281c] border border-[#e5e9e6] dark:border-[#1a3d2a] space-y-2">
+                <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
                     <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Reserved Amenities</h4>
                     <div class="space-y-1 text-xs">
                         ${reservation.reservation_amenities.map(a => `
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[#0d2116] border border-[#dbe3de] dark:border-[#1a3d2a]">
+                            <div class="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                                 <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')} (${escapeHtml(a.pricing_type)})</span>
                                 <span class="font-bold text-[#178a52] dark:text-[#8fd0ab]">₱${parseFloat(a.price_at_booking || a.price || 0).toFixed(2)} x ${a.quantity}</span>
                             </div>
@@ -706,7 +706,7 @@ window.AppPage['staff_records'] = function () {
         }
 
         html += `
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f4f7f5] dark:bg-[#0e2418] border border-[#dbe3de] dark:border-[#1a3d2a] text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-In</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.check_in || 'N/A')}</span>

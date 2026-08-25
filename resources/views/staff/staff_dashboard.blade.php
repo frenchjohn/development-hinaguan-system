@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -32,7 +32,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.staff-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.staff-portal .dash-layout,
         body.staff-portal .dash-main,
@@ -77,8 +77,8 @@
             }
         }
         [data-theme="dark"] body.staff-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -111,7 +111,7 @@
                         'Pending' => '#c8a45d',
                         'Confirmed' => '#4c9a5f',
                         'Checked In' => '#2f6f45',
-                        'Checked Out' => '#94a3b8',
+                        'Checked Out' => '#9ca3af',
                         'Cancelled' => '#d64550',
                     ];
                     $donutTotal = array_sum($statusBreakdown);
@@ -140,13 +140,13 @@
                 {{-- ===== GREETING BANNER ===== --}}
                 <section class="mb-4 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                     <div class="min-w-[200px] flex-1">
-                        <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#c8e6c8]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Staff User' }}!</h2>
+                        <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#f3f4f6]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Staff User' }}!</h2>
                         <p class="m-0 text-sm font-medium text-hp-text-muted">Welcome to the Hinaguan Nature Park Portal</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-6">
                         <div class="flex flex-col items-end gap-0.5 max-[992px]:items-start">
                             <span class="text-[0.8rem] font-medium text-hp-text-muted">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
-                            <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#c8e6c8]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
+                            <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#f3f4f6]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
                         </div>
                         @if ($weatherNow)
                         <div class="flex items-center gap-2">
@@ -156,7 +156,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-9 w-9 text-[#c8a45d]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             @endif
                             <div class="flex flex-col items-center">
-                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
+                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
                                 <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? '—' }}</span>
                             </div>
                         </div>
@@ -186,48 +186,48 @@
                     {{-- LEFT: Stat Cards --}}
                     <div class="sd-stats-col grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-2 xl:col-span-1 xl:grid-cols-1">
                         <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#81c784]">
+                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
                                 <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Today's Check-ins</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ $todayCheckIns }}</p>
+                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $todayCheckIns }}</p>
                                 <p class="m-0 mt-0.5 text-[0.65rem] leading-[1.4] text-hp-text-muted">Reservations marked as checked in today</p>
                             </div>
                         </article>
                         <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#81c784]">
+                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
                                 <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Pending Reservations</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ $pendingReservationsCount }}</p>
+                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $pendingReservationsCount }}</p>
                             </div>
                         </article>
                         <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#81c784]">
+                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
                                 <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Guests On-Site</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestsOnSiteCount }}</p>
+                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestsOnSiteCount }}</p>
                             </div>
                         </article>
                         <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#81c784]">
+                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
                                 <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Today's Revenue</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">₱{{ number_format($todayRevenue) }}</p>
+                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">₱{{ number_format($todayRevenue) }}</p>
                             </div>
                         </article>
                     </div>
@@ -235,7 +235,7 @@
                     {{-- CENTER: Area Chart --}}
                     <section class="sd-chart-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#c8e6c8]">Bookings & Revenue – Last 7 Days</h3>
+                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Bookings & Revenue – Last 7 Days</h3>
                             <div class="flex gap-4">
                                 <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-hp-text-muted">
                                     <i class="sd-legend-swatch sd-legend-swatch--bookings inline-block h-[0.7rem] w-[0.7rem] rounded-[0.2rem] bg-hp-green"></i>Bookings
@@ -262,13 +262,13 @@
                     {{-- RIGHT: Donut Chart --}}
                     <section class="sd-donut-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#c8e6c8]">Reservation Status</h3>
+                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Status</h3>
                         </div>
                         <div class="sd-donut-panel__body flex flex-1 flex-col items-center justify-center gap-4 p-5">
                             @if ($donutTotal > 0)
                                 <div class="sd-donut-ring flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(13,44,29,0.06)] max-[768px]:h-[120px] max-[768px]:w-[120px]" style="{{ $donutStyle }}">
                                     <div class="sd-donut-ring__hole flex h-[90px] w-[90px] flex-col items-center justify-center rounded-full bg-glass max-[768px]:h-[72px] max-[768px]:w-[72px]">
-                                        <span class="sd-donut-ring__total font-display text-[1.75rem] font-bold leading-none text-hp-green-dark dark:text-[#c8e6c8]">{{ $donutTotal }}</span>
+                                        <span class="sd-donut-ring__total font-display text-[1.75rem] font-bold leading-none text-hp-green-dark dark:text-[#f3f4f6]">{{ $donutTotal }}</span>
                                         <small class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-hp-text-muted">Total</small>
                                     </div>
                                 </div>
@@ -291,7 +291,7 @@
                 <div class="sd-bottom-grid grid grid-cols-1 gap-4 lg:grid-cols-3">
                     <section class="dash-panel dash-chart overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="dash-panel__head flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#c8e6c8]">Most Booked Amenities</h3>
+                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Most Booked Amenities</h3>
                         </div>
                         @if ($topAmenities->isNotEmpty())
                             <div class="dash-hbars grid gap-4 p-5">
@@ -299,7 +299,7 @@
                                     <div class="dash-hbar">
                                         <div class="dash-hbar__row mb-1.5 flex items-baseline justify-between text-[0.8125rem] text-hp-text">
                                             <span>{{ $amenity['name'] }}</span>
-                                            <strong class="text-hp-green-dark dark:text-[#c8e6c8]">{{ $amenity['total'] }}</strong>
+                                            <strong class="text-hp-green-dark dark:text-[#f3f4f6]">{{ $amenity['total'] }}</strong>
                                         </div>
                                         <div class="dash-hbar__track h-2 overflow-hidden rounded-full bg-glass-hover dark:bg-[#0d2812]">
                                             <div class="dash-hbar__fill h-full w-0 rounded-full bg-gradient-to-r from-hp-green-mid to-hp-green-dark transition-[width] duration-[600ms] ease-[cubic-bezier(0.22,0.8,0.32,1)] [&.is-animated]:w-[var(--val)]" style="--val: {{ round($amenity['total'] / $topAmenityMax * 100) }}%"></div>
@@ -314,7 +314,7 @@
 
                     <section class="dash-panel overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="dash-panel__head border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#c8e6c8]">Today's Expected Arrivals</h3>
+                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Today's Expected Arrivals</h3>
                         </div>
                         <ul class="dash-arrivals m-0 list-none p-4">
                             @forelse ($todayArrivals as $arrival)
@@ -337,7 +337,7 @@
 
                     <section class="dash-panel overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="dash-panel__head border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#c8e6c8]">Recent Activity</h3>
+                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Recent Activity</h3>
                         </div>
                         <ul class="dash-activity-list m-0 list-none p-4">
                             @forelse ($activityItems as $activity)

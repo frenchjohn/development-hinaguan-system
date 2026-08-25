@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['admin_settings'] = function () {
     // Drill-down navigation functionality
     const settingsMenu = document.getElementById('settingsMenu');

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -32,7 +32,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.staff-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.staff-portal .dash-layout,
         body.staff-portal .dash-main,
@@ -77,8 +77,8 @@
             }
         }
         [data-theme="dark"] body.staff-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -108,7 +108,7 @@
                 {{-- Live status strip --}}
                 <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3">
                     <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
                         </span>
                         <div class="min-w-0">
@@ -136,7 +136,7 @@
                         </div>
                     </article>
                     <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </span>
                         <div class="min-w-0">
@@ -144,7 +144,7 @@
                             <p class="mt-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Available Now</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-gradient-to-br from-[#e7f3ec]/60 to-transparent p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 dark:from-[#1a3324]/40">
+                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-gradient-to-br from-[#e7f3ec]/60 to-transparent p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 dark:from-[#1e2220]/40">
                         <div class="occupancy-rate-ring relative grid h-[3.1rem] w-[3.1rem] shrink-0 place-items-center rounded-full shadow-[inset_0_1px_2px_rgba(23,42,32,0.08)]" style="background: conic-gradient(var(--hp-green) calc(var(--pct) * 1%), var(--glass-border) 0); --pct: {{ $occupancyRate }}">
                             <span class="grid h-[2.15rem] w-[2.15rem] place-items-center rounded-full bg-glass text-[0.68rem] font-bold text-hp-green shadow-[inset_0_1px_2px_rgba(23,42,32,0.06)]">{{ $occupancyRate }}%</span>
                         </div>
@@ -355,14 +355,14 @@
                             </div>
                             <div class="occupancy-card__content relative flex flex-col gap-3 bg-glass p-4">
                                 <div class="flex items-start justify-between gap-2.5">
-                                    <h4 class="occupancy-card__name m-0 font-display text-lg font-semibold leading-[1.3] text-hp-text dark:text-[#c8e6c8]">{{ $amenity->amenities_name }}</h4>
+                                    <h4 class="occupancy-card__name m-0 font-display text-lg font-semibold leading-[1.3] text-hp-text dark:text-[#f3f4f6]">{{ $amenity->amenities_name }}</h4>
                                     <span class="shrink-0 whitespace-nowrap text-[0.8rem] font-bold text-hp-green">₱{{ number_format($amenity->daytime_price, 2) }}<small class="text-[0.62rem] font-semibold text-hp-text-muted/70">/day</small></span>
                                 </div>
                                 <div class="flex flex-wrap gap-2">
-                                    <span class="slot-chip slot-chip--daytime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasDay ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
+                                    <span class="slot-chip slot-chip--daytime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasDay ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
                                         <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasDay ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Daytime
                                     </span>
-                                    <span class="slot-chip slot-chip--nighttime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasNight ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
+                                    <span class="slot-chip slot-chip--nighttime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasNight ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
                                         <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasNight ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Nighttime
                                     </span>
                                 </div>
@@ -397,7 +397,7 @@
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" id="closeAmenityDetailModal"></div>
         <div class="amenity-detail-panel relative z-[1] flex max-h-[90vh] w-full max-w-[600px] flex-col overflow-hidden rounded-2xl bg-glass shadow-glass dark:bg-glass">
             <div class="flex items-center justify-between border-b border-[#e5e7eb] px-6 py-5 dark:border-glass-border">
-                <h3 class="m-0 font-display text-xl text-hp-green-dark dark:text-[#c8e6c8]" id="modalAmenityTitle">Amenity Details</h3>
+                <h3 class="m-0 font-display text-xl text-hp-green-dark dark:text-[#f3f4f6]" id="modalAmenityTitle">Amenity Details</h3>
                 <button type="button" class="modal__close cursor-pointer border-0 bg-transparent text-2xl leading-none text-hp-text-muted" id="closeAmenityDetailModalBtn">&times;</button>
             </div>
             <div class="amenity-detail-body flex flex-col gap-5 overflow-y-auto p-6">
@@ -412,31 +412,31 @@
                     <div class="amenity-detail-grid grid grid-cols-2 gap-4 rounded-xl bg-glass-hover p-4 dark:bg-[#0d2812]">
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Daytime Price</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalDaytimePrice"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalDaytimePrice"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Nighttime Price</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalNighttimePrice"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalNighttimePrice"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Day Aircon</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalDayAircon"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalDayAircon"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Night Aircon</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalNightAircon"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalNightAircon"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Additional / Head</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalAddHead"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalAddHead"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
                             <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Capacity</span>
-                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#81c784]" id="modalCapacity"></span>
+                            <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalCapacity"></span>
                         </div>
                     </div>
                     <div class="amenity-detail-status-section">
-                        <h4 class="m-0 mb-3 text-sm font-bold text-hp-text dark:text-[#c8e6c8]">Current Status & Active Reservations</h4>
+                        <h4 class="m-0 mb-3 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Current Status & Active Reservations</h4>
                         <div id="modalStatusList" class="status-list flex flex-col gap-2"></div>
                     </div>
                 </div>

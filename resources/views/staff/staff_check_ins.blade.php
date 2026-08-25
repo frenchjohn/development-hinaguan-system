@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
 	<meta charset="utf-8">
@@ -33,7 +33,7 @@
 			background-color: #ebf3ec !important;
 		}
 		[data-theme="dark"] body.staff-portal {
-			background-color: #06120a !important;
+			background-color: #0f1110 !important;
 		}
 		body.staff-portal .dash-layout,
 		body.staff-portal .dash-main,
@@ -78,8 +78,8 @@
 			}
 		}
 		[data-theme="dark"] body.staff-portal .dash-main::before {
-			background-color: #06120a !important;
-			background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+			background-color: #0f1110 !important;
+			background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
 			filter: none !important;
 			-webkit-filter: none !important;
 			opacity: 1 !important;
@@ -324,7 +324,7 @@
 						<!-- Widget 1: Overview -->
 						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
 							<div class="premium-widget__header mb-4 flex items-center gap-3">
-								<div class="widget-icon widget-icon--green flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+								<div class="widget-icon widget-icon--green flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
 									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
 								</div>
 								<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">OVERVIEW</h4>
@@ -332,7 +332,7 @@
 							<div class="premium-widget__grid cols-3 mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<div class="premium-stat">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ACTIVE GUESTS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $activeCustomers->count() }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $activeCustomers->count() }}</strong>
 									@if ($guestTrendPct > 0)
 										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $guestTrendPct }}% vs yesterday</div>
 									@elseif ($guestTrendPct < 0)
@@ -343,7 +343,7 @@
 								</div>
 								<div class="premium-stat">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">RESERVATIONS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $totalActiveRes }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $totalActiveRes }}</strong>
 									@if ($resTrendPct > 0)
 										<div class="stat-trend trend-up mt-1 text-xs font-semibold text-[#16a34a]">▲ {{ $resTrendPct }}% vs yesterday</div>
 									@elseif ($resTrendPct < 0)
@@ -421,22 +421,22 @@
 							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MALE</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryMale }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryMale }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctMale }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFemFil }}&#xa;Foreigner: {{ $demoFemFor }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FEMALE</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFemale }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryFemale }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFem }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoForFil ?? 0 }}&#xa;Foreigner: {{ $demoForFor ?? 0 }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FOREIGNER</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryForeign }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryForeign }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFor }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoFilFil ?? 0 }}&#xa;Foreigner: {{ $demoFilFor ?? 0 }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">FILIPINO</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $guestSummaryFilipino }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryFilipino }}</strong>
 									<div class="stat-trend trend-blue mt-1 text-xs font-semibold text-[#2a6a8f]">{{ $pctFil }}%</div>
 								</div>
 							</div>
@@ -476,22 +476,22 @@
 							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilKids }}&#xa;Foreigner: {{ $ageForKids }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageKids }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageKids }}</strong>
 									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctKids }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilTeen }}&#xa;Foreigner: {{ $ageForTeen }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">TEENS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageTeen }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageTeen }}</strong>
 									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctTeen }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilAdult }}&#xa;Foreigner: {{ $ageForAdult }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">ADULTS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageAdult }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageAdult }}</strong>
 									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctAdult }}%</div>
 								</div>
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilSenior }}&#xa;Foreigner: {{ $ageForSenior }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">SENIORS</span>
-									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $ageSenior }}</strong>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageSenior }}</strong>
 									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $pctSenior }}%</div>
 								</div>
 							</div>
@@ -675,18 +675,18 @@
 								</div>
 							</div>
 						<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
-							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
+							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#1e2220] dark:hover:border-[#4a8a52] dark:hover:text-[#f3f4f6]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
 							<span>Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
 						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-3 dark:bg-glass" id="guestFilterPanel" hidden>
 							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-3">
 								<span>Search</span>
-								<input type="search" id="guestSearchInput" placeholder="Search by name, ID, gender" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="search" id="guestSearchInput" placeholder="Search by name, ID, gender" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Sort by</span>
-								<select id="guestSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<select id="guestSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 									<option value="name-asc">Name (A-Z)</option>
 									<option value="name-desc">Name (Z-A)</option>
 									<option value="age-asc">Age (Low-High)</option>
@@ -696,7 +696,7 @@
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Show Guests</span>
-								<select id="guestRoleSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<select id="guestRoleSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 									<option value="all">All Guests</option>
 									<option value="primary">Main Guests Only</option>
 									<option value="companion">Companions Only</option>
@@ -704,15 +704,15 @@
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in from</span>
-								<input type="date" id="guestCheckInFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="date" id="guestCheckInFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in to</span>
-								<input type="date" id="guestCheckInTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="date" id="guestCheckInTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Reservation ID</span>
-								<select id="guestReservationSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<select id="guestReservationSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 									<option value="">All Reservations</option>
 									@php
 										$filteredReservations = collect($reservations ?? collect())->filter(function ($reservation) {
@@ -735,7 +735,7 @@
 									@endforelse
 								</select>
 							</label>
-							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="guestFiltersClear">Clear</button>
+							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#1e2220] dark:text-[#f3f4f6]" id="guestFiltersClear">Clear</button>
 						</div>
 					</div>
 
@@ -908,7 +908,7 @@
 										}
 									@endphp
 									<tr
-										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#1e2220] dark:focus-visible:bg-[#1e2220]"
 										@if (! $isPrimary) style="display: none;" @endif
 										data-customer-id="{{ $customer->id }}"
 										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
@@ -947,7 +947,7 @@
 													@endif
 												</span>
 												@if($isPrimary && $companionCount > 0)
-													<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
+													<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#1e2220] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
 														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 													</button>
 												@endif
@@ -987,7 +987,7 @@
 											<div class="text-[0.72rem] leading-tight text-hp-text-muted capitalize">{{ $customer->gender ?? 'N/A' }}</div>
 										</td>
 										<td>
-											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2 py-0.5 text-[0.65rem] font-bold tracking-[0.02em] shadow-sm {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1a3324] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
+											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2 py-0.5 text-[0.65rem] font-bold tracking-[0.02em] shadow-sm {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
 										</td>
 										<td>
 											<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
@@ -1121,18 +1121,18 @@
 							</div>
 
 					<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
-						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#2d5a32] dark:hover:border-[#4a8a52] dark:hover:text-[#c8e6c8]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
+						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#1e2220] dark:hover:border-[#4a8a52] dark:hover:text-[#f3f4f6]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
 							<span>Reservation Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
 						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-4 dark:bg-glass" id="resvFilterPanel" hidden>
 							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-4">
 								<span>Search</span>
-								<input type="search" id="resvSearchInput" placeholder="Search by reservation ID, main guest, booker, amenity..." class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="search" id="resvSearchInput" placeholder="Search by reservation ID, main guest, booker, amenity..." class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Reservation Type</span>
-								<select id="resvTypeFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<select id="resvTypeFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 									<option value="all">All Types</option>
 									<option value="walk_in">Walk-in</option>
 									<option value="online">Online</option>
@@ -1140,13 +1140,13 @@
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in from</span>
-								<input type="date" id="resvDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="date" id="resvDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
 							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
 								<span>Check-in to</span>
-								<input type="date" id="resvDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#c8e6c8]">
+								<input type="date" id="resvDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
 							</label>
-							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#2d5a32] dark:text-[#c8e6c8]" id="resvFiltersClear">Clear</button>
+							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#1e2220] dark:text-[#f3f4f6]" id="resvFiltersClear">Clear</button>
 						</div>
 					</div>
 
@@ -1200,7 +1200,7 @@
 										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
 									@endphp
 									<tr
-										class="reservation-row {{ $highlightClass }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#2d5a32] dark:focus-visible:bg-[#2d5a32]"
+										class="reservation-row {{ $highlightClass }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#1e2220] dark:focus-visible:bg-[#1e2220]"
 										data-reservation-id="{{ $reservation->id }}"
 										data-reservation-type="{{ $reservation->reservation_type }}"
 										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
@@ -1211,7 +1211,7 @@
 									>
 										<td>
 											<div class="flex items-center gap-2">
-												<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#2d5a32] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
+												<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#1e2220] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
 													<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 												</button>
 												<div>
@@ -1286,7 +1286,7 @@
 	</div>
 	<!-- Modals (Direct children of body) -->
 	<div class="guest-modal" id="guestModal" aria-hidden="true">
-		<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-modal="true"></div>
+		<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-modal="true"></div>
 		<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
 			<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-modal="true" aria-label="Close details">&times;</button>
 			<div class="guest-modal__header mb-4 flex items-center gap-3">
@@ -1308,7 +1308,7 @@
 	</script>
 
 	<div class="guest-modal guest-modal--add" id="addGuestModal" aria-hidden="true">
-		<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-add-modal="true"></div>
+		<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-add-modal="true"></div>
 		<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
 			<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-modal="true" aria-label="Close add guest form">&times;</button>
 			<div class="guest-modal__header mb-4 flex items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
@@ -1351,7 +1351,7 @@
 							<div class="guest-form__grid grid grid-cols-1 gap-4 lg:grid-cols-2">
 								<div class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 									<div class="guest-form__section-header mb-2 flex items-center justify-between">
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Stay & Entrance Details</h4>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Stay & Entrance Details</h4>
 									</div>
 									
 									<!-- Stay Dates & Sessions Selector -->
@@ -1365,7 +1365,7 @@
 													</svg>
 												</div>
 												<div>
-													<div class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]" id="walkInScheduleSummaryText">Today ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}) — 1 Day</div>
+													<div class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]" id="walkInScheduleSummaryText">Today ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}) — 1 Day</div>
 													<div class="text-xs text-hp-text-muted" id="walkInScheduleDatesText">{{ now()->format('M d, Y') }} ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }})</div>
 												</div>
 											</div>
@@ -1417,19 +1417,19 @@
 
 								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 									<div class="guest-form__section-header mb-2">
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Primary Guest</h4>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest</h4>
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_first_name">First name</label>
-										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_middle_name">Middle name</label>
-										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_last_name">Last name</label>
-										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</div>
 									<div class="guest-form__row guest-form__row--two mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
 										<div class="guest-form__field-group grid gap-1.5">
@@ -1437,11 +1437,11 @@
 												<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_age">Age</label>
 												<span id="primaryAgeBadge" class="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">Adult Rate</span>
 											</div>
-											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
 										<div class="guest-form__field-group grid gap-1.5">
 											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_gender">Gender</label>
-											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 												<option value="">Select gender</option>
 												<option value="Male">Male</option>
 												<option value="Female">Female</option>
@@ -1450,7 +1450,7 @@
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primaryGuestIsForeigner">Nationality</label>
-										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											<option value="0" selected>Filipino</option>
 											<option value="1">Foreigner</option>
 										</select>
@@ -1458,11 +1458,11 @@
 									<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
 										<div class="guest-form__field-group grid gap-1.5">
 											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_phone">Phone</label>
-											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
 										<div class="guest-form__field-group grid gap-1.5">
 											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_email">Email</label>
-											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
 									</div>
 								</div>
@@ -1470,7 +1470,7 @@
 
 							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 								<div class="guest-form__section-header mb-2 flex items-center justify-between">
-									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Companions</h4>
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
 									<span id="walkInCompanionCountBadge" class="text-xs text-hp-text-muted">0 companions</span>
 								</div>
 								<div id="companionList" class="guest-companion-list grid gap-2"></div>
@@ -1481,7 +1481,7 @@
 							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
 								<div class="guest-form__section-header mb-3 flex items-center justify-between">
 									<div>
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Amenities</h4>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Amenities</h4>
 										<p class="m-0 text-xs text-hp-text-muted">Add available amenities and customize individual stay schedules</p>
 									</div>
 									<button type="button" class="guest-form__action-btn inline-flex cursor-pointer items-center rounded-lg border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="chooseAmenitiesBtn">
@@ -1519,7 +1519,7 @@
 
 				<!-- Walk-In Range Calendar Modal -->
 				<div class="guest-modal guest-modal--calendar" id="walkInCalendarModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-walkin-calendar="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-calendar="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="walkInCalendarModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-walkin-calendar="true" aria-label="Close calendar">&times;</button>
 						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
@@ -1553,12 +1553,12 @@
 						<!-- Calendar Component -->
 						<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
 							<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="walkInCalPrev" aria-label="Previous month">&lsaquo;</button>
+								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalPrev" aria-label="Previous month">&lsaquo;</button>
 								<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-									<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="walkInCalTitle">&mdash;</div>
-									<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="walkInCalYear" aria-label="Select year"></select>
+									<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="walkInCalTitle">&mdash;</div>
+									<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalYear" aria-label="Select year"></select>
 								</div>
-								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="walkInCalNext" aria-label="Next month">&rsaquo;</button>
+								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalNext" aria-label="Next month">&rsaquo;</button>
 							</div>
 
 							<div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
@@ -1572,14 +1572,14 @@
 									<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-hp-green"></span> Selected Stay</span>
 									<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Available</span>
 								</div>
-								<span id="walkInCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click any date to set Check-Out</span>
+								<span id="walkInCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click any date to set Check-Out</span>
 							</div>
 						</div>
 
 						<!-- Modal Footer: Summary & Apply button -->
 						<div class="edit-calendar__footer mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border pt-3 dark:border-white/10">
 							<div class="min-w-0">
-								<div class="text-xs font-bold text-hp-text dark:text-[#c8e6c8]" id="walkInCalSummaryText">Select checkout date</div>
+								<div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]" id="walkInCalSummaryText">Select checkout date</div>
 								<div class="text-[0.72rem] text-hp-text-muted" id="walkInCalSpanText">1 Day Stay</div>
 							</div>
 							<div class="flex gap-2">
@@ -1592,7 +1592,7 @@
 
 				<!-- Walk-In Per-Amenity Schedule Customizer Modal -->
 				<div class="guest-modal guest-modal--compact" id="walkInAmenityScheduleModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-walkin-amenity-schedule="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-amenity-schedule="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="walkInAmenityScheduleTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-walkin-amenity-schedule="true" aria-label="Close schedule form">&times;</button>
 						<h3 id="walkInAmenityScheduleTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Customize Amenity Stay</h3>
@@ -1607,11 +1607,11 @@
 							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 								<div class="grid gap-1.5">
 									<label class="text-xs font-bold uppercase tracking-wider text-hp-text-muted" for="walkInAmenityStartDate">Check-In Date</label>
-									<input type="date" id="walkInAmenityStartDate" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="date" id="walkInAmenityStartDate" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="grid gap-1.5">
 									<label class="text-xs font-bold uppercase tracking-wider text-hp-text-muted" for="walkInAmenityStartSlot">Check-In Session</label>
-									<select id="walkInAmenityStartSlot" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select id="walkInAmenityStartSlot" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="Daytime">Daytime</option>
 										<option value="Nighttime">Nighttime</option>
 									</select>
@@ -1621,11 +1621,11 @@
 							<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 								<div class="grid gap-1.5">
 									<label class="text-xs font-bold uppercase tracking-wider text-hp-text-muted" for="walkInAmenityEndDate">Check-Out Date</label>
-									<input type="date" id="walkInAmenityEndDate" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="date" id="walkInAmenityEndDate" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="grid gap-1.5">
 									<label class="text-xs font-bold uppercase tracking-wider text-hp-text-muted" for="walkInAmenityEndSlot">Check-Out Session</label>
-									<select id="walkInAmenityEndSlot" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select id="walkInAmenityEndSlot" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="Daytime">Daytime</option>
 										<option value="Nighttime">Nighttime</option>
 									</select>
@@ -1640,7 +1640,7 @@
 							</div>
 
 							<div class="rounded-xl border border-glass-border bg-glass p-3.5 text-xs text-hp-text-muted">
-								<div class="flex justify-between font-bold text-hp-text dark:text-[#c8e6c8]">
+								<div class="flex justify-between font-bold text-hp-text dark:text-[#f3f4f6]">
 									<span>Duration:</span>
 									<span id="walkInAmenityDurationText">1 Day (1D 0N)</span>
 								</div>
@@ -1664,7 +1664,7 @@
 
 				<!-- Choose Amenities Modal -->
 				<div class="guest-modal guest-modal--compact" id="amenityModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-amenity-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[680px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-amenity-modal="true" aria-label="Close amenity selection">&times;</button>
 						<div class="guest-modal__header mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
@@ -1692,7 +1692,7 @@
 				</div>
 
 				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-companion-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
 						<div class="guest-modal__header mb-4 flex items-center gap-3">
@@ -1708,27 +1708,27 @@
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_first_name">First name</label>
-									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_middle_name">Middle name</label>
-									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_last_name">Last name</label>
-									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<div class="flex items-center justify-between">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_age">Age</label>
 										<span id="companionAgeComputedBadge" class="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">Adult Rate</span>
 									</div>
-									<input type="number" name="age" id="companion_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="number" name="age" id="companion_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									<input type="hidden" name="age_type" id="companion_age_type" value="adult">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_gender">Gender</label>
-									<select name="gender" id="companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="gender" id="companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
@@ -1736,18 +1736,18 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companionIsForeigner">Nationality</label>
-									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_phone">Phone</label>
-									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
-									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
@@ -1761,7 +1761,7 @@
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_gender">Gender</label>
-									<select name="gender" id="bulk_companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="gender" id="bulk_companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
@@ -1769,7 +1769,7 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_age_group">Age Group</label>
-									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0-12">Kids (0-12)</option>
 										<option value="13-17">Teens (13-17)</option>
 										<option value="18-59">Adults (18-59)</option>
@@ -1778,14 +1778,14 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity</label>
-									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
@@ -1798,7 +1798,7 @@
 
 				<!-- Payment & Review Confirmation Modal -->
 				<div class="guest-modal" id="paymentConfirmModal" aria-hidden="true" style="z-index: 1050;">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.65)]" data-close-payment-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/75" data-close-payment-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[640px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="paymentConfirmTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-payment-modal="true" aria-label="Close modal">&times;</button>
 						
@@ -1900,7 +1900,7 @@
 
 				{{-- Check In Modal (used when scanning a reservation) --}}
 				<div class="guest-modal guest-modal--add" id="checkInModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-in-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
 						<h3 id="checkInModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
@@ -1921,30 +1921,30 @@
 
 							<div id="checkInPrimaryGuestSection" class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 								<div class="guest-form__section-header mb-1">
-									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Primary guest</h4>
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary guest</h4>
 								</div>
 								<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">First name</span>
-										<input type="text" name="check_in_primary_guest[first_name]" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="check_in_primary_guest[first_name]" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Middle name</span>
-										<input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Last name</span>
-										<input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 								</div>
 								<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Age</span>
-										<input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Gender</span>
-										<select name="check_in_primary_guest[gender]" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<select name="check_in_primary_guest[gender]" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											<option value="">Select gender</option>
 											<option value="Male">Male</option>
 											<option value="Female">Female</option>
@@ -1952,7 +1952,7 @@
 									</label>
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Nationality</span>
-										<select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											<option value="0" selected>Filipino</option>
 											<option value="1">Foreigner</option>
 										</select>
@@ -1961,17 +1961,17 @@
 								<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Phone</span>
-										<input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 									<label class="guest-form__field grid gap-1.5">
 										<span class="text-sm font-semibold text-hp-text">Email</span>
-										<input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+										<input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</label>
 								</div>
 							</div>
 							<div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 								<div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
-									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#c8e6c8]">Companions</h4>
+									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
 									<div class="flex gap-2">
 										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInAddCompanionBtn">+ Add Single</button>
 										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInBulkCompanionBtn">+ Add Bulk</button>
@@ -1991,7 +1991,7 @@
 
 				{{-- Check Out Confirmation Modal --}}
 				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1100;">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-out-confirm="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-out-confirm="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
 						<h3 id="checkOutConfirmTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Confirm Check Out</h3>
@@ -2005,7 +2005,7 @@
 
 				{{-- Reservation Detail Modal --}}
 				<div class="guest-modal" id="reservationModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-reservation-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
 						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
@@ -2023,7 +2023,7 @@
 
 				{{-- Add Companion to Active Reservation Modal --}}
 				<div class="guest-modal guest-modal--wide" id="reservationAddCompanionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-reservation-add-companion="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
 						<div class="guest-modal__header mb-4 flex items-center gap-3">
@@ -2040,23 +2040,23 @@
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_first_name">First name</label>
-									<input type="text" name="first_name" id="resadd_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="first_name" id="resadd_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_middle_name">Middle name</label>
-									<input type="text" name="middle_name" id="resadd_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="middle_name" id="resadd_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_last_name">Last name</label>
-									<input type="text" name="last_name" id="resadd_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="last_name" id="resadd_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_age">Age</label>
-									<input type="number" name="age" id="resadd_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="number" name="age" id="resadd_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_gender">Gender</label>
-									<select name="gender" id="resadd_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="gender" id="resadd_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
@@ -2064,18 +2064,18 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="resadd_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="is_foreigner" id="resadd_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_phone">Phone</label>
-									<input type="text" name="phone" id="resadd_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="phone" id="resadd_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_email">Email</label>
-									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 							</div>
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -2118,7 +2118,7 @@
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_gender">Gender</label>
-									<select name="gender" id="resadd_bulk_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="gender" id="resadd_bulk_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
@@ -2126,7 +2126,7 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_age_group">Age Group</label>
-									<select name="age_group" id="resadd_bulk_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="age_group" id="resadd_bulk_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0-12">Kids (0-12)</option>
 										<option value="13-17">Teens (13-17)</option>
 										<option value="18-59">Adults (18-59)</option>
@@ -2135,14 +2135,14 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="resadd_bulk_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="is_foreigner" id="resadd_bulk_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Quantity</label>
-									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
@@ -2182,7 +2182,7 @@
 
 				{{-- Scan QR Modal --}}
 				<div class="guest-modal guest-modal--add" id="scanQrModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-scan-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-scan-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[900px] max-h-[min(84vh,760px)] flex-row overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
 						<div class="flex flex-1 flex-col justify-center p-6">
@@ -2205,7 +2205,7 @@
 
 				{{-- Companion modal used by check-in flow --}}
 				<div class="guest-modal guest-modal--compact" id="checkInCompanionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-companion-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-in-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-companion-modal="true" aria-label="Close companion form">&times;</button>
 						<h3 id="checkInCompanionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
@@ -2213,25 +2213,25 @@
 							<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">First name</span>
-									<input type="text" name="first_name" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="first_name" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Middle name</span>
-									<input type="text" name="middle_name" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="middle_name" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Last name</span>
-									<input type="text" name="last_name" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="last_name" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 							</div>
 							<div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Age</span>
-									<input type="number" name="age" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="number" name="age" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Gender</span>
-									<select name="gender" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="gender" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="">Select gender</option>
 										<option value="Male">Male</option>
 										<option value="Female">Female</option>
@@ -2239,7 +2239,7 @@
 								</label>
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Nationality</span>
-									<select name="is_foreigner" id="checkInCompanionIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<select name="is_foreigner" id="checkInCompanionIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										<option value="0" selected>Filipino</option>
 										<option value="1">Foreigner</option>
 									</select>
@@ -2248,11 +2248,11 @@
 							<div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Phone</span>
-									<input type="text" name="phone" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="text" name="phone" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 								<label class="guest-form__field grid gap-1.5">
 									<span class="text-sm font-semibold text-hp-text">Email</span>
-									<input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+									<input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</label>
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
@@ -2265,7 +2265,7 @@
 
 				{{-- Check In Confirmation Modal --}}
 				<div class="guest-modal guest-modal--compact" id="checkInConfirmationModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-check-in-confirmation="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-in-confirmation="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInConfirmationTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-confirmation="true" aria-label="Close confirmation">&times;</button>
 						<h3 id="checkInConfirmationTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
@@ -2279,7 +2279,7 @@
 
 				{{-- Companion Groups Summary Modal --}}
 				<div class="guest-modal guest-modal--compact" id="companionSummaryModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-companion-summary="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-summary="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionSummaryTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-summary="true" aria-label="Close summary">&times;</button>
 						<h3 id="companionSummaryTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Companion Groups Summary</h3>
@@ -2293,7 +2293,7 @@
 
 				{{-- Bulk Companion Modal --}}
 				<div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-bulk-companion-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-bulk-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
 
@@ -2379,7 +2379,7 @@
 
 				{{-- Bulk Group Manage Modal --}}
 				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-bulk-manage-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-bulk-manage-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-manage-modal="true" aria-label="Close form">&times;</button>
 
@@ -2440,7 +2440,7 @@
 
 				{{-- Adjust / Extend Stay Schedule Modal --}}
 				<div class="guest-modal guest-modal--compact" id="extendStayModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extend-stay-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-stay-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendStayTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-stay-modal="true" aria-label="Close modal">&times;</button>
 						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
@@ -2480,12 +2480,12 @@
 							{{-- Interactive 5-Year Calendar --}}
 							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-3.5 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
 								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendStayCalPrev" aria-label="Previous month">&lsaquo;</button>
 									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="extendStayCalTitle">&mdash;</div>
-										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalYear" aria-label="Select year"></select>
+										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="extendStayCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendStayCalYear" aria-label="Select year"></select>
 									</div>
-									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendStayCalNext" aria-label="Next month">&rsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendStayCalNext" aria-label="Next month">&rsaquo;</button>
 								</div>
 
 								<div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-1">
@@ -2499,7 +2499,7 @@
 										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Selected Stay</span>
 										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green/20"></span> In Stay Range</span>
 									</div>
-									<span id="extendStayCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to set Check-Out</span>
+									<span id="extendStayCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click date to set Check-Out</span>
 								</div>
 							</div>
 
@@ -2515,7 +2515,7 @@
 
 				{{-- Extend Existing Amenity Modal --}}
 				<div class="guest-modal guest-modal--compact" id="extendAmenityModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extend-amenity-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[560px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendAmenityTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-amenity-modal="true" aria-label="Close modal">&times;</button>
 						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
@@ -2575,12 +2575,12 @@
 							{{-- Interactive 5-Year Calendar for Amenity Extension --}}
 							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-3.5 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
 								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
 									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="extendAmenityCalTitle">&mdash;</div>
-										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalYear" aria-label="Select year"></select>
+										<div class="edit-calendar__title text-[0.9rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="extendAmenityCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendAmenityCalYear" aria-label="Select year"></select>
 									</div>
-									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="extendAmenityCalNext" aria-label="Next month">&rsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[1.9rem] w-[1.9rem] cursor-pointer items-center justify-center rounded-[0.5rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="extendAmenityCalNext" aria-label="Next month">&rsaquo;</button>
 								</div>
 
 								<div class="edit-calendar__weekdays mt-1.5 grid grid-cols-7 gap-1">
@@ -2595,7 +2595,7 @@
 										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Booked (Conflict)</span>
 										<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-500/60"></span> Exceeds Stay</span>
 									</div>
-									<span id="extendAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to extend amenity</span>
+									<span id="extendAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click date to extend amenity</span>
 								</div>
 							</div>
 
@@ -2623,7 +2623,7 @@
 
 				{{-- Add New Amenity Mid-Stay Modal --}}
 				<div class="guest-modal guest-modal--wide" id="addAmenityMidStayModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-add-amenity-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-add-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[580px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addAmenityMidStayTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-amenity-modal="true" aria-label="Close add amenity modal">&times;</button>
 						<div class="guest-modal__header mb-4 flex items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
@@ -2695,12 +2695,12 @@
 							<!-- 5. 5-Year Calendar Component -->
 							<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
 								<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="addAmenityCalPrev" aria-label="Previous month">&lsaquo;</button>
 									<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-										<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#c8e6c8]" id="addAmenityCalTitle">&mdash;</div>
-										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalYear" aria-label="Select year"></select>
+										<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="addAmenityCalTitle">&mdash;</div>
+										<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="addAmenityCalYear" aria-label="Select year"></select>
 									</div>
-									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#c8e6c8]" id="addAmenityCalNext" aria-label="Next month">&rsaquo;</button>
+									<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="addAmenityCalNext" aria-label="Next month">&rsaquo;</button>
 								</div>
 
 								<div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
@@ -2717,7 +2717,7 @@
 										<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-rose-500"></span> Booked</span>
 										<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> Exceeds Stay</span>
 									</div>
-									<span id="addAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#81c784]">Click date to set check-out</span>
+									<span id="addAmenityCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click date to set check-out</span>
 								</div>
 							</div>
 
@@ -2745,7 +2745,7 @@
 
 				{{-- Final Extension / Addition Payment Confirmation Modal --}}
 				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-[rgba(13,44,29,0.55)]" data-close-extension-payment-modal="true"></div>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extension-payment-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[520px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extensionPaymentTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extension-payment-modal="true" aria-label="Close payment modal">&times;</button>
 						<div class="guest-modal__header mb-4 flex items-center gap-2.5 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">

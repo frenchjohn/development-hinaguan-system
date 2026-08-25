@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['admin_feedback'] = function () {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     const bodyEl = document.body;

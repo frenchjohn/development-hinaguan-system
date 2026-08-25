@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -33,7 +33,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.admin-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.admin-portal .dash-layout,
         body.admin-portal .dash-main,
@@ -78,8 +78,8 @@
             }
         }
         [data-theme="dark"] body.admin-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;

@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['admin_usermanagement'] = function () {
 
     const modal = document.getElementById('userModal');

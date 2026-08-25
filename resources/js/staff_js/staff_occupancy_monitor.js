@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['staff_occupancy_monitor'] = function () {
 
     // Filter functionality

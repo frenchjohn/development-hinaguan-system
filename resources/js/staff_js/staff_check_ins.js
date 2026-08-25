@@ -1,4 +1,4 @@
-import { Html5Qrcode } from 'html5-qrcode';
+﻿import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
 let activeStaffCheckInsHandlers = null;
@@ -3927,7 +3927,7 @@ window.AppPage['staff_check_ins'] = function () {
                 card.innerHTML = `
                     <div class="flex-1 min-w-[200px]">
                         <div class="flex items-center gap-2">
-                            <strong class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">${amenity.amenities_name}</strong>
+                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
                             ${isAvailable
                         ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
                         : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
@@ -4064,7 +4064,7 @@ window.AppPage['staff_check_ins'] = function () {
             card.innerHTML = `
                 <div class="flex flex-wrap items-start justify-between gap-2 border-b border-glass-border/50 pb-2.5">
                     <div>
-                        <strong class="text-sm font-bold text-hp-text dark:text-[#c8e6c8]">${am.amenity_name}</strong>
+                        <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${am.amenity_name}</strong>
                         <div class="text-xs text-hp-text-muted">Capacity: ${am.min_cap || 1}–${am.max_cap || 10} guests</div>
                     </div>
                     <div class="text-right">

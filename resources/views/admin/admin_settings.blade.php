@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -33,7 +33,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.admin-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.admin-portal .dash-layout,
         body.admin-portal .dash-main,
@@ -78,8 +78,8 @@
             }
         }
         [data-theme="dark"] body.admin-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -166,13 +166,13 @@
                                 @csrf
                                 <div class="admin-settings__form-grid">
                                     <!-- Live Park Status & Closure Reason Card -->
-                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#183525]">
+                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#242a26]">
                                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div>
                                                 <label class="admin-settings__label text-sm font-bold text-[#0d2c1d] dark:text-[#f5f5f0] mb-0.5">Live Park Operational Status</label>
                                                 <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Set whether the park is currently open for visitors or temporarily closed.</p>
                                             </div>
-                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#0d2116] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#1a3d2a]">
+                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#181b19] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29]">
                                                 <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
                                                     <input type="radio" name="park_status" value="open" id="park_status_open" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" {{ ($parkSettings->park_status ?? 'open') === 'open' ? 'checked' : '' }} disabled>
                                                     <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
@@ -191,7 +191,7 @@
                                         </div>
 
                                         <!-- Close Description (Reason for Closure) -->
-                                        <div id="closeDescriptionWrapper" class="{{ ($parkSettings->park_status ?? 'open') === 'closed' ? '' : 'hidden' }} mt-3 pt-3 border-t border-[#dbe3de] dark:border-[#183525]">
+                                        <div id="closeDescriptionWrapper" class="{{ ($parkSettings->park_status ?? 'open') === 'closed' ? '' : 'hidden' }} mt-3 pt-3 border-t border-[#dbe3de] dark:border-[#242a26]">
                                             <label for="close_description" class="admin-settings__label text-xs font-semibold text-red-700 dark:text-red-400">
                                                 Closure Reason / Description <span class="text-xs font-normal text-[#5a6b5c] dark:text-[#a8b8a8]">(Shows on hover in headers & guest website)</span>
                                             </label>

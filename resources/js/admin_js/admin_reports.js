@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['admin_reports'] = function () {
     const data = window.reportData || {};
     const rawRows = data.rawRows || [];
@@ -188,7 +188,7 @@ window.AppPage['admin_reports'] = function () {
             'Pending': '#c8a45d',
             'Confirmed': '#4c9a5f',
             'Checked In': '#2f6f45',
-            'Checked Out': '#94a3b8',
+            'Checked Out': '#9ca3af',
             'Cancelled': '#d64550',
         };
 

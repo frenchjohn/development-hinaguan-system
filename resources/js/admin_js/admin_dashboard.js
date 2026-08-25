@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['admin_dashboard'] = function () {
     // Live clock ticker
     const clockEl = document.getElementById('sdLiveClock');

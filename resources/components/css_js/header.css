@@ -66,43 +66,43 @@
 }
 
 [data-theme="dark"] {
-    --hp-cream: #0d2c1d;
-    --hp-light: #0b2418;
-    --hp-text: #f5f5f0;
-    --hp-text-muted: #a8b8a8;
-    --dash-border: #1a3d2a;
+    --hp-cream: #0f1110;
+    --hp-light: #121513;
+    --hp-text: #f3f4f6;
+    --hp-text-muted: #9ca3af;
+    --dash-border: rgba(255, 255, 255, 0.08);
 
     /* Solid header tokens — Dark Mode */
-    --header-bg: #0d2116;
-    --header-border: #1a3d2a;
+    --header-bg: #121513;
+    --header-border: rgba(255, 255, 255, 0.08);
     --header-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 
-    --glass-bg: #12281c;
-    --glass-bg-hover: #183525;
-    --glass-bg-strong: #0d2116;
-    --glass-border: #1a3d2a;
-    --glass-border-strong: #27573d;
+    --glass-bg: #181b19;
+    --glass-bg-hover: #222623;
+    --glass-bg-strong: #141715;
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-strong: rgba(255, 255, 255, 0.15);
     --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 
     /* Shared portal tokens — Dark Mode */
-    --ink: #eaf0eb;
-    --ink-muted: #9baaa1;
-    --ink-faint: #6e7c73;
-    --surface: #1a221b;
-    --surface-2: #141b15;
-    --border: #28332b;
-    --border-strong: #3b4740;
-    --green: #3cac77;
-    --green-deep: #a2dcc0;
-    --green-edge: #1d6e48;
-    --green-hover: #2a8a5f;
-    --green-soft: #1d2f24;
-    --green-tint: #18261d;
-    --danger: #e5827a;
-    --danger-soft: #331e1c;
-    --success: #57c58a;
-    --warn: #d9b058;
-    --warn-soft: #302614;
+    --ink: #f3f4f6;
+    --ink-muted: #9ca3af;
+    --ink-faint: #6b7280;
+    --surface: #181b19;
+    --surface-2: #1e2220;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.15);
+    --green: #10b981;
+    --green-deep: #34d399;
+    --green-edge: #059669;
+    --green-hover: #10b981;
+    --green-soft: rgba(16, 185, 129, 0.12);
+    --green-tint: rgba(16, 185, 129, 0.06);
+    --danger: #f87171;
+    --danger-soft: rgba(244, 63, 94, 0.14);
+    --success: #34d399;
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.12);
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -336,8 +336,8 @@ body.admin-portal .dash-header {
 }
 
 [data-theme="dark"] .dash-header__status-tooltip {
-    background: #0d2116;
-    border-color: #1a3d2a;
+    background: #151c28;
+    border-color: rgba(255, 255, 255, 0.1);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
@@ -1028,8 +1028,8 @@ body.staff-portal {
 }
 
 [data-theme="dark"] body.staff-portal {
-    --staff-header-bg: #0e1c14;
-    --staff-header-border: #24332b;
+    --staff-header-bg: #121513;
+    --staff-header-border: rgba(255, 255, 255, 0.08);
     --staff-header-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 28px -16px rgba(0, 0, 0, 0.5);
 }
 
@@ -1077,8 +1077,8 @@ body.staff-portal .dash-header__status-badge {
 }
 
 [data-theme="dark"] body.staff-portal .dash-header__status-badge {
-    background: rgba(60, 172, 119, 0.14);
-    color: #8fd0ab;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
 }
 
 /* Weather chip */
@@ -1090,7 +1090,7 @@ body.staff-portal .dash-header__weather-btn {
 }
 
 [data-theme="dark"] body.staff-portal .dash-header__weather-btn {
-    background: #101d15;
+    background: #181b19;
     border-color: var(--border);
     color: #fff;
 }
@@ -1111,7 +1111,7 @@ body.staff-portal .dash-header__notif-btn {
 }
 
 [data-theme="dark"] body.staff-portal .dash-header__notif-btn {
-    background: #101d15;
+    background: #181b19;
     border-color: var(--border);
     color: #fff;
 }
@@ -1134,7 +1134,7 @@ body.staff-portal .dash-header__weather-dropdown {
 
 [data-theme="dark"] body.staff-portal .dash-header__notif-dropdown,
 [data-theme="dark"] body.staff-portal .dash-header__weather-dropdown {
-    background: #101d15;
+    background: #181b19;
     border-color: var(--border);
     box-shadow: var(--shadow-lg);
 }

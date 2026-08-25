@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -33,7 +33,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.staff-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.staff-portal .dash-layout,
         body.staff-portal .dash-main,
@@ -78,8 +78,8 @@
             }
         }
         [data-theme="dark"] body.staff-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -109,7 +109,7 @@
                 <section class="group is-open mb-6 overflow-hidden rounded-2xl border border-glass-border bg-glass p-6 shadow-glass transition-all duration-300 is-open:border-t is-open:pt-6" id="reportsFilters">
                     <div class="flex cursor-pointer items-center justify-between" id="filterToggleBtn">
                         <div class="flex items-center gap-4">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                                 <svg class="h-[22px] w-[22px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
                             </div>
                             <div>
@@ -181,18 +181,18 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
                             <span class="text-sm font-semibold text-hp-text-muted">Quick Range:</span>
-                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1a3324] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="today">Today</button>
-                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1a3324] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="7d">Last 7 days</button>
-                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1a3324] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="30d">Last 30 days</button>
-                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1a3324] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="month">This month</button>
-                            <button type="button" class="preset-chip is-active cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1a3324] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="all">All time</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="today">Today</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="7d">Last 7 days</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="30d">Last 30 days</button>
+                            <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="month">This month</button>
+                            <button type="button" class="preset-chip is-active cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="all">All time</button>
                         </div>
                     </div>
                 </section>
 
                 <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                     <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                             <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </div>
                         <div class="flex flex-col">
@@ -241,7 +241,7 @@
                     <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                         <div class="mb-6 flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                                     <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                                 </div>
                                 <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue — Last 6 Months</h3>
@@ -290,7 +290,7 @@
                     <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                         <div class="mb-6 flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                                     <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                                 </div>
                                 <div>
@@ -312,7 +312,7 @@
                     <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                         <div class="mb-6 flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                                     <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 </div>
                                 <div>

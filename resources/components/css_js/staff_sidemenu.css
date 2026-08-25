@@ -37,14 +37,14 @@
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark Mode — Bespoke deep rich green to match the dark theme */
+/* Dark Mode — Sleek dark graphite charcoal sidebar to match the dark theme */
 [data-theme="dark"] .dash-sidebar {
-    --ink: #eaf0eb;
-    --sidebar-bg: #09140e; /* Very dark rich green */
-    --sidebar-bg-hover: rgba(255, 255, 255, 0.05);
-    --sidebar-bg-active: rgba(255, 255, 255, 0.08);
-    --sidebar-border: #14281c;
-    --sidebar-border-strong: #1b3525;
+    --ink: #f3f4f6;
+    --sidebar-bg: #121513; /* Neutral deep graphite charcoal */
+    --sidebar-bg-hover: rgba(255, 255, 255, 0.06);
+    --sidebar-bg-active: rgba(255, 255, 255, 0.10);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-border-strong: rgba(255, 255, 255, 0.15);
     --sidebar-separator: rgba(255, 255, 255, 0.06);
     --glass-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
@@ -474,8 +474,9 @@
 }
 
 [data-theme="dark"] .dash-sidebar__profile-dropdown {
-    background: #0d1a12;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px #1b3525;
+    background: #181b19;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 .dash-sidebar__profile-dropdown.is-open {
@@ -602,7 +603,7 @@
     position: fixed;
     inset: 0;
     z-index: 49;
-    background: rgba(5, 16, 10, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     opacity: 0;
@@ -633,7 +634,7 @@
 }
 
 [data-theme="dark"] .logout-modal__backdrop {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
 }
 
 .logout-modal__content {
@@ -651,8 +652,9 @@
 }
 
 [data-theme="dark"] .logout-modal__content {
-    background: rgba(0, 0, 0, 0.6);
-    box-shadow: var(--glass-shadow);
+    background: #181b19;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
 }
 
 @keyframes modalSlideIn {
@@ -672,7 +674,7 @@
 }
 
 [data-theme="dark"] .logout-modal__header {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .logout-modal__title {
@@ -683,7 +685,7 @@
 }
 
 [data-theme="dark"] .logout-modal__title {
-    color: white;
+    color: #f3f4f6;
 }
 
 .logout-modal__body {
@@ -698,7 +700,7 @@
 }
 
 [data-theme="dark"] .logout-modal__message {
-    color: rgba(255, 255, 255, 0.8);
+    color: #9ca3af;
 }
 
 .logout-modal__footer {
@@ -733,8 +735,8 @@
 }
 
 [data-theme="dark"] .logout-modal__btn--cancel {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f3f4f6;
 }
 
 [data-theme="dark"] .logout-modal__btn--cancel:hover {
@@ -742,16 +744,16 @@
 }
 
 .logout-modal__btn--confirm {
-    background: var(--nature-moss-green);
+    background: #10b981;
     color: white;
     position: relative;
     overflow: hidden;
 }
 
 .logout-modal__btn--confirm:hover {
-    background: var(--nature-forest-green);
+    background: #059669;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(110, 159, 84, 0.3);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .logout-modal__btn--confirm.is-loading {

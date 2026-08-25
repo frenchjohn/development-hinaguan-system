@@ -1,4 +1,4 @@
-// Shared toast helper for the staff portal. Lightweight, dependency-free:
+﻿// Shared toast helper for the staff portal. Lightweight, dependency-free:
 // a fixed stack bottom-right, fade/slide in, auto-dismiss, and a
 // sessionStorage bridge so a toast can survive a page reload (queue before
 // reloading, showPendingToast() after the page comes back).

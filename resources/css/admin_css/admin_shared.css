@@ -21,7 +21,7 @@ body.admin-portal {
 }
 
 [data-theme="dark"] body.admin-portal {
-    background-color: #06120a !important;
+    background-color: #0f1110 !important;
 }
 
 body.admin-portal .dash-layout,
@@ -73,8 +73,8 @@ body.admin-portal .dash-main::before {
 }
 
 [data-theme="dark"] body.admin-portal .dash-main::before {
-    background-color: #06120a !important;
-    background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    background-color: #0f1110 !important;
+    background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
     filter: none !important;
     -webkit-filter: none !important;
     opacity: 1 !important;
@@ -801,8 +801,9 @@ body.admin-portal .modal__panel {
 }
 
 [data-theme="dark"] body.admin-portal .modal__panel {
-    background: #1a2e1e;
-    border-color: rgba(255, 255, 255, 0.15);
+    background: #181b19;
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
 }
 
 body.admin-portal .modal__header {
@@ -833,8 +834,8 @@ body.admin-portal .modal-form__section {
 }
 
 [data-theme="dark"] body.admin-portal .modal-form__section {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: #141715;
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 body.admin-portal .modal-form__section-title {
@@ -873,9 +874,16 @@ body.admin-portal .modal-form__row textarea {
 [data-theme="dark"] body.admin-portal .modal-form__row input,
 [data-theme="dark"] body.admin-portal .modal-form__row select,
 [data-theme="dark"] body.admin-portal .modal-form__row textarea {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    background: #141715;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] body.admin-portal .modal-form__row input:focus,
+[data-theme="dark"] body.admin-portal .modal-form__row select:focus,
+[data-theme="dark"] body.admin-portal .modal-form__row textarea:focus {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
 body.admin-portal .modal-form__row input:disabled,
@@ -1223,9 +1231,9 @@ body.admin-portal .amenities-table-toolbar__item input::placeholder {
 [data-theme="dark"] #amenityModal .modal-form input,
 [data-theme="dark"] #amenityModal .modal-form textarea,
 [data-theme="dark"] #amenityModal .modal-form select {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    background: #141715;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f3f4f6;
 }
 
 #amenityModal .modal-form textarea {
@@ -1737,8 +1745,9 @@ body.admin-portal .admin-settings__modal-content {
 }
 
 [data-theme="dark"] body.admin-portal .admin-settings__modal-content {
-    background: #1a2e1e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #181b19;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
 }
 
 body.admin-portal .admin-settings__modal-content--success {

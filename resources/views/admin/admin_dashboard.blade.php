@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -33,7 +33,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.admin-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.admin-portal .dash-layout,
         body.admin-portal .dash-main,
@@ -78,8 +78,8 @@
             }
         }
         [data-theme="dark"] body.admin-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -118,7 +118,7 @@
                         'Pending' => '#c8a45d',
                         'Confirmed' => '#4c9a5f',
                         'Checked In' => '#2f6f45',
-                        'Checked Out' => '#94a3b8',
+                        'Checked Out' => '#9ca3af',
                         'Cancelled' => '#d64550',
                     ];
                     $donutTotal = array_sum($statusBreakdown);
@@ -137,13 +137,13 @@
                 {{-- ===== GREETING BANNER ===== --}}
                 <section class="mb-6 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                     <div class="min-w-[200px] flex-1">
-                        <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#c8e6c8]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Admin User' }}!</h2>
+                        <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#f3f4f6]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Admin User' }}!</h2>
                         <p class="m-0 text-sm font-medium text-hp-text-muted">Welcome to Hinaguan Nature Park · Admin Portal Overview</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-6">
                         <div class="flex flex-col items-end gap-0.5 max-[992px]:items-start">
                             <span class="text-[0.8rem] font-medium text-hp-text-muted">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
-                            <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#c8e6c8]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
+                            <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#f3f4f6]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
                         </div>
                         @if ($weatherNow)
                         <div class="flex items-center gap-2">
@@ -153,7 +153,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-9 w-9 text-[#c8a45d]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             @endif
                             <div class="flex flex-col items-center">
-                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#c8e6c8]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
+                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
                                 <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? '—' }}</span>
                             </div>
                         </div>
@@ -167,7 +167,7 @@
                 {{-- ===== STAT CARDS ===== --}}
                 <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
                     <article class="flex items-center gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-[6px] transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1a3324] dark:text-[#6ab88c]">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-6 w-6"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </div>
                         <div>
@@ -368,7 +368,7 @@
                         <div class="mb-6 grid gap-3">
                             <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass-hover px-4 py-3">
                                 <span class="text-sm font-medium text-hp-text">Checked-in Guests Currently On-Site</span>
-                                <strong class="text-base font-bold text-hp-green-dark dark:text-[#c8e6c8]">{{ $checkedInGuests }}</strong>
+                                <strong class="text-base font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $checkedInGuests }}</strong>
                             </div>
                             <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass-hover px-4 py-3">
                                 <span class="text-sm font-medium text-hp-text">Pending Confirmations</span>

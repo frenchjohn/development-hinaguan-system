@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -32,7 +32,7 @@
             background-color: #ebf3ec !important;
         }
         [data-theme="dark"] body.staff-portal {
-            background-color: #06120a !important;
+            background-color: #0f1110 !important;
         }
         body.staff-portal .dash-layout,
         body.staff-portal .dash-main,
@@ -77,8 +77,8 @@
             }
         }
         [data-theme="dark"] body.staff-portal .dash-main::before {
-            background-color: #06120a !important;
-            background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             filter: none !important;
             -webkit-filter: none !important;
             opacity: 1 !important;
@@ -140,7 +140,7 @@
 
                 @if(session('staff_profile_change'))
                     <div class="modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="staffOtpModal" aria-hidden="true">
-                        <div class="absolute inset-0 bg-[rgba(13,44,29,0.45)]" data-close-staff-otp></div>
+                        <div class="absolute inset-0 bg-black/45 dark:bg-black/75" data-close-staff-otp></div>
                         <div class="modal__panel relative z-[1] w-full max-w-[520px] rounded-2xl bg-glass p-4 shadow-glass dark:bg-[rgba(30,30,30,0.95)]">
                             <div class="modal__header mb-3 flex items-center justify-between">
                                 <h3 class="m-0 text-lg font-bold text-hp-text">Verify your changes</h3>

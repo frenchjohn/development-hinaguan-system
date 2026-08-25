@@ -1,4 +1,4 @@
-import { Html5Qrcode } from 'html5-qrcode';
+﻿import { Html5Qrcode } from 'html5-qrcode';
 import { queueToast, showPendingToast, convertFlashToToast } from './toast.js';
 
 window.AppPage = window.AppPage || {};
@@ -118,7 +118,7 @@ window.AppPage['staff_reservations'] = function () {
         };
         return `
                 <td class="py-3.5 px-3 w-20 whitespace-nowrap">
-                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784]">#${escapeHtml(reservation.id)}</span>
+                    <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
                 </td>
                 <td>
                     <div class="resv-booker">
@@ -339,13 +339,13 @@ window.AppPage['staff_reservations'] = function () {
         let html = `<p>Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
 
         html += `
-            <div style="margin-top: 1rem; border: 1px solid #e2e8f0; border-radius: 0.6rem; overflow: hidden;">
+            <div style="margin-top: 1rem; border: 1px solid #f3f4f6; border-radius: 0.6rem; overflow: hidden;">
                 <div style="padding: 0.65rem 0.9rem; background: #f8fafc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Payment Summary</div>
                 <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; color: #334155;">
                     <span style="font-size: 0.85rem;">Entrance fee</span>
                     <strong style="font-size: 0.85rem;">₱${entranceTotal.toFixed(2)}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #94a3b8; font-size: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #9ca3af; font-size: 0.8rem;">
                     <span>${adultCount} adult${adultCount === 1 ? '' : 's'} × ₱${adultRate.toFixed(2)} + ${childCount} child${childCount === 1 ? '' : 'ren'} × ₱${childRate.toFixed(2)}</span>
                     <span>₱${entranceTotal.toFixed(2)}</span>
                 </div>
@@ -357,7 +357,7 @@ window.AppPage['staff_reservations'] = function () {
                     <span style="font-size: 0.85rem;">Remaining reservation balance</span>
                     <strong style="font-size: 0.85rem;">₱${balance.toFixed(2)}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border-top: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border-top: 1px solid #f3f4f6;">
                     <strong style="font-size: 0.95rem;">Total to pay</strong>
                     <strong style="font-size: 0.95rem; color: #16a34a;">₱${grandTotal.toFixed(2)}</strong>
                 </div>
@@ -1108,7 +1108,7 @@ window.AppPage['staff_reservations'] = function () {
                 <div class="guest-card__grid">
                     <div>
                         <span class="guest-label">Reservation ID</span>
-                        <div class="guest-value"><span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#81c784]">#${escapeHtml(reservation.id)}</span></div>
+                        <div class="guest-value"><span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span></div>
                     </div>
                     <div>
                         <span class="guest-label">Booker</span>
@@ -1554,12 +1554,12 @@ window.AppPage['staff_reservations'] = function () {
 
             item.innerHTML = `
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-hp-text dark:text-[#c8e6c8]">Booked Amenity #${idx + 1}</span>
-                    <span class="edit-amenity-price-tag text-xs font-bold text-hp-green dark:text-[#81c784]">₱${Number(ra.price_at_booking || 0).toFixed(2)}</span>
+                    <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Booked Amenity #${idx + 1}</span>
+                    <span class="edit-amenity-price-tag text-xs font-bold text-hp-green dark:text-[#9ca3af]">₱${Number(ra.price_at_booking || 0).toFixed(2)}</span>
                 </div>
                 <div class="grid gap-1">
                     <label class="text-[0.75rem] font-semibold text-hp-text">Change / Swap Amenity</label>
-                    <select class="edit-amenity-select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                    <select class="edit-amenity-select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                         ${optionsHtml}
                     </select>
                 </div>
@@ -1567,8 +1567,8 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="grid gap-1">
                         <label class="text-[0.72rem] font-semibold text-hp-text-muted">Amenity Check-In Date & Session</label>
                         <div class="flex gap-1.5">
-                            <input type="date" class="edit-amenity-start-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" value="${raStart}" min="${masterStart}" max="${masterEnd}">
-                            <select class="edit-amenity-start-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                            <input type="date" class="edit-amenity-start-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]" value="${raStart}" min="${masterStart}" max="${masterEnd}">
+                            <select class="edit-amenity-start-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                                 <option value="Daytime" ${raStartSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
                                 <option value="Nighttime" ${raStartSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
                             </select>
@@ -1577,8 +1577,8 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="grid gap-1">
                         <label class="text-[0.72rem] font-semibold text-hp-text-muted">Amenity Check-Out Date & Session</label>
                         <div class="flex gap-1.5">
-                            <input type="date" class="edit-amenity-end-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]" value="${raEnd}" min="${masterStart}" max="${masterEnd}">
-                            <select class="edit-amenity-end-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#c8e6c8]">
+                            <input type="date" class="edit-amenity-end-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]" value="${raEnd}" min="${masterStart}" max="${masterEnd}">
+                            <select class="edit-amenity-end-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                                 <option value="Daytime" ${raEndSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
                                 <option value="Nighttime" ${raEndSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
                             </select>
@@ -1842,7 +1842,7 @@ window.AppPage['staff_reservations'] = function () {
                     if (pricing.totalDiff > 0) {
                         editPriceDiffBadge.innerHTML = `<span class="inline-block rounded-md bg-[#e65100]/10 px-2 py-0.5 text-[#e65100] dark:bg-[#ffb74d]/20 dark:text-[#ffb74d]">+₱${pricing.totalDiff.toFixed(2)} added to total & balance</span>`;
                     } else if (pricing.totalDiff < 0) {
-                        editPriceDiffBadge.innerHTML = `<span class="inline-block rounded-md bg-hp-green/10 px-2 py-0.5 text-hp-green dark:bg-[#81c784]/20 dark:text-[#81c784]">-₱${Math.abs(pricing.totalDiff).toFixed(2)} reduced from total & balance</span>`;
+                        editPriceDiffBadge.innerHTML = `<span class="inline-block rounded-md bg-hp-green/10 px-2 py-0.5 text-hp-green dark:bg-[#81c784]/20 dark:text-[#9ca3af]">-₱${Math.abs(pricing.totalDiff).toFixed(2)} reduced from total & balance</span>`;
                     } else {
                         editPriceDiffBadge.innerHTML = `<span class="text-hp-text-muted">Same total amount</span>`;
                     }
@@ -2521,7 +2521,7 @@ window.AppPage['staff_reservations'] = function () {
                             cells[3].textContent = guests;
                         }
                         if (cells[4]) {
-                            cells[4].innerHTML = `<span class="reservation-status reservation-status--${String(status).toLowerCase()} inline-flex items-center justify-center rounded-[0.4rem] px-3 py-1.5 text-[0.8rem] font-bold capitalize ${status === 'Pending' ? 'bg-[#fff3cd] text-[#856404] dark:bg-glass dark:text-[#ffd54f]' : 'bg-[#d4edda] text-[#155724] dark:bg-glass dark:text-[#81c784]'}">${status}</span>`;
+                            cells[4].innerHTML = `<span class="reservation-status reservation-status--${String(status).toLowerCase()} inline-flex items-center justify-center rounded-[0.4rem] px-3 py-1.5 text-[0.8rem] font-bold capitalize ${status === 'Pending' ? 'bg-[#fff3cd] text-[#856404] dark:bg-glass dark:text-[#ffd54f]' : 'bg-[#d4edda] text-[#155724] dark:bg-glass dark:text-[#9ca3af]'}">${status}</span>`;
                         }
                         if (cells[5] && updated.total_amount !== undefined) {
                             cells[5].textContent = `₱${Number(updated.total_amount).toFixed(2)}`;

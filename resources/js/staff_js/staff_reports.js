@@ -1,4 +1,4 @@
-window.AppPage = window.AppPage || {};
+﻿window.AppPage = window.AppPage || {};
 window.AppPage['staff_reports'] = function () {
     const data = window.reportData || {};
     const rawRows = data.rawRows || [];

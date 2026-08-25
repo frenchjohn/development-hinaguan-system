@@ -79,7 +79,7 @@ body.admin-portal .bg-glass {
 }
 [data-theme="dark"] body.staff-portal .bg-glass,
 [data-theme="dark"] body.admin-portal .bg-glass {
-    background-color: rgba(12, 32, 20, 0.90) !important;
+    background-color: rgba(24, 27, 25, 0.90) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
@@ -88,7 +88,7 @@ body.staff-portal .border-glass-border {
     border-color: rgba(255, 255, 255, 0.80) !important;
 }
 [data-theme="dark"] body.staff-portal .border-glass-border {
-    border-color: rgba(255, 255, 255, 0.10) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.staff-portal .shadow-glass {
@@ -99,30 +99,29 @@ body.staff-portal .shadow-glass {
 }
 
 [data-theme="dark"] body.staff-portal, [data-theme="dark"] body.admin-portal {
-    /* Refined, rich botanical dark green palette:
-       Deep forest slate background, emerald-infused dark cards,
-       and soft, soothing accents that eliminate eye strain. */
-    --hp-green-darkest: #040d07;
-    --hp-green-dark: #0a1c11;
-    --hp-green: #133822;
-    --hp-green-mid: #1d5334;
+    /* Sleek modern dark mode: Deep charcoal canvas, clean neutral dark cards,
+       crisp light typography, and subtle neutral borders that eliminate any neon green glow. */
+    --hp-green-darkest: #0f1110;
+    --hp-green-dark: #121513;
+    --hp-green: #181b19;
+    --hp-green-mid: #1e2220;
     --hp-gold: #c9a86a;
     --hp-gold-light: #dfc68e;
     --hp-gold-dark: #9c7c42;
-    --hp-cream: #0c1c12;
-    --hp-light: #07130b;
-    --hp-text: #ecf5ef;
-    --hp-text-muted: #93a89c;
-    --hp-text-light: #677d70;
+    --hp-cream: #181b19;
+    --hp-light: #0f1110;
+    --hp-text: #f3f4f6;
+    --hp-text-muted: #9ca3af;
+    --hp-text-light: #6b7280;
 
-    --bg: #06120a;
-    --surface: #0c1f14;
-    --surface-2: #09180f;
-    --border: rgba(52, 211, 153, 0.12);
-    --border-strong: rgba(52, 211, 153, 0.22);
-    --ink: #ecf5ef;
-    --ink-muted: #93a89c;
-    --ink-faint: #677d70;
+    --bg: #0f1110;
+    --surface: #181b19;
+    --surface-2: #1e2220;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.15);
+    --ink: #f3f4f6;
+    --ink-muted: #9ca3af;
+    --ink-faint: #6b7280;
     --green: #10b981;
     --green-deep: #34d399;
     --green-edge: #059669;
@@ -136,10 +135,10 @@ body.staff-portal .shadow-glass {
     --warn: #fbbf24;
     --warn-soft: rgba(251, 191, 36, 0.12);
 
-    --glass-bg: rgba(12, 31, 20, 0.75);
-    --glass-bg-hover: rgba(18, 44, 29, 0.85);
-    --glass-border: rgba(52, 211, 153, 0.14);
-    --glass-border-strong: rgba(52, 211, 153, 0.26);
+    --glass-bg: rgba(24, 27, 25, 0.90);
+    --glass-bg-hover: rgba(34, 38, 35, 0.95);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-border-strong: rgba(255, 255, 255, 0.15);
 
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.45);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
@@ -150,7 +149,7 @@ body.staff-portal .shadow-glass {
 /* Sleek custom scrollbars for dark mode across both portals */
 [data-theme="dark"] * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(52, 211, 153, 0.22) rgba(6, 18, 10, 0.4);
+    scrollbar-color: rgba(255, 255, 255, 0.18) rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="dark"] ::-webkit-scrollbar {
@@ -159,18 +158,18 @@ body.staff-portal .shadow-glass {
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track {
-    background: rgba(6, 18, 10, 0.3);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: 4px;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-    background: rgba(52, 211, 153, 0.22);
+    background: rgba(255, 255, 255, 0.18);
     border-radius: 4px;
     transition: background 0.2s ease;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-    background: rgba(52, 211, 153, 0.38);
+    background: rgba(255, 255, 255, 0.30);
 }
 
 body.staff-portal,
@@ -185,7 +184,7 @@ body.admin-portal {
 
 [data-theme="dark"] body.staff-portal,
 [data-theme="dark"] body.admin-portal {
-    background-color: #06120a !important;
+    background-color: #0f1110 !important;
 }
 
 body.staff-portal .dash-layout,
@@ -241,8 +240,8 @@ body.admin-portal .dash-main::before {
 
 [data-theme="dark"] body.staff-portal .dash-main::before,
 [data-theme="dark"] body.admin-portal .dash-main::before {
-    background-color: #06120a !important;
-    background-image: linear-gradient(rgba(6, 18, 10, 0.88), rgba(6, 18, 10, 0.92)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
+    background-color: #0f1110 !important;
+    background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('/storage/design_images/staff-admin-background-image.jpeg') !important;
     filter: none !important;
     -webkit-filter: none !important;
     opacity: 1 !important;
@@ -1090,9 +1089,9 @@ body.admin-portal #reservationTableWrap {
 [data-theme="dark"] body.admin-portal .users-table-wrap,
 [data-theme="dark"] body.staff-portal #reservationTableWrap,
 [data-theme="dark"] body.admin-portal #reservationTableWrap {
-    background-color: #0c2014 !important;
-    background: #0c2014 !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    background-color: #181b19 !important;
+    background: #181b19 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -1109,9 +1108,9 @@ body.admin-portal .guest-table thead tr {
 [data-theme="dark"] body.admin-portal .guest-table thead,
 [data-theme="dark"] body.staff-portal .guest-table thead tr,
 [data-theme="dark"] body.admin-portal .guest-table thead tr {
-    background-color: #11281b !important;
-    background: #11281b !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: #1e2220 !important;
+    background: #1e2220 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.staff-portal .guest-table tbody tr,
@@ -1127,13 +1126,13 @@ body.admin-portal .guest-table tbody tr:hover {
 
 [data-theme="dark"] body.staff-portal .guest-table tbody tr,
 [data-theme="dark"] body.admin-portal .guest-table tbody tr {
-    background-color: #0c2014 !important;
-    background: #0c2014 !important;
+    background-color: #181b19 !important;
+    background: #181b19 !important;
 }
 [data-theme="dark"] body.staff-portal .guest-table tbody tr:hover,
 [data-theme="dark"] body.admin-portal .guest-table tbody tr:hover {
-    background-color: #143322 !important;
-    background: #143322 !important;
+    background-color: #242a26 !important;
+    background: #242a26 !important;
 }
 
 body.staff-portal #guestTableSection .guest-table,
@@ -1179,7 +1178,7 @@ body.admin-portal #reservationTableSection .guest-table thead th {
 [data-theme="dark"] body.admin-portal #guestTableSection .guest-table thead th,
 [data-theme="dark"] body.staff-portal #reservationTableSection .guest-table thead th,
 [data-theme="dark"] body.admin-portal #reservationTableSection .guest-table thead th {
-    background: #0c1f14 !important;
+    background: #1e2220 !important;
     border-bottom-color: var(--glass-border) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -1601,6 +1600,20 @@ body.staff-portal .app-nav-guard__panel , body.admin-portal .app-nav-guard__pane
     animation: spModalIn 0.24s cubic-bezier(0.22, 0.8, 0.32, 1) both;
 }
 
+[data-theme="dark"] body.staff-portal .guest-modal__content,
+[data-theme="dark"] body.admin-portal .guest-modal__content,
+[data-theme="dark"] body.staff-portal .modal__panel,
+[data-theme="dark"] body.admin-portal .modal__panel,
+[data-theme="dark"] body.staff-portal .logout-modal__content,
+[data-theme="dark"] body.admin-portal .logout-modal__content,
+[data-theme="dark"] body.staff-portal .app-nav-guard__panel,
+[data-theme="dark"] body.admin-portal .app-nav-guard__panel {
+    background: #181b19 !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65) !important;
+    color: #f3f4f6 !important;
+}
+
 body.staff-portal .guest-modal__backdrop, body.admin-portal .guest-modal__backdrop,
 body.staff-portal .modal__backdrop, body.admin-portal .modal__backdrop,
 body.staff-portal .logout-modal__backdrop, body.admin-portal .logout-modal__backdrop,
@@ -1609,10 +1622,31 @@ body.staff-portal .app-nav-guard__backdrop , body.admin-portal .app-nav-guard__b
     backdrop-filter: blur(3px);
 }
 
+[data-theme="dark"] body.staff-portal .guest-modal__backdrop,
+[data-theme="dark"] body.admin-portal .guest-modal__backdrop,
+[data-theme="dark"] body.staff-portal .modal__backdrop,
+[data-theme="dark"] body.admin-portal .modal__backdrop,
+[data-theme="dark"] body.staff-portal .logout-modal__backdrop,
+[data-theme="dark"] body.admin-portal .logout-modal__backdrop,
+[data-theme="dark"] body.staff-portal .app-nav-guard__backdrop,
+[data-theme="dark"] body.admin-portal .app-nav-guard__backdrop {
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
 body.staff-portal .guest-modal__header, body.admin-portal .guest-modal__header,
 body.staff-portal .modal__header, body.admin-portal .modal__header,
 body.staff-portal .logout-modal__header , body.admin-portal .logout-modal__header {
     border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dark"] body.staff-portal .guest-modal__header,
+[data-theme="dark"] body.admin-portal .guest-modal__header,
+[data-theme="dark"] body.staff-portal .modal__header,
+[data-theme="dark"] body.admin-portal .modal__header,
+[data-theme="dark"] body.staff-portal .logout-modal__header,
+[data-theme="dark"] body.admin-portal .logout-modal__header {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 body.staff-portal .guest-modal__title, body.admin-portal .guest-modal__title,
@@ -8743,8 +8777,9 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .modal__panel.amenity-detail-panel {
-    background: var(--glass-bg);
-    color: #c8e6c8;
+    background: #181b19;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f3f4f6;
 }
 
 .modal__header {
@@ -8756,7 +8791,7 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .modal__header {
-    border-bottom-color: var(--border-strong);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .modal__header h3 {
@@ -8767,7 +8802,7 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .modal__header h3 {
-    color: #c8e6c8;
+    color: #f3f4f6;
 }
 
 .modal__close {
@@ -8827,7 +8862,8 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .amenity-detail-grid {
-    background: #0d2812;
+    background: #141715;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .detail-item {
@@ -8851,7 +8887,7 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .detail-val {
-    color: #81c784;
+    color: #f3f4f6;
 }
 
 .amenity-detail-status-section h4 {
@@ -8862,7 +8898,7 @@ td.mono-cell {
 }
 
 [data-theme="dark"] .amenity-detail-status-section h4 {
-    color: #c8e6c8;
+    color: #f3f4f6;
 }
 
 .status-list {
