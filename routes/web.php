@@ -2287,6 +2287,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ]);
     })->name('reports');
 
+    Route::post('/api/reports/ai-analyze', [\App\Http\Controllers\AdminReportAiController::class, 'analyze'])->name('reports.ai_analyze');
+
     Route::get('/settings', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'admin') {
@@ -3471,6 +3473,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'reportPaymentCounts'
         ));
     })->name('reports');
+
+    Route::post('/api/reports/ai-analyze', [\App\Http\Controllers\AdminReportAiController::class, 'analyze'])->name('reports.ai_analyze');
 
     Route::get('/check-ins', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $isAmenitySlotTaken, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
