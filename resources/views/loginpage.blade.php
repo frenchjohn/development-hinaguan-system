@@ -17,6 +17,8 @@
 
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
 
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
     @vite(['resources/css/app.css', 'resources/css/loginpage.css', 'resources/js/loginpage.js'])
 
 </head>
@@ -127,7 +129,13 @@
 
                         </div>
 
-
+                        {{-- Cloudflare Turnstile "I am not a robot" CAPTCHA --}}
+                        <div class="login-form__group" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0.5rem 0;">
+                            <div class="cf-turnstile" data-sitekey="{{ config('services.cloudflare.turnstile_site_key') ?? '0x4AAAAAAEfCC0KJOL1zsgrX' }}" data-theme="dark"></div>
+                            @error('cf-turnstile-response')
+                                <p class="login-form__error" style="text-align: center; margin-top: 0.5rem;">{{ $message }}</p>
+                            @enderror
+                        </div>
 
                         <button type="submit" class="login-form__submit">Log in</button>
 

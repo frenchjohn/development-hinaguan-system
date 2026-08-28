@@ -40,4 +40,9 @@ return [
         'location' => env('WEATHERAPI_LOCATION', 'Jasaan, Misamis Oriental, Philippines'),
     ],
 
+    'cloudflare' => [
+        'turnstile_site_key' => env('CLOUDFLARE_TURNSTILE_SITE_KEY', '0x4AAAAAAEfCC0KJOL1zsgrX'),
+        'turnstile_secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', '0x4AAAAAAEfCCzHV3kNQl3IPpR1GADxq188'),
+    ],
+
 ];
