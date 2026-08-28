@@ -38,7 +38,7 @@ class LoginController extends Controller
         $turnstileResponse = $request->input('cf-turnstile-response');
         $secretKey = config('services.cloudflare.turnstile_secret_key');
 
-        if (!$this->verifyTurnstile($turnstileResponse, $secretKey, $request->ip())) {
+        if (!$this->verifyTurnstile($turnstileResponse, $secretKey, $request->ip(), $request->getHost())) {
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors(['cf-turnstile-response' => 'Security verification failed. Please complete the captcha.'])
@@ -81,11 +81,18 @@ class LoginController extends Controller
     /**
      * Verify Cloudflare Turnstile token with Cloudflare's siteverify endpoint.
      */
-    protected function verifyTurnstile(?string $response, ?string $secretKey, ?string $ip): bool
+    protected function verifyTurnstile(?string $response, ?string $secretKey, ?string $ip, ?string $host = null): bool
     {
         // Bypass in testing environment unless strict testing is enabled
         if (app()->environment('testing') && !config('services.cloudflare.test_turnstile_strict', false)) {
             return true;
+        }
+
+        $isLocalhost = in_array($host ?? request()->getHost(), ['localhost', '127.0.0.1', '::1']);
+
+        // When running on localhost, use Cloudflare's official dummy test secret key
+        if ($isLocalhost && (env('CLOUDFLARE_TURNSTILE_USE_TEST_ON_LOCAL', true) || str_starts_with($response ?? '', '2x000000000000000000002') || $response === 'XXXX.DUMMY.TOKEN.XXXX')) {
+            $secretKey = '1x0000000000000000000000000000000AA';
         }
 
         if (empty($secretKey)) {
@@ -108,7 +115,7 @@ class LoginController extends Controller
             return (bool) $verifyResponse->json('success');
         } catch (\Throwable $e) {
             Log::error('Cloudflare Turnstile verification failed: ' . $e->getMessage());
-            return false;
+            return $isLocalhost;
         }
     }
 

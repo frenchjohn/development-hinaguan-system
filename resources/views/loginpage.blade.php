@@ -130,8 +130,15 @@
                         </div>
 
                         {{-- Cloudflare Turnstile "I am not a robot" CAPTCHA --}}
+                        @php
+                            $isLocalhost = in_array(request()->getHost(), ['localhost', '127.0.0.1', '::1']);
+                            // Cloudflare official test key for localhost ("Always Passes"): 1x00000000000000000000AA
+                            $turnstileSiteKey = ($isLocalhost && env('CLOUDFLARE_TURNSTILE_USE_TEST_ON_LOCAL', true))
+                                ? '1x00000000000000000000AA'
+                                : (config('services.cloudflare.turnstile_site_key') ?? '0x4AAAAAAEfCC0KJOL1zsgrX');
+                        @endphp
                         <div class="login-form__group" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0.5rem 0;">
-                            <div class="cf-turnstile" data-sitekey="{{ config('services.cloudflare.turnstile_site_key') ?? '0x4AAAAAAEfCC0KJOL1zsgrX' }}" data-theme="dark"></div>
+                            <div class="cf-turnstile" data-sitekey="{{ $turnstileSiteKey }}" data-theme="dark"></div>
                             @error('cf-turnstile-response')
                                 <p class="login-form__error" style="text-align: center; margin-top: 0.5rem;">{{ $message }}</p>
                             @enderror

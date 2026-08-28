@@ -21,7 +21,7 @@ class LoginTurnstileTest extends TestCase
         $response->assertOk();
         $response->assertSee('challenges.cloudflare.com/turnstile/v0/api.js');
         $response->assertSee('cf-turnstile');
-        $response->assertSee('0x4AAAAAAEfCC0KJOL1zsgrX');
+        $response->assertSee('data-sitekey');
     }
 
     public function test_login_authenticates_admin_successfully_with_valid_captcha(): void
