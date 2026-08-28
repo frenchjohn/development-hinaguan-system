@@ -32,7 +32,8 @@ return new class extends Migration
                 'Confirmed',
                 'Checked In',
                 'Checked Out',
-                'Cancelled'
+                'Cancelled',
+                'No Show'
             ])->default('Pending');
 
             // Payment Summary

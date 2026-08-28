@@ -5575,7 +5575,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'customer_email' => $customer->email,
                     ]);
 
-                    Mail::mailer('smtp')->send(
+                    Mail::to($customer->email)->send(
                         new \App\Mail\CheckoutReceiptMail(
                             $customer,
                             $reservation,
@@ -6360,7 +6360,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     'total_cost' => $totalCost,
                 ]);
 
-                Mail::mailer('smtp')->send(
+                Mail::to($customer->email)->send(
                     new \App\Mail\CheckoutReceiptMail(
                         $customer,
                         $reservation,
@@ -6563,14 +6563,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $otp = random_int(100000, 999999);
 
         try {
-            Mail::mailer('smtp')->send('emails.staff_settings_otp', [
-                'otp' => $otp,
-                'name' => $data['name'],
-            ], function ($message) use ($data) {
-                $message->from('parkhinaguan@gmail.com', 'Hinaguan Nature Park')
-                    ->to($data['email'])
-                    ->subject('Hinaguan Nature Park — Verify your profile change');
-            });
+            Mail::to($data['email'])->send(new \App\Mail\StaffSettingsOtpMail($otp, $data['name']));
 
             // Only store pending change after mail was sent successfully
             $request->session()->put('staff_profile_change', [

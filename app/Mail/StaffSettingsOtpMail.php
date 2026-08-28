@@ -3,28 +3,20 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class AdminSettingsOtpMail extends Mailable
+class StaffSettingsOtpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $otp;
-    public $name;
-
-    /**
-     * Create a new message instance.
-     */
-    public function __construct($otp, $name)
-    {
-        $this->otp = $otp;
-        $this->name = $name;
-    }
+    public function __construct(
+        public int|string $otp,
+        public string $name
+    ) {}
 
     /**
      * Get the message envelope.
@@ -36,7 +28,7 @@ class AdminSettingsOtpMail extends Mailable
 
         return new Envelope(
             from: new Address($fromAddress, $fromName),
-            subject: 'Password Change Verification Code - Hinaguan Nature Park',
+            subject: 'Hinaguan Nature Park — Verify your profile change',
         );
     }
 
@@ -46,7 +38,7 @@ class AdminSettingsOtpMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.admin_settings_otp',
+            view: 'emails.staff_settings_otp',
             with: [
                 'otp' => $this->otp,
                 'name' => $this->name,

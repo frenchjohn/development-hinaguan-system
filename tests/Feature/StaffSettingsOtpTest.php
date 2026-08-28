@@ -13,6 +13,8 @@ class StaffSettingsOtpTest extends TestCase
 
     public function test_staff_profile_changes_require_otp_verification(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $staff = StaffAccount::create([
             'name' => 'Current Staff',
             'email' => 'current@example.com',
@@ -33,6 +35,11 @@ class StaffSettingsOtpTest extends TestCase
             'password' => 'newpassword123',
             'password_confirmation' => 'newpassword123',
         ]);
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\StaffSettingsOtpMail::class, function (\App\Mail\StaffSettingsOtpMail $mail): bool {
+            return (string) $mail->otp === (string) session('staff_profile_change.otp')
+                && $mail->name === 'Updated Staff';
+        });
 
         $this->assertNotNull(session('staff_profile_change'));
         $otp = session('staff_profile_change.otp');

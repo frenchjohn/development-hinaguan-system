@@ -103,6 +103,20 @@ window.AppPage['staff_reservations'] = function () {
 
     // Shared row markup (used by server rows, refresh + fallback renders)
     const buildRowCells = (reservation) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const resDateStr = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '';
+        const isToday = resDateStr === todayStr;
+        const statusLower = String(reservation.status || '').toLowerCase();
+        const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
+        const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
+
+        let daysOverdue = 0;
+        if (isPastArrival) {
+            const rDate = new Date(resDateStr);
+            const tDate = new Date(todayStr);
+            daysOverdue = Math.max(1, Math.round((tDate - rDate) / (1000 * 60 * 60 * 24)));
+        }
+
         const formatDate = (dateStr, endDateStr, totalDays) => {
             if (!dateStr) return 'N/A';
             const date = new Date(dateStr);
@@ -112,19 +126,32 @@ window.AppPage['staff_reservations'] = function () {
                 const endDate = new Date(endDateStr);
                 const eFormatted = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
                 const daysCount = totalDays || (Math.round((endDate - date) / (1000 * 60 * 60 * 24)) + 1);
-                return `<div><span style="font-weight:600;">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div></div>`;
+                return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;">⚠️ Overdue Arrival</div>` : ''}</div>`;
             }
-            return escapeHtml(sFormatted);
+            return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(1 Day Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;">⚠️ Overdue Arrival</div>` : ''}</div>`;
         };
+
+        const badgeHtml = isToday
+            ? `<span class="today-reservation-badge ml-1.5 inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>`
+            : (isPastArrival
+                ? `<span class="past-reservation-badge ml-1.5 inline-flex items-center gap-1 rounded-md bg-[#ef4444] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white shadow-sm dark:bg-[#dc2626]" title="Arrival date was ${escapeHtml(resDateStr)} (${daysOverdue} days overdue)">
+                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                    PAST ARRIVAL (${daysOverdue}d ago)
+                </span>`
+                : '');
+
         return `
                 <td class="py-3.5 px-3 w-20 whitespace-nowrap">
                     <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
                 </td>
                 <td>
-                    <div class="resv-booker">
+                    <div class="resv-booker flex items-center gap-3">
                         <span class="resv-avatar">${escapeHtml(getInitials(reservation.booker_name))}</span>
                         <div class="resv-booker__info">
-                            <div class="guest-name">${escapeHtml(reservation.booker_name)}</div>
+                            <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9] flex items-center gap-1.5 flex-wrap">
+                                <span>${escapeHtml(reservation.booker_name)}</span>
+                                ${badgeHtml}
+                            </div>
                             <div class="guest-meta">${escapeHtml(reservation.email)}</div>
                         </div>
                     </div>
@@ -1347,10 +1374,35 @@ window.AppPage['staff_reservations'] = function () {
 
         const expectedCheckout = formatExpectedCheckout(reservation);
 
+        const todayStr = new Date().toISOString().split('T')[0];
+        const resDateStr = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '';
+        const isToday = resDateStr === todayStr;
+        const statusLower = String(reservation.status || '').toLowerCase();
+        const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
+        const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
+
+        let overdueBannerHtml = '';
+        if (isPastArrival) {
+            const rDate = new Date(resDateStr);
+            const tDate = new Date(todayStr);
+            const daysOverdue = Math.max(1, Math.round((tDate - rDate) / (1000 * 60 * 60 * 24)));
+            overdueBannerHtml = `
+                <div style="margin-bottom: 0.85rem; padding: 0.75rem 1rem; border-radius: 0.75rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); display: flex; align-items: center; gap: 0.6rem; color: #b91c1c; font-size: 0.82rem; font-weight: 600;">
+                    <svg style="width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: #dc2626;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                    </svg>
+                    <div>
+                        <strong>Arrival Reminder:</strong> Scheduled arrival was <strong>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, reservation.start_slot, reservation.end_slot))}</strong> (${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} ago). The guest has not yet arrived or checked in.
+                    </div>
+                </div>
+            `;
+        }
+
         modalStatus.textContent = reservation.status;
         modalStatus.className = `guest-modal__role-badge reservation-status reservation-status--${String(reservation.status || '').toLowerCase()}`;
         modalBody.innerHTML = `
             <div class="guest-card">
+                ${overdueBannerHtml}
                 <div class="guest-card__grid">
                     <div>
                         <span class="guest-label">Reservation ID</span>
@@ -1422,9 +1474,16 @@ window.AppPage['staff_reservations'] = function () {
 
     const renderTableFromData = (data) => {
         tableBody.innerHTML = '';
+        const todayStr = new Date().toISOString().split('T')[0];
         Object.values(data).forEach((reservation) => {
+            const resDateStr = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '';
+            const isToday = resDateStr === todayStr;
+            const statusLower = String(reservation.status || '').toLowerCase();
+            const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
+            const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
+
             const row = document.createElement('tr');
-            row.className = `guest-row reservation-row ${reservation.reservation_date === new Date().toISOString().split('T')[0] ? 'today-reservation' : ''}`;
+            row.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''}`;
             row.setAttribute('data-reservation-id', reservation.id);
             row.setAttribute('data-booker-name', reservation.booker_name);
             row.setAttribute('data-email', reservation.email);
@@ -1433,7 +1492,8 @@ window.AppPage['staff_reservations'] = function () {
             row.setAttribute('data-status', reservation.status.toLowerCase());
             row.setAttribute('data-guests', reservation.number_of_guests);
             row.setAttribute('data-total-amount', reservation.total_amount);
-            row.setAttribute('data-search', `${reservation.id} #${reservation.id} ${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()}`);
+            row.setAttribute('data-is-past', isPastArrival ? '1' : '0');
+            row.setAttribute('data-search', `${reservation.id} #${reservation.id} ${(reservation.booker_name || '').toLowerCase()} ${(reservation.email || '').toLowerCase()} ${(reservation.phone || '').toLowerCase()} ${(reservation.status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
             row.setAttribute('tabindex', '0');
             row.setAttribute('role', 'button');
             row.setAttribute('aria-label', `View reservation details for ${reservation.booker_name} (#${reservation.id})`);
@@ -3005,7 +3065,10 @@ window.AppPage['staff_reservations'] = function () {
         let filteredRows = rows.filter((row) => {
             const searchText = (row.getAttribute('data-search') || '').toLowerCase();
             const matchesSearch = !query || searchText.includes(query);
-            const matchesStatus = statusValue === 'all' || row.getAttribute('data-status') === statusValue;
+            const matchesStatus = statusValue === 'all'
+                || (statusValue === 'today' && row.classList.contains('today-reservation'))
+                || (statusValue === 'past' && (row.classList.contains('past-reservation') || row.getAttribute('data-is-past') === '1'))
+                || row.getAttribute('data-status') === statusValue;
             const reservationDate = row.getAttribute('data-reservation-date') || '';
             const matchesCheckInFrom = !checkInFromValue || !reservationDate || reservationDate >= checkInFromValue;
             const matchesCheckInTo = !checkInToValue || !reservationDate || reservationDate <= checkInToValue;

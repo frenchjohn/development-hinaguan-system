@@ -30,8 +30,11 @@ class CheckoutReceiptMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $fromAddress = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'parkhinaguan@gmail.com';
+        $fromName = config('mail.from.name') ?: 'Hinaguan Nature Park';
+
         return new Envelope(
-            from: new Address(config('mail.from.address'), config('mail.from.name')),
+            from: new Address($fromAddress, $fromName),
             to: [$this->customer->email],
             subject: 'Your Hinaguan Nature Park Visit Receipt',
         );

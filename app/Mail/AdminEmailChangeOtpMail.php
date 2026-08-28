@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -32,8 +33,11 @@ class AdminEmailChangeOtpMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $fromAddress = config('mail.from.address') ?: config('mail.mailers.smtp.username') ?: 'parkhinaguan@gmail.com';
+        $fromName = config('mail.from.name') ?: 'Hinaguan Nature Park';
+
         return new Envelope(
-            from: 'parkhinaguan@gmail.com',
+            from: new Address($fromAddress, $fromName),
             subject: 'Email Change Verification Code - Hinaguan Nature Park',
         );
     }

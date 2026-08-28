@@ -259,6 +259,8 @@
                         <span>Status</span>
                         <select id="reservationStatusFilter" class="w-full rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm text-[#183d28] focus:border-[#2d6a4f] focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
                             <option value="all">All statuses</option>
+                            <option value="today">Today's Reservations</option>
+                            <option value="past">Past / Overdue Arrival</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
                         </select>
@@ -295,7 +297,15 @@
                         <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#181b19]">
                             @forelse ($reservations as $reservation)
                                 @php
-                                    $isToday = $reservation->reservation_date && \Carbon\Carbon::parse($reservation->reservation_date)->isToday();
+                                    $resDateStr = $reservation->reservation_date;
+                                    $resDateObj = $resDateStr ? \Carbon\Carbon::parse($resDateStr)->startOfDay() : null;
+                                    $todayObj = now()->startOfDay();
+                                    $isToday = $resDateObj && $resDateObj->equalTo($todayObj);
+                                    $statusLower = strtolower($reservation->status);
+                                    $isPendingOrConfirmed = in_array($statusLower, ['pending', 'confirmed']);
+                                    $isPastArrival = $resDateObj && $resDateObj->lessThan($todayObj) && $isPendingOrConfirmed;
+                                    $daysOverdue = $isPastArrival ? $todayObj->diffInDays($resDateObj) : 0;
+
                                     $timeSlots = $reservationData[$reservation->id]['time_slots'] ?? [];
                                     $initials = collect(explode(' ', trim($reservation->booker_name ?? '?')))
                                         ->filter()
@@ -305,7 +315,7 @@
                                     $totalDays = $reservation->total_days ?? (\Carbon\Carbon::parse($reservation->reservation_date)->diffInDays(\Carbon\Carbon::parse($reservation->end_date ?? $reservation->reservation_date)) + 1);
                                 @endphp
                                 <tr
-                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]"
+                                    class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} {{ $isPastArrival ? 'past-reservation' : '' }} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]"
                                     data-reservation-id="{{ $reservation->id }}"
                                     data-booker-name="{{ e($reservation->booker_name) }}"
                                     data-email="{{ e($reservation->email) }}"
@@ -314,7 +324,8 @@
                                     data-status="{{ strtolower($reservation->status) }}"
                                     data-guests="{{ $reservation->number_of_guests }}"
                                     data-total-amount="{{ (float) $reservation->total_amount }}"
-                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? ''))) }}"
+                                    data-is-past="{{ $isPastArrival ? '1' : '0' }}"
+                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : ''))) }}"
                                     tabindex="0"
                                     role="button"
                                     aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
@@ -326,10 +337,15 @@
                                         <div class="resv-booker flex items-center gap-3">
                                             <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
                                             <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
-                                                <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">
-                                                    {{ $reservation->booker_name }}
+                                                <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9] flex items-center gap-1.5 flex-wrap">
+                                                    <span>{{ $reservation->booker_name }}</span>
                                                     @if ($isToday)
-                                                        <span class="today-reservation-badge ml-1.5 inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>
+                                                        <span class="today-reservation-badge inline-block rounded-md bg-[#ff9800] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white dark:bg-[#ffb74d]">TODAY</span>
+                                                    @elseif ($isPastArrival)
+                                                        <span class="past-reservation-badge inline-flex items-center gap-1 rounded-md bg-[#ef4444] px-2 py-0.5 text-[0.65rem] font-bold tracking-wide text-white shadow-sm dark:bg-[#dc2626]" title="Arrival date was {{ $resDateObj->format('M j, Y') }} ({{ $daysOverdue }} {{ $daysOverdue === 1 ? 'day' : 'days' }} overdue)">
+                                                            <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
+                                                            PAST ARRIVAL ({{ $daysOverdue }}d ago)
+                                                        </span>
                                                     @endif
                                                 </div>
                                                 <div class="guest-meta text-xs text-[#718076] dark:text-[#9baaa1] truncate">{{ $reservation->email }}</div>
@@ -339,13 +355,19 @@
                                     <td class="py-3.5 px-4">
                                         @if ($reservation->end_date && $reservation->end_date !== $reservation->reservation_date)
                                             <div>
-                                                <span class="font-bold text-xs sm:text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
+                                                <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
                                                 <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} {{ $totalDays > 1 ? 'Days Stay' : 'Day Stay' }})</div>
+                                                @if ($isPastArrival)
+                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5">⚠️ Overdue Arrival</div>
+                                                @endif
                                             </div>
                                         @else
                                             <div>
-                                                <span class="font-bold text-xs sm:text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }}</span>
+                                                <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }}</span>
                                                 <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">(1 Day Stay)</div>
+                                                @if ($isPastArrival)
+                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5">⚠️ Overdue Arrival</div>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>

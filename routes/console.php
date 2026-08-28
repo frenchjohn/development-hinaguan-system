@@ -76,6 +76,17 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
         $this->error("Type: " . get_class($e));
     }
 
+    $this->line("-----------------------------------------");
+    $this->comment("3. Sending Staff/Admin OTP email template...");
+    try {
+        \Illuminate\Support\Facades\Mail::to($toEmail)->send(new \App\Mail\StaffSettingsOtpMail('123456', 'Diagnostic Tester'));
+        $this->info("✓ Success: OTP email sent to {$toEmail}!");
+    } catch (\Throwable $e) {
+        $this->error("✗ OTP email delivery failed!");
+        $this->error("Error: " . $e->getMessage());
+        $this->error("Type: " . get_class($e));
+    }
+
     $this->info("=========================================");
-})->purpose('Test sending a Reservation QR confirmation email via SMTP');
+})->purpose('Test sending emails (Reservation QR & OTP) via the configured default mailer (Gmail API or SMTP)');
 
