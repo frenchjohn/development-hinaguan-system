@@ -1445,6 +1445,17 @@
 										</button>
 									</div>
 
+									<!-- Entrance Fee Policy Selector -->
+									<div class="guest-form__field-group mb-3 grid gap-1.5">
+										<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInEntranceOption">Entrance Fee Policy</label>
+										<select name="entrance_option" id="walkInEntranceOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="all_paid" selected>All Pay Entrance Fee (Standard Rate)</option>
+											<option value="specific">Specific Pay Entrance Fee (Pick Free Guests)</option>
+											<option value="all_free">All Free Entrance Fee (Promo • ₱0.00)</option>
+										</select>
+										<p class="m-0 text-[0.72rem] text-hp-text-muted" id="walkInEntranceOptionHelp">All guests will pay the standard entrance fee based on age.</p>
+									</div>
+
 									<!-- Pool Access Policy Selector -->
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInPoolOption">Pool Access Policy</label>
@@ -1496,7 +1507,10 @@
 								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 									<div class="guest-form__section-header mb-2 flex items-center justify-between">
 										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest</h4>
-										<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300">🏊 Pool Pass</span>
+										<div class="flex items-center gap-1.5 flex-wrap">
+											<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300">🎟️ Free Entrance</span>
+											<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300">🏊 Pool Pass</span>
+										</div>
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_first_name">First name</label>
@@ -1544,6 +1558,16 @@
 											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
 									</div>
+									<!-- Primary Guest Free Entrance Fee Toggle -->
+									<div id="primaryGuestFreeEntranceWrap" class="guest-form__field-group mb-3 rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
+										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+											<div class="flex items-center gap-2">
+												<span class="text-base">🎟️</span>
+												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee (Primary Guest)</span>
+											</div>
+											<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+										</label>
+									</div>
 									<!-- Primary Guest Specific Pool Toggle -->
 									<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
 										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
@@ -1568,20 +1592,28 @@
 
 							<!-- Amenities Section with Mixed Times / Schedule Customizer -->
 							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
-								<div class="guest-form__section-header mb-3 flex items-center justify-between">
+								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
 									<div>
 										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Amenities</h4>
 										<p class="m-0 text-xs text-hp-text-muted">Add available amenities and customize individual stay schedules</p>
 									</div>
-									<button type="button" class="guest-form__action-btn inline-flex cursor-pointer items-center rounded-lg border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="chooseAmenitiesBtn">
-										<svg class="mr-1.5 h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="chooseAmenitiesBtn">
+										<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
-										Choose Amenities
+										<span>Choose Amenities</span>
 									</button>
 								</div>
 								<div id="selectedAmenitiesContainer" class="grid gap-2.5">
-									<p class="m-0 py-3 text-center text-xs text-hp-text-muted" id="noAmenitiesNotice">No amenities selected yet. Click "Choose Amenities" to add.</p>
+									<div class="m-0 flex flex-col items-center justify-center rounded-xl border border-dashed border-glass-border bg-glass/60 p-5 text-center dark:border-white/10 dark:bg-white/5" id="noAmenitiesNotice">
+										<p class="m-0 text-xs font-medium text-hp-text-muted">No amenities selected yet for this walk-in.</p>
+										<button type="button" class="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-hp-green/40 bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-colors hover:bg-hp-green hover:text-white" onclick="document.getElementById('chooseAmenitiesBtn')?.click()">
+											<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+											</svg>
+											<span>+ Add Amenities</span>
+										</button>
+									</div>
 								</div>
 								<div id="amenitiesHiddenInputs"></div>
 								<div class="guest-form__summary mt-3 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text">
@@ -1838,6 +1870,15 @@
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
 									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionFreeEntranceWrap" style="display: none;">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+										<div class="flex items-center gap-2">
+											<span class="text-base">🎟️</span>
+											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee for this Companion</span>
+										</div>
+										<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+									</label>
+								</div>
 								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 										<div class="flex items-center gap-2">
@@ -1884,6 +1925,16 @@
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity (Total in Group)</label>
 									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
+									<div class="flex items-center justify-between">
+										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_free_quantity">
+											<span>🎟️</span> Free Entrance Quantity
+										</label>
+										<span class="text-[0.72rem] font-bold text-amber-800 dark:text-amber-300" id="bulkFreeQtyHint">0 of 1 with free entrance</span>
+									</div>
+									<input type="number" name="free_entrance_quantity" id="bulk_companion_free_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									<p class="m-0 text-[0.7rem] text-hp-text-muted">Specify how many guests in this bulk group receive free entrance (e.g. 2 of 5).</p>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-3" id="bulkCompanionPoolWrap">
 									<div class="flex items-center justify-between">
@@ -2186,11 +2237,17 @@
 									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
 							</div>
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
+							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
 										<input type="checkbox" name="pool_access" id="resadd_pool_access" class="h-4 w-4 accent-hp-green">
 										<span>Include Pool Access</span>
+									</label>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
+										<input type="checkbox" name="is_free_entrance" id="resadd_free_entrance" class="h-4 w-4 accent-hp-green">
+										<span>🎟️ Free Entrance Fee</span>
 									</label>
 								</div>
 							</div>
@@ -2256,6 +2313,12 @@
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
 										<input type="checkbox" name="pool_access" id="resadd_bulk_pool_access" class="h-4 w-4 accent-hp-green">
 										<span id="resaddBulkPoolLabel">Include Pool Access (all 1)</span>
+									</label>
+								</div>
+								<div class="guest-form__field-group grid gap-1.5">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
+										<input type="checkbox" name="is_free_entrance" id="resadd_bulk_free_entrance" class="h-4 w-4 accent-hp-green">
+										<span id="resaddBulkFreeEntranceLabel">🎟️ Free Entrance Fee (all 1)</span>
 									</label>
 								</div>
 							</div>

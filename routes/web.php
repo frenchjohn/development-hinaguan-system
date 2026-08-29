@@ -4209,6 +4209,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'total_days' => ['nullable', 'integer', 'min:1'],
             'check_in' => ['nullable', 'date'],
             'time_period' => ['nullable', 'in:daytime,nighttime,daytonight,nighttoday'],
+            'entrance_option' => ['nullable', 'string', 'in:all_paid,specific,all_free'],
             'pool_option' => ['nullable', 'string', 'in:no_pool,specific,all_paid,all_free'],
             'include_pool' => ['nullable'],
             'primary_guest' => ['nullable', 'array'],
@@ -4221,6 +4222,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'primary_guest.phone' => ['nullable', 'string', 'max:255'],
             'primary_guest.email' => ['nullable', 'email', 'max:255'],
             'primary_guest.has_pool_access' => ['nullable'],
+            'primary_guest.is_free_entrance' => ['nullable'],
             'companions' => ['nullable', 'array'],
             // Bulk companions submit empty names (they only carry an age group),
             // so names must be nullable — but stay required when the other name
@@ -4235,6 +4237,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
             'companions.*.has_pool_access' => ['nullable'],
+            'companions.*.is_free_entrance' => ['nullable'],
             'selected_amenities' => ['nullable', 'array'],
             'selected_amenities.*.amenity_id' => ['required', 'string'],
             'selected_amenities.*.start_date' => ['nullable', 'date'],
@@ -4337,27 +4340,36 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $companionCount = count($data['companions'] ?? []);
         $guestCount = $primaryGuestCount + $companionCount;
 
-        // Adult/child counts from guest ages (12 and below = child).
+        // Adult/child counts from guest ages (12 and below = child), accounting for free entrance
         $adultCount = 0;
         $childCount = 0;
+        $payingAdultCount = 0;
+        $payingChildCount = 0;
         if ($primaryGuestCount) {
+            $pFree = ! empty($data['primary_guest']['is_free_entrance']);
             $primaryAge = (int) ($data['primary_guest']['age'] ?? 99);
             if ($primaryAge <= 12) {
                 $childCount++;
+                if (! $pFree) $payingChildCount++;
             } else {
                 $adultCount++;
+                if (! $pFree) $payingAdultCount++;
             }
         }
         foreach ($data['companions'] ?? [] as $companionData) {
+            $cFree = ! empty($companionData['is_free_entrance']);
             // Bulk companions send an age_group (0-12, 13-17, 18-59, 60+) instead of an age
             if (($companionData['age_group'] ?? null) === '0-12') {
                 $childCount++;
+                if (! $cFree) $payingChildCount++;
             } else {
                 $companionAge = (int) ($companionData['age'] ?? 99);
                 if ($companionAge <= 12) {
                     $childCount++;
+                    if (! $cFree) $payingChildCount++;
                 } else {
                     $adultCount++;
+                    if (! $cFree) $payingAdultCount++;
                 }
             }
         }
@@ -4386,7 +4398,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $childRate = $dayChild;
         }
 
-        $entranceTotal = ($adultCount * $adultRate) + ($childCount * $childRate);
+        $entranceOption = $data['entrance_option'] ?? 'all_paid';
+        if ($entranceOption === 'all_free') {
+            $payingAdultCount = 0;
+            $payingChildCount = 0;
+        } elseif ($entranceOption === 'all_paid') {
+            $payingAdultCount = $adultCount;
+            $payingChildCount = $childCount;
+        }
+
+        $entranceTotal = ($payingAdultCount * $adultRate) + ($payingChildCount * $childRate);
 
         // Pool option & pool access determination
         $poolOption = $data['pool_option'] ?? (! empty($data['include_pool']) ? 'all_paid' : 'no_pool');
@@ -5023,6 +5044,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
             'companions.*.pool_access' => ['nullable', 'boolean'],
+            'companions.*.is_free_entrance' => ['nullable'],
+            'companions.*.free_entrance' => ['nullable'],
         ]);
 
         $statusKey = strtolower((string) $reservation->status);
@@ -5031,22 +5054,28 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         // Adult/child counts from the new companions (12 and below = child),
-        // plus how many of them get pool access.
+        // accounting for free entrance, plus how many of them get pool access.
         $adultCount = 0;
         $childCount = 0;
+        $payingAdultCount = 0;
+        $payingChildCount = 0;
         $poolCount = 0;
         foreach ($data['companions'] ?? [] as $companionData) {
             if (! empty($companionData['pool_access'])) {
                 $poolCount++;
             }
+            $cFree = ! empty($companionData['is_free_entrance']) || ! empty($companionData['free_entrance']);
             if (($companionData['age_group'] ?? null) === '0-12') {
                 $childCount++;
+                if (! $cFree) $payingChildCount++;
             } else {
                 $companionAge = (int) ($companionData['age'] ?? 99);
                 if ($companionAge <= 12) {
                     $childCount++;
+                    if (! $cFree) $payingChildCount++;
                 } else {
                     $adultCount++;
+                    if (! $cFree) $payingAdultCount++;
                 }
             }
         }
@@ -5093,7 +5122,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $childRate = $dayChild;
         }
 
-        $newEntranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
+        $newEntranceTotal = round(($payingAdultCount * $adultRate) + ($payingChildCount * $childRate), 2);
 
         // Pool fee: charged per companion that ticks pool access, priced by
         // the same effective period as the entrance fee.

@@ -3237,6 +3237,16 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     // Pool Policy UI Controls
+    const walkInEntranceOption = document.getElementById('walkInEntranceOption');
+    const walkInEntranceOptionHelp = document.getElementById('walkInEntranceOptionHelp');
+    const primaryGuestFreeEntranceWrap = document.getElementById('primaryGuestFreeEntranceWrap');
+    const primaryGuestEntranceBadge = document.getElementById('primaryGuestEntranceBadge');
+    const primaryIsFreeInput = document.getElementById('primary_is_free_entrance');
+    const singleCompanionFreeEntranceWrap = document.getElementById('singleCompanionFreeEntranceWrap');
+    const bulkCompanionFreeEntranceWrap = document.getElementById('bulkCompanionFreeEntranceWrap');
+    const bulkCompanionFreeQty = document.getElementById('bulk_companion_free_quantity');
+    const bulkFreeQtyHint = document.getElementById('bulkFreeQtyHint');
+
     const walkInPoolOption = document.getElementById('walkInPoolOption');
     const walkInPoolOptionHelp = document.getElementById('walkInPoolOptionHelp');
     const primaryGuestPoolWrap = document.getElementById('primaryGuestPoolWrap');
@@ -3248,6 +3258,49 @@ window.AppPage['staff_check_ins'] = function () {
     const bulkCompanionPoolQty = document.getElementById('bulk_companion_pool_quantity');
     const bulkCompanionQtyInput = document.getElementById('bulk_companion_quantity');
     const bulkPoolQtyHint = document.getElementById('bulkPoolQtyHint');
+
+    const syncEntranceOptionUI = () => {
+        const opt = walkInEntranceOption?.value || 'all_paid';
+        const isSpecific = opt === 'specific';
+        const isAllPaid = opt === 'all_paid';
+        const isAllFree = opt === 'all_free';
+
+        if (primaryGuestFreeEntranceWrap) {
+            primaryGuestFreeEntranceWrap.style.display = isSpecific ? 'block' : 'none';
+        }
+        if (singleCompanionFreeEntranceWrap) {
+            singleCompanionFreeEntranceWrap.style.display = isSpecific ? 'block' : 'none';
+        }
+        if (bulkCompanionFreeEntranceWrap) {
+            bulkCompanionFreeEntranceWrap.style.display = isSpecific ? 'grid' : 'none';
+        }
+
+        if (walkInEntranceOptionHelp) {
+            if (isAllPaid) {
+                walkInEntranceOptionHelp.textContent = 'All guests will pay the standard entrance fee based on age.';
+            } else if (isSpecific) {
+                walkInEntranceOptionHelp.textContent = 'Custom: choose which individual guests or groups receive free entrance.';
+            } else if (isAllFree) {
+                walkInEntranceOptionHelp.textContent = 'Free Promo: entrance fee is waived (₱0.00) for all guests in this reservation.';
+            }
+        }
+
+        if (primaryGuestEntranceBadge) {
+            if (isAllFree) {
+                primaryGuestEntranceBadge.classList.remove('hidden');
+                primaryGuestEntranceBadge.textContent = '🎟️ Free Entrance (All)';
+            } else if (isSpecific && primaryIsFreeInput?.checked) {
+                primaryGuestEntranceBadge.classList.remove('hidden');
+                primaryGuestEntranceBadge.textContent = '🎟️ Free Entrance';
+            } else {
+                primaryGuestEntranceBadge.classList.add('hidden');
+            }
+        }
+
+        syncBulkFreeQuantityMax();
+        renderCompanions();
+        updateGrandTotal();
+    };
 
     const syncPoolOptionUI = () => {
         const opt = walkInPoolOption?.value || 'no_pool';
@@ -3303,8 +3356,10 @@ window.AppPage['staff_check_ins'] = function () {
         updateGrandTotal();
     };
 
+    walkInEntranceOption?.addEventListener('change', syncEntranceOptionUI);
     walkInPoolOption?.addEventListener('change', syncPoolOptionUI);
     primaryHasPoolInput?.addEventListener('change', syncPoolOptionUI);
+    primaryIsFreeInput?.addEventListener('change', syncEntranceOptionUI);
 
     const syncBulkPoolQuantityMax = () => {
         if (!bulkCompanionQtyInput || !bulkCompanionPoolQty) return;
@@ -3322,10 +3377,27 @@ window.AppPage['staff_check_ins'] = function () {
     bulkCompanionQtyInput?.addEventListener('input', syncBulkPoolQuantityMax);
     bulkCompanionPoolQty?.addEventListener('input', syncBulkPoolQuantityMax);
 
+    const syncBulkFreeQuantityMax = () => {
+        if (!bulkCompanionQtyInput || !bulkCompanionFreeQty) return;
+        const total = Math.max(1, parseInt(bulkCompanionQtyInput.value, 10) || 1);
+        bulkCompanionFreeQty.max = total;
+        let currentFree = parseInt(bulkCompanionFreeQty.value, 10) || 0;
+        if (currentFree > total) {
+            currentFree = total;
+            bulkCompanionFreeQty.value = total;
+        }
+        if (bulkFreeQtyHint) {
+            bulkFreeQtyHint.textContent = `${currentFree} of ${total} with free entrance`;
+        }
+    };
+    bulkCompanionQtyInput?.addEventListener('input', syncBulkFreeQuantityMax);
+    bulkCompanionFreeQty?.addEventListener('input', syncBulkFreeQuantityMax);
+
     // Calculate entrance fee based on main guest, companions, and pool policies
     const calculateEntranceFee = () => {
         const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
         const timeType = counts.nightCount > 0 && counts.dayCount > 0 ? 'daytonight' : (counts.nightCount > 0 ? 'nighttime' : 'daytime');
+        const entranceOpt = walkInEntranceOption?.value || 'all_paid';
         const poolOpt = walkInPoolOption?.value || 'no_pool';
 
         const dayAdult = parseFloat(parkSettings.daytime_adult_entrance_fee) || 0;
@@ -3372,7 +3444,8 @@ window.AppPage['staff_check_ins'] = function () {
         // Bulk companion groups
         bulkCompanionGroups.forEach(g => {
             const qty = parseInt(g.quantity) || 1;
-            if (g.age_group === '0-12') {
+            const isChild = g.age_group === '0-12';
+            if (isChild) {
                 childCount += qty;
             } else {
                 adultCount += qty;
@@ -3380,8 +3453,47 @@ window.AppPage['staff_check_ins'] = function () {
         });
 
         const totalGuests = adultCount + childCount;
-        const totalAdultFee = adultCount * adultRate;
-        const totalChildFee = childCount * childRate;
+        let payingAdultCount = adultCount;
+        let payingChildCount = childCount;
+        let freeEntranceCount = 0;
+
+        if (entranceOpt === 'all_free') {
+            payingAdultCount = 0;
+            payingChildCount = 0;
+            freeEntranceCount = totalGuests;
+        } else if (entranceOpt === 'specific') {
+            const primaryIsFree = Boolean(primaryIsFreeInput?.checked);
+            payingAdultCount = (primaryIsChild || primaryIsFree) ? 0 : 1;
+            payingChildCount = (!primaryIsChild || primaryIsFree) ? 0 : 1;
+            freeEntranceCount = primaryIsFree ? 1 : 0;
+
+            companions.forEach(c => {
+                let isChild = false;
+                if (c.age !== null && c.age !== undefined && c.age !== '') {
+                    const age = parseInt(c.age);
+                    if (!isNaN(age)) isChild = age <= 12;
+                } else if (c.age_type === 'child') {
+                    isChild = true;
+                }
+                if (c.has_free_entrance) {
+                    freeEntranceCount++;
+                } else {
+                    if (isChild) payingChildCount++; else payingAdultCount++;
+                }
+            });
+
+            bulkCompanionGroups.forEach(g => {
+                const qty = parseInt(g.quantity) || 1;
+                const isChild = g.age_group === '0-12';
+                const fQty = Math.min(Math.max(0, parseInt(g.free_quantity, 10) || 0), qty);
+                const payingQty = qty - fQty;
+                freeEntranceCount += fQty;
+                if (isChild) payingChildCount += payingQty; else payingAdultCount += payingQty;
+            });
+        }
+
+        const totalAdultFee = payingAdultCount * adultRate;
+        const totalChildFee = payingChildCount * childRate;
 
         // Pool Access Count calculation
         let poolCount = 0;
@@ -3403,8 +3515,24 @@ window.AppPage['staff_check_ins'] = function () {
 
         const totalEntrance = totalAdultFee + totalChildFee + totalPoolFee;
 
-        if (adultEntranceFee) adultEntranceFee.textContent = `₱${totalAdultFee.toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
-        if (childEntranceFee) childEntranceFee.textContent = `₱${totalChildFee.toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
+        if (adultEntranceFee) {
+            if (entranceOpt === 'all_free') {
+                adultEntranceFee.textContent = `₱0.00 (Free Promo • ${adultCount} Adult${adultCount === 1 ? '' : 's'})`;
+            } else {
+                const freeAdults = adultCount - payingAdultCount;
+                const freeTxt = freeAdults > 0 ? ` • ${freeAdults} Free` : '';
+                adultEntranceFee.textContent = `₱${totalAdultFee.toFixed(2)} (${payingAdultCount} × ₱${adultRate.toFixed(2)}${freeTxt})`;
+            }
+        }
+        if (childEntranceFee) {
+            if (entranceOpt === 'all_free') {
+                childEntranceFee.textContent = `₱0.00 (Free Promo • ${childCount} Child${childCount === 1 ? '' : 'ren'})`;
+            } else {
+                const freeChildren = childCount - payingChildCount;
+                const freeTxt = freeChildren > 0 ? ` • ${freeChildren} Free` : '';
+                childEntranceFee.textContent = `₱${totalChildFee.toFixed(2)} (${payingChildCount} × ₱${childRate.toFixed(2)}${freeTxt})`;
+            }
+        }
         if (poolFee) {
             if (poolOpt === 'no_pool') {
                 poolFee.textContent = '₱0.00 (No pool access)';
@@ -3418,7 +3546,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
         if (totalEntranceFee) totalEntranceFee.textContent = `₱${totalEntrance.toFixed(2)}`;
 
-        return { totalEntrance, adultCount, childCount, totalPoolFee, poolCount, poolOption: poolOpt, poolRate };
+        return { totalEntrance, adultCount, childCount, payingAdultCount, payingChildCount, freeEntranceCount, totalPoolFee, poolCount, entranceOption: entranceOpt, poolOption: poolOpt, poolRate };
     };
 
     // Calculate Grand Total (Entrance + Pool + Amenities)
@@ -3538,7 +3666,7 @@ window.AppPage['staff_check_ins'] = function () {
             childRate = dayChild + nightChild;
         }
 
-        const { totalEntrance, adultCount, childCount, totalPoolFee, poolCount, poolOption: poolOpt, poolRate } = calculateEntranceFee();
+        const { totalEntrance, adultCount, childCount, payingAdultCount, payingChildCount, freeEntranceCount, totalPoolFee, poolCount, poolOption: poolOpt, poolRate } = calculateEntranceFee();
         const totalGuests = adultCount + childCount;
 
         // 1. Expected Check-Out
@@ -3579,7 +3707,8 @@ window.AppPage['staff_check_ins'] = function () {
             payConfirmDemographics.textContent = `${genText} • ${ageText} • ${natText}`;
         }
         if (payConfirmPartyCount) {
-            payConfirmPartyCount.textContent = `${totalGuests} Guest${totalGuests === 1 ? '' : 's'} (${adultCount} Adult${adultCount === 1 ? '' : 's'}, ${childCount} Child${childCount === 1 ? '' : 'ren'})`;
+            const freePartyText = freeEntranceCount > 0 ? `, ${freeEntranceCount} Free Entrance` : '';
+            payConfirmPartyCount.textContent = `${totalGuests} Guest${totalGuests === 1 ? '' : 's'} (${adultCount} Adult${adultCount === 1 ? '' : 's'}, ${childCount} Child${childCount === 1 ? '' : 'ren'}${freePartyText})`;
         }
 
         // 3. Entrance & Pool Fees
@@ -3588,8 +3717,16 @@ window.AppPage['staff_check_ins'] = function () {
         const payConfirmPoolFee = document.getElementById('payConfirmPoolFee');
         const payConfirmEntranceTotal = document.getElementById('payConfirmEntranceTotal');
 
-        if (payConfirmAdultFee) payConfirmAdultFee.textContent = `₱${(adultCount * adultRate).toFixed(2)} (${adultCount} × ₱${adultRate.toFixed(2)})`;
-        if (payConfirmChildFee) payConfirmChildFee.textContent = `₱${(childCount * childRate).toFixed(2)} (${childCount} × ₱${childRate.toFixed(2)})`;
+        if (payConfirmAdultFee) {
+            const freeAdults = adultCount - payingAdultCount;
+            const freeTxt = freeAdults > 0 ? ` (${freeAdults} Free)` : '';
+            payConfirmAdultFee.textContent = `₱${(payingAdultCount * adultRate).toFixed(2)} (${payingAdultCount} × ₱${adultRate.toFixed(2)}${freeTxt})`;
+        }
+        if (payConfirmChildFee) {
+            const freeChildren = childCount - payingChildCount;
+            const freeTxt = freeChildren > 0 ? ` (${freeChildren} Free)` : '';
+            payConfirmChildFee.textContent = `₱${(payingChildCount * childRate).toFixed(2)} (${payingChildCount} × ₱${childRate.toFixed(2)}${freeTxt})`;
+        }
         if (payConfirmPoolFee) {
             if (poolOpt === 'no_pool') {
                 payConfirmPoolFee.textContent = '₱0.00 (No pool access)';
@@ -3796,6 +3933,7 @@ window.AppPage['staff_check_ins'] = function () {
     const renderCompanions = () => {
         companionList.innerHTML = '';
         companionHiddenFields.innerHTML = '';
+        const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
 
         // Render individual companions
@@ -3814,11 +3952,21 @@ window.AppPage['staff_check_ins'] = function () {
                     : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
             }
 
+            let freeBadgeHtml = '';
+            if (currentEntranceOpt === 'all_free') {
+                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🎟️ Free Entrance</span>';
+            } else if (currentEntranceOpt === 'specific') {
+                freeBadgeHtml = companion.has_free_entrance
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance">🎟️ Free Entrance ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance">+ Free Entrance</button>`;
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
+                    ${freeBadgeHtml}
                     ${poolBadgeHtml}
                 </div>
                 <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-companion-index="${index}">Remove</button>
@@ -3826,6 +3974,7 @@ window.AppPage['staff_check_ins'] = function () {
             companionList.appendChild(item);
 
             const hasPoolFlag = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') ? '1' : (companion.has_pool_access ? '1' : '0');
+            const isFreeEntranceFlag = (currentEntranceOpt === 'all_free') ? '1' : (currentEntranceOpt === 'specific' && companion.has_free_entrance ? '1' : '0');
 
             // Add hidden fields
             companionHiddenFields.insertAdjacentHTML('beforeend', `
@@ -3839,6 +3988,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="companions[${index}][phone]" value="${companion.phone || ''}">
                 <input type="hidden" name="companions[${index}][email]" value="${companion.email || ''}">
                 <input type="hidden" name="companions[${index}][has_pool_access]" value="${hasPoolFlag}">
+                <input type="hidden" name="companions[${index}][is_free_entrance]" value="${isFreeEntranceFlag}">
             `);
         });
 
@@ -3864,11 +4014,28 @@ window.AppPage['staff_check_ins'] = function () {
                 `;
             }
 
+            let bulkFreeBadgeHtml = '';
+            if (currentEntranceOpt === 'all_free') {
+                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🎟️ All ${group.quantity} Free Entrance</span>`;
+            } else if (currentEntranceOpt === 'specific') {
+                const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
+                group.free_quantity = fQty;
+                bulkFreeBadgeHtml = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-amber-900 dark:text-amber-300">
+                        <span>🎟️ Free:</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-dec="${groupIndex}" title="Decrease free entrance quantity">−</button>
+                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${fQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-inc="${groupIndex}" title="Increase free entrance quantity">+</button>
+                    </div>
+                `;
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
+                    ${bulkFreeBadgeHtml}
                     ${bulkPoolBadgeHtml}
                 </div>
                 <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-bulk-index="${groupIndex}">Remove</button>
@@ -3879,6 +4046,7 @@ window.AppPage['staff_check_ins'] = function () {
             for (let i = 0; i < group.quantity; i++) {
                 const companionIndex = companions.length + groupIndex * 1000 + i;
                 const personHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') || (currentPoolOpt === 'specific' && i < (group.pool_quantity || 0));
+                const personIsFree = (currentEntranceOpt === 'all_free') || (currentEntranceOpt === 'specific' && i < (group.free_quantity || 0));
 
                 companionHiddenFields.insertAdjacentHTML('beforeend', `
                     <input type="hidden" name="companions[${companionIndex}][first_name]" value="Companion">
@@ -3891,6 +4059,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <input type="hidden" name="companions[${companionIndex}][phone]" value="">
                     <input type="hidden" name="companions[${companionIndex}][email]" value="">
                     <input type="hidden" name="companions[${companionIndex}][has_pool_access]" value="${personHasPool ? '1' : '0'}">
+                    <input type="hidden" name="companions[${companionIndex}][is_free_entrance]" value="${personIsFree ? '1' : '0'}">
                 `);
             }
         });
@@ -3908,11 +4077,16 @@ window.AppPage['staff_check_ins'] = function () {
         const ageVal = formData.get('age');
         const parsedAge = parseInt(ageVal, 10);
         const autoAgeType = (!isNaN(parsedAge) && parsedAge <= 12) ? 'child' : 'adult';
+        const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
 
         const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
             ? true
             : (currentPoolOpt === 'specific' ? (formData.get('has_pool_access') === '1' || companionHasPoolInput?.checked) : false);
+
+        const isFreeEntrance = (currentEntranceOpt === 'all_free')
+            ? true
+            : (currentEntranceOpt === 'specific' ? (formData.get('is_free_entrance') === '1' || Boolean(document.getElementById('companion_is_free_entrance')?.checked)) : false);
 
         const companionData = {
             first_name: formData.get('first_name') || 'Companion',
@@ -3925,6 +4099,7 @@ window.AppPage['staff_check_ins'] = function () {
             phone: formData.get('phone'),
             email: formData.get('email'),
             has_pool_access: companionHasPool,
+            has_free_entrance: isFreeEntrance,
         };
 
         companions.push(companionData);
@@ -3944,6 +4119,7 @@ window.AppPage['staff_check_ins'] = function () {
         const isForeigner = formData.get('is_foreigner') === '1';
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
         const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
+        const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
 
         const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
@@ -3954,6 +4130,14 @@ window.AppPage['staff_check_ins'] = function () {
             poolQty = 0;
         }
 
+        const rawFreeQty = parseInt(formData.get('free_entrance_quantity'), 10) || 0;
+        let freeQty = Math.min(Math.max(0, rawFreeQty), quantity);
+        if (currentEntranceOpt === 'all_free') {
+            freeQty = quantity;
+        } else if (currentEntranceOpt === 'all_paid') {
+            freeQty = 0;
+        }
+
         bulkCompanionGroups.push({
             gender,
             age_group: ageGroup,
@@ -3961,12 +4145,15 @@ window.AppPage['staff_check_ins'] = function () {
             is_foreigner: isForeigner,
             quantity: quantity,
             pool_quantity: poolQty,
+            free_quantity: freeQty,
+            has_free_entrance: freeQty === quantity,
         });
 
         renderCompanions();
         updateGrandTotal();
         bulkCompanionForm.reset();
         syncBulkPoolQuantityMax();
+        syncBulkFreeQuantityMax();
         closeCompanionModal();
     });
 
@@ -3996,6 +4183,50 @@ window.AppPage['staff_check_ins'] = function () {
                 companions[cIdx].has_pool_access = !companions[cIdx].has_pool_access;
                 renderCompanions();
                 updateGrandTotal();
+            }
+            return;
+        }
+
+        // Click-to-toggle free entrance on single companion pill
+        const toggleFreeBtn = e.target.closest('[data-toggle-companion-free]');
+        if (toggleFreeBtn) {
+            const cIdx = parseInt(toggleFreeBtn.dataset.toggleCompanionFree, 10);
+            if (!isNaN(cIdx) && companions[cIdx]) {
+                companions[cIdx].has_free_entrance = !companions[cIdx].has_free_entrance;
+                renderCompanions();
+                updateGrandTotal();
+            }
+            return;
+        }
+
+        // Click-to-increase bulk free entrance
+        const bulkFreeIncBtn = e.target.closest('[data-bulk-free-inc]');
+        if (bulkFreeIncBtn) {
+            const bIdx = parseInt(bulkFreeIncBtn.dataset.bulkFreeInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.free_quantity || 0;
+                if (cur < group.quantity) {
+                    group.free_quantity = cur + 1;
+                    renderCompanions();
+                    updateGrandTotal();
+                }
+            }
+            return;
+        }
+
+        // Click-to-decrease bulk free entrance
+        const bulkFreeDecBtn = e.target.closest('[data-bulk-free-dec]');
+        if (bulkFreeDecBtn) {
+            const bIdx = parseInt(bulkFreeDecBtn.dataset.bulkFreeDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.free_quantity || 0;
+                if (cur > 0) {
+                    group.free_quantity = cur - 1;
+                    renderCompanions();
+                    updateGrandTotal();
+                }
             }
             return;
         }
@@ -5253,17 +5484,20 @@ window.AppPage['staff_check_ins'] = function () {
         const rates = resAddRates();
         const hasAge = !Number.isNaN(ageVal);
         const isChild = hasAge && ageVal <= 12;
+        const isFree = Boolean(resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.checked);
         const adultCount = hasAge && !isChild ? 1 : 0;
         const childCount = hasAge && isChild ? 1 : 0;
+        const payingAdultCount = isFree ? 0 : adultCount;
+        const payingChildCount = isFree ? 0 : childCount;
         const poolOn = resAddSingleForm?.querySelector('[name="pool_access"]')?.checked;
-        const adultFee = adultCount * rates.adult;
-        const childFee = childCount * rates.child;
+        const adultFee = payingAdultCount * rates.adult;
+        const childFee = payingChildCount * rates.child;
         const poolFee = poolOn ? rates.pool : 0;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('resaddAdultCount', adultCount);
-        set('resaddAdultFee', money(adultFee));
+        set('resaddAdultFee', isFree && adultCount > 0 ? '₱0.00 (Free)' : money(adultFee));
         set('resaddChildCount', childCount);
-        set('resaddChildFee', money(childFee));
+        set('resaddChildFee', isFree && childCount > 0 ? '₱0.00 (Free)' : money(childFee));
         set('resaddPoolCount', poolOn ? 1 : 0);
         set('resaddPoolFee', money(poolFee));
         set('resaddTotalFee', money(adultFee + childFee + poolFee));
@@ -5274,32 +5508,39 @@ window.AppPage['staff_check_ins'] = function () {
         const ageGroup = resAddBulkForm?.querySelector('[name="age_group"]')?.value || '18-59';
         const rates = resAddRates();
         const isChild = ageGroup === '0-12';
+        const isFree = Boolean(resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.checked);
         const adultCount = isChild ? 0 : qty;
         const childCount = isChild ? qty : 0;
+        const payingAdultCount = isFree ? 0 : adultCount;
+        const payingChildCount = isFree ? 0 : childCount;
         const poolOn = resAddBulkForm?.querySelector('[name="pool_access"]')?.checked;
         const poolCount = poolOn ? qty : 0;
-        const adultFee = adultCount * rates.adult;
-        const childFee = childCount * rates.child;
+        const adultFee = payingAdultCount * rates.adult;
+        const childFee = payingChildCount * rates.child;
         const poolFee = poolCount * rates.pool;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('resaddBulkAdultCount', adultCount);
-        set('resaddBulkAdultFee', money(adultFee));
+        set('resaddBulkAdultFee', isFree && adultCount > 0 ? `₱0.00 (All ${qty} Free)` : money(adultFee));
         set('resaddBulkChildCount', childCount);
-        set('resaddBulkChildFee', money(childFee));
+        set('resaddBulkChildFee', isFree && childCount > 0 ? `₱0.00 (All ${qty} Free)` : money(childFee));
         set('resaddBulkPoolCount', poolCount);
         set('resaddBulkPoolFee', money(poolFee));
         set('resaddBulkTotalFee', money(adultFee + childFee + poolFee));
         const poolLabel = document.getElementById('resaddBulkPoolLabel');
         if (poolLabel) poolLabel.textContent = `Include Pool Access (all ${qty})`;
+        const freeLabel = document.getElementById('resaddBulkFreeEntranceLabel');
+        if (freeLabel) freeLabel.textContent = `🎟️ Free Entrance Fee (all ${qty})`;
     };
 
     const resAddBindFeeWatchers = () => {
         const singleAge = resAddSingleForm?.querySelector('[name="age"]');
         singleAge?.addEventListener('input', resAddUpdateSingleFees);
         resAddSingleForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateSingleFees);
+        resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateSingleFees);
         resAddBulkForm?.querySelector('[name="age_group"]')?.addEventListener('change', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateBulkFees);
     };
 
     const openResAddCompanionModal = () => {
@@ -5390,6 +5631,7 @@ window.AppPage['staff_check_ins'] = function () {
             showToast('First name and last name are required.', 'error');
             return;
         }
+        const isFree = Boolean(resAddSingleForm.querySelector('[name="is_free_entrance"]')?.checked);
         const submitButton = e.submitter || resAddSingleForm.querySelector('[type="submit"]');
         postCompanionsToReservation([{
             first_name: firstName,
@@ -5401,6 +5643,7 @@ window.AppPage['staff_check_ins'] = function () {
             phone: formData.get('phone'),
             email: formData.get('email'),
             pool_access: formData.get('pool_access') === 'on',
+            is_free_entrance: isFree,
         }], submitButton, 'Add Companion');
     });
 
@@ -5409,6 +5652,7 @@ window.AppPage['staff_check_ins'] = function () {
         const formData = new FormData(resAddBulkForm);
         const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
         const poolOn = formData.get('pool_access') === 'on';
+        const isFree = Boolean(resAddBulkForm.querySelector('[name="is_free_entrance"]')?.checked);
         const companions = [];
         for (let i = 0; i < quantity; i++) {
             companions.push({
@@ -5420,6 +5664,7 @@ window.AppPage['staff_check_ins'] = function () {
                 phone: '',
                 email: '',
                 pool_access: poolOn,
+                is_free_entrance: isFree,
             });
         }
         const submitButton = e.submitter || resAddBulkForm.querySelector('[type="submit"]');
