@@ -674,9 +674,17 @@ body.admin-portal .dash-donut__hole small {
 }
 
 @keyframes spPulseSoft {
-    0% { box-shadow: 0 0 0 0 rgba(31, 157, 97, 0.45); }
-    70% { box-shadow: 0 0 0 6px rgba(31, 157, 97, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(31, 157, 97, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(31, 157, 97, 0.45);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(31, 157, 97, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(31, 157, 97, 0);
+    }
 }
 
 /* ------------------------------------------------------------
@@ -1461,8 +1469,15 @@ body.admin-portal .admin-settings__content--hidden {
 }
 
 @keyframes adminFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 body.admin-portal .admin-settings__form {
@@ -1654,7 +1669,9 @@ body.admin-portal .admin-settings__btn.loading::after {
 }
 
 @keyframes adminSpin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 body.admin-portal .admin-settings__btn-icon {
@@ -1805,8 +1822,15 @@ body.admin-portal .admin-settings__modal-actions .admin-settings__btn {
 }
 
 @keyframes adminSlideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 768px) {
@@ -1821,4 +1845,34 @@ body.admin-portal .admin-settings__modal-actions .admin-settings__btn {
     body.admin-portal .admin-settings__form-actions .admin-settings__btn {
         width: 100%;
     }
+}
+
+body.admin-portal .admin-settings__modal-content.max-w-lg {
+    max-width: 580px;
+    width: 92%;
+    text-align: left;
+}
+
+body.admin-portal .admin-settings__modal .admin-settings__group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    text-align: left;
+    margin-bottom: 0.25rem;
+}
+
+body.admin-portal .admin-settings__modal .admin-settings__label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--hp-text-muted);
+    margin-bottom: 0.35rem;
+    text-align: left;
+}
+
+body.admin-portal .admin-settings__modal .admin-settings__input {
+    width: 100%;
+    box-sizing: border-box;
 }

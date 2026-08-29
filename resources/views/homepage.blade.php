@@ -141,39 +141,81 @@
         <div class="hp-hero__bg" style="background-image: url('{{ asset('images/background.jpeg') }}')" aria-hidden="true"></div>
         <div class="hp-hero__overlay" aria-hidden="true"></div>
 
-        @if ($weather)
-            <aside class="hp-weather" aria-label="Today's weather" data-animate="fade-left">
-                <p class="hp-weather__label">Today's Weather</p>
-                <div class="hp-weather__main">
-                    @if ($weather['icon'])
-                        <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="44" height="44">
-                    @endif
-                    <div class="hp-weather__info">
-                        <p class="hp-weather__temp">{{ round($weather['temp_c']) }}°C</p>
-                        <p class="hp-weather__condition">{{ $weather['condition'] }}</p>
-                    </div>
-                </div>
-                <p class="hp-weather__location">{{ $weather['location'] }}{{ !empty($weather['region']) ? ', '.$weather['region'] : '' }}</p>
-                <p class="hp-weather__meta">Feels like {{ round($weather['feelslike_c']) }}°C &middot; {{ $weather['humidity'] }}% humidity</p>
+        @if ($weather || $nearEvent)
+            <div class="hp-hero__side-widgets" data-animate="fade-left">
+                @if ($weather)
+                    <aside class="hp-weather" aria-label="Today's weather">
+                        <p class="hp-weather__label">Today's Weather</p>
+                        <div class="hp-weather__main">
+                            @if ($weather['icon'])
+                                <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="44" height="44">
+                            @endif
+                            <div class="hp-weather__info">
+                                <p class="hp-weather__temp">{{ round($weather['temp_c']) }}°C</p>
+                                <p class="hp-weather__condition">{{ $weather['condition'] }}</p>
+                            </div>
+                        </div>
+                        <p class="hp-weather__location">{{ $weather['location'] }}{{ !empty($weather['region']) ? ', '.$weather['region'] : '' }}</p>
+                        <p class="hp-weather__meta">Feels like {{ round($weather['feelslike_c']) }}°C &middot; {{ $weather['humidity'] }}% humidity</p>
 
-                @if (!empty($weather['next_3_hours']))
-                    <div class="hp-weather__hourly mt-2 pt-2 border-t border-white/20">
-                        <p class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-gold mb-1.5">Next 3 Hours</p>
-                        <div class="grid grid-cols-3 gap-1.5 text-center">
-                            @foreach ($weather['next_3_hours'] as $hour)
-                                <div class="rounded-lg bg-white/10 p-1.5 backdrop-blur-sm flex flex-col items-center">
-                                    <span class="text-[0.65rem] font-semibold text-white/90">{{ $hour['time_label'] }}</span>
-                                    @if (!empty($hour['icon']))
-                                        <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="h-6 w-6 my-0.5">
-                                    @endif
-                                    <span class="text-[0.72rem] font-bold text-white">{{ round($hour['temp_c']) }}°C</span>
-                                    <span class="text-[0.58rem] text-[#6ab88c]">{{ $hour['chance_of_rain'] ?? 0 }}% rain</span>
+                        @if (!empty($weather['next_3_hours']))
+                            <div class="hp-weather__hourly mt-2 pt-2 border-t border-white/20">
+                                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-gold mb-1.5">Next 3 Hours</p>
+                                <div class="grid grid-cols-3 gap-1.5 text-center">
+                                    @foreach ($weather['next_3_hours'] as $hour)
+                                        <div class="rounded-lg bg-white/10 p-1.5 backdrop-blur-sm flex flex-col items-center">
+                                            <span class="text-[0.65rem] font-semibold text-white/90">{{ $hour['time_label'] }}</span>
+                                            @if (!empty($hour['icon']))
+                                                <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="h-6 w-6 my-0.5">
+                                            @endif
+                                            <span class="text-[0.72rem] font-bold text-white">{{ round($hour['temp_c']) }}°C</span>
+                                            <span class="text-[0.58rem] text-[#6ab88c]">{{ $hour['chance_of_rain'] ?? 0 }}% rain</span>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            @endforeach
+                            </div>
+                        @endif
+                    </aside>
+                @endif
+
+                @if ($nearEvent)
+                    <div class="hp-near-event-widget group" tabindex="0" aria-label="Near Event: {{ $nearEvent->title }}">
+                        <div class="hp-near-event-widget__header">
+                            <span class="hp-near-event-widget__label">
+                                <span class="hp-near-event-widget__dot"></span>
+                                Near Event
+                            </span>
+                            <span class="hp-near-event-widget__date">
+                                {{ $nearEvent->day }} &middot; {{ \Carbon\Carbon::parse($nearEvent->date)->format('M d') }}
+                            </span>
+                        </div>
+
+                        <h3 class="hp-near-event-widget__title">
+                            {{ $nearEvent->title }}
+                        </h3>
+
+                        <div class="hp-near-event-widget__hint">
+                            <span>Hover for details</span>
+                            <svg class="h-3 w-3 text-[var(--hp-gold)] transition-transform group-hover:translate-y-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+
+                        {{-- Smooth Expandable Description on Hover --}}
+                        <div class="hp-near-event-widget__expand">
+                            <p class="hp-near-event-widget__desc">
+                                {{ $nearEvent->event ?: $nearEvent->description }}
+                            </p>
+                            <a href="#events" class="hp-near-event-widget__link">
+                                <span>View all events</span>
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </a>
                         </div>
                     </div>
                 @endif
-            </aside>
+            </div>
         @endif
 
         <div class="hp-hero__content">
@@ -375,6 +417,101 @@
                         <p>Capture stunning shots at the bamboo grove, river views, and rustic cottages — a content creator's paradise.</p>
                     </div>
                 </article>
+            </div>
+        </div>
+    </section>
+
+    {{-- Park Events (All Events) --}}
+    <section class="hp-section hp-section--cream" id="events" data-section>
+        <div class="hp-container">
+            <div class="hp-section__header" data-animate="fade-up">
+                <span class="hp-section__label">What's Happening</span>
+                <h2 class="hp-section__title">Park Events &amp; Experiences</h2>
+                <p class="hp-section__desc">
+                    Discover exciting gatherings, seasonal celebrations, and outdoor activities scheduled at Hinaguan Nature Park.
+                </p>
+            </div>
+
+            {{-- Events Schedule Banner --}}
+            <div class="hp-events-week-banner" data-animate="fade-up" data-delay="80">
+                <div class="hp-events-week-banner__info">
+                    <div class="hp-events-week-banner__tag">
+                        <span class="hp-pulse-dot"></span>
+                        <span>Park Schedule</span>
+                    </div>
+                    <p class="hp-events-week-banner__dates">
+                        Hinaguan Nature Park &middot; Jasaan, Misamis Oriental
+                    </p>
+                </div>
+                <div class="hp-events-week-banner__summary">
+                    @if ($allEvents->isNotEmpty())
+                        <span class="text-sm font-semibold text-[#1b5e3a]">
+                            🎉 <strong>{{ $allEvents->count() }}</strong> event{{ $allEvents->count() > 1 ? 's' : '' }} scheduled
+                        </span>
+                    @else
+                        <span class="text-sm text-gray-600">Open daily for scenic walks, picnics, and overnight stays.</span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Events Grid --}}
+            <div class="hp-events-panel is-active" id="panelAllEvents">
+                @if ($allEvents->isNotEmpty())
+                    <div class="hp-events-grid">
+                        @foreach ($allEvents as $index => $event)
+                            @php
+                                $eventCarbon = \Carbon\Carbon::parse($event->date);
+                                $isToday = $eventCarbon->isToday();
+                            @endphp
+                            <article class="hp-event-card {{ $isToday ? 'hp-event-card--today' : '' }}" data-animate="fade-up" data-delay="{{ ($index + 1) * 80 }}">
+                                <div class="hp-event-card__date-box">
+                                    <span class="hp-event-card__weekday">{{ $event->day ?: $eventCarbon->format('l') }}</span>
+                                    <span class="hp-event-card__day">{{ $eventCarbon->format('d') }}</span>
+                                    <span class="hp-event-card__month">{{ $eventCarbon->format('M') }}</span>
+                                </div>
+
+                                <div class="hp-event-card__content">
+                                    <div class="hp-event-card__meta-top">
+                                        @if ($isToday)
+                                            <span class="hp-event-badge hp-event-badge--today">
+                                                <span class="hp-pulse-dot"></span> Happening Today
+                                            </span>
+                                        @elseif ($event->badge)
+                                            <span class="hp-event-badge hp-event-badge--tag">{{ $event->badge }}</span>
+                                        @else
+                                            <span class="hp-event-badge hp-event-badge--week">Scheduled Event</span>
+                                        @endif
+
+                                        @if ($event->time)
+                                            <span class="hp-event-time">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                {{ $event->time }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <h3 class="hp-event-card__title">{{ $event->title }}</h3>
+
+                                    <p class="hp-event-card__desc">
+                                        {{ $event->event ?: $event->description }}
+                                    </p>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="hp-events-empty" data-animate="fade-up">
+                        <div class="hp-events-empty__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                            </svg>
+                        </div>
+                        <h3>No Special Events Scheduled</h3>
+                        <p>Hinaguan Nature Park is open daily for regular entrance, swimming, picnics, and overnight stays.</p>
+                    </div>
+                @endif
             </div>
         </div>
     </section>

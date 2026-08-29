@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -121,6 +121,15 @@
                             </div>
                             <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Rules</h3>
                             <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park guidelines, swimming attire, corkage, and regulations</p>
+                        </div>
+                        <div class="admin-settings__menu-card group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="event-settings">
+                            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-8 w-8">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <h3 class="admin-settings__menu-card__title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Event Settings</h3>
+                            <p class="admin-settings__menu-card__text m-0 text-[0.875rem] leading-[1.5] text-[var(--hp-text-muted)]">Manage park events, schedule dates, what day, and descriptions</p>
                         </div>
                         <div class="admin-settings__menu-card group relative flex cursor-pointer flex-col items-center gap-4 overflow-hidden rounded-2xl border border-[rgba(13,44,29,0.1)] bg-white p-8 text-center transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] before:absolute before:left-0 before:right-0 before:top-0 before:h-1 before:bg-[var(--hp-green)] before:content-[''] before:scale-x-0 before:transition-transform before:duration-300 hover:-translate-y-2 hover:border-[var(--hp-green)] hover:shadow-[0_20px_40px_rgba(13,44,29,0.15)] hover:before:scale-x-100 dark:border-white/10 dark:bg-white/5 dark:before:bg-[var(--hp-gold)] dark:hover:border-[var(--hp-gold)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.3)]" data-target="security">
                             <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[rgba(26,58,31,0.1)] text-[var(--hp-green)] transition-all duration-300 group-hover:scale-110 group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)]">
@@ -427,6 +436,199 @@
                         </div>
                     </div>
 
+                    <!-- Event Settings Content -->
+                    <div class="admin-settings__content admin-settings__content--hidden" id="event-settings">
+                        <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromEvents">
+                            <svg class="admin-settings__back-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                            Back to Settings
+                        </button>
+
+                        <section class="dash-panel p-6 sm:p-8">
+                            <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                                <div>
+                                    <h2 class="admin-settings__card-title m-0 text-[1.25rem] font-semibold text-[var(--hp-text)]">Park Events &amp; Experiences</h2>
+                                    <p class="admin-settings__card-text m-0 mt-1 text-[0.875rem] text-[var(--hp-text-muted)]">Click on any event to view details, edit, or remove.</p>
+                                </div>
+                                <button type="button" class="admin-settings__btn admin-settings__btn--primary" id="addEventBtn">
+                                    <svg class="admin-settings__btn-icon h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                    Add Event
+                                </button>
+                            </div>
+
+                            <!-- Events List Grid -->
+                            <div class="park-events-list grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" id="parkEventsGrid">
+                                @forelse($parkEvents as $event)
+                                    <div class="park-event-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]"
+                                         id="parkEventCard_{{ $event->id }}"
+                                         data-event-id="{{ $event->id }}"
+                                         data-event-title="{{ $event->title }}"
+                                         data-event-date="{{ $event->date ? $event->date->format('Y-m-d') : '' }}"
+                                         data-event-day="{{ $event->day }}"
+                                         data-event-desc="{{ $event->event ?: $event->description }}"
+                                         data-event-updated="{{ $event->updated_at ? $event->updated_at->diffForHumans() : 'Recently' }}">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <div class="flex flex-col items-center justify-center shrink-0 w-12 py-1 rounded-lg bg-[rgba(26,58,31,0.08)] text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
+                                                <span class="text-[0.65rem] font-bold uppercase tracking-wider">{{ $event->date ? $event->date->format('M') : 'DATE' }}</span>
+                                                <span class="text-base font-extrabold leading-none">{{ $event->date ? $event->date->format('d') : '--' }}</span>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <span class="truncate block text-sm font-semibold text-[var(--hp-text)] event-title-display">
+                                                    {{ $event->title }}
+                                                </span>
+                                                <span class="text-xs text-[var(--hp-text-muted)] block truncate">
+                                                    {{ $event->day }} &middot; {{ Str::limit($event->event ?: $event->description, 40) }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="col-span-full py-10 text-center text-sm text-[var(--hp-text-muted)]" id="emptyParkEventsState">
+                                        No park events created yet. Click "Add Event" above to create one.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- View Park Event Modal -->
+                    <div id="viewParkEventModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-lg text-left">
+                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                                <div class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewEventIdBadge">
+                                        #1
+                                    </span>
+                                    <div>
+                                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewEventModalTitle">Event Title</h3>
+                                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewEventModalMeta">Date &middot; Day</p>
+                                    </div>
+                                </div>
+                                <button type="button" id="closeViewEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Event Date</span>
+                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDateDisplay">--</span>
+                                    </div>
+                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">What Day</span>
+                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDayDisplay">--</span>
+                                    </div>
+                                </div>
+
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Event Description</label>
+                                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewEventModalDesc">
+                                    Event description goes here...
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                                <button type="button" id="viewEventModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    Delete Event
+                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="viewEventModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
+                                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Edit Event
+                                    </button>
+                                    <button type="button" id="closeViewEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add / Edit Park Event Modal -->
+                    <div id="parkEventModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-lg text-left">
+                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+                                <div>
+                                    <h3 class="admin-settings__modal-title text-left m-0 text-xl font-bold" id="parkEventModalTitle">Add Park Event</h3>
+                                    <p class="admin-settings__modal-text text-left m-0 mt-1 text-xs text-[var(--hp-text-muted)]" id="parkEventModalSubtitle">Schedule a new event for Hinaguan Nature Park.</p>
+                                </div>
+                                <button type="button" id="closeAddEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <form id="parkEventForm" class="mt-4 flex flex-col gap-4 text-left">
+                                @csrf
+                                <input type="hidden" id="eventIdInput" name="event_id" value="">
+
+                                <div class="admin-settings__group admin-settings__group--full">
+                                    <label for="eventTitleInput" class="admin-settings__label font-semibold">Event Title</label>
+                                    <input type="text" id="eventTitleInput" name="title" class="admin-settings__input w-full" placeholder="e.g. Riverside Acoustic Sunset Sessions" required maxlength="255">
+                                    <span class="admin-settings__error" id="eventTitleError"></span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="admin-settings__group">
+                                        <label for="eventDateInput" class="admin-settings__label font-semibold">Date</label>
+                                        <input type="date" id="eventDateInput" name="date" class="admin-settings__input w-full" required>
+                                        <span class="admin-settings__error" id="eventDateError"></span>
+                                    </div>
+                                    <div class="admin-settings__group">
+                                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day (e.g. Saturday)</label>
+                                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto-calculated from date">
+                                        <span class="admin-settings__error" id="eventDayError"></span>
+                                    </div>
+                                </div>
+
+                                <div class="admin-settings__group admin-settings__group--full">
+                                    <label for="eventDescInput" class="admin-settings__label font-semibold">Event Description (What event)</label>
+                                    <textarea id="eventDescInput" name="event" rows="4" class="admin-settings__input w-full h-auto resize-y" placeholder="Describe what event or activity is taking place..." required maxlength="2000"></textarea>
+                                    <span class="admin-settings__error" id="eventDescError"></span>
+                                </div>
+
+                                <div class="admin-settings__modal-actions mt-2 flex justify-end gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                                    <button type="button" id="cancelEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+                                    <button type="submit" id="saveEventSubmitBtn" class="admin-settings__btn admin-settings__btn--primary">Save Event</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Delete Event Confirmation Modal -->
+                    <div id="deleteParkEventModal" class="admin-settings__modal" style="display: none;">
+                        <div class="admin-settings__modal-content max-w-md text-center">
+                            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </div>
+                            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Event?</h3>
+                            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteEventConfirmText">Are you sure you want to delete this event? This action cannot be undone.</p>
+                            
+                            <input type="hidden" id="deleteEventIdInput" value="">
+
+                            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
+                                <button type="button" id="confirmDeleteEventBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Event</button>
+                                <button type="button" id="cancelDeleteEventBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Security Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="security">
                         <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromSecurity">
@@ -543,6 +745,15 @@
                             </section>
                         </div>
                     </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {{-- Admin AI Intelligence Chatbot --}}
+    <x-admin_chatbot />
+</body>
+</html>
                 </div>
             </main>
         </div>

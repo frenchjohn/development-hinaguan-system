@@ -2296,9 +2296,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         }
         $parkSettings = \App\Models\ParkSetting::first();
         $parkRules = \App\Models\ParkRule::orderBy('id', 'asc')->get();
+        $parkEvents = \App\Models\ParkEvent::orderBy('date', 'asc')->get();
         return view('admin.admin_settings', [
             'parkSettings' => $parkSettings,
             'parkRules' => $parkRules,
+            'parkEvents' => $parkEvents,
         ]);
     })->name('settings');
 
@@ -2467,6 +2469,143 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'message' => 'Park rule deleted successfully.',
         ]);
     })->name('settings.rules.delete');
+
+    // Park Events Management Routes
+    Route::post('/settings/events', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'date' => 'required|date',
+            'day' => 'nullable|string|max:50',
+            'event' => 'required|string|max:2000',
+            'description' => 'nullable|string|max:2000',
+            'time' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'badge' => 'nullable|string|max:50',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        if (empty($validated['day'])) {
+            $validated['day'] = \Carbon\Carbon::parse($validated['date'])->format('l');
+        }
+
+        $event = \App\Models\ParkEvent::create($validated);
+
+        \App\Models\ActivityLog::log(
+            activityType: 'event_created',
+            title: 'Park Event Created',
+            description: "Admin created new event: '{$event->title}' scheduled on {$event->date->format('M d, Y')} ({$event->day})",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['event_id' => $event->id, 'title' => $event->title, 'date' => $event->date->toDateString(), 'day' => $event->day]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Park event created successfully.',
+            'event' => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'date' => $event->date->format('Y-m-d'),
+                'day' => $event->day,
+                'event' => $event->event,
+                'description' => $event->description,
+                'time' => $event->time,
+                'location' => $event->location,
+                'badge' => $event->badge,
+                'is_active' => $event->is_active,
+                'updated_at' => $event->updated_at->diffForHumans(),
+            ],
+        ]);
+    })->name('settings.events.store');
+
+    Route::put('/settings/events/{parkEvent}', function (Request $request, \App\Models\ParkEvent $parkEvent) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'date' => 'required|date',
+            'day' => 'nullable|string|max:50',
+            'event' => 'required|string|max:2000',
+            'description' => 'nullable|string|max:2000',
+            'time' => 'nullable|string|max:100',
+            'location' => 'nullable|string|max:255',
+            'badge' => 'nullable|string|max:50',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        if (empty($validated['day'])) {
+            $validated['day'] = \Carbon\Carbon::parse($validated['date'])->format('l');
+        }
+
+        $parkEvent->update($validated);
+
+        \App\Models\ActivityLog::log(
+            activityType: 'event_updated',
+            title: 'Park Event Updated',
+            description: "Admin updated event: '{$parkEvent->title}' scheduled on {$parkEvent->date->format('M d, Y')} ({$parkEvent->day})",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['event_id' => $parkEvent->id, 'title' => $parkEvent->title, 'date' => $parkEvent->date->toDateString(), 'day' => $parkEvent->day]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Park event updated successfully.',
+            'event' => [
+                'id' => $parkEvent->id,
+                'title' => $parkEvent->title,
+                'date' => $parkEvent->date->format('Y-m-d'),
+                'day' => $parkEvent->day,
+                'event' => $parkEvent->event,
+                'description' => $parkEvent->description,
+                'time' => $parkEvent->time,
+                'location' => $parkEvent->location,
+                'badge' => $parkEvent->badge,
+                'is_active' => $parkEvent->is_active,
+                'updated_at' => $parkEvent->updated_at->diffForHumans(),
+            ],
+        ]);
+    })->name('settings.events.update');
+
+    Route::delete('/settings/events/{parkEvent}', function (Request $request, \App\Models\ParkEvent $parkEvent) {
+        $user = $request->session()->get('auth_user');
+        if (!$user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $title = $parkEvent->title;
+        $id = $parkEvent->id;
+        $dateStr = $parkEvent->date ? $parkEvent->date->format('M d, Y') : 'N/A';
+        $parkEvent->delete();
+
+        \App\Models\ActivityLog::log(
+            activityType: 'event_deleted',
+            title: 'Park Event Deleted',
+            description: "Admin deleted event: '{$title}' ({$dateStr})",
+            reservationId: null,
+            actorName: $user['name'] ?? 'Admin User',
+            actorRole: $user['role'] ?? 'admin',
+            staffId: isset($user['id']) ? (string) $user['id'] : null,
+            metadata: ['event_id' => $id, 'title' => $title]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Park event deleted successfully.',
+        ]);
+    })->name('settings.events.delete');
 
     Route::post('/send-password-otp', function (Request $request) {
         $user = $request->session()->get('auth_user');

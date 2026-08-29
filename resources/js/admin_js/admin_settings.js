@@ -1,4 +1,4 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['admin_settings'] = function () {
     // Drill-down navigation functionality
     const settingsMenu = document.getElementById('settingsMenu');
@@ -10,12 +10,12 @@ window.AppPage['admin_settings'] = function () {
     menuCards.forEach(card => {
         card.addEventListener('click', () => {
             const targetId = card.getAttribute('data-target');
-            
+
             // Hide menu
             if (settingsMenu) {
                 settingsMenu.classList.add('admin-settings__menu--hidden');
             }
-            
+
             // Show target content
             contentSections.forEach(section => {
                 section.classList.add('admin-settings__content--hidden');
@@ -34,7 +34,7 @@ window.AppPage['admin_settings'] = function () {
             contentSections.forEach(section => {
                 section.classList.add('admin-settings__content--hidden');
             });
-            
+
             // Show menu
             if (settingsMenu) {
                 settingsMenu.classList.remove('admin-settings__menu--hidden');
@@ -114,9 +114,9 @@ window.AppPage['admin_settings'] = function () {
     // Handle park settings form submission
     parkSettingsForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const formData = new FormData(parkSettingsForm);
-        
+
         try {
             const response = await fetch(parkSettingsForm.action, {
                 method: 'POST',
@@ -125,7 +125,7 @@ window.AppPage['admin_settings'] = function () {
                     'X-Requested-With': 'XMLHttpRequest',
                 }
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
 
@@ -142,7 +142,7 @@ window.AppPage['admin_settings'] = function () {
                 if (parkSettingsSuccessModal) {
                     parkSettingsSuccessModal.style.display = 'flex';
                 }
-                
+
                 parkSettingsFormActions?.classList.add('admin-settings__form-actions--hidden');
                 editParkSettingsBtn?.classList.remove('admin-settings__btn--hidden');
 
@@ -895,13 +895,367 @@ window.AppPage['admin_settings'] = function () {
         });
     }
 
+    // ===== PARK EVENTS MANAGEMENT SECTION =====
+    const viewParkEventModal = document.getElementById('viewParkEventModal');
+    const viewEventIdBadge = document.getElementById('viewEventIdBadge');
+    const viewEventModalTitle = document.getElementById('viewEventModalTitle');
+    const viewEventModalMeta = document.getElementById('viewEventModalMeta');
+    const viewEventModalDateDisplay = document.getElementById('viewEventModalDateDisplay');
+    const viewEventModalDayDisplay = document.getElementById('viewEventModalDayDisplay');
+    const viewEventModalDesc = document.getElementById('viewEventModalDesc');
+    const viewEventModalEditBtn = document.getElementById('viewEventModalEditBtn');
+    const viewEventModalDeleteBtn = document.getElementById('viewEventModalDeleteBtn');
+    const closeViewEventModalBtn = document.getElementById('closeViewEventModalBtn');
+    const closeViewEventModalXBtn = document.getElementById('closeViewEventModalXBtn');
+
+    const parkEventModal = document.getElementById('parkEventModal');
+    const parkEventModalTitle = document.getElementById('parkEventModalTitle');
+    const parkEventModalSubtitle = document.getElementById('parkEventModalSubtitle');
+    const addEventBtn = document.getElementById('addEventBtn');
+    const cancelEventModalBtn = document.getElementById('cancelEventModalBtn');
+    const closeAddEventModalXBtn = document.getElementById('closeAddEventModalXBtn');
+    const parkEventForm = document.getElementById('parkEventForm');
+    const eventIdInput = document.getElementById('eventIdInput');
+    const eventTitleInput = document.getElementById('eventTitleInput');
+    const eventDateInput = document.getElementById('eventDateInput');
+    const eventDayInput = document.getElementById('eventDayInput');
+    const eventDescInput = document.getElementById('eventDescInput');
+    const saveEventSubmitBtn = document.getElementById('saveEventSubmitBtn');
+
+    const deleteParkEventModal = document.getElementById('deleteParkEventModal');
+    const deleteEventConfirmText = document.getElementById('deleteEventConfirmText');
+    const deleteEventIdInput = document.getElementById('deleteEventIdInput');
+    const confirmDeleteEventBtn = document.getElementById('confirmDeleteEventBtn');
+    const cancelDeleteEventBtn = document.getElementById('cancelDeleteEventBtn');
+
+    const backToMenuFromEvents = document.getElementById('backToMenuFromEvents');
+    const parkEventsGrid = document.getElementById('parkEventsGrid');
+
+    let currentViewingEventData = null;
+
+    // Helper: Calculate Day of Week from Date String
+    function getDayOfWeek(dateString) {
+        if (!dateString) return '';
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dateObj = new Date(dateString + 'T00:00:00');
+        return days[dateObj.getDay()] || '';
+    }
+
+    // Auto-fill day when date changes in Add/Edit modal
+    if (eventDateInput && eventDayInput) {
+        eventDateInput.addEventListener('change', function () {
+            if (this.value) {
+                eventDayInput.value = getDayOfWeek(this.value);
+            }
+        });
+    }
+
+    // Back to Menu from Event Settings
+    if (backToMenuFromEvents) {
+        backToMenuFromEvents.addEventListener('click', function () {
+            const eventSettingsView = document.getElementById('event-settings');
+            const menuCardsGrid = document.getElementById('menuCardsGrid');
+            if (eventSettingsView) eventSettingsView.classList.add('admin-settings__content--hidden');
+            if (menuCardsGrid) menuCardsGrid.classList.remove('admin-settings__menu-grid--hidden');
+        });
+    }
+
+    // Open View Event Modal when clicking an event card
+    function attachEventCardListeners() {
+        document.querySelectorAll('.park-event-item').forEach(card => {
+            card.onclick = function () {
+                const eventId = this.getAttribute('data-event-id');
+                const title = this.getAttribute('data-event-title');
+                const date = this.getAttribute('data-event-date');
+                const day = this.getAttribute('data-event-day') || getDayOfWeek(date);
+                const desc = this.getAttribute('data-event-desc');
+                const updated = this.getAttribute('data-event-updated');
+
+                currentViewingEventData = { id: eventId, title, date, day, desc, updated };
+
+                if (viewEventIdBadge) viewEventIdBadge.textContent = `#${eventId}`;
+                if (viewEventModalTitle) viewEventModalTitle.textContent = title;
+                if (viewEventModalMeta) viewEventModalMeta.textContent = `${date} · ${day}`;
+                if (viewEventModalDateDisplay) viewEventModalDateDisplay.textContent = date || 'Not set';
+                if (viewEventModalDayDisplay) viewEventModalDayDisplay.textContent = day || 'Not set';
+                if (viewEventModalDesc) viewEventModalDesc.textContent = desc;
+
+                if (viewParkEventModal) viewParkEventModal.style.display = 'flex';
+            };
+        });
+    }
+    attachEventCardListeners();
+
+    // Close View Event Modal
+    function closeViewEventModal() {
+        if (viewParkEventModal) viewParkEventModal.style.display = 'none';
+        currentViewingEventData = null;
+    }
+    if (closeViewEventModalBtn) closeViewEventModalBtn.addEventListener('click', closeViewEventModal);
+    if (closeViewEventModalXBtn) closeViewEventModalXBtn.addEventListener('click', closeViewEventModal);
+
+    // Open Add Event Modal
+    if (addEventBtn) {
+        addEventBtn.addEventListener('click', function () {
+            if (parkEventForm) parkEventForm.reset();
+            if (eventIdInput) eventIdInput.value = '';
+            if (parkEventModalTitle) parkEventModalTitle.textContent = 'Add Park Event';
+            if (parkEventModalSubtitle) parkEventModalSubtitle.textContent = 'Schedule a new event for Hinaguan Nature Park.';
+            if (saveEventSubmitBtn) saveEventSubmitBtn.textContent = 'Save Event';
+            clearEventErrors();
+            if (parkEventModal) parkEventModal.style.display = 'flex';
+        });
+    }
+
+    // Open Edit Event Modal from View Modal
+    if (viewEventModalEditBtn) {
+        viewEventModalEditBtn.addEventListener('click', function () {
+            if (!currentViewingEventData) return;
+            closeViewEventModal();
+
+            clearEventErrors();
+            if (eventIdInput) eventIdInput.value = currentViewingEventData.id;
+            if (eventTitleInput) eventTitleInput.value = currentViewingEventData.title;
+            if (eventDateInput) eventDateInput.value = currentViewingEventData.date;
+            if (eventDayInput) eventDayInput.value = currentViewingEventData.day || getDayOfWeek(currentViewingEventData.date);
+            if (eventDescInput) eventDescInput.value = currentViewingEventData.desc;
+
+            if (parkEventModalTitle) parkEventModalTitle.textContent = 'Edit Park Event';
+            if (parkEventModalSubtitle) parkEventModalSubtitle.textContent = 'Update details for this scheduled park event.';
+            if (saveEventSubmitBtn) saveEventSubmitBtn.textContent = 'Update Event';
+
+            if (parkEventModal) parkEventModal.style.display = 'flex';
+        });
+    }
+
+    // Close Add/Edit Event Modal
+    function closeAddEditEventModal() {
+        if (parkEventModal) parkEventModal.style.display = 'none';
+        if (parkEventForm) parkEventForm.reset();
+        clearEventErrors();
+    }
+    if (cancelEventModalBtn) cancelEventModalBtn.addEventListener('click', closeAddEditEventModal);
+    if (closeAddEventModalXBtn) closeAddEventModalXBtn.addEventListener('click', closeAddEditEventModal);
+
+    function clearEventErrors() {
+        ['eventTitleError', 'eventDateError', 'eventDayError', 'eventDescError'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '';
+        });
+    }
+
+    // Submit Add/Edit Event Form
+    if (parkEventForm) {
+        parkEventForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            clearEventErrors();
+
+            const isEdit = !!eventIdInput.value;
+            const eventId = eventIdInput.value;
+            const url = isEdit ? `/admin/settings/events/${eventId}` : '/admin/settings/events';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                document.querySelector('input[name="_token"]')?.value;
+
+            const payload = {
+                title: eventTitleInput.value.trim(),
+                date: eventDateInput.value,
+                day: eventDayInput.value.trim() || getDayOfWeek(eventDateInput.value),
+                event: eventDescInput.value.trim(),
+            };
+
+            if (!payload.title) {
+                const el = document.getElementById('eventTitleError');
+                if (el) el.textContent = 'Event title is required.';
+                return;
+            }
+            if (!payload.date) {
+                const el = document.getElementById('eventDateError');
+                if (el) el.textContent = 'Event date is required.';
+                return;
+            }
+            if (!payload.event) {
+                const el = document.getElementById('eventDescError');
+                if (el) el.textContent = 'Event description is required.';
+                return;
+            }
+
+            if (saveEventSubmitBtn) {
+                saveEventSubmitBtn.disabled = true;
+                saveEventSubmitBtn.classList.add('loading');
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (data.errors) {
+                        if (data.errors.title) document.getElementById('eventTitleError').textContent = data.errors.title[0];
+                        if (data.errors.date) document.getElementById('eventDateError').textContent = data.errors.date[0];
+                        if (data.errors.event) document.getElementById('eventDescError').textContent = data.errors.event[0];
+                    } else {
+                        showSuccessMessage(data.message || 'Failed to save event.');
+                    }
+                    return;
+                }
+
+                closeAddEditEventModal();
+                showSuccessMessage(isEdit ? 'Event updated successfully!' : 'Event created successfully!');
+
+                const event = data.event;
+                const monthName = new Date(event.date + 'T00:00:00').toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                const dayNum = new Date(event.date + 'T00:00:00').getDate();
+
+                if (isEdit) {
+                    const card = document.getElementById(`parkEventCard_${event.id}`);
+                    if (card) {
+                        card.setAttribute('data-event-title', event.title);
+                        card.setAttribute('data-event-date', event.date);
+                        card.setAttribute('data-event-day', event.day);
+                        card.setAttribute('data-event-desc', event.event || event.description);
+                        card.setAttribute('data-event-updated', event.updated_at);
+
+                        const titleEl = card.querySelector('.event-title-display');
+                        if (titleEl) titleEl.textContent = event.title;
+
+                        const metaEl = card.querySelector('.min-w-0 span:last-child');
+                        if (metaEl) metaEl.textContent = `${event.day} · ${(event.event || event.description).substring(0, 40)}`;
+
+                        const monthEl = card.querySelector('.flex-col span:first-child');
+                        if (monthEl) monthEl.textContent = monthName;
+
+                        const dayNumEl = card.querySelector('.flex-col span:last-child');
+                        if (dayNumEl) dayNumEl.textContent = dayNum;
+                    }
+                } else {
+                    const emptyState = document.getElementById('emptyParkEventsState');
+                    if (emptyState) emptyState.remove();
+
+                    const newCard = document.createElement('div');
+                    newCard.className = 'park-event-item group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-4 py-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-green)] hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)]';
+                    newCard.id = `parkEventCard_${event.id}`;
+                    newCard.setAttribute('data-event-id', event.id);
+                    newCard.setAttribute('data-event-title', event.title);
+                    newCard.setAttribute('data-event-date', event.date);
+                    newCard.setAttribute('data-event-day', event.day);
+                    newCard.setAttribute('data-event-desc', event.event || event.description);
+                    newCard.setAttribute('data-event-updated', event.updated_at);
+
+                    newCard.innerHTML = `
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="flex flex-col items-center justify-center shrink-0 w-12 py-1 rounded-lg bg-[rgba(26,58,31,0.08)] text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
+                                <span class="text-[0.65rem] font-bold uppercase tracking-wider">${monthName}</span>
+                                <span class="text-base font-extrabold leading-none">${dayNum}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="truncate block text-sm font-semibold text-[var(--hp-text)] event-title-display">${event.title}</span>
+                                <span class="text-xs text-[var(--hp-text-muted)] block truncate">${event.day} · ${(event.event || event.description).substring(0, 40)}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    `;
+                    if (parkEventsGrid) parkEventsGrid.prepend(newCard);
+                    attachEventCardListeners();
+                }
+            } catch (err) {
+                console.error('Error saving event:', err);
+                showSuccessMessage('An unexpected error occurred.');
+            } finally {
+                if (saveEventSubmitBtn) {
+                    saveEventSubmitBtn.disabled = false;
+                    saveEventSubmitBtn.classList.remove('loading');
+                }
+            }
+        });
+    }
+
+    // Delete Event Logic
+    if (viewEventModalDeleteBtn) {
+        viewEventModalDeleteBtn.addEventListener('click', function () {
+            if (!currentViewingEventData) return;
+            const eventId = currentViewingEventData.id;
+            const title = currentViewingEventData.title;
+
+            closeViewEventModal();
+
+            if (deleteEventIdInput) deleteEventIdInput.value = eventId;
+            if (deleteEventConfirmText) deleteEventConfirmText.textContent = `Are you sure you want to delete "${title}"? This action cannot be undone.`;
+            if (deleteParkEventModal) deleteParkEventModal.style.display = 'flex';
+        });
+    }
+
+    if (cancelDeleteEventBtn) {
+        cancelDeleteEventBtn.addEventListener('click', function () {
+            if (deleteParkEventModal) deleteParkEventModal.style.display = 'none';
+            if (deleteEventIdInput) deleteEventIdInput.value = '';
+        });
+    }
+
+    if (confirmDeleteEventBtn) {
+        confirmDeleteEventBtn.addEventListener('click', async function () {
+            const eventId = deleteEventIdInput ? deleteEventIdInput.value : '';
+            if (!eventId) return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                document.querySelector('input[name="_token"]')?.value;
+
+            confirmDeleteEventBtn.disabled = true;
+
+            try {
+                const res = await fetch(`/admin/settings/events/${eventId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                });
+
+                if (res.ok) {
+                    if (deleteParkEventModal) deleteParkEventModal.style.display = 'none';
+                    const card = document.getElementById(`parkEventCard_${eventId}`);
+                    if (card) card.remove();
+
+                    if (parkEventsGrid && parkEventsGrid.children.length === 0) {
+                        parkEventsGrid.innerHTML = `
+                            <div class="col-span-full py-10 text-center text-sm text-[var(--hp-text-muted)]" id="emptyParkEventsState">
+                                No park events created yet. Click "Add Event" above to create one.
+                            </div>
+                        `;
+                    }
+                    showSuccessMessage('Park event deleted successfully.');
+                } else {
+                    showSuccessMessage('Failed to delete park event.');
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                showSuccessMessage('An error occurred while deleting.');
+            } finally {
+                confirmDeleteEventBtn.disabled = false;
+            }
+        });
+    }
+
     function isValidEmail(email) {
         const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return regex.test(email);
     }
 
     function showSuccessMessage(message) {
-        // Create a temporary success message
         const successDiv = document.createElement('div');
         successDiv.style.cssText = `
             position: fixed;
