@@ -16,11 +16,8 @@ class ParkEvent extends Model
         'title',
         'date',
         'day',
-        'event',
-        'description',
         'time',
-        'location',
-        'badge',
+        'event',
         'is_active',
     ];
 

@@ -17,11 +17,8 @@ return new class extends Migration
                 $table->string('title');
                 $table->date('date');
                 $table->string('day'); // e.g. Saturday, Sunday, Monday
+                $table->string('time')->nullable(); // e.g. 04:00 PM or 4:00 PM - 8:00 PM
                 $table->text('event'); // Description of what event is taking place
-                $table->text('description')->nullable();
-                $table->string('time')->nullable();
-                $table->string('location')->nullable();
-                $table->string('badge')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->timestamps();
             });

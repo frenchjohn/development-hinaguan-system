@@ -902,6 +902,7 @@ window.AppPage['admin_settings'] = function () {
     const viewEventModalMeta = document.getElementById('viewEventModalMeta');
     const viewEventModalDateDisplay = document.getElementById('viewEventModalDateDisplay');
     const viewEventModalDayDisplay = document.getElementById('viewEventModalDayDisplay');
+    const viewEventModalTimeDisplay = document.getElementById('viewEventModalTimeDisplay');
     const viewEventModalDesc = document.getElementById('viewEventModalDesc');
     const viewEventModalEditBtn = document.getElementById('viewEventModalEditBtn');
     const viewEventModalDeleteBtn = document.getElementById('viewEventModalDeleteBtn');
@@ -919,6 +920,7 @@ window.AppPage['admin_settings'] = function () {
     const eventTitleInput = document.getElementById('eventTitleInput');
     const eventDateInput = document.getElementById('eventDateInput');
     const eventDayInput = document.getElementById('eventDayInput');
+    const eventTimeInput = document.getElementById('eventTimeInput');
     const eventDescInput = document.getElementById('eventDescInput');
     const saveEventSubmitBtn = document.getElementById('saveEventSubmitBtn');
 
@@ -968,16 +970,18 @@ window.AppPage['admin_settings'] = function () {
                 const title = this.getAttribute('data-event-title');
                 const date = this.getAttribute('data-event-date');
                 const day = this.getAttribute('data-event-day') || getDayOfWeek(date);
+                const time = this.getAttribute('data-event-time') || '';
                 const desc = this.getAttribute('data-event-desc');
                 const updated = this.getAttribute('data-event-updated');
 
-                currentViewingEventData = { id: eventId, title, date, day, desc, updated };
+                currentViewingEventData = { id: eventId, title, date, day, time, desc, updated };
 
                 if (viewEventIdBadge) viewEventIdBadge.textContent = `#${eventId}`;
                 if (viewEventModalTitle) viewEventModalTitle.textContent = title;
-                if (viewEventModalMeta) viewEventModalMeta.textContent = `${date} · ${day}`;
+                if (viewEventModalMeta) viewEventModalMeta.textContent = `${date} · ${day}${time ? ' · ' + time : ''}`;
                 if (viewEventModalDateDisplay) viewEventModalDateDisplay.textContent = date || 'Not set';
                 if (viewEventModalDayDisplay) viewEventModalDayDisplay.textContent = day || 'Not set';
+                if (viewEventModalTimeDisplay) viewEventModalTimeDisplay.textContent = time || 'Not specified';
                 if (viewEventModalDesc) viewEventModalDesc.textContent = desc;
 
                 if (viewParkEventModal) viewParkEventModal.style.display = 'flex';
@@ -1018,6 +1022,7 @@ window.AppPage['admin_settings'] = function () {
             if (eventTitleInput) eventTitleInput.value = currentViewingEventData.title;
             if (eventDateInput) eventDateInput.value = currentViewingEventData.date;
             if (eventDayInput) eventDayInput.value = currentViewingEventData.day || getDayOfWeek(currentViewingEventData.date);
+            if (eventTimeInput) eventTimeInput.value = currentViewingEventData.time || '';
             if (eventDescInput) eventDescInput.value = currentViewingEventData.desc;
 
             if (parkEventModalTitle) parkEventModalTitle.textContent = 'Edit Park Event';
@@ -1038,7 +1043,7 @@ window.AppPage['admin_settings'] = function () {
     if (closeAddEventModalXBtn) closeAddEventModalXBtn.addEventListener('click', closeAddEditEventModal);
 
     function clearEventErrors() {
-        ['eventTitleError', 'eventDateError', 'eventDayError', 'eventDescError'].forEach(id => {
+        ['eventTitleError', 'eventDateError', 'eventDayError', 'eventTimeError', 'eventDescError'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = '';
         });
@@ -1062,6 +1067,7 @@ window.AppPage['admin_settings'] = function () {
                 title: eventTitleInput.value.trim(),
                 date: eventDateInput.value,
                 day: eventDayInput.value.trim() || getDayOfWeek(eventDateInput.value),
+                time: eventTimeInput ? eventTimeInput.value.trim() : '',
                 event: eventDescInput.value.trim(),
             };
 
@@ -1103,6 +1109,7 @@ window.AppPage['admin_settings'] = function () {
                     if (data.errors) {
                         if (data.errors.title) document.getElementById('eventTitleError').textContent = data.errors.title[0];
                         if (data.errors.date) document.getElementById('eventDateError').textContent = data.errors.date[0];
+                        if (data.errors.time) document.getElementById('eventTimeError').textContent = data.errors.time[0];
                         if (data.errors.event) document.getElementById('eventDescError').textContent = data.errors.event[0];
                     } else {
                         showSuccessMessage(data.message || 'Failed to save event.');
@@ -1116,6 +1123,7 @@ window.AppPage['admin_settings'] = function () {
                 const event = data.event;
                 const monthName = new Date(event.date + 'T00:00:00').toLocaleString('en-US', { month: 'short' }).toUpperCase();
                 const dayNum = new Date(event.date + 'T00:00:00').getDate();
+                const timeText = event.time ? ` · ${event.time}` : '';
 
                 if (isEdit) {
                     const card = document.getElementById(`parkEventCard_${event.id}`);
@@ -1123,14 +1131,15 @@ window.AppPage['admin_settings'] = function () {
                         card.setAttribute('data-event-title', event.title);
                         card.setAttribute('data-event-date', event.date);
                         card.setAttribute('data-event-day', event.day);
-                        card.setAttribute('data-event-desc', event.event || event.description);
+                        card.setAttribute('data-event-time', event.time || '');
+                        card.setAttribute('data-event-desc', event.event);
                         card.setAttribute('data-event-updated', event.updated_at);
 
                         const titleEl = card.querySelector('.event-title-display');
                         if (titleEl) titleEl.textContent = event.title;
 
                         const metaEl = card.querySelector('.min-w-0 span:last-child');
-                        if (metaEl) metaEl.textContent = `${event.day} · ${(event.event || event.description).substring(0, 40)}`;
+                        if (metaEl) metaEl.textContent = `${event.day}${timeText} · ${event.event.substring(0, 35)}`;
 
                         const monthEl = card.querySelector('.flex-col span:first-child');
                         if (monthEl) monthEl.textContent = monthName;
@@ -1149,7 +1158,8 @@ window.AppPage['admin_settings'] = function () {
                     newCard.setAttribute('data-event-title', event.title);
                     newCard.setAttribute('data-event-date', event.date);
                     newCard.setAttribute('data-event-day', event.day);
-                    newCard.setAttribute('data-event-desc', event.event || event.description);
+                    newCard.setAttribute('data-event-time', event.time || '');
+                    newCard.setAttribute('data-event-desc', event.event);
                     newCard.setAttribute('data-event-updated', event.updated_at);
 
                     newCard.innerHTML = `
@@ -1160,7 +1170,7 @@ window.AppPage['admin_settings'] = function () {
                             </div>
                             <div class="min-w-0">
                                 <span class="truncate block text-sm font-semibold text-[var(--hp-text)] event-title-display">${event.title}</span>
-                                <span class="text-xs text-[var(--hp-text-muted)] block truncate">${event.day} · ${(event.event || event.description).substring(0, 40)}</span>
+                                <span class="text-xs text-[var(--hp-text-muted)] block truncate">${event.day}${timeText} · ${event.event.substring(0, 35)}</span>
                             </div>
                         </div>
                         <div class="flex items-center text-[var(--hp-text-muted)] group-hover:text-[var(--hp-green)] dark:group-hover:text-[var(--hp-gold)] transition-colors">

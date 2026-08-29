@@ -146,4 +146,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateActiveGuestCount();
     window.setInterval(updateActiveGuestCount, 30000);
+
+    // ── Events Horizontal Carousel Controller ──
+    const eventsTrack = document.getElementById('hpEventsTrack');
+    const eventsPrevBtn = document.getElementById('hpEventsPrev');
+    const eventsNextBtn = document.getElementById('hpEventsNext');
+    const eventsDotsContainer = document.getElementById('hpEventsDots');
+
+    if (eventsTrack) {
+        const getCardWidth = () => {
+            const firstCard = eventsTrack.querySelector('.hp-event-card');
+            if (!firstCard) return eventsTrack.clientWidth;
+            const gap = parseFloat(getComputedStyle(eventsTrack).gap) || 24;
+            return firstCard.offsetWidth + gap;
+        };
+
+        const updateEventsNav = () => {
+            const maxScroll = eventsTrack.scrollWidth - eventsTrack.clientWidth;
+            const currentScroll = eventsTrack.scrollLeft;
+
+            if (eventsPrevBtn) {
+                const isStart = currentScroll <= 6;
+                eventsPrevBtn.disabled = isStart;
+                eventsPrevBtn.classList.toggle('is-disabled', isStart);
+            }
+            if (eventsNextBtn) {
+                const isEnd = currentScroll >= maxScroll - 6;
+                eventsNextBtn.disabled = isEnd;
+                eventsNextBtn.classList.toggle('is-disabled', isEnd);
+            }
+
+            // Sync active dot
+            if (eventsDotsContainer) {
+                const cardWidth = getCardWidth();
+                const activeIndex = Math.min(
+                    Math.round(currentScroll / cardWidth),
+                    eventsDotsContainer.children.length - 1
+                );
+                const dots = eventsDotsContainer.querySelectorAll('.hp-events-dot');
+                dots.forEach((dot, idx) => {
+                    dot.classList.toggle('is-active', idx === activeIndex);
+                });
+            }
+        };
+
+        eventsPrevBtn?.addEventListener('click', () => {
+            const cardWidth = getCardWidth();
+            eventsTrack.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+        });
+
+        eventsNextBtn?.addEventListener('click', () => {
+            const cardWidth = getCardWidth();
+            eventsTrack.scrollBy({ left: cardWidth, behavior: 'smooth' });
+        });
+
+        if (eventsDotsContainer) {
+            const dots = eventsDotsContainer.querySelectorAll('.hp-events-dot');
+            dots.forEach((dot) => {
+                dot.addEventListener('click', () => {
+                    const idx = parseInt(dot.dataset.index ?? '0', 10);
+                    const cardWidth = getCardWidth();
+                    eventsTrack.scrollTo({ left: idx * cardWidth, behavior: 'smooth' });
+                });
+            });
+        }
+
+        eventsTrack.addEventListener('scroll', updateEventsNav, { passive: true });
+        window.addEventListener('resize', updateEventsNav, { passive: true });
+        updateEventsNav();
+    }
 });

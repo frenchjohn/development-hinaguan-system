@@ -187,6 +187,9 @@
                             </span>
                             <span class="hp-near-event-widget__date">
                                 {{ $nearEvent->day }} &middot; {{ \Carbon\Carbon::parse($nearEvent->date)->format('M d') }}
+                                @if ($nearEvent->time)
+                                    &middot; {{ $nearEvent->time }}
+                                @endif
                             </span>
                         </div>
 
@@ -204,7 +207,7 @@
                         {{-- Smooth Expandable Description on Hover --}}
                         <div class="hp-near-event-widget__expand">
                             <p class="hp-near-event-widget__desc">
-                                {{ $nearEvent->event ?: $nearEvent->description }}
+                                {{ $nearEvent->event }}
                             </p>
                             <a href="#events" class="hp-near-event-widget__link">
                                 <span>View all events</span>
@@ -422,7 +425,7 @@
     </section>
 
     {{-- Park Events (All Events) --}}
-    <section class="hp-section hp-section--cream" id="events" data-section>
+    <section class="hp-section hp-section--dark" id="events" data-section>
         <div class="hp-container">
             <div class="hp-section__header" data-animate="fade-up">
                 <span class="hp-section__label">What's Happening</span>
@@ -449,57 +452,80 @@
                             🎉 <strong>{{ $allEvents->count() }}</strong> event{{ $allEvents->count() > 1 ? 's' : '' }} scheduled
                         </span>
                     @else
-                        <span class="text-sm text-gray-600">Open daily for scenic walks, picnics, and overnight stays.</span>
+                        <span class="text-sm text-gray-400">Open daily for scenic walks, picnics, and overnight stays.</span>
                     @endif
                 </div>
             </div>
 
-            {{-- Events Grid --}}
+            {{-- Events Carousel (2 Items Visible, Horizontal Scroll) --}}
             <div class="hp-events-panel is-active" id="panelAllEvents">
                 @if ($allEvents->isNotEmpty())
-                    <div class="hp-events-grid">
-                        @foreach ($allEvents as $index => $event)
-                            @php
-                                $eventCarbon = \Carbon\Carbon::parse($event->date);
-                                $isToday = $eventCarbon->isToday();
-                            @endphp
-                            <article class="hp-event-card {{ $isToday ? 'hp-event-card--today' : '' }}" data-animate="fade-up" data-delay="{{ ($index + 1) * 80 }}">
-                                <div class="hp-event-card__date-box">
-                                    <span class="hp-event-card__weekday">{{ $event->day ?: $eventCarbon->format('l') }}</span>
-                                    <span class="hp-event-card__day">{{ $eventCarbon->format('d') }}</span>
-                                    <span class="hp-event-card__month">{{ $eventCarbon->format('M') }}</span>
-                                </div>
-
-                                <div class="hp-event-card__content">
-                                    <div class="hp-event-card__meta-top">
-                                        @if ($isToday)
-                                            <span class="hp-event-badge hp-event-badge--today">
-                                                <span class="hp-pulse-dot"></span> Happening Today
-                                            </span>
-                                        @elseif ($event->badge)
-                                            <span class="hp-event-badge hp-event-badge--tag">{{ $event->badge }}</span>
-                                        @else
-                                            <span class="hp-event-badge hp-event-badge--week">Scheduled Event</span>
-                                        @endif
-
-                                        @if ($event->time)
-                                            <span class="hp-event-time">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                </svg>
-                                                {{ $event->time }}
-                                            </span>
-                                        @endif
+                    <div class="hp-events-carousel-wrapper">
+                        <div class="hp-events-carousel-track" id="hpEventsTrack">
+                            @foreach ($allEvents as $index => $event)
+                                @php
+                                    $eventCarbon = \Carbon\Carbon::parse($event->date);
+                                    $isToday = $eventCarbon->isToday();
+                                @endphp
+                                <article class="hp-event-card {{ $isToday ? 'hp-event-card--today' : '' }}" data-animate="fade-up" data-delay="{{ min(($index + 1) * 80, 400) }}">
+                                    <div class="hp-event-card__date-box">
+                                        <span class="hp-event-card__weekday">{{ $event->day ?: $eventCarbon->format('l') }}</span>
+                                        <span class="hp-event-card__day">{{ $eventCarbon->format('d') }}</span>
+                                        <span class="hp-event-card__month">{{ $eventCarbon->format('M') }}</span>
                                     </div>
 
-                                    <h3 class="hp-event-card__title">{{ $event->title }}</h3>
+                                    <div class="hp-event-card__content">
+                                        <div class="hp-event-card__meta-top">
+                                            @if ($isToday)
+                                                <span class="hp-event-badge hp-event-badge--today">
+                                                    <span class="hp-pulse-dot"></span> Happening Today
+                                                </span>
+                                            @else
+                                                <span class="hp-event-badge hp-event-badge--week">Scheduled Event</span>
+                                            @endif
 
-                                    <p class="hp-event-card__desc">
-                                        {{ $event->event ?: $event->description }}
-                                    </p>
+                                            @if ($event->time)
+                                                <span class="hp-event-time">
+                                                    <svg class="hp-event-time__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    <span>{{ $event->time }}</span>
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <h3 class="hp-event-card__title">{{ $event->title }}</h3>
+
+                                        <p class="hp-event-card__desc">
+                                            {{ $event->event }}
+                                        </p>
+                                    </div>
+                                </article>
+                            @endforeach
+                        </div>
+
+                        {{-- Carousel Controls (Arrows + Dots) --}}
+                        @if ($allEvents->count() > 2)
+                            <div class="hp-events-carousel-nav" data-animate="fade-up">
+                                <button type="button" class="hp-events-nav-btn hp-events-nav-btn--prev" id="hpEventsPrev" aria-label="Previous events">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                    </svg>
+                                </button>
+
+                                <div class="hp-events-carousel-dots" id="hpEventsDots">
+                                    @foreach ($allEvents as $idx => $ev)
+                                        <button type="button" class="hp-events-dot {{ $idx === 0 ? 'is-active' : '' }}" data-index="{{ $idx }}" aria-label="Go to event {{ $idx + 1 }}"></button>
+                                    @endforeach
                                 </div>
-                            </article>
-                        @endforeach
+
+                                <button type="button" class="hp-events-nav-btn hp-events-nav-btn--next" id="hpEventsNext" aria-label="Next events">
+                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 @else
                     <div class="hp-events-empty" data-animate="fade-up">
@@ -517,7 +543,7 @@
     </section>
 
     {{-- Rates --}}
-    <section class="hp-section hp-section--light" id="rates" data-section>
+    <section class="hp-section hp-section--cream" id="rates" data-section>
         <div class="hp-container">
             <div class="hp-section__header" data-animate="fade-up">
                 <span class="hp-section__label">Pricing</span>
@@ -589,7 +615,7 @@
     </section>
 
     {{-- Guest Reviews --}}
-    <section class="hp-section hp-section--reviews" id="reviews" data-section>
+    <section class="hp-section hp-section--cream" id="reviews" data-section>
         <div class="hp-container">
             <div class="hp-section__header" data-animate="fade-up">
                 <span class="hp-section__label">Guest Reviews</span>
@@ -631,7 +657,7 @@
                 </div>
 
                 <div class="hp-reviews-running__actions" data-animate="fade-up" data-delay="150">
-                    <a href="{{ route('feedback') }}" class="hp-btn hp-btn--outline">See Other Reviews</a>
+                    <a href="{{ route('feedback') }}" class="hp-btn--reviews-outline">See Other Reviews</a>
                 </div>
             @else
                 <div class="hp-reviews-empty" data-animate="fade-up">
@@ -643,7 +669,7 @@
     </section>
 
     {{-- Directions --}}
-    <section class="hp-section hp-section--cream" id="directions" data-section>
+    <section class="hp-section hp-section--dark" id="directions" data-section>
         <div class="hp-container">
             <div class="hp-section__header" data-animate="fade-up">
                 <span class="hp-section__label">Find Us</span>

@@ -468,7 +468,8 @@
                                          data-event-title="{{ $event->title }}"
                                          data-event-date="{{ $event->date ? $event->date->format('Y-m-d') : '' }}"
                                          data-event-day="{{ $event->day }}"
-                                         data-event-desc="{{ $event->event ?: $event->description }}"
+                                         data-event-time="{{ $event->time }}"
+                                         data-event-desc="{{ $event->event }}"
                                          data-event-updated="{{ $event->updated_at ? $event->updated_at->diffForHumans() : 'Recently' }}">
                                         <div class="flex items-center gap-3 min-w-0">
                                             <div class="flex flex-col items-center justify-center shrink-0 w-12 py-1 rounded-lg bg-[rgba(26,58,31,0.08)] text-[var(--hp-green)] transition-colors group-hover:bg-[var(--hp-green)] group-hover:text-white dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)] dark:group-hover:bg-[var(--hp-gold)] dark:group-hover:text-black">
@@ -480,7 +481,7 @@
                                                     {{ $event->title }}
                                                 </span>
                                                 <span class="text-xs text-[var(--hp-text-muted)] block truncate">
-                                                    {{ $event->day }} &middot; {{ Str::limit($event->event ?: $event->description, 40) }}
+                                                    {{ $event->day }}{{ $event->time ? ' · ' . $event->time : '' }} &middot; {{ Str::limit($event->event, 35) }}
                                                 </span>
                                             </div>
                                         </div>
@@ -520,7 +521,7 @@
                             </div>
 
                             <div class="mt-4">
-                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                                     <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
                                         <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Event Date</span>
                                         <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDateDisplay">--</span>
@@ -528,6 +529,10 @@
                                     <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
                                         <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">What Day</span>
                                         <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDayDisplay">--</span>
+                                    </div>
+                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Time</span>
+                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalTimeDisplay">--</span>
                                     </div>
                                 </div>
 
@@ -582,16 +587,21 @@
                                     <span class="admin-settings__error" id="eventTitleError"></span>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div class="admin-settings__group">
                                         <label for="eventDateInput" class="admin-settings__label font-semibold">Date</label>
                                         <input type="date" id="eventDateInput" name="date" class="admin-settings__input w-full" required>
                                         <span class="admin-settings__error" id="eventDateError"></span>
                                     </div>
                                     <div class="admin-settings__group">
-                                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day (e.g. Saturday)</label>
-                                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto-calculated from date">
+                                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day</label>
+                                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto from date">
                                         <span class="admin-settings__error" id="eventDayError"></span>
+                                    </div>
+                                    <div class="admin-settings__group">
+                                        <label for="eventTimeInput" class="admin-settings__label font-semibold">Time</label>
+                                        <input type="text" id="eventTimeInput" name="time" class="admin-settings__input w-full" placeholder="e.g. 4:00 PM - 8:00 PM" maxlength="100">
+                                        <span class="admin-settings__error" id="eventTimeError"></span>
                                     </div>
                                 </div>
 
