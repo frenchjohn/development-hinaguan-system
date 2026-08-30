@@ -263,6 +263,10 @@
                             <option value="past">Past / Overdue Arrival</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
+                            <option value="checked in">Checked In</option>
+                            <option value="checked out">Checked Out</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no show">No Show</option>
                         </select>
                     </label>
                     <label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-[#183d28] dark:text-[#f3f4f6]">
@@ -394,6 +398,7 @@
                                                 'Checked In', 'Checked in' => 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
                                                 'Checked Out', 'Checked out' => 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
                                                 'Cancelled' => 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
+                                                'No Show', 'No show' => 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700',
                                                 default => 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300'
                                             };
                                         @endphp
@@ -522,6 +527,7 @@
                                 <option value="Checked In">Checked In</option>
                                 <option value="Checked Out">Checked Out</option>
                                 <option value="Cancelled">Cancelled</option>
+                                <option value="No Show">No Show</option>
                             </select>
                         </label>
                     </div>

@@ -216,7 +216,7 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
               ->orWhere('status', '!=', 'Completed');
         })
         ->whereHas('reservation', function ($rq) use ($excludeReservationId) {
-            $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out'])
+            $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'No Show', 'cancelled', 'checked out', 'checked_out', 'checked-out', 'no show', 'no_show', 'noshow'])
                ->when($excludeReservationId !== null, fn ($q) => $q->whereKeyNot($excludeReservationId));
         })
         ->where(function ($q) use ($minDate, $maxDate) {
@@ -261,7 +261,7 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
         if (! $res) continue;
 
         $resStatus = strtolower(trim((string) $res->status));
-        if (in_array($resStatus, ['cancelled', 'checked out', 'checkedout', 'checked-out'], true)) {
+        if (in_array($resStatus, ['cancelled', 'checked out', 'checkedout', 'checked-out', 'no show', 'noshow', 'no_show'], true)) {
             continue;
         }
 
@@ -3938,19 +3938,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return redirect()->route('login');
         }
 
-        // Get all checked-out reservation guests
+        // Get all record reservation guests (from Checked Out, No Show, or Cancelled reservations, or with checked_out_at)
         $checkedOutGuests = ReservationGuest::with(['customer', 'reservation' => function ($query) {
             $query->with(['reservationAmenities.amenity', 'reservationGuests.customer']);
         }])
-            ->whereNotNull('checked_out_at')
-            ->orderBy('checked_out_at', 'desc')
+            ->where(function ($query) {
+                $query->whereNotNull('checked_out_at')
+                    ->orWhereHas('reservation', function ($rq) {
+                        $rq->whereIn('status', ['Checked Out', 'No Show', 'Cancelled'])
+                            ->orWhereNotNull('check_out');
+                    });
+            })
+            ->whereHas('reservation', function ($rq) {
+                $rq->whereNotIn('status', ['Pending']);
+            })
             ->get();
 
         // ── Bulk companion grouping ──────────────────────────────────────────
-        // Bulk companions are stored as one customer row each, but the records
-        // page shows them merged by their bulk group (same reservation + name +
-        // age + gender + nationality). A group's quantity grows as more members
-        // check out: a 2x record becomes 3x once the last one leaves.
         $isBulkCompanionName = function (?string $name): bool {
             $name = strtolower(trim((string) $name));
             return str_starts_with($name, 'bulk') || str_contains($name, 'companion');
@@ -3994,10 +3998,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $bulkGroups = collect($bulkGroupMembers)->map(function (array $members, string $key) use ($bulkAgeGroupLabel, $toDateTimeString) {
             $first = $members[0];
             $customer = $first->customer;
-            $sorted = collect($members)->sortByDesc(fn ($m) => $m->checked_out_at)->values();
+            $sorted = collect($members)->sortByDesc(fn ($m) => $m->checked_out_at ?: ($m->reservation?->check_out ?: ($m->reservation?->reservation_date ?: $m->created_at)))->values();
             $ageGroup = $bulkAgeGroupLabel($customer->age);
             $gender = $customer->gender ?? 'N/A';
             $nationality = $customer->is_foreigner ? 'Foreigner' : 'Filipino';
+            $resStatus = trim((string) ($first->reservation?->status ?? 'Checked Out'));
+            $groupStatus = in_array($resStatus, ['No Show', 'no show', 'No show', 'no_show']) ? 'No Show' : (in_array($resStatus, ['Cancelled', 'cancelled', 'Cancel']) ? 'Cancelled' : 'Checked Out');
+            $effectiveDate = $sorted->first()?->checked_out_at ?: ($first->reservation?->check_out ?: ($first->reservation?->reservation_date ?: $first->created_at));
 
             return [
                 'key' => $key,
@@ -4006,9 +4013,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'age_group' => $ageGroup,
                 'gender' => $gender,
                 'nationality' => $nationality,
-                'status' => 'Checked Out',
+                'status' => $groupStatus,
                 'count' => count($members),
-                'checked_out_at' => $toDateTimeString($sorted->first()?->checked_out_at),
+                'checked_out_at' => $toDateTimeString($effectiveDate),
                 'members' => $sorted->map(fn ($m) => [
                     'customer_id' => $m->customer_id,
                     'check_in' => $toDateTimeString($m->reservation?->check_in),
@@ -4018,24 +4025,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         })->values();
 
         // Table rows: regular guest entries + one merged row per bulk group,
-        // ordered by most recent check-out.
+        // ordered by most recent activity/check-out.
         $guestRows = $regularGuestEntries
             ->map(fn ($rg) => ['type' => 'guest', 'entry' => $rg])
             ->concat($bulkGroups->map(fn ($group) => ['type' => 'bulk', 'group' => $group]))
-            ->sortByDesc(fn ($row) => $row['type'] === 'bulk'
-                ? (string) ($row['group']['checked_out_at'] ?? '')
-                : ($row['entry']->checked_out_at ? $toDateTimeString($row['entry']->checked_out_at) : ''))
+            ->sortByDesc(function ($row) use ($toDateTimeString) {
+                if ($row['type'] === 'bulk') {
+                    return (string) ($row['group']['checked_out_at'] ?? '');
+                }
+                $entry = $row['entry'];
+                $dt = $entry->checked_out_at ?: ($entry->reservation?->check_out ?: ($entry->reservation?->reservation_date ?: $entry->created_at));
+                return $dt ? $toDateTimeString($dt) : '';
+            })
             ->values();
 
         $bulkGroupData = $bulkGroups->mapWithKeys(fn ($group) => [$group['key'] => $group]);
 
-        // Get all completed / checked-out reservations
-        // A reservation only appears here if:
-        // 1. Its status is 'Checked Out' or check_out is set, OR
-        // 2. All of its registered guests have checked out (no guest remains with checked_out_at = null)
+        // Get all completed/history reservations with status Checked Out, No Show, or Cancelled
         $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->where(function ($query) {
-                $query->where('status', 'Checked Out')
+                $query->whereIn('status', ['Checked Out', 'No Show', 'Cancelled'])
                     ->orWhereNotNull('check_out')
                     ->orWhere(function ($sub) {
                         $sub->whereNotNull('check_in')
@@ -4045,8 +4054,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             });
                     });
             })
-            ->whereNotIn('status', ['Pending', 'Cancelled'])
-            ->orderBy('check_out', 'desc')
+            ->where('status', '!=', 'Pending')
+            ->orderByRaw('COALESCE(check_out, reservation_date, created_at) DESC')
             ->get();
 
         $amenities = Amenity::where('status', true)
@@ -4056,6 +4065,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // Summary stats shown at the top of the records page.
         $guestRecordsCount = $checkedOutGuests->count();
         $completedReservationsCount = $checkedOutReservations->count();
+        $checkedOutCount = $checkedOutReservations->filter(fn ($r) => in_array($r->status, ['Checked Out', 'Checked in', 'Checked In']) || $r->check_out !== null)->count();
+        $noShowCount = $checkedOutReservations->where('status', 'No Show')->count();
+        $cancelledCount = $checkedOutReservations->where('status', 'Cancelled')->count();
         $completedRevenue = (float) $checkedOutReservations->sum('amount_paid');
         $uniqueGuestsCount = $checkedOutGuests->pluck('customer_id')->unique()->filter()->count();
 
@@ -4078,43 +4090,43 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             if (! $rg->customer_id) continue;
             $reservationCustomerCounts[$rg->customer_id] = ($reservationCustomerCounts[$rg->customer_id] ?? 0) + 1;
         }
-        $returningGuests = count(array_filter($reservationCustomerCounts, fn ($count) => $count >= 2));
-        $returningGuestsPct = $uniqueGuestsCount > 0 ? (int) round($returningGuests / $uniqueGuestsCount * 100) : 0;
+        $returningGuests = count(array_filter($reservationCustomerCounts, fn ($count) => $count > 1));
+        $returningGuestsPct = $uniqueGuestsCount > 0 ? round(($returningGuests / $uniqueGuestsCount) * 100) : 0;
 
-        // Revenue per day (from check-out dates) for the mini revenue chart.
-        $revenueByDate = [];
-        foreach ($checkedOutReservations as $res) {
-            $date = $res->check_out ? \Carbon\Carbon::parse($res->check_out)->toDateString() : ($res->created_at ? \Carbon\Carbon::parse($res->created_at)->toDateString() : null);
-            if (! $date) continue;
-            $revenueByDate[$date] = ($revenueByDate[$date] ?? 0) + (float) $res->amount_paid;
+        // Daily revenue sparkline data for the last 7 days with checked-out stays.
+        $revenueSeries = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day = \Carbon\Carbon::now()->subDays($i)->format('Y-m-d');
+            $dayRevenue = (float) $checkedOutReservations->filter(function ($res) use ($day) {
+                $checkoutDate = $res->check_out ? \Carbon\Carbon::parse($res->check_out)->format('Y-m-d') : null;
+                return $checkoutDate === $day;
+            })->sum('amount_paid');
+            $revenueSeries[] = [
+                'date' => \Carbon\Carbon::parse($day)->format('M d'),
+                'revenue' => $dayRevenue,
+            ];
         }
-        ksort($revenueByDate);
-        $revenueSeries = array_values($revenueByDate);
 
         $guestData = $checkedOutGuests->mapWithKeys(function ($guest) {
             return [$guest->customer_id => [
-                'id' => $guest->customer->id,
-                'first_name' => $guest->customer->first_name,
-                'middle_name' => $guest->customer->middle_name,
-                'last_name' => $guest->customer->last_name,
-                'age' => $guest->customer->age,
-                'gender' => $guest->customer->gender,
-                'is_foreigner' => (bool) $guest->customer->is_foreigner,
-                'email' => $guest->customer->email,
-                'phone' => $guest->customer->phone,
-                'checked_out_at' => $guest->checked_out_at,
+                'id' => $guest->customer_id,
+                'first_name' => $guest->customer->first_name ?? '',
+                'middle_name' => $guest->customer->middle_name ?? '',
+                'last_name' => $guest->customer->last_name ?? '',
+                'age' => $guest->customer->age ?? '',
+                'gender' => $guest->customer->gender ?? '',
+                'is_foreigner' => (bool) ($guest->customer->is_foreigner ?? false),
+                'email' => $guest->customer->email ?? '',
+                'phone' => $guest->customer->phone ?? '',
                 'reservation_guests' => [[
                     'reservation' => $guest->reservation ? [
                         'id' => $guest->reservation->id,
                         'status' => $guest->reservation->status,
+                        'reservation_date' => $guest->reservation->reservation_date,
                         'check_in' => $guest->reservation->check_in,
                         'check_out' => $guest->reservation->check_out,
-                        'booker_name' => $guest->reservation->booker_name,
                         'reservation_amenities' => $guest->reservation->reservationAmenities->map(function ($ra) {
-                            return [
-                                'amenity' => ['amenities_name' => $ra->amenity?->amenities_name],
-                                'pricing_type' => $ra->pricing_type,
-                            ];
+                            return ['amenity' => ['amenities_name' => $ra->amenity?->amenities_name]];
                         })->toArray(),
                         'reservation_guests' => $guest->reservation->reservationGuests->map(function ($rg) {
                             return [
@@ -4140,6 +4152,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $reservation->email,
                 'phone' => $reservation->phone,
                 'reservation_date' => $reservation->reservation_date,
+                'end_date' => $reservation->end_date,
+                'start_slot' => $reservation->start_slot ?? 'Daytime',
+                'end_slot' => $reservation->end_slot ?? 'Daytime',
                 'check_in' => $reservation->check_in,
                 'check_out' => $reservation->check_out,
                 'number_of_guests' => $reservation->number_of_guests,
@@ -4190,6 +4205,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'amenities',
             'guestRecordsCount',
             'completedReservationsCount',
+            'checkedOutCount',
+            'noShowCount',
+            'cancelledCount',
             'completedRevenue',
             'uniqueGuestsCount',
             'avgLengthOfStay',
@@ -6092,7 +6110,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'start_slot' => 'nullable|string',
             'end_slot' => 'nullable|string',
             'number_of_guests' => 'required|integer|min:1',
-            'status' => 'required|in:Pending,Confirmed,Checked In,Checked Out,Cancelled',
+            'status' => 'required|in:Pending,Confirmed,Checked In,Checked Out,Cancelled,No Show',
             'amenities' => 'nullable|array',
             'amenities.*.id' => 'nullable',
             'amenities.*.amenity_id' => 'nullable|string',

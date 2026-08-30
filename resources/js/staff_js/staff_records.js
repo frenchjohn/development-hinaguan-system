@@ -1,4 +1,4 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['staff_records'] = function () {
 
     // =====================
@@ -33,35 +33,40 @@ window.AppPage['staff_records'] = function () {
     // DYNAMIC STATS COUNTER UPDATERS
     // ============================================================
     const counterGuestRecords = document.getElementById('counterGuestRecords');
-    const counterCompletedReservations = document.getElementById('counterCompletedReservations');
+    const counterCheckedOut = document.getElementById('counterCheckedOut');
+    const counterNoShow = document.getElementById('counterNoShow');
+    const counterCancelled = document.getElementById('counterCancelled');
     const counterRevenueCollected = document.getElementById('counterRevenueCollected');
-    const counterUniqueVisitors = document.getElementById('counterUniqueVisitors');
 
     const updateCountersFromGuests = (rows) => {
         let totalGuests = 0;
+        let checkedOutCount = 0;
+        let noShowCount = 0;
+        let cancelledCount = 0;
         const uniqueResIds = new Set();
-        const uniqueCustomerIds = new Set();
+        const resAmounts = window.staffReservationAmounts || {};
 
         rows.forEach((row) => {
             const guestCount = parseInt(row.getAttribute('data-guest-count') || '1', 10);
-            totalGuests += isNaN(guestCount) ? 1 : guestCount;
+            const count = isNaN(guestCount) ? 1 : guestCount;
+            totalGuests += count;
+
+            const status = (row.getAttribute('data-status') || '').toLowerCase();
+            if (status.includes('cancel')) {
+                cancelledCount += count;
+            } else if (status.includes('no show') || status.includes('noshow')) {
+                noShowCount += count;
+            } else {
+                checkedOutCount += count;
+            }
 
             const resId = row.getAttribute('data-reservation-id');
             if (resId && resId !== '' && resId !== '0') {
                 uniqueResIds.add(resId);
             }
-
-            const custId = row.getAttribute('data-customer-id');
-            if (custId && custId !== '' && custId !== '0') {
-                uniqueCustomerIds.add('cust_' + custId);
-            } else if (row.getAttribute('data-bulk-key')) {
-                uniqueCustomerIds.add('bulk_' + row.getAttribute('data-bulk-key'));
-            }
         });
 
-        // Compute revenue from the unique completed reservations matching the filtered guests
         let totalRevenue = 0;
-        const resAmounts = window.staffReservationAmounts || {};
         uniqueResIds.forEach((resId) => {
             if (resAmounts[resId] !== undefined) {
                 totalRevenue += parseFloat(resAmounts[resId]) || 0;
@@ -69,15 +74,18 @@ window.AppPage['staff_records'] = function () {
         });
 
         if (counterGuestRecords) counterGuestRecords.textContent = totalGuests.toLocaleString();
-        if (counterCompletedReservations) counterCompletedReservations.textContent = uniqueResIds.size.toLocaleString();
+        if (counterCheckedOut) counterCheckedOut.textContent = checkedOutCount.toLocaleString();
+        if (counterNoShow) counterNoShow.textContent = noShowCount.toLocaleString();
+        if (counterCancelled) counterCancelled.textContent = cancelledCount.toLocaleString();
         if (counterRevenueCollected) counterRevenueCollected.textContent = '₱' + Math.round(totalRevenue).toLocaleString();
-        if (counterUniqueVisitors) counterUniqueVisitors.textContent = uniqueCustomerIds.size.toLocaleString();
     };
 
     const updateCountersFromReservations = (rows) => {
         let totalGuests = 0;
         let totalRevenue = 0;
-        const uniqueCustomerKeys = new Set();
+        let checkedOutCount = 0;
+        let noShowCount = 0;
+        let cancelledCount = 0;
 
         rows.forEach((row) => {
             const count = parseInt(row.getAttribute('data-guest-count') || '1', 10);
@@ -86,16 +94,21 @@ window.AppPage['staff_records'] = function () {
             const amount = parseFloat(row.getAttribute('data-amount') || '0');
             totalRevenue += isNaN(amount) ? 0 : amount;
 
-            const email = row.getAttribute('data-email');
-            const booker = row.getAttribute('data-booker-name');
-            if (email && email !== '') uniqueCustomerKeys.add(email);
-            else if (booker) uniqueCustomerKeys.add(booker);
+            const status = (row.getAttribute('data-status') || '').toLowerCase();
+            if (status.includes('cancel')) {
+                cancelledCount++;
+            } else if (status.includes('no show') || status.includes('noshow')) {
+                noShowCount++;
+            } else {
+                checkedOutCount++;
+            }
         });
 
         if (counterGuestRecords) counterGuestRecords.textContent = totalGuests.toLocaleString();
-        if (counterCompletedReservations) counterCompletedReservations.textContent = rows.length.toLocaleString();
+        if (counterCheckedOut) counterCheckedOut.textContent = checkedOutCount.toLocaleString();
+        if (counterNoShow) counterNoShow.textContent = noShowCount.toLocaleString();
+        if (counterCancelled) counterCancelled.textContent = cancelledCount.toLocaleString();
         if (counterRevenueCollected) counterRevenueCollected.textContent = '₱' + Math.round(totalRevenue).toLocaleString();
-        if (counterUniqueVisitors) counterUniqueVisitors.textContent = uniqueCustomerKeys.size.toLocaleString();
     };
 
     // =====================
@@ -146,6 +159,7 @@ window.AppPage['staff_records'] = function () {
     const bulkGroupData = window.staffBulkGroupData || {};
 
     const searchInput = document.getElementById('guestSearchInput');
+    const guestStatusFilter = document.getElementById('guestStatusFilter');
     const sortSelect = document.getElementById('guestSortSelect');
     const checkOutFrom = document.getElementById('guestCheckOutFrom');
     const checkOutTo = document.getElementById('guestCheckOutTo');
@@ -184,6 +198,14 @@ window.AppPage['staff_records'] = function () {
             const primaryPhone = primaryGuest?.customer?.phone || '';
             const amenities = (reservation?.reservation_amenities || []).map((amenity) => amenity.amenity?.amenities_name).join(', ') || 'None';
 
+            const resStatus = (reservation?.status || (entry?.checked_out_at ? 'Checked Out' : 'N/A')).trim();
+            let statusBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40';
+            if (resStatus.toLowerCase().includes('cancel')) {
+                statusBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40';
+            } else if (resStatus.toLowerCase().includes('no show') || resStatus.toLowerCase().includes('noshow')) {
+                statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700';
+            }
+
             const primaryGuestMarkup = primaryGuest?.customer
                 ? `
                     <div class="p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29]">
@@ -197,7 +219,10 @@ window.AppPage['staff_records'] = function () {
                 <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-[0.7rem] font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Reservation Reference</span>
-                        <span class="font-bold text-xs text-[#178a52] dark:text-[#8fd0ab]">#${escapeHtml(reservation?.id ?? 'N/A')}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border ${statusBadgeClass}">${escapeHtml(resStatus)}</span>
+                            <span class="font-bold text-xs text-[#178a52] dark:text-[#8fd0ab]">#${escapeHtml(reservation?.id ?? 'N/A')}</span>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3 text-xs">
                         <div>
@@ -205,8 +230,8 @@ window.AppPage['staff_records'] = function () {
                             <div class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation?.check_in ?? 'N/A')}</div>
                         </div>
                         <div>
-                            <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-out</span>
-                            <div class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(entry?.checked_out_at ? formatDateTime(entry.checked_out_at) : 'Not yet')}</div>
+                            <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-out / Date</span>
+                            <div class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(entry?.checked_out_at ? formatDateTime(entry.checked_out_at) : (reservation?.check_out ? formatDateTime(reservation.check_out) : 'N/A'))}</div>
                         </div>
                     </div>
                     <div>
@@ -402,6 +427,7 @@ window.AppPage['staff_records'] = function () {
 
     const applyGuestFilters = () => {
         const query = searchInput?.value.trim().toLowerCase() ?? '';
+        const statusFilterValue = (guestStatusFilter?.value ?? 'all').toLowerCase();
         const sortValue = sortSelect?.value ?? 'checkout-desc';
         const checkOutFromValue = checkOutFrom?.value ?? '';
         const checkOutToValue = checkOutTo?.value ?? '';
@@ -416,11 +442,26 @@ window.AppPage['staff_records'] = function () {
 
             const searchText = (row.getAttribute('data-search') || '').toLowerCase();
             const matchesSearch = !query || searchText.includes(query);
+
+            const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+            let matchesStatus = true;
+            if (statusFilterValue !== 'all') {
+                if (statusFilterValue === 'no show') {
+                    matchesStatus = rowStatus.includes('no show') || rowStatus.includes('noshow');
+                } else if (statusFilterValue === 'cancelled') {
+                    matchesStatus = rowStatus.includes('cancel');
+                } else if (statusFilterValue === 'checked out') {
+                    matchesStatus = rowStatus.includes('checked out') || rowStatus.includes('checkedout');
+                } else {
+                    matchesStatus = rowStatus === statusFilterValue;
+                }
+            }
+
             const checkedOutDate = row.getAttribute('data-checked-out') || '';
             const checkedOutDateOnly = checkedOutDate.split(' ')[0];
             const matchesCheckOutFrom = !checkOutFromValue || !checkedOutDateOnly || checkedOutDateOnly >= checkOutFromValue;
             const matchesCheckOutTo = !checkOutToValue || !checkedOutDateOnly || checkedOutDateOnly <= checkOutToValue;
-            return matchesSearch && matchesCheckOutFrom && matchesCheckOutTo;
+            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo;
         });
 
         filteredRows.sort((left, right) => {
@@ -557,13 +598,14 @@ window.AppPage['staff_records'] = function () {
         }
     });
 
-    [searchInput, sortSelect, checkOutFrom, checkOutTo, showCompanionsCheckbox].forEach((element) => {
+    [searchInput, guestStatusFilter, sortSelect, checkOutFrom, checkOutTo, showCompanionsCheckbox].forEach((element) => {
         element?.addEventListener('input', applyGuestFilters);
         element?.addEventListener('change', applyGuestFilters);
     });
 
     clearButton?.addEventListener('click', () => {
         if (searchInput) searchInput.value = '';
+        if (guestStatusFilter) guestStatusFilter.value = 'all';
         if (sortSelect) sortSelect.value = 'checkout-desc';
         if (checkOutFrom) checkOutFrom.value = '';
         if (checkOutTo) checkOutTo.value = '';
@@ -613,6 +655,7 @@ window.AppPage['staff_records'] = function () {
     const reservationData = window.staffReservationData || {};
 
     const reservationSearchInput = document.getElementById('reservationSearchInput');
+    const reservationStatusFilter = document.getElementById('reservationStatusFilter');
     const reservationSortSelect = document.getElementById('reservationSortSelect');
     const reservationCheckOutFrom = document.getElementById('reservationCheckOutFrom');
     const reservationCheckOutTo = document.getElementById('reservationCheckOutTo');
@@ -639,18 +682,36 @@ window.AppPage['staff_records'] = function () {
         }
 
         const primaryGuest = (reservation.reservation_guests || []).find(g => g.is_primary_guest);
-        const companions = (reservation.reservation_guests || []).filter(g => !g.is_primary_guest && g.checked_out_at);
+        const companions = (reservation.reservation_guests || []).filter(g => !g.is_primary_guest);
+
+        const statusRaw = (reservation.status || 'Checked Out').trim();
+        let statusBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40';
+        if (statusRaw.toLowerCase().includes('cancel')) {
+            statusBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40';
+        } else if (statusRaw.toLowerCase().includes('no show') || statusRaw.toLowerCase().includes('noshow')) {
+            statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700';
+        }
 
         let html = `
+            <!-- Header Bar -->
+            <div class="flex items-center justify-between p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
+                <div>
+                    <span class="text-[0.7rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation Reference</span>
+                    <div class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] font-mono">#${escapeHtml(reservation.id)} <span class="text-xs font-semibold text-[#889b8a] ml-1 font-sans">(${escapeHtml(reservation.reservation_type || 'online')})</span></div>
+                </div>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${statusBadgeClass}">${escapeHtml(statusRaw)}</span>
+            </div>
+
+            <!-- Main Booker / Primary Guest -->
             <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
                 <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Main Booker / Primary Guest</h4>
                 <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
+                    <div class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.booker_name || 'N/A')}</div>
+                    <div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">Email: ${escapeHtml(reservation.email || 'N/A')} · Phone: ${escapeHtml(reservation.phone || 'N/A')}</div>
                     ${primaryGuest && primaryGuest.customer ? `
-                        <div class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(primaryGuest.customer.first_name)} ${escapeHtml(primaryGuest.customer.middle_name || '')} ${escapeHtml(primaryGuest.customer.last_name)}</div>
-                        <div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">Age: ${escapeHtml(primaryGuest.customer.age || 'N/A')} · Gender: ${escapeHtml(primaryGuest.customer.gender || 'N/A')} · ${escapeHtml(primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino')}</div>
-                        <div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">Email: ${escapeHtml(primaryGuest.customer.email || 'N/A')} · Phone: ${escapeHtml(primaryGuest.customer.phone || 'N/A')}</div>
-                        <div class="text-[0.75rem] font-medium text-[#178a52] dark:text-[#8fd0ab] mt-1">Checked Out: ${escapeHtml(primaryGuest.checked_out_at ? formatDateTime(primaryGuest.checked_out_at) : 'Not yet')}</div>
-                    ` : '<div class="text-xs text-[#889b8a]">No main guest assigned</div>'}
+                        <div class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-1">Age: ${escapeHtml(primaryGuest.customer.age || 'N/A')} · Gender: ${escapeHtml(primaryGuest.customer.gender || 'N/A')} · ${escapeHtml(primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino')}</div>
+                        <div class="text-[0.72rem] font-medium text-[#178a52] dark:text-[#8fd0ab] mt-1">Checked Out: ${escapeHtml(primaryGuest.checked_out_at ? formatDateTime(primaryGuest.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'N/A'))}</div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -662,25 +723,25 @@ window.AppPage['staff_records'] = function () {
                 const age = c.customer.age || 'N/A';
                 const gender = c.customer.gender || 'N/A';
                 const nationality = c.customer.is_foreigner ? 'Foreigner' : 'Filipino';
-                const key = `${age}|${gender}|${nationality}`;
+                const isCheckedOut = Boolean(c.checked_out_at);
+                const key = `${age}|${gender}|${nationality}|${isCheckedOut ? 'out' : 'in'}`;
 
                 if (!companionGroups[key]) {
-                    companionGroups[key] = { age, gender, nationality, count: 0, emails: [], phones: [] };
+                    companionGroups[key] = { age, gender, nationality, isCheckedOut, count: 0 };
                 }
                 companionGroups[key].count++;
-                if (c.customer.email) companionGroups[key].emails.push(c.customer.email);
-                if (c.customer.phone) companionGroups[key].phones.push(c.customer.phone);
             });
 
             const groupEntries = Object.entries(companionGroups);
             if (groupEntries.length > 0) {
                 html += `
                     <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
-                        <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Companions (${companions.length})</h4>
+                        <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Companions & Guests (${companions.length})</h4>
                         <div class="space-y-2 max-h-48 overflow-y-auto">
                             ${groupEntries.map(([key, group]) => `
-                                <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] text-xs">
-                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.nationality)} · ${escapeHtml(group.gender)} (${escapeHtml(group.age)}) <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-[#eaf5ee] text-[#178a52]">${group.count}x</span></div>
+                                <div class="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] text-xs">
+                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.nationality)} · ${escapeHtml(group.gender)} (${escapeHtml(group.age)}) <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 ml-1.5">${group.count}x</span></div>
+                                    <span class="text-[0.7rem] text-[#889b8a]">${group.isCheckedOut ? 'Checked Out' : '—'}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -693,11 +754,11 @@ window.AppPage['staff_records'] = function () {
             html += `
                 <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
                     <h4 class="m-0 text-xs font-bold text-[#5a6b5c] dark:text-[#a8b8a8] uppercase">Reserved Amenities</h4>
-                    <div class="space-y-1 text-xs">
+                    <div class="space-y-1.5 text-xs">
                         ${reservation.reservation_amenities.map(a => `
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
-                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')} (${escapeHtml(a.pricing_type)})</span>
-                                <span class="font-bold text-[#178a52] dark:text-[#8fd0ab]">₱${parseFloat(a.price_at_booking || a.price || 0).toFixed(2)} x ${a.quantity}</span>
+                            <div class="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
+                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')} <span class="text-[#889b8a]">(${escapeHtml(a.pricing_type || 'Flat')})</span></span>
+                                <span class="font-bold text-emerald-700 dark:text-emerald-300">₱${parseFloat(a.price_at_booking || a.price || 0).toFixed(2)} x ${a.quantity}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -706,14 +767,14 @@ window.AppPage['staff_records'] = function () {
         }
 
         html += `
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
                 <div>
-                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-In</span>
-                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.check_in || 'N/A')}</span>
+                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Stay Schedule</span>
+                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.reservation_date ? formatDateTime(reservation.reservation_date) : 'N/A')}</span>
                 </div>
                 <div>
-                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-Out</span>
-                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.check_out || 'Checked Out')}</span>
+                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-Out Date</span>
+                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.check_out ? formatDateTime(reservation.check_out) : (reservation.end_date ? formatDateTime(reservation.end_date) : 'N/A'))}</span>
                 </div>
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Total Amount</span>
@@ -721,14 +782,14 @@ window.AppPage['staff_records'] = function () {
                 </div>
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Amount Paid</span>
-                    <span class="font-bold text-[#178a52] dark:text-[#8fd0ab]">₱${parseFloat(reservation.amount_paid || 0).toFixed(2)}</span>
+                    <span class="font-bold text-emerald-700 dark:text-emerald-300">₱${parseFloat(reservation.amount_paid || 0).toFixed(2)}</span>
                 </div>
             </div>
         `;
 
         reservationModalBody.innerHTML = html;
         const modalTitle = document.getElementById('reservationModalTitle');
-        if (modalTitle) modalTitle.textContent = `Reservation #${reservation.id} Details`;
+        if (modalTitle) modalTitle.textContent = `Reservation #${reservation.id} Archive Details`;
         reservationModal.classList.add('is-open');
         reservationModal.setAttribute('aria-hidden', 'false');
     };
@@ -767,7 +828,7 @@ window.AppPage['staff_records'] = function () {
             if (!emptyRow && reservationTableBodyEl) {
                 emptyRow = document.createElement('tr');
                 emptyRow.id = 'reservationTableEmptyRow';
-                emptyRow.innerHTML = '<td colspan="8" class="px-4 py-8 text-center text-xs text-[#889b8a]">No completed reservations match your filters.</td>';
+                emptyRow.innerHTML = '<td colspan="8" class="px-4 py-8 text-center text-xs text-[#889b8a]">No reservation archive records match your filters.</td>';
                 reservationTableBodyEl.appendChild(emptyRow);
             }
             if (emptyRow) emptyRow.style.display = '';
@@ -794,6 +855,7 @@ window.AppPage['staff_records'] = function () {
 
     const applyReservationFilters = () => {
         const query = reservationSearchInput?.value.trim().toLowerCase() ?? '';
+        const statusFilterValue = (reservationStatusFilter?.value ?? 'all').toLowerCase();
         const sortValue = reservationSortSelect?.value ?? 'date-desc';
         const checkOutFromValue = reservationCheckOutFrom?.value ?? '';
         const checkOutToValue = reservationCheckOutTo?.value ?? '';
@@ -801,16 +863,33 @@ window.AppPage['staff_records'] = function () {
         const filteredRows = reservationTableRows.filter((row) => {
             const searchText = (row.getAttribute('data-search') || '').toLowerCase();
             const matchesSearch = !query || searchText.includes(query);
+
+            const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+            let matchesStatus = true;
+            if (statusFilterValue !== 'all') {
+                if (statusFilterValue === 'no show') {
+                    matchesStatus = rowStatus.includes('no show') || rowStatus.includes('noshow');
+                } else if (statusFilterValue === 'cancelled') {
+                    matchesStatus = rowStatus.includes('cancel');
+                } else if (statusFilterValue === 'checked out') {
+                    matchesStatus = rowStatus.includes('checked out') || rowStatus.includes('checkedout');
+                } else {
+                    matchesStatus = rowStatus === statusFilterValue;
+                }
+            }
+
             const checkOutDate = row.getAttribute('data-check-out') || '';
             const checkOutDateOnly = checkOutDate.split(' ')[0];
             const matchesCheckOutFrom = !checkOutFromValue || !checkOutDateOnly || checkOutDateOnly >= checkOutFromValue;
             const matchesCheckOutTo = !checkOutToValue || !checkOutDateOnly || checkOutDateOnly <= checkOutToValue;
-            return matchesSearch && matchesCheckOutFrom && matchesCheckOutTo;
+            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo;
         });
 
         filteredRows.sort((left, right) => {
             const leftName = (left.getAttribute('data-booker-name') || '').toLowerCase();
             const rightName = (right.getAttribute('data-booker-name') || '').toLowerCase();
+            const leftResId = Number(left.getAttribute('data-reservation-id') || 0);
+            const rightResId = Number(right.getAttribute('data-reservation-id') || 0);
             const leftAmount = Number(left.getAttribute('data-amount') || 0);
             const rightAmount = Number(right.getAttribute('data-amount') || 0);
             const leftCheckOut = left.getAttribute('data-check-out') || '';
@@ -819,6 +898,10 @@ window.AppPage['staff_records'] = function () {
             switch (sortValue) {
                 case 'date-asc':
                     return leftCheckOut.localeCompare(rightCheckOut);
+                case 'res-id-desc':
+                    return rightResId - leftResId;
+                case 'res-id-asc':
+                    return leftResId - rightResId;
                 case 'name-asc':
                     return leftName.localeCompare(rightName);
                 case 'name-desc':
@@ -862,13 +945,14 @@ window.AppPage['staff_records'] = function () {
         }
     });
 
-    [reservationSearchInput, reservationSortSelect, reservationCheckOutFrom, reservationCheckOutTo].forEach((element) => {
+    [reservationSearchInput, reservationStatusFilter, reservationSortSelect, reservationCheckOutFrom, reservationCheckOutTo].forEach((element) => {
         element?.addEventListener('input', applyReservationFilters);
         element?.addEventListener('change', applyReservationFilters);
     });
 
     reservationClearButton?.addEventListener('click', () => {
         if (reservationSearchInput) reservationSearchInput.value = '';
+        if (reservationStatusFilter) reservationStatusFilter.value = 'all';
         if (reservationSortSelect) reservationSortSelect.value = 'date-desc';
         if (reservationCheckOutFrom) reservationCheckOutFrom.value = '';
         if (reservationCheckOutTo) reservationCheckOutTo.value = '';
