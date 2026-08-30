@@ -135,7 +135,7 @@
                 @endphp
 
                 {{-- ===== GREETING BANNER ===== --}}
-                <section class="mb-6 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                <section class="mb-5 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                     <div class="min-w-[200px] flex-1">
                         <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#f3f4f6]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Admin User' }}!</h2>
                         <p class="m-0 text-sm font-medium text-hp-text-muted">Welcome to Hinaguan Nature Park · Admin Portal Overview</p>
@@ -163,6 +163,11 @@
                         </div>
                     </div>
                 </section>
+
+                {{-- ===== VISITOR PREDICTION & WEATHER INTELLIGENCE (TOP) ===== --}}
+                @if (isset($predictionReport))
+                    <x-visitor_prediction_card :predictionReport="$predictionReport" />
+                @endif
 
                 {{-- ===== STAT CARDS ===== --}}
                 <div class="mb-6 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">

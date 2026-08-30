@@ -1781,6 +1781,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         $recentActivities = ActivityLog::orderByDesc('created_at')->take(10)->get();
 
+        $predictionReport = app(\App\Services\VisitorPredictionService::class)->predictForDate(now()->toDateString());
+
         return view('admin.admin_dashboard', [
             'totalReservations' => $totalReservations,
             'totalGuests' => $totalGuests,
@@ -1796,6 +1798,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'statusBreakdown' => $statusBreakdown,
             'weekRevenue' => $weekRevenue,
             'weekDays' => $weekDays,
+            'predictionReport' => $predictionReport,
         ]);
     })->name('dashboard');
 
@@ -3186,6 +3189,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
+        $predictionReport = app(\App\Services\VisitorPredictionService::class)->predictForDate(now()->toDateString());
+
         return view('staff.staff_dashboard', compact(
             'todayCheckIns',
             'pendingReservationsCount',
@@ -3200,7 +3205,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'topAmenityMax',
             'todayArrivals',
             'dashboardGuestsDue',
-            'dashboardResDue'
+            'dashboardResDue',
+            'predictionReport'
         ));
     })->name('dashboard');
 

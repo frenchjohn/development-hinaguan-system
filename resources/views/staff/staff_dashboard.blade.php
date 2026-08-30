@@ -167,18 +167,9 @@
                     </div>
                 </section>
 
-                {{-- ===== CHECKOUT ALERTS BANNER ===== --}}
-                @if (($dashboardGuestsDue ?? 0) > 0 || ($dashboardResDue ?? 0) > 0)
-                <div class="mb-6 flex items-center gap-5 rounded-2xl border border-rose-500/25 bg-rose-500/10 p-5 shadow-sm dark:border-rose-500/30 dark:bg-rose-950/25">
-                    <div class="sd-pulse flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm">
-                        <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div class="flex flex-1 flex-col gap-1">
-                        <strong class="text-base font-extrabold uppercase tracking-[0.05em] text-rose-700 dark:text-rose-300">ATTENTION REQUIRED</strong>
-                        <span class="text-sm text-hp-text">There are <strong>{{ $dashboardResDue }} reservations</strong> ({{ $dashboardGuestsDue }} guests) currently overdue for checkout.</span>
-                    </div>
-                    <a href="{{ route('staff.checkins') }}" class="whitespace-nowrap rounded-xl bg-rose-600 px-6 py-3 text-sm font-bold text-white no-underline shadow-[0_4px_12px_rgba(225,29,72,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-700 hover:text-white hover:shadow-[0_6px_15px_rgba(225,29,72,0.35)]">Resolve Check-outs &rarr;</a>
-                </div>
+                {{-- ===== VISITOR PREDICTION & SHIFT FORECASTING (TOP) ===== --}}
+                @if (isset($predictionReport))
+                    <x-visitor_prediction_card :predictionReport="$predictionReport" :isStaff="true" />
                 @endif
 
                 {{-- ===== MAIN DASHBOARD GRID: Stats | Chart | Donut ===== --}}
@@ -275,7 +266,7 @@
                                 <ul class="sd-donut-legend m-0 flex w-full list-none flex-col gap-1.5 p-0">
                                     @foreach ($statusBreakdown as $status => $count)
                                         <li class="flex items-center gap-2 text-[0.75rem] font-medium text-hp-text">
-                                            <i class="inline-block h-[0.6rem] w-[0.6rem] shrink-0 rounded-full" style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
+                                             <i class="inline-block h-[0.6rem] w-[0.6rem] shrink-0 rounded-full" style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
                                             {{ $status }}
                                         </li>
                                     @endforeach

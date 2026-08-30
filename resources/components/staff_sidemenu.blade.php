@@ -9,6 +9,48 @@
         ['key' => 'checkins', 'label' => 'Check-ins', 'url' => route('staff.checkins'), 'icon' => 'check'],
         ['key' => 'records', 'label' => 'Records', 'url' => route('staff.records'), 'icon' => 'archive'],
     ];
+
+    $hasOverdueCheckouts = false;
+    $dueCount = 0;
+    try {
+        $activeCheckedIn = \App\Models\Reservation::query()
+            ->with(['reservationGuests', 'entranceFee'])
+            ->whereNotNull('check_in')
+            ->where('status', 'Checked In')
+            ->get();
+
+        $parkSettings = \App\Models\ParkSetting::first();
+        $dayEndTime = $parkSettings?->day_tour_end_time ?? '18:00:00';
+        $nightEndTime = $parkSettings?->night_tour_end_time ?? '04:00:00';
+
+        foreach ($activeCheckedIn as $res) {
+            $startDate = $res->reservation_date ? \Carbon\Carbon::parse($res->reservation_date)->toDateString() : null;
+            if (!$startDate) continue;
+
+            $totalDays = max(1, (int) ($res->total_days ?? 1));
+            $endDate = $res->end_date ? \Carbon\Carbon::parse($res->end_date)->toDateString() : ($totalDays > 1 ? \Carbon\Carbon::parse($startDate)->addDays($totalDays - 1)->toDateString() : $startDate);
+            $endSlot = $res->end_slot ?: ($res->entranceFee?->pricing_type ?: $res->start_slot ?: 'Daytime');
+
+            $checkoutBase = \Carbon\Carbon::parse($endDate);
+            $targetSlot = strtolower($endSlot);
+
+            if (str_contains($targetSlot, 'night') && !str_contains($targetSlot, 'day')) {
+                $coAt = $checkoutBase->copy()->addDay()->setTimeFromTimeString($nightEndTime);
+            } else {
+                $coAt = $checkoutBase->copy()->setTimeFromTimeString($dayEndTime);
+            }
+
+            if ($coAt && $coAt->isPast()) {
+                $unresolved = $res->reservationGuests->whereNull('checked_out_at')->count();
+                if ($unresolved > 0) {
+                    $hasOverdueCheckouts = true;
+                    $dueCount++;
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        $hasOverdueCheckouts = false;
+    }
 @endphp
 
 <aside class="fixed top-0 left-0 z-50 flex flex-col w-[10rem] h-screen bg-[#1a3a25] dark:bg-[#09140e] border-r border-white/12 dark:border-[#14281c] text-white shadow-[0_4px_20px_rgba(0,0,0,0.25)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] overflow-visible transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] -translate-x-full lg:translate-x-0 group/sidebar" id="dashSidebar">
@@ -32,10 +74,16 @@
                         class="nav-link relative flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-white min-h-0 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer overflow-hidden group/link hover:bg-white/10 dark:hover:bg-white/5 hover:scale-105 {{ $active === $link['key'] ? 'is-active' : '' }}"
                         data-page-transition
                     >
-                        <span class="nav-icon w-7 h-7 flex items-center justify-center mb-1 shrink-0 rounded-lg bg-transparent transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-85 group-hover/link:opacity-100 group-hover/link:scale-110">
+                        <span class="nav-icon relative w-7 h-7 flex items-center justify-center mb-1 shrink-0 rounded-lg bg-transparent transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-85 group-hover/link:opacity-100 group-hover/link:scale-110">
                             <span class="[&>svg]:w-5 [&>svg]:h-5 [&>svg]:fill-none [&>svg]:transition-all [&>svg]:duration-300 [&>svg]:ease-[cubic-bezier(0.34,1.56,0.64,1)] [&>svg]:stroke-white [&>svg]:stroke-[1.5]">
                                 @include('components.partials.sidemenu-icon', ['icon' => $link['icon']])
                             </span>
+                            @if ($link['key'] === 'checkins' && $hasOverdueCheckouts)
+                                <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5" title="{{ $dueCount }} reservation(s) overdue for checkout">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.9)]"></span>
+                                </span>
+                            @endif
                         </span>
                         <span class="nav-label font-['Poppins','Inter',sans-serif] text-[10px] text-center leading-[1.2] shrink-0 tracking-[0.2px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-100 text-white/75 font-medium group-hover/link:text-white group-hover/link:font-semibold">{{ $link['label'] }}</span>
                     </a>

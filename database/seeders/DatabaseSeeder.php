@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ParkSettingSeeder::class,
             ParkRuleSeeder::class,
+            DailyWeatherShiftLogSeeder::class,
         ]);
 
         StaffAccount::firstOrCreate(
