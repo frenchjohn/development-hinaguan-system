@@ -108,5 +108,20 @@ class VisitorPredictionTest extends TestCase
         $this->assertStringContainsString('Baseline', $shiftReport['confidence']);
         $this->assertGreaterThan(0, $shiftReport['predicted_guests']);
     }
+
+    public function test_records_daily_shift_log_and_runs_sync_command()
+    {
+        $predictionService = new VisitorPredictionService();
+        $log = $predictionService->recordShiftLog('2026-08-28', 'Daytime', 'Sunny', 31.0);
+
+        $this->assertNotNull($log);
+        $this->assertEquals('2026-08-28', $log->log_date->toDateString());
+        $this->assertEquals('Daytime', $log->shift);
+        $this->assertEquals('Sunny', $log->weather_condition);
+
+        $this->artisan('weather:log-shifts --days=2')
+            ->assertExitCode(0);
+    }
 }
+
 

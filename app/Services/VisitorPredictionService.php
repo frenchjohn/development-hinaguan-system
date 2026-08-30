@@ -413,4 +413,84 @@ class VisitorPredictionService
 
         return "{$prefix}Projected {$shift} attendance is on track with typical {$dayName} numbers (~{$predicted} visitors) under {$weather} conditions.";
     }
+
+    /**
+     * Record actual attendance and weather for a completed date/shift.
+     * Automatically called at the end of the day or when sync runs.
+     */
+    public function recordShiftLog(string $date, string $shift, ?string $weatherCondition = null, ?float $temperature = null): DailyWeatherShiftLog
+    {
+        $carbonDate = Carbon::parse($date);
+
+        // Fetch weather if not provided
+        if (!$weatherCondition) {
+            $weather = $this->weatherService->getShiftForecastForDate($carbonDate->toDateString());
+            $weatherCondition = $shift === 'Daytime' ? ($weather['daytime']['condition'] ?? 'Sunny') : ($weather['nighttime']['condition'] ?? 'Partly Cloudy');
+            $temperature = $shift === 'Daytime' ? ($weather['daytime']['temperature'] ?? 28.0) : ($weather['nighttime']['temperature'] ?? 26.0);
+        }
+
+        // Query all reservations that checked in on this date for this shift
+        $reservations = Reservation::query()
+            ->whereDate('reservation_date', $carbonDate->toDateString())
+            ->whereIn('status', ['Checked In', 'Checked Out'])
+            ->whereNotNull('check_in')
+            ->get();
+
+        // Filter by shift
+        $shiftReservations = $reservations->filter(function ($r) use ($shift) {
+            $slot = $r->start_slot ?: ($r->entranceFee?->pricing_type ?: 'Daytime');
+            if ($shift === 'Daytime') {
+                return !str_contains(strtolower($slot), 'night');
+            } else {
+                return str_contains(strtolower($slot), 'night');
+            }
+        });
+
+        $actualGuests = (int) $shiftReservations->sum('number_of_guests');
+        $actualReservations = $shiftReservations->count();
+
+        // Determine earliest check-in time
+        $checkInTimes = $shiftReservations->map(fn($r) => $r->check_in ? Carbon::parse($r->check_in) : null)->filter();
+        $earliestCheckIn = $checkInTimes->isNotEmpty() ? $checkInTimes->min()->format('H:i:s') : ($shift === 'Daytime' ? '09:00:00' : '18:15:00');
+        $peakArrival = $shift === 'Daytime' ? '11:00:00' : '19:00:00';
+
+        $existing = DailyWeatherShiftLog::query()
+            ->whereDate('log_date', $carbonDate->toDateString())
+            ->where('shift', $shift)
+            ->first();
+
+        $data = [
+            'log_date' => $carbonDate->toDateString(),
+            'shift' => $shift,
+            'weather_condition' => $weatherCondition ?: 'Sunny',
+            'temperature_celsius' => $temperature ?: 28.0,
+            'precipitation_probability' => $weather['daytime']['precip_prob'] ?? 10,
+            'is_weekend' => $carbonDate->isWeekend(),
+            'is_holiday' => $this->detectHolidayOrEvent($carbonDate)['is_holiday'],
+            'actual_guests' => $actualGuests,
+            'actual_reservations' => $actualReservations,
+            'earliest_arrival_time' => $earliestCheckIn,
+            'peak_arrival_time' => $peakArrival,
+        ];
+
+        if ($existing) {
+            $existing->update($data);
+            return $existing;
+        }
+
+        return DailyWeatherShiftLog::create($data);
+    }
+
+    /**
+     * Sync yesterday's and past completed shifts so database is always up to date.
+     */
+    public function syncRecentShiftLogs(int $daysBack = 7): void
+    {
+        for ($i = 1; $i <= $daysBack; $i++) {
+            $pastDate = Carbon::today()->subDays($i)->toDateString();
+            $this->recordShiftLog($pastDate, 'Daytime');
+            $this->recordShiftLog($pastDate, 'Nighttime');
+        }
+    }
 }
+

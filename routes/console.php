@@ -90,3 +90,14 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     $this->info("=========================================");
 })->purpose('Test sending emails (Reservation QR & OTP) via the configured default mailer (Gmail API or SMTP)');
 
+Artisan::command('weather:log-shifts {--days=7 : Number of past days to sync}', function () {
+    $days = (int) ($this->option('days') ?: 7);
+    $this->info("Syncing actual attendance and weather logs for the past {$days} days...");
+
+    $service = app(\App\Services\VisitorPredictionService::class);
+    $service->syncRecentShiftLogs($days);
+
+    $this->info("✓ Shift logs successfully recorded and synchronized in database.");
+})->purpose('Compile and record actual guest attendance and weather logs into daily_weather_shift_logs for future predictions');
+
+
