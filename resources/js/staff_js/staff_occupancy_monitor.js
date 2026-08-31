@@ -1,18 +1,85 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['staff_occupancy_monitor'] = function () {
 
     // Filter functionality
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const filterPanel = document.getElementById('filterPanel');
     const searchInput = document.getElementById('searchAmenities');
+    const startDateFilter = document.getElementById('startDateFilter');
+    const endDateFilter = document.getElementById('endDateFilter');
     const timeSlotFilter = document.getElementById('timeSlotFilter');
     const availabilityFilter = document.getElementById('availabilityFilter');
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const todayFilterBtn = document.getElementById('todayFilterBtn');
+    const tomorrowFilterBtn = document.getElementById('tomorrowFilterBtn');
+    const thisWeekendFilterBtn = document.getElementById('thisWeekendFilterBtn');
+    const nextWeekFilterBtn = document.getElementById('nextWeekFilterBtn');
+    const occupancyFilterForm = document.getElementById('occupancyFilterForm');
     const occupancyCards = document.querySelectorAll('.occupancy-card');
+
+    // Quick Date Helpers
+    const formatDate = (date) => {
+        const d = new Date(date);
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${d.getFullYear()}-${month}-${day}`;
+    };
 
     // Toggle filter panel
     filterToggleBtn?.addEventListener('click', function() {
+        if (!filterPanel) return;
+        filterPanel.classList.toggle('hidden');
         filterPanel.classList.toggle('is-open');
+    });
+
+    todayFilterBtn?.addEventListener('click', () => {
+        const todayStr = formatDate(new Date());
+        if (startDateFilter) startDateFilter.value = todayStr;
+        if (endDateFilter) endDateFilter.value = todayStr;
+        occupancyFilterForm?.submit();
+    });
+
+    tomorrowFilterBtn?.addEventListener('click', () => {
+        const tmr = new Date();
+        tmr.setDate(tmr.getDate() + 1);
+        const tmrStr = formatDate(tmr);
+        if (startDateFilter) startDateFilter.value = tmrStr;
+        if (endDateFilter) endDateFilter.value = tmrStr;
+        occupancyFilterForm?.submit();
+    });
+
+    thisWeekendFilterBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const day = now.getDay();
+        const diffToSat = (6 - day + 7) % 7;
+        const sat = new Date(now);
+        sat.setDate(now.getDate() + diffToSat);
+        const sun = new Date(sat);
+        sun.setDate(sat.getDate() + 1);
+
+        if (startDateFilter) startDateFilter.value = formatDate(sat);
+        if (endDateFilter) endDateFilter.value = formatDate(sun);
+        occupancyFilterForm?.submit();
+    });
+
+    nextWeekFilterBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const day = now.getDay();
+        const diffToNextMon = (8 - day) % 7 || 7;
+        const nextMon = new Date(now);
+        nextMon.setDate(now.getDate() + diffToNextMon);
+        const nextSun = new Date(nextMon);
+        nextSun.setDate(nextMon.getDate() + 6);
+
+        if (startDateFilter) startDateFilter.value = formatDate(nextMon);
+        if (endDateFilter) endDateFilter.value = formatDate(nextSun);
+        occupancyFilterForm?.submit();
+    });
+
+    startDateFilter?.addEventListener('change', () => {
+        if (startDateFilter.value && endDateFilter && (!endDateFilter.value || endDateFilter.value < startDateFilter.value)) {
+            endDateFilter.value = startDateFilter.value;
+        }
     });
 
     // Clear filters
@@ -20,75 +87,90 @@ window.AppPage['staff_occupancy_monitor'] = function () {
         if (searchInput) searchInput.value = '';
         if (timeSlotFilter) timeSlotFilter.value = 'all';
         if (availabilityFilter) availabilityFilter.value = 'all';
-        applyFilters();
+        const todayStr = formatDate(new Date());
+        if (startDateFilter && (startDateFilter.value !== todayStr || endDateFilter?.value !== todayStr)) {
+            startDateFilter.value = todayStr;
+            if (endDateFilter) endDateFilter.value = todayStr;
+            occupancyFilterForm?.submit();
+        } else {
+            applyFilters();
+        }
     });
 
     // Apply filters
     function applyFilters() {
-        const searchTerm = searchInput?.value.toLowerCase() || '';
+        const searchTerm = (searchInput?.value || '').toLowerCase().trim();
         const selectedTimeSlot = timeSlotFilter?.value || 'all';
         const selectedAvailability = availabilityFilter?.value || 'all';
 
         occupancyCards.forEach(card => {
-            const amenityName = card.dataset.amenityName || '';
-            const availableSlots = card.dataset.availableSlots || '';
-            const unavailableSlots = card.dataset.unavailableSlots || '';
+            const amenityName = (card.dataset.amenityName || '').toLowerCase();
+            const availableSlotsArray = (card.dataset.availableSlots || '')
+                .split(',')
+                .map(s => s.trim().toLowerCase())
+                .filter(Boolean);
+            const unavailableSlotsArray = (card.dataset.unavailableSlots || '')
+                .split(',')
+                .map(s => s.trim().toLowerCase())
+                .filter(Boolean);
 
-            // Search filter
-            const matchesSearch = amenityName.includes(searchTerm);
+            let occupied = [];
+            let reserved = [];
+            try {
+                occupied = JSON.parse(card.dataset.occupiedJson || '[]');
+                reserved = JSON.parse(card.dataset.reservedJson || '[]');
+            } catch (e) {}
 
-            // Time slot filter
-            let matchesTimeSlot = true;
-            if (selectedTimeSlot !== 'all') {
-                const availableSlotsArray = availableSlots.split(',').filter(s => s.trim());
+            const isOccupied = occupied.length > 0;
+            const isReserved = reserved.length > 0;
+            const isAvailable = availableSlotsArray.length > 0;
 
-                if (selectedTimeSlot === 'daytonight') {
-                    matchesTimeSlot = availableSlotsArray.includes('daytime') || availableSlotsArray.includes('nighttime');
-                } else if (selectedTimeSlot === 'nighttoday') {
-                    // Night to Day's relevant part today is tonight
-                    matchesTimeSlot = availableSlotsArray.includes('nighttime');
-                } else {
-                    matchesTimeSlot = availableSlotsArray.includes(selectedTimeSlot);
-                }
-            }
+            // 1. Search Filter
+            const matchesSearch = !searchTerm || amenityName.includes(searchTerm);
 
-            // Availability filter
-            let matchesAvailability = true;
-            if (selectedAvailability !== 'all' && selectedTimeSlot !== 'all') {
-                const availableSlotsArray = availableSlots.split(',').filter(s => s.trim());
-                const unavailableSlotsArray = unavailableSlots.split(',').filter(s => s.trim());
+            // 2. Time Slot & Availability Filter
+            let matchesTimeSlotAndAvailability = true;
 
-                if (selectedTimeSlot === 'daytonight' || selectedTimeSlot === 'nighttoday') {
-                    const isDaytimeAvailable = availableSlotsArray.includes('daytime');
-                    const isNighttimeAvailable = availableSlotsArray.includes('nighttime');
-                    const isDaytimeUnavailable = unavailableSlotsArray.includes('daytime');
-                    const isNighttimeUnavailable = unavailableSlotsArray.includes('nighttime');
-
-                    if (selectedAvailability === 'available') {
-                        matchesAvailability = isDaytimeAvailable || isNighttimeAvailable;
-                    } else if (selectedAvailability === 'unavailable') {
-                        matchesAvailability = isDaytimeUnavailable || isNighttimeUnavailable;
-                    }
-                } else {
-                    if (selectedAvailability === 'available') {
-                        matchesAvailability = availableSlotsArray.includes(selectedTimeSlot);
-                    } else if (selectedAvailability === 'unavailable') {
-                        matchesAvailability = unavailableSlotsArray.includes(selectedTimeSlot);
-                    }
-                }
-            } else if (selectedAvailability !== 'all' && selectedTimeSlot === 'all') {
-                const availableSlotsArray = availableSlots.split(',').filter(s => s.trim());
-
+            if (selectedTimeSlot === 'all') {
                 if (selectedAvailability === 'available') {
-                    matchesAvailability = availableSlotsArray.length > 0;
+                    matchesTimeSlotAndAvailability = isAvailable && !isOccupied && !isReserved;
+                } else if (selectedAvailability === 'occupied') {
+                    matchesTimeSlotAndAvailability = isOccupied;
+                } else if (selectedAvailability === 'reserved') {
+                    matchesTimeSlotAndAvailability = isReserved;
                 } else if (selectedAvailability === 'unavailable') {
-                    const unavailableSlotsArray = unavailableSlots.split(',').filter(s => s.trim());
-                    matchesAvailability = unavailableSlotsArray.length > 0;
+                    matchesTimeSlotAndAvailability = isOccupied || isReserved || unavailableSlotsArray.length > 0;
+                }
+            } else {
+                // Specific slot: daytime or nighttime
+                const isSlotAvailable = availableSlotsArray.includes(selectedTimeSlot);
+                const isSlotUnavailable = unavailableSlotsArray.includes(selectedTimeSlot);
+
+                // Check if occupied or reserved specifically for this slot
+                const isSlotOccupied = occupied.some(item => {
+                    const slots = (item.today_slots || []).map(s => s.toLowerCase());
+                    return slots.includes(selectedTimeSlot) || (item.time_slot || '').toLowerCase().includes(selectedTimeSlot);
+                });
+                const isSlotReserved = reserved.some(item => {
+                    const slots = (item.today_slots || []).map(s => s.toLowerCase());
+                    return slots.includes(selectedTimeSlot) || (item.time_slot || '').toLowerCase().includes(selectedTimeSlot);
+                });
+
+                if (selectedAvailability === 'all') {
+                    matchesTimeSlotAndAvailability = true;
+                } else if (selectedAvailability === 'available') {
+                    matchesTimeSlotAndAvailability = isSlotAvailable && !isSlotOccupied && !isSlotReserved;
+                } else if (selectedAvailability === 'occupied') {
+                    matchesTimeSlotAndAvailability = isSlotOccupied;
+                } else if (selectedAvailability === 'reserved') {
+                    matchesTimeSlotAndAvailability = isSlotReserved;
+                } else if (selectedAvailability === 'unavailable') {
+                    matchesTimeSlotAndAvailability = isSlotUnavailable || isSlotOccupied || isSlotReserved;
                 }
             }
 
             // Show/hide card based on filters
-            if (matchesSearch && matchesTimeSlot && matchesAvailability) {
+            if (matchesSearch && matchesTimeSlotAndAvailability) {
                 card.style.display = '';
             } else {
                 card.style.display = 'none';
@@ -101,17 +183,14 @@ window.AppPage['staff_occupancy_monitor'] = function () {
         let emptyState = document.querySelector('.occupancy-empty');
 
         if (visibleCards.length === 0) {
-            // The @empty state only renders when there are no amenities at all;
-            // create one on the fly so filters that hide everything get feedback.
             if (!emptyState && grid) {
                 emptyState = document.createElement('div');
-                emptyState.className = 'occupancy-empty';
-                emptyState.innerHTML = '<p></p>';
+                emptyState.className = 'occupancy-empty col-span-full py-12 text-center text-hp-text-muted';
+                emptyState.innerHTML = '<p class="text-sm font-semibold">No amenities match your filters</p>';
                 grid.appendChild(emptyState);
             }
             if (emptyState) {
-                emptyState.style.display = 'flex';
-                emptyState.querySelector('p').textContent = 'No amenities match your filters';
+                emptyState.style.display = 'block';
             }
         } else if (emptyState) {
             emptyState.style.display = 'none';

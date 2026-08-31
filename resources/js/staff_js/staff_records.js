@@ -251,12 +251,20 @@ window.AppPage['staff_records'] = function () {
                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#178a52] text-white font-bold text-base shadow-sm">
                     ${escapeHtml(customerData.first_name ? customerData.first_name[0] : 'G')}
                 </div>
-                <div>
-                    <h4 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(fullName)}</h4>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(fullName)}</h4>
+                        ${customerData.has_pool_access ? `
+                            <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.68rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Availing Pool Access">
+                                <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                Pool Access
+                            </span>
+                        ` : ''}
+                    </div>
                     <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Customer ID #${escapeHtml(customerData.id)} · ${customerData.is_foreigner ? 'Foreigner' : 'Filipino'}</p>
                 </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Age</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(customerData.age ?? 'N/A')}</span>
@@ -264,6 +272,10 @@ window.AppPage['staff_records'] = function () {
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Gender</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(customerData.gender ?? 'N/A')}</span>
+                </div>
+                <div>
+                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Pool Access</span>
+                    <span class="font-bold ${customerData.has_pool_access ? 'text-[#0284c7] dark:text-[#38bdf8]' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">${customerData.has_pool_access ? '✓ Availing Pool' : 'No'}</span>
                 </div>
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Email</span>
@@ -300,7 +312,14 @@ window.AppPage['staff_records'] = function () {
         const membersHtml = members.length
             ? members.map((m, idx) => `
                 <div class="flex items-center justify-between p-2.5 rounded-lg bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
-                    <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">Member #${idx + 1} (Customer #${escapeHtml(m.customer_id)})</span>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">Member #${idx + 1} (Customer #${escapeHtml(m.customer_id)})</span>
+                        ${m.has_pool_access ? `
+                            <span class="inline-flex items-center gap-0.5 rounded bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.2 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40">
+                                Pool Access
+                            </span>
+                        ` : ''}
+                    </div>
                     <span class="text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">${m.checked_out_at ? formatDateTime(m.checked_out_at) : 'Checked Out'}</span>
                 </div>
             `).join('')
@@ -311,12 +330,20 @@ window.AppPage['staff_records'] = function () {
                 <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#178a52] text-white shadow-sm">
                     <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /></svg>
                 </div>
-                <div>
-                    <h4 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.name)} (${group.count} Guests)</h4>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h4 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.name)} (${group.count} Guests)</h4>
+                        ${group.has_pool_access ? `
+                            <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.68rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Availing Pool Access">
+                                <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                Pool (${group.pool_access_count || group.count}x)
+                            </span>
+                        ` : ''}
+                    </div>
                     <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation #${escapeHtml(group.reservation_id)} · Bulk Companion Group</p>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] text-xs">
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Age Group</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.age_group)}</span>
@@ -328,6 +355,10 @@ window.AppPage['staff_records'] = function () {
                 <div>
                     <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Nationality</span>
                     <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.nationality)}</span>
+                </div>
+                <div>
+                    <span class="block text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Pool Access</span>
+                    <span class="font-bold ${group.has_pool_access ? 'text-[#0284c7] dark:text-[#38bdf8]' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">${group.has_pool_access ? `✓ Yes (${group.pool_access_count || group.count}x)` : 'No'}</span>
                 </div>
             </div>
             <div class="space-y-2">
@@ -692,12 +723,22 @@ window.AppPage['staff_records'] = function () {
             statusBadgeClass = 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700';
         }
 
+        const hasPoolAccess = (reservation.pool_access_count > 0) || (parseFloat(reservation.pool_fee || 0) > 0) || (reservation.pool_option === 'with_pool');
+
         let html = `
             <!-- Header Bar -->
             <div class="flex items-center justify-between p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
                 <div>
                     <span class="text-[0.7rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Reservation Reference</span>
-                    <div class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] font-mono">#${escapeHtml(reservation.id)} <span class="text-xs font-semibold text-[#889b8a] ml-1 font-sans">(${escapeHtml(reservation.reservation_type || 'online')})</span></div>
+                    <div class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] font-mono flex items-center gap-2 flex-wrap">
+                        <span>#${escapeHtml(reservation.id)} <span class="text-xs font-semibold text-[#889b8a] font-sans">(${escapeHtml(reservation.reservation_type || 'online')})</span></span>
+                        ${hasPoolAccess ? `
+                            <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.68rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs font-sans" title="Pool Access Included">
+                                <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                Pool (${reservation.pool_access_count || 1}x)
+                            </span>
+                        ` : ''}
+                    </div>
                 </div>
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${statusBadgeClass}">${escapeHtml(statusRaw)}</span>
             </div>
@@ -708,8 +749,15 @@ window.AppPage['staff_records'] = function () {
                 <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                     <div class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.booker_name || 'N/A')}</div>
                     <div class="text-[0.75rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">Email: ${escapeHtml(reservation.email || 'N/A')} · Phone: ${escapeHtml(reservation.phone || 'N/A')}</div>
-                    ${primaryGuest && primaryGuest.customer ? `
-                        <div class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-1">Age: ${escapeHtml(primaryGuest.customer.age || 'N/A')} · Gender: ${escapeHtml(primaryGuest.customer.gender || 'N/A')} · ${escapeHtml(primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino')}</div>
+                    ${primaryGuest && (primaryGuest.customer || primaryGuest.name) ? `
+                        <div class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span>Age: ${escapeHtml(primaryGuest.customer?.age || primaryGuest.age || 'N/A')} · Gender: ${escapeHtml(primaryGuest.customer?.gender || primaryGuest.gender || 'N/A')} · ${escapeHtml((primaryGuest.customer?.is_foreigner ?? false) ? 'Foreigner' : 'Filipino')}</span>
+                            ${primaryGuest.has_pool_access ? `
+                                <span class="inline-flex items-center gap-0.5 rounded bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.2 text-[0.62rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40" title="Availing Pool Access">
+                                    Pool Access
+                                </span>
+                            ` : ''}
+                        </div>
                         <div class="text-[0.72rem] font-medium text-[#178a52] dark:text-[#8fd0ab] mt-1">Checked Out: ${escapeHtml(primaryGuest.checked_out_at ? formatDateTime(primaryGuest.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'N/A'))}</div>
                     ` : ''}
                 </div>
@@ -719,15 +767,16 @@ window.AppPage['staff_records'] = function () {
         if (companions.length > 0) {
             const companionGroups = {};
             companions.forEach(c => {
-                if (!c.customer) return;
-                const age = c.customer.age || 'N/A';
-                const gender = c.customer.gender || 'N/A';
-                const nationality = c.customer.is_foreigner ? 'Foreigner' : 'Filipino';
+                const cust = c.customer || c;
+                const age = cust.age || 'N/A';
+                const gender = cust.gender || 'N/A';
+                const nationality = (cust.is_foreigner ?? false) ? 'Foreigner' : 'Filipino';
                 const isCheckedOut = Boolean(c.checked_out_at);
-                const key = `${age}|${gender}|${nationality}|${isCheckedOut ? 'out' : 'in'}`;
+                const hasPool = Boolean(c.has_pool_access);
+                const key = `${age}|${gender}|${nationality}|${isCheckedOut ? 'out' : 'in'}|${hasPool ? 'pool' : 'nopool'}`;
 
                 if (!companionGroups[key]) {
-                    companionGroups[key] = { age, gender, nationality, isCheckedOut, count: 0 };
+                    companionGroups[key] = { age, gender, nationality, isCheckedOut, hasPool, count: 0 };
                 }
                 companionGroups[key].count++;
             });
@@ -740,7 +789,15 @@ window.AppPage['staff_records'] = function () {
                         <div class="space-y-2 max-h-48 overflow-y-auto">
                             ${groupEntries.map(([key, group]) => `
                                 <div class="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] text-xs">
-                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(group.nationality)} · ${escapeHtml(group.gender)} (${escapeHtml(group.age)}) <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 ml-1.5">${group.count}x</span></div>
+                                    <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
+                                        <span>${escapeHtml(group.nationality)} · ${escapeHtml(group.gender)} (${escapeHtml(group.age)})</span>
+                                        <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">${group.count}x</span>
+                                        ${group.hasPool ? `
+                                            <span class="inline-flex items-center gap-0.5 rounded bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.2 text-[0.62rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40">
+                                                Pool Access
+                                            </span>
+                                        ` : ''}
+                                    </div>
                                     <span class="text-[0.7rem] text-[#889b8a]">${group.isCheckedOut ? 'Checked Out' : '—'}</span>
                                 </div>
                             `).join('')}
@@ -790,6 +847,7 @@ window.AppPage['staff_records'] = function () {
         reservationModalBody.innerHTML = html;
         const modalTitle = document.getElementById('reservationModalTitle');
         if (modalTitle) modalTitle.textContent = `Reservation #${reservation.id} Archive Details`;
+        guestModal.classList.remove('is-open');
         reservationModal.classList.add('is-open');
         reservationModal.setAttribute('aria-hidden', 'false');
     };

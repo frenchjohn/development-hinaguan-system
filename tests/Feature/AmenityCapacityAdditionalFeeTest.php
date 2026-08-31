@@ -592,5 +592,11 @@ class AmenityCapacityAdditionalFeeTest extends TestCase
         // Check that /staff/check-ins loads cleanly with status 200 without any closure variable issues
         $checkInsPage = $this->authStaff()->get('/staff/check-ins');
         $checkInsPage->assertOk();
+
+        // Check that /staff/occupancy-monitor does NOT show Cottage 1 as occupied today!
+        $occPage = $this->authStaff()->get('/staff/occupancy-monitor');
+        $occPage->assertOk();
+        $occData = $occPage->viewData('occupancyData');
+        $this->assertEmpty($occData[$this->cottageAmenity->id]['occupied'], 'Cottage 1 should NOT be occupied today on occupancy monitor because it starts on Sep 3');
     }
 }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -166,9 +166,15 @@
                 </div>
 
                 <div class="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-glass-border bg-glass px-4 py-2 text-[0.74rem] text-hp-text-muted shadow-glass">
-                    <span class="inline-flex items-center gap-1.5 font-bold text-hp-green"><i class="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]"></i> Live</span>
+                    @if ($startDate === $today && $endDate === $today)
+                        <span class="inline-flex items-center gap-1.5 font-bold text-hp-green"><i class="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]"></i> Live (Today)</span>
+                    @elseif ($startDate === $endDate)
+                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Date: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }}</span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Range: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }} – {{ \Illuminate\Support\Carbon::parse($endDate)->format('M d, Y') }}</span>
+                    @endif
                     <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#dc2626]"></i>Occupied</span>
-                    <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#c8a45d]"></i>Reserved today</span>
+                    <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#c8a45d]"></i>Reserved</span>
                     <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-hp-green"></i>Available</span>
                     <span class="ml-auto italic text-hp-text-muted/70">Click any amenity card for full details</span>
                 </div>
@@ -179,37 +185,59 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
                         </svg>
                         Filters
+                        @if ($startDate !== $today || $endDate !== $today)
+                            <span class="rounded-full bg-hp-green/20 px-2 py-0.5 text-xs font-bold text-hp-green">Active</span>
+                        @endif
                     </button>
                 </div>
 
-                <div class="occupancy-monitor__filter-panel mb-6 hidden rounded-xl border border-glass-border bg-glass p-5 shadow-glass is-open:block" id="filterPanel">
-                    <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
-                        <div class="flex flex-col gap-1.5">
-                            <label for="searchAmenities" class="text-[0.8rem] font-semibold text-hp-text">Search Amenities</label>
-                            <input type="text" id="searchAmenities" placeholder="Search by name..." class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
+                <div class="occupancy-monitor__filter-panel mb-6 hidden rounded-xl border border-glass-border bg-glass p-5 shadow-glass [&.is-open]:block" id="filterPanel">
+                    <form method="GET" action="{{ route('staff.occupancy-monitor') }}" id="occupancyFilterForm">
+                        <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label for="searchAmenities" class="text-[0.8rem] font-semibold text-hp-text">Search Amenities</label>
+                                <input type="text" id="searchAmenities" placeholder="Search by name..." class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="startDateFilter" class="text-[0.8rem] font-semibold text-hp-text">Start Date</label>
+                                <input type="date" id="startDateFilter" name="start_date" value="{{ $startDate }}" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="endDateFilter" class="text-[0.8rem] font-semibold text-hp-text">End Date</label>
+                                <input type="date" id="endDateFilter" name="end_date" value="{{ $endDate }}" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="timeSlotFilter" class="text-[0.8rem] font-semibold text-hp-text">Time Slot</label>
+                                <select id="timeSlotFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
+                                    <option value="all">All Time Slots</option>
+                                    <option value="daytime">Daytime</option>
+                                    <option value="nighttime">Nighttime</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1.5">
+                                <label for="availabilityFilter" class="text-[0.8rem] font-semibold text-hp-text">Availability</label>
+                                <select id="availabilityFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
+                                    <option value="all">All Statuses</option>
+                                    <option value="available">Available</option>
+                                    <option value="occupied">Occupied</option>
+                                    <option value="reserved">Reserved</option>
+                                    <option value="unavailable">Unavailable (Occupied/Reserved)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label for="timeSlotFilter" class="text-[0.8rem] font-semibold text-hp-text">Time Slot</label>
-                            <select id="timeSlotFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
-                                <option value="all">All Time Slots</option>
-                                <option value="daytime">Daytime</option>
-                                <option value="nighttime">Nighttime</option>
-                                <option value="daytonight">Day to Night</option>
-                                <option value="nighttoday">Night to Day</option>
-                            </select>
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-4">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" id="todayFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Today</button>
+                                <button type="button" id="tomorrowFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Tomorrow</button>
+                                <button type="button" id="thisWeekendFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">This Weekend</button>
+                                <button type="button" id="nextWeekFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Next Week</button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="clearFiltersBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-4 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Reset to Today</button>
+                                <button type="submit" class="cursor-pointer rounded-md border border-hp-green bg-hp-green px-4 py-2 text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark">Apply Date Range</button>
+                            </div>
                         </div>
-                        <div class="flex flex-col gap-1.5">
-                            <label for="availabilityFilter" class="text-[0.8rem] font-semibold text-hp-text">Availability</label>
-                            <select id="availabilityFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
-                                <option value="all">All</option>
-                                <option value="available">Available</option>
-                                <option value="unavailable">Unavailable</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-2">
-                        <button type="button" id="clearFiltersBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-4 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Clear Filters</button>
-                    </div>
+                    </form>
                 </div>
 
                 <div class="occupancy-grid grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-6 max-[480px]:grid-cols-1">

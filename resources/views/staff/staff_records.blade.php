@@ -297,6 +297,7 @@
                                                             ? 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700'
                                                             : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40');
                                                     $bulkResAmount = (float) ($reservationAmounts[$group['reservation_id']] ?? 0);
+                                                    $bulkHasPool = (bool) ($group['has_pool_access'] ?? false);
                                                 @endphp
                                                 <tr
                                                     class="guest-row guest-row--bulk-group cursor-pointer select-none transition-colors hover:bg-[#f8faf9] dark:hover:bg-[#141715]"
@@ -308,11 +309,12 @@
                                                     data-gender="{{ $group['gender'] }}"
                                                     data-nationality="{{ $group['nationality'] }}"
                                                     data-status="{{ strtolower($bulkStatus) }}"
+                                                    data-has-pool="{{ $bulkHasPool ? 'true' : 'false' }}"
                                                     data-reservation-id="{{ $group['reservation_id'] }}"
                                                     data-reservation-amount="{{ $bulkResAmount }}"
                                                     data-age-value="999999"
                                                     data-checked-out="{{ $group['checked_out_at'] ?? '' }}"
-                                                    data-search="{{ strtolower(trim(($group['name'] ?? '') . ' ' . $group['reservation_id'] . ' ' . $group['gender'] . ' ' . $group['age_group'] . ' ' . $group['nationality'] . ' ' . $bulkStatus . ' ' . $group['count'] . ' bulk companion group #' . $group['reservation_id'])) }}"
+                                                    data-search="{{ strtolower(trim(($group['name'] ?? '') . ' ' . $group['reservation_id'] . ' ' . $group['gender'] . ' ' . $group['age_group'] . ' ' . $group['nationality'] . ' ' . $bulkStatus . ' ' . $group['count'] . ' bulk companion group #' . $group['reservation_id'] . ($bulkHasPool ? ' pool swimming swimmer' : ''))) }}"
                                                     tabindex="0"
                                                     role="button"
                                                 >
@@ -322,9 +324,15 @@
                                                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
                                                             </span>
                                                             <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5">
+                                                                <div class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
                                                                     <span>{{ $group['name'] }}</span>
                                                                     <span class="px-2 py-0.5 text-[0.68rem] font-bold rounded-full bg-[#e5e9e6] text-[#5a6b5c] dark:bg-[#282c29] dark:text-[#a8b8a8]">{{ $group['count'] }}x</span>
+                                                                    @if ($bulkHasPool)
+                                                                        <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.68rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="{{ $group['pool_access_count'] ?? $group['count'] }} Guests Availing Pool">
+                                                                            <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                                                            Pool Access ({{ $group['pool_access_count'] ?? $group['count'] }})
+                                                                        </span>
+                                                                    @endif
                                                                 </div>
                                                                 <div class="text-[0.75rem] text-[#889b8a] mt-0.5">Bulk companion group</div>
                                                             </div>
@@ -373,6 +381,7 @@
                                                     $guestTypeLabel = ($guestEntry->reservation?->reservation_type ?? '') === 'walk_in' ? 'Walk-in Guest' : ($isPrimaryGuest ? 'Online Primary' : 'Companion');
                                                     $guestResAmount = (float) ($reservationAmounts[$guestEntry->reservation_id ?? 0] ?? 0);
                                                     $effectiveGuestDate = $guestEntry->checked_out_at ?: ($guestEntry->reservation?->check_out ?: ($guestEntry->reservation?->reservation_date ?: $guestEntry->created_at));
+                                                    $hasPoolAccess = (bool) ($guestEntry->has_pool_access ?? false);
                                                 @endphp
                                                 <tr
                                                     class="guest-row cursor-pointer select-none transition-colors hover:bg-[#f8faf9] dark:hover:bg-[#141715]"
@@ -384,12 +393,13 @@
                                                     data-gender="{{ $customer->gender ?? 'N/A' }}"
                                                     data-nationality="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
                                                     data-status="{{ strtolower($guestStatus) }}"
+                                                    data-has-pool="{{ $hasPoolAccess ? 'true' : 'false' }}"
                                                     data-reservation-id="{{ $guestEntry->reservation_id ?? '' }}"
                                                     data-reservation-amount="{{ $guestResAmount }}"
                                                     data-is-foreigner="{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}"
                                                     data-checked-out="{{ $effectiveGuestDate ?? '' }}"
                                                     data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
-                                                    data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino') . ' ' . $guestStatus . ' ' . $guestTypeLabel . ' #' . ($guestEntry->reservation_id ?? ''))) }}"
+                                                    data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner ? 'Foreigner' : 'Filipino') . ' ' . $guestStatus . ' ' . $guestTypeLabel . ' #' . ($guestEntry->reservation_id ?? '') . ($hasPoolAccess ? ' pool swimming swimmer' : ''))) }}"
                                                     tabindex="0"
                                                     role="button"
                                                 >
@@ -403,7 +413,15 @@
                                                                 @endif
                                                             </span>
                                                             <div class="min-w-0">
-                                                                <div class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ collect([$customer->first_name, $customer->middle_name, $customer->last_name])->filter()->join(' ') }}</div>
+                                                                <div class="text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
+                                                                    <span>{{ collect([$customer->first_name, $customer->middle_name, $customer->last_name])->filter()->join(' ') }}</span>
+                                                                    @if ($hasPoolAccess)
+                                                                        <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.68rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Availing Pool Access">
+                                                                            <svg class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                                                            Pool Access
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
                                                                 <div class="text-[0.75rem] text-[#889b8a] mt-0.5">{{ $guestTypeLabel }}</div>
                                                             </div>
                                                         </div>
@@ -597,7 +615,20 @@
                                                             </svg>
                                                             #{{ $reservation->id }}
                                                         </span>
-                                                        <div class="text-[0.7rem] text-[#889b8a] font-medium mt-0.5 capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</div>
+                                                        @php
+                                                            $resPoolFee = (float) ($reservation->entranceFee?->pool_fee ?? 0);
+                                                            $resPoolCount = (int) ($reservation->entranceFee?->pool_access_count ?? $reservation->reservationGuests->filter(fn($g) => (bool)$g->has_pool_access)->count());
+                                                            $resHasPool = $resPoolFee > 0 || $resPoolCount > 0 || ($reservation->entranceFee?->pool_option && $reservation->entranceFee->pool_option !== 'no_pool');
+                                                        @endphp
+                                                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                            <span class="text-[0.7rem] text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
+                                                            @if ($resHasPool)
+                                                                <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Pool Included in Booking">
+                                                                    <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                                                    Pool {{ $resPoolCount > 0 ? "({$resPoolCount})" : '' }}
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -679,13 +710,20 @@
                                                             'gender' => $gender,
                                                             'nationality' => $nationality,
                                                             'is_foreigner' => (bool) $customer->is_foreigner,
+                                                            'has_pool_access' => false,
+                                                            'pool_access_count' => 0,
                                                             'count' => 0,
                                                             'members' => [],
                                                         ];
                                                     }
                                                     $bulkGroupsForRes[$key]['count']++;
+                                                    if ($guest->has_pool_access) {
+                                                        $bulkGroupsForRes[$key]['has_pool_access'] = true;
+                                                        $bulkGroupsForRes[$key]['pool_access_count']++;
+                                                    }
                                                     $bulkGroupsForRes[$key]['members'][] = [
                                                         'customer_id' => $customer->id,
+                                                        'has_pool_access' => (bool) $guest->has_pool_access,
                                                         'check_in' => $guest->reservation?->check_in ? \Carbon\Carbon::parse($guest->reservation->check_in)->toDateTimeString() : null,
                                                         'checked_out_at' => $guest->checked_out_at ? \Carbon\Carbon::parse($guest->checked_out_at)->toDateTimeString() : null,
                                                     ];
@@ -713,6 +751,7 @@
                                                     data-bulk-age="{{ $compRow['age_group'] }}"
                                                     data-bulk-gender="{{ $compRow['gender'] }}"
                                                     data-bulk-nationality="{{ $compRow['nationality'] }}"
+                                                    data-has-pool="{{ ($compRow['has_pool_access'] ?? false) ? 'true' : 'false' }}"
                                                     data-reservation-id="{{ $reservation->id }}"
                                                     data-bulk-members='@json($compRow['members'])'
                                                     tabindex="0"
@@ -726,9 +765,15 @@
                                                                 <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
                                                             </span>
                                                             <div class="cell-person__body min-w-0">
-                                                                <div class="guest-name text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5">
+                                                                <div class="guest-name text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
                                                                     <span>{{ $compRow['name'] }}</span>
                                                                     <span class="px-2 py-0.5 text-[0.65rem] font-bold rounded-full bg-[#e5e9e6] text-[#5a6b5c] dark:bg-[#282c29] dark:text-[#a8b8a8]">{{ $compRow['count'] }}x</span>
+                                                                    @if ($compRow['has_pool_access'] ?? false)
+                                                                        <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="{{ $compRow['pool_access_count'] ?? $compRow['count'] }} with Pool">
+                                                                            <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                                                            Pool ({{ $compRow['pool_access_count'] ?? $compRow['count'] }})
+                                                                        </span>
+                                                                    @endif
                                                                 </div>
                                                                 <div class="guest-meta text-[0.7rem] text-[#889b8a]">Bulk companion group</div>
                                                             </div>
@@ -741,10 +786,12 @@
                                             @else
                                                 @php
                                                     $guest = $compRow['guest'];
+                                                    $compHasPool = (bool) ($guest->has_pool_access ?? false);
                                                 @endphp
                                                 <tr
                                                     class="companion-row companion-of-{{ $reservation->id }} cursor-pointer select-none bg-[#f8faf9] dark:bg-[#0e2418] hover:bg-[#f0f4f2] dark:hover:bg-[#1e2220] transition-colors"
                                                     data-customer-id="{{ $guest->customer->id }}"
+                                                    data-has-pool="{{ $compHasPool ? 'true' : 'false' }}"
                                                     tabindex="0"
                                                     role="button"
                                                     aria-label="View details for {{ collect([$guest->customer->first_name, $guest->customer->middle_name, $guest->customer->last_name])->filter()->join(' ') }}"
@@ -756,7 +803,15 @@
                                                                 <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
                                                             </span>
                                                             <div class="cell-person__body min-w-0">
-                                                                <div class="guest-name text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ collect([$guest->customer->first_name, $guest->customer->middle_name, $guest->customer->last_name])->filter()->join(' ') }}</div>
+                                                                <div class="guest-name text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
+                                                                    <span>{{ collect([$guest->customer->first_name, $guest->customer->middle_name, $guest->customer->last_name])->filter()->join(' ') }}</span>
+                                                                    @if ($compHasPool)
+                                                                        <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Availing Pool Access">
+                                                                            <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
+                                                                            Pool Access
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
                                                                 <div class="guest-meta text-[0.7rem] text-[#889b8a]">ID: #{{ $guest->customer->id }}</div>
                                                             </div>
                                                         </div>

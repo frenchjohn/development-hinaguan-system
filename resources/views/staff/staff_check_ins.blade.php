@@ -15,6 +15,7 @@
 	<link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
 	<link rel="preconnect" href="https://fonts.bunny.net">
 	<link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 	@vite([
 		'resources/css/app.css',
 		'resources/css/homepage.css',
@@ -297,6 +298,42 @@
 						} else {
 							$monthTrendPct = 0;
 						}
+
+						// 7. Pool Activity & Access Analytics
+						$activeGuestsWithPool = 0;
+						$activeGuestsNoPool = 0;
+						$activeKidsWithPool = 0;
+						$activeTeensWithPool = 0;
+						$activeAdultsWithPool = 0;
+						$activeSeniorsWithPool = 0;
+						$poolRevenueToday = 0;
+
+						foreach ($activeCustomers as $customer) {
+							$resGuest = $customer->reservationGuests->first(function ($guest) {
+								return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
+							});
+							$hasPool = (bool) ($resGuest?->has_pool_access ?? false);
+							if ($hasPool) {
+								$activeGuestsWithPool++;
+								$age = is_numeric($customer->age) ? (int)$customer->age : null;
+								if ($age !== null) {
+									if ($age <= 12) $activeKidsWithPool++;
+									elseif ($age <= 17) $activeTeensWithPool++;
+									elseif ($age <= 59) $activeAdultsWithPool++;
+									else $activeSeniorsWithPool++;
+								}
+							} else {
+								$activeGuestsNoPool++;
+							}
+						}
+
+						foreach ($activeReservations ?? [] as $res) {
+							$poolRevenueToday += (float) ($res->entranceFee?->pool_fee ?? 0);
+						}
+
+						$totalActiveGuests = $activeCustomers->count();
+						$poolAccessPct = $totalActiveGuests > 0 ? round(($activeGuestsWithPool / $totalActiveGuests) * 100) : 0;
+						$noPoolAccessPct = 100 - $poolAccessPct;
 					@endphp
 
 					<!-- MASTER TABS -->
@@ -418,7 +455,7 @@
 									$conicGradient = "#22c55e 0deg {$degMale}deg, #ec4899 {$degMale}deg {$degFem}deg, #e5e7eb {$degFem}deg 360deg";
 								}
 							@endphp
-							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $demoMaleFil }}&#xa;Foreigner: {{ $demoMaleFor }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">MALE</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestSummaryMale }}</strong>
@@ -450,11 +487,11 @@
 										<span class="text-[0.65rem] text-hp-text-muted">Total</span>
 									</div>
 								</div>
-								<div class="donut-legend flex min-w-[120px] flex-col gap-2.5 text-[0.8rem] text-hp-text">
-									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#22c55e]"></span>Male</span> <span>{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
-									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#ec4899]"></span>Female</span> <span>{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
-									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#f59e0b]"></span>Foreigner</span> <span>{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
-									<div class="legend-item flex justify-between"><span class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-[#8b5cf6]"></span>Filipino</span> <span>{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
+								<div class="donut-legend flex min-w-[140px] flex-col gap-2.5 text-[0.8rem] text-hp-text">
+									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#22c55e]"></span>Male</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryMale }} ({{ $pctMale }}%)</span></div>
+									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#ec4899]"></span>Female</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryFemale }} ({{ $pctFem }}%)</span></div>
+									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#f59e0b]"></span>Foreigner</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryForeign }} ({{ $pctFor }}%)</span></div>
+									<div class="legend-item flex items-center justify-between gap-4"><span class="flex items-center gap-2"><span class="h-2 w-2 flex-shrink-0 rounded-full bg-[#8b5cf6]"></span>Filipino</span> <span class="whitespace-nowrap font-medium text-hp-text">{{ $guestSummaryFilipino }} ({{ $pctFil }}%)</span></div>
 								</div>
 							</div>
 						</div>
@@ -473,7 +510,7 @@
 								$pctAdult = $totalGuests > 0 ? round(($ageAdult / $totalGuests) * 100) : 0;
 								$pctSenior = $totalGuests > 0 ? round(($ageSenior / $totalGuests) * 100) : 0;
 							@endphp
-							<div class="premium-widget__grid cols-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
 								<div class="premium-stat" data-tooltip="Filipino: {{ $ageFilKids }}&#xa;Foreigner: {{ $ageForKids }}">
 									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS</span>
 									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $ageKids }}</strong>
@@ -532,6 +569,83 @@
 									</div>
 									<div class="h-2 w-full overflow-hidden rounded bg-black/5 dark:bg-white/10">
 										<div class="h-full rounded bg-[#f59e0b]" style="width: {{ $pctSenior }}%;"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Widget 5: Pool & Swimming Activity -->
+						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+							<div class="premium-widget__header mb-4 flex items-center justify-between">
+								<div class="flex items-center gap-3">
+									<div class="widget-icon flex h-9 w-9 items-center justify-center rounded-lg bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">
+										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" />
+											<circle cx="12" cy="6" r="2.5" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M8.5 11l2-2 3.5 1.5 2.5-1.5" />
+										</svg>
+									</div>
+									<h4 class="m-0 text-sm font-bold uppercase tracking-wide text-hp-text">POOL ACTIVITY & ACCESS</h4>
+								</div>
+								<span class="inline-flex items-center gap-1.5 rounded-full bg-[#0284c7]/10 px-2.5 py-1 text-xs font-bold text-[#0284c7] dark:bg-[#38bdf8]/10 dark:text-[#38bdf8]">
+									<i class="h-2 w-2 animate-pulse rounded-full bg-[#0284c7] dark:bg-[#38bdf8]"></i>
+									{{ $activeGuestsWithPool }} Active Swimmer{{ $activeGuestsWithPool === 1 ? '' : 's' }}
+								</span>
+							</div>
+
+							<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
+								<div class="premium-stat">
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">POOL PASSES</span>
+									<strong class="block font-display text-2xl font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeGuestsWithPool }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-[#0284c7] dark:text-[#38bdf8]">{{ $poolAccessPct }}% of guests</div>
+								</div>
+								<div class="premium-stat">
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">NO POOL PASS</span>
+									<strong class="block font-display text-2xl font-bold text-hp-text-muted">{{ $activeGuestsNoPool }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $noPoolAccessPct }}% sightseeing</div>
+								</div>
+								<div class="premium-stat">
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">POOL REVENUE</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">₱{{ number_format($poolRevenueToday, 0) }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-green">Active stay fees</div>
+								</div>
+								<div class="premium-stat">
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">KIDS IN POOL</span>
+									<strong class="block font-display text-2xl font-bold text-hp-green-dark dark:text-[#f3f4f6]">{{ $activeKidsWithPool }}</strong>
+									<div class="stat-trend mt-1 text-xs font-semibold text-hp-text-muted">{{ $ageKids > 0 ? round(($activeKidsWithPool / $ageKids) * 100) : 0 }}% of kids</div>
+								</div>
+							</div>
+
+							<!-- Pool Access Breakdown & Progress -->
+							<div class="pool-progress-area mt-6 flex flex-col gap-4">
+								<div class="progress-row">
+									<div class="mb-1 flex justify-between text-xs text-hp-text-muted">
+										<span class="font-medium text-hp-text">Pool Access Rate vs General Admission</span>
+										<span>{{ $poolAccessPct }}% with Pool</span>
+									</div>
+									<div class="flex h-2.5 w-full overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+										<div class="h-full rounded-l-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8]" style="width: {{ $poolAccessPct }}%;"></div>
+										<div class="h-full rounded-r-full bg-slate-300 dark:bg-slate-700" style="width: {{ $noPoolAccessPct }}%;"></div>
+									</div>
+								</div>
+
+								<!-- Swimmer demographic pills -->
+								<div class="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
+									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
+										<span class="text-hp-text-muted">Kids:</span>
+										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeKidsWithPool }}</strong>
+									</div>
+									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
+										<span class="text-hp-text-muted">Teens:</span>
+										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeTeensWithPool }}</strong>
+									</div>
+									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
+										<span class="text-hp-text-muted">Adults:</span>
+										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeAdultsWithPool }}</strong>
+									</div>
+									<div class="flex items-center justify-between rounded-lg bg-[rgba(2,132,199,0.08)] px-2.5 py-1.5 text-xs">
+										<span class="text-hp-text-muted">Seniors:</span>
+										<strong class="font-bold text-[#0284c7] dark:text-[#38bdf8]">{{ $activeSeniorsWithPool }}</strong>
 									</div>
 								</div>
 							</div>
@@ -991,11 +1105,11 @@
 													<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
 														<span>{{ $isBulk ? $customer->first_name : trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</span>
 														@if($hasPool && $hasAmenity)
-															<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked">🏊 Pool + 🏡</span>
+															<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked"><i class="bi bi-water"></i> Pool + <i class="bi bi-house-door-fill"></i></span>
 														@elseif($hasPool)
-															<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active">🏊 Pool</span>
+															<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
 														@elseif($hasAmenity)
-															<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">🏡 Amenity</span>
+															<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked"><i class="bi bi-house-door-fill"></i> Amenity</span>
 														@endif
 														@if($isStray)
 															<span class="rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.6rem] font-semibold text-white">Stray</span>
@@ -1298,11 +1412,11 @@
 														<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
 															<span class="truncate">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</span>
 															@if($primaryHasPool && $resHasAmenity)
-																<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked">🏊 Pool + 🏡</span>
+																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked"><i class="bi bi-water"></i> Pool + <i class="bi bi-house-door-fill"></i></span>
 															@elseif($primaryHasPool)
-																<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active">🏊 Pool</span>
+																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
 															@elseif($resHasAmenity)
-																<span class="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">🏡 Amenity</span>
+																<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked"><i class="bi bi-house-door-fill"></i> Amenity</span>
 															@endif
 														</div>
 													</div>
@@ -1508,8 +1622,8 @@
 									<div class="guest-form__section-header mb-2 flex items-center justify-between">
 										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest</h4>
 										<div class="flex items-center gap-1.5 flex-wrap">
-											<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300">🎟️ Free Entrance</span>
-											<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300">🏊 Pool Pass</span>
+											<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>
+											<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Pool Pass</span>
 										</div>
 									</div>
 									<div class="guest-form__field-group mb-3 grid gap-1.5">
@@ -1562,7 +1676,7 @@
 									<div id="primaryGuestFreeEntranceWrap" class="guest-form__field-group mb-3 rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
 										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 											<div class="flex items-center gap-2">
-												<span class="text-base">🎟️</span>
+												<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
 												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee (Primary Guest)</span>
 											</div>
 											<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
@@ -1572,7 +1686,7 @@
 									<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
 										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 											<div class="flex items-center gap-2">
-												<span class="text-base">🏊</span>
+												<i class="bi bi-water text-sky-600 text-base"></i>
 												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for Primary Guest</span>
 											</div>
 											<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
@@ -1881,7 +1995,7 @@
 								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionFreeEntranceWrap" style="display: none;">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 										<div class="flex items-center gap-2">
-											<span class="text-base">🎟️</span>
+											<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
 											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee for this Companion</span>
 										</div>
 										<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
@@ -1890,7 +2004,7 @@
 								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 										<div class="flex items-center gap-2">
-											<span class="text-base">🏊</span>
+											<i class="bi bi-water text-sky-600 text-base"></i>
 											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for this Companion</span>
 										</div>
 										<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
@@ -1941,7 +2055,7 @@
 								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
 									<div class="flex items-center justify-between">
 										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_free_quantity">
-											<span>🎟️</span> Free Entrance Quantity
+											<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance Quantity
 										</label>
 										<span class="text-[0.72rem] font-bold text-amber-800 dark:text-amber-300" id="bulkFreeQtyHint">0 of 1 with free entrance</span>
 									</div>
@@ -1951,7 +2065,7 @@
 								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-3" id="bulkCompanionPoolWrap">
 									<div class="flex items-center justify-between">
 										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_pool_quantity">
-											<span>🏊</span> Pool Access Quantity
+											<i class="bi bi-water text-sky-600"></i> Pool Access Quantity
 										</label>
 										<span class="text-[0.72rem] text-hp-text-muted" id="bulkPoolQtyHint">0 of 1 with pool access</span>
 									</div>
@@ -2170,7 +2284,7 @@
 				</div>
 
 				{{-- Check Out Confirmation Modal --}}
-				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1100;">
+				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1350;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-out-confirm="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
@@ -2184,25 +2298,26 @@
 				</div>
 
 				{{-- Reservation Detail Modal --}}
-				<div class="guest-modal" id="reservationModal" aria-hidden="true">
-					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-modal="true"></div>
-					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
-						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
-							<h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
-							<span id="reservationModalStatus" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em]"></span>
-							<button type="button" class="guest-form__button--secondary guest-form__button--small ml-auto hidden cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="reservationAddCompanionBtn">Add Companion</button>
-							<button type="button" class="guest-form__button guest-form__button--small cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="reservationCheckOutBtn">Check Out</button>
+				<div class="guest-modal" id="reservationModal" aria-hidden="true" style="z-index: 1100;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-reservation-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-2xl bg-glass shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle" style="width: min(94vw, 780px) !important; max-width: 780px !important; height: min(92vh, 880px) !important; min-height: min(86vh, 760px) !important; max-height: 94vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text z-10" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
+						<div class="guest-modal__header p-5 pb-3 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 shrink-0">
+							<div class="flex items-center gap-2.5">
+								<h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Reservation Details</h3>
+								<span id="reservationModalStatus" class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-[0.04em]"></span>
+							</div>
 						</div>
-						<div id="reservationModalBody" class="guest-modal__body grid gap-4"></div>
-						<div class="guest-form__actions mt-6 flex flex-wrap justify-end gap-3" id="reservationModalActions">
-							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true">Close</button>
+						<div id="reservationModalBody" class="guest-modal__body p-6 overflow-y-auto flex-1 space-y-4" style="display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding: 1.5rem 1.75rem !important;"></div>
+						<div class="guest-form__actions p-4 px-6 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/90 dark:bg-[#1a201c] backdrop-blur-md shrink-0 flex items-center justify-between gap-3 flex-wrap" id="reservationModalActions">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-modal="true">Close</button>
+							<div class="flex items-center gap-2.5 flex-wrap ml-auto" id="reservationModalStickyButtons"></div>
 						</div>
 					</div>
 				</div>
 
 				{{-- Add Companion to Active Reservation Modal --}}
-				<div class="guest-modal guest-modal--wide" id="reservationAddCompanionModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--wide" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
@@ -2272,7 +2387,7 @@
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
 										<input type="checkbox" name="is_free_entrance" id="resadd_free_entrance" class="h-4 w-4 accent-hp-green">
-										<span>🎟️ Free Entrance Fee</span>
+										<span><i class="bi bi-ticket-perforated-fill text-amber-600 me-1"></i>Free Entrance Fee</span>
 									</label>
 								</div>
 							</div>
@@ -2351,7 +2466,7 @@
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
 										<input type="checkbox" name="is_free_entrance" id="resadd_bulk_free_entrance" class="h-4 w-4 accent-hp-green">
-										<span id="resaddBulkFreeEntranceLabel">🎟️ Free Entrance Fee (all 1)</span>
+										<span id="resaddBulkFreeEntranceLabel"><i class="bi bi-ticket-perforated-fill text-amber-600 me-1"></i>Free Entrance Fee (all 1)</span>
 									</label>
 								</div>
 							</div>
@@ -2622,8 +2737,9 @@
 								{{-- Section 1: Companions WITH Pool Access --}}
 								<div class="rounded-2xl border border-sky-500/25 bg-sky-500/5 p-4 text-center flex flex-col justify-between dark:bg-sky-950/20">
 									<div>
-										<div class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2.5 py-1 text-xs font-bold text-sky-700 dark:text-sky-300 mb-2">
-											<span>🏊 With Pool Pass</span>
+										<div class="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 border border-sky-500/30 px-3 py-1 text-xs font-bold text-sky-700 dark:text-sky-300 mb-2">
+											<i class="bi bi-water"></i>
+											<span>With Pool Pass</span>
 										</div>
 
 										<div class="my-2">
@@ -2653,8 +2769,9 @@
 								{{-- Section 2: Companions WITHOUT Pool Access --}}
 								<div class="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-center flex flex-col justify-between dark:bg-amber-950/20">
 									<div>
-										<div class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
-											<span>🚶 Standard (No Pool)</span>
+										<div class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 mb-2">
+											<i class="bi bi-person-fill"></i>
+											<span>Standard (No Pool)</span>
 										</div>
 
 										<div class="my-2">
@@ -2692,7 +2809,7 @@
 				</div>
 
 				{{-- Adjust / Extend Stay Schedule Modal --}}
-				<div class="guest-modal guest-modal--compact" id="extendStayModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="extendStayModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-stay-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendStayTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-stay-modal="true" aria-label="Close modal">&times;</button>
@@ -2767,7 +2884,7 @@
 				</div>
 
 				{{-- Extend Existing Amenity Modal --}}
-				<div class="guest-modal guest-modal--compact" id="extendAmenityModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="extendAmenityModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[560px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendAmenityTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-amenity-modal="true" aria-label="Close modal">&times;</button>
@@ -2875,7 +2992,7 @@
 				</div>
 
 				{{-- Add New Amenity Mid-Stay Modal --}}
-				<div class="guest-modal guest-modal--wide" id="addAmenityMidStayModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--wide" id="addAmenityMidStayModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-add-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[580px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addAmenityMidStayTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-amenity-modal="true" aria-label="Close add amenity modal">&times;</button>
@@ -3005,7 +3122,7 @@
 				</div>
 
 				{{-- Final Extension / Addition Payment Confirmation Modal --}}
-				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true" style="z-index: 1300;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extension-payment-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[520px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extensionPaymentTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extension-payment-modal="true" aria-label="Close payment modal">&times;</button>
@@ -3046,6 +3163,53 @@
 							<div class="mt-2 flex justify-end gap-3">
 								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all hover:bg-glass-hover" data-close-extension-payment-modal="true">Back / Cancel</button>
 								<button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-hp-green-dark" id="confirmExtensionPaymentBtn">Confirm & Pay at Counter</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{{-- Unified Companion Checkout Modal for Reservations --}}
+				<div class="guest-modal" id="reservationCompanionCheckoutModal" aria-hidden="true" style="z-index: 1200;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-checkout-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(88vh,820px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionCheckoutModalTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-checkout-modal="true" aria-label="Close modal">&times;</button>
+
+						{{-- Modal Header --}}
+						<div class="guest-modal__header flex flex-col items-center gap-1 border-b border-glass-border/40 p-6 pb-4 text-center">
+							<div class="guest-modal__icon-wrap mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-white shadow-[0_4px_15px_rgba(23,138,82,0.3)]">
+								<svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+								</svg>
+							</div>
+							<h3 id="companionCheckoutModalTitle" class="guest-modal__title m-0 text-xl font-bold text-hp-text">Group Checkout</h3>
+							<div class="mt-1 flex flex-wrap items-center justify-center gap-2 text-xs text-hp-text-muted">
+								<span>Reservation <strong id="companionCheckoutResId" class="text-hp-text">#</strong></span>
+								<span>&bull;</span>
+								<span id="companionCheckoutBookerName" class="font-semibold text-hp-text"></span>
+							</div>
+							<div class="mt-3 flex flex-wrap items-center justify-center gap-2" id="companionCheckoutStatsPills">
+								<!-- Injected dynamically via JS -->
+							</div>
+						</div>
+
+						{{-- Modal Body --}}
+						<div class="guest-modal__body p-6 pt-4 space-y-4" id="companionCheckoutModalBody">
+							<!-- Dynamic guests & companions content rendered via JS -->
+						</div>
+
+						{{-- Modal Footer Actions --}}
+						<div class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 bg-hp-cream/95 backdrop-blur-md p-4 dark:bg-[#181b19]/95">
+							<div class="text-xs font-semibold text-hp-text" id="companionCheckoutSelectedSummary">
+								0 guests selected for checkout
+							</div>
+							<div class="flex items-center gap-2.5">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover hover:border-glass-border-strong transition-all" data-close-companion-checkout-modal="true">
+									Cancel
+								</button>
+								<button type="button" id="companionCheckoutSubmitBtn" class="flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-hp-green-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+									<span>Checkout Selected Guests</span>
+								</button>
 							</div>
 						</div>
 					</div>

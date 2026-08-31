@@ -3614,6 +3614,10 @@ td.mono-cell {
 }
 
 .premium-widget__grid.cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.premium-widget--alert .premium-widget__grid.cols-4 {
     grid-template-columns: repeat(4, 1fr);
 }
 

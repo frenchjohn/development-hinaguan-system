@@ -6,6 +6,14 @@ let activeStaffCheckInsHandlers = null;
 if (!window.__staffCheckInsGlobalClickBound) {
     window.__staffCheckInsGlobalClickBound = true;
     document.addEventListener('click', (e) => {
+        const companionCheckoutBtn = e.target.closest('.resv-companion-checkout-btn');
+        if (companionCheckoutBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            activeStaffCheckInsHandlers?.openCompanionCheckoutModal?.(companionCheckoutBtn.dataset.reservationId);
+            return;
+        }
+
         const extendStayBtn = e.target.closest('.resv-extend-stay-btn');
         if (extendStayBtn) {
             e.preventDefault();
@@ -65,6 +73,7 @@ window.AppPage['staff_check_ins'] = function () {
     const reservationModalBody = document.getElementById('reservationModalBody');
     const reservationCheckOutBtn = document.getElementById('reservationCheckOutBtn');
     const reservationAddCompanionBtn = document.getElementById('reservationAddCompanionBtn');
+    const reservationCompanionCheckoutHeaderBtn = document.getElementById('reservationCompanionCheckoutHeaderBtn');
     const reservationCloseButtons = document.querySelectorAll('[data-close-reservation-modal="true"]');
     const checkOutConfirmModal = document.getElementById('checkOutConfirmModal');
     const confirmCheckOutBtn = document.getElementById('confirmCheckOutBtn');
@@ -315,7 +324,7 @@ window.AppPage['staff_check_ins'] = function () {
     // Reservation modal functions
     const openReservationModal = (reservationId) => {
         currentReservationId = reservationId;
-        const reservation = reservationData[reservationId];
+        const reservation = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
 
         if (!reservation) return;
 
@@ -323,6 +332,7 @@ window.AppPage['staff_check_ins'] = function () {
         const guestsList = reservation.reservation_guests || [];
         const primaryGuest = guestsList.find(g => g.is_primary_guest);
         const companions = guestsList.filter(g => !g.is_primary_guest);
+        const activeCompanions = companions.filter(c => !c.checked_out_at);
 
         const totalResGuests = guestsList.length || parseInt(reservation.number_of_guests || 0, 10);
         const activeResGuests = guestsList.filter(g => !g.checked_out_at).length;
@@ -340,248 +350,260 @@ window.AppPage['staff_check_ins'] = function () {
         const endSlot = reservation.end_slot || startSlot;
         const isMultiDay = reservation.end_date && reservation.end_date !== reservation.reservation_date;
 
+        const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
+        const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active' || statusKey.includes('checked');
+        const showPerAmenityCheckout = isCheckedIn && differentTime;
+        const hasActiveGuests = guestsList.some(g => !g.checked_out_at);
+        const reservationTypeLabel = escapeHtml(reservation.reservation_type || (reservation.is_walk_in ? 'Walk-in' : 'Online Booking'));
+
+        const primaryGuestId = primaryGuest?.customer?.id || primaryGuest?.customer_id || primaryGuest?.id || 'N/A';
+
         let html = `
-            <div class="ci-design-box">
-                <div class="ci-col">
-                    <span class="ci-label">BOOKER</span>
-                    <div class="ci-value">${reservation.booker_name || 'N/A'}</div>
-                </div>
-                <div class="ci-col ci-border-left">
-                    <span class="ci-label">CONTACT</span>
-                    <div class="ci-value" style="font-weight: 500;">
-                        ${reservation.phone || 'N/A'}<br>
-                        ${reservation.email || 'N/A'}
+            <!-- Main Reservation Info Banner (Highlighting Reservation ID + Main Guest ID) -->
+            <div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-5 mb-4 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 text-white font-black text-xl shadow-md tracking-tight">
+                            #${reservation.id}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2.5 flex-wrap">
+                                <span class="font-display font-black text-xl text-hp-text tracking-tight">Reservation #${reservation.id}</span>
+                                <span class="inline-flex items-center rounded-lg bg-hp-green/15 text-hp-green border border-hp-green/30 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide">
+                                    ${reservationTypeLabel}
+                                </span>
+                            </div>
+                            <div class="text-sm text-hp-text-muted mt-1.5 flex items-center gap-2 flex-wrap">
+                                <span>Main Guest: <strong class="text-hp-text font-bold">${escapeHtml(reservation.booker_name || (primaryGuest?.customer ? `${primaryGuest.customer.first_name} ${primaryGuest.customer.last_name}` : 'N/A'))}</strong> <span class="font-mono text-emerald-800 dark:text-emerald-300 font-bold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded text-xs">ID: #${primaryGuestId}</span></span>
+                                <span>&bull;</span>
+                                <span><i class="bi bi-calendar3 me-1"></i>${formatDate(reservation.reservation_date)} <span class="font-bold">(${startSlot})</span>${isMultiDay ? ` → ${formatDate(reservation.end_date)} <span class="font-bold">(${endSlot})</span>` : ''}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Attendance & Payment Status Badges -->
+                    <div class="flex items-center gap-2.5 flex-wrap shrink-0">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-4 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 shadow-2xs">
+                            <i class="bi bi-people-fill"></i> ${activeResGuests} / ${totalResGuests} Guests Inside
+                        </span>
+                        <span class="inline-flex items-center gap-1 rounded-full ${reservation.payment_status?.toLowerCase() === 'paid' ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300' : 'bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300'} px-4 py-1.5 text-xs font-bold uppercase shadow-2xs">
+                            ${(reservation.payment_status || 'PENDING').toUpperCase()}
+                        </span>
                     </div>
                 </div>
-                <div class="ci-col ci-border-left" style="flex: 1.4; min-width: 190px;">
-                    <span class="ci-label">RESERVATION STAY</span>
-                    <div class="ci-value" style="display: flex; flex-direction: column; gap: 0.35rem; line-height: 1.35;">
+            </div>
+
+            <!-- Section Tabs Grid (4 Clean Tabs - NEVER scrolls horizontally, 100% visible) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full my-4 shrink-0" style="display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0.65rem !important;">
+                <button type="button" class="resv-tab-btn active w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl bg-hp-green text-white shadow-sm py-3 px-3 text-xs sm:text-sm font-bold transition-all border border-transparent" data-target-pane="resvPaneOverview" style="min-height: 44px;">
+                    <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
+                    <span class="truncate">Overview</span>
+                </button>
+                <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneGuests" style="min-height: 44px;">
+                    <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+                    <span class="truncate">Guests (${totalResGuests})</span>
+                </button>
+                <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneAmenities" style="min-height: 44px;">
+                    <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+                    <span class="truncate">Amenities (${validAmenities.length})</span>
+                </button>
+                <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneBilling" style="min-height: 44px;">
+                    <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
+                    <span class="truncate">Billing</span>
+                </button>
+            </div>
+
+            <!-- Tab Panes -->
+            <div class="resv-tab-panes flex-1 min-h-0">
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- PANE 1: OVERVIEW & STAY                                 -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div id="resvPaneOverview" class="resv-tab-pane space-y-4">
+                    <!-- Key Information 4-Card Grid (Spacious & Clean) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div class="rounded-2xl border border-glass-border bg-glass p-4 flex flex-col justify-between shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider mb-1">Booker</span>
+                            <div class="font-bold text-base text-hp-text truncate" title="${escapeHtml(reservation.booker_name || '')}">${escapeHtml(reservation.booker_name || 'N/A')}</div>
+                            <span class="text-xs text-hp-text-muted mt-1">Lead Customer</span>
+                        </div>
+                        <div class="rounded-2xl border border-glass-border bg-glass p-4 flex flex-col justify-between shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider mb-1">Contact Info</span>
+                            <div class="font-bold text-sm text-hp-text truncate">${escapeHtml(reservation.phone || 'No phone')}</div>
+                            <span class="text-xs text-hp-text-muted truncate mt-1" title="${escapeHtml(reservation.email || '')}">${escapeHtml(reservation.email || 'No email')}</span>
+                        </div>
+                        <div class="rounded-2xl border border-glass-border bg-glass p-4 flex flex-col justify-between shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider mb-1">Reservation Stay</span>
+                            <div class="font-bold text-sm text-hp-text">
+                                ${isMultiDay
+                ? `<span>${formatDate(reservation.reservation_date)} <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span><br><span class="text-xs text-hp-text-muted font-normal">to</span> ${formatDate(reservation.end_date)} <span class="text-xs font-semibold text-hp-text-muted">(${endSlot})</span></span>`
+                : `<span>${formatDate(reservation.reservation_date)} <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span></span>`}
+                            </div>
+                            <div class="mt-2 flex items-center gap-1.5 flex-wrap">
+                                ${isMultiDay ? `<span class="inline-flex rounded-md bg-hp-green/10 border border-hp-green/30 px-2 py-0.5 text-[0.68rem] font-bold text-hp-green">${reservation.total_days || 2} Days</span>` : ''}
+                                ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `<button type="button" class="resv-extend-stay-btn inline-flex items-center gap-1 rounded-lg border border-hp-green/40 bg-hp-green/15 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer shadow-2xs" data-reservation-id="${reservation.id}">Adjust / Extend</button>` : ''}
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-glass-border bg-glass p-4 flex flex-col justify-between shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider mb-1">Total Guests</span>
+                            <div class="font-black text-2xl text-hp-text">${totalResGuests} <span class="text-sm font-semibold text-hp-text-muted">registered</span></div>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1"><i class="bi bi-people-fill me-1"></i>${activeResGuests} active inside</span>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Breakdown Stats Cards -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        <div class="rounded-2xl border border-emerald-600/20 bg-emerald-600/5 dark:bg-emerald-950/20 p-4 shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Total Guests</span>
+                            <div class="text-2xl font-black text-emerald-800 dark:text-emerald-200 mt-1">${totalResGuests}</div>
+                            <div class="text-xs text-hp-text-muted mt-1">Full reservation party</div>
+                        </div>
+                        <div class="rounded-2xl border border-emerald-600/20 bg-emerald-600/5 dark:bg-emerald-950/20 p-4 shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Currently Inside</span>
+                            <div class="text-2xl font-black text-emerald-800 dark:text-emerald-200 mt-1">${activeResGuests} <span class="text-sm font-medium text-hp-text-muted">/ ${totalResGuests}</span></div>
+                            <div class="text-xs text-hp-text-muted mt-1">Active on premises</div>
+                        </div>
+                        <div class="rounded-2xl border border-sky-500/25 bg-sky-500/5 dark:bg-sky-950/20 p-4 shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider">Total Pool Passes</span>
+                            <div class="text-2xl font-black text-sky-700 dark:text-sky-300 mt-1">${totalPoolGuests} <span class="text-sm font-medium text-hp-text-muted">/ ${totalResGuests}</span></div>
+                            <div class="text-xs text-hp-text-muted mt-1">With pool pass inclusion</div>
+                        </div>
+                        <div class="rounded-2xl border border-sky-500/25 bg-sky-500/5 dark:bg-sky-950/20 p-4 shadow-2xs">
+                            <span class="text-[0.72rem] font-bold text-sky-700 dark:text-sky-300 uppercase tracking-wider">Current Pool Guests</span>
+                            <div class="text-2xl font-black text-sky-700 dark:text-sky-300 mt-1">${activePoolGuests} <span class="text-sm font-medium text-hp-text-muted">/ ${totalPoolGuests}</span></div>
+                            <div class="text-xs text-hp-text-muted mt-1">Active pool users inside</div>
+                        </div>
+                    </div>
+
+                    <!-- Expected Checkout Card -->
+                    <div class="rounded-2xl border border-glass-border bg-hp-cream/60 dark:bg-white/5 p-4 sm:p-5 flex justify-between items-center flex-wrap gap-3 shadow-2xs">
                         <div>
-                            ${isMultiDay
-                ? `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span><br><span class="text-xs text-hp-text-muted">to</span> <span style="font-weight: 700;">${formatDate(reservation.end_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${endSlot})</span>`
-                : `<span style="font-weight: 700;">${formatDate(reservation.reservation_date)}</span> <span class="text-xs font-semibold text-hp-text-muted">(${startSlot})</span>`}
+                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider block">Expected Check-Out</span>
+                            <div class="text-base sm:text-lg font-extrabold text-hp-text flex items-center gap-2.5 flex-wrap mt-1">
+                                <span>${expectedCheckout.date}</span>
+                                <span class="bg-hp-green text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs">${expectedCheckout.session}</span>
+                                ${expectedCheckout.time ? `<span class="text-sm font-semibold text-hp-text-muted">at ${expectedCheckout.time}</span>` : ''}
+                            </div>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                            ${isMultiDay ? `<span class="resv-date-badge">${reservation.total_days || 2} Days</span>` : ''}
-                            ${differentTime ? '<span class="resv-date-badge">Mixed Time</span>' : ''}
-                            ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `<button type="button" class="resv-extend-stay-btn inline-flex items-center gap-1 rounded-lg border border-hp-green/40 bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer" data-reservation-id="${reservation.id}">Adjust / Extend Stay</button>` : ''}
-                        </div>
+                        ${(String(reservation.status || '').toLowerCase().includes('checked') && reservation.checkout_at) ? `<div class="resv-checkout-countdown text-sm font-bold" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>` : ''}
                     </div>
                 </div>
-                <div class="ci-col ci-border-left">
-                    <span class="ci-label">GUESTS</span>
-                    <div class="ci-value">${totalResGuests}</div>
-                </div>
-            </div>
 
-            <!-- Guests & Pool Attendance Breakdown Stats Card -->
-            <div class="ci-design-box" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem;">
-                <div class="ci-col" style="background: rgba(23,138,82,0.06); border: 1px solid rgba(23,138,82,0.2); border-radius: 0.75rem; padding: 0.75rem;">
-                    <span class="ci-label" style="color: #0e5c37; font-weight: 700;">TOTAL GUESTS</span>
-                    <div class="ci-value-lg" style="color: #0e5c37; font-size: 1.3rem;">${totalResGuests}</div>
-                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Total of reservation</div>
-                </div>
-                <div class="ci-col" style="background: rgba(23,138,82,0.06); border: 1px solid rgba(23,138,82,0.2); border-radius: 0.75rem; padding: 0.75rem;">
-                    <span class="ci-label" style="color: #0e5c37; font-weight: 700;">CURRENT GUESTS</span>
-                    <div class="ci-value-lg" style="color: #0e5c37; font-size: 1.3rem;">${activeResGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalResGuests}</span></div>
-                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Currently inside</div>
-                </div>
-                <div class="ci-col" style="background: rgba(14,165,233,0.08); border: 1px solid rgba(14,165,233,0.25); border-radius: 0.75rem; padding: 0.75rem;">
-                    <span class="ci-label" style="color: #0284c7; font-weight: 700;">TOTAL POOL PASSES</span>
-                    <div class="ci-value-lg" style="color: #0284c7; font-size: 1.3rem;">${totalPoolGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalResGuests}</span></div>
-                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">With pool pass</div>
-                </div>
-                <div class="ci-col" style="background: rgba(14,165,233,0.08); border: 1px solid rgba(14,165,233,0.25); border-radius: 0.75rem; padding: 0.75rem;">
-                    <span class="ci-label" style="color: #0284c7; font-weight: 700;">CURRENT POOL GUESTS</span>
-                    <div class="ci-value-lg" style="color: #0284c7; font-size: 1.3rem;">${activePoolGuests} <span style="font-size: 0.85rem; font-weight: 500; color: #555;">/ ${totalPoolGuests}</span></div>
-                    <div style="font-size: 0.72rem; color: var(--hp-text-muted); margin-top: 2px;">Active pool inside</div>
-                </div>
-            </div>
-
-            <!-- Expected Checkout Card -->
-            <div class="ci-design-box" style="margin-top: 1rem; background: rgba(26,92,60,0.06); border: 1px solid rgba(26,92,60,0.25); border-radius: 0.75rem; padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <span class="ci-label" style="color: #1a5c3c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Expected Check-out</span>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #113824; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 3px;">
-                        <span>${expectedCheckout.date}</span>
-                        <span style="background: #1a5c3c; color: #ffffff; font-size: 0.78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;">${expectedCheckout.session}</span>
-                        ${expectedCheckout.time ? `<span style="font-size: 0.88rem; font-weight: 500; color: #355e46;">at ${expectedCheckout.time}</span>` : ''}
-                    </div>
-                </div>
-                ${(String(reservation.status || '').toLowerCase().includes('checked') && reservation.checkout_at) ? `<div class="resv-checkout-countdown" data-checkout-at="${reservation.checkout_at}" data-checkout-state=""></div>` : ''}
-            </div>
-
-            <div class="ci-design-box" style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div style="display:flex; gap: 2rem; flex-wrap: wrap;">
-                    <div class="ci-col">
-                        <span class="ci-label" style="text-transform: none;">Total Due:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                    <div class="ci-col ci-border-left">
-                        <span class="ci-label" style="text-transform: none;">Paid to Date:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                    <div class="ci-col ci-border-left">
-                        <span class="ci-label" style="text-transform: none;">Balance Due:</span>
-                        <div class="ci-value-lg">₱${parseFloat(reservation.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    </div>
-                </div>
-                <div>
-                    <span class="ci-pill ${reservation.payment_status?.toLowerCase() === 'paid' ? 'ci-pill-green' : 'ci-pill-orange'}">
-                        ${(reservation.payment_status || 'PENDING').toUpperCase()}
-                    </span>
-                </div>
-            </div>
-
-            ${(() => {
-                const periods = [];
-                if (validAmenities.length > 0) {
-                    validAmenities.forEach(a => {
-                        const t = String(a.pricing_type || 'N/A');
-                        if (!periods.includes(t)) periods.push(t);
-                    });
-                } else if (reservation.entrance_fee && reservation.entrance_fee.pricing_type) {
-                    periods.push(reservation.entrance_fee.pricing_type);
-                }
-                if (!periods.length) return '';
-                return `
-                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: rgba(194,146,29,0.10); border: 1px solid rgba(194,146,29,0.35); border-radius: 0.6rem; padding: 0.55rem 1rem;">
-                    <span style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #a1760f;">Time Period:</span>
-                    ${periods.map(t => `<span style="background: var(--hp-gold); color: #fff; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;">${t}</span>`).join('')}
-                    ${differentTime ? '<span style="font-size: 0.75rem; font-weight: 600; color: #a1760f;">Mixed time periods</span>' : ''}
-                </div>
-                `;
-            })()}
-
-            ${reservation.entrance_fee ? `
-                <div class="ci-design-box" style="margin-top: 0.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.65rem 1rem;">
-                    <div style="display:flex; gap: 1.5rem; flex-wrap: wrap;">
-                        <div class="ci-col">
-                            <span class="ci-label" style="text-transform: none;">Entrance Fee:</span>
-                            <div class="ci-value" style="font-weight: 600;">₱${(parseFloat(reservation.entrance_fee.total_amount || 0) - parseFloat(reservation.entrance_fee.pool_fee || 0)).toFixed(2)} <span style="font-weight: 400; font-size: 0.78rem;">(${reservation.entrance_fee.adult_count || 0} adult${(reservation.entrance_fee.adult_count || 0) === 1 ? '' : 's'} · ${reservation.entrance_fee.child_count || 0} child${(reservation.entrance_fee.child_count || 0) === 1 ? '' : 'ren'})</span></div>
-                        </div>
-                        <div class="ci-col ci-border-left">
-                            <span class="ci-label" style="text-transform: none;">Pool Fee:</span>
-                            <div class="ci-value" style="font-weight: 600;">₱${parseFloat(reservation.entrance_fee.pool_fee || 0).toFixed(2)}</div>
-                        </div>
-                        <div class="ci-col ci-border-left">
-                            <span class="ci-label" style="text-transform: none;">Entrance + Pool:</span>
-                            <div class="ci-value" style="font-weight: 700;">₱${parseFloat(reservation.entrance_fee.total_amount || 0).toFixed(2)}</div>
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- PANE 2: GUESTS & COMPANIONS                             -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div id="resvPaneGuests" class="resv-tab-pane space-y-3 hidden">
+                    <div class="flex items-center justify-between gap-2 border-b border-glass-border/40 pb-2 flex-wrap">
+                        <span class="text-xs font-bold text-hp-text uppercase tracking-wider">Registered Guests & Companions</span>
+                        <div class="flex items-center gap-2">
+                            ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `
+                                <button type="button" class="resv-companion-checkout-btn inline-flex items-center gap-1 rounded-xl bg-hp-green/10 border border-hp-green/40 px-3 py-1.5 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer shadow-2xs" data-reservation-id="${reservation.id}">
+                                    Group Checkout
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-                </div>
-            ` : ''}
-        `;
 
-        if (companions.length >= 0) {
-            const activeCompanions = companions.filter(c => !c.checked_out_at);
-            const individualCompanions = activeCompanions.filter(c =>
-                c.customer &&
-                c.customer.first_name &&
-                !c.customer.first_name.toLowerCase().includes('companion') &&
-                !c.customer.first_name.toLowerCase().includes('reservation')
-            );
-
-            const bulkCompanions = activeCompanions.filter(c =>
-                !c.customer ||
-                !c.customer.first_name ||
-                c.customer.first_name.toLowerCase().includes('companion') ||
-                c.customer.first_name.toLowerCase().includes('reservation')
-            );
-
-            const bulkGroups = {};
-            bulkCompanions.forEach(c => {
-                if (!c.customer) return;
-                const gender = c.customer.gender || 'Unknown';
-                const status = c.customer.is_foreigner ? 'Foreigner' : 'Filipino';
-                const age = c.customer.age || 'Unknown';
-                const key = `${gender}/${status}/${age}`;
-                if (!bulkGroups[key]) {
-                    bulkGroups[key] = { gender, status, age, count: 0, poolCount: 0 };
-                }
-                bulkGroups[key].count++;
-                if (c.has_pool_access) bulkGroups[key].poolCount++;
-            });
-
-            const hasAmenity = validAmenities.length > 0;
-            const primaryHasPool = Boolean(primaryGuest?.has_pool_access);
-            const primaryGlow = primaryHasPool && hasAmenity ? 'guest-avatar-glow--both' : (primaryHasPool ? 'guest-avatar-glow--pool' : (hasAmenity ? 'guest-avatar-glow--amenity' : ''));
-
-            html += `
-                <div style="margin-top:1.5rem;">
-                    <h3 class="ci-section-title">GUESTS ON THIS RESERVATION</h3>
                     <div class="ci-guest-grid">
                         ${primaryGuest && primaryGuest.customer ? `
                             <div class="ci-guest-card">
-                                <div class="ci-guest-icon ${primaryGlow}">
+                                <div class="ci-guest-icon ${primaryGuest.has_pool_access ? 'guest-avatar-glow--pool' : ''}">
                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                                 </div>
                                 <div class="ci-guest-info">
                                     <div class="ci-guest-role flex items-center gap-1.5">
                                         <span>PRIMARY GUEST</span>
-                                        ${primaryHasPool && hasAmenity ? '<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏊 Pool + 🏡</span>' : (primaryHasPool ? '<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏊 Pool Pass</span>' : (hasAmenity ? '<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700;">🏡 Amenity</span>' : '<span style="font-size: 0.62rem; background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); color: #475569; padding: 1px 6px; border-radius: 8px; font-weight: 700;">Standard</span>'))}
+                                        <span class="inline-flex items-center rounded-md bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border border-emerald-500/40 px-1.5 py-0.2 text-[0.62rem] font-bold">Main Booker</span>
+                                        ${primaryGuest.has_pool_access ? '<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700;"><i class="bi bi-water me-1"></i>Pool Pass</span>' : '<span style="font-size: 0.62rem; background: rgba(100,116,139,0.15); border: 1px solid rgba(100,116,139,0.3); color: #475569; padding: 1px 6px; border-radius: 8px; font-weight: 700;">Standard</span>'}
                                     </div>
-                                    <div class="ci-guest-name">${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</div>
-                                    <div class="ci-guest-meta">${primaryGuest.customer.age || 'N/A'} yrs - ${primaryGuest.customer.gender || 'N/A'} - ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
+                                    <div class="ci-guest-name font-bold text-hp-text">${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</div>
+                                    <div class="ci-guest-meta">${primaryGuest.customer.age || 'N/A'} yrs &bull; ${primaryGuest.customer.gender || 'N/A'} &bull; ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                                 </div>
                             </div>
                         ` : '<div class="ci-guest-card"><div class="ci-guest-info"><div class="ci-guest-name">No main guest assigned</div></div></div>'}
-            `;
 
-            if (bulkCompanions.length > 0 || individualCompanions.length > 0) {
+                        ${(() => {
+                const individualCompanions = activeCompanions.filter(c =>
+                    c.customer &&
+                    c.customer.first_name &&
+                    !c.customer.first_name.toLowerCase().includes('companion') &&
+                    !c.customer.first_name.toLowerCase().includes('reservation')
+                );
+
+                const bulkCompanions = activeCompanions.filter(c =>
+                    !c.customer ||
+                    !c.customer.first_name ||
+                    c.customer.first_name.toLowerCase().includes('companion') ||
+                    c.customer.first_name.toLowerCase().includes('reservation')
+                );
+
+                const bulkGroups = {};
+                bulkCompanions.forEach(c => {
+                    if (!c.customer) return;
+                    const gender = c.customer.gender || 'Unknown';
+                    const status = c.customer.is_foreigner ? 'Foreigner' : 'Filipino';
+                    const age = c.customer.age || 'Unknown';
+                    const key = `${gender}/${status}/${age}`;
+                    if (!bulkGroups[key]) {
+                        bulkGroups[key] = { gender, status, age, count: 0, poolCount: 0 };
+                    }
+                    bulkGroups[key].count++;
+                    if (c.has_pool_access) bulkGroups[key].poolCount++;
+                });
+
                 const totalCompanions = bulkCompanions.length + individualCompanions.length;
-                const singleCount = individualCompanions.length;
-                const singlePoolCount = individualCompanions.filter(c => Boolean(c.has_pool_access)).length;
-                const bulkCount = bulkCompanions.length;
-                const bulkPoolCount = bulkCompanions.filter(c => Boolean(c.has_pool_access)).length;
-                let summaryLines = '';
-                if (singleCount > 0) {
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single companions: <strong>${singleCount}</strong> (${singlePoolCount} with pool)</div>`;
+                if (totalCompanions === 0) {
+                    return `<div class="rounded-xl border border-glass-border bg-glass p-4 text-xs text-hp-text-muted italic text-center">No companion guests registered.</div>`;
                 }
-                if (bulkCount > 0) {
+
+                let summaryLines = '';
+                if (individualCompanions.length > 0) {
+                    const singlePoolCount = individualCompanions.filter(c => Boolean(c.has_pool_access)).length;
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single / Named companions: <strong>${individualCompanions.length}</strong> (${singlePoolCount} with pool)</div>`;
+                }
+                if (bulkCompanions.length > 0) {
+                    const bulkPoolCount = bulkCompanions.filter(c => Boolean(c.has_pool_access)).length;
                     const groupSummary = Object.values(bulkGroups)
                         .map(g => `${g.gender} · ${ageGroupLabel(g.age)} ×${g.count} (${g.poolCount} pool)`)
                         .join(' · ');
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companions: <strong>${bulkCount}</strong> (${bulkPoolCount} with pool)${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">— ${groupSummary}</span>` : ''}</div>`;
+                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companion groups: <strong>${bulkCompanions.length}</strong> (${bulkPoolCount} with pool)${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">— ${groupSummary}</span>` : ''}</div>`;
                 }
-                const companionsHasPool = singlePoolCount > 0 || bulkPoolCount > 0;
-                const companionsGlow = companionsHasPool && hasAmenity ? 'guest-avatar-glow--both' : (companionsHasPool ? 'guest-avatar-glow--pool' : (hasAmenity ? 'guest-avatar-glow--amenity' : ''));
 
-                html += `
-                    <div class="ci-guest-card" style="align-items: flex-start;">
-                        <div class="ci-guest-icon ${companionsGlow}" style="margin-top: 0.2rem;">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                        </div>
-                        <div class="ci-guest-info" style="width: 100%;">
-                            <div class="ci-guest-role">COMPANIONS (${totalCompanions})</div>
-                            ${summaryLines}
-                        </div>
-                    </div>
-                `;
-            }
-
-            html += `
-                    </div>
-                </div>
-            `;
-        }
-
-        const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
-        const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active' || statusKey.includes('checked');
-        const showPerAmenityCheckout = isCheckedIn && differentTime;
-
-        if (validAmenities.length > 0) {
-            html += `
-            <div style="margin-top:0.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
-                    <div class="flex items-center gap-2">
-                        ${showPerAmenityCheckout ? '<span class="resv-diff-time-label">Different amenity time</span>' : ''}
-                        ${isCheckedIn ? `<button type="button" class="resv-add-amenity-btn rounded-lg bg-hp-green px-2.5 py-1 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">+ Add Amenity</button>` : ''}
+                return `
+                                <div class="ci-guest-card" style="align-items: flex-start;">
+                                    <div class="ci-guest-icon" style="margin-top: 0.2rem;">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                                    </div>
+                                    <div class="ci-guest-info" style="width: 100%;">
+                                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                            <div class="ci-guest-role" style="margin-bottom: 0;">COMPANIONS (${totalCompanions})</div>
+                                            ${activeCompanions.length > 0 ? `<button type="button" class="resv-companion-checkout-btn inline-flex items-center gap-1 rounded-lg bg-hp-green/10 border border-hp-green/40 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer shadow-2xs" data-reservation-id="${reservation.id}">Group Checkout</button>` : ''}
+                                        </div>
+                                        ${summaryLines}
+                                    </div>
+                                </div>
+                            `;
+            })()}
                     </div>
                 </div>
-                <div class="resv-amenity-list">
-                    ${validAmenities.map(a => {
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- PANE 3: RESERVED AMENITIES                              -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div id="resvPaneAmenities" class="resv-tab-pane space-y-3 hidden">
+                    <div class="flex items-center justify-between gap-2 border-b border-glass-border/40 pb-2 flex-wrap">
+                        <span class="text-xs font-bold text-hp-text uppercase tracking-wider">Reserved Amenities (${validAmenities.length})</span>
+                        <div class="flex items-center gap-2">
+                            ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `
+                                <button type="button" class="resv-add-amenity-btn inline-flex items-center gap-1 rounded-xl bg-hp-green px-3 py-1.5 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">
+                                    + Add Amenity
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    ${validAmenities.length > 0 ? `
+                        <div class="resv-amenity-list">
+                            ${validAmenities.map(a => {
                 const amenityStatus = a.status || 'Active';
                 const isCompleted = amenityStatus === 'Completed';
                 const aStart = a.start_date ? formatDate(a.start_date) : '';
@@ -593,14 +615,14 @@ window.AppPage['staff_check_ins'] = function () {
                     ? ` (${aStart} [${aStartSlot}] to ${aEnd} [${aEndSlot}])`
                     : (aStartSlot ? ` (${aStartSlot})` : '');
                 return `
-                            <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
-                                <div class="resv-amenity-item__info">
-                                    <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
-                                    <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'}${aSched} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
-                                    ${!isCompleted && (a.checkout_at || a.starts_at) ? `<div class="resv-amenity-countdown" data-starts-at="${a.starts_at || ''}" data-checkout-at="${a.checkout_at || ''}" data-checkout-state=""></div>` : ''}
-                                </div>
-                                <div class="resv-amenity-item__actions flex items-center gap-1.5">
-                                    ${isCompleted
+                                    <div class="resv-amenity-item ${isCompleted ? 'resv-amenity-item--completed' : ''}">
+                                        <div class="resv-amenity-item__info">
+                                            <div class="resv-amenity-item__name">${a.amenity ? a.amenity.amenities_name : (a.amenity_name || a.amenity_id || 'Unknown amenity')}</div>
+                                            <div class="resv-amenity-item__meta">${a.pricing_type || 'N/A'}${aSched} · ₱${parseFloat(a.price || a.price_at_booking || 0).toFixed(2)} x ${a.quantity || 1}</div>
+                                            ${!isCompleted && (a.checkout_at || a.starts_at) ? `<div class="resv-amenity-countdown" data-starts-at="${a.starts_at || ''}" data-checkout-at="${a.checkout_at || ''}" data-checkout-state=""></div>` : ''}
+                                        </div>
+                                        <div class="resv-amenity-item__actions flex items-center gap-1.5">
+                                            ${isCompleted
                         ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
                         : (
                             (isCheckedIn ? `<button type="button" class="resv-amenity-extend-btn rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer" data-reservation-id="${reservation.id}" data-reservation-amenity-id="${a.id}">Extend</button>` : '') +
@@ -609,26 +631,85 @@ window.AppPage['staff_check_ins'] = function () {
                                 : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
                         )
                     }
+                                        </div>
+                                    </div>
+                                `;
+            }).join('')}
+                        </div>
+                    ` : `
+                        <div class="rounded-xl border border-glass-border bg-glass p-6 text-center text-xs text-hp-text-muted italic">
+                            No amenities booked on this stay. Click "+ Add Amenity" to rent one mid-stay.
+                        </div>
+                    `}
+                </div>
+
+                <!-- ════════════════════════════════════════════════════════ -->
+                <!-- PANE 4: BILLING & FEES                                  -->
+                <!-- ════════════════════════════════════════════════════════ -->
+                <div id="resvPaneBilling" class="resv-tab-pane space-y-3 hidden">
+                    <div class="ci-design-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display:flex; gap: 2rem; flex-wrap: wrap;">
+                            <div class="ci-col">
+                                <span class="ci-label" style="text-transform: none;">Total Due:</span>
+                                <div class="ci-value-lg">₱${parseFloat(reservation.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            </div>
+                            <div class="ci-col ci-border-left">
+                                <span class="ci-label" style="text-transform: none;">Paid to Date:</span>
+                                <div class="ci-value-lg">₱${parseFloat(reservation.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            </div>
+                            <div class="ci-col ci-border-left">
+                                <span class="ci-label" style="text-transform: none;">Balance Due:</span>
+                                <div class="ci-value-lg">₱${parseFloat(reservation.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="ci-pill ${reservation.payment_status?.toLowerCase() === 'paid' ? 'ci-pill-green' : 'ci-pill-orange'}">
+                                ${(reservation.payment_status || 'PENDING').toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+
+                    ${reservation.entrance_fee ? `
+                        <div class="ci-design-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; padding: 0.85rem 1rem;">
+                            <div style="display:flex; gap: 1.5rem; flex-wrap: wrap;">
+                                <div class="ci-col">
+                                    <span class="ci-label" style="text-transform: none;">Entrance Fee:</span>
+                                    <div class="ci-value" style="font-weight: 600;">₱${(parseFloat(reservation.entrance_fee.total_amount || 0) - parseFloat(reservation.entrance_fee.pool_fee || 0)).toFixed(2)} <span style="font-weight: 400; font-size: 0.78rem;">(${reservation.entrance_fee.adult_count || 0} adult${(reservation.entrance_fee.adult_count || 0) === 1 ? '' : 's'} · ${reservation.entrance_fee.child_count || 0} child${(reservation.entrance_fee.child_count || 0) === 1 ? '' : 'ren'})</span></div>
+                                </div>
+                                <div class="ci-col ci-border-left">
+                                    <span class="ci-label" style="text-transform: none;">Pool Fee:</span>
+                                    <div class="ci-value" style="font-weight: 600;">₱${parseFloat(reservation.entrance_fee.pool_fee || 0).toFixed(2)}</div>
+                                </div>
+                                <div class="ci-col ci-border-left">
+                                    <span class="ci-label" style="text-transform: none;">Entrance + Pool:</span>
+                                    <div class="ci-value" style="font-weight: 700;">₱${parseFloat(reservation.entrance_fee.total_amount || 0).toFixed(2)}</div>
                                 </div>
                             </div>
-                        `;
-            }).join('')}
-                </div>
-            </div>
-            `;
-        } else if (isCheckedIn) {
-            html += `
-            <div style="margin-top:0.75rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span class="ci-modal-label" style="margin: 0;">Reserved Amenities</span>
-                    <button type="button" class="resv-add-amenity-btn rounded-lg bg-hp-green px-2.5 py-1 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">+ Add Amenity</button>
-                </div>
-                <div class="rounded-xl border border-glass-border bg-glass p-3 text-xs text-hp-text-muted italic">No amenities booked on this stay yet. Click "+ Add Amenity" to rent one.</div>
-            </div>
-            `;
-        }
+                        </div>
+                    ` : ''}
 
-        html += `</div>`; // Close guest-card
+                    ${(() => {
+                const periods = [];
+                if (validAmenities.length > 0) {
+                    validAmenities.forEach(a => {
+                        const t = String(a.pricing_type || 'N/A');
+                        if (!periods.includes(t)) periods.push(t);
+                    });
+                } else if (reservation.entrance_fee && reservation.entrance_fee.pricing_type) {
+                    periods.push(reservation.entrance_fee.pricing_type);
+                }
+                if (!periods.length) return '';
+                return `
+                        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; background: rgba(194,146,29,0.10); border: 1px solid rgba(194,146,29,0.35); border-radius: 0.6rem; padding: 0.55rem 1rem;">
+                            <span style="font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #a1760f;">Time Period:</span>
+                            ${periods.map(t => `<span style="background: var(--hp-gold); color: #fff; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;">${t}</span>`).join('')}
+                            ${differentTime ? '<span style="font-size: 0.75rem; font-weight: 600; color: #a1760f;">Mixed time periods</span>' : ''}
+                        </div>
+                        `;
+            })()}
+                </div>
+            </div>
+        `;
 
         // Update modal status badge
         const statusBadge = document.getElementById('reservationModalStatus');
@@ -638,12 +719,83 @@ window.AppPage['staff_check_ins'] = function () {
 
         // Only checked-in reservations can accept new companions mid-stay.
         if (reservationAddCompanionBtn) {
-            const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
-            const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active';
             reservationAddCompanionBtn.classList.toggle('hidden', !isCheckedIn);
+        }
+        if (reservationCompanionCheckoutHeaderBtn) {
+            const hasActiveGuests = guestsList.some(g => !g.checked_out_at);
+            reservationCompanionCheckoutHeaderBtn.classList.toggle('hidden', !isCheckedIn || !hasActiveGuests);
+            reservationCompanionCheckoutHeaderBtn.setAttribute('data-reservation-id', reservation.id);
         }
 
         reservationModalBody.innerHTML = html;
+
+        // Render and Bind Sticky Action Buttons in Modal Footer (Always visible wherever user scrolls)
+        const stickyButtonsContainer = document.getElementById('reservationModalStickyButtons');
+        if (stickyButtonsContainer) {
+            if (isCheckedIn) {
+                stickyButtonsContainer.innerHTML = `
+                    <button type="button" class="resv-quick-add-companion-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-2 border-emerald-600 bg-emerald-600/10 hover:bg-emerald-600 hover:text-white px-3.5 py-1.5 text-xs font-extrabold text-emerald-900 dark:text-emerald-200 transition-all shadow-xs" data-reservation-id="${reservation.id}">
+                        <svg class="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                        <span>Add Companion</span>
+                    </button>
+                    ${hasActiveGuests ? `
+                        <button type="button" class="resv-quick-group-checkout-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl bg-gradient-to-r from-teal-700 to-emerald-700 hover:from-teal-800 hover:to-emerald-800 px-3.5 py-1.5 text-xs font-extrabold text-white transition-all shadow-md hover:shadow-lg" data-reservation-id="${reservation.id}">
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+                            <span>Group Checkout</span>
+                        </button>
+                    ` : ''}
+                    <button type="button" class="resv-quick-checkout-all-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green hover:bg-hp-green-dark px-4 py-1.5 text-xs font-extrabold text-white transition-all shadow-md hover:shadow-lg" data-reservation-id="${reservation.id}">
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                        <span>Check Out All</span>
+                    </button>
+                `;
+
+                // Bind Sticky Action Buttons
+                const quickAddCompanionBtn = stickyButtonsContainer.querySelector('.resv-quick-add-companion-btn');
+                const quickGroupCheckoutBtn = stickyButtonsContainer.querySelector('.resv-quick-group-checkout-btn');
+                const quickCheckoutAllBtn = stickyButtonsContainer.querySelector('.resv-quick-checkout-all-btn');
+
+                quickAddCompanionBtn?.addEventListener('click', () => {
+                    openResAddCompanionModal();
+                });
+
+                quickGroupCheckoutBtn?.addEventListener('click', () => {
+                    openCompanionCheckoutModal(reservation.id);
+                });
+
+                quickCheckoutAllBtn?.addEventListener('click', () => {
+                    pendingCheckOutReservationId = reservation.id;
+                    openCheckOutConfirmModal();
+                });
+            } else {
+                stickyButtonsContainer.innerHTML = '';
+            }
+        }
+
+        // Bind Tab Switching Listeners inside modal
+        const tabBtns = reservationModalBody.querySelectorAll('.resv-tab-btn');
+        const tabPanes = reservationModalBody.querySelectorAll('.resv-tab-pane');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.targetPane;
+                tabBtns.forEach(b => {
+                    const isCurrent = (b === btn);
+                    b.classList.toggle('active', isCurrent);
+                    b.classList.toggle('bg-hp-green', isCurrent);
+                    b.classList.toggle('text-white', isCurrent);
+                    b.classList.toggle('shadow-sm', isCurrent);
+                    b.classList.toggle('border-transparent', isCurrent);
+                    b.classList.toggle('bg-white/70', !isCurrent);
+                    b.classList.toggle('text-hp-text-muted', !isCurrent);
+                    b.classList.toggle('border-glass-border/60', !isCurrent);
+                });
+                tabPanes.forEach(pane => {
+                    pane.classList.toggle('hidden', pane.id !== targetId);
+                });
+            });
+        });
+
         refreshCheckoutCountdowns();
         reservationModal.classList.add('is-open');
         reservationModal.setAttribute('aria-hidden', 'false');
@@ -669,13 +821,23 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
-    // Reservation row click handlers
+    // Reservation row click handlers (both delegated and direct)
+    if (reservationTableBody) {
+        reservationTableBody.addEventListener('click', (e) => {
+            if (e.target.closest('.btn-expand-row') || e.target.closest('button')) return;
+            const row = e.target.closest('.reservation-row');
+            if (row && row.dataset.reservationId) {
+                openReservationModal(row.dataset.reservationId);
+            }
+        });
+    }
+
     const reservationRows = reservationTableBody?.querySelectorAll('.reservation-row') ?? [];
     reservationRows.forEach(row => {
         row.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-expand-row')) return;
+            if (e.target.closest('.btn-expand-row') || e.target.closest('button')) return;
             const reservationId = row.dataset.reservationId;
-            openReservationModal(reservationId);
+            if (reservationId) openReservationModal(reservationId);
         });
     });
 
@@ -686,6 +848,12 @@ window.AppPage['staff_check_ins'] = function () {
 
     checkOutConfirmCloseButtons.forEach(button => {
         button.addEventListener('click', closeCheckOutConfirmModal);
+    });
+
+    // Companion checkout button in reservation modal header
+    reservationCompanionCheckoutHeaderBtn?.addEventListener('click', () => {
+        if (!currentReservationId) return;
+        openCompanionCheckoutModal(currentReservationId);
     });
 
     // Reservation checkout - open confirmation modal
@@ -2443,6 +2611,8 @@ window.AppPage['staff_check_ins'] = function () {
         openExtendStayModal,
         openAddAmenityMidStayModal,
         openExtendAmenityModal,
+        openCompanionCheckoutModal: (id) => openCompanionCheckoutModal(id),
+        openReservationModal: (id) => openReservationModal(id),
         handleAmenityCheckout,
         stopQrScanner: () => stopQrScanner?.(),
     };
@@ -2831,6 +3001,649 @@ window.AppPage['staff_check_ins'] = function () {
         if (val < max) bulkManageNoPoolQtyInput.value = val + 1;
     });
 
+    // ==========================================
+    // Unified Companion Checkout Modal System
+    // ==========================================
+    let currentCompanionCheckoutResId = null;
+    const companionCheckoutModal = document.getElementById('reservationCompanionCheckoutModal');
+    const companionCheckoutResIdEl = document.getElementById('companionCheckoutResId');
+    const companionCheckoutBookerNameEl = document.getElementById('companionCheckoutBookerName');
+    const companionCheckoutStatsPillsEl = document.getElementById('companionCheckoutStatsPills');
+    const companionCheckoutModalBody = document.getElementById('companionCheckoutModalBody');
+    const companionCheckoutSelectedSummary = document.getElementById('companionCheckoutSelectedSummary');
+    const companionCheckoutSubmitBtn = document.getElementById('companionCheckoutSubmitBtn');
+
+    const closeCompanionCheckoutModal = () => {
+        const previousResId = currentCompanionCheckoutResId;
+        currentCompanionCheckoutResId = null;
+        if (companionCheckoutModal) {
+            companionCheckoutModal.classList.remove('is-open');
+            companionCheckoutModal.setAttribute('aria-hidden', 'true');
+        }
+        if (previousResId) {
+            openReservationModal(previousResId);
+        }
+    };
+
+    document.querySelectorAll('[data-close-companion-checkout-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeCompanionCheckoutModal);
+    });
+
+    const updateCompanionCheckoutSelectionSummary = () => {
+        if (!companionCheckoutModalBody) return;
+
+        // 1. Count selected single and primary guests
+        const selectedSingleCheckboxes = Array.from(companionCheckoutModalBody.querySelectorAll('.companion-single-checkbox:checked'));
+        const singleCount = selectedSingleCheckboxes.length;
+        const hasPrimarySelected = selectedSingleCheckboxes.some(cb => cb.dataset.isPrimary === 'true');
+        const namedCompanionSelectedCount = selectedSingleCheckboxes.filter(cb => cb.dataset.isPrimary !== 'true').length;
+
+        // 2. Count selected bulk companions from stepper inputs
+        let bulkCount = 0;
+        companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach(input => {
+            const val = parseInt(input.value, 10) || 0;
+            if (val > 0) bulkCount += val;
+        });
+
+        const totalSelected = singleCount + bulkCount;
+        if (companionCheckoutSelectedSummary) {
+            const parts = [];
+            if (hasPrimarySelected) parts.push('Main Guest');
+            if (namedCompanionSelectedCount > 0) parts.push(`${namedCompanionSelectedCount} companion${namedCompanionSelectedCount === 1 ? '' : 's'}`);
+            if (bulkCount > 0) parts.push(`${bulkCount} bulk companion${bulkCount === 1 ? '' : 's'}`);
+
+            if (totalSelected === 0) {
+                companionCheckoutSelectedSummary.innerHTML = `<span class="text-hp-text-muted">No guests selected for checkout</span>`;
+            } else {
+                companionCheckoutSelectedSummary.innerHTML = `<span>Selected: <strong class="text-hp-green">${parts.join(' + ')}</strong> (${totalSelected} total)</span>`;
+            }
+        }
+
+        if (companionCheckoutSubmitBtn) {
+            companionCheckoutSubmitBtn.disabled = (totalSelected === 0);
+            companionCheckoutSubmitBtn.innerHTML = `
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                <span>Checkout Selected (${totalSelected})</span>
+            `;
+        }
+    };
+
+    const openCompanionCheckoutModal = (reservationId) => {
+        const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
+        if (!res) {
+            showToast('Reservation details not found.', 'error');
+            return;
+        }
+
+        currentCompanionCheckoutResId = reservationId;
+        if (companionCheckoutResIdEl) companionCheckoutResIdEl.textContent = res.id;
+        if (companionCheckoutBookerNameEl) companionCheckoutBookerNameEl.textContent = res.booker_name || 'N/A';
+
+        const guestsList = res.reservation_guests || [];
+        const primaryGuest = guestsList.find(g => g.is_primary_guest);
+        const companions = guestsList.filter(g => !g.is_primary_guest);
+
+        const isBulk = (g) => {
+            const fn = (g.customer?.first_name || '').toLowerCase().trim();
+            return !fn || fn.startsWith('bulk') || fn.includes('companion') || fn.includes('reservation');
+        };
+
+        const singleCompanions = companions.filter(g => !isBulk(g));
+        const bulkCompanions = companions.filter(g => isBulk(g));
+
+        const activeSingle = singleCompanions.filter(g => !g.checked_out_at);
+        const activeBulk = bulkCompanions.filter(g => !g.checked_out_at);
+        const isPrimaryActive = primaryGuest && !primaryGuest.checked_out_at;
+
+        const totalActiveGuests = guestsList.filter(g => !g.checked_out_at).length;
+        const totalGuestsCount = guestsList.length;
+
+        const totalPool = guestsList.filter(g => Boolean(g.has_pool_access)).length;
+        const activePool = guestsList.filter(g => Boolean(g.has_pool_access) && !g.checked_out_at).length;
+        const totalStandard = guestsList.filter(g => !g.has_pool_access).length;
+        const activeStandard = guestsList.filter(g => !g.has_pool_access && !g.checked_out_at).length;
+
+        // Render Stats Pills
+        if (companionCheckoutStatsPillsEl) {
+            companionCheckoutStatsPillsEl.innerHTML = `
+                <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                    <i class="bi bi-people-fill"></i> ${totalActiveGuests} / ${totalGuestsCount} Active Inside
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-xs font-bold text-sky-700 dark:text-sky-300">
+                    <i class="bi bi-water"></i> ${activePool} / ${totalPool} Pool Pass
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-800 dark:text-amber-300">
+                    <i class="bi bi-person-fill"></i> ${activeStandard} / ${totalStandard} Standard
+                </span>
+            `;
+        }
+
+        if (totalGuestsCount === 0) {
+            companionCheckoutModalBody.innerHTML = `
+                <div class="rounded-2xl border border-glass-border bg-glass p-8 text-center">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-white/10">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>
+                    </div>
+                    <h4 class="m-0 text-base font-bold text-hp-text">No Guests Found</h4>
+                    <p class="m-0 mt-1 text-xs text-hp-text-muted">No guest records are registered under this reservation.</p>
+                </div>
+            `;
+            updateCompanionCheckoutSelectionSummary();
+            companionCheckoutModal.classList.add('is-open');
+            companionCheckoutModal.setAttribute('aria-hidden', 'false');
+            return;
+        }
+
+        let html = '';
+
+        // Select All / Deselect All Bar
+        if (totalActiveGuests > 0) {
+            html += `
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass p-3">
+                    <div class="text-xs font-semibold text-hp-text">
+                        <span>Select guests to check out:</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="companionCheckoutSelectAllBtn" class="cursor-pointer rounded-lg bg-hp-green/10 border border-hp-green/30 text-hp-green hover:bg-hp-green hover:text-white px-2.5 py-1 text-xs font-bold transition-all">
+                            Select All Active
+                        </button>
+                        <button type="button" id="companionCheckoutDeselectAllBtn" class="cursor-pointer rounded-lg border border-glass-border bg-glass hover:bg-glass-hover text-hp-text px-2.5 py-1 text-xs font-semibold transition-all">
+                            Clear Selection
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Section 1: Main Guest (Primary Booker)
+        if (primaryGuest) {
+            const c = primaryGuest.customer || {};
+            const fullName = [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(' ').trim() || res.booker_name || 'Primary Booker';
+            const isCheckedOut = Boolean(primaryGuest.checked_out_at);
+            const hasPool = Boolean(primaryGuest.has_pool_access);
+
+            html += `
+                <div class="rounded-2xl border border-glass-border bg-glass p-4">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-glass-border/40">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-hp-text">Main / Primary Guest</span>
+                            <span class="rounded-full ${isCheckedOut ? 'bg-slate-500/15 text-slate-600 dark:text-slate-300' : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'} text-[0.7rem] font-bold px-2 py-0.5">${isCheckedOut ? 'Checked Out' : 'Active Inside'}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-xl border ${isCheckedOut ? 'border-glass-border/30 bg-black/[0.02] dark:bg-white/[0.02] opacity-60' : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50 transition-all'}">
+                        <div class="flex items-center gap-3 min-w-0">
+                            ${!isCheckedOut ? `
+                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${primaryGuest.id || primaryGuest.customer_id}" data-is-primary="true" data-guest-name="${escapeHtml(fullName)}" checked>
+                            ` : `
+                                <span class="h-4 w-4 inline-flex items-center justify-center text-slate-400 font-bold"><i class="bi bi-check-lg"></i></span>
+                            `}
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-800 text-white text-xs font-bold shadow-2xs">
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-bold text-hp-text truncate">${escapeHtml(fullName)}</span>
+                                    <span class="inline-flex items-center gap-0.5 rounded bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 border border-emerald-500/40 px-1.5 py-0.2 text-[0.62rem] font-bold">Main Booker</span>
+                                    ${hasPool ? `
+                                        <span class="inline-flex items-center gap-0.5 rounded bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-700 dark:text-sky-300">
+                                            <i class="bi bi-water"></i> Pool Pass
+                                        </span>
+                                    ` : `
+                                        <span class="inline-flex items-center gap-0.5 rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300">
+                                            <i class="bi bi-person-fill"></i> Standard
+                                        </span>
+                                    `}
+                                </div>
+                                <div class="text-[0.72rem] text-hp-text-muted mt-0.5">
+                                    ${escapeHtml(c.phone || res.phone || 'No phone')} &bull; ${escapeHtml(c.email || res.email || 'No email')}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            ${!isCheckedOut ? `
+                                <button type="button" class="companion-single-quick-checkout-btn cursor-pointer rounded-lg bg-hp-green/10 border border-hp-green/30 text-hp-green hover:bg-hp-green hover:text-white px-2.5 py-1 text-xs font-bold transition-all shadow-2xs" data-rg-id="${primaryGuest.id || primaryGuest.customer_id}" data-guest-name="${escapeHtml(fullName)}">
+                                    Check Out
+                                </button>
+                            ` : `
+                                <span class="text-[0.7rem] font-semibold text-slate-500">Checked Out</span>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Section 2: Single / Named Companions
+        if (singleCompanions.length > 0) {
+            html += `
+                <div class="rounded-2xl border border-glass-border bg-glass p-4">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-glass-border/40">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-hp-text">Single / Named Companions</span>
+                            <span class="rounded-full bg-hp-green/15 text-hp-green text-[0.7rem] font-bold px-2 py-0.5">${activeSingle.length} Active / ${singleCompanions.length} Total</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2.5">
+            `;
+
+            singleCompanions.forEach(g => {
+                const c = g.customer || {};
+                const fullName = [c.first_name, c.middle_name, c.last_name].filter(Boolean).join(' ').trim() || 'Companion';
+                const isCheckedOut = Boolean(g.checked_out_at);
+                const hasPool = Boolean(g.has_pool_access);
+
+                html += `
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-xl border ${isCheckedOut ? 'border-glass-border/30 bg-black/[0.02] dark:bg-white/[0.02] opacity-60' : 'border-glass-border bg-hp-cream/60 dark:bg-white/5 hover:border-hp-green/40 transition-all'}">
+                        <div class="flex items-center gap-3 min-w-0">
+                            ${!isCheckedOut ? `
+                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${g.id || g.customer_id}" data-guest-name="${escapeHtml(fullName)}" checked>
+                            ` : `
+                                <span class="h-4 w-4 inline-flex items-center justify-center text-slate-400"><i class="bi bi-check-lg"></i></span>
+                            `}
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${hasPool ? 'bg-sky-600 text-white' : 'bg-[#2f6f45] text-white'} text-xs font-bold shadow-2xs">
+                                ${escapeHtml(c.first_name ? c.first_name[0] : 'C')}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-bold text-hp-text truncate">${escapeHtml(fullName)}</span>
+                                    ${hasPool ? `
+                                        <span class="inline-flex items-center gap-0.5 rounded bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-sky-700 dark:text-sky-300">
+                                            <i class="bi bi-water"></i> Pool Pass
+                                        </span>
+                                    ` : `
+                                        <span class="inline-flex items-center gap-0.5 rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300">
+                                            <i class="bi bi-person-fill"></i> Standard
+                                        </span>
+                                    `}
+                                </div>
+                                <div class="text-[0.72rem] text-hp-text-muted mt-0.5">
+                                    ${escapeHtml(c.gender || 'N/A')} &bull; Age ${escapeHtml(c.age || 'N/A')} &bull; ${c.is_foreigner ? 'Foreigner' : 'Filipino'}
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            ${!isCheckedOut ? `
+                                <button type="button" class="companion-single-quick-checkout-btn cursor-pointer rounded-lg bg-hp-green/10 border border-hp-green/30 text-hp-green hover:bg-hp-green hover:text-white px-2.5 py-1 text-xs font-bold transition-all shadow-2xs" data-rg-id="${g.id || g.customer_id}" data-guest-name="${escapeHtml(fullName)}">
+                                    Check Out
+                                </button>
+                            ` : `
+                                <span class="text-[0.7rem] font-semibold text-slate-500">Checked Out</span>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        // Section 3: Bulk Companion Groups
+        if (bulkCompanions.length > 0) {
+            const bulkGroupMap = {};
+            bulkCompanions.forEach(g => {
+                const c = g.customer || {};
+                const gender = c.gender || 'Unknown';
+                const ageGroup = ageGroupLabel(c.age);
+                const nationality = c.is_foreigner ? 'Foreigner' : 'Filipino';
+                const key = `${gender}|${ageGroup}|${nationality}`;
+                if (!bulkGroupMap[key]) {
+                    bulkGroupMap[key] = { gender, ageGroup, nationality, is_foreigner: Boolean(c.is_foreigner), members: [] };
+                }
+                bulkGroupMap[key].members.push(g);
+            });
+
+            const groupEntries = Object.entries(bulkGroupMap);
+
+            html += `
+                <div class="rounded-2xl border border-glass-border bg-glass p-4">
+                    <div class="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-glass-border/40">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-hp-text">Bulk Companion Groups</span>
+                            <span class="rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 text-[0.7rem] font-bold px-2 py-0.5">${activeBulk.length} Active / ${bulkCompanions.length} Total</span>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+            `;
+
+            groupEntries.forEach(([key, group], idx) => {
+                const totalInGroup = group.members.length;
+                const activeInGroup = group.members.filter(g => !g.checked_out_at).length;
+                const totalPoolInGroup = group.members.filter(g => Boolean(g.has_pool_access)).length;
+                const activePoolInGroup = group.members.filter(g => Boolean(g.has_pool_access) && !g.checked_out_at).length;
+                const totalNoPoolInGroup = group.members.filter(g => !g.has_pool_access).length;
+                const activeNoPoolInGroup = group.members.filter(g => !g.has_pool_access && !g.checked_out_at).length;
+
+                const isAllCheckedOut = activeInGroup === 0;
+
+                html += `
+                    <div class="rounded-xl border ${isAllCheckedOut ? 'border-glass-border/30 bg-black/[0.02] dark:bg-white/[0.02] opacity-60' : 'border-glass-border bg-hp-cream/60 dark:bg-white/5'} p-3.5" data-bulk-card-key="${escapeHtml(key)}">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0e7490] to-[#155e75] text-white text-xs shadow-2xs font-bold">
+                                    <i class="bi bi-people-fill"></i>
+                                </span>
+                                <div>
+                                    <div class="text-xs font-bold text-hp-text">${escapeHtml(group.gender)} &bull; ${escapeHtml(group.ageGroup)} &bull; ${escapeHtml(group.nationality)}</div>
+                                    <div class="text-[0.7rem] text-hp-text-muted">${activeInGroup} / ${totalInGroup} inside</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                ${totalPoolInGroup > 0 ? `
+                                    <span class="rounded bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.68rem] font-bold text-sky-700 dark:text-sky-300">
+                                        <i class="bi bi-water"></i> ${activePoolInGroup}/${totalPoolInGroup} Pool
+                                    </span>
+                                ` : ''}
+                                ${totalNoPoolInGroup > 0 ? `
+                                    <span class="rounded bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.68rem] font-bold text-amber-800 dark:text-amber-300">
+                                        <i class="bi bi-person-fill"></i> ${activeNoPoolInGroup}/${totalNoPoolInGroup} Standard
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                `;
+
+                if (isAllCheckedOut) {
+                    html += `
+                        <div class="text-xs text-hp-text-muted italic py-1 text-center">All companions in this group are checked out.</div>
+                    `;
+                } else {
+                    html += `
+                        <div class="mt-3 pt-3 border-t border-glass-border/40 space-y-2.5">
+                    `;
+
+                    // If group has active pool members
+                    if (activePoolInGroup > 0) {
+                        html += `
+                            <div class="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-sky-500/20 bg-sky-500/5 dark:bg-sky-950/20">
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>With Pool Pass</div>
+                                    <div class="text-[0.7rem] text-hp-text-muted">${activePoolInGroup} available to check out</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" class="bulk-stepper-btn-minus h-7 w-7 flex items-center justify-center rounded-lg border border-sky-500/30 bg-glass text-xs font-bold text-hp-text hover:bg-sky-500/20 cursor-pointer transition-colors" data-target-input="bulk_pool_${idx}">−</button>
+                                        <input type="number" id="bulk_pool_${idx}" class="companion-bulk-stepper-input h-7 w-12 border border-sky-500/30 rounded-lg bg-glass text-center text-xs font-bold text-hp-text" value="0" min="0" max="${activePoolInGroup}" data-gender="${escapeHtml(group.gender)}" data-age-group="${escapeHtml(group.ageGroup)}" data-is-foreigner="${group.is_foreigner ? '1' : '0'}" data-pool-type="with_pool" data-max="${activePoolInGroup}">
+                                        <button type="button" class="bulk-stepper-btn-plus h-7 w-7 flex items-center justify-center rounded-lg border border-sky-500/30 bg-glass text-xs font-bold text-hp-text hover:bg-sky-500/20 cursor-pointer transition-colors" data-target-input="bulk_pool_${idx}">+</button>
+                                    </div>
+                                    <button type="button" class="bulk-max-btn rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-700 dark:text-sky-300 px-2 py-1 text-[0.7rem] font-bold hover:bg-sky-500/20 transition-all cursor-pointer" data-target-input="bulk_pool_${idx}" data-max="${activePoolInGroup}">
+                                        All (${activePoolInGroup})
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // If group has active standard (no pool) members
+                    if (activeNoPoolInGroup > 0) {
+                        html += `
+                            <div class="flex items-center justify-between gap-3 p-2.5 rounded-lg border border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/20">
+                                <div class="min-w-0">
+                                    <div class="text-xs font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-person-fill me-1"></i>Standard (No Pool)</div>
+                                    <div class="text-[0.7rem] text-hp-text-muted">${activeNoPoolInGroup} available to check out</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <button type="button" class="bulk-stepper-btn-minus h-7 w-7 flex items-center justify-center rounded-lg border border-amber-500/30 bg-glass text-xs font-bold text-hp-text hover:bg-amber-500/20 cursor-pointer transition-colors" data-target-input="bulk_nopool_${idx}">−</button>
+                                        <input type="number" id="bulk_nopool_${idx}" class="companion-bulk-stepper-input h-7 w-12 border border-amber-500/30 rounded-lg bg-glass text-center text-xs font-bold text-hp-text" value="0" min="0" max="${activeNoPoolInGroup}" data-gender="${escapeHtml(group.gender)}" data-age-group="${escapeHtml(group.ageGroup)}" data-is-foreigner="${group.is_foreigner ? '1' : '0'}" data-pool-type="without_pool" data-max="${activeNoPoolInGroup}">
+                                        <button type="button" class="bulk-stepper-btn-plus h-7 w-7 flex items-center justify-center rounded-lg border border-amber-500/30 bg-glass text-xs font-bold text-hp-text hover:bg-amber-500/20 cursor-pointer transition-colors" data-target-input="bulk_nopool_${idx}">+</button>
+                                    </div>
+                                    <button type="button" class="bulk-max-btn rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 px-2 py-1 text-[0.7rem] font-bold hover:bg-amber-500/20 transition-all cursor-pointer" data-target-input="bulk_nopool_${idx}" data-max="${activeNoPoolInGroup}">
+                                        All (${activeNoPoolInGroup})
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                        </div>
+                    `;
+                }
+
+                html += `
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        companionCheckoutModalBody.innerHTML = html;
+
+        // Bind Steppers & Select All Listeners inside Modal Body
+        const selectAllBtn = document.getElementById('companionCheckoutSelectAllBtn');
+        const deselectAllBtn = document.getElementById('companionCheckoutDeselectAllBtn');
+
+        selectAllBtn?.addEventListener('click', () => {
+            // Check all single and primary checkboxes
+            companionCheckoutModalBody.querySelectorAll('.companion-single-checkbox').forEach(cb => {
+                cb.checked = true;
+            });
+            // Set all bulk steppers to their max
+            companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach(input => {
+                const max = parseInt(input.dataset.max, 10) || 0;
+                input.value = max;
+            });
+            updateCompanionCheckoutSelectionSummary();
+        });
+
+        deselectAllBtn?.addEventListener('click', () => {
+            companionCheckoutModalBody.querySelectorAll('.companion-single-checkbox').forEach(cb => {
+                cb.checked = false;
+            });
+            companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach(input => {
+                input.value = 0;
+            });
+            updateCompanionCheckoutSelectionSummary();
+        });
+
+        // Single checkbox change
+        companionCheckoutModalBody.querySelectorAll('.companion-single-checkbox').forEach(cb => {
+            cb.addEventListener('change', updateCompanionCheckoutSelectionSummary);
+        });
+
+        // Bulk stepper buttons
+        companionCheckoutModalBody.querySelectorAll('.bulk-stepper-btn-minus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.targetInput);
+                if (!input) return;
+                const val = parseInt(input.value, 10) || 0;
+                if (val > 0) input.value = val - 1;
+                updateCompanionCheckoutSelectionSummary();
+            });
+        });
+
+        companionCheckoutModalBody.querySelectorAll('.bulk-stepper-btn-plus').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.targetInput);
+                if (!input) return;
+                const val = parseInt(input.value, 10) || 0;
+                const max = parseInt(input.dataset.max, 10) || 0;
+                if (val < max) input.value = val + 1;
+                updateCompanionCheckoutSelectionSummary();
+            });
+        });
+
+        companionCheckoutModalBody.querySelectorAll('.bulk-max-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.targetInput);
+                if (!input) return;
+                const max = parseInt(btn.dataset.max, 10) || 0;
+                input.value = (parseInt(input.value, 10) === max) ? 0 : max;
+                updateCompanionCheckoutSelectionSummary();
+            });
+        });
+
+        companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach(input => {
+            input.addEventListener('input', () => {
+                let val = parseInt(input.value, 10) || 0;
+                const max = parseInt(input.dataset.max, 10) || 0;
+                if (val < 0) val = 0;
+                if (val > max) val = max;
+                input.value = val;
+                updateCompanionCheckoutSelectionSummary();
+            });
+        });
+
+        // Quick individual checkout for single / primary guests
+        companionCheckoutModalBody.querySelectorAll('.companion-single-quick-checkout-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const rgId = btn.dataset.rgId;
+                const guestName = btn.dataset.guestName || 'Guest';
+                if (!confirm(`Check out ${guestName} now?`)) return;
+
+                btn.disabled = true;
+                btn.textContent = 'Checking out...';
+
+                try {
+                    const response = await fetch(`/staff/reservation-guests/${rgId}/check-out`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+
+                    const payload = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(payload.message || 'Unable to check out guest.');
+                    }
+
+                    queueToast(`${guestName} checked out successfully.`);
+                    window.location.reload();
+                } catch (err) {
+                    showToast(err.message || 'Error checking out guest.', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Check Out';
+                }
+            });
+        });
+
+        // Initialize selection summary
+        updateCompanionCheckoutSelectionSummary();
+
+        // Close details modal if open and show group checkout modal
+        if (reservationModal) {
+            reservationModal.classList.remove('is-open');
+            reservationModal.setAttribute('aria-hidden', 'true');
+        }
+        if (companionCheckoutModal) {
+            companionCheckoutModal.classList.add('is-open');
+            companionCheckoutModal.setAttribute('aria-hidden', 'false');
+        }
+    };
+
+    // Primary Action: Checkout Selected Guests (Primary + Companions)
+    companionCheckoutSubmitBtn?.addEventListener('click', async () => {
+        if (!currentCompanionCheckoutResId || !companionCheckoutModalBody) return;
+
+        // 1. Gather selected single and primary guest IDs
+        const selectedSingleCheckboxes = Array.from(companionCheckoutModalBody.querySelectorAll('.companion-single-checkbox:checked'));
+        const singleRgIds = selectedSingleCheckboxes.map(cb => cb.dataset.rgId).filter(Boolean);
+
+        // 2. Gather bulk companion tasks
+        const bulkTasks = [];
+        let totalBulkCount = 0;
+
+        companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach(input => {
+            const qty = parseInt(input.value, 10) || 0;
+            if (qty > 0) {
+                totalBulkCount += qty;
+                bulkTasks.push({
+                    count: qty,
+                    pool_access_type: input.dataset.poolType || 'any',
+                    gender: input.dataset.gender || null,
+                    age_group: input.dataset.ageGroup || null,
+                    is_foreigner: input.dataset.isForeigner === '1' ? true : (input.dataset.isForeigner === '0' ? false : null),
+                });
+            }
+        });
+
+        const totalSelected = singleRgIds.length + totalBulkCount;
+        if (totalSelected === 0) {
+            showToast('Please select at least one guest or companion to check out.', 'error');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to check out ${totalSelected} selected guest${totalSelected === 1 ? '' : 's'}?`)) {
+            return;
+        }
+
+        const originalBtnHtml = companionCheckoutSubmitBtn.innerHTML;
+        companionCheckoutSubmitBtn.disabled = true;
+        companionCheckoutSubmitBtn.innerHTML = `
+            <div class="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>
+            <span>Checking out ${totalSelected} guest(s)...</span>
+        `;
+
+        try {
+            const checkoutPromises = [];
+
+            // Single and Primary guest checkouts
+            singleRgIds.forEach(rgId => {
+                checkoutPromises.push(
+                    fetch(`/staff/reservation-guests/${rgId}/check-out`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    }).then(async r => {
+                        const data = await r.json().catch(() => ({}));
+                        if (!r.ok) throw new Error(data.message || `Failed to check out guest #${rgId}`);
+                        return data;
+                    })
+                );
+            });
+
+            // Bulk companion group checkouts
+            bulkTasks.forEach(task => {
+                checkoutPromises.push(
+                    fetch(`/staff/reservations/${currentCompanionCheckoutResId}/bulk-companions/check-out`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify(task),
+                    }).then(async r => {
+                        const data = await r.json().catch(() => ({}));
+                        if (!r.ok) throw new Error(data.message || `Failed to check out bulk companions`);
+                        return data;
+                    })
+                );
+            });
+
+            const results = await Promise.allSettled(checkoutPromises);
+            const failures = results.filter(r => r.status === 'rejected');
+
+            if (failures.length > 0) {
+                const errorMsg = failures.map(f => f.reason?.message || 'Error').join('; ');
+                throw new Error(errorMsg || 'Some checkouts failed.');
+            }
+
+            queueToast(`Successfully checked out ${totalSelected} guest(s).`);
+            window.location.reload();
+        } catch (err) {
+            console.error('Group checkout error:', err);
+            showToast(err.message || 'Error occurred during group checkout.', 'error');
+            companionCheckoutSubmitBtn.disabled = false;
+            companionCheckoutSubmitBtn.innerHTML = originalBtnHtml;
+        }
+    });
+
     guestRows.forEach(row => {
         row.addEventListener('click', (e) => {
             if (e.target.closest('.btn-expand-row')) return;
@@ -2911,18 +3724,18 @@ window.AppPage['staff_check_ins'] = function () {
                             const gGlowClass = gHasPool && gHasAmenity ? 'guest-avatar-glow--both' : (gHasPool ? 'guest-avatar-glow--pool' : (gHasAmenity ? 'guest-avatar-glow--amenity' : ''));
                             let poolBadge = '';
                             if (gHasPool && gHasAmenity) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool + 🏡</span>`;
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
                             } else if (gHasPool) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool</span>`;
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool</span>`;
                             } else if (gHasAmenity) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏡 Amenity</span>`;
+                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-house-door-fill me-1"></i>Amenity</span>`;
                             }
 
                             // Clicking a guest (main or single companion) opens
                             // the same detail modal as the guest table.
                             guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 6px 8px; cursor: pointer; border-radius: 8px; transition: background 0.15s ease;" class="hover:bg-black/5 dark:hover:bg-white/5">
                                 <span class="nested-guest-avatar ${gGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: ${g.is_primary_guest ? 'linear-gradient(135deg, #178a52, #0e5c37)' : 'linear-gradient(135deg, #2f6f45, #178a52)'}; color: #fff; font-size: 0.6rem; font-weight: bold;">
-                                    ${g.is_primary_guest ? '★' : '•'}
+                                    ${g.is_primary_guest ? '<i class="bi bi-star-fill"></i>' : '•'}
                                 </span>
                                 <span>${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name}</span>
                                 ${pill}
@@ -2966,11 +3779,11 @@ window.AppPage['staff_check_ins'] = function () {
 
                                 let poolBadge = '';
                                 if (groupHasPool && groupHasAmenity) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool + 🏡</span>`;
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
                                 } else if (groupHasPool) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏊 Pool (${activePool}/${totalPool})</span>`;
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool (${activePool}/${totalPool})</span>`;
                                 } else if (groupHasAmenity) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;">🏡 Amenity</span>`;
+                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-house-door-fill me-1"></i>Amenity</span>`;
                                 }
 
                                 const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
@@ -2989,7 +3802,7 @@ window.AppPage['staff_check_ins'] = function () {
                                     style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 6px 8px; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; border-radius: 8px; transition: background 0.15s ease; color: var(--hp-green);"
                                 >
                                     <span class="nested-guest-avatar ${groupGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0e7490, #155e75); color: #fff; font-size: 0.6rem; font-weight: bold;">
-                                        👥
+                                        <i class="bi bi-people-fill"></i>
                                     </span>
                                     <span>Bulk Companions (#${resId})</span>
                                     <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${totalBulk} Checked In</span>
@@ -3356,10 +4169,10 @@ window.AppPage['staff_check_ins'] = function () {
         if (primaryGuestEntranceBadge) {
             if (isAllFree) {
                 primaryGuestEntranceBadge.classList.remove('hidden');
-                primaryGuestEntranceBadge.textContent = '🎟️ Free Entrance (All)';
+                primaryGuestEntranceBadge.innerHTML = '<i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance (All)';
             } else if (isSpecific && primaryIsFreeInput?.checked) {
                 primaryGuestEntranceBadge.classList.remove('hidden');
-                primaryGuestEntranceBadge.textContent = '🎟️ Free Entrance';
+                primaryGuestEntranceBadge.innerHTML = '<i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance';
             } else {
                 primaryGuestEntranceBadge.classList.add('hidden');
             }
@@ -3403,13 +4216,13 @@ window.AppPage['staff_check_ins'] = function () {
         if (primaryGuestPoolBadge) {
             if (isAllPaid) {
                 primaryGuestPoolBadge.classList.remove('hidden');
-                primaryGuestPoolBadge.textContent = '🏊 Pool Pass (All)';
+                primaryGuestPoolBadge.innerHTML = '<i class="bi bi-water me-1"></i>Pool Pass (All)';
             } else if (isAllFree) {
                 primaryGuestPoolBadge.classList.remove('hidden');
-                primaryGuestPoolBadge.textContent = '🏊 Free Promo Pool';
+                primaryGuestPoolBadge.innerHTML = '<i class="bi bi-water me-1"></i>Free Promo Pool';
             } else if (isSpecific && primaryHasPoolInput?.checked) {
                 primaryGuestPoolBadge.classList.remove('hidden');
-                primaryGuestPoolBadge.textContent = '🏊 Pool Pass';
+                primaryGuestPoolBadge.innerHTML = '<i class="bi bi-water me-1"></i>Pool Pass';
             } else {
                 primaryGuestPoolBadge.classList.add('hidden');
             }
@@ -3824,8 +4637,8 @@ window.AppPage['staff_check_ins'] = function () {
         }
         if (payConfirmContactInfo) {
             const parts = [];
-            if (primaryPhone) parts.push(`📞 ${primaryPhone}`);
-            if (primaryEmail) parts.push(`✉️ ${primaryEmail}`);
+            if (primaryPhone) parts.push(`${primaryPhone}`);
+            if (primaryEmail) parts.push(`${primaryEmail}`);
             payConfirmContactInfo.textContent = parts.join(' • ') || 'No contact info provided';
         }
         if (payConfirmDemographics) {
@@ -4124,21 +4937,21 @@ window.AppPage['staff_check_ins'] = function () {
             
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Pool Pass</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
             } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Free Pool</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access">🏊 Pool Pass ✓</button>`
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water"></i> Pool Pass <i class="bi bi-check-lg"></i></button>`
                     : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🎟️ Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance">🎟️ Free Entrance ✓</button>`
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance <i class="bi bi-check-lg"></i></button>`
                     : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance">+ Free Entrance</button>`;
             }
 
@@ -4146,7 +4959,7 @@ window.AppPage['staff_check_ins'] = function () {
             if (selectedAmenities.length > 1 && companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
@@ -4191,14 +5004,14 @@ window.AppPage['staff_check_ins'] = function () {
             
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} with Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
             } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} Free Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
                 const pQty = group.pool_quantity || 0;
                 bulkPoolBadgeHtml = `
                     <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
-                        <span>🏊 Pool:</span>
+                        <span><i class="bi bi-water me-1"></i>Pool:</span>
                         <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${groupIndex}" title="Decrease pool access quantity">−</button>
                         <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
                         <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${groupIndex}" title="Increase pool access quantity">+</button>
@@ -4208,13 +5021,13 @@ window.AppPage['staff_check_ins'] = function () {
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🎟️ All ${group.quantity} Free Entrance</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> All ${group.quantity} Free Entrance</span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
                 bulkFreeBadgeHtml = `
                     <div class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-amber-900 dark:text-amber-300">
-                        <span>🎟️ Free:</span>
+                        <span><i class="bi bi-ticket-perforated-fill me-1"></i>Free:</span>
                         <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-dec="${groupIndex}" title="Decrease free entrance quantity">−</button>
                         <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${fQty} / ${group.quantity}</span>
                         <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-inc="${groupIndex}" title="Increase free entrance quantity">+</button>
@@ -4226,7 +5039,7 @@ window.AppPage['staff_check_ins'] = function () {
             if (selectedAmenities.length > 1 && group.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
@@ -4811,7 +5624,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <div>
                         ${isAlreadySelected ? `
                             <button type="button" class="rounded-xl border border-hp-green bg-hp-green px-3.5 py-1.5 text-xs font-bold text-white cursor-default" disabled>
-                                ✓ Added
+                                <i class="bi bi-check-lg me-1"></i>Added
                             </button>
                         ` : (isAvailable ? `
                             <button type="button" class="walkin-add-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white" data-amenity-id="${amenity.id}">
@@ -5788,7 +6601,7 @@ window.AppPage['staff_check_ins'] = function () {
         const poolLabel = document.getElementById('resaddBulkPoolLabel');
         if (poolLabel) poolLabel.textContent = `Include Pool Access (all ${qty})`;
         const freeLabel = document.getElementById('resaddBulkFreeEntranceLabel');
-        if (freeLabel) freeLabel.textContent = `🎟️ Free Entrance Fee (all ${qty})`;
+        if (freeLabel) freeLabel.innerHTML = `<i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance Fee (all ${qty})`;
     };
 
     const resAddBindFeeWatchers = () => {
