@@ -507,4 +507,90 @@ class AmenityCapacityAdditionalFeeTest extends TestCase
         $this->assertNotNull($cottageTodayEntry);
         $this->assertTrue($cottageTodayEntry['daytime'], 'Cottage 1 should be available for daytime today');
     }
+
+    public function test_add_amenity_mid_stay_with_custom_future_schedule()
+    {
+        \Illuminate\Support\Carbon::setTestNow('2026-08-31 10:00:00');
+
+        // Create checked-in reservation spanning Aug 31 to Sep 4
+        $reservation = \App\Models\Reservation::create([
+            'reservation_code' => 'RES-TEST-MIDSTAY',
+            'booker_name' => 'John MidStay',
+            'email' => 'johnmidstay@example.com',
+            'phone' => '09123456789',
+            'number_of_guests' => 2,
+            'reservation_type' => 'walk_in',
+            'reservation_date' => '2026-08-31',
+            'end_date' => '2026-09-04',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 5,
+            'total_amount' => 1000,
+            'amount_paid' => 1000,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+            'status' => 'Checked-In',
+        ]);
+
+        \App\Models\ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => $this->ahouseAmenity->id,
+            'start_date' => '2026-08-31',
+            'end_date' => '2026-09-04',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'price' => 1000,
+            'pricing_type' => 'Continuous Stay (5D)',
+            'status' => 'Active',
+            'quantity' => 1,
+        ]);
+
+        // Add Cottage 1 mid-stay starting Sep 3 Nighttime to Sep 4 Daytime
+        $response = $this->authStaff()->postJson("/staff/reservations/{$reservation->id}/amenities/add", [
+            'amenity_id' => (string) $this->cottageAmenity->id,
+            'start_date' => '2026-09-03',
+            'start_slot' => 'Nighttime',
+            'end_date' => '2026-09-04',
+            'end_slot' => 'Daytime',
+            'is_aircon' => false,
+            'quantity' => 1,
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+        $this->assertNotNull($response->json('starts_at'));
+        $this->assertNotNull($response->json('checkout_at'));
+
+        // Check availability of Cottage 1 on Aug 31 (today) - MUST be available because amenity starts on Sep 3!
+        $aug31Api = $this->getJson('/api/amenities/availability?start_date=2026-08-31&end_date=2026-08-31&start_slot=Daytime&end_slot=Daytime');
+        $aug31Api->assertOk();
+        $cottageAug31 = collect($aug31Api->json('amenities'))->firstWhere('id', $this->cottageAmenity->id);
+        $this->assertNotNull($cottageAug31);
+        $this->assertTrue($cottageAug31['is_available'], 'Cottage 1 should be available on Aug 31 Daytime even though parent reservation is checked in today');
+
+        // Check availability of Cottage 1 on Sep 1 (should be FREE)
+        $sep1Api = $this->getJson('/api/amenities/availability?start_date=2026-09-01&end_date=2026-09-01&start_slot=Daytime&end_slot=Daytime');
+        $sep1Api->assertOk();
+        $cottageSep1 = collect($sep1Api->json('amenities'))->firstWhere('id', $this->cottageAmenity->id);
+        $this->assertNotNull($cottageSep1);
+        $this->assertTrue($cottageSep1['is_available'], 'Cottage 1 should be available on Sep 1 Daytime');
+
+        // Check availability of Cottage 1 on Sep 3 Daytime (should be FREE)
+        $sep3DayApi = $this->getJson('/api/amenities/availability?start_date=2026-09-03&end_date=2026-09-03&start_slot=Daytime&end_slot=Daytime');
+        $sep3DayApi->assertOk();
+        $cottageSep3Day = collect($sep3DayApi->json('amenities'))->firstWhere('id', $this->cottageAmenity->id);
+        $this->assertNotNull($cottageSep3Day);
+        $this->assertTrue($cottageSep3Day['is_available'], 'Cottage 1 should be available on Sep 3 Daytime');
+
+        // Check availability of Cottage 1 on Sep 3 Nighttime (should be OCCUPIED / UNAVAILABLE)
+        $sep3NightApi = $this->getJson('/api/amenities/availability?start_date=2026-09-03&end_date=2026-09-03&start_slot=Nighttime&end_slot=Nighttime');
+        $sep3NightApi->assertOk();
+        $cottageSep3Night = collect($sep3NightApi->json('amenities'))->firstWhere('id', $this->cottageAmenity->id);
+        $this->assertNotNull($cottageSep3Night);
+        $this->assertFalse($cottageSep3Night['is_available'], 'Cottage 1 should NOT be available on Sep 3 Nighttime');
+
+        // Check that /staff/check-ins loads cleanly with status 200 without any closure variable issues
+        $checkInsPage = $this->authStaff()->get('/staff/check-ins');
+        $checkInsPage->assertOk();
+    }
 }

@@ -163,11 +163,16 @@ $getReservationAmenityTimeline = function ($ra, $res = null) use ($continuousSlo
 
     // Early check-in: guest arrived before the scheduled start — occupy the amenity
     // from actual check-in until the original scheduled checkout (end_date/end_slot).
+    // Note: Do NOT pull forward future mid-stay amenities that have an explicit start date after the reservation start.
     if ($res) {
         $resStatus = strtolower(trim((string) ($res->status ?? '')));
         $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+        $raExplicitStartDate = $formatLocalDate($ra, 'start_date');
+        $resStartDate = $formatLocalDate($res, 'reservation_date');
 
-        if ($isCheckedIn && $res->check_in) {
+        $isFutureMidStayAmenity = $raExplicitStartDate && $resStartDate && $raExplicitStartDate > $resStartDate;
+
+        if ($isCheckedIn && $res->check_in && ! $isFutureMidStayAmenity) {
             $checkInCarbon = \Illuminate\Support\Carbon::parse($res->check_in);
             $checkInDate = $checkInCarbon->toDateString();
 
@@ -346,6 +351,26 @@ $amenityCheckoutAt = function (?string $date, ?string $slot): ?\Illuminate\Suppo
         str_contains($baseSlot, 'Nighttime') => $base->copy()->addDay()->setTime($nightEnd->hour, $nightEnd->minute),
         default => null,
     };
+};
+
+// Returns the start datetime (Carbon) for an amenity based on start_date and start_slot
+$amenityStartsAt = function (?string $startDate, string $startSlot = 'Daytime'): ?\Illuminate\Support\Carbon {
+    if (! $startDate) {
+        return null;
+    }
+
+    $settings = \App\Models\ParkSetting::first();
+    $dayStart = \Illuminate\Support\Carbon::parse($settings->daytime_start ?? '08:00');
+    $nightStart = \Illuminate\Support\Carbon::parse($settings->nighttime_start ?? '18:00');
+
+    $base = \Illuminate\Support\Carbon::parse($startDate);
+    $cleanStartSlot = str_contains($startSlot, 'Night') ? 'Nighttime' : 'Daytime';
+
+    if ($cleanStartSlot === 'Nighttime') {
+        return $base->copy()->setTime($nightStart->hour, $nightStart->minute);
+    }
+
+    return $base->copy()->setTime($dayStart->hour, $dayStart->minute);
 };
 
 // Returns the checkout Carbon datetime for a reservation based ONLY on its
@@ -3131,7 +3156,7 @@ Route::get('/api/activity-notifications/stream', function (Request $request) {
     ]);
 })->name('api.activity-notifications.stream');
 
-Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
+Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTaken, $isAmenityRangeTaken, $calculateContinuousSlotsCount, $continuousSlotTimeline, $getReservationAmenityTimeline, $amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
     Route::get('/dashboard', function (Request $request) use ($computeReservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
@@ -3693,7 +3718,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
     Route::post('/api/reports/ai-analyze', [\App\Http\Controllers\AdminReportAiController::class, 'analyze'])->name('reports.ai_analyze');
 
-    Route::get('/check-ins', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $isAmenitySlotTaken, $formatLocalDate) {
+    Route::get('/check-ins', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $reservationCheckoutAt, $computeReservationCheckoutAt, $isAmenitySlotTaken, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -3755,7 +3780,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // Build a lookup map of all active reservations for the check-in modal.
         // Keep in sync with the reservation count update above in the check-in
         // handler (a GET request must never mutate data).
-        $reservationData = $activeReservations->mapWithKeys(function ($reservation) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
+        $reservationData = $activeReservations->mapWithKeys(function ($reservation) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $computeReservationCheckoutAt, $formatLocalDate) {
             $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
             $primaryCustomer = $primaryGuest?->customer;
 
@@ -3801,7 +3826,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         ],
                     ];
                 })->values(),
-                'reservation_amenities' => $reservation->reservationAmenities->map(function ($amenity) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservation, $formatLocalDate) {
+                'reservation_amenities' => $reservation->reservationAmenities->map(function ($amenity) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $reservation, $formatLocalDate) {
                     $raStartDate = $formatLocalDate($amenity, 'start_date') ?: $formatLocalDate($reservation, 'reservation_date');
                     $raEndDate = $formatLocalDate($amenity, 'end_date') ?: ($formatLocalDate($reservation, 'end_date') ?: $raStartDate);
                     $raStartSlot = $amenity->start_slot ?: ($reservation->start_slot ?: 'Daytime');
@@ -3812,6 +3837,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     } else {
                         $amCheckoutAt = $amenityCheckoutAt($raStartDate, $amenity->pricing_type ?: $raEndSlot);
                     }
+
+                    $amStartsAt = $amenityStartsAt($raStartDate, $raStartSlot);
 
                     return [
                         'id' => $amenity->id,
@@ -3831,6 +3858,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'end_slot' => $raEndSlot,
                         'day_slots_count' => $amenity->day_slots_count,
                         'night_slots_count' => $amenity->night_slots_count,
+                        'starts_at' => $amStartsAt?->toIso8601String(),
                         'checkout_at' => $amCheckoutAt?->toIso8601String(),
                     ];
                 })->values(),
@@ -3926,7 +3954,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'occupiedTodayAmenityIds', 'currentPeriod', 'currentSlotName'));
     })->name('checkins');
 
-    Route::get('/check-ins/lookup', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $computeReservationCheckoutAt, $formatLocalDate) {
+    Route::get('/check-ins/lookup', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -3989,7 +4017,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         ],
                     ];
                 })->values(),
-                'reservation_amenities' => $reservation->reservationAmenities->map(function ($amenity) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $reservation, $formatLocalDate) {
+                'reservation_amenities' => $reservation->reservationAmenities->map(function ($amenity) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $reservation, $formatLocalDate) {
                     $raStartDate = $formatLocalDate($amenity, 'start_date') ?: $formatLocalDate($reservation, 'reservation_date');
                     $raEndDate = $formatLocalDate($amenity, 'end_date') ?: ($formatLocalDate($reservation, 'end_date') ?: $raStartDate);
                     $raStartSlot = $amenity->start_slot ?: ($reservation->start_slot ?: 'Daytime');
@@ -4000,6 +4028,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     } else {
                         $amCheckoutAt = $amenityCheckoutAt($raStartDate, $amenity->pricing_type ?: $raEndSlot);
                     }
+
+                    $amStartsAt = $amenityStartsAt($raStartDate, $raStartSlot);
 
                     return [
                         'id' => $amenity->id,
@@ -4017,6 +4047,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'end_slot' => $raEndSlot,
                         'day_slots_count' => $amenity->day_slots_count,
                         'night_slots_count' => $amenity->night_slots_count,
+                        'starts_at' => $amStartsAt?->toIso8601String(),
                         'checkout_at' => $amCheckoutAt?->toIso8601String(),
                     ];
                 })->values(),
@@ -5680,7 +5711,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
     })->name('reservations.amenities.extend');
 
     // Add a brand-new amenity to an active checked-in reservation
-    Route::post('/reservations/{reservation}/amenities/add', function (Request $request, Reservation $reservation) use ($calculateContinuousSlotsCount, $continuousSlotTimeline, $isAmenityRangeTaken, $computeReservationCheckoutAt) {
+    Route::post('/reservations/{reservation}/amenities/add', function (Request $request, Reservation $reservation) use ($amenityContinuousCheckoutAt, $amenityStartsAt, $calculateContinuousSlotsCount, $continuousSlotTimeline, $isAmenityRangeTaken, $computeReservationCheckoutAt) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -5735,20 +5766,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // Chronological ordering helper: Day < Night within the same day.
         $slotOrderIndex = fn (string $date, string $slot): int => ((int) strtotime($date)) * 2 + (str_contains($slot, 'Night') ? 1 : 0);
 
-        // Sessions that have already begun cannot be booked retroactively:
-        // - Daytime now   -> earliest bookable start is tonight's Nighttime.
-        // - Nighttime now -> today is fully underway; earliest is tomorrow's Daytime.
-        if ($currentSession === 'Nighttime') {
-            $earliestDate = now()->addDay()->toDateString();
-            $earliestSlot = 'Daytime';
-        } else {
-            $earliestDate = now()->toDateString();
-            $earliestSlot = 'Nighttime';
-        }
+        // Checked-in mid-stay additions can start at the current active session on site today or any future session within stay
+        $earliestDate = now()->toDateString();
+        $earliestSlot = $currentSession;
 
         if ($slotOrderIndex($startDate, $startSlot) < $slotOrderIndex($earliestDate, $earliestSlot)) {
             return response()->json([
-                'message' => "That session has already started. The earliest available start for a new amenity is {$earliestDate} ({$earliestSlot}).",
+                'message' => "That session has already passed. The earliest available start for a new amenity is {$earliestDate} ({$earliestSlot}).",
             ], 422);
         }
 
@@ -5841,13 +5865,18 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]
         );
 
+        $amenityCheckout = $amenityContinuousCheckoutAt($endDate, $endSlot);
+        $amenityStart = $amenityStartsAt($startDate, $startSlot);
+
         return response()->json([
             'success' => true,
             'message' => "Added {$amenity->amenities_name} to reservation #{$reservation->id} successfully.",
             'amenity' => $newAmenity,
             'added_cost' => $totalAmenityCost,
             'new_total' => $reservation->total_amount,
-            'checkout_at' => $newCheckoutAt?->toIso8601String(),
+            'starts_at' => $amenityStart?->toIso8601String(),
+            'checkout_at' => $amenityCheckout?->toIso8601String(),
+            'reservation_checkout_at' => $newCheckoutAt?->toIso8601String(),
         ]);
     })->name('reservations.amenities.add');
 

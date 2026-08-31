@@ -2895,6 +2895,8 @@
 
 						<form id="addAmenityMidStayForm" class="grid gap-3.5">
 							<input type="hidden" id="addAmenityMidStayResId" value="">
+							<input type="hidden" id="addAmenityNewStartDate" value="">
+							<input type="hidden" id="addAmenityNewStartSlot" value="Daytime">
 							<input type="hidden" id="addAmenityNewEndDate" value="">
 							<input type="hidden" id="addAmenityNewEndSlot" value="Daytime">
 
@@ -2906,43 +2908,49 @@
 								</select>
 							</div>
 
-							<!-- 2. Start Info (Fixed from Today) & Master Stay Limit -->
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 rounded-xl border border-glass-border bg-glass p-3 dark:border-white/10 dark:bg-white/5">
-								<div class="grid gap-1">
-									<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Start Session (Today)</span>
-									<div class="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-										<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-										</svg>
-										<span id="addAmenityStartFixedText">Today • Daytime</span>
+							<!-- 2. Stay Limit Window Banner -->
+							<div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs dark:border-white/10 dark:bg-white/5">
+								<div class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-hp-text-muted text-[0.7rem]">
+									<svg class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+									</svg>
+									<span>Reservation Stay Window</span>
+								</div>
+								<span id="addAmenityStayLimit" class="font-extrabold text-amber-800 dark:text-amber-300">—</span>
+							</div>
+
+							<!-- 3. Start and End Schedule Selectors -->
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+								<!-- Start Schedule -->
+								<div class="rounded-xl border border-glass-border bg-glass p-2.5 dark:border-white/10 dark:bg-white/5 flex flex-col gap-1.5">
+									<div class="flex items-center justify-between">
+										<span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Amenity Check-In</span>
+										<span id="addAmenityStartDateBadge" class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">Today</span>
+									</div>
+									<div class="flex gap-1.5" id="addAmenityStartSlotGroup">
+										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
+										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
 									</div>
 								</div>
-								<div class="grid gap-1">
-									<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Stay Check-Out Limit</span>
-									<div class="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
-										<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-										</svg>
-										<span id="addAmenityStayLimit">—</span>
+								<!-- End Schedule -->
+								<div class="rounded-xl border border-glass-border bg-glass p-2.5 dark:border-white/10 dark:bg-white/5 flex flex-col gap-1.5">
+									<div class="flex items-center justify-between">
+										<span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Amenity Check-Out</span>
+										<span id="addAmenityEndDateBadge" class="text-xs font-extrabold text-hp-green">Today</span>
+									</div>
+									<div class="flex gap-1.5" id="addAmenityEndSlotGroup">
+										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
+										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
 									</div>
 								</div>
 							</div>
 
-							<!-- 3. Aircon Option (Only shown if amenity actually has aircon) -->
+							<!-- 4. Aircon Option (Only shown if amenity actually has aircon) -->
 							<div id="midStayAirconWrapper" class="hidden">
 								<label class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-glass-border bg-glass p-3 text-xs text-hp-text hover:bg-glass-hover">
 									<input type="checkbox" id="midStayIsAircon" class="h-4 w-4 accent-hp-green">
 									<span class="font-bold">With Aircon Option</span>
 								</label>
-							</div>
-
-							<!-- 4. End Session Selector -->
-							<div class="grid gap-1">
-								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Select Amenity Check-Out Session</span>
-								<div class="flex gap-2" id="addAmenityEndSlotGroup">
-									<button type="button" class="session-pill-btn flex-1 rounded-xl border border-glass-border bg-glass py-2 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
-									<button type="button" class="session-pill-btn flex-1 rounded-xl border border-glass-border bg-glass py-2 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
-								</div>
 							</div>
 
 							<!-- 5. 5-Year Calendar Component -->
