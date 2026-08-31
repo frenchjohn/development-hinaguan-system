@@ -1647,19 +1647,11 @@ window.AppPage['staff_check_ins'] = function () {
     const addAmenityCloseButtons = document.querySelectorAll('[data-close-add-amenity-modal="true"]');
 
     // Earliest bookable (date, slot) for an amenity added mid-stay.
-    // Sessions that have already begun cannot be booked retroactively:
-    // - Daytime now   -> today's daytime is underway; earliest is tonight's Nighttime.
-    // - Nighttime now -> today is fully underway; earliest is tomorrow's Daytime
-    //                    (today's date is disabled on the calendar).
+    // Checked-in mid-stay additions start at the current active session on site today
     const resolveMidStayStart = () => {
         const today = window.SERVER_TODAY || todayStr;
         const session = window.SERVER_CURRENT_SESSION || 'Daytime';
-        if (session === 'Nighttime') {
-            const t = new Date(today + 'T00:00:00');
-            t.setDate(t.getDate() + 1);
-            return { date: toDateKey(t), slot: 'Daytime' };
-        }
-        return { date: today, slot: 'Nighttime' };
+        return { date: today, slot: session };
     };
 
     // Chronological ordering index for a (date, slot) pair: Day < Night per day.

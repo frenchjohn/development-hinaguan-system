@@ -413,6 +413,7 @@ class AmenityCapacityAdditionalFeeTest extends TestCase
 
     public function test_checked_in_amenity_shows_as_occupied_in_occupancy_monitor_and_unavailable_in_api()
     {
+        \Illuminate\Support\Carbon::setTestNow('2026-08-31 10:00:00');
         $today = now()->toDateString();
 
         // 1. Create a walk-in check-in with A-House 1
