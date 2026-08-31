@@ -14,6 +14,8 @@ class MultiDayBoundaryAvailabilityTest extends TestCase
 
     public function test_multi_day_reservation_boundary_slots_availability(): void
     {
+        \Carbon\Carbon::setTestNow('2026-08-25 10:00:00');
+
         // Create an amenity
         $amenity = Amenity::create([
             'id' => 'AMENITY-TEST-001',

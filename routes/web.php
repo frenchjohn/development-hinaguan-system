@@ -245,7 +245,7 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
             })
             // OR parent reservation is currently Checked In (active on site)
             ->orWhereHas('reservation', function ($rq) {
-                $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Active', 'active']);
+                $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active']);
             });
         })
         ->with('reservation')
@@ -270,8 +270,22 @@ $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $
         }
 
         $existingTimeline = $getReservationAmenityTimeline($ra, $res);
+        $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+
         foreach ($existingTimeline as [$d, $s]) {
             if (isset($reqMap["{$d}_{$s}"])) {
+                return true;
+            }
+        }
+
+        // Fallback for active stays with no computed timeline
+        if (empty($existingTimeline) && $isCheckedIn) {
+            $todayStr = now()->toDateString();
+            $settings = \App\Models\ParkSetting::first();
+            $daytimeEnd = $settings->daytime_end ?? '18:00';
+            $currentTime = now()->format('H:i');
+            $currentSlot = ($currentTime < $daytimeEnd) ? 'Daytime' : 'Nighttime';
+            if (isset($reqMap["{$todayStr}_{$currentSlot}"])) {
                 return true;
             }
         }
@@ -425,7 +439,7 @@ $occupiedAmenityIdsForContinuousRange = function (string $startDate, ?string $en
             })
             // OR parent reservation is currently Checked In (active on site)
             ->orWhereHas('reservation', function ($rq) {
-                $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Active', 'active']);
+                $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active']);
             });
         })
         ->with('reservation')
@@ -448,10 +462,24 @@ $occupiedAmenityIdsForContinuousRange = function (string $startDate, ?string $en
         }
 
         $existingTimeline = $getReservationAmenityTimeline($ra, $res);
+        $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+        $matched = false;
         foreach ($existingTimeline as [$d, $s]) {
             if (isset($reqMap["{$d}_{$s}"])) {
                 $occupied[] = (string) $ra->amenity_id;
+                $matched = true;
                 break;
+            }
+        }
+
+        if (! $matched && empty($existingTimeline) && $isCheckedIn) {
+            $todayStr = now()->toDateString();
+            $settings = \App\Models\ParkSetting::first();
+            $daytimeEnd = $settings->daytime_end ?? '18:00';
+            $currentTime = now()->format('H:i');
+            $currentSlot = ($currentTime < $daytimeEnd) ? 'Daytime' : 'Nighttime';
+            if (isset($reqMap["{$todayStr}_{$currentSlot}"])) {
+                $occupied[] = (string) $ra->amenity_id;
             }
         }
     }
@@ -562,9 +590,9 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
     $reservations = \App\Models\Reservation::query()
         ->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out'])
         ->where(function ($query) use ($today) {
-            $query->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Active', 'active'])
+            $query->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active'])
                   ->orWhere(function ($q) use ($today) {
-                      $q->whereIn('status', ['Pending', 'Confirmed', 'pending', 'confirmed'])
+                      $q->whereIn('status', ['Pending', 'Confirmed', 'Approved', 'pending', 'confirmed', 'approved'])
                         ->where(function ($dateQ) use ($today) {
                             $dateQ->where(function ($dSub) use ($today) {
                                 $dSub->whereDate('reservation_date', '<=', $today)
@@ -590,7 +618,6 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
                         });
                   });
         })
-        ->whereNotIn('status', ['Cancelled', 'Checked Out'])
         ->with(['reservationAmenities' => function ($query) {
             $query->with('amenity');
         }, 'reservationGuests'])
@@ -605,12 +632,15 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
         ];
 
         foreach ($reservations as $reservation) {
+            $resStatus = strtolower(trim((string) ($reservation->status ?? '')));
+            $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+            $isReserved = in_array($resStatus, ['pending', 'confirmed', 'approved'], true);
             $uniqueAmenitiesCount = $reservation->reservationAmenities->pluck('amenity_id')->unique()->count();
             $isSharedGroup = $uniqueAmenitiesCount > 1;
 
             foreach ($reservation->reservationAmenities as $ra) {
                 if ($ra->status === 'Completed') continue;
-                if ($ra->amenity_id === $amenity->id) {
+                if ((string) $ra->amenity_id === (string) $amenity->id) {
                     $timeline = $getReservationAmenityTimeline($ra, $reservation);
 
                     // Filter timeline for TODAY's slots only
@@ -622,7 +652,15 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
                     }
 
                     if (empty($todaySlots)) {
-                        continue;
+                        if ($isCheckedIn) {
+                            $settings = \App\Models\ParkSetting::first();
+                            $daytimeEnd = $settings->daytime_end ?? '18:00';
+                            $currentTime = now()->format('H:i');
+                            $currentSlot = ($currentTime < $daytimeEnd) ? 'Daytime' : 'Nighttime';
+                            $todaySlots = [$currentSlot];
+                        } else {
+                            continue;
+                        }
                     }
 
                     $hasDay = in_array('Daytime', $todaySlots);
@@ -655,9 +693,9 @@ Route::get('/amenities', function () use ($getReservationAmenityTimeline) {
                         'total_amenities_count' => $uniqueAmenitiesCount,
                     ];
 
-                    if ($reservation->status === 'Checked In') {
+                    if ($isCheckedIn) {
                         $occupancyData[$amenity->id]['occupied'][] = $entry;
-                    } elseif (in_array($reservation->status, ['Pending', 'Confirmed'])) {
+                    } elseif ($isReserved) {
                         $occupancyData[$amenity->id]['reserved'][] = $entry;
                     }
                 }
@@ -867,7 +905,8 @@ Route::get('/reservation/availability', function (Request $request) use ($occupi
         'date' => $startDate,
         'slot' => $startSlot,
         'occupied_amenity_ids' => $occupiedAmenityIds,
-    ]);
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      ->header('Pragma', 'no-cache');
 })->name('reservation.availability');
 
 Route::get('/reservation/availability/calendar', function (Request $request) use ($isAmenityRangeTaken) {
@@ -885,14 +924,10 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
     }
 
     $amenityIds = array_values(array_filter(array_map('trim', $amenityIds)));
+    $isAllAmenitiesQuery = empty($amenityIds);
 
-    if (empty($amenityIds)) {
-        return response()->json([
-            'amenity_id' => $amenityId,
-            'amenity_ids' => [],
-            'slot' => $slot,
-            'availability' => [],
-        ]);
+    if ($isAllAmenitiesQuery) {
+        $amenityIds = \App\Models\Amenity::where('status', true)->pluck('id')->map('strval')->all();
     }
 
     // Use today's date in the application's timezone to avoid offset issues
@@ -937,28 +972,61 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
         }
 
         if ($daytimeAvailable) {
-            foreach ($amenityIds as $aId) {
-                if ($isAmenityRangeTaken($aId, $date, $date, 'Daytime', 'Daytime')) {
-                    $daytimeAvailable = false;
-                    break;
+            if ($isAllAmenitiesQuery) {
+                $anyFree = false;
+                foreach ($amenityIds as $aId) {
+                    if (! $isAmenityRangeTaken($aId, $date, $date, 'Daytime', 'Daytime')) {
+                        $anyFree = true;
+                        break;
+                    }
+                }
+                $daytimeAvailable = $anyFree;
+            } else {
+                foreach ($amenityIds as $aId) {
+                    if ($isAmenityRangeTaken($aId, $date, $date, 'Daytime', 'Daytime')) {
+                        $daytimeAvailable = false;
+                        break;
+                    }
                 }
             }
         }
 
         if ($nighttimeAvailable) {
-            foreach ($amenityIds as $aId) {
-                if ($isAmenityRangeTaken($aId, $date, $date, 'Nighttime', 'Nighttime')) {
-                    $nighttimeAvailable = false;
-                    break;
+            if ($isAllAmenitiesQuery) {
+                $anyFree = false;
+                foreach ($amenityIds as $aId) {
+                    if (! $isAmenityRangeTaken($aId, $date, $date, 'Nighttime', 'Nighttime')) {
+                        $anyFree = true;
+                        break;
+                    }
+                }
+                $nighttimeAvailable = $anyFree;
+            } else {
+                foreach ($amenityIds as $aId) {
+                    if ($isAmenityRangeTaken($aId, $date, $date, 'Nighttime', 'Nighttime')) {
+                        $nighttimeAvailable = false;
+                        break;
+                    }
                 }
             }
         }
 
         if ($nextDaytimeAvailable) {
-            foreach ($amenityIds as $aId) {
-                if ($isAmenityRangeTaken($aId, $nextDate, $nextDate, 'Daytime', 'Daytime')) {
-                    $nextDaytimeAvailable = false;
-                    break;
+            if ($isAllAmenitiesQuery) {
+                $anyFree = false;
+                foreach ($amenityIds as $aId) {
+                    if (! $isAmenityRangeTaken($aId, $nextDate, $nextDate, 'Daytime', 'Daytime')) {
+                        $anyFree = true;
+                        break;
+                    }
+                }
+                $nextDaytimeAvailable = $anyFree;
+            } else {
+                foreach ($amenityIds as $aId) {
+                    if ($isAmenityRangeTaken($aId, $nextDate, $nextDate, 'Daytime', 'Daytime')) {
+                        $nextDaytimeAvailable = false;
+                        break;
+                    }
                 }
             }
         }
@@ -977,7 +1045,8 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
         'amenity_ids' => $amenityIds,
         'slot' => $slot,
         'availability' => $availability,
-    ]);
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      ->header('Pragma', 'no-cache');
 })->name('reservation.availability.calendar');
 
 Route::get('/reservation', function (WeatherService $weather) {
@@ -1009,12 +1078,13 @@ Route::get('/reservation', function (WeatherService $weather) {
     $weatherPreview = $weather->getForecastForDate($selectedDate);
     $parkSettings = \App\Models\ParkSetting::first();
 
-    return view('reservationpage', [
+    return response()->view('reservationpage', [
         'amenities' => $amenities,
         'weatherPreview' => $weatherPreview,
         'maxReservationDate' => $maxReservationDate,
         'parkSettings' => $parkSettings,
-    ]);
+    ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      ->header('Pragma', 'no-cache');
 })->name('reservation');
 
 // ── PayMongo Reservation & Payment Endpoints ─────────────────────────────────
@@ -3295,6 +3365,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'nighttime_price' => (float) ($reservationAmenity->amenity?->nighttime_price ?? 0),
                             'daytime_aircon_price' => $reservationAmenity->amenity?->daytime_aircon_price !== null ? (float) $reservationAmenity->amenity->daytime_aircon_price : null,
                             'nighttime_aircon_price' => $reservationAmenity->amenity?->nighttime_aircon_price !== null ? (float) $reservationAmenity->amenity->nighttime_aircon_price : null,
+                            'minimum_capacity' => $reservationAmenity->amenity?->minimum_capacity,
+                            'maximum_capacity' => $reservationAmenity->amenity?->maximum_capacity !== null && $reservationAmenity->amenity?->maximum_capacity !== '' ? (int) $reservationAmenity->amenity->maximum_capacity : null,
+                            'additional_per_head' => (float) ($reservationAmenity->amenity?->additional_per_head ?? 0),
                         ],
                     ];
                 })->values(),
@@ -3358,9 +3431,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservations = \App\Models\Reservation::query()
             ->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out'])
             ->where(function ($query) use ($today) {
-                $query->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Active', 'active'])
+                $query->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active'])
                       ->orWhere(function ($q) use ($today) {
-                          $q->whereIn('status', ['Pending', 'Confirmed', 'pending', 'confirmed'])
+                          $q->whereIn('status', ['Pending', 'Confirmed', 'Approved', 'pending', 'confirmed', 'approved'])
                             ->where(function ($dateQ) use ($today) {
                                 $dateQ->where(function ($dSub) use ($today) {
                                     $dSub->whereDate('reservation_date', '<=', $today)
@@ -3400,12 +3473,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ];
 
             foreach ($reservations as $reservation) {
+                $resStatus = strtolower(trim((string) ($reservation->status ?? '')));
+                $isCheckedIn = in_array($resStatus, ['checked in', 'checked-in', 'checked_in', 'active'], true);
+                $isReserved = in_array($resStatus, ['pending', 'confirmed', 'approved'], true);
                 $uniqueAmenitiesCount = $reservation->reservationAmenities->pluck('amenity_id')->unique()->count();
                 $isSharedGroup = $uniqueAmenitiesCount > 1;
 
                 foreach ($reservation->reservationAmenities as $ra) {
                     if ($ra->status === 'Completed') continue;
-                    if ($ra->amenity_id === $amenity->id) {
+                    if ((string) $ra->amenity_id === (string) $amenity->id) {
                         $timeline = $getReservationAmenityTimeline($ra, $reservation);
 
                         // Filter timeline for TODAY's slots only
@@ -3417,7 +3493,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         }
 
                         if (empty($todaySlots)) {
-                            continue;
+                            if ($isCheckedIn) {
+                                $settings = \App\Models\ParkSetting::first();
+                                $daytimeEnd = $settings->daytime_end ?? '18:00';
+                                $currentTime = now()->format('H:i');
+                                $currentSlot = ($currentTime < $daytimeEnd) ? 'Daytime' : 'Nighttime';
+                                $todaySlots = [$currentSlot];
+                            } else {
+                                continue;
+                            }
                         }
 
                         $hasDay = in_array('Daytime', $todaySlots);
@@ -3450,9 +3534,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'total_amenities_count' => $uniqueAmenitiesCount,
                         ];
 
-                        if ($reservation->status === 'Checked In') {
+                        if ($isCheckedIn) {
                             $occupancyData[$amenity->id]['occupied'][] = $entry;
-                        } elseif (in_array($reservation->status, ['Pending', 'Confirmed'])) {
+                        } elseif ($isReserved) {
                             $occupancyData[$amenity->id]['reserved'][] = $entry;
                         }
                     }
@@ -3734,8 +3818,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'amenity_name' => $amenity->amenity?->amenities_name ?? ($amenity->amenity_id ?? 'Unknown'),
                         'pricing_type' => $amenity->pricing_type,
                         'price' => $amenity->price_at_booking ?? 0,
+                        'price_at_booking' => $amenity->price_at_booking ?? 0,
                         'quantity' => $amenity->quantity ?? 1,
                         'amenity_id' => $amenity->amenity_id,
+                        'minimum_capacity' => $amenity->amenity?->minimum_capacity,
+                        'maximum_capacity' => $amenity->amenity?->maximum_capacity !== null && $amenity->amenity?->maximum_capacity !== '' ? (int) $amenity->amenity->maximum_capacity : null,
+                        'additional_per_head' => (float) ($amenity->amenity?->additional_per_head ?? 0),
                         'status' => $amenity->status ?? 'Active',
                         'start_date' => $raStartDate,
                         'end_date' => $raEndDate,
@@ -3915,7 +4003,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
                     return [
                         'id' => $amenity->id,
+                        'amenity_id' => $amenity->amenity_id,
                         'amenity_name' => $amenity->amenity?->amenities_name,
+                        'minimum_capacity' => $amenity->amenity?->minimum_capacity,
+                        'maximum_capacity' => $amenity->amenity?->maximum_capacity !== null && $amenity->amenity?->maximum_capacity !== '' ? (int) $amenity->amenity->maximum_capacity : null,
+                        'additional_per_head' => (float) ($amenity->amenity?->additional_per_head ?? 0),
                         'pricing_type' => $amenity->pricing_type,
                         'price_at_booking' => $amenity->price_at_booking,
                         'quantity' => $amenity->quantity,
@@ -4477,7 +4569,34 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $poolFee = round($poolCount * $poolRate, 2);
         }
 
-        $grandTotal = round($entranceTotal + $poolFee + $amenityTotal, 2);
+        // Calculate Additional Per Head fee for amenities exceeding capacity
+        $extraHeadTotal = 0;
+        if (! empty($processedAmenities)) {
+            $defaultAmenityId = (string) $processedAmenities[0]['amenity_id'];
+            $amenityGuestCounts = [];
+
+            if ($primaryGuestCount) {
+                $pAmId = (string) ($data['primary_guest']['amenity_id'] ?? $defaultAmenityId);
+                $amenityGuestCounts[$pAmId] = ($amenityGuestCounts[$pAmId] ?? 0) + 1;
+            }
+
+            foreach ($data['companions'] ?? [] as $companionData) {
+                $cAmId = (string) ($companionData['amenity_id'] ?? $defaultAmenityId);
+                $amenityGuestCounts[$cAmId] = ($amenityGuestCounts[$cAmId] ?? 0) + 1;
+            }
+
+            foreach ($processedAmenities as $pAm) {
+                $am = $pAm['amenity'];
+                $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
+                $assignedCount = $amenityGuestCounts[(string) $am->id] ?? 0;
+                if ($maxCap !== null && $assignedCount > $maxCap) {
+                    $excess = $assignedCount - $maxCap;
+                    $extraHeadTotal += $excess * (float) ($am->additional_per_head ?? 0);
+                }
+            }
+        }
+
+        $grandTotal = round($entranceTotal + $poolFee + $amenityTotal + $extraHeadTotal, 2);
 
         $primaryFirstName = trim((string) ($data['primary_guest']['first_name'] ?? '')) ?: 'Walk-In';
         $primaryLastName = trim((string) ($data['primary_guest']['last_name'] ?? '')) ?: 'Guest';
@@ -4512,7 +4631,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'reservation_id' => $reservation->id,
             'pricing_type' => $entrancePricingType,
             'pool_option' => $poolOption,
-            'total_amount' => round($entranceTotal + $poolFee, 2),
+            'total_amount' => round($entranceTotal + $poolFee + $extraHeadTotal, 2),
             'pool_fee' => round($poolFee, 2),
             'pool_access_count' => $poolCount,
             'adult_count' => $adultCount,
@@ -4989,7 +5108,36 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $poolTotal = round($poolCount * $poolRate, 2);
         }
 
-        $grandTotal = round($entranceTotal + $poolTotal, 2);
+        // Calculate Additional Per Head Fee for amenities exceeding capacity limit
+        $extraHeadTotal = 0;
+        $resAmenities = $reservation->reservationAmenities()->with('amenity')->get();
+        if ($resAmenities->isNotEmpty()) {
+            $defaultAmenityId = (string) $resAmenities->first()->amenity_id;
+            $amenityGuestCounts = [];
+
+            if ($data['guest_mode'] === 'with_primary' && ! empty($data['primary_guest'])) {
+                $pAmId = (string) ($data['primary_guest']['amenity_id'] ?? $defaultAmenityId);
+                $amenityGuestCounts[$pAmId] = ($amenityGuestCounts[$pAmId] ?? 0) + 1;
+            }
+
+            foreach ($data['companions'] ?? [] as $companionData) {
+                $cAmId = (string) ($companionData['amenity_id'] ?? $defaultAmenityId);
+                $amenityGuestCounts[$cAmId] = ($amenityGuestCounts[$cAmId] ?? 0) + 1;
+            }
+
+            foreach ($resAmenities as $ra) {
+                $am = $ra->amenity;
+                if (! $am) continue;
+                $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
+                $assignedCount = $amenityGuestCounts[(string) $am->id] ?? 0;
+                if ($maxCap !== null && $assignedCount > $maxCap) {
+                    $excess = $assignedCount - $maxCap;
+                    $extraHeadTotal += $excess * (float) ($am->additional_per_head ?? 0);
+                }
+            }
+        }
+
+        $grandTotal = round($entranceTotal + $poolTotal + $extraHeadTotal, 2);
 
         \App\Models\ReservationEntranceFee::updateOrCreate(
             ['reservation_id' => $reservation->id],
@@ -5161,7 +5309,28 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
         $newPoolTotal = round($poolCount * $poolRate, 2);
 
-        $newCompanionTotal = round($newEntranceTotal + $newPoolTotal, 2);
+        // Additional per head fee if reservation has amenities with limits
+        $newExtraHeadFee = 0;
+        $resAmenities = $reservation->reservationAmenities()->with('amenity')->get();
+        if ($resAmenities->isNotEmpty()) {
+            $defaultAmenityId = (string) $resAmenities->first()->amenity_id;
+            $existingGuestsCount = $reservation->reservationGuests()->whereNull('checked_out_at')->count();
+
+            foreach ($data['companions'] ?? [] as $companionData) {
+                $cAmId = (string) ($companionData['amenity_id'] ?? $defaultAmenityId);
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->first();
+                $am = $ra?->amenity;
+                if ($am) {
+                    $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
+                    if ($maxCap !== null && $existingGuestsCount >= $maxCap) {
+                        $newExtraHeadFee += (float) ($am->additional_per_head ?? 0);
+                    }
+                    $existingGuestsCount++;
+                }
+            }
+        }
+
+        $newCompanionTotal = round($newEntranceTotal + $newPoolTotal + $newExtraHeadFee, 2);
 
         // Create customers + reservation guests (checked-in: no checked_out_at).
         foreach ($data['companions'] ?? [] as $companionData) {
@@ -5957,7 +6126,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 })
                 // OR parent reservation is currently Checked In (active on site)
                 ->orWhereHas('reservation', function ($rq) {
-                    $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Active', 'active']);
+                    $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active']);
                 });
             })
             ->with('reservation')

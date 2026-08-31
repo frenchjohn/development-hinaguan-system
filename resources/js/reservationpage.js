@@ -763,11 +763,11 @@ document.addEventListener('DOMContentLoaded', () => {
             url.searchParams.set('end_slot', mainEndSlot || selectedSlot);
             url.searchParams.set('date', startD);
             url.searchParams.set('slot', selectedSlot);
+            url.searchParams.set('_t', Date.now());
 
             const response = await fetch(url.toString(), {
-
-                headers: { Accept: 'application/json' },
-
+                cache: 'no-store',
+                headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
             });
 
             if (!response.ok) {
@@ -859,13 +859,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const url = new URL('/reservation/availability/calendar', window.location.origin);
+                url.searchParams.set('amenity_id', targetAmenityIds);
                 url.searchParams.set('amenity_ids', targetAmenityIds);
                 url.searchParams.set('slot', calendarSlot);
                 url.searchParams.set('month', selectedMonth);
                 url.searchParams.set('year', selectedYear);
+                url.searchParams.set('_t', Date.now());
 
                 const response = await fetch(url.toString(), {
-                    headers: { Accept: 'application/json' },
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
                 });
 
                 if (!response.ok) {
@@ -902,7 +905,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         calendarAvailability = [];
-        renderAvailabilityCalendar();
+        if (availabilityCalendar) {
+            availabilityCalendar.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2rem; opacity: 0.7;">Loading availability…</div>';
+        }
 
         availabilityModal.classList.add('is-open');
         availabilityModal.setAttribute('aria-hidden', 'false');
@@ -2468,12 +2473,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const url = new URL('/reservation/availability/calendar', window.location.origin);
             if (amenityIds) {
                 url.searchParams.set('amenity_ids', amenityIds);
+                url.searchParams.set('amenity_id', amenityIds);
             }
             url.searchParams.set('month', selectedMonth);
             url.searchParams.set('year', selectedYear);
+            url.searchParams.set('_t', Date.now());
 
             const response = await fetch(url.toString(), {
-                headers: { Accept: 'application/json' },
+                cache: 'no-store',
+                headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
             });
 
             if (!response.ok) {
@@ -2567,7 +2575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPast = date < today;
             const isToday = date.getTime() === today.getTime();
 
-            let isAvailable = !isPast;
+            let isAvailable = false;
 
             const modalSlotDaytime = document.getElementById('modalSlotDaytime');
             const modalSlotNighttime = document.getElementById('modalSlotNighttime');
@@ -2622,6 +2630,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
+            } else {
+                isAvailable = !isPast;
             }
 
             if (isToday) {
@@ -3937,6 +3947,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const url = new URL('/reservation/availability/calendar', window.location.origin);
                 url.searchParams.set('amenity_id', calendarAmenityId || '');
+                url.searchParams.set('amenity_ids', calendarAmenityId || '');
                 url.searchParams.set('slot', calendarSlot);
 
                 // Include month and year from dropdowns
@@ -3953,12 +3964,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     url.searchParams.set('year', today.getFullYear());
                 }
 
-
+                url.searchParams.set('_t', Date.now());
 
                 const response = await fetch(url.toString(), {
-
-                    headers: { Accept: 'application/json' },
-
+                    cache: 'no-store',
+                    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
                 });
 
 

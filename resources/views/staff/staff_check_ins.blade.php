@@ -1620,6 +1620,10 @@
 									<span>Amenities Subtotal</span>
 									<strong class="text-hp-green" id="walkInAmenitiesSubtotal">₱0.00</strong>
 								</div>
+								<div class="guest-form__summary mt-2 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text" id="walkInExtraHeadFeeSummaryWrap" style="display: none;">
+									<span>Extra Head Fee (Capacity Limit)</span>
+									<strong class="text-[#e65100] dark:text-[#ffb74d]" id="walkInExtraHeadSubtotal">₱0.00</strong>
+								</div>
 							</div>
 
 							<!-- Overall Total Banner -->
@@ -1870,6 +1874,10 @@
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
 									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="walkInSingleCompanionAmenityWrap" style="display: none;">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInCompanionAmenity">Assign to Amenity</label>
+									<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+								</div>
 								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionFreeEntranceWrap" style="display: none;">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
 										<div class="flex items-center gap-2">
@@ -1925,6 +1933,10 @@
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity (Total in Group)</label>
 									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="walkInBulkCompanionAmenityWrap" style="display: none;">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInBulkCompanionAmenity">Assign to Amenity</label>
+									<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
 									<div class="flex items-center justify-between">
@@ -2040,6 +2052,15 @@
 								<div id="payConfirmAmenitiesList" class="grid gap-1.5 text-xs text-hp-text-muted">
 									<p class="m-0 text-hp-text-muted italic">No amenities selected</p>
 								</div>
+							</div>
+
+							<!-- Extra Head Fees Breakdown -->
+							<div class="rounded-xl border border-glass-border bg-glass p-3.5 text-xs text-hp-text grid gap-2" id="payConfirmExtraHeadWrap" style="display: none;">
+								<div class="flex justify-between items-center">
+									<span class="font-bold text-hp-text-muted uppercase tracking-wider text-[0.7rem]">Extra Head Fees (Capacity Limit)</span>
+									<span id="payConfirmExtraHeadSubtotal" class="font-bold text-[#e65100] dark:text-[#ffb74d]">₱0.00</span>
+								</div>
+								<div id="payConfirmExtraHeadList" class="grid gap-1 text-xs text-hp-text-muted"></div>
 							</div>
 
 							<!-- Big Payment Box -->
@@ -2236,6 +2257,10 @@
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_email">Email</label>
 									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+								<div class="guest-form__field-group grid gap-1.5 sm:col-span-3" id="resaddSingleAmenityWrap" style="display: none;">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_amenity">Assign to Amenity</label>
+									<select name="amenity_id" id="resadd_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+								</div>
 							</div>
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
@@ -2265,6 +2290,10 @@
 									<div class="guest-form__fee-item flex justify-between">
 										<span>Pool Fee (<span id="resaddPoolCount">0</span>):</span>
 										<strong class="text-hp-text" id="resaddPoolFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between" id="resaddExtraHeadRow" style="display: none;">
+										<span>Extra Head Fee:</span>
+										<strong class="text-[#e65100] dark:text-[#ffb74d]" id="resaddExtraHeadFee">₱0.00</strong>
 									</div>
 									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
 										<span>Total:</span>
@@ -2309,6 +2338,10 @@
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Quantity</label>
 									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="resaddBulkAmenityWrap" style="display: none;">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_amenity">Assign to Amenity</label>
+									<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
 										<input type="checkbox" name="pool_access" id="resadd_bulk_pool_access" class="h-4 w-4 accent-hp-green">
@@ -2336,6 +2369,10 @@
 									<div class="guest-form__fee-item flex justify-between">
 										<span>Pool Fee (<span id="resaddBulkPoolCount">0</span>):</span>
 										<strong class="text-hp-text" id="resaddBulkPoolFee">₱0.00</strong>
+									</div>
+									<div class="guest-form__fee-item flex justify-between" id="resaddBulkExtraHeadRow" style="display: none;">
+										<span>Extra Head Fee:</span>
+										<strong class="text-[#e65100] dark:text-[#ffb74d]" id="resaddBulkExtraHeadFee">₱0.00</strong>
 									</div>
 									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
 										<span>Total:</span>

@@ -73,6 +73,13 @@ window.AppPage['staff_check_ins'] = function () {
     const reservationData = window.staffReservationData || {};
     const guestData = window.staffGuestData || {};
 
+    const escapeHtml = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+
     // Bulk companions store a representative midpoint age (0-12→6, 13-17→15,
     // 18-59→30, 60+→65). Display the actual age group instead of the midpoint.
     const ageGroupLabel = (age) => {
@@ -3549,14 +3556,75 @@ window.AppPage['staff_check_ins'] = function () {
         return { totalEntrance, adultCount, childCount, payingAdultCount, payingChildCount, freeEntranceCount, totalPoolFee, poolCount, entranceOption: entranceOpt, poolOption: poolOpt, poolRate };
     };
 
-    // Calculate Grand Total (Entrance + Pool + Amenities)
+    // Calculate Extra Head Fee for walk-in when amenity capacities are exceeded
+    const calculateExtraHeadFee = () => {
+        let extraHeadTotal = 0;
+        const extraHeadBreakdown = [];
+        if (selectedAmenities.length > 0) {
+            const defaultAmenityId = String(selectedAmenities[0].amenity_id || '');
+            const amenityCounts = {};
+
+            // Primary guest
+            const primaryAgeInput = document.getElementById('primary_age');
+            const primaryAgeVal = primaryAgeInput ? parseInt(primaryAgeInput.value, 10) : null;
+            const pAmId = defaultAmenityId;
+            amenityCounts[pAmId] = (amenityCounts[pAmId] || 0) + 1;
+
+            // Single companions
+            companions.forEach(c => {
+                const cAmId = String(c.amenity_id || defaultAmenityId);
+                amenityCounts[cAmId] = (amenityCounts[cAmId] || 0) + 1;
+            });
+
+            // Bulk companion groups
+            bulkCompanionGroups.forEach(g => {
+                const bAmId = String(g.amenity_id || defaultAmenityId);
+                const qty = parseInt(g.quantity, 10) || 1;
+                amenityCounts[bAmId] = (amenityCounts[bAmId] || 0) + qty;
+            });
+
+            selectedAmenities.forEach(am => {
+                const amId = String(am.amenity_id || '');
+                const maxCap = (am.max_cap !== null && am.max_cap !== undefined && am.max_cap !== '') ? parseInt(am.max_cap, 10) : null;
+                const addRate = parseFloat(am.additional_per_head) || 0;
+                const count = amenityCounts[amId] || 0;
+
+                if (maxCap !== null && !isNaN(maxCap) && count > maxCap) {
+                    const excess = count - maxCap;
+                    const fee = excess * addRate;
+                    extraHeadTotal += fee;
+                    extraHeadBreakdown.push({
+                        amenity_id: amId,
+                        amenity_name: am.amenity_name || 'Amenity',
+                        assigned: count,
+                        max_cap: maxCap,
+                        excess,
+                        add_rate: addRate,
+                        fee
+                    });
+                }
+            });
+        }
+        return { extraHeadTotal, extraHeadBreakdown };
+    };
+
+    // Calculate Grand Total (Entrance + Pool + Amenities + Extra Head Fee)
     const updateGrandTotal = () => {
         const { totalEntrance } = calculateEntranceFee();
         const amenitiesTotal = selectedAmenities.reduce((sum, a) => sum + (parseFloat(a.price_at_booking) || 0), 0);
-        const grandTotal = totalEntrance + amenitiesTotal;
+        const { extraHeadTotal, extraHeadBreakdown } = calculateExtraHeadFee();
+        const grandTotal = totalEntrance + amenitiesTotal + extraHeadTotal;
 
         if (walkInAmenitiesSubtotal) {
             walkInAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+        }
+        const walkInExtraHeadSubtotal = document.getElementById('walkInExtraHeadSubtotal');
+        const walkInExtraHeadFeeSummaryWrap = document.getElementById('walkInExtraHeadFeeSummaryWrap');
+        if (walkInExtraHeadSubtotal) {
+            walkInExtraHeadSubtotal.textContent = `₱${extraHeadTotal.toFixed(2)}`;
+        }
+        if (walkInExtraHeadFeeSummaryWrap) {
+            walkInExtraHeadFeeSummaryWrap.style.display = extraHeadTotal > 0 ? 'flex' : 'none';
         }
         if (reservationTotal) {
             reservationTotal.textContent = `₱${grandTotal.toFixed(2)}`;
@@ -3571,7 +3639,7 @@ window.AppPage['staff_check_ins'] = function () {
             companionCountBadge.textContent = `${totalCompanions} companion${totalCompanions === 1 ? '' : 's'}`;
         }
 
-        return { entranceFeeTotal: totalEntrance, amenitiesTotal, grandTotal };
+        return { entranceFeeTotal: totalEntrance, amenitiesTotal, extraHeadTotal, extraHeadBreakdown, grandTotal };
     };
 
     const primaryAgeInput = document.getElementById('primary_age');
@@ -3773,8 +3841,33 @@ window.AppPage['staff_check_ins'] = function () {
             payConfirmAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
         }
 
+        // 4b. Extra Head Fee Breakdown
+        const { extraHeadTotal, extraHeadBreakdown } = calculateExtraHeadFee();
+        const payConfirmExtraHeadWrap = document.getElementById('payConfirmExtraHeadWrap');
+        const payConfirmExtraHeadSubtotal = document.getElementById('payConfirmExtraHeadSubtotal');
+        const payConfirmExtraHeadList = document.getElementById('payConfirmExtraHeadList');
+
+        if (payConfirmExtraHeadWrap) {
+            if (extraHeadTotal > 0) {
+                payConfirmExtraHeadWrap.style.display = 'grid';
+                if (payConfirmExtraHeadSubtotal) {
+                    payConfirmExtraHeadSubtotal.textContent = `₱${extraHeadTotal.toFixed(2)}`;
+                }
+                if (payConfirmExtraHeadList) {
+                    payConfirmExtraHeadList.innerHTML = extraHeadBreakdown.map(b => `
+                        <div class="flex justify-between items-center border-b border-glass-border/20 pb-1">
+                            <span>${b.amenity_name} (${b.excess} extra guest${b.excess > 1 ? 's' : ''} × ₱${b.add_rate.toFixed(2)})</span>
+                            <strong class="text-[#e65100] dark:text-[#ffb74d]">₱${b.fee.toFixed(2)}</strong>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                payConfirmExtraHeadWrap.style.display = 'none';
+            }
+        }
+
         // 5. Grand Total
-        const grandTotal = totalEntrance + amenitiesTotal;
+        const grandTotal = totalEntrance + amenitiesTotal + extraHeadTotal;
         const payConfirmGrandTotal = document.getElementById('payConfirmGrandTotal');
         if (payConfirmGrandTotal) {
             payConfirmGrandTotal.textContent = `₱${grandTotal.toFixed(2)}`;
@@ -3874,6 +3967,33 @@ window.AppPage['staff_check_ins'] = function () {
     let bulkCompanionGroups = [];
 
     const openCompanionModal = () => {
+        // Setup Amenity select dropdowns for companion modals
+        const singleAmWrap = document.getElementById('walkInSingleCompanionAmenityWrap');
+        const singleAmSelect = document.getElementById('walkInCompanionAmenity');
+        const bulkAmWrap = document.getElementById('walkInBulkCompanionAmenityWrap');
+        const bulkAmSelect = document.getElementById('walkInBulkCompanionAmenity');
+
+        if (selectedAmenities.length > 1) {
+            let optionsHtml = '';
+            selectedAmenities.forEach(am => {
+                const max = (am.max_cap !== null && am.max_cap !== undefined && am.max_cap !== '') ? `Max: ${am.max_cap}` : 'No limit';
+                const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
+                optionsHtml += `<option value="${am.amenity_id}">${escapeHtml(am.amenity_name)} (${max}${addFee})</option>`;
+            });
+            if (singleAmSelect) singleAmSelect.innerHTML = optionsHtml;
+            if (bulkAmSelect) bulkAmSelect.innerHTML = optionsHtml;
+            if (singleAmWrap) singleAmWrap.style.display = 'grid';
+            if (bulkAmWrap) bulkAmWrap.style.display = 'grid';
+        } else {
+            if (singleAmWrap) singleAmWrap.style.display = 'none';
+            if (bulkAmWrap) bulkAmWrap.style.display = 'none';
+            if (selectedAmenities.length === 1) {
+                const singleId = selectedAmenities[0].amenity_id;
+                if (singleAmSelect) singleAmSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(selectedAmenities[0].amenity_name)}</option>`;
+                if (bulkAmSelect) bulkAmSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(selectedAmenities[0].amenity_name)}</option>`;
+            }
+        }
+
         companionModal.classList.add('is-open');
         companionModal.classList.remove('hidden');
         companionModal.setAttribute('aria-hidden', 'false');
@@ -3961,11 +4081,20 @@ window.AppPage['staff_check_ins'] = function () {
                     : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance">+ Free Entrance</button>`;
             }
 
+            let amenityBadgeHtml = '';
+            if (selectedAmenities.length > 1 && companion.amenity_id) {
+                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
+                if (foundAm) {
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                }
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
+                    ${amenityBadgeHtml}
                     ${freeBadgeHtml}
                     ${poolBadgeHtml}
                 </div>
@@ -3975,6 +4104,7 @@ window.AppPage['staff_check_ins'] = function () {
 
             const hasPoolFlag = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') ? '1' : (companion.has_pool_access ? '1' : '0');
             const isFreeEntranceFlag = (currentEntranceOpt === 'all_free') ? '1' : (currentEntranceOpt === 'specific' && companion.has_free_entrance ? '1' : '0');
+            const companionAmenityVal = companion.amenity_id || (selectedAmenities[0]?.amenity_id || '');
 
             // Add hidden fields
             companionHiddenFields.insertAdjacentHTML('beforeend', `
@@ -3989,6 +4119,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="companions[${index}][email]" value="${companion.email || ''}">
                 <input type="hidden" name="companions[${index}][has_pool_access]" value="${hasPoolFlag}">
                 <input type="hidden" name="companions[${index}][is_free_entrance]" value="${isFreeEntranceFlag}">
+                <input type="hidden" name="companions[${index}][amenity_id]" value="${companionAmenityVal}">
             `);
         });
 
@@ -4030,17 +4161,28 @@ window.AppPage['staff_check_ins'] = function () {
                 `;
             }
 
+            let bulkAmenityBadgeHtml = '';
+            if (selectedAmenities.length > 1 && group.amenity_id) {
+                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
+                if (foundAm) {
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                }
+            }
+
             const item = document.createElement('div');
             item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
             item.innerHTML = `
                 <div class="flex items-center gap-2 flex-wrap">
                     <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
+                    ${bulkAmenityBadgeHtml}
                     ${bulkFreeBadgeHtml}
                     ${bulkPoolBadgeHtml}
                 </div>
                 <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-bulk-index="${groupIndex}">Remove</button>
             `;
             companionList.appendChild(item);
+
+            const groupAmenityVal = group.amenity_id || (selectedAmenities[0]?.amenity_id || '');
 
             // Add hidden fields for each companion in the group
             for (let i = 0; i < group.quantity; i++) {
@@ -4060,6 +4202,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <input type="hidden" name="companions[${companionIndex}][email]" value="">
                     <input type="hidden" name="companions[${companionIndex}][has_pool_access]" value="${personHasPool ? '1' : '0'}">
                     <input type="hidden" name="companions[${companionIndex}][is_free_entrance]" value="${personIsFree ? '1' : '0'}">
+                    <input type="hidden" name="companions[${companionIndex}][amenity_id]" value="${groupAmenityVal}">
                 `);
             }
         });
@@ -4079,6 +4222,7 @@ window.AppPage['staff_check_ins'] = function () {
         const autoAgeType = (!isNaN(parsedAge) && parsedAge <= 12) ? 'child' : 'adult';
         const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+        const chosenAmenityId = String(formData.get('amenity_id') || selectedAmenities[0]?.amenity_id || '');
 
         const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
             ? true
@@ -4100,6 +4244,7 @@ window.AppPage['staff_check_ins'] = function () {
             email: formData.get('email'),
             has_pool_access: companionHasPool,
             has_free_entrance: isFreeEntrance,
+            amenity_id: chosenAmenityId,
         };
 
         companions.push(companionData);
@@ -4121,6 +4266,7 @@ window.AppPage['staff_check_ins'] = function () {
         const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
         const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+        const chosenAmenityId = String(formData.get('amenity_id') || selectedAmenities[0]?.amenity_id || '');
 
         const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
         let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
@@ -4147,6 +4293,7 @@ window.AppPage['staff_check_ins'] = function () {
             pool_quantity: poolQty,
             free_quantity: freeQty,
             has_free_entrance: freeQty === quantity,
+            amenity_id: chosenAmenityId,
         });
 
         renderCompanions();
@@ -4666,6 +4813,7 @@ window.AppPage['staff_check_ins'] = function () {
                 amenity_name: amenity.amenities_name,
                 min_cap: amenity.minimum_capacity,
                 max_cap: amenity.maximum_capacity,
+                additional_per_head: parseFloat(amenity.additional_per_head) || 0,
                 start_date: walkInSchedule.startDate,
                 end_date: walkInSchedule.endDate,
                 start_slot: walkInSchedule.startSlot,
@@ -4709,6 +4857,9 @@ window.AppPage['staff_check_ins'] = function () {
             const sFmt = formatDisplayDate(am.start_date);
             const eFmt = formatDisplayDate(am.end_date);
             const spanLabel = am.total_days === 1 ? '1 Day' : `${am.total_days} Days`;
+            const maxCapText = (am.max_cap !== null && am.max_cap !== undefined && am.max_cap !== '')
+                ? `Max ${am.max_cap} guests${parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : ''}`
+                : 'No limit';
 
             const card = document.createElement('div');
             card.className = 'selected-amenity-card rounded-xl border border-glass-border bg-glass p-3.5 shadow-sm transition-all duration-200';
@@ -4718,7 +4869,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <div class="flex flex-wrap items-start justify-between gap-2 border-b border-glass-border/50 pb-2.5">
                     <div>
                         <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${am.amenity_name}</strong>
-                        <div class="text-xs text-hp-text-muted">Capacity: ${am.min_cap || 1}–${am.max_cap || 10} guests</div>
+                        <div class="text-xs text-hp-text-muted">Capacity: ${maxCapText}</div>
                     </div>
                     <div class="text-right">
                         <div class="text-sm font-extrabold text-hp-green">₱${parseFloat(am.price_at_booking).toFixed(2)}</div>
@@ -5493,6 +5644,23 @@ window.AppPage['staff_check_ins'] = function () {
         const adultFee = payingAdultCount * rates.adult;
         const childFee = payingChildCount * rates.child;
         const poolFee = poolOn ? rates.pool : 0;
+
+        // Calculate Extra Head Fee if assigned amenity has capacity limit
+        const res = reservationData[currentReservationId];
+        const resAmenities = res?.reservation_amenities || [];
+        const amId = String(resAddSingleForm?.querySelector('[name="amenity_id"]')?.value || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+        const foundAmenity = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id || ra.id) === amId);
+        let extraHeadFee = 0;
+        if (foundAmenity) {
+            const amData = foundAmenity.amenity || foundAmenity;
+            const maxCap = (amData.maximum_capacity !== null && amData.maximum_capacity !== undefined && amData.maximum_capacity !== '') ? parseInt(amData.maximum_capacity, 10) : null;
+            const addRate = parseFloat(amData.additional_per_head) || 0;
+            const currentGuestCount = (res.reservation_guests || []).length;
+            if (maxCap !== null && !isNaN(maxCap) && currentGuestCount >= maxCap) {
+                extraHeadFee = addRate;
+            }
+        }
+
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('resaddAdultCount', adultCount);
         set('resaddAdultFee', isFree && adultCount > 0 ? '₱0.00 (Free)' : money(adultFee));
@@ -5500,7 +5668,12 @@ window.AppPage['staff_check_ins'] = function () {
         set('resaddChildFee', isFree && childCount > 0 ? '₱0.00 (Free)' : money(childFee));
         set('resaddPoolCount', poolOn ? 1 : 0);
         set('resaddPoolFee', money(poolFee));
-        set('resaddTotalFee', money(adultFee + childFee + poolFee));
+        const extraHeadRow = document.getElementById('resaddExtraHeadRow');
+        if (extraHeadRow) {
+            extraHeadRow.style.display = extraHeadFee > 0 ? 'flex' : 'none';
+            set('resaddExtraHeadFee', money(extraHeadFee));
+        }
+        set('resaddTotalFee', money(adultFee + childFee + poolFee + extraHeadFee));
     };
 
     const resAddUpdateBulkFees = () => {
@@ -5518,6 +5691,26 @@ window.AppPage['staff_check_ins'] = function () {
         const adultFee = payingAdultCount * rates.adult;
         const childFee = payingChildCount * rates.child;
         const poolFee = poolCount * rates.pool;
+
+        // Calculate Extra Head Fee if assigned amenity has capacity limit
+        const res = reservationData[currentReservationId];
+        const resAmenities = res?.reservation_amenities || [];
+        const amId = String(resAddBulkForm?.querySelector('[name="amenity_id"]')?.value || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+        const foundAmenity = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id || ra.id) === amId);
+        let bulkExtraHeadFee = 0;
+        if (foundAmenity) {
+            const amData = foundAmenity.amenity || foundAmenity;
+            const maxCap = (amData.maximum_capacity !== null && amData.maximum_capacity !== undefined && amData.maximum_capacity !== '') ? parseInt(amData.maximum_capacity, 10) : null;
+            const addRate = parseFloat(amData.additional_per_head) || 0;
+            let currentGuestCount = (res.reservation_guests || []).length;
+            for (let i = 0; i < qty; i++) {
+                if (maxCap !== null && !isNaN(maxCap) && currentGuestCount >= maxCap) {
+                    bulkExtraHeadFee += addRate;
+                }
+                currentGuestCount++;
+            }
+        }
+
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         set('resaddBulkAdultCount', adultCount);
         set('resaddBulkAdultFee', isFree && adultCount > 0 ? `₱0.00 (All ${qty} Free)` : money(adultFee));
@@ -5525,7 +5718,12 @@ window.AppPage['staff_check_ins'] = function () {
         set('resaddBulkChildFee', isFree && childCount > 0 ? `₱0.00 (All ${qty} Free)` : money(childFee));
         set('resaddBulkPoolCount', poolCount);
         set('resaddBulkPoolFee', money(poolFee));
-        set('resaddBulkTotalFee', money(adultFee + childFee + poolFee));
+        const bulkExtraHeadRow = document.getElementById('resaddBulkExtraHeadRow');
+        if (bulkExtraHeadRow) {
+            bulkExtraHeadRow.style.display = bulkExtraHeadFee > 0 ? 'flex' : 'none';
+            set('resaddBulkExtraHeadFee', money(bulkExtraHeadFee));
+        }
+        set('resaddBulkTotalFee', money(adultFee + childFee + poolFee + bulkExtraHeadFee));
         const poolLabel = document.getElementById('resaddBulkPoolLabel');
         if (poolLabel) poolLabel.textContent = `Include Pool Access (all ${qty})`;
         const freeLabel = document.getElementById('resaddBulkFreeEntranceLabel');
@@ -5537,16 +5735,53 @@ window.AppPage['staff_check_ins'] = function () {
         singleAge?.addEventListener('input', resAddUpdateSingleFees);
         resAddSingleForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateSingleFees);
         resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateSingleFees);
+        resAddSingleForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateSingleFees);
         resAddBulkForm?.querySelector('[name="age_group"]')?.addEventListener('change', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateBulkFees);
     };
 
     const openResAddCompanionModal = () => {
         if (resAddCompanionFor && currentReservationId) {
             resAddCompanionFor.textContent = `Reservation #${currentReservationId}`;
         }
+
+        // Setup Amenity select dropdowns for companion modals
+        const res = reservationData[currentReservationId];
+        const resAmenities = res?.reservation_amenities || [];
+        const singleWrap = document.getElementById('resaddSingleAmenityWrap');
+        const singleSelect = document.getElementById('resadd_amenity');
+        const bulkWrap = document.getElementById('resaddBulkAmenityWrap');
+        const bulkSelect = document.getElementById('resadd_bulk_amenity');
+
+        if (resAmenities.length > 1) {
+            let optionsHtml = '';
+            resAmenities.forEach(ra => {
+                const am = ra.amenity || ra;
+                const amId = String(am.id || ra.amenity_id || '');
+                const name = am.amenities_name || ra.amenity_name || 'Amenity';
+                const max = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? `Max: ${am.maximum_capacity}` : 'No limit';
+                const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
+                optionsHtml += `<option value="${amId}">${escapeHtml(name)} (${max}${addFee})</option>`;
+            });
+            if (singleSelect) singleSelect.innerHTML = optionsHtml;
+            if (bulkSelect) bulkSelect.innerHTML = optionsHtml;
+            if (singleWrap) singleWrap.style.display = 'grid';
+            if (bulkWrap) bulkWrap.style.display = 'block';
+        } else {
+            if (singleWrap) singleWrap.style.display = 'none';
+            if (bulkWrap) bulkWrap.style.display = 'none';
+            if (resAmenities.length === 1) {
+                const am = resAmenities[0].amenity || resAmenities[0];
+                const singleId = String(am.id || resAmenities[0].amenity_id || '');
+                const singleName = am.amenities_name || resAmenities[0].amenity_name || 'Amenity';
+                if (singleSelect) singleSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(singleName)}</option>`;
+                if (bulkSelect) bulkSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(singleName)}</option>`;
+            }
+        }
+
         loadParkSettings().then(() => {
             resAddUpdateSingleFees();
             resAddUpdateBulkFees();
@@ -5633,6 +5868,10 @@ window.AppPage['staff_check_ins'] = function () {
         }
         const isFree = Boolean(resAddSingleForm.querySelector('[name="is_free_entrance"]')?.checked);
         const submitButton = e.submitter || resAddSingleForm.querySelector('[type="submit"]');
+        const res = reservationData[currentReservationId];
+        const resAmenities = res?.reservation_amenities || [];
+        const amId = String(formData.get('amenity_id') || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+
         postCompanionsToReservation([{
             first_name: firstName,
             middle_name: formData.get('middle_name'),
@@ -5644,6 +5883,7 @@ window.AppPage['staff_check_ins'] = function () {
             email: formData.get('email'),
             pool_access: formData.get('pool_access') === 'on',
             is_free_entrance: isFree,
+            amenity_id: amId,
         }], submitButton, 'Add Companion');
     });
 
@@ -5653,6 +5893,10 @@ window.AppPage['staff_check_ins'] = function () {
         const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
         const poolOn = formData.get('pool_access') === 'on';
         const isFree = Boolean(resAddBulkForm.querySelector('[name="is_free_entrance"]')?.checked);
+        const res = reservationData[currentReservationId];
+        const resAmenities = res?.reservation_amenities || [];
+        const amId = String(formData.get('amenity_id') || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+
         const companions = [];
         for (let i = 0; i < quantity; i++) {
             companions.push({
@@ -5665,6 +5909,7 @@ window.AppPage['staff_check_ins'] = function () {
                 email: '',
                 pool_access: poolOn,
                 is_free_entrance: isFree,
+                amenity_id: amId,
             });
         }
         const submitButton = e.submitter || resAddBulkForm.querySelector('[type="submit"]');

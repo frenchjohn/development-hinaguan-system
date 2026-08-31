@@ -8,11 +8,32 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Reserve cottages, huts, and amenities at Hinaguan Nature Park in Jasaan, Misamis Oriental. Pick a date, choose your amenity, and confirm your booking in minutes.">
 
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>Book a Visit — Hinaguan Nature Park</title>
 
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+        }
+    </script>
 
     @php
         $settings = $parkSettings ?? \App\Models\ParkSetting::first();

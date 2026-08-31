@@ -753,7 +753,7 @@
                         <p class="m-0 text-[0.72rem] text-hp-text-muted" id="checkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Adults</p>
                             <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#f3f4f6]" id="checkInAdultSummary">0 × ₱0.00</p>
@@ -766,11 +766,19 @@
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Pool</p>
                             <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#f3f4f6]" id="checkInPoolSummary">₱0.00</p>
                         </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5" id="checkInExtraHeadCard">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Extra Head Fee</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-[#e65100] dark:text-[#ffb74d]" id="checkInExtraHeadSummary">₱0.00</p>
+                        </div>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hp-green/30 bg-[rgba(26,58,31,0.08)] px-3.5 py-2.5 dark:bg-[rgba(129,199,132,0.08)]">
                         <div>
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Entrance subtotal</p>
                             <p class="m-0 text-[1.05rem] font-extrabold text-hp-green" id="checkInEntranceTotal">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Extra guest fee</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-[#e65100]" id="checkInExtraHeadTotal">₱0.00</p>
                         </div>
                         <div>
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Reservation balance</p>
@@ -863,6 +871,11 @@
                         <span class="text-sm font-semibold text-hp-text">Email</span>
                         <input type="email" name="email" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                     </label>
+                </div>
+
+                <div id="checkInCompanionAmenityWrap" class="guest-form__field grid gap-1.5" style="display: none;">
+                    <span class="text-sm font-semibold text-hp-text">Assign to Amenity</span>
+                    <select name="amenity_id" id="checkInCompanionAmenity" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
                 </div>
 
                 <div id="checkInCompanionPoolWrap" class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
@@ -992,6 +1005,11 @@
                         </div>
                     </div>
 
+                    <div id="checkInBulkCompanionAmenityWrap" class="bulk-field mt-3 flex flex-col gap-1.5" style="display: none;">
+                        <span class="bulk-field__label text-[0.8rem] font-semibold uppercase tracking-[0.5px] text-hp-text-muted">Assign to Amenity</span>
+                        <select name="amenity_id" id="checkInBulkCompanionAmenity" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+                    </div>
+
                     <div id="checkInBulkCompanionPoolWrap" class="mt-4 flex flex-col gap-2 rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
@@ -1021,6 +1039,7 @@
 
     <script>
         window.staffReservationData = @json($reservationData ?? []);
+        window.ALL_AMENITIES = @json($allAmenities ?? []);
     </script>
 </body>
 </html>
