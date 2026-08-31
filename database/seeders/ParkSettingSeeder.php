@@ -18,19 +18,19 @@ class ParkSettingSeeder extends Seeder
             'email' => 'parkhinaguan@gmail.com',
 
             'opening_time' => '08:00:00',
-            'closing_time' => '18:00:00',
+            'closing_time' => '17:00:00',
 
-            'daytime_start' => '08:01:00',
-            'daytime_end' => '18:00:00',
-            'nighttime_start' => '18:01:00',
+            'daytime_start' => '08:00:00',
+            'daytime_end' => '17:00:00',
+            'nighttime_start' => '18:00:00',
             'nighttime_end' => '08:00:00',
 
             'daytime_adult_entrance_fee' => 20,
-            'daytime_child_entrance_fee' => 10,
+            'daytime_child_entrance_fee' => 0,
             'nighttime_adult_entrance_fee' => 50,
-            'nighttime_child_entrance_fee' => 20,
-            'day_pool_fee' => 70,
-            'night_pool_fee' => 100,
+            'nighttime_child_entrance_fee' => 0,
+            'day_pool_fee' => 50,
+            'night_pool_fee' => 70,
 
             'facebook_link' => null,
         ]);

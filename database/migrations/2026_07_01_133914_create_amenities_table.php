@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('nighttime_aircon_price')->nullable();
             $table->string('additional_per_head')->nullable();
             $table->string('minimum_capacity');
-            $table->string('maximum_capacity');
+            $table->string('maximum_capacity')->nullable();
             $table->string('description')->nullable();
             $table->string('image')->nullable();
             $table->boolean('status')->default(true); // true = enabled, false = disabled
