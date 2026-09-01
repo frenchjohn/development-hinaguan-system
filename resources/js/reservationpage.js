@@ -149,6 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const modal = document.getElementById('amenityModal');
 
+    const modalClose = document.querySelectorAll('[data-close-modal]');
+
     const cancelConfirmModal = document.getElementById('cancelConfirmModal');
 
     const gridSkeleton = document.getElementById('gridSkeleton');
@@ -2577,15 +2579,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateControls = document.getElementById('dateControlsSection');
         const slotControls = document.getElementById('slotControlsSection');
 
-        if (dateCta) {
-            dateCta.hidden = hasDate;
+        if (activeBookingFlow === 'amenity-first') {
+            if (dateCta) dateCta.hidden = true;
+            if (dateControls) dateControls.hidden = true;
+            if (slotControls) slotControls.hidden = true;
+            return;
         }
-        if (dateControls) {
-            dateControls.hidden = !hasDate;
+
+        if (activeBookingFlow === 'date-first') {
+            if (dateCta) {
+                dateCta.hidden = hasDate;
+            }
+            if (dateControls) {
+                dateControls.hidden = !hasDate;
+            }
+            if (slotControls) {
+                slotControls.hidden = !hasDate;
+            }
+            return;
         }
-        if (slotControls) {
-            slotControls.hidden = !hasDate;
-        }
+
+        if (dateCta) dateCta.hidden = true;
+        if (dateControls) dateControls.hidden = true;
+        if (slotControls) slotControls.hidden = true;
     };
 
     const closeDatePickerModal = () => {
@@ -3036,6 +3052,142 @@ document.addEventListener('DOMContentLoaded', () => {
         pickDateBtn.addEventListener('click', () => {
             openDatePickerModal();
         });
+    }
+
+    // ── Booking Flow Selector & Dual-Mode State ───────────────────────────
+    const bookingFlowStarter = document.getElementById('bookingFlowStarter');
+    const startFlowAmenityBtn = document.getElementById('startFlowAmenityBtn');
+    const startFlowDateBtn = document.getElementById('startFlowDateBtn');
+    const flowActiveNav = document.getElementById('flowActiveNav');
+    const flowBackBtn = document.getElementById('flowBackBtn');
+    const flowActiveStatusText = document.getElementById('flowActiveStatusText');
+    const mainBookingContent = document.getElementById('mainBookingContent');
+
+    let activeBookingFlow = 'starter'; // 'starter' | 'amenity-first' | 'date-first'
+
+    const resetReservationState = () => {
+        // 1. Reset Dates & Slots
+        if (dateInput) {
+            dateInput.value = '';
+        }
+        mainStartDate = null;
+        mainEndDate = null;
+        mainStartSlot = 'Daytime';
+        mainEndSlot = 'Daytime';
+        stayMode = 'single';
+        dpStayMode = 'single';
+        calendarStayMode = 'single';
+        dpRangeStart = null;
+        dpRangeEnd = null;
+        calendarRangeStart = null;
+        calendarRangeEnd = null;
+
+        if (reservationDateTrigger) {
+            reservationDateTrigger.textContent = 'Select date';
+        }
+        if (reservationDay) {
+            reservationDay.textContent = '';
+        }
+
+        setActiveSlot('Daytime');
+
+        const weatherPreview = document.getElementById('reservationWeatherPreview');
+        if (weatherPreview) weatherPreview.hidden = true;
+
+        // 2. Reset Multi-selection
+        setMultiSelection(false);
+        selectedCards = [];
+        multiSelectionChoices = {};
+        for (const k in amenityStayConfig) delete amenityStayConfig[k];
+
+        // 3. Reset Category & Filters
+        activeCategory = 'all';
+        categoryPills.forEach(p => p.classList.toggle('is-active', p.dataset.categoryFilter === 'all'));
+
+        if (filterType) filterType.value = 'all';
+        if (filterMin) { filterMin.value = ''; filterMin.disabled = true; }
+        if (filterMax) { filterMax.value = ''; filterMax.disabled = true; }
+
+        // 4. Close open modals
+        if (modal) { modal.classList.remove('is-open'); modal.setAttribute('aria-hidden', 'true'); }
+        if (datePickerModal) { datePickerModal.classList.remove('is-open'); datePickerModal.setAttribute('aria-hidden', 'true'); }
+        if (availabilityModal) { availabilityModal.classList.remove('is-open'); availabilityModal.setAttribute('aria-hidden', 'true'); }
+        if (selectionSheet) { selectionSheet.classList.remove('is-open'); }
+        updateOverlayScrollLock();
+
+        // 5. Re-apply fresh filters & date state
+        applyFilters();
+        syncDateSections();
+    };
+
+    const setBookingFlow = (flowName, options = { scroll: true, openPicker: true }) => {
+        activeBookingFlow = flowName;
+
+        if (flowName === 'starter') {
+            resetReservationState();
+            if (bookingFlowStarter) bookingFlowStarter.hidden = false;
+            if (flowActiveNav) flowActiveNav.hidden = true;
+            if (mainBookingContent) mainBookingContent.hidden = true;
+
+            if (options.scroll && bookingFlowStarter) {
+                bookingFlowStarter.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
+        }
+
+        if (bookingFlowStarter) bookingFlowStarter.hidden = true;
+        if (flowActiveNav) flowActiveNav.hidden = false;
+        if (mainBookingContent) mainBookingContent.hidden = false;
+
+        if (flowName === 'amenity-first') {
+            if (flowActiveStatusText) {
+                flowActiveStatusText.textContent = 'Browsing: Amenity Then Date';
+            }
+            syncDateSections();
+            if (options.scroll && flowActiveNav) {
+                flowActiveNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else if (flowName === 'date-first') {
+            if (flowActiveStatusText) {
+                flowActiveStatusText.textContent = 'Browsing: Date Then Amenity';
+            }
+            syncDateSections();
+            if (options.scroll && flowActiveNav) {
+                flowActiveNav.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            if (options.openPicker) {
+                window.setTimeout(() => {
+                    openDatePickerModal();
+                }, 150);
+            }
+        }
+    };
+
+    if (startFlowAmenityBtn) {
+        startFlowAmenityBtn.addEventListener('click', () => {
+            setBookingFlow('amenity-first');
+        });
+    }
+
+    if (startFlowDateBtn) {
+        startFlowDateBtn.addEventListener('click', () => {
+            setBookingFlow('date-first');
+        });
+    }
+
+    if (flowBackBtn) {
+        flowBackBtn.addEventListener('click', () => {
+            setBookingFlow('starter');
+        });
+    }
+
+    // Auto-detect preselected URL queries
+    if (preselectedAmenityId) {
+        setBookingFlow('amenity-first', { scroll: false, openPicker: false });
+    } else if (preselectedDate) {
+        setBookingFlow('date-first', { scroll: false, openPicker: false });
+    } else {
+        setBookingFlow('starter', { scroll: false, openPicker: false });
     }
 
     syncDateSections();

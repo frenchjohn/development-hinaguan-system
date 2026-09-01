@@ -506,6 +506,355 @@ html {
     transform: rotate(180deg);
 }
 
+/* ─────────────────────────── Booking Flow Starter (Starting Screen) ─────────────────────────── */
+
+.rp-starter {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.rp-starter[hidden] {
+    display: none !important;
+}
+
+.rp-starter__hero {
+    text-align: center;
+    max-width: 44rem;
+    margin: 0 auto;
+}
+
+.rp-starter__title {
+    margin: 0.3rem 0 0.6rem;
+    font-family: var(--rp-font-display);
+    font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+    color: #fff;
+    font-weight: 700;
+    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.rp-starter__desc {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rp-starter__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+    max-width: 58rem;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.rp-starter__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.2rem 2rem 2rem;
+    border-radius: 1.15rem;
+    background:
+        radial-gradient(80% 120% at 50% 0%, rgba(200, 164, 93, 0.15) 0%, rgba(200, 164, 93, 0) 70%),
+        linear-gradient(135deg, rgba(11, 36, 24, 0.88) 0%, rgba(18, 48, 33, 0.88) 100%);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(200, 164, 93, 0.32);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+}
+
+.rp-starter__card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(200, 164, 93, 0.65);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.5), 0 0 24px rgba(200, 164, 93, 0.25);
+}
+
+.rp-starter__card--amenity {
+    background:
+        radial-gradient(80% 120% at 100% 0%, rgba(52, 211, 153, 0.12) 0%, transparent 60%),
+        radial-gradient(80% 120% at 0% 100%, rgba(200, 164, 93, 0.14) 0%, transparent 60%),
+        linear-gradient(135deg, rgba(11, 36, 24, 0.92) 0%, rgba(14, 45, 30, 0.92) 100%);
+}
+
+.rp-starter__card--date {
+    background:
+        radial-gradient(80% 120% at 0% 0%, rgba(250, 204, 21, 0.14) 0%, transparent 60%),
+        radial-gradient(80% 120% at 100% 100%, rgba(200, 164, 93, 0.14) 0%, transparent 60%),
+        linear-gradient(135deg, rgba(11, 36, 24, 0.92) 0%, rgba(20, 52, 35, 0.92) 100%);
+}
+
+.rp-starter__card-badge {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(200, 164, 93, 0.18);
+    border: 1px solid rgba(200, 164, 93, 0.45);
+    color: var(--rp-gold-light);
+}
+
+.rp-starter__card-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.3), rgba(200, 164, 93, 0.1));
+    border: 1px solid rgba(200, 164, 93, 0.45);
+    color: var(--rp-gold-light);
+    margin-bottom: 1.25rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    transition: transform 0.3s ease;
+}
+
+.rp-starter__card:hover .rp-starter__card-icon {
+    transform: scale(1.08) rotate(3deg);
+}
+
+.rp-starter__card-icon svg {
+    width: 1.85rem;
+    height: 1.85rem;
+}
+
+.rp-starter__card-content h3 {
+    margin: 0 0 0.5rem;
+    font-family: var(--rp-font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.25;
+}
+
+.rp-starter__card-content p {
+    margin: 0 0 1.1rem;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.rp-starter__card-steps {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    display: grid;
+    gap: 0.55rem;
+}
+
+.rp-starter__card-steps li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 0.55rem;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.rp-starter__card-steps li span {
+    width: 1.35rem;
+    height: 1.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--rp-gold-light), var(--rp-gold-dark));
+    color: var(--rp-green-dark);
+    font-size: 0.72rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.rp-starter__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.85rem 1.6rem;
+    border-radius: 0.75rem;
+    font-family: var(--rp-font-body);
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    border: none;
+}
+
+.rp-starter__btn--amenity {
+    background: linear-gradient(135deg, var(--rp-gold-light), var(--rp-gold-dark));
+    color: var(--rp-green-dark);
+    box-shadow: 0 6px 20px rgba(200, 164, 93, 0.35);
+}
+
+.rp-starter__btn--amenity:hover {
+    background: linear-gradient(135deg, #e4c581, var(--rp-gold));
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(200, 164, 93, 0.45);
+}
+
+.rp-starter__btn--date {
+    background: linear-gradient(135deg, #fef08a, var(--rp-gold-light));
+    color: var(--rp-green-dark);
+    box-shadow: 0 6px 20px rgba(250, 204, 21, 0.35);
+}
+
+.rp-starter__btn--date:hover {
+    background: linear-gradient(135deg, #fffbeb, #fef08a);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(250, 204, 21, 0.45);
+}
+
+.rp-starter__btn svg {
+    transition: transform 0.25s ease;
+}
+
+.rp-starter__btn:hover svg {
+    transform: translateX(4px);
+}
+
+.rp-starter__how-to {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+/* ─────────────────────────── Active Flow Navigation Bar ─────────────────────────── */
+
+.rp-flow-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, rgba(11, 36, 24, 0.92) 0%, rgba(18, 48, 33, 0.92) 100%);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(200, 164, 93, 0.38);
+    border-radius: 0.85rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+    animation: rp-fade-in 0.3s ease;
+}
+
+.rp-flow-nav[hidden] {
+    display: none !important;
+}
+
+.rp-flow-nav__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    background: rgba(200, 164, 93, 0.15);
+    border: 1px solid rgba(200, 164, 93, 0.4);
+    color: var(--rp-gold-light);
+    font-family: var(--rp-font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    white-space: nowrap;
+}
+
+.rp-flow-nav__back:hover {
+    background: rgba(200, 164, 93, 0.28);
+    border-color: var(--rp-gold);
+    color: #fff;
+    transform: translateX(-2px);
+    box-shadow: 0 4px 14px rgba(200, 164, 93, 0.28);
+}
+
+.rp-flow-nav__back svg {
+    transition: transform 0.25s ease;
+}
+
+.rp-flow-nav__back:hover svg {
+    transform: translateX(-3px);
+}
+
+.rp-flow-nav__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.rp-flow-nav__dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+    animation: rp-pulse 2s infinite;
+}
+
+@keyframes rp-pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+/* ─────────────────────────── Main Booking Content Container ─────────────────────────── */
+
+.rp-booking-content {
+    display: flex;
+    flex-direction: column;
+    animation: rp-fade-in 0.35s ease;
+}
+
+.rp-booking-content[hidden] {
+    display: none !important;
+}
+
+@keyframes rp-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .rp-starter__cards {
+        grid-template-columns: 1fr;
+        gap: 1.15rem;
+    }
+
+    .rp-starter__card {
+        padding: 1.6rem 1.25rem 1.4rem;
+    }
+
+    .rp-flow-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.65rem;
+    }
+
+    .rp-flow-nav__back {
+        justify-content: center;
+    }
+
+    .rp-flow-nav__status {
+        justify-content: center;
+    }
+}
+
 .rp-steps {
     display: flex;
     flex-direction: column;

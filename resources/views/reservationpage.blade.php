@@ -261,127 +261,136 @@
 
 
 
-        {{-- ── How to book toggle button ── --}}
-        <div class="rp-steps-toggle-wrap" data-animate="fade-up" data-delay="80">
-            <button type="button" id="toggleStepsBtn" class="rp-steps-toggle-btn" aria-expanded="false" aria-controls="bookingSteps">
-                <span class="rp-steps-toggle-icon-wrap">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </span>
-                <span class="rp-steps-toggle-text" id="toggleStepsText">Show How to Book</span>
-                <span class="rp-steps-toggle-chevron">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                </span>
-            </button>
-        </div>
-
-        {{-- ── How booking works (two paths) ── --}}
-        <section class="rp-steps is-collapsed" id="bookingSteps" aria-label="How booking works" hidden>
-
-            <div class="rp-steps__head">
-
-                <span class="rp-label">Two ways to book</span>
-
-                <h2 class="rp-steps__title">Start wherever feels right</h2>
-
-                <p class="rp-steps__desc">Planning around a date, or already in love with a specific spot? Both routes lead to the same perfect day out.</p>
-
+        {{-- ── Starting Point / Booking Flow Selector ── --}}
+        <section class="rp-starter" id="bookingFlowStarter" data-animate="fade-up" data-delay="80">
+            <div class="rp-starter__hero">
+                <span class="rp-label">Reservation Guide</span>
+                <h2 class="rp-starter__title">How would you like to start?</h2>
+                <p class="rp-starter__desc">Choose your preferred path to book your visit at Hinaguan Nature Park.</p>
             </div>
 
-            <div class="rp-steps__paths">
-
-                <article class="rp-step rp-step--date">
-
-                    <span class="rp-step__badge">Path 1 &middot; Date first</span>
-
-                    <div class="rp-step__icon">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-
-                        </svg>
-
-                    </div>
-
-                    <h3>Know when you're going?</h3>
-
-                    <p>Pick your date first, then browse exactly which amenities are free that day.</p>
-
-                    <ol class="rp-step__list">
-
-                        <li><span>1</span> Choose your visit date</li>
-
-                        <li><span>2</span> Pick from what's available that day</li>
-
-                    </ol>
-
-                </article>
-
-                <article class="rp-step rp-step--amenity">
-
-                    <span class="rp-step__badge">Path 2 &middot; Amenity first</span>
-
-                    <div class="rp-step__icon">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
-
+            {{-- 2 Pathways Cards --}}
+            <div class="rp-starter__cards">
+                {{-- Choice A: Amenity Then Date --}}
+                <div class="rp-starter__card rp-starter__card--amenity" id="flowChoiceAmenity">
+                    <div class="rp-starter__card-badge">Option 1</div>
+                    <div class="rp-starter__card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-
                         </svg>
-
                     </div>
+                    <div class="rp-starter__card-content">
+                        <h3>Amenity Then Date</h3>
+                        <p>Browse cottages, A-houses, and function halls first, then choose your preferred visit date.</p>
+                        <ul class="rp-starter__card-steps">
+                            <li><span>1</span> Pick your favorite spot(s)</li>
+                            <li><span>2</span> Select available date</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="rp-starter__btn rp-starter__btn--amenity" id="startFlowAmenityBtn">
+                        <span>Browse Amenities</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
 
-                    <h3>Got a favorite spot?</h3>
-
-                    <p>Tap any amenity to open its availability calendar, then book it on a date that suits you.</p>
-
-                    <ol class="rp-step__list">
-
-                        <li><span>1</span> Pick your favorite amenity</li>
-
-                        <li><span>2</span> Choose an open date from its calendar</li>
-
-                    </ol>
-
-                </article>
-
+                {{-- Choice B: Date Then Amenity --}}
+                <div class="rp-starter__card rp-starter__card--date" id="flowChoiceDate">
+                    <div class="rp-starter__card-badge">Option 2</div>
+                    <div class="rp-starter__card-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="rp-starter__card-content">
+                        <h3>Date Then Amenity</h3>
+                        <p>Pick your planned visit date and time slot first to browse spots that are available on that day.</p>
+                        <ul class="rp-starter__card-steps">
+                            <li><span>1</span> Choose your visit date</li>
+                            <li><span>2</span> Pick from open amenities</li>
+                        </ul>
+                    </div>
+                    <button type="button" class="rp-starter__btn rp-starter__btn--date" id="startFlowDateBtn">
+                        <span>Select Date First</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
             </div>
 
-            <article class="rp-step rp-step--finish">
+            {{-- Optional detailed steps modal or expandable footer --}}
+            <div class="rp-starter__how-to">
+                <button type="button" id="toggleStepsBtn" class="rp-steps-toggle-btn" aria-expanded="false" aria-controls="bookingSteps">
+                    <span class="rp-steps-toggle-icon-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </span>
+                    <span class="rp-steps-toggle-text" id="toggleStepsText">Detailed Booking Guide</span>
+                    <span class="rp-steps-toggle-chevron">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
+                </button>
+            </div>
 
-                <div class="rp-step__icon">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
-
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-
-                    </svg>
-
+            {{-- ── How booking works detailed steps ── --}}
+            <div class="rp-steps is-collapsed" id="bookingSteps" aria-label="How booking works" hidden>
+                <div class="rp-steps__head">
+                    <span class="rp-label">Step-by-step</span>
+                    <h3 class="rp-steps__title">How our simple booking works</h3>
+                    <p class="rp-steps__desc">Both paths lead to the same effortless reservation in just a few minutes.</p>
                 </div>
-
-                <div class="rp-step__finish-copy">
-
-                    <h3>Confirm &amp; get your QR</h3>
-
-                    <p>Both paths end the same way — enter your details, pay a small deposit, and your QR code arrives by email for check-in.</p>
-
+                <div class="rp-steps__paths">
+                    <article class="rp-step rp-step--amenity">
+                        <span class="rp-step__badge">Amenity &rarr; Date</span>
+                        <div class="rp-step__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        </div>
+                        <h3>Explore Spot First</h3>
+                        <p>Browse all cottages, compare capacity & rates, then check live dates on its availability calendar.</p>
+                    </article>
+                    <article class="rp-step rp-step--date">
+                        <span class="rp-step__badge">Date &rarr; Amenity</span>
+                        <div class="rp-step__icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </div>
+                        <h3>Pick Schedule First</h3>
+                        <p>Pick your trip date and time slot (Daytime, Nighttime, or Whole Day), and see all spots open for that day.</p>
+                    </article>
                 </div>
-
-                <span class="rp-step__finish-num" aria-hidden="true">&#10003;</span>
-
-            </article>
-
+                <article class="rp-step rp-step--finish">
+                    <div class="rp-step__icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="rp-step__finish-copy">
+                        <h3>Confirm &amp; Instant QR Pass</h3>
+                        <p>Pay a 50% deposit via PayMongo (GCash / Cards / Maya) and receive your official entry QR pass by email.</p>
+                    </div>
+                    <span class="rp-step__finish-num" aria-hidden="true">&#10003;</span>
+                </article>
+            </div>
         </section>
 
+        {{-- ── Active Flow Top Navigation Bar (with Go Back button) ── --}}
+        <div class="rp-flow-nav" id="flowActiveNav" hidden>
+            <button type="button" class="rp-flow-nav__back" id="flowBackBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Go Back to Starting Choices</span>
+            </button>
+            <div class="rp-flow-nav__status">
+                <span class="rp-flow-nav__dot"></span>
+                <span id="flowActiveStatusText">Browsing: Amenity Then Date</span>
+            </div>
+        </div>
 
+        {{-- ── Main Booking Content Container (revealed when flow is chosen) ── --}}
+        <div class="rp-booking-content" id="mainBookingContent" hidden>
 
-        {{-- ── Date selection CTA (compact banner) ── --}}
+            {{-- ── Date selection CTA (compact banner) ── --}}
 
-        <section class="rp-date-cta" data-animate="fade-up" data-delay="100" id="dateCtaSection">
+            <section class="rp-date-cta" data-animate="fade-up" data-delay="100" id="dateCtaSection">
 
             <div class="rp-date-cta__inner">
 
@@ -809,6 +818,8 @@
             @endif
 
         </section>
+
+        </div> {{-- ── End #mainBookingContent ── --}}
 
 
 
