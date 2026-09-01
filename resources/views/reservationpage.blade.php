@@ -261,9 +261,25 @@
 
 
 
-        {{-- ── How booking works (two paths) ── --}}
+        {{-- ── How to book toggle button ── --}}
+        <div class="rp-steps-toggle-wrap" data-animate="fade-up" data-delay="80">
+            <button type="button" id="toggleStepsBtn" class="rp-steps-toggle-btn" aria-expanded="false" aria-controls="bookingSteps">
+                <span class="rp-steps-toggle-icon-wrap">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+                <span class="rp-steps-toggle-text" id="toggleStepsText">Show How to Book</span>
+                <span class="rp-steps-toggle-chevron">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </span>
+            </button>
+        </div>
 
-        <section class="rp-steps" id="bookingSteps" data-animate="fade-up" data-delay="100" aria-label="How booking works">
+        {{-- ── How booking works (two paths) ── --}}
+        <section class="rp-steps is-collapsed" id="bookingSteps" aria-label="How booking works" hidden>
 
             <div class="rp-steps__head">
 
@@ -363,39 +379,49 @@
 
 
 
-        {{-- ── Date selection CTA ── --}}
+        {{-- ── Date selection CTA (compact banner) ── --}}
 
         <section class="rp-date-cta" data-animate="fade-up" data-delay="100" id="dateCtaSection">
 
-            <div class="rp-date-cta__content">
+            <div class="rp-date-cta__inner">
 
-                <span class="rp-date-cta__icon">
+                <div class="rp-date-cta__left">
 
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <span class="rp-date-cta__icon" aria-hidden="true">
 
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 
-                    </svg>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
 
-                </span>
+                        </svg>
 
-                <h2>Ready to reserve?</h2>
+                    </span>
 
-                <p>Start by picking the date you want to visit — it only takes a few seconds.</p>
+                    <div class="rp-date-cta__text">
 
-                <button type="button" id="pickDateBtn" class="rp-date-cta__button">
+                        <h2>Ready to reserve?</h2>
 
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <p>Pick your visit date first to browse available spots, or tap any amenity below.</p>
 
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </div>
 
-                    </svg>
+                </div>
 
-                    Pick a Date
+                <div class="rp-date-cta__action">
 
-                </button>
+                    <button type="button" id="pickDateBtn" class="rp-date-cta__button">
 
-                <p class="rp-date-cta__hint">Daytime &amp; overnight bookings are limited each day — early booking is recommended.</p>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+
+                        </svg>
+
+                        <span>Pick a Date</span>
+
+                    </button>
+
+                </div>
 
             </div>
 
@@ -487,63 +513,9 @@
 
 
 
-        {{-- ── Filters & multi-select ── --}}
-
-        <section class="rp-subfilters" data-animate="fade-up" data-delay="200">
-
-            <div class="rp-subfilters__control">
-
-                <label for="filterType">Filter by</label>
-
-                <div class="rp-select-wrap">
-
-                    <select id="filterType">
-
-                        <option value="all">All amenities</option>
-
-                        <option value="capacity">Capacity range</option>
-
-                        <option value="price">Price range</option>
-
-                    </select>
-
-                </div>
-
-            </div>
-
-            <div class="rp-subfilters__control">
-
-                <label for="filterMin">Minimum</label>
-
-                <input id="filterMin" type="number" min="0" placeholder="Min" disabled>
-
-            </div>
-
-            <div class="rp-subfilters__control">
-
-                <label for="filterMax">Maximum</label>
-
-                <input id="filterMax" type="number" min="0" placeholder="Max" disabled>
-
-            </div>
-
-            <label class="rp-multi-toggle" for="multiSelectionToggle">
-
-                <input id="multiSelectionToggle" type="checkbox">
-
-                <span class="rp-multi-toggle__track" aria-hidden="true"><span class="rp-multi-toggle__thumb"></span></span>
-
-                <span class="rp-multi-toggle__label">Multiple selection</span>
-
-            </label>
-
-        </section>
-
-
-
         {{-- ── Amenity grid ── --}}
 
-        <section class="rp-grid" id="reservationGridShell" data-animate="fade-up" data-delay="250">
+        <section class="rp-grid" id="reservationGridShell" data-animate="fade-up" data-delay="200">
 
             {{-- Section heading --}}
 
@@ -558,6 +530,98 @@
                 </div>
 
                 <p class="rp-grid__sub">Tap an amenity to see its calendar and rates, or start with a date above.</p>
+
+            </div>
+
+            {{-- ── Filters & multi-select (below Choose your spot) ── --}}
+
+            <div class="rp-subfilters" id="amenitySubfilters">
+
+                <div class="rp-subfilters__group">
+
+                    <div class="rp-subfilters__control">
+
+                        <label for="filterType">Filter by</label>
+
+                        <div class="rp-select-wrap">
+
+                            <select id="filterType">
+
+                                <option value="all">All amenities</option>
+
+                                <option value="capacity">Capacity range</option>
+
+                                <option value="price">Price range</option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="rp-subfilters__control">
+
+                        <label for="filterMin">Minimum</label>
+
+                        <input id="filterMin" type="number" min="0" placeholder="Min" disabled>
+
+                    </div>
+
+                    <div class="rp-subfilters__control">
+
+                        <label for="filterMax">Maximum</label>
+
+                        <input id="filterMax" type="number" min="0" placeholder="Max" disabled>
+
+                    </div>
+
+                </div>
+
+                <div class="rp-subfilters__multi-wrap">
+
+                    {{-- Floating Speech Bubble Tooltip pointing down at switch --}}
+                    <div class="rp-multi-tooltip" id="multiSelectionHint" role="tooltip">
+
+                        <span class="rp-multi-tooltip__icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+
+                        <span class="rp-multi-tooltip__text">To book more than 1 amenity, activate this switch</span>
+
+                        <span class="rp-multi-tooltip__caret" aria-hidden="true"></span>
+
+                    </div>
+
+                    {{-- Premium Multi-Select Switch Button --}}
+                    <button type="button" class="rp-multi-toggle" id="multiSelectionToggleBtn" role="switch" aria-checked="false" title="Activate to select and book multiple amenities together">
+
+                        <span class="rp-multi-toggle__icon" aria-hidden="true">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+
+                            </svg>
+
+                        </span>
+
+                        <div class="rp-multi-toggle__text">
+
+                            <span class="rp-multi-toggle__label">Multiple selection</span>
+
+                            <span class="rp-multi-toggle__state" id="multiSelectionState">OFF</span>
+
+                        </div>
+
+                        <span class="rp-multi-toggle__track" aria-hidden="true"><span class="rp-multi-toggle__thumb"></span></span>
+
+                        <input id="multiSelectionToggle" type="checkbox" style="display:none;" aria-hidden="true">
+
+                    </button>
+
+                </div>
 
             </div>
 
@@ -611,124 +675,135 @@
 
             @else
 
-                <div class="rp-grid__list" id="amenityGrid">
+                @php
+                    $getCategoryName = function($name) {
+                        $trimmed = trim((string) $name);
+                        $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+                        if (empty($base)) {
+                            $base = $trimmed;
+                        }
+                        if (preg_match('/s$/i', $base)) {
+                            return $base;
+                        }
+                        if (preg_match('/(sh|ch|x|z)$/i', $base)) {
+                            return $base . 'es';
+                        }
+                        if (preg_match('/[^aeiou]y$/i', $base)) {
+                            return substr($base, 0, -1) . 'ies';
+                        }
+                        return $base . 's';
+                    };
 
-                    @foreach($amenities as $index => $amenity)
+                    $categories = $amenities->groupBy(function($amenity) use ($getCategoryName) {
+                        return $getCategoryName($amenity->amenities_name);
+                    });
+                @endphp
 
-                        @php
-
-                            $minPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->min();
-
-                            $maxPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->max();
-
-                            $hasSale = $amenity->sale_percentage && $amenity->sale_percentage > 0;
-
-                        @endphp
-
-                        <article class="rp-card"
-
-                            data-animate="fade-up"
-
-                            data-delay="{{ min($index * 60, 360) }}"
-
-                            data-amenity-id="{{ $amenity->id }}"
-
-                            data-name="{{ $amenity->amenities_name }}"
-
-                            data-min-capacity="{{ $amenity->minimum_capacity }}"
-
-                            data-max-capacity="{{ $amenity->maximum_capacity }}"
-
-                            data-min-price="{{ $minPrice }}"
-
-                            data-max-price="{{ $maxPrice }}"
-
-                            data-daytime-price="{{ $amenity->daytime_price }}"
-
-                            data-nighttime-price="{{ $amenity->nighttime_price }}"
-
-                            data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ?? '' }}"
-
-                            data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ?? '' }}"
-
-                            data-has-aircon="{{ (!empty($amenity->daytime_aircon_price) || !empty($amenity->nighttime_aircon_price)) ? '1' : '0' }}"
-
-                            data-additional="{{ $amenity->additional_per_head ?? '0' }}"
-
-                            data-description="{{ $amenity->description ?? '' }}"
-
-                            data-sale-percentage="{{ $amenity->sale_percentage ?? 0 }}"
-
-                            data-original-daytime-price="{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}"
-
-                            data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}"
-
-                            data-original-daytime-aircon-price="{{ $amenity->original_daytime_aircon_price ?? $amenity->daytime_aircon_price }}"
-
-                            data-original-nighttime-aircon-price="{{ $amenity->original_nighttime_aircon_price ?? $amenity->nighttime_aircon_price }}">
-
-                            <button type="button" class="rp-card__button" data-open-modal>
-
-                                @if($amenity->image)
-
-                                    <div class="rp-card__image" style="background-image:url('{{ asset('storage/' . $amenity->image) }}')"></div>
-
-                                @else
-
-                                    <div class="rp-card__image rp-card__image--empty"></div>
-
-                                @endif
-
-                                <div class="rp-card__chips">
-
-                                    <span class="rp-card__chip rp-card__chip--capacity">
-
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-
-                                        {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
-
-                                    </span>
-
-                                    @if($minPrice)
-
-                                        <span class="rp-card__chip rp-card__chip--price">
-
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-
-                                            from &#8369;{{ number_format($minPrice) }}
-
-                                        </span>
-
-                                    @endif
-
-                                </div>
-
-                                @if($hasSale)
-
-                                    <div class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</div>
-
-                                @endif
-
-                                <div class="rp-card__overlay">
-
-                                    <span>{{ $amenity->amenities_name }}</span>
-
-                                </div>
-
-                                <span class="rp-card__cta">View &amp; Book</span>
-
+                {{-- Category Filter Quick Pills (if more than 1 category) --}}
+                @if($categories->count() > 1)
+                    <div class="rp-category-nav" id="categoryNav">
+                        <button type="button" class="rp-category-pill is-active" data-category-filter="all">
+                            <span>All Amenities</span>
+                            <small>({{ $amenities->count() }})</small>
+                        </button>
+                        @foreach($categories as $categoryName => $groupAmenities)
+                            <button type="button" class="rp-category-pill" data-category-filter="{{ $categoryName }}">
+                                <span>{{ $categoryName }}</span>
+                                <small>({{ $groupAmenities->count() }})</small>
                             </button>
+                        @endforeach
+                    </div>
+                @endif
 
-                        </article>
+                <div class="rp-grid__categories" id="amenityGrid">
+                    @php $cardIndex = 0; @endphp
+                    @foreach($categories as $categoryName => $categoryAmenities)
+                        <div class="rp-category-group" data-category="{{ $categoryName }}">
+                            <div class="rp-category-header">
+                                <div class="rp-category-title-wrap">
+                                    <span class="rp-category-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                        </svg>
+                                    </span>
+                                    <h3 class="rp-category-title">{{ $categoryName }}:</h3>
+                                    <span class="rp-category-badge">{{ $categoryAmenities->count() }} {{ \Illuminate\Support\Str::plural('unit', $categoryAmenities->count()) }}</span>
+                                </div>
+                                <div class="rp-category-line"></div>
+                            </div>
 
+                            <div class="rp-grid__list">
+                                @foreach($categoryAmenities as $amenity)
+                                    @php
+                                        $minPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->min();
+                                        $maxPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->max();
+                                        $hasSale = $amenity->sale_percentage && $amenity->sale_percentage > 0;
+                                        $cardIndex++;
+                                    @endphp
+
+                                    <article class="rp-card"
+                                        data-animate="fade-up"
+                                        data-delay="{{ min($cardIndex * 50, 360) }}"
+                                        data-amenity-id="{{ $amenity->id }}"
+                                        data-name="{{ $amenity->amenities_name }}"
+                                        data-category="{{ $categoryName }}"
+                                        data-min-capacity="{{ $amenity->minimum_capacity }}"
+                                        data-max-capacity="{{ $amenity->maximum_capacity }}"
+                                        data-min-price="{{ $minPrice }}"
+                                        data-max-price="{{ $maxPrice }}"
+                                        data-daytime-price="{{ $amenity->daytime_price }}"
+                                        data-nighttime-price="{{ $amenity->nighttime_price }}"
+                                        data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ?? '' }}"
+                                        data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ?? '' }}"
+                                        data-has-aircon="{{ (!empty($amenity->daytime_aircon_price) || !empty($amenity->nighttime_aircon_price)) ? '1' : '0' }}"
+                                        data-additional="{{ $amenity->additional_per_head ?? '0' }}"
+                                        data-description="{{ $amenity->description ?? '' }}"
+                                        data-sale-percentage="{{ $amenity->sale_percentage ?? 0 }}"
+                                        data-original-daytime-price="{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}"
+                                        data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}"
+                                        data-original-daytime-aircon-price="{{ $amenity->original_daytime_aircon_price ?? $amenity->daytime_aircon_price }}"
+                                        data-original-nighttime-aircon-price="{{ $amenity->original_nighttime_aircon_price ?? $amenity->nighttime_aircon_price }}">
+
+                                        <button type="button" class="rp-card__button" data-open-modal>
+                                            @if($amenity->image)
+                                                <div class="rp-card__image" style="background-image:url('{{ asset('storage/' . $amenity->image) }}')"></div>
+                                            @else
+                                                <div class="rp-card__image rp-card__image--empty"></div>
+                                            @endif
+
+                                            <div class="rp-card__chips">
+                                                <span class="rp-card__chip rp-card__chip--capacity">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                    {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
+                                                </span>
+
+                                                @if($minPrice)
+                                                    <span class="rp-card__chip rp-card__chip--price">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                        from &#8369;{{ number_format($minPrice) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            @if($hasSale)
+                                                <div class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</div>
+                                            @endif
+
+                                            <div class="rp-card__overlay">
+                                                <span>{{ $amenity->amenities_name }}</span>
+                                            </div>
+
+                                            <span class="rp-card__cta">View &amp; Book</span>
+                                        </button>
+                                    </article>
+                                @endforeach
+                            </div>
+                        </div>
                     @endforeach
-
                 </div>
 
                 <div class="rp-empty" id="emptyState" style="display:none;">
-
                     <p>No amenities are available for the selected date and booking type.</p>
-
                 </div>
 
             @endif

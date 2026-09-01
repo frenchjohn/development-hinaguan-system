@@ -157,9 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const reservationDateTrigger = document.getElementById('reservationDateTrigger');
 
-    const modalClose = document.querySelectorAll('[data-close-modal]');
-
     const multiSelectionToggle = document.getElementById('multiSelectionToggle');
+
+    const multiSelectionToggleBtn = document.getElementById('multiSelectionToggleBtn');
 
     const selectionFloatingBar = document.getElementById('selectionFloatingBar');
 
@@ -1135,13 +1135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderAvailabilityCalendar = () => {
         if (!availabilityCalendar || !calendarAmenityId) return;
 
-        availabilityCalendar.innerHTML = '';
+        const fragment = document.createDocumentFragment();
 
         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((weekday) => {
             const label = document.createElement('span');
             label.className = 'rp-calendar__weekday';
             label.textContent = weekday;
-            availabilityCalendar.appendChild(label);
+            fragment.appendChild(label);
         });
 
         const calendarMonthSelect = document.getElementById('calendarMonth');
@@ -1166,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const spacer = document.createElement('span');
             spacer.className = 'rp-calendar__day rp-calendar__day--empty';
             spacer.setAttribute('aria-hidden', 'true');
-            availabilityCalendar.appendChild(spacer);
+            fragment.appendChild(spacer);
         }
 
         const today = new Date();
@@ -1331,7 +1331,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return dayButton;
         });
 
-        days.forEach((day) => availabilityCalendar.appendChild(day));
+        days.forEach((day) => fragment.appendChild(day));
+        availabilityCalendar.replaceChildren(fragment);
     };
 
 
@@ -1351,6 +1352,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+
+    // Toggle "How to Book" section
+    const toggleStepsBtn = document.getElementById('toggleStepsBtn');
+    const toggleStepsText = document.getElementById('toggleStepsText');
+    const bookingSteps = document.getElementById('bookingSteps');
+
+    if (toggleStepsBtn && bookingSteps) {
+        toggleStepsBtn.addEventListener('click', () => {
+            const isHidden = bookingSteps.hasAttribute('hidden');
+            if (isHidden) {
+                bookingSteps.removeAttribute('hidden');
+                bookingSteps.classList.add('is-open');
+                toggleStepsBtn.classList.add('is-active');
+                toggleStepsBtn.setAttribute('aria-expanded', 'true');
+                if (toggleStepsText) toggleStepsText.textContent = 'Hide How to Book';
+            } else {
+                bookingSteps.setAttribute('hidden', '');
+                bookingSteps.classList.remove('is-open');
+                toggleStepsBtn.classList.remove('is-active');
+                toggleStepsBtn.setAttribute('aria-expanded', 'false');
+                if (toggleStepsText) toggleStepsText.textContent = 'Show How to Book';
+            }
+        });
+    }
+
+    let activeCategory = 'all';
+
+    const categoryPills = document.querySelectorAll('.rp-category-pill');
+    categoryPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            categoryPills.forEach(p => p.classList.remove('is-active'));
+            pill.classList.add('is-active');
+            activeCategory = pill.dataset.categoryFilter || 'all';
+            applyFilters();
+        });
+    });
 
     const applyFilters = () => {
 
@@ -1398,9 +1435,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             }
 
+            const categoryMatch = (activeCategory === 'all') || (card.dataset.category === activeCategory);
 
-
-            const visible = filterMatch;
+            const visible = filterMatch && categoryMatch;
 
             const isBooked = !slotMatch;
 
@@ -1426,11 +1463,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         });
 
-
+        // Toggle category group containers based on whether they have visible cards
+        document.querySelectorAll('.rp-category-group').forEach(group => {
+            const groupCards = group.querySelectorAll('.rp-card');
+            const hasVisible = Array.from(groupCards).some(c => c.style.display !== 'none');
+            group.style.display = hasVisible ? '' : 'none';
+        });
 
         if (grid) {
 
-            grid.style.display = visibleCount > 0 ? 'grid' : 'none';
+            grid.style.display = visibleCount > 0 ? '' : 'none';
 
         }
 
@@ -2529,11 +2571,29 @@ document.addEventListener('DOMContentLoaded', () => {
         updateOverlayScrollLock();
     };
 
+    const syncDateSections = () => {
+        const hasDate = Boolean(dateInput && dateInput.value);
+        const dateCta = document.getElementById('dateCtaSection');
+        const dateControls = document.getElementById('dateControlsSection');
+        const slotControls = document.getElementById('slotControlsSection');
+
+        if (dateCta) {
+            dateCta.hidden = hasDate;
+        }
+        if (dateControls) {
+            dateControls.hidden = !hasDate;
+        }
+        if (slotControls) {
+            slotControls.hidden = !hasDate;
+        }
+    };
+
     const closeDatePickerModal = () => {
         if (!datePickerModal) return;
         datePickerModal.classList.remove('is-open');
         datePickerModal.setAttribute('aria-hidden', 'true');
         updateOverlayScrollLock();
+        syncDateSections();
     };
 
     const renderDatePickerDays = () => {
@@ -2547,13 +2607,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
 
-        datePickerDays.innerHTML = '';
+        const fragment = document.createDocumentFragment();
 
         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach((weekday) => {
             const label = document.createElement('span');
             label.className = 'rp-calendar__weekday';
             label.textContent = weekday;
-            datePickerDays.appendChild(label);
+            fragment.appendChild(label);
         });
 
         for (let i = 0; i < firstDayOfMonth; i++) {
@@ -2561,7 +2621,7 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyCell.type = 'button';
             emptyCell.className = 'rp-calendar__day rp-calendar__day--empty';
             emptyCell.disabled = true;
-            datePickerDays.appendChild(emptyCell);
+            fragment.appendChild(emptyCell);
         }
 
         updateModalSlotButtonsForDate();
@@ -2756,7 +2816,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return dayButton;
         });
 
-        days.forEach(day => datePickerDays.appendChild(day));
+        days.forEach(day => fragment.appendChild(day));
+        datePickerDays.replaceChildren(fragment);
     };
 
     // Event listeners for date picker
@@ -2923,15 +2984,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    if (multiSelectionToggle) {
+    const setMultiSelection = (enabled) => {
+        multiSelectionEnabled = enabled;
+        if (multiSelectionToggle) multiSelectionToggle.checked = enabled;
+        const toggleBtn = document.getElementById('multiSelectionToggleBtn');
+        const multiSelectionHint = document.getElementById('multiSelectionHint');
+        const multiSelectionState = document.getElementById('multiSelectionState');
+
+        if (toggleBtn) {
+            toggleBtn.classList.toggle('is-active', multiSelectionEnabled);
+            toggleBtn.setAttribute('aria-checked', String(multiSelectionEnabled));
+        }
+        if (multiSelectionHint) {
+            multiSelectionHint.classList.toggle('is-hidden', multiSelectionEnabled);
+        }
+        if (multiSelectionState) {
+            multiSelectionState.textContent = multiSelectionEnabled ? 'ACTIVE' : 'OFF';
+        }
+
+        if (!multiSelectionEnabled) {
+            selectedCards = [];
+            multiSelectionChoices = {};
+            for (const k in amenityStayConfig) delete amenityStayConfig[k];
+        }
+        updateSelectionUi();
+    };
+
+    if (multiSelectionToggleBtn) {
+        multiSelectionToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            setMultiSelection(!multiSelectionEnabled);
+        });
+    } else if (multiSelectionToggle) {
         multiSelectionToggle.addEventListener('change', () => {
-            multiSelectionEnabled = multiSelectionToggle.checked;
-            if (!multiSelectionEnabled) {
-                selectedCards = [];
-                multiSelectionChoices = {};
-                for (const k in amenityStayConfig) delete amenityStayConfig[k];
-            }
-            updateSelectionUi();
+            setMultiSelection(multiSelectionToggle.checked);
         });
     }
 
@@ -2945,24 +3031,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle "Pick a Date" CTA button
     const pickDateBtn = document.getElementById('pickDateBtn');
-    const dateCtaSection = document.getElementById('dateCtaSection');
-    const dateControlsSection = document.getElementById('dateControlsSection');
-    const slotControlsSection = document.getElementById('slotControlsSection');
 
     if (pickDateBtn) {
         pickDateBtn.addEventListener('click', () => {
-            if (dateCtaSection) {
-                dateCtaSection.hidden = true;
-            }
-            if (dateControlsSection) {
-                dateControlsSection.hidden = false;
-            }
-            if (slotControlsSection) {
-                slotControlsSection.hidden = true;
-            }
             openDatePickerModal();
         });
     }
+
+    syncDateSections();
 
     document.querySelectorAll('[data-open-modal]').forEach(button => {
         button.addEventListener('click', (e) => {
