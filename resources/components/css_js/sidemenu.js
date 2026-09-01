@@ -580,7 +580,7 @@ window.addEventListener('DOMContentLoaded', function () {
         toast = document.createElement('div');
         toast.id = 'spaPrepareToast';
         toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;align-items:center;gap:8px;background:rgba(13,44,29,0.92);backdrop-filter:blur(10px);color:#f5f5f0;font:600 12px/1.4 "Poppins",system-ui,sans-serif;padding:8px 16px;border-radius:999px;box-shadow:0 4px 20px rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.15);opacity:0;transition:opacity .3s cubic-bezier(0.4,0,0.2,1),transform .3s cubic-bezier(0.4,0,0.2,1);transform:translateY(10px);pointer-events:none;';
-        
+
         toast.innerHTML = `
             <span id="spaPrepareIcon" style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;">
                 <span style="width:10px;height:10px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;animation:spaSpin 0.7s linear infinite;"></span>

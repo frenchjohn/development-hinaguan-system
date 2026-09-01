@@ -330,10 +330,22 @@
 						foreach ($activeReservations ?? [] as $res) {
 							$poolRevenueToday += (float) ($res->entranceFee?->pool_fee ?? 0);
 						}
-
 						$totalActiveGuests = $activeCustomers->count();
 						$poolAccessPct = $totalActiveGuests > 0 ? round(($activeGuestsWithPool / $totalActiveGuests) * 100) : 0;
 						$noPoolAccessPct = 100 - $poolAccessPct;
+					@endphp
+					@php
+						$hasAnyReservationAmenityDue = false;
+						foreach ($activeReservations ?? [] as $r) {
+							$rAmenities = $reservationData[$r->id]['reservation_amenities'] ?? [];
+							foreach ($rAmenities as $raData) {
+								if (($raData['status'] ?? '') === 'Completed') continue;
+								if (!empty($raData['checkout_at']) && \Carbon\Carbon::parse($raData['checkout_at'])->isPast()) {
+									$hasAnyReservationAmenityDue = true;
+									break 2;
+								}
+							}
+						}
 					@endphp
 
 					<!-- MASTER TABS -->
@@ -346,6 +358,9 @@
 							<button type="button" class="checkins-tab" data-tab-target="reservation" role="tab" aria-selected="false">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
 								<span>Reservations</span>
+								@if($hasAnyReservationAmenityDue || ($resSummaryCheckoutDue ?? 0) > 0)
+									<span class="master-resv-due-dot inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Reservations have checkouts due"></span>
+								@endif
 							</button>
 							<button type="button" class="checkins-tab" data-tab-target="dashboard" role="tab" aria-selected="false">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
@@ -1356,6 +1371,23 @@
 										}
 										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
 
+										// Check if any individual amenity is past its checkout time
+										$resAmenitiesData = $reservationData[$reservation->id]['reservation_amenities'] ?? [];
+										$hasAmenityDue = false;
+										$amenityCheckoutTimes = [];
+										foreach ($resAmenitiesData as $raData) {
+											if (($raData['status'] ?? '') === 'Completed') continue;
+											if (!empty($raData['checkout_at'])) {
+												$amenityCheckoutTimes[] = $raData['checkout_at'];
+												if (\Carbon\Carbon::parse($raData['checkout_at'])->isPast()) {
+													$hasAmenityDue = true;
+												}
+											}
+										}
+
+										// Only flag specific amenity due if the entire reservation stay is NOT already due for checkout
+										$isSpecificAmenityDue = $hasAmenityDue && !$checkoutDue;
+
 										$totalResGuests = $reservation->reservationGuests->count();
 										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
 									@endphp
@@ -1365,6 +1397,7 @@
 										data-reservation-type="{{ $reservation->reservation_type }}"
 										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
 										data-reservation-search="{{ strtolower(trim($reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
+										data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"
 										tabindex="0"
 										role="button"
 										aria-label="View reservation {{ $reservation->id }}"
@@ -1375,7 +1408,12 @@
 													<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 												</button>
 												<div>
-													<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">#{{ $reservation->id }}</div>
+													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
+														<span>#{{ $reservation->id }}</span>
+														@if($isSpecificAmenityDue)
+															<span class="amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
+														@endif
+													</div>
 													<div class="guest-meta mt-0.5 flex items-center gap-1 text-[0.72rem] leading-tight text-hp-text-muted">
 														<span>{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</span>
 														@if ($isMixedTime)
@@ -1416,7 +1454,12 @@
 															@elseif($primaryHasPool)
 																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
 															@elseif($resHasAmenity)
-																<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked"><i class="bi bi-house-door-fill"></i> Amenity</span>
+																<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">
+																	<i class="bi bi-house-door-fill"></i> Amenity
+																	@if($isSpecificAmenityDue)
+																		<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" title="Specific amenity time to checkout"></span>
+																	@endif
+																</span>
 															@endif
 														</div>
 													</div>
@@ -1433,14 +1476,26 @@
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
-											<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
+											<div class="flex items-center gap-1.5">
+												<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
+												@if($isSpecificAmenityDue)
+													<span class="amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
+												@endif
+											</div>
 										</td>
 										<td>
 											<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $totalResGuests }} Total</div>
 											<div class="guest-meta mt-0.5 text-[0.72rem] leading-tight text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
 										</td>
 										<td>
-											<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+											<div class="flex items-center gap-1.5 flex-wrap">
+												<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+												@if($isSpecificAmenityDue)
+													<span class="amenity-due-status-pill inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[0.65rem] font-bold text-red-600 dark:text-red-400 shadow-2xs" title="One or more specific amenities are time to checkout">
+														<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> Amenity Due
+													</span>
+												@endif
+											</div>
 										</td>
 										<td class="text-right text-[#9ca3af]">
 											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>

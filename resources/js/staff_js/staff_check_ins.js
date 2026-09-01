@@ -253,6 +253,95 @@ window.AppPage['staff_check_ins'] = function () {
                 }
             }
         });
+
+        // Dynamic update of amenity due red dots on reservation table rows
+        document.querySelectorAll('tr.reservation-row').forEach(row => {
+            const rawTimes = row.dataset.amenityCheckoutTimes;
+            if (!rawTimes) return;
+            const times = rawTimes.split(',').map(t => t.trim()).filter(Boolean);
+            const now = Date.now();
+            const isAnyAmenityDue = times.some(t => {
+                const target = new Date(t).getTime();
+                return !Number.isNaN(target) && target <= now;
+            });
+
+            // Check if the entire reservation stay itself is already due for checkout
+            const resCheckoutEl = row.querySelector('.table-time-left');
+            const resCheckoutAt = resCheckoutEl ? resCheckoutEl.dataset.checkoutAt : '';
+            const resTarget = resCheckoutAt ? new Date(resCheckoutAt).getTime() : NaN;
+            const isReservationItselfDue = !Number.isNaN(resTarget) && resTarget <= now;
+
+            // Only show specific amenity due alert if the reservation stay itself is NOT already due
+            const shouldShowAmenityDue = isAnyAmenityDue && !isReservationItselfDue;
+
+            const existingDots = row.querySelectorAll('.amenity-due-dot, .amenity-due-status-pill');
+            if (shouldShowAmenityDue) {
+                if (existingDots.length === 0) {
+                    const idWrap = row.querySelector('td:first-child .guest-name');
+                    if (idWrap && !idWrap.querySelector('.amenity-due-dot')) {
+                        const dot = document.createElement('span');
+                        dot.className = 'amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse';
+                        dot.title = 'A specific amenity in this reservation is due for checkout';
+                        idWrap.appendChild(dot);
+                    }
+                    const amWrap = row.querySelector('td:nth-child(4) .flex');
+                    if (amWrap && !amWrap.querySelector('.amenity-due-dot')) {
+                        const dot = document.createElement('span');
+                        dot.className = 'amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse';
+                        dot.title = 'A specific amenity in this reservation is due for checkout';
+                        amWrap.appendChild(dot);
+                    }
+                    const statusWrap = row.querySelector('td:nth-child(6) .flex');
+                    if (statusWrap && !statusWrap.querySelector('.amenity-due-status-pill')) {
+                        const pill = document.createElement('span');
+                        pill.className = 'amenity-due-status-pill inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[0.65rem] font-bold text-red-600 dark:text-red-400 shadow-2xs';
+                        pill.title = 'One or more specific amenities are time to checkout';
+                        pill.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> Amenity Due';
+                        statusWrap.appendChild(pill);
+                    }
+                }
+            } else {
+                existingDots.forEach(d => d.remove());
+            }
+        });
+
+        // Dynamic update of amenity tab button red dot in open modal
+        const modalAmenityTabBtn = document.querySelector('#reservationModal .resv-tab-btn[data-target-pane="resvPaneAmenities"]');
+        if (modalAmenityTabBtn) {
+            const hasDueAmenityInModal = Boolean(document.querySelector('#resvPaneAmenities .resv-amenity-countdown[data-checkout-state="due"]'));
+            const existingTabDot = modalAmenityTabBtn.querySelector('.amenity-tab-due-dot');
+            if (hasDueAmenityInModal) {
+                if (!existingTabDot) {
+                    const dot = document.createElement('span');
+                    dot.className = 'amenity-tab-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse';
+                    dot.title = 'Amenity time to checkout';
+                    modalAmenityTabBtn.appendChild(dot);
+                }
+            } else if (existingTabDot) {
+                existingTabDot.remove();
+            }
+        }
+
+        // Dynamic update of top Master "Reservations" tab red dot
+        const masterResvTab = document.querySelector('.checkins-tab[data-tab-target="reservation"]');
+        if (masterResvTab) {
+            const hasAnyDueInTable = Boolean(
+                document.querySelector('tr.reservation-row .amenity-due-dot') ||
+                document.querySelector('tr.reservation-row.row-checkout-due') ||
+                document.querySelector('tr.reservation-row .amenity-due-status-pill')
+            );
+            const existingMasterDot = masterResvTab.querySelector('.master-resv-due-dot');
+            if (hasAnyDueInTable) {
+                if (!existingMasterDot) {
+                    const dot = document.createElement('span');
+                    dot.className = 'master-resv-due-dot inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse';
+                    dot.title = 'Reservations have checkouts due';
+                    masterResvTab.appendChild(dot);
+                }
+            } else if (existingMasterDot) {
+                existingMasterDot.remove();
+            }
+        }
     };
 
     // Tick every 30s; tighten to 5s once any countdown enters the warning window.
@@ -358,7 +447,38 @@ window.AppPage['staff_check_ins'] = function () {
 
         const primaryGuestId = primaryGuest?.customer?.id || primaryGuest?.customer_id || primaryGuest?.id || 'N/A';
 
+        const resCheckoutState = getCheckoutState(reservation.checkout_at);
+        const isReservationStayDue = isCheckedIn && resCheckoutState.visible && resCheckoutState.tone === 'due';
+
+        const hasAmenityDue = validAmenities.some(a => {
+            if ((a.status || 'Active') === 'Completed') return false;
+            if (!a.checkout_at && !a.starts_at) return false;
+            const st = getCountdownState(a.starts_at, a.checkout_at);
+            return st.visible && st.tone === 'due';
+        });
+
         let html = `
+            ${isReservationStayDue ? `
+                <!-- Reservation Stay Time Ended Reminder Banner -->
+                <div class="resv-stay-due-banner mb-4 flex items-center justify-between gap-3.5 rounded-2xl border-2 border-red-500/40 bg-gradient-to-r from-red-500/15 via-red-500/10 to-rose-500/15 p-4 text-red-900 dark:text-red-200 shadow-sm">
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm ring-4 ring-red-500/20">
+                            <svg class="h-6 w-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm sm:text-base font-black tracking-tight flex items-center gap-2 flex-wrap">
+                                <span>Reservation Stay Time Has Ended</span>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-[0.68rem] font-bold text-white uppercase tracking-wider shadow-2xs">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-white animate-ping"></span> Time to Check Out
+                                </span>
+                            </div>
+                            <div class="text-xs text-red-700/90 dark:text-red-300/90 mt-0.5 font-medium">
+                                The stay period for this reservation (${expectedCheckout.fullText}) has expired. Please check out the reservation and remaining guests.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
             <!-- Main Reservation Info Banner (Highlighting Reservation ID + Main Guest ID) -->
             <div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-5 mb-4 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-4">
@@ -406,6 +526,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneAmenities" style="min-height: 44px;">
                     <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
                     <span class="truncate">Amenities (${validAmenities.length})</span>
+                    ${hasAmenityDue ? '<span class="amenity-tab-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Amenity is time to checkout"></span>' : ''}
                 </button>
                 <button type="button" class="resv-tab-btn w-full inline-flex items-center justify-center gap-2 cursor-pointer rounded-xl border border-glass-border/60 bg-white/70 dark:bg-white/10 hover:bg-glass-hover text-hp-text-muted hover:text-hp-text py-3 px-3 text-xs sm:text-sm font-bold transition-all" data-target-pane="resvPaneBilling" style="min-height: 44px;">
                     <svg class="h-4.5 w-4.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
@@ -475,12 +596,12 @@ window.AppPage['staff_check_ins'] = function () {
                     </div>
 
                     <!-- Expected Checkout Card -->
-                    <div class="rounded-2xl border border-glass-border bg-hp-cream/60 dark:bg-white/5 p-4 sm:p-5 flex justify-between items-center flex-wrap gap-3 shadow-2xs">
+                    <div class="rounded-2xl border ${isReservationStayDue ? 'border-red-500/50 bg-red-500/10' : 'border-glass-border bg-hp-cream/60 dark:bg-white/5'} p-4 sm:p-5 flex justify-between items-center flex-wrap gap-3 shadow-2xs">
                         <div>
-                            <span class="text-[0.72rem] font-bold text-hp-text-muted uppercase tracking-wider block">Expected Check-Out</span>
+                            <span class="text-[0.72rem] font-bold ${isReservationStayDue ? 'text-red-700 dark:text-red-300' : 'text-hp-text-muted'} uppercase tracking-wider block">Expected Check-Out</span>
                             <div class="text-base sm:text-lg font-extrabold text-hp-text flex items-center gap-2.5 flex-wrap mt-1">
                                 <span>${expectedCheckout.date}</span>
-                                <span class="bg-hp-green text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs">${expectedCheckout.session}</span>
+                                <span class="${isReservationStayDue ? 'bg-red-600' : 'bg-hp-green'} text-white text-xs font-bold px-3 py-1 rounded-full shadow-2xs">${expectedCheckout.session}</span>
                                 ${expectedCheckout.time ? `<span class="text-sm font-semibold text-hp-text-muted">at ${expectedCheckout.time}</span>` : ''}
                             </div>
                         </div>
@@ -591,7 +712,10 @@ window.AppPage['staff_check_ins'] = function () {
                 <!-- ════════════════════════════════════════════════════════ -->
                 <div id="resvPaneAmenities" class="resv-tab-pane space-y-3 hidden">
                     <div class="flex items-center justify-between gap-2 border-b border-glass-border/40 pb-2 flex-wrap">
-                        <span class="text-xs font-bold text-hp-text uppercase tracking-wider">Reserved Amenities (${validAmenities.length})</span>
+                        <span class="text-xs font-bold text-hp-text uppercase tracking-wider flex items-center gap-1.5">
+                            Reserved Amenities (${validAmenities.length})
+                            ${hasAmenityDue ? '<span class="inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Amenity is time to checkout"></span>' : ''}
+                        </span>
                         <div class="flex items-center gap-2">
                             ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `
                                 <button type="button" class="resv-add-amenity-btn inline-flex items-center gap-1 rounded-xl bg-hp-green px-3 py-1.5 text-xs font-bold text-white hover:bg-hp-green-dark transition-colors cursor-pointer" data-reservation-id="${reservation.id}">
@@ -626,7 +750,7 @@ window.AppPage['staff_check_ins'] = function () {
                         ? '<span class="resv-amenity-status resv-amenity-status--completed">Completed</span>'
                         : (
                             (isCheckedIn ? `<button type="button" class="resv-amenity-extend-btn rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer" data-reservation-id="${reservation.id}" data-reservation-amenity-id="${a.id}">Extend</button>` : '') +
-                            (showPerAmenityCheckout
+                            (isCheckedIn
                                 ? `<button type="button" class="resv-amenity-checkout-btn" data-reservation-amenity-id="${a.id || ''}" data-reservation-id="${reservation.id}">Check Out</button>`
                                 : '<span class="resv-amenity-status resv-amenity-status--active">Active</span>')
                         )
@@ -744,9 +868,9 @@ window.AppPage['staff_check_ins'] = function () {
                             <span>Group Checkout</span>
                         </button>
                     ` : ''}
-                    <button type="button" class="resv-quick-checkout-all-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green hover:bg-hp-green-dark px-4 py-1.5 text-xs font-extrabold text-white transition-all shadow-md hover:shadow-lg" data-reservation-id="${reservation.id}">
+                    <button type="button" class="resv-quick-checkout-all-btn inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 ${isReservationStayDue ? 'bg-red-600 hover:bg-red-700 ring-2 ring-red-500/30' : 'bg-hp-green hover:bg-hp-green-dark'} px-4 py-1.5 text-xs font-extrabold text-white transition-all shadow-md hover:shadow-lg" data-reservation-id="${reservation.id}">
                         <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                        <span>Check Out All</span>
+                        <span>${isReservationStayDue ? 'Check Out All (Due)' : 'Check Out All'}</span>
                     </button>
                 `;
 
@@ -884,10 +1008,39 @@ window.AppPage['staff_check_ins'] = function () {
             const data = await response.json();
 
             if (response.ok && data.success) {
+                const resId = pendingCheckOutReservationId;
                 closeCheckOutConfirmModal();
                 closeReservationModal();
-                queueToast(`Reservation #${pendingCheckOutReservationId} checked out successfully.`);
-                location.reload();
+
+                if (window.staffReservationData && window.staffReservationData[resId]) {
+                    window.staffReservationData[resId].status = 'Checked Out';
+                }
+
+                // Remove or update the reservation table row with a smooth exit
+                const resvRow = document.querySelector(`tr.reservation-row[data-reservation-id="${resId}"]`);
+                if (resvRow) {
+                    resvRow.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                    resvRow.style.opacity = '0';
+                    resvRow.style.transform = 'scaleY(0)';
+                    setTimeout(() => {
+                        resvRow.remove();
+                        const remainingRows = document.querySelectorAll('tr.reservation-row').length;
+                        const countEl = document.getElementById('resvResultsCount');
+                        if (countEl) countEl.textContent = `Showing ${remainingRows} reservation${remainingRows === 1 ? '' : 's'}`;
+                        refreshCheckoutCountdowns();
+                    }, 250);
+                }
+
+                // Remove associated guest rows in the active guest table
+                document.querySelectorAll(`tr.guest-row[data-reservation-id="${resId}"]`).forEach(gRow => {
+                    gRow.remove();
+                });
+                const remainingGuestRows = document.querySelectorAll('tr.guest-row').length;
+                const guestCountEl = document.getElementById('guestResultsCount');
+                if (guestCountEl) guestCountEl.textContent = `Showing ${remainingGuestRows} active guest${remainingGuestRows === 1 ? '' : 's'}`;
+
+                refreshCheckoutCountdowns();
+                showToast(`Reservation #${resId} checked out successfully.`);
             } else {
                 throw new Error(data.message || 'Failed to check out reservation');
             }
@@ -932,7 +1085,18 @@ window.AppPage['staff_check_ins'] = function () {
             const res = (window.staffReservationData && window.staffReservationData[reservationId]) || reservationData[reservationId];
             const amenity = res?.reservation_amenities?.find(a => String(a.id) === String(reservationAmenityId));
             if (amenity) amenity.status = 'Completed';
+
+            // Synchronize background table row data attributes and live state in place
+            const tableRow = document.querySelector(`tr.reservation-row[data-reservation-id="${reservationId}"]`);
+            if (tableRow && res) {
+                const activeAmenityCheckoutTimes = (res.reservation_amenities || [])
+                    .filter(a => (a.status || 'Active') !== 'Completed' && a.checkout_at)
+                    .map(a => a.checkout_at);
+                tableRow.setAttribute('data-amenity-checkout-times', activeAmenityCheckoutTimes.join(','));
+            }
+
             openReservationModal(reservationId);
+            refreshCheckoutCountdowns();
             showToast('Amenity checked out successfully.');
         } catch (error) {
             window.alert(error.message || 'Unable to check out this amenity.');
@@ -2955,8 +3119,32 @@ window.AppPage['staff_check_ins'] = function () {
             const message = remaining > 0
                 ? `${done} companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
                 : `${done} companion${done === 1 ? '' : 's'} checked out successfully.`;
-            queueToast(message);
-            window.location.reload();
+
+            // Close bulk manage modal if open
+            if (bulkManageModal) {
+                bulkManageModal.classList.remove('is-open');
+                bulkManageModal.setAttribute('aria-hidden', 'true');
+            }
+
+            // Update local reservation data
+            if (currentBulkResId && window.staffReservationData && window.staffReservationData[currentBulkResId]) {
+                const res = window.staffReservationData[currentBulkResId];
+                let checkedCount = 0;
+                (res.reservation_guests || []).forEach(g => {
+                    if (!g.is_primary_guest && !g.checked_out_at && checkedCount < done) {
+                        const isBulkGuest = !g.customer || !g.customer.first_name || g.customer.first_name.toLowerCase().includes('companion');
+                        if (isBulkGuest) {
+                            g.checked_out_at = new Date().toISOString();
+                            checkedCount++;
+                        }
+                    }
+                });
+                if (currentReservationId === currentBulkResId) {
+                    openReservationModal(currentBulkResId);
+                }
+            }
+
+            showToast(message);
         } catch (err) {
             console.error(err);
             showToast(err.message || 'Unable to check out companions.', 'error');
@@ -3517,8 +3705,23 @@ window.AppPage['staff_check_ins'] = function () {
                         throw new Error(payload.message || 'Unable to check out guest.');
                     }
 
-                    queueToast(`${guestName} checked out successfully.`);
-                    window.location.reload();
+                    // Update local state for this guest
+                    if (currentCompanionCheckoutResId && window.staffReservationData && window.staffReservationData[currentCompanionCheckoutResId]) {
+                        const res = window.staffReservationData[currentCompanionCheckoutResId];
+                        const targetGuest = (res.reservation_guests || []).find(g => String(g.id) === String(rgId));
+                        if (targetGuest) targetGuest.checked_out_at = new Date().toISOString();
+                    }
+
+                    // Remove guest row from active guest table if present
+                    const guestRow = document.querySelector(`tr.guest-row[data-guest-id="${rgId}"]`);
+                    if (guestRow) guestRow.remove();
+
+                    // Re-render open modal if active
+                    if (currentReservationId === currentCompanionCheckoutResId) {
+                        openReservationModal(currentCompanionCheckoutResId);
+                    }
+
+                    showToast(`${guestName} checked out successfully.`);
                 } catch (err) {
                     showToast(err.message || 'Error checking out guest.', 'error');
                     btn.disabled = false;
@@ -3634,8 +3837,42 @@ window.AppPage['staff_check_ins'] = function () {
                 throw new Error(errorMsg || 'Some checkouts failed.');
             }
 
-            queueToast(`Successfully checked out ${totalSelected} guest(s).`);
-            window.location.reload();
+            if (companionCheckoutModal) {
+                companionCheckoutModal.classList.remove('is-open');
+                companionCheckoutModal.setAttribute('aria-hidden', 'true');
+            }
+
+            // Update in-memory guests
+            if (currentCompanionCheckoutResId && window.staffReservationData && window.staffReservationData[currentCompanionCheckoutResId]) {
+                const res = window.staffReservationData[currentCompanionCheckoutResId];
+                singleRgIds.forEach(id => {
+                    const g = (res.reservation_guests || []).find(rg => String(rg.id) === String(id));
+                    if (g) g.checked_out_at = new Date().toISOString();
+                });
+                let bulkDone = 0;
+                (res.reservation_guests || []).forEach(g => {
+                    if (!g.is_primary_guest && !g.checked_out_at && bulkDone < totalBulkCount) {
+                        const isBulkGuest = !g.customer || !g.customer.first_name || g.customer.first_name.toLowerCase().includes('companion');
+                        if (isBulkGuest) {
+                            g.checked_out_at = new Date().toISOString();
+                            bulkDone++;
+                        }
+                    }
+                });
+            }
+
+            // Remove selected single guest rows from table
+            singleRgIds.forEach(id => {
+                const gRow = document.querySelector(`tr.guest-row[data-guest-id="${id}"]`);
+                if (gRow) gRow.remove();
+            });
+
+            // Re-open reservation details modal with updated guests
+            if (currentCompanionCheckoutResId) {
+                openReservationModal(currentCompanionCheckoutResId);
+            }
+
+            showToast(`Successfully checked out ${totalSelected} guest(s).`);
         } catch (err) {
             console.error('Group checkout error:', err);
             showToast(err.message || 'Error occurred during group checkout.', 'error');
@@ -3902,8 +4139,24 @@ window.AppPage['staff_check_ins'] = function () {
                 throw new Error(payload.message || 'Unable to check out this guest.');
             }
 
-            queueToast(`${customer.first_name || 'Guest'} checked out successfully.`);
-            window.location.reload();
+            closeGuestModal();
+
+            // Remove or update guest row in the table
+            const guestId = customer.id || reservationGuest.id;
+            const guestRow = document.querySelector(`tr.guest-row[data-guest-id="${guestId}"]`) || document.querySelector(`tr.guest-row[data-reservation-guest-id="${reservationGuest.id}"]`);
+            if (guestRow) {
+                guestRow.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+                guestRow.style.opacity = '0';
+                guestRow.style.transform = 'scaleY(0)';
+                setTimeout(() => {
+                    guestRow.remove();
+                    const remainingGuestRows = document.querySelectorAll('tr.guest-row').length;
+                    const guestCountEl = document.getElementById('guestResultsCount');
+                    if (guestCountEl) guestCountEl.textContent = `Showing ${remainingGuestRows} active guest${remainingGuestRows === 1 ? '' : 's'}`;
+                }, 250);
+            }
+
+            showToast(`${customer.first_name || 'Guest'} checked out successfully.`);
         } catch (error) {
             window.alert(error.message || 'Unable to check out this guest.');
             submitButton.disabled = false;
@@ -4934,7 +5187,7 @@ window.AppPage['staff_check_ins'] = function () {
         companions.forEach((companion, index) => {
             const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = companion.age_type === 'child' ? 'Child' : 'Adult';
-            
+
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
                 poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
@@ -5001,7 +5254,7 @@ window.AppPage['staff_check_ins'] = function () {
         bulkCompanionGroups.forEach((group, groupIndex) => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
-            
+
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
                 bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
@@ -6302,8 +6555,13 @@ window.AppPage['staff_check_ins'] = function () {
                                     if (!checkoutResponse.ok) {
                                         window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
                                     } else {
-                                        queueToast(`Reservation #${reservationId} checked out successfully.`);
-                                        window.location.reload();
+                                        const resRow = document.querySelector(`tr.reservation-row[data-reservation-id="${reservationId}"]`);
+                                        if (resRow) resRow.remove();
+                                        if (window.staffReservationData && window.staffReservationData[reservationId]) {
+                                            window.staffReservationData[reservationId].status = 'Checked Out';
+                                        }
+                                        refreshCheckoutCountdowns();
+                                        showToast(`Reservation #${reservationId} checked out successfully.`);
                                     }
                                 } catch (checkoutError) {
                                     window.alert('Unable to check out this reservation. Please try again.');
@@ -6716,14 +6974,26 @@ window.AppPage['staff_check_ins'] = function () {
                 const firstError = payload.errors ? Object.values(payload.errors)[0]?.[0] : null;
                 throw new Error(payload.message || firstError || 'Unable to add companion.');
             }
-            queueToast(`${payload.added || companions.length} companion${(payload.added || companions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.`);
-            // Remember which reservation was just updated so the reloaded page
-            // can auto-open its detail modal — the user sees the addition
-            // immediately instead of hunting for it.
-            try {
-                sessionStorage.setItem('hpJustAddedCompanionRes', String(currentReservationId));
-            } catch (e) { /* storage unavailable — modal just won't auto-open */ }
-            window.location.reload();
+            closeAddCompanionModal();
+
+            // Append added companions into in-memory dataset
+            if (window.staffReservationData && window.staffReservationData[currentReservationId]) {
+                const res = window.staffReservationData[currentReservationId];
+                if (!res.reservation_guests) res.reservation_guests = [];
+                companions.forEach(c => {
+                    res.reservation_guests.push({
+                        id: 'temp_' + Date.now() + Math.random(),
+                        customer: { first_name: c.first_name || 'Companion', last_name: c.last_name || '' },
+                        has_pool_access: Boolean(c.has_pool_access),
+                        is_primary_guest: false,
+                        checked_out_at: null,
+                    });
+                });
+                res.number_of_guests = (parseInt(res.number_of_guests || 0, 10) + companions.length);
+                openReservationModal(currentReservationId);
+            }
+
+            showToast(`${payload.added || companions.length} companion${(payload.added || companions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.`);
         } catch (error) {
             showToast(error.message || 'Unable to add companion.', 'error');
             submitButton.disabled = false;

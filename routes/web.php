@@ -2880,9 +2880,7 @@ Route::get('/api/activity-notifications', function (Request $request) {
     $userRole = $user['role'] ?? 'staff';
     $userId = (int) ($user['id'] ?? 0);
     $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
-
-    $queryLastSeenId = (int) $request->query('last_seen_id', 0);
-    $effectiveLastSeenId = max($dbLastSeenId, $queryLastSeenId);
+    $effectiveLastSeenId = $dbLastSeenId;
 
     $clientLatestId = (int) $request->query('latest_id', 0);
     $sinceId = (int) $request->query('since_id', 0);

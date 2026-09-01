@@ -518,7 +518,7 @@ window.AppPage['staff_reservations'] = function () {
             const breakdownLines = extraHeadBreakdown.map(b => `${escapeHtml(b.amenity_name)}: ${b.excess} extra × ₱${b.add_rate.toFixed(2)} = ₱${b.fee.toFixed(2)}`).join('<br>');
             extraHeadHtml = `
                 <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #b45309; background: #fffbeb;">
-                    <span style="font-size: 0.85rem; font-weight: 600;">Extra Head Fee (${extraHeadBreakdown.reduce((s,b)=>s+b.excess,0)} extra)</span>
+                    <span style="font-size: 0.85rem; font-weight: 600;">Extra Head Fee (${extraHeadBreakdown.reduce((s, b) => s + b.excess, 0)} extra)</span>
                     <strong style="font-size: 0.85rem;">₱${extraHeadTotal.toFixed(2)}</strong>
                 </div>
                 <div style="padding: 0.4rem 0.9rem; font-size: 0.75rem; color: #92400e; background: #fffbeb; border-top: 1px dashed #fde68a;">
@@ -1261,8 +1261,20 @@ window.AppPage['staff_reservations'] = function () {
                                     if (!checkoutResponse.ok) {
                                         window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
                                     } else {
-                                        queueToast(`Reservation #${reservationId} checked out successfully.`);
-                                        window.location.reload();
+                                        if (window.reservationsData && window.reservationsData[reservationId]) {
+                                            window.reservationsData[reservationId].status = 'Completed';
+                                        }
+                                        const resRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+                                        if (resRow) {
+                                            const statusPill = resRow.querySelector('.status-pill, .badge-status');
+                                            if (statusPill) {
+                                                statusPill.textContent = 'Completed';
+                                                statusPill.className = 'status-pill status-pill--completed';
+                                            }
+                                        }
+                                        closeModal();
+                                        window.dispatchEvent(new CustomEvent('app:data-mutated'));
+                                        showToast(`Reservation #${reservationId} checked out successfully.`);
                                     }
                                 } catch (checkoutError) {
                                     window.alert('Unable to check out this reservation. Please try again.');
@@ -3062,8 +3074,20 @@ window.AppPage['staff_reservations'] = function () {
                         throw new Error(payload.message || 'Unable to check out this reservation.');
                     }
 
-                    queueToast(`Reservation #${reservationId} checked out successfully.`);
-                    window.location.reload();
+                    if (window.reservationsData && window.reservationsData[reservationId]) {
+                        window.reservationsData[reservationId].status = 'Completed';
+                    }
+                    const resRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+                    if (resRow) {
+                        const statusPill = resRow.querySelector('.status-pill, .badge-status');
+                        if (statusPill) {
+                            statusPill.textContent = 'Completed';
+                            statusPill.className = 'status-pill status-pill--completed';
+                        }
+                    }
+                    closeModal();
+                    window.dispatchEvent(new CustomEvent('app:data-mutated'));
+                    showToast(`Reservation #${reservationId} checked out successfully.`);
                 } catch (error) {
                     window.alert(error.message || 'Unable to check out this reservation.');
                 }
@@ -3158,8 +3182,26 @@ window.AppPage['staff_reservations'] = function () {
                 throw new Error(payload.message || 'Unable to check in this reservation.');
             }
 
-            queueToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
-            window.location.reload();
+            if (window.reservationsData && window.reservationsData[pendingReservationId]) {
+                window.reservationsData[pendingReservationId].status = 'Checked In';
+                window.reservationsData[pendingReservationId].payment_status = 'Paid';
+            }
+            const resRow = document.querySelector(`tr[data-reservation-id="${pendingReservationId}"]`);
+            if (resRow) {
+                const statusPill = resRow.querySelector('.status-pill, .badge-status');
+                if (statusPill) {
+                    statusPill.textContent = 'Checked In';
+                    statusPill.className = 'status-pill status-pill--checked-in';
+                }
+                const paymentPill = resRow.querySelector('.payment-status-pill, .badge-payment');
+                if (paymentPill) {
+                    paymentPill.textContent = 'PAID';
+                }
+            }
+            closeCheckInModal();
+            closeCompanionSummaryModal?.();
+            window.dispatchEvent(new CustomEvent('app:data-mutated'));
+            showToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
         } catch (error) {
             window.alert(error.message || 'Unable to check in this reservation.');
             if (submitButton) {

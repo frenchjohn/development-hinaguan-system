@@ -60,6 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (id > 0) {
             const { storageKey } = getUserMeta();
             localStorage.setItem(storageKey, id.toString());
+            const panel = notifDropdown();
+            if (panel) panel.setAttribute('data-last-seen-id', id.toString());
 
             // Persist to server per-account in database
             try {
@@ -224,20 +226,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetId > 0) {
             setLastSeenId(targetId);
         }
-        pendingSeenId = 0;
+        document.querySelectorAll('.notif-new-badge').forEach(b => b.classList.add('hidden'));
         updateUnreadStateUI(0);
-    };
-
-    // Auto mark as read on dropdown close
-    const handleNotifDropdownClose = () => {
-        if (pendingSeenId > 0) {
-            const currentLastSeen = getLastSeenId();
-            if (pendingSeenId > currentLastSeen) {
-                setLastSeenId(pendingSeenId);
-            }
-            pendingSeenId = 0;
-            updateUnreadStateUI(0);
-        }
     };
 
     const setNotifOpen = (open) => {
@@ -248,7 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const isCurrentlyOpen = panel.classList.contains('is-open');
 
         if (open && !isCurrentlyOpen) {
-            pendingSeenId = getHighestRenderedId();
             btn.classList.add('is-active');
             btn.setAttribute('aria-expanded', 'true');
             panel.classList.add('is-open');
@@ -259,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.setAttribute('aria-expanded', 'false');
             panel.classList.remove('is-open');
             panel.setAttribute('aria-hidden', 'true');
-            handleNotifDropdownClose();
         }
     };
 
@@ -317,6 +305,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = notifDetailModal();
         const card = notifDetailModalCard();
         if (!modal || !card) return;
+
+        const actId = parseInt(act.id, 10);
+        if (actId > 0) {
+            const currentLastSeen = getLastSeenId();
+            if (actId > currentLastSeen) {
+                setLastSeenId(actId);
+            }
+            const itemEl = document.querySelector(`.notif-item[data-activity-id="${actId}"]`);
+            if (itemEl) {
+                const newBadge = itemEl.querySelector('.notif-new-badge');
+                if (newBadge) newBadge.classList.add('hidden');
+            }
+            const unread = countCurrentUnreadFromDOM();
+            updateUnreadStateUI(unread);
+        }
 
         const meta = getActivityIconAndColor(act.type || '');
 
@@ -629,9 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const panel = notifDropdown();
                 if (panel) {
                     panel.setAttribute('data-latest-id', knownLatestId);
-                    if (panel.classList.contains('is-open')) {
-                        pendingSeenId = Math.max(pendingSeenId, knownLatestId);
-                    }
                 }
 
                 // Notify Staff Chatbot Proactive Speech immediately
