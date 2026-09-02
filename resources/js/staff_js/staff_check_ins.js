@@ -5140,6 +5140,30 @@ window.AppPage['staff_check_ins'] = function () {
         renderModalCompanionPreview();
     });
 
+    // Bulk quantity steppers in creator form
+    const walkInBulkQtyMinusBtn = document.getElementById('walkInBulkQtyMinusBtn');
+    const walkInBulkQtyPlusBtn = document.getElementById('walkInBulkQtyPlusBtn');
+
+    walkInBulkQtyMinusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionQtyInput) return;
+        const current = parseInt(bulkCompanionQtyInput.value, 10) || 1;
+        if (current > 1) {
+            bulkCompanionQtyInput.value = current - 1;
+            syncBulkPoolQuantityMax();
+            syncBulkFreeQuantityMax();
+        }
+    });
+
+    walkInBulkQtyPlusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionQtyInput) return;
+        const current = parseInt(bulkCompanionQtyInput.value, 10) || 1;
+        if (current < 500) {
+            bulkCompanionQtyInput.value = current + 1;
+            syncBulkPoolQuantityMax();
+            syncBulkFreeQuantityMax();
+        }
+    });
+
     const renderModalCompanionPreview = () => {
         if (!modalCompanionPreviewList) return;
         modalCompanionPreviewList.innerHTML = '';
@@ -5205,55 +5229,52 @@ window.AppPage['staff_check_ins'] = function () {
 
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Pool Pass</span>';
             } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water"></i> Pool Pass <i class="bi bi-check-lg"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass">+ Pool</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass">🏊 Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass">+ Pool</button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-modal-toggle-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance <i class="bi bi-check-lg"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-free="${index}" title="Click to grant free entrance">+ Free</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-modal-toggle-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-free="${index}" title="Click to grant free entrance">+ Free</button>`;
             }
 
             let amenityBadgeHtml = '';
             if (selectedAmenities.length > 1 && companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
             const item = document.createElement('div');
-            item.className = 'flex items-start justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-white/80 dark:bg-[#181b19]/90 shadow-xs transition-all hover:border-hp-green/40';
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
             item.innerHTML = `
-                <div class="flex flex-col gap-1 min-w-0 flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-hp-green/15 text-hp-green font-bold text-[0.68rem]">
-                            ${index + 1}
-                        </span>
-                        <span class="text-xs font-bold text-hp-text truncate">
-                            ${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}
-                        </span>
-                        <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.2 text-[0.65rem] font-medium text-hp-text-muted">
-                            ${escapeHtml(companion.gender)} &bull; ${companion.age ? companion.age + 'y (' + rateLabel + ')' : rateLabel} &bull; ${nationality}
-                        </span>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-xs font-bold text-hp-green">
+                        <i class="bi bi-person-fill"></i>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-wrap pl-7">
-                        ${amenityBadgeHtml}
-                        ${freeBadgeHtml}
-                        ${poolBadgeHtml}
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(companion.gender)}, ${companion.age ? escapeHtml(companion.age) + 'y (' + rateLabel + ')' : rateLabel}</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${amenityBadgeHtml}
+                            ${freeBadgeHtml}
+                            ${poolBadgeHtml}
+                        </div>
                     </div>
                 </div>
-                <button type="button" class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 hover:text-red-700 transition-colors cursor-pointer border-0 bg-transparent text-xs" data-modal-remove-single="${index}" title="Remove companion">
-                    <i class="bi bi-trash3"></i>
+                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-single="${index}" title="Remove staged companion">
+                    <i class="bi bi-trash3 text-xs"></i>
                 </button>
             `;
             modalCompanionPreviewList.appendChild(item);
@@ -5278,33 +5299,33 @@ window.AppPage['staff_check_ins'] = function () {
 
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-1.5 py-0.2 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All with Pool</span>`;
             } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} Free Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
                 const pQty = group.pool_quantity || 0;
                 bulkPoolBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-md bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.2 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
-                        <span><i class="bi bi-water me-0.5"></i>Pool:</span>
-                        <button type="button" class="flex h-3.5 w-3.5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.6rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${groupIndex}">−</button>
-                        <span class="px-0.5 min-w-[1.4rem] text-center font-bold text-[0.65rem]">${pQty}/${group.quantity}</span>
-                        <button type="button" class="flex h-3.5 w-3.5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.6rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${groupIndex}">+</button>
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
+                        <span>🏊</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${groupIndex}">−</button>
+                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${groupIndex}">+</button>
                     </div>
                 `;
             }
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 text-[0.65rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> All ${group.quantity} Free</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> All ${group.quantity} Free</span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
                 bulkFreeBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[0.65rem] font-bold text-amber-900 dark:text-amber-300">
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-900 dark:text-amber-300">
                         <span><i class="bi bi-ticket-perforated-fill me-0.5"></i>Free:</span>
-                        <button type="button" class="flex h-3.5 w-3.5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.6rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-dec="${groupIndex}">−</button>
-                        <span class="px-0.5 min-w-[1.4rem] text-center font-bold text-[0.65rem]">${fQty}/${group.quantity}</span>
-                        <button type="button" class="flex h-3.5 w-3.5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.6rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-inc="${groupIndex}">+</button>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-dec="${groupIndex}">−</button>
+                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${fQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-inc="${groupIndex}">+</button>
                     </div>
                 `;
             }
@@ -5313,54 +5334,46 @@ window.AppPage['staff_check_ins'] = function () {
             if (selectedAmenities.length > 1 && group.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-1.5 py-0.2 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
             const item = document.createElement('div');
-            item.className = 'flex items-start justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-emerald-500/5 dark:bg-emerald-950/25 shadow-xs transition-all hover:border-hp-green/40';
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
             item.innerHTML = `
-                <div class="flex flex-col gap-1 min-w-0 flex-1">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <div class="inline-flex items-center gap-1 rounded-md bg-teal-600/15 border border-teal-600/30 px-1 py-0.2 text-[0.65rem] font-bold text-teal-800 dark:text-teal-300">
-                            <span>Bulk:</span>
-                            <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-teal-700/20 text-teal-900 dark:text-white hover:bg-teal-700/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-qty-dec="${groupIndex}" title="Decrease quantity">−</button>
-                            <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${groupIndex}" class="no-spinners w-11 text-center font-bold text-xs bg-white/90 dark:bg-[#1a1e1b] border border-teal-500/40 rounded px-1 py-0 text-hp-text focus:outline-none focus:border-hp-green shadow-inner [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" style="-webkit-appearance: none; -moz-appearance: textfield; appearance: textfield; margin: 0;" title="Type any amount">
-                            <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-teal-700/20 text-teal-900 dark:text-white hover:bg-teal-700/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-qty-inc="${groupIndex}" title="Increase quantity">+</button>
-                        </div>
-                        <span class="text-xs font-bold text-hp-text">
-                            ${escapeHtml(group.gender)} &bull; Age ${escapeHtml(group.age_group)} (${rateLabel}) &bull; ${nationality}
-                        </span>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600/15 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-people-fill"></i>
                     </div>
-                    <div class="flex items-center gap-1.5 flex-wrap pl-2">
-                        ${bulkAmenityBadgeHtml}
-                        ${bulkFreeBadgeHtml}
-                        ${bulkPoolBadgeHtml}
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Bulk: ${group.quantity} guests</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(group.gender)}, Age ${escapeHtml(group.age_group)} (${rateLabel})</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${bulkAmenityBadgeHtml}
+                            ${bulkFreeBadgeHtml}
+                            ${bulkPoolBadgeHtml}
+                        </div>
                     </div>
                 </div>
-                <button type="button" class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-500/10 hover:text-red-700 transition-colors cursor-pointer border-0 bg-transparent text-xs" data-modal-remove-bulk="${groupIndex}" title="Remove bulk group">
-                    <i class="bi bi-trash3"></i>
-                </button>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-dec="${groupIndex}" title="Decrease quantity">−</button>
+                        <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${groupIndex}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-inc="${groupIndex}" title="Increase quantity">+</button>
+                    </div>
+                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-bulk="${groupIndex}" title="Remove staged bulk group">
+                        <i class="bi bi-trash3 text-xs"></i>
+                    </button>
+                </div>
             `;
             modalCompanionPreviewList.appendChild(item);
         });
 
-        if (companions.length === 0 && bulkCompanionGroups.length === 0) {
-            modalCompanionPreviewList.innerHTML = `
-                <div class="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-glass-border/60 bg-glass/40">
-                    <i class="bi bi-person-plus text-2xl text-hp-text-muted/60 mb-1"></i>
-                    <p class="m-0 text-xs font-semibold text-hp-text-muted">No companions created yet.</p>
-                    <p class="m-0 text-[0.72rem] text-hp-text-muted/80">Use the form above to add single or bulk companions.</p>
-                </div>
-            `;
-        } else if (visibleModalCount === 0) {
-            modalCompanionPreviewList.innerHTML = `
-                <div class="flex flex-col items-center justify-center p-6 text-center rounded-xl border border-dashed border-glass-border/60 bg-glass/40">
-                    <i class="bi bi-funnel text-2xl text-hp-text-muted/60 mb-1"></i>
-                    <p class="m-0 text-xs font-semibold text-hp-text-muted">No companions match your filter.</p>
-                    <p class="m-0 text-[0.72rem] text-hp-text-muted/80">Try changing or clearing your search criteria.</p>
-                </div>
-            `;
+        if (visibleModalCount === 0) {
+            modalCompanionPreviewList.innerHTML = totalCount === 0
+                ? '<div class="py-8 text-center text-xs text-hp-text-muted/70 italic"><i class="bi bi-person-plus text-2xl block mb-1 opacity-50"></i>No companions staged yet.<br>Fill the form on the left to add companions.</div>'
+                : '<div class="py-6 text-center text-xs text-hp-text-muted/70 italic"><i class="bi bi-search text-xl block mb-1 opacity-50"></i>No staged companions match the search/filter criteria.</div>';
         }
     };
 

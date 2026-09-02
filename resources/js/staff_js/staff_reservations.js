@@ -186,9 +186,11 @@ window.AppPage['staff_reservations'] = function () {
     const checkInCompanionPoolWrap = document.getElementById('checkInCompanionPoolWrap');
     const checkInCompanionHasPool = document.getElementById('checkInCompanionHasPool');
     const checkInBulkCompanionPoolWrap = document.getElementById('checkInBulkCompanionPoolWrap');
+    const checkInBulkCompanionQuantity = document.getElementById('checkInBulkCompanionQuantity');
     const checkInBulkPoolQuantity = document.getElementById('checkInBulkPoolQuantity');
-    const checkInBulkPoolMaxLabel = document.getElementById('checkInBulkPoolMaxLabel');
-    const bulkCompanionQuantity = document.getElementById('bulkCompanionQuantity');
+    const checkInBulkPoolQtyHint = document.getElementById('checkInBulkPoolQtyHint');
+    const checkInBulkQtyMinusBtn = document.getElementById('checkInBulkQtyMinusBtn');
+    const checkInBulkQtyPlusBtn = document.getElementById('checkInBulkQtyPlusBtn');
 
     const syncCheckInPoolOptionUI = () => {
         const opt = checkInPoolOption?.value || 'no_pool';
@@ -226,30 +228,36 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const syncCheckInBulkPoolMax = () => {
-        if (!bulkCompanionQuantity || !checkInBulkPoolQuantity) return;
-        const maxVal = parseInt(bulkCompanionQuantity.value, 10) || 1;
+        if (!checkInBulkCompanionQuantity || !checkInBulkPoolQuantity) return;
+        const maxVal = parseInt(checkInBulkCompanionQuantity.value, 10) || 1;
         checkInBulkPoolQuantity.max = maxVal;
-        if (checkInBulkPoolMaxLabel) {
-            checkInBulkPoolMaxLabel.textContent = `Max: ${maxVal}`;
-        }
-        if (parseInt(checkInBulkPoolQuantity.value, 10) > maxVal) {
-            checkInBulkPoolQuantity.value = maxVal;
+        const curPoolVal = parseInt(checkInBulkPoolQuantity.value, 10) || 0;
+        const clampedVal = Math.min(Math.max(0, curPoolVal), maxVal);
+        checkInBulkPoolQuantity.value = clampedVal;
+        if (checkInBulkPoolQtyHint) {
+            checkInBulkPoolQtyHint.textContent = `${clampedVal} of ${maxVal}`;
         }
     };
 
-    bulkCompanionQuantity?.addEventListener('input', syncCheckInBulkPoolMax);
-    bulkCompanionQuantity?.addEventListener('change', syncCheckInBulkPoolMax);
-    document.getElementById('bulkCompanionBtnMinus')?.addEventListener('click', () => {
-        const cur = parseInt(bulkCompanionQuantity.value, 10) || 1;
+    checkInBulkCompanionQuantity?.addEventListener('input', syncCheckInBulkPoolMax);
+    checkInBulkCompanionQuantity?.addEventListener('change', syncCheckInBulkPoolMax);
+    checkInBulkPoolQuantity?.addEventListener('input', syncCheckInBulkPoolMax);
+    checkInBulkPoolQuantity?.addEventListener('change', syncCheckInBulkPoolMax);
+
+    checkInBulkQtyMinusBtn?.addEventListener('click', () => {
+        if (!checkInBulkCompanionQuantity) return;
+        const cur = parseInt(checkInBulkCompanionQuantity.value, 10) || 1;
         if (cur > 1) {
-            bulkCompanionQuantity.value = cur - 1;
+            checkInBulkCompanionQuantity.value = cur - 1;
             syncCheckInBulkPoolMax();
         }
     });
-    document.getElementById('bulkCompanionBtnPlus')?.addEventListener('click', () => {
-        const cur = parseInt(bulkCompanionQuantity.value, 10) || 1;
-        if (cur < 50) {
-            bulkCompanionQuantity.value = cur + 1;
+
+    checkInBulkQtyPlusBtn?.addEventListener('click', () => {
+        if (!checkInBulkCompanionQuantity) return;
+        const cur = parseInt(checkInBulkCompanionQuantity.value, 10) || 1;
+        if (cur < 500) {
+            checkInBulkCompanionQuantity.value = cur + 1;
             syncCheckInBulkPoolMax();
         }
     });
@@ -263,6 +271,405 @@ window.AppPage['staff_reservations'] = function () {
         };
         return ageMap[ageGroup] || 30;
     };
+
+    const getTotalCheckInCompanionCount = () => {
+        const singleCount = checkInCompanions.length;
+        const bulkCount = bulkCompanionGroups.reduce((acc, g) => acc + (parseInt(g.quantity, 10) || 0), 0);
+        return singleCount + bulkCount;
+    };
+
+    // Modal Staged companion search and filter controls
+    const checkInModalCompanionPreviewList = document.getElementById('checkInModalCompanionPreviewList');
+    const checkInModalCompanionPreviewCountBadge = document.getElementById('checkInModalCompanionPreviewCountBadge');
+    const checkInModalCompanionFooterSummary = document.getElementById('checkInModalCompanionFooterSummary');
+    const checkInModalCompanionClearAllBtn = document.getElementById('checkInModalCompanionClearAllBtn');
+    const toggleCheckInModalCompanionFilterBtn = document.getElementById('toggleCheckInModalCompanionFilterBtn');
+    const checkInModalCompanionFilterToolbar = document.getElementById('checkInModalCompanionFilterToolbar');
+    const checkInModalCompanionSearchInput = document.getElementById('checkInModalCompanionSearchInput');
+    const checkInModalCompanionFilterGender = document.getElementById('checkInModalCompanionFilterGender');
+    const checkInModalCompanionFilterAgeGroup = document.getElementById('checkInModalCompanionFilterAgeGroup');
+    const checkInModalCompanionFilterResetBtn = document.getElementById('checkInModalCompanionFilterResetBtn');
+
+    toggleCheckInModalCompanionFilterBtn?.addEventListener('click', () => {
+        if (!checkInModalCompanionFilterToolbar) return;
+        const isHidden = checkInModalCompanionFilterToolbar.classList.contains('hidden');
+        if (isHidden) {
+            checkInModalCompanionFilterToolbar.classList.remove('hidden');
+            checkInModalCompanionFilterToolbar.classList.add('flex');
+            toggleCheckInModalCompanionFilterBtn.classList.add('bg-hp-green/15', 'border-hp-green/40', 'text-hp-green');
+            checkInModalCompanionSearchInput?.focus();
+        } else {
+            checkInModalCompanionFilterToolbar.classList.add('hidden');
+            checkInModalCompanionFilterToolbar.classList.remove('flex');
+            toggleCheckInModalCompanionFilterBtn.classList.remove('bg-hp-green/15', 'border-hp-green/40', 'text-hp-green');
+        }
+    });
+
+    checkInModalCompanionSearchInput?.addEventListener('input', () => renderCheckInModalCompanionPreview());
+    checkInModalCompanionFilterGender?.addEventListener('change', () => renderCheckInModalCompanionPreview());
+    checkInModalCompanionFilterAgeGroup?.addEventListener('change', () => renderCheckInModalCompanionPreview());
+    checkInModalCompanionFilterResetBtn?.addEventListener('click', () => {
+        if (checkInModalCompanionSearchInput) checkInModalCompanionSearchInput.value = '';
+        if (checkInModalCompanionFilterGender) checkInModalCompanionFilterGender.value = '';
+        if (checkInModalCompanionFilterAgeGroup) checkInModalCompanionFilterAgeGroup.value = '';
+        renderCheckInModalCompanionPreview();
+    });
+
+    const handleCheckInBulkQtyChange = (bIdx, rawVal) => {
+        if (isNaN(bIdx) || !bulkCompanionGroups[bIdx]) return;
+        const group = bulkCompanionGroups[bIdx];
+        let val = parseInt(rawVal, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 500) val = 500;
+        group.quantity = val;
+        const curPoolOpt = checkInPoolOption?.value || 'no_pool';
+        if (curPoolOpt === 'all_paid' || curPoolOpt === 'all_free') {
+            group.pool_quantity = val;
+        } else if (curPoolOpt === 'specific') {
+            group.pool_quantity = Math.min(group.pool_quantity || 0, val);
+        } else {
+            group.pool_quantity = 0;
+        }
+        renderCheckInCompanions();
+        renderCheckInModalCompanionPreview();
+    };
+
+    const renderCheckInModalCompanionPreview = () => {
+        if (!checkInModalCompanionPreviewList) return;
+        checkInModalCompanionPreviewList.innerHTML = '';
+
+        const totalCount = getTotalCheckInCompanionCount();
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+
+        if (checkInModalCompanionPreviewCountBadge) {
+            checkInModalCompanionPreviewCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'}`;
+        }
+        if (checkInModalCompanionFooterSummary) {
+            checkInModalCompanionFooterSummary.textContent = totalCount === 0 
+                ? '0 companions added so far' 
+                : `${totalCount} companion${totalCount === 1 ? '' : 's'} staged (Ready to apply)`;
+        }
+        if (checkInModalCompanionClearAllBtn) {
+            checkInModalCompanionClearAllBtn.classList.toggle('hidden', totalCount === 0);
+        }
+
+        const searchTerm = (checkInModalCompanionSearchInput?.value || '').trim().toLowerCase();
+        const filterGender = (checkInModalCompanionFilterGender?.value || '').trim();
+        const filterAgeGroup = (checkInModalCompanionFilterAgeGroup?.value || '').trim();
+
+        if (checkInModalCompanionFilterResetBtn) {
+            const isFiltered = Boolean(searchTerm || filterGender || filterAgeGroup);
+            checkInModalCompanionFilterResetBtn.classList.toggle('hidden', !isFiltered);
+            checkInModalCompanionFilterResetBtn.classList.toggle('inline-flex', isFiltered);
+        }
+
+        let visibleModalCount = 0;
+
+        // Render Single Companions in modal preview
+        checkInCompanions.forEach((companion, index) => {
+            const fullName = `${companion.first_name || ''} ${companion.middle_name || ''} ${companion.last_name || ''}`.toLowerCase();
+            const matchesSearch = !searchTerm || fullName.includes(searchTerm);
+            const matchesGender = !filterGender || (companion.gender || '').toLowerCase() === filterGender.toLowerCase();
+
+            let matchesAgeGroup = true;
+            if (filterAgeGroup) {
+                const parsedAge = parseInt(companion.age, 10);
+                if (filterAgeGroup === '0-12') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge <= 12;
+                } else if (filterAgeGroup === '13-17') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 13 && parsedAge <= 17;
+                } else if (filterAgeGroup === '18-59') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 18 && parsedAge <= 59;
+                } else if (filterAgeGroup === '60+') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 60;
+                }
+            }
+
+            if (!matchesSearch || !matchesGender || !matchesAgeGroup) {
+                return;
+            }
+
+            visibleModalCount++;
+            const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+            const parsedAge = parseInt(companion.age, 10);
+            const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
+
+            let poolBadge = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Pool Pass</span>';
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Free Pool</span>';
+            } else if (currentPoolOpt === 'specific') {
+                poolBadge = companion.has_pool_access
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to remove pool pass">🏊 Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-1.5 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to grant pool pass">+ Pool Pass</button>`;
+            }
+
+            let amenityBadge = '';
+            if (resAmenities.length > 1) {
+                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-xs font-bold text-hp-green">
+                        ${escapeHtml(getInitials(`${companion.first_name || ''} ${companion.last_name || ''}`))}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(companion.gender || 'Male')}, ${escapeHtml(companion.age || '—')} yrs (${rateLabel})</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${amenityBadge}
+                            ${poolBadge}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-single="${index}" title="Remove staged companion">
+                    <i class="bi bi-trash3 text-xs"></i>
+                </button>
+            `;
+            checkInModalCompanionPreviewList.appendChild(item);
+        });
+
+        // Render Bulk Companion Groups in modal preview
+        bulkCompanionGroups.forEach((group, index) => {
+            const matchesSearch = !searchTerm;
+            const matchesGender = !filterGender || (group.gender || '').toLowerCase() === filterGender.toLowerCase();
+            const matchesAgeGroup = !filterAgeGroup || group.age_group === filterAgeGroup;
+
+            if (!matchesSearch || !matchesGender || !matchesAgeGroup) {
+                return;
+            }
+
+            visibleModalCount++;
+            const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
+
+            let poolBadge = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All with Pool</span>`;
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All Free Pool</span>`;
+            } else if (currentPoolOpt === 'specific') {
+                const pQty = group.pool_quantity || 0;
+                poolBadge = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
+                        <span>🏊</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${index}" title="Decrease pool pass">−</button>
+                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${index}" title="Increase pool pass">+</button>
+                    </div>
+                `;
+            }
+
+            let amenityBadge = '';
+            if (resAmenities.length > 1) {
+                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600/15 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Bulk: ${group.quantity} guests</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(group.gender)}, Age ${escapeHtml(group.age_group)} (${rateLabel})</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${amenityBadge}
+                            ${poolBadge}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
+                        <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-inc="${index}" title="Increase quantity">+</button>
+                    </div>
+                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-bulk="${index}" title="Remove staged bulk group">
+                        <i class="bi bi-trash3 text-xs"></i>
+                    </button>
+                </div>
+            `;
+            checkInModalCompanionPreviewList.appendChild(item);
+        });
+
+        if (visibleModalCount === 0) {
+            checkInModalCompanionPreviewList.innerHTML = totalCount === 0
+                ? '<div class="py-8 text-center text-xs text-hp-text-muted/70 italic"><i class="bi bi-person-plus text-2xl block mb-1 opacity-50"></i>No companions staged yet.<br>Fill the form on the left to add companions.</div>'
+                : '<div class="py-6 text-center text-xs text-hp-text-muted/70 italic"><i class="bi bi-search text-xl block mb-1 opacity-50"></i>No staged companions match the search/filter criteria.</div>';
+        }
+    };
+
+    // In-modal preview click listeners (Remove single, remove bulk, toggle pool, inc/dec pool/free, inc/dec bulk qty)
+    checkInModalCompanionPreviewList?.addEventListener('click', (e) => {
+        const removeSingleBtn = e.target.closest('[data-modal-remove-single]');
+        if (removeSingleBtn) {
+            const idx = parseInt(removeSingleBtn.dataset.modalRemoveSingle, 10);
+            if (!isNaN(idx) && checkInCompanions[idx]) {
+                const comp = checkInCompanions[idx];
+                const name = comp ? `${comp.first_name} ${comp.last_name}` : 'this companion';
+                openRemoveCompanionModal(
+                    `Are you sure you want to remove <strong>${escapeHtml(name)}</strong> from staged companions?`,
+                    () => {
+                        checkInCompanions.splice(idx, 1);
+                        renderCheckInCompanions();
+                        renderCheckInModalCompanionPreview();
+                    }
+                );
+            }
+            return;
+        }
+
+        const removeBulkBtn = e.target.closest('[data-modal-remove-bulk]');
+        if (removeBulkBtn) {
+            const bIdx = parseInt(removeBulkBtn.dataset.modalRemoveBulk, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const grp = bulkCompanionGroups[bIdx];
+                const desc = grp ? `${grp.quantity} guests (${grp.gender}, Age ${grp.age_group})` : 'this bulk group';
+                openRemoveCompanionModal(
+                    `Are you sure you want to remove the staged bulk group with <strong>${escapeHtml(desc)}</strong>?`,
+                    () => {
+                        bulkCompanionGroups.splice(bIdx, 1);
+                        renderCheckInCompanions();
+                        renderCheckInModalCompanionPreview();
+                    }
+                );
+            }
+            return;
+        }
+
+        // Increase/Decrease Bulk Group Quantity inside modal preview
+        const bulkQtyIncBtn = e.target.closest('[data-modal-bulk-qty-inc]');
+        if (bulkQtyIncBtn) {
+            const bIdx = parseInt(bulkQtyIncBtn.dataset.modalBulkQtyInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
+            }
+            return;
+        }
+
+        const bulkQtyDecBtn = e.target.closest('[data-modal-bulk-qty-dec]');
+        if (bulkQtyDecBtn) {
+            const bIdx = parseInt(bulkQtyDecBtn.dataset.modalBulkQtyDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
+            }
+            return;
+        }
+
+        // Toggle Single Companion Pool Pass inside modal preview
+        const togglePoolBtn = e.target.closest('[data-modal-toggle-companion-pool]');
+        if (togglePoolBtn) {
+            const idx = parseInt(togglePoolBtn.dataset.modalToggleCompanionPool, 10);
+            if (!isNaN(idx) && checkInCompanions[idx]) {
+                checkInCompanions[idx].has_pool_access = !checkInCompanions[idx].has_pool_access;
+                renderCheckInCompanions();
+                renderCheckInModalCompanionPreview();
+            }
+            return;
+        }
+
+        // Increase/Decrease Bulk Pool Passes inside modal preview
+        const bulkPoolIncBtn = e.target.closest('[data-modal-bulk-pool-inc]');
+        if (bulkPoolIncBtn) {
+            const bIdx = parseInt(bulkPoolIncBtn.dataset.modalBulkPoolInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur < group.quantity) {
+                    group.pool_quantity = cur + 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+
+        const bulkPoolDecBtn = e.target.closest('[data-modal-bulk-pool-dec]');
+        if (bulkPoolDecBtn) {
+            const bIdx = parseInt(bulkPoolDecBtn.dataset.modalBulkPoolDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur > 0) {
+                    group.pool_quantity = cur - 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+    });
+
+    checkInModalCompanionPreviewList?.addEventListener('change', (e) => {
+        const input = e.target.closest('[data-modal-bulk-qty-input]');
+        if (input) {
+            const bIdx = parseInt(input.dataset.modalBulkQtyInput, 10);
+            handleCheckInBulkQtyChange(bIdx, input.value);
+        }
+    });
+
+    checkInModalCompanionClearAllBtn?.addEventListener('click', () => {
+        if (checkInCompanions.length === 0 && bulkCompanionGroups.length === 0) return;
+        openRemoveCompanionModal(
+            `Are you sure you want to <strong>clear all staged companions</strong>?`,
+            () => {
+                checkInCompanions = [];
+                bulkCompanionGroups = [];
+                renderCheckInCompanions();
+                renderCheckInModalCompanionPreview();
+            }
+        );
+    });
+
+    // Main Check-In Card Search & Filter controls
+    const checkInCompanionCountBadge = document.getElementById('checkInCompanionCountBadge');
+    const toggleCheckInCompanionFilterBtn = document.getElementById('toggleCheckInCompanionFilterBtn');
+    const checkInCompanionFilterToolbar = document.getElementById('checkInCompanionFilterToolbar');
+    const checkInCompanionSearchInput = document.getElementById('checkInCompanionSearchInput');
+    const checkInCompanionFilterGender = document.getElementById('checkInCompanionFilterGender');
+    const checkInCompanionFilterAgeGroup = document.getElementById('checkInCompanionFilterAgeGroup');
+    const checkInCompanionFilterResetBtn = document.getElementById('checkInCompanionFilterResetBtn');
+
+    toggleCheckInCompanionFilterBtn?.addEventListener('click', () => {
+        if (!checkInCompanionFilterToolbar) return;
+        const isHidden = checkInCompanionFilterToolbar.classList.contains('hidden');
+        if (isHidden) {
+            checkInCompanionFilterToolbar.classList.remove('hidden');
+            checkInCompanionFilterToolbar.classList.add('flex');
+            toggleCheckInCompanionFilterBtn.classList.add('bg-hp-green/15', 'border-hp-green/40', 'text-hp-green');
+            checkInCompanionSearchInput?.focus();
+        } else {
+            checkInCompanionFilterToolbar.classList.add('hidden');
+            checkInCompanionFilterToolbar.classList.remove('flex');
+            toggleCheckInCompanionFilterBtn.classList.remove('bg-hp-green/15', 'border-hp-green/40', 'text-hp-green');
+        }
+    });
+
+    checkInCompanionSearchInput?.addEventListener('input', () => renderCheckInCompanions());
+    checkInCompanionFilterGender?.addEventListener('change', () => renderCheckInCompanions());
+    checkInCompanionFilterAgeGroup?.addEventListener('change', () => renderCheckInCompanions());
+    checkInCompanionFilterResetBtn?.addEventListener('click', () => {
+        if (checkInCompanionSearchInput) checkInCompanionSearchInput.value = '';
+        if (checkInCompanionFilterGender) checkInCompanionFilterGender.value = '';
+        if (checkInCompanionFilterAgeGroup) checkInCompanionFilterAgeGroup.value = '';
+        renderCheckInCompanions();
+    });
 
     // Merges individually-added companions with bulk groups expanded into
     // individual companion records (used both for the summary UI hidden fields
@@ -303,119 +710,185 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const renderCheckInCompanions = () => {
+        if (!checkInCompanionList) return;
         checkInCompanionList.innerHTML = '';
-        checkInCompanionHiddenFields.innerHTML = '';
+        if (checkInCompanionHiddenFields) checkInCompanionHiddenFields.innerHTML = '';
+
+        const totalCount = getTotalCheckInCompanionCount();
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
         const resAmenities = currentReservationData?.reservation_amenities || [];
 
-        // Render individual companions (single additions)
-        if (checkInCompanions.length > 0) {
-            checkInCompanions.forEach((companion, index) => {
-                const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
-                const parsedAge = parseInt(companion.age, 10);
-                const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
-
-                let poolBadgeHtml = '';
-                if (currentPoolOpt === 'all_paid') {
-                    poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Pool Pass</span>';
-                } else if (currentPoolOpt === 'all_free') {
-                    poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Free Pool</span>';
-                } else if (currentPoolOpt === 'specific') {
-                    poolBadgeHtml = companion.has_pool_access
-                        ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access">🏊 Pool Pass ✓</button>`
-                        : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
-                }
-
-                let amenityBadgeHtml = '';
-                if (resAmenities.length > 1) {
-                    const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
-                    const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
-                }
-
-                const item = document.createElement('div');
-                item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${companion.first_name} ${companion.last_name} - ${nationality} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${companion.gender}</span>
-                        ${amenityBadgeHtml}
-                        ${poolBadgeHtml}
-                    </div>
-                    <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-companion-index="${index}">Remove</button>
-                `;
-                checkInCompanionList.appendChild(item);
-            });
+        if (checkInCompanionCountBadge) {
+            checkInCompanionCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'} added`;
         }
+
+        const searchTerm = (checkInCompanionSearchInput?.value || '').trim().toLowerCase();
+        const filterGender = (checkInCompanionFilterGender?.value || '').trim();
+        const filterAgeGroup = (checkInCompanionFilterAgeGroup?.value || '').trim();
+
+        if (checkInCompanionFilterResetBtn) {
+            const isFiltered = Boolean(searchTerm || filterGender || filterAgeGroup);
+            checkInCompanionFilterResetBtn.classList.toggle('hidden', !isFiltered);
+            checkInCompanionFilterResetBtn.classList.toggle('inline-flex', isFiltered);
+        }
+
+        let visibleCount = 0;
+
+        // Render individual companions (single additions)
+        checkInCompanions.forEach((companion, index) => {
+            const fullName = `${companion.first_name || ''} ${companion.middle_name || ''} ${companion.last_name || ''}`.toLowerCase();
+            const matchesSearch = !searchTerm || fullName.includes(searchTerm);
+            const matchesGender = !filterGender || (companion.gender || '').toLowerCase() === filterGender.toLowerCase();
+
+            let matchesAgeGroup = true;
+            if (filterAgeGroup) {
+                const parsedAge = parseInt(companion.age, 10);
+                if (filterAgeGroup === '0-12') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge <= 12;
+                } else if (filterAgeGroup === '13-17') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 13 && parsedAge <= 17;
+                } else if (filterAgeGroup === '18-59') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 18 && parsedAge <= 59;
+                } else if (filterAgeGroup === '60+') {
+                    matchesAgeGroup = !isNaN(parsedAge) && parsedAge >= 60;
+                }
+            }
+
+            if (!matchesSearch || !matchesGender || !matchesAgeGroup) {
+                return;
+            }
+
+            visibleCount++;
+            const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
+            const parsedAge = parseInt(companion.age, 10);
+            const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
+
+            let poolBadgeHtml = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Pool Pass</span>';
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 Free Pool</span>';
+            } else if (currentPoolOpt === 'specific') {
+                poolBadgeHtml = companion.has_pool_access
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access">🏊 Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
+            }
+
+            let amenityBadgeHtml = '';
+            if (resAmenities.length > 1) {
+                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
+            item.innerHTML = `
+                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)} - ${escapeHtml(nationality)} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${escapeHtml(companion.gender)}</span>
+                    ${amenityBadgeHtml}
+                    ${poolBadgeHtml}
+                </div>
+                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-companion-index="${index}" title="Remove companion">
+                    <i class="bi bi-trash3 text-xs"></i>
+                </button>
+            `;
+            checkInCompanionList.appendChild(item);
+        });
 
         // Render bulk companion groups
-        if (bulkCompanionGroups.length > 0) {
-            bulkCompanionGroups.forEach((group, index) => {
-                const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
-                const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
+        bulkCompanionGroups.forEach((group, index) => {
+            const matchesSearch = !searchTerm;
+            const matchesGender = !filterGender || (group.gender || '').toLowerCase() === filterGender.toLowerCase();
+            const matchesAgeGroup = !filterAgeGroup || group.age_group === filterAgeGroup;
 
-                let bulkPoolBadgeHtml = '';
-                if (currentPoolOpt === 'all_paid') {
-                    bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} with Pool</span>`;
-                } else if (currentPoolOpt === 'all_free') {
-                    bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} Free Pool</span>`;
-                } else if (currentPoolOpt === 'specific') {
-                    const pQty = group.pool_quantity || 0;
-                    bulkPoolBadgeHtml = `
-                        <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
-                            <span>🏊 Pool:</span>
-                            <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${index}" title="Decrease pool access quantity">−</button>
-                            <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
-                            <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${index}" title="Increase pool access quantity">+</button>
-                        </div>
-                    `;
-                }
+            if (!matchesSearch || !matchesGender || !matchesAgeGroup) {
+                return;
+            }
 
-                let bulkAmenityBadgeHtml = '';
-                if (resAmenities.length > 1) {
-                    const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                    const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
-                }
+            visibleCount++;
+            const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
-                const item = document.createElement('div');
-                item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${group.gender} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
-                        ${bulkAmenityBadgeHtml}
-                        ${bulkPoolBadgeHtml}
+            let bulkPoolBadgeHtml = '';
+            if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} with Pool</span>`;
+            } else if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold">🏊 All ${group.quantity} Free Pool</span>`;
+            } else if (currentPoolOpt === 'specific') {
+                const pQty = group.pool_quantity || 0;
+                bulkPoolBadgeHtml = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
+                        <span>🏊 Pool:</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${index}" title="Decrease pool access quantity">−</button>
+                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${index}" title="Increase pool access quantity">+</button>
                     </div>
-                    <button type="button" class="guest-companion-pill__delete text-xs font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer shrink-0" data-bulk-index="${index}">Remove</button>
                 `;
-                checkInCompanionList.appendChild(item);
-            });
-        }
+            }
 
-        if (checkInCompanions.length === 0 && bulkCompanionGroups.length === 0) {
-            checkInCompanionList.innerHTML = '<p class="guest-empty text-xs text-hp-text-muted italic py-2">No companions added yet.</p>';
+            let bulkAmenityBadgeHtml = '';
+            if (resAmenities.length > 1) {
+                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
+            }
+
+            const item = document.createElement('div');
+            item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
+            item.innerHTML = `
+                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${escapeHtml(group.gender)} - ${escapeHtml(nationality)} - Age Group: ${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    ${bulkAmenityBadgeHtml}
+                    ${bulkPoolBadgeHtml}
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
+                        <input type="number" min="1" max="500" value="${group.quantity}" data-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-inc="${index}" title="Increase quantity">+</button>
+                    </div>
+                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-bulk-index="${index}" title="Remove bulk group">
+                        <i class="bi bi-trash3 text-xs"></i>
+                    </button>
+                </div>
+            `;
+            checkInCompanionList.appendChild(item);
+        });
+
+        if (visibleCount === 0) {
+            checkInCompanionList.innerHTML = totalCount === 0
+                ? '<p class="guest-empty text-xs text-hp-text-muted italic py-2">No companions added yet.</p>'
+                : '<p class="guest-empty text-xs text-hp-text-muted italic py-2">No companions match the active filters.</p>';
         }
 
         // Generate individual companions from bulk groups for form submission
         const allCompanions = getAllCheckInCompanions();
 
-        allCompanions.forEach((companion, index) => {
-            Object.entries(companion).forEach(([key, value]) => {
-                const field = document.createElement('input');
-                field.type = 'hidden';
-                field.name = `check_in_companions[${index}][${key}]`;
-                field.value = (typeof value === 'boolean') ? (value ? '1' : '0') : (value ?? '');
-                checkInCompanionHiddenFields.appendChild(field);
+        if (checkInCompanionHiddenFields) {
+            allCompanions.forEach((companion, index) => {
+                Object.entries(companion).forEach(([key, value]) => {
+                    const field = document.createElement('input');
+                    field.type = 'hidden';
+                    field.name = `check_in_companions[${index}][${key}]`;
+                    field.value = (typeof value === 'boolean') ? (value ? '1' : '0') : (value ?? '');
+                    checkInCompanionHiddenFields.appendChild(field);
+                });
             });
-        });
+        }
 
         updateCheckInFeeSummary();
     };
 
     const openCheckInCompanionModal = () => {
-        checkInCompanionForm.reset();
+        checkInCompanionForm?.reset();
+        checkInBulkCompanionForm?.reset();
         syncCheckInPoolOptionUI();
+        syncCheckInBulkPoolMax();
+        renderCheckInModalCompanionPreview();
         if (checkInCompanionModal) {
             checkInCompanionModal.classList.add('is-open');
+            checkInCompanionModal.classList.remove('hidden');
             checkInCompanionModal.setAttribute('aria-hidden', 'false');
         }
     };
@@ -423,24 +896,8 @@ window.AppPage['staff_reservations'] = function () {
     const closeCheckInCompanionModal = () => {
         if (checkInCompanionModal) {
             checkInCompanionModal.classList.remove('is-open');
+            checkInCompanionModal.classList.add('hidden');
             checkInCompanionModal.setAttribute('aria-hidden', 'true');
-        }
-    };
-
-    const openBulkCompanionModal = () => {
-        bulkCompanionForm.reset();
-        syncCheckInPoolOptionUI();
-        syncCheckInBulkPoolMax();
-        if (bulkCompanionModal) {
-            bulkCompanionModal.classList.add('is-open');
-            bulkCompanionModal.setAttribute('aria-hidden', 'false');
-        }
-    };
-
-    const closeBulkCompanionModal = () => {
-        if (bulkCompanionModal) {
-            bulkCompanionModal.classList.remove('is-open');
-            bulkCompanionModal.setAttribute('aria-hidden', 'true');
         }
     };
 
@@ -876,19 +1333,108 @@ window.AppPage['staff_reservations'] = function () {
         updateCheckInFeeSummary();
     });
 
+    // Duplicate companion warning modal controls
+    const duplicateCompanionModal = document.getElementById('duplicateCompanionModal');
+    const duplicateCompanionMessage = document.getElementById('duplicateCompanionMessage');
+
+    const showDuplicateCompanionModal = (message) => {
+        if (duplicateCompanionMessage && message) {
+            duplicateCompanionMessage.textContent = message;
+        }
+        if (duplicateCompanionModal) {
+            duplicateCompanionModal.classList.add('is-open');
+            duplicateCompanionModal.classList.remove('hidden');
+            duplicateCompanionModal.setAttribute('aria-hidden', 'false');
+        }
+    };
+
+    const closeDuplicateCompanionModal = () => {
+        if (duplicateCompanionModal) {
+            duplicateCompanionModal.classList.remove('is-open');
+            duplicateCompanionModal.classList.add('hidden');
+            duplicateCompanionModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    document.querySelectorAll('[data-close-duplicate-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeDuplicateCompanionModal);
+    });
+
+    // Remove Companion Confirmation Modal Controls
+    const removeCompanionConfirmModal = document.getElementById('removeCompanionConfirmModal');
+    const removeCompanionModalMessage = document.getElementById('removeCompanionModalMessage');
+    const confirmRemoveCompanionBtn = document.getElementById('confirmRemoveCompanionBtn');
+    let pendingRemoveAction = null;
+
+    const openRemoveCompanionModal = (messageHtml, onConfirm) => {
+        if (!removeCompanionConfirmModal) {
+            if (typeof onConfirm === 'function') onConfirm();
+            return;
+        }
+        if (removeCompanionModalMessage && messageHtml) {
+            removeCompanionModalMessage.innerHTML = messageHtml;
+        }
+        pendingRemoveAction = onConfirm;
+        removeCompanionConfirmModal.classList.add('is-open');
+        removeCompanionConfirmModal.classList.remove('hidden');
+        removeCompanionConfirmModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeRemoveCompanionModal = () => {
+        if (!removeCompanionConfirmModal) return;
+        removeCompanionConfirmModal.classList.remove('is-open');
+        removeCompanionConfirmModal.classList.add('hidden');
+        removeCompanionConfirmModal.setAttribute('aria-hidden', 'true');
+        pendingRemoveAction = null;
+    };
+
+    document.querySelectorAll('[data-close-remove-companion-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeRemoveCompanionModal);
+    });
+
+    confirmRemoveCompanionBtn?.addEventListener('click', () => {
+        if (typeof pendingRemoveAction === 'function') {
+            pendingRemoveAction();
+        }
+        closeRemoveCompanionModal();
+    });
+
+    // Tab switching for companion modal (Single vs Bulk)
+    const checkInCompanionTabs = document.querySelectorAll('[data-checkin-companion-tab]');
+    const checkInCompanionTabContents = document.querySelectorAll('[data-checkin-companion-content]');
+
+    checkInCompanionTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.checkinCompanionTab;
+            checkInCompanionTabs.forEach(t => {
+                t.classList.remove('guest-form__tab--active', 'bg-hp-green', 'text-white', 'shadow-xs');
+                t.classList.add('bg-transparent', 'text-hp-text');
+            });
+            tab.classList.add('guest-form__tab--active', 'bg-hp-green', 'text-white', 'shadow-xs');
+            tab.classList.remove('bg-transparent', 'text-hp-text');
+
+            checkInCompanionTabContents.forEach(content => {
+                if (content.dataset.checkinCompanionContent === targetTab) {
+                    content.classList.remove('hidden');
+                    content.classList.add('guest-form--tab-content--active');
+                } else {
+                    content.classList.add('hidden');
+                    content.classList.remove('guest-form--tab-content--active');
+                }
+            });
+        });
+    });
+
     checkInAddCompanionBtn?.addEventListener('click', (e) => {
         e.preventDefault();
+        if (checkInAddCompanionBtn.disabled) return;
+        checkInAddCompanionBtn.disabled = true;
+        checkInAddCompanionBtn.classList.add('opacity-50', 'pointer-events-none');
+        setTimeout(() => {
+            checkInAddCompanionBtn.disabled = false;
+            checkInAddCompanionBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }, 1000);
         openCheckInCompanionModal();
-    });
-
-    checkInBulkCompanionBtn?.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        openBulkCompanionModal();
-    });
-
-    bulkCompanionCloseButtons.forEach((button) => {
-        button.addEventListener('click', closeBulkCompanionModal);
     });
 
     companionSummaryCloseButtons.forEach((button) => {
@@ -897,61 +1443,6 @@ window.AppPage['staff_reservations'] = function () {
 
     checkInConfirmationCloseButtons.forEach((button) => {
         button.addEventListener('click', closeCheckInConfirmationModal);
-    });
-
-    bulkCompanionForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const formData = new FormData(bulkCompanionForm);
-        const gender = formData.get('gender');
-        const isForeigner = formData.get('is_foreigner') === '1';
-        const ageGroup = formData.get('age_group');
-        const quantity = parseInt(formData.get('quantity'), 10) || 1;
-        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const bAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
-
-        const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
-        let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
-        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
-            poolQty = quantity;
-        } else if (currentPoolOpt === 'no_pool') {
-            poolQty = 0;
-        }
-
-        // Check for duplicates with same gender, nationality, age group, and assigned amenity
-        const duplicateIndex = bulkCompanionGroups.findIndex(
-            group => group.gender === gender &&
-                group.is_foreigner === isForeigner &&
-                group.age_group === ageGroup &&
-                String(group.amenity_id || '') === bAmenityId
-        );
-
-        if (duplicateIndex !== -1) {
-            const dupModal = document.getElementById('duplicateCompanionModal');
-            const dupMsg = document.getElementById('duplicateCompanionMessage');
-            if (dupModal) {
-                if (dupMsg) dupMsg.textContent = 'This companion group already exists. Please edit the existing group instead.';
-                dupModal.classList.add('is-open');
-                dupModal.classList.remove('hidden');
-                dupModal.setAttribute('aria-hidden', 'false');
-            } else if (typeof showToast === 'function') {
-                showToast('This companion group already exists. Please edit the existing group instead.', 'warning');
-            }
-            return;
-        }
-
-        // Directly add the companion group
-        bulkCompanionGroups.push({
-            gender,
-            is_foreigner: isForeigner,
-            age_group: ageGroup,
-            quantity,
-            pool_quantity: poolQty,
-            amenity_id: bAmenityId,
-        });
-
-        renderCheckInCompanions();
-        closeBulkCompanionModal();
     });
 
     proceedToCheckInBtn?.addEventListener('click', () => {
@@ -964,47 +1455,212 @@ window.AppPage['staff_reservations'] = function () {
         submitCheckInForm();
     });
 
+    // Single companion form submission with duplicate validation & 1s anti-double-click lock
     checkInCompanionForm?.addEventListener('submit', (e) => {
         e.preventDefault();
+
         const formData = new FormData(checkInCompanionForm);
+        const firstName = (formData.get('first_name') || '').trim();
+        const middleName = (formData.get('middle_name') || '').trim();
+        const lastName = (formData.get('last_name') || '').trim();
+        const ageVal = (formData.get('age') || '').trim();
+        const parsedAge = parseInt(ageVal, 10);
+        const genderVal = (formData.get('gender') || '').trim();
+        const isForeigner = formData.get('is_foreigner') === '1';
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
         const cAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
+
+        // Check duplicate against primary guest
+        const primaryFirst = (checkInForm?.querySelector('input[name="check_in_primary_guest[first_name]"]')?.value || '').trim();
+        const primaryLast = (checkInForm?.querySelector('input[name="check_in_primary_guest[last_name]"]')?.value || '').trim();
+        const primaryAge = parseInt(checkInForm?.querySelector('input[name="check_in_primary_guest[age]"]')?.value, 10);
+        const primaryGender = checkInForm?.querySelector('select[name="check_in_primary_guest[gender]"]')?.value;
+        const primaryIsForeigner = checkInForm?.querySelector('select[name="check_in_primary_guest[is_foreigner]"]')?.value === '1';
+
+        const isMatchPrimary = firstName.toLowerCase() === primaryFirst.toLowerCase() &&
+            lastName.toLowerCase() === primaryLast.toLowerCase() &&
+            parsedAge === primaryAge &&
+            genderVal.toLowerCase() === (primaryGender || '').toLowerCase() &&
+            isForeigner === primaryIsForeigner;
+
+        if (isMatchPrimary) {
+            showDuplicateCompanionModal(`A guest with the name "${firstName} ${lastName}" is already registered as the primary guest.`);
+            return;
+        }
+
+        // Check duplicate against staged single companions
+        const isDuplicateSingle = checkInCompanions.some(c => {
+            const sameFirst = (c.first_name || '').trim().toLowerCase() === firstName.toLowerCase();
+            const sameMiddle = (c.middle_name || '').trim().toLowerCase() === middleName.toLowerCase();
+            const sameLast = (c.last_name || '').trim().toLowerCase() === lastName.toLowerCase();
+            const sameAge = parseInt(c.age, 10) === parsedAge;
+            const sameGender = (c.gender || '').toLowerCase() === genderVal.toLowerCase();
+            const sameNat = Boolean(c.is_foreigner) === isForeigner;
+            return sameFirst && sameMiddle && sameLast && sameAge && sameGender && sameNat;
+        });
+
+        if (isDuplicateSingle) {
+            showDuplicateCompanionModal(`A companion with the name "${firstName} ${lastName}" and identical demographic info is already in the list.`);
+            return;
+        }
+
+        // 1-second anti-double-click lock on submit button
+        const submitBtn = checkInCompanionForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'pointer-events-none');
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }, 1000);
+        }
 
         const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
             ? true
             : (currentPoolOpt === 'specific' ? (formData.get('has_pool_access') === '1' || checkInCompanionHasPool?.checked) : false);
 
         const companion = {
-            first_name: formData.get('first_name') || 'Companion',
-            middle_name: formData.get('middle_name'),
-            last_name: formData.get('last_name') || 'Guest',
-            age: formData.get('age'),
-            gender: formData.get('gender') || 'Male',
-            is_foreigner: formData.get('is_foreigner') === '1',
-            phone: formData.get('phone'),
-            email: formData.get('email'),
+            first_name: firstName || 'Companion',
+            middle_name: middleName,
+            last_name: lastName || 'Guest',
+            age: ageVal,
+            gender: genderVal || 'Male',
+            is_foreigner: isForeigner,
+            phone: (formData.get('phone') || '').trim(),
+            email: (formData.get('email') || '').trim(),
             has_pool_access: companionHasPool,
             amenity_id: cAmenityId,
         };
+
         checkInCompanions.push(companion);
         renderCheckInCompanions();
-        closeCheckInCompanionModal();
+        renderCheckInModalCompanionPreview();
+
+        checkInCompanionForm.reset();
+        if (checkInCompanionIsForeigner) checkInCompanionIsForeigner.value = '0';
+        syncCheckInPoolOptionUI();
     });
 
-    // Companion list interaction: remove and toggle/stepper controls
+    // Bulk companion form submission with duplicate validation & 1s anti-double-click lock
+    checkInBulkCompanionForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const formData = new FormData(checkInBulkCompanionForm);
+        const gender = formData.get('gender') || 'Male';
+        const isForeigner = formData.get('is_foreigner') === '1';
+        const ageGroup = formData.get('age_group') || '18-59';
+        const quantity = parseInt(formData.get('quantity'), 10) || 1;
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+        const bAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
+
+        const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
+        let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
+        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+            poolQty = quantity;
+        } else if (currentPoolOpt === 'no_pool') {
+            poolQty = 0;
+        }
+
+        // Check for duplicate bulk group with exact same demographic profile & amenity
+        const duplicateGroup = bulkCompanionGroups.find(
+            group => group.gender === gender &&
+                group.is_foreigner === isForeigner &&
+                group.age_group === ageGroup &&
+                String(group.amenity_id || '') === bAmenityId
+        );
+
+        if (duplicateGroup) {
+            showDuplicateCompanionModal(`A bulk companion group for "${gender}, Age ${ageGroup} (${isForeigner ? 'Foreigner' : 'Filipino'})" already exists. Please adjust its quantity on the staged preview instead of creating a duplicate.`);
+            return;
+        }
+
+        // 1-second anti-double-click lock on submit button
+        const submitBtn = checkInBulkCompanionForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'pointer-events-none');
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }, 1000);
+        }
+
+        bulkCompanionGroups.push({
+            gender,
+            is_foreigner: isForeigner,
+            age_group: ageGroup,
+            quantity,
+            pool_quantity: poolQty,
+            amenity_id: bAmenityId,
+        });
+
+        renderCheckInCompanions();
+        renderCheckInModalCompanionPreview();
+
+        checkInBulkCompanionForm.reset();
+        if (checkInBulkCompanionQuantity) checkInBulkCompanionQuantity.value = '1';
+        syncCheckInBulkPoolMax();
+    });
+
+    // Delete / Toggle companion handlers on the main check-in card
     checkInCompanionList?.addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('.guest-companion-pill__delete');
+        const removeBtn = e.target.closest('[data-companion-index]') || e.target.closest('[data-bulk-index]') || e.target.closest('.guest-companion-pill__delete');
         if (removeBtn) {
             const index = removeBtn.dataset.companionIndex;
             const bulkIndex = removeBtn.dataset.bulkIndex;
 
             if (index !== undefined && index !== null && index !== '') {
-                checkInCompanions.splice(parseInt(index, 10), 1);
+                const idx = parseInt(index, 10);
+                if (!isNaN(idx) && checkInCompanions[idx]) {
+                    const comp = checkInCompanions[idx];
+                    const name = comp ? `${comp.first_name} ${comp.last_name}` : 'this companion';
+                    openRemoveCompanionModal(
+                        `Are you sure you want to remove <strong>${escapeHtml(name)}</strong> from the companion list?`,
+                        () => {
+                            checkInCompanions.splice(idx, 1);
+                            renderCheckInCompanions();
+                            renderCheckInModalCompanionPreview();
+                        }
+                    );
+                }
             } else if (bulkIndex !== undefined && bulkIndex !== null && bulkIndex !== '') {
-                bulkCompanionGroups.splice(parseInt(bulkIndex, 10), 1);
+                const bIdx = parseInt(bulkIndex, 10);
+                if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                    const grp = bulkCompanionGroups[bIdx];
+                    const desc = grp ? `${grp.quantity} guests (${grp.gender}, Age ${grp.age_group})` : 'this bulk group';
+                    openRemoveCompanionModal(
+                        `Are you sure you want to remove the bulk companion group with <strong>${escapeHtml(desc)}</strong>?`,
+                        () => {
+                            bulkCompanionGroups.splice(bIdx, 1);
+                            renderCheckInCompanions();
+                            renderCheckInModalCompanionPreview();
+                        }
+                    );
+                }
             }
+            return;
+        }
 
-            renderCheckInCompanions();
+        // Stepper: Increase Bulk Group Quantity
+        const bulkQtyIncBtn = e.target.closest('[data-bulk-qty-inc]');
+        if (bulkQtyIncBtn) {
+            const bIdx = parseInt(bulkQtyIncBtn.dataset.bulkQtyInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
+            }
+            return;
+        }
+
+        // Stepper: Decrease Bulk Group Quantity
+        const bulkQtyDecBtn = e.target.closest('[data-bulk-qty-dec]');
+        if (bulkQtyDecBtn) {
+            const bIdx = parseInt(bulkQtyDecBtn.dataset.bulkQtyDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
+            }
             return;
         }
 
@@ -1015,6 +1671,7 @@ window.AppPage['staff_reservations'] = function () {
             if (!isNaN(cIdx) && checkInCompanions[cIdx]) {
                 checkInCompanions[cIdx].has_pool_access = !checkInCompanions[cIdx].has_pool_access;
                 renderCheckInCompanions();
+                renderCheckInModalCompanionPreview();
             }
             return;
         }
@@ -1029,6 +1686,7 @@ window.AppPage['staff_reservations'] = function () {
                 if (cur < group.quantity) {
                     group.pool_quantity = cur + 1;
                     renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
                 }
             }
             return;
@@ -1044,9 +1702,18 @@ window.AppPage['staff_reservations'] = function () {
                 if (cur > 0) {
                     group.pool_quantity = cur - 1;
                     renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
                 }
             }
             return;
+        }
+    });
+
+    checkInCompanionList?.addEventListener('change', (e) => {
+        const input = e.target.closest('[data-bulk-qty-input]');
+        if (input) {
+            const bIdx = parseInt(input.dataset.bulkQtyInput, 10);
+            handleCheckInBulkQtyChange(bIdx, input.value);
         }
     });
 

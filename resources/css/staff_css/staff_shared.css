@@ -5337,6 +5337,11 @@ body.admin-portal .guest-row--companion td:first-child {
     width: min(900px, calc(100% - 2rem));
 }
 
+.guest-modal__content--companion-unified {
+    width: min(1360px, 95vw) !important;
+    max-width: 1360px !important;
+}
+
 /* Form Actions */
 .guest-form__actions {
     display: flex;
