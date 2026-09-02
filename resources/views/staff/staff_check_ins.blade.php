@@ -100,12 +100,12 @@
 		<x-staff_sidemenu active="checkins" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
 		<div class="dash-main">
+			<x-header
+				title="Check Ins"
+				subtitle="Active check-ins and walk-ins"
+			/>
 
 			<main class="dash-content p-6">
-				<x-header
-					title="Check Ins"
-					subtitle="Active check-ins and walk-ins"
-				/>
 				@if (session('success'))
 					<div class="mb-4 rounded-xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-hp-green" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
 				@endif

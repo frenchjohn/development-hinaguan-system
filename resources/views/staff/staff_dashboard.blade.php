@@ -98,13 +98,13 @@
         <x-staff_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
+            <x-header
+                title="Staff Dashboard"
+                subtitle="Daily tasks and guest activity at the park"
+                :showWelcome="true"
+            />
 
             <main class="dash-content p-6">
-                <x-header
-                    title="Staff Dashboard"
-                    subtitle="Daily tasks and guest activity at the park"
-                    :showWelcome="true"
-                />
 
                 @php
                     $donutColors = [

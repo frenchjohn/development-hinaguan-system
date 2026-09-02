@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -97,11 +97,12 @@
         <x-admin_sidemenu active="feedback" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
+            <x-header
+                title="Guest Feedback"
+                subtitle="Review, show, or hide visitor reviews"
+            />
+
             <main class="dash-content p-6">
-                <x-header
-                    title="Guest Feedback"
-                    subtitle="Review, show, or hide visitor reviews"
-                />
 
                 <section class="mb-7 flex flex-wrap items-start justify-between gap-6">
                     <div>

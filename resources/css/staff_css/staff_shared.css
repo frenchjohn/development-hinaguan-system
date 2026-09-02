@@ -373,13 +373,42 @@ body.admin-portal .reports-metric-card {
    ------------------------------------------------------------ */
 body.staff-portal .dash-header,
 body.admin-portal .dash-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+    width: 100% !important;
+    max-width: 100% !important;
     background: transparent !important;
     background-color: transparent !important;
-    border-bottom: none !important;
+    border-bottom: 1px solid transparent !important;
     box-shadow: none !important;
     min-height: 0;
-    margin: 0 0 1.25rem 0 !important;
-    padding: 0 !important;
+    margin: 0 !important;
+    padding: 0.85rem 1.5rem !important;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                backdrop-filter 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+body.staff-portal .dash-header.is-scrolled,
+body.admin-portal .dash-header.is-scrolled {
+    background: rgba(245, 245, 240, 0.92) !important;
+    background-color: rgba(245, 245, 240, 0.92) !important;
+    backdrop-filter: blur(16px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
+    border-bottom: 1px solid rgba(13, 44, 29, 0.08) !important;
+    box-shadow: 0 4px 20px -2px rgba(13, 44, 29, 0.08), 0 2px 6px -1px rgba(13, 44, 29, 0.04) !important;
+}
+
+[data-theme="dark"] body.staff-portal .dash-header.is-scrolled,
+[data-theme="dark"] body.admin-portal .dash-header.is-scrolled {
+    background: rgba(15, 17, 16, 0.94) !important;
+    background-color: rgba(15, 17, 16, 0.94) !important;
+    backdrop-filter: blur(16px) saturate(1.5) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.5) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6), 0 2px 6px -1px rgba(0, 0, 0, 0.4) !important;
 }
 
 body.staff-portal .dash-header__overlay,

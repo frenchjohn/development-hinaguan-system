@@ -902,4 +902,16 @@ document.addEventListener('DOMContentLoaded', () => {
         window.__weatherClockInterval = setInterval(updateWeatherClock, 1000);
     }
     updateWeatherClock();
+
+    // Sticky Header Scroll Detection (Staff & Admin)
+    const updateHeaderStickyState = () => {
+        const header = document.querySelector('[data-dash-header]');
+        if (!header) return;
+        const isScrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 10;
+        header.classList.toggle('is-scrolled', isScrolled);
+    };
+
+    window.addEventListener('scroll', updateHeaderStickyState, { passive: true });
+    window.addEventListener('spa:navigated', updateHeaderStickyState);
+    updateHeaderStickyState();
 });

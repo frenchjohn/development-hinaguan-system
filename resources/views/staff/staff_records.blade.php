@@ -98,12 +98,12 @@
         <x-staff_sidemenu active="records" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
+            <x-header
+                title="Records & Archives"
+                subtitle="Historical records of checked-out guests, completed stays, no shows, and cancelled reservations"
+            />
 
             <main class="dash-content p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-                <x-header
-                    title="Records & Archives"
-                    subtitle="Historical records of checked-out guests, completed stays, no shows, and cancelled reservations"
-                />
 
                 <!-- SUMMARY STRIP METRIC CARDS -->
                 <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

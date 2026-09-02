@@ -101,6 +101,10 @@
         <x-staff_sidemenu active="reservations" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
+            <x-header
+                title="Reservations"
+                subtitle="Manage online reservations and walk-in check-ins"
+            />
 
             <main class="dash-content p-6">
                 @php
@@ -119,11 +123,6 @@
                         }
                     }
                 @endphp
-
-                <x-header
-                    title="Reservations"
-                    subtitle="Manage online reservations and walk-in check-ins"
-                />
 
                 <script data-spa-data="">
                     window.staffAmenitiesData = @json($allAmenities ?? []);

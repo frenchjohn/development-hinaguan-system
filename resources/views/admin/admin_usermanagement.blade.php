@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -99,12 +99,12 @@
         <x-admin_sidemenu active="users" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
+            <x-header
+                title="User Management"
+                subtitle="Manage staff accounts and access"
+            />
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <x-header
-                    title="User Management"
-                    subtitle="Manage staff accounts and access"
-                />
                 <section class="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <p class="m-0 mb-[0.3rem] text-[0.8rem] font-bold uppercase tracking-[0.16em] text-[var(--hp-gold-dark)]">Manage Staff Accounts</p>

@@ -98,9 +98,9 @@
     <div class="dash-layout">
         <x-admin_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
         <div class="dash-main">
+            <x-header title="Settings" subtitle="Manage park configuration, rules, and security" />
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <x-header title="Settings" subtitle="Manage park configuration, rules, and security" />
                 <div class="admin-settings">
                     <!-- Horizontal Card Menu -->
                     <div class="admin-settings__menu" id="settingsMenu">

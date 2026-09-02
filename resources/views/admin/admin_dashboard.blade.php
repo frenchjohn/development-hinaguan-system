@@ -99,12 +99,13 @@
         <x-admin_sidemenu active="dashboard" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
+            <x-header
+                title="Admin Dashboard"
+                subtitle="Overview of park operations, reservations, revenue, and analytics"
+                :showWelcome="true"
+            />
+
             <main class="dash-content p-6">
-                <x-header
-                    title="Admin Dashboard"
-                    subtitle="Overview of park operations, reservations, revenue, and analytics"
-                    :showWelcome="true"
-                />
 
                 @php
                     $hour = (int) now()->format('G');

@@ -375,8 +375,8 @@ window.addEventListener('DOMContentLoaded', function () {
             if (token !== navToken) return;
 
             // Persistent Header DOM swap: keep header intact, update only page title & body content
-            const currentHeader = main.querySelector(':scope > header, :scope > .dash-header, [data-dash-header]');
-            const newHeader = newMain.querySelector(':scope > header, :scope > .dash-header, [data-dash-header]');
+            const currentHeader = document.querySelector('[data-dash-header]');
+            const newHeader = doc ? doc.querySelector('[data-dash-header]') : null;
 
             if (currentHeader && newHeader) {
                 const newH1 = newHeader.querySelector('h1');
@@ -396,19 +396,8 @@ window.addEventListener('DOMContentLoaded', function () {
                         currentP.style.display = 'none';
                     }
                 }
-
-                // Remove only non-header elements from current main
-                const toRemove = Array.from(main.children).filter(el => el !== currentHeader);
-                toRemove.forEach(el => el.remove());
-
-                // Append all non-header elements from newMain
-                const toAdd = Array.from(newMain.children).filter(el => el !== newHeader);
-                toAdd.forEach(el => {
-                    main.appendChild(el.cloneNode(true));
-                });
-            } else {
-                main.innerHTML = newMain.innerHTML;
             }
+            main.innerHTML = newMain.innerHTML;
             finishNavBar();
 
             // Swap body classes

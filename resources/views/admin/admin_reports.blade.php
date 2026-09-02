@@ -351,11 +351,12 @@
         <x-admin_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
+            <x-header
+                title="Admin Reports & Analytics"
+                subtitle="Comprehensive analytics, revenue performance, and park operational ledger"
+            />
+
             <main class="dash-content p-6">
-                <x-header
-                    title="Admin Reports & Analytics"
-                    subtitle="Comprehensive analytics, revenue performance, and park operational ledger"
-                />
 
                 <!-- SECTION NAVIGATION TABS -->
                 <div class="web-only-section mb-6 flex flex-wrap items-center justify-between gap-4">

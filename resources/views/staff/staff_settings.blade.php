@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -97,9 +97,9 @@
     <div class="dash-layout">
         <x-staff_sidemenu active="settings" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
         <div class="dash-main">
+            <x-header title="Settings" subtitle="Update your profile securely" />
 
             <main class="dash-content p-6">
-                <x-header title="Settings" subtitle="Update your profile securely" />
 
                 @if(session('success'))
                     <div class="mb-4 rounded-2xl border border-glass-border bg-[rgba(26,58,31,0.15)] px-4 py-3 text-sm font-semibold text-hp-green shadow-glass">{{ session('success') }}</div>

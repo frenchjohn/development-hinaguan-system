@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -99,12 +99,12 @@
         <x-admin_sidemenu active="amenities" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
         <div class="dash-main">
+            <x-header
+                title="Amenities Management"
+                subtitle="Create, edit, and maintain park amenities"
+            />
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <x-header
-                    title="Amenities Management"
-                    subtitle="Create, edit, and maintain park amenities"
-                />
                 <section class="mb-7 flex flex-wrap items-start justify-between gap-6">
                     <div>
                         <p class="mb-3 inline-flex rounded-full bg-[rgba(200,164,93,0.12)] px-[0.95rem] py-[0.45rem] text-[0.85rem] font-bold uppercase tracking-[0.14em] text-[var(--hp-gold-dark)]">Manage Amenities</p>

@@ -98,12 +98,12 @@
         <x-staff_sidemenu active="occupancy-monitor" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
+            <x-header
+                title="Occupancy Monitor"
+                subtitle="Real-time view of all amenities and their availability"
+            />
 
             <main class="dash-content p-6">
-                <x-header
-                    title="Occupancy Monitor"
-                    subtitle="Real-time view of all amenities and their availability"
-                />
 
                 {{-- Live status strip --}}
                 <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3">

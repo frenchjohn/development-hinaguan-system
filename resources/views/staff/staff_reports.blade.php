@@ -140,12 +140,12 @@
         <x-staff_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
         <div class="dash-main">
+            <x-header
+                title="Staff Reports"
+                subtitle="Customer, reservation, and amenity insights"
+            />
 
             <main class="dash-content p-6">
-                <x-header
-                    title="Staff Reports"
-                    subtitle="Customer, reservation, and amenity insights"
-                />
 
                 {{-- Segmented Mode Switcher (Standard vs AI) --}}
                 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
