@@ -1374,28 +1374,45 @@ body.staff-portal .guest-panel .guest-table thead th.sortable,
 body.admin-portal .guest-panel .guest-table thead th.sortable {
     cursor: pointer;
     user-select: none;
+    transition: color 0.15s ease;
+}
+
+body.staff-portal .guest-panel .guest-table thead th.sortable:hover,
+body.admin-portal .guest-panel .guest-table thead th.sortable:hover {
+    color: var(--green) !important;
 }
 
 body.staff-portal .guest-panel .guest-table thead th.sortable::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable::after {
-    content: '\2195';
+    content: ' \21C5';
     margin-left: 0.35rem;
-    font-size: 0.62rem;
-    opacity: 0.45;
+    font-size: 0.7rem;
+    opacity: 0.35;
+    font-family: system-ui, sans-serif;
+    display: inline-block;
+    vertical-align: baseline;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+body.staff-portal .guest-panel .guest-table thead th.sortable:hover::after,
+body.admin-portal .guest-panel .guest-table thead th.sortable:hover::after {
+    opacity: 0.75;
 }
 
 body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-asc::after {
-    content: '\2191';
+    content: ' \2191';
     opacity: 1;
     color: var(--green);
+    font-weight: 800;
 }
 
 body.staff-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after,
 body.admin-portal .guest-panel .guest-table thead th.sortable.is-sorted-desc::after {
-    content: '\2193';
+    content: ' \2193';
     opacity: 1;
     color: var(--green);
+    font-weight: 800;
 }
 
 body.staff-portal .guest-table,
@@ -14770,4 +14787,22 @@ body.admin-portal .cell-person__avatar--bulk {
 .dark .nested-guest-avatar.guest-avatar-glow--both,
 [data-theme='dark'] .nested-guest-avatar.guest-avatar-glow--both {
     box-shadow: 0 0 0 2px #38bdf8, 0 0 0 4px #fbbf24, 0 0 14px rgba(56, 189, 248, 0.85), 0 0 18px rgba(251, 191, 36, 0.75), inset 0 2px 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Hide number input up/down arrows/spinners */
+input[type="number"].no-spinners::-webkit-inner-spin-button,
+input[type="number"].no-spinners::-webkit-outer-spin-button,
+[data-modal-bulk-qty-input]::-webkit-inner-spin-button,
+[data-modal-bulk-qty-input]::-webkit-outer-spin-button,
+[data-bulk-qty-input]::-webkit-inner-spin-button,
+[data-bulk-qty-input]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input[type="number"].no-spinners,
+[data-modal-bulk-qty-input],
+[data-bulk-qty-input] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
 }

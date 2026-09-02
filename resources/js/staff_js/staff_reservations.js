@@ -927,8 +927,16 @@ window.AppPage['staff_reservations'] = function () {
         );
 
         if (duplicateIndex !== -1) {
-            alert('This companion group already exists. Please edit the existing group instead.');
-            closeBulkCompanionModal();
+            const dupModal = document.getElementById('duplicateCompanionModal');
+            const dupMsg = document.getElementById('duplicateCompanionMessage');
+            if (dupModal) {
+                if (dupMsg) dupMsg.textContent = 'This companion group already exists. Please edit the existing group instead.';
+                dupModal.classList.add('is-open');
+                dupModal.classList.remove('hidden');
+                dupModal.setAttribute('aria-hidden', 'false');
+            } else if (typeof showToast === 'function') {
+                showToast('This companion group already exists. Please edit the existing group instead.', 'warning');
+            }
             return;
         }
 

@@ -1638,18 +1638,6 @@
 										<p class="m-0 text-[0.72rem] text-hp-text-muted" id="walkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
 									</div>
 
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text">Companions</label>
-										<div class="guest-form__actions-inline flex flex-wrap gap-2">
-											<button type="button" class="guest-form__action-btn inline-flex cursor-pointer items-center rounded-lg border border-glass-border bg-glass px-3 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="addCompanionBtn">
-												<svg class="mr-1.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-												</svg>
-												Add Companion
-											</button>
-										</div>
-									</div>
-
 									<div class="guest-form__field-group grid gap-1.5">
 										<label class="guest-form__label text-sm font-semibold text-hp-text">Entrance Fees Summary</label>
 										<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
@@ -1751,11 +1739,58 @@
 							</div>
 
 							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
-								<div class="guest-form__section-header mb-2 flex items-center justify-between">
-									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
-									<span id="walkInCompanionCountBadge" class="text-xs text-hp-text-muted">0 companions</span>
+								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
+									<div>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
+										<p class="m-0 text-xs text-hp-text-muted" id="walkInCompanionCountBadge">0 companions added</p>
+									</div>
+									<div class="flex items-center gap-2">
+										<button type="button" id="toggleCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong active:scale-[0.98]" title="Toggle companion search & filters">
+											<i class="bi bi-funnel text-xs text-hp-green"></i>
+											<span>Filter & Search</span>
+										</button>
+										<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="addCompanionBtn">
+											<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+											</svg>
+											<span>+ Add Companions</span>
+										</button>
+									</div>
 								</div>
-								<div id="companionList" class="guest-companion-list grid gap-2"></div>
+								<div id="companionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
+									<!-- Search single companion by name -->
+									<div class="relative flex-1 min-w-[170px]">
+										<i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
+										<input type="text" id="companionSearchInput" placeholder="Search single companion..." class="w-full rounded-xl border border-glass-border bg-glass py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+									
+									<!-- Filter bulk: Gender -->
+									<div class="w-auto min-w-[110px]">
+										<select id="companionFilterGender" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="">All Genders</option>
+											<option value="Male">Male</option>
+											<option value="Female">Female</option>
+										</select>
+									</div>
+
+									<!-- Filter bulk: Age Group -->
+									<div class="w-auto min-w-[125px]">
+										<select id="companionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="">All Age Groups</option>
+											<option value="0-12">Kids (0-12)</option>
+											<option value="13-17">Teens (13-17)</option>
+											<option value="18-59">Adults (18-59)</option>
+											<option value="60+">Seniors (60+)</option>
+										</select>
+									</div>
+
+									<button type="button" id="companionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
+										<i class="bi bi-x-circle"></i>
+										<span>Reset</span>
+									</button>
+								</div>
+
+								<div id="companionList" class="guest-companion-list grid gap-2 max-h-[290px] overflow-y-auto overflow-x-hidden pr-1"></div>
 								<div id="companionHiddenFields"></div>
 							</div>
 
@@ -1987,152 +2022,307 @@
 
 				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
-						<div class="guest-modal__header mb-4 flex items-center gap-3">
-							<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
-						</div>
-						<div class="guest-form__tabs mb-4 flex gap-2 rounded-xl border border-glass-border bg-glass p-1.5">
-							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-hp-green px-4 py-2.5 text-sm font-bold text-white transition-all duration-200" data-companion-tab="single">Single Companion</button>
-							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" data-companion-tab="bulk">Bulk Companions</button>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[1140px] max-h-[min(92vh,880px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text hover:text-hp-green transition-colors" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
+						
+						<!-- MODAL HEADER -->
+						<div class="guest-modal__header mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/40 pb-3">
+							<div class="flex items-center gap-3">
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+									<i class="bi bi-people-fill text-xl"></i>
+								</div>
+								<div>
+									<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-xl font-bold text-hp-text">Add Companions</h3>
+									<p class="m-0 text-xs text-hp-text-muted">Create single or bulk companions on the left, review staged companions on the right</p>
+								</div>
+							</div>
+							<div class="flex items-center gap-2">
+								<span id="modalCompanionStagedBadge" class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300">
+									<span id="modalCompanionStagedCount">0</span> Staged
+								</span>
+							</div>
 						</div>
 
-						<!-- Single Companion Form -->
-						<form id="companionForm" class="guest-form guest-form--tab-content guest-form--tab-content--active grid gap-4" data-companion-content="single">
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_first_name">First name</label>
-									<input type="text" name="first_name" id="companion_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+						<!-- TWO COLUMN LAYOUT: CREATOR (LEFT) & PREVIEW (RIGHT) -->
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+							
+							<!-- LEFT SIDE: COMPANION CREATOR -->
+							<div class="lg:col-span-7 flex flex-col gap-3">
+								<div class="guest-form__tabs flex gap-2 rounded-xl border border-glass-border bg-glass p-1.5">
+									<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-hp-green px-4 py-2.5 text-xs font-bold text-white transition-all duration-200" data-companion-tab="single">
+										<i class="bi bi-person-plus-fill me-1.5"></i>Single Companion
+									</button>
+									<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" data-companion-tab="bulk">
+										<i class="bi bi-people-fill me-1.5"></i>Bulk Companions
+									</button>
 								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_middle_name">Middle name</label>
-									<input type="text" name="middle_name" id="companion_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_last_name">Last name</label>
-									<input type="text" name="last_name" id="companion_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<div class="flex items-center justify-between">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_age">Age</label>
-										<span id="companionAgeComputedBadge" class="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">Adult Rate</span>
-									</div>
-									<input type="number" name="age" id="companion_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									<input type="hidden" name="age_type" id="companion_age_type" value="adult">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_gender">Gender</label>
-									<select name="gender" id="companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="">Select gender</option>
-										<option value="Male">Male</option>
-										<option value="Female">Female</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companionIsForeigner">Nationality</label>
-									<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0" selected>Filipino</option>
-										<option value="1">Foreigner</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_phone">Phone</label>
-									<input type="text" name="phone" id="companion_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="companion_email">Email</label>
-									<input type="email" name="email" id="companion_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="walkInSingleCompanionAmenityWrap" style="display: none;">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInCompanionAmenity">Assign to Amenity</label>
-									<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
-								</div>
-								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionFreeEntranceWrap" style="display: none;">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-										<div class="flex items-center gap-2">
-											<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
-											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee for this Companion</span>
-										</div>
-										<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-									</label>
-								</div>
-								<div class="guest-form__field-group sm:col-span-3 rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-										<div class="flex items-center gap-2">
-											<i class="bi bi-water text-sky-600 text-base"></i>
-											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for this Companion</span>
-										</div>
-										<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-									</label>
-								</div>
-							</div>
-							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
-							</div>
-						</form>
 
-						<!-- Bulk Companion Form -->
-						<form id="bulkCompanionForm" class="guest-form guest-form--tab-content gap-4" data-companion-content="bulk" style="display: none;">
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_gender">Gender</label>
-									<select name="gender" id="bulk_companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="">Select gender</option>
-										<option value="Male">Male</option>
-										<option value="Female">Female</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_age_group">Age Group</label>
-									<select name="age_group" id="bulk_companion_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0-12">Kids (0-12)</option>
-										<option value="13-17">Teens (13-17)</option>
-										<option value="18-59">Adults (18-59)</option>
-										<option value="60+">Seniors (60+)</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0" selected>Filipino</option>
-										<option value="1">Foreigner</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="bulk_companion_quantity">Quantity (Total in Group)</label>
-									<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="walkInBulkCompanionAmenityWrap" style="display: none;">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInBulkCompanionAmenity">Assign to Amenity</label>
-									<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
-									<div class="flex items-center justify-between">
-										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_free_quantity">
-											<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance Quantity
-										</label>
-										<span class="text-[0.72rem] font-bold text-amber-800 dark:text-amber-300" id="bulkFreeQtyHint">0 of 1 with free entrance</span>
+								<!-- Single Companion Form -->
+								<form id="walkInCompanionForm" class="guest-form guest-form--tab-content guest-form--tab-content--active grid gap-3 rounded-2xl border border-glass-border/60 bg-glass/60 p-4 shadow-xs" data-companion-content="single">
+									<div class="guest-form__grid grid grid-cols-1 gap-3 sm:grid-cols-3">
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_first_name">First name</label>
+											<input type="text" name="first_name" id="companion_first_name" placeholder="First name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_middle_name">Middle name</label>
+											<input type="text" name="middle_name" id="companion_middle_name" placeholder="Middle" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_last_name">Last name</label>
+											<input type="text" name="last_name" id="companion_last_name" placeholder="Last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
 									</div>
-									<input type="number" name="free_entrance_quantity" id="bulk_companion_free_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									<p class="m-0 text-[0.7rem] text-hp-text-muted">Specify how many guests in this bulk group receive free entrance (e.g. 2 of 5).</p>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-3" id="bulkCompanionPoolWrap">
-									<div class="flex items-center justify-between">
-										<label class="guest-form__label text-sm font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_pool_quantity">
-											<i class="bi bi-water text-sky-600"></i> Pool Access Quantity
-										</label>
-										<span class="text-[0.72rem] text-hp-text-muted" id="bulkPoolQtyHint">0 of 1 with pool access</span>
+
+									<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+										<div class="guest-form__field-group grid gap-1">
+											<div class="flex items-center justify-between">
+												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_age">Age</label>
+												<span id="companionAgeComputedBadge" class="rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.2 text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">Adult</span>
+											</div>
+											<input type="number" name="age" id="companion_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<input type="hidden" name="age_type" id="companion_age_type" value="adult">
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_gender">Gender</label>
+											<select name="gender" id="companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">Select</option>
+												<option value="Male">Male</option>
+												<option value="Female">Female</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companionIsForeigner">Nationality</label>
+											<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="0" selected>Filipino</option>
+												<option value="1">Foreigner</option>
+											</select>
+										</div>
 									</div>
-									<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									<p class="m-0 text-[0.7rem] text-hp-text-muted">Specify how many people in this bulk group want pool access (e.g. 3 of 5).</p>
+
+									<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_phone">Phone (Optional)</label>
+											<input type="text" name="phone" id="companion_phone" placeholder="Phone" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_email">Email (Optional)</label>
+											<input type="email" name="email" id="companion_email" placeholder="Email" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+									</div>
+
+									<div class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2" id="walkInSingleCompanionAmenityWrap" style="display: none;">
+										<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInCompanionAmenity">Assign to Amenity</label>
+										<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+									</div>
+
+									<div class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionFreeEntranceWrap" style="display: none;">
+										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-xs text-hp-text">
+											<div class="flex items-center gap-2">
+												<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm"></i>
+												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee for this Companion</span>
+											</div>
+											<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+										</label>
+									</div>
+
+									<div class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
+										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-xs text-hp-text">
+											<div class="flex items-center gap-2">
+												<i class="bi bi-water text-sky-600 text-sm"></i>
+												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for this Companion</span>
+											</div>
+											<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+										</label>
+									</div>
+
+									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
+										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
+											<i class="bi bi-plus-circle"></i>
+											<span>Add Single Companion</span>
+										</button>
+									</div>
+								</form>
+
+								<!-- Bulk Companion Form -->
+								<form id="walkInBulkCompanionForm" class="guest-form guest-form--tab-content gap-3 rounded-2xl border border-glass-border/60 bg-glass/60 p-4 shadow-xs" data-companion-content="bulk" style="display: none;">
+									<div class="guest-form__grid grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="bulk_companion_gender">Gender</label>
+											<select name="gender" id="bulk_companion_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">Select</option>
+												<option value="Male">Male</option>
+												<option value="Female">Female</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="bulk_companion_age_group">Age Group</label>
+											<select name="age_group" id="bulk_companion_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="0-12">Kids (0-12)</option>
+												<option value="13-17">Teens (13-17)</option>
+												<option value="18-59">Adults (18-59)</option>
+												<option value="60+">Seniors (60+)</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="bulk_companion_is_foreigner">Nationality</label>
+											<select name="is_foreigner" id="bulk_companion_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="0" selected>Filipino</option>
+												<option value="1">Foreigner</option>
+											</select>
+										</div>
+										<div class="guest-form__field-group grid gap-1">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="bulk_companion_quantity">Quantity (Group Size)</label>
+											<input type="number" name="quantity" id="bulk_companion_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2" id="walkInBulkCompanionAmenityWrap" style="display: none;">
+											<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInBulkCompanionAmenity">Assign to Amenity</label>
+											<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+										</div>
+										<div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
+											<div class="flex items-center justify-between">
+												<label class="guest-form__label text-xs font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_free_quantity">
+													<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance Quantity
+												</label>
+												<span class="text-[0.68rem] font-bold text-amber-800 dark:text-amber-300" id="bulkFreeQtyHint">0 of 1</span>
+											</div>
+											<input type="number" name="free_entrance_quantity" id="bulk_companion_free_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="bulkCompanionPoolWrap">
+											<div class="flex items-center justify-between">
+												<label class="guest-form__label text-xs font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_pool_quantity">
+													<i class="bi bi-water text-sky-600"></i> Pool Access Quantity
+												</label>
+												<span class="text-[0.68rem] text-hp-text-muted" id="bulkPoolQtyHint">0 of 1</span>
+											</div>
+											<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+									</div>
+									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
+										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
+											<i class="bi bi-people-fill"></i>
+											<span>Add Bulk Companions</span>
+										</button>
+									</div>
+								</form>
+							</div>
+
+							<!-- RIGHT SIDE: COMPANION PREVIEW -->
+							<div class="lg:col-span-5 flex flex-col gap-3">
+								<div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-4 shadow-xs flex flex-col" id="modalCompanionPreviewSection">
+									<div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/40 pb-2.5">
+										<div class="flex items-center gap-2">
+											<i class="bi bi-person-lines-fill text-hp-green text-base"></i>
+											<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Staged Companions</h4>
+										</div>
+										<div class="flex items-center gap-2">
+											<span id="modalCompanionPreviewCountBadge" class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+											<button type="button" id="toggleModalCompanionFilterBtn" class="flex h-7 items-center gap-1.5 px-2.5 rounded-lg border border-glass-border bg-glass text-xs font-semibold text-hp-text hover:bg-glass-hover hover:border-glass-border-strong transition-colors cursor-pointer" title="Toggle Search & Filter">
+												<i class="bi bi-funnel text-xs text-hp-green"></i>
+												<span class="text-[0.72rem]">Filter</span>
+											</button>
+											<button type="button" id="modalCompanionClearAllBtn" class="hidden text-xs font-semibold text-red-500 hover:text-red-700 transition-colors cursor-pointer">
+												Clear
+											</button>
+										</div>
+									</div>
+
+									<!-- Modal Staged Search & Filter Toolbar (Default is hidden) -->
+									<div id="modalCompanionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-1.5 rounded-xl border border-glass-border/70 bg-glass/70 p-2 transition-all animate-fade-in">
+										<!-- Search single companion by name -->
+										<div class="relative flex-1 min-w-[130px]">
+											<i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] text-hp-text-muted/70"></i>
+											<input type="text" id="modalCompanionSearchInput" placeholder="Search single name..." class="w-full rounded-lg border border-glass-border bg-glass py-1 pl-7 pr-2 text-[0.72rem] text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										
+										<!-- Filter bulk: Gender -->
+										<div class="w-auto min-w-[90px]">
+											<select id="modalCompanionFilterGender" class="w-full rounded-lg border border-glass-border bg-glass px-2 py-1 text-[0.72rem] font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">Gender</option>
+												<option value="Male">Male</option>
+												<option value="Female">Female</option>
+											</select>
+										</div>
+
+										<!-- Filter bulk: Age Group -->
+										<div class="w-auto min-w-[100px]">
+											<select id="modalCompanionFilterAgeGroup" class="w-full rounded-lg border border-glass-border bg-glass px-2 py-1 text-[0.72rem] font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">Age Group</option>
+												<option value="0-12">Kids (0-12)</option>
+												<option value="13-17">Teens (13-17)</option>
+												<option value="18-59">Adults (18-59)</option>
+												<option value="60+">Seniors (60+)</option>
+											</select>
+										</div>
+
+										<button type="button" id="modalCompanionFilterResetBtn" class="hidden items-center gap-1 rounded-lg border border-glass-border bg-glass px-2 py-1 text-[0.68rem] font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
+											<i class="bi bi-x-circle"></i>
+										</button>
+									</div>
+
+									<!-- Scrollable Staged List Container -->
+									<div id="modalCompanionPreviewList" class="grid gap-2 max-h-[440px] overflow-y-auto pr-1">
+										<!-- Populated dynamically via JS -->
+									</div>
 								</div>
 							</div>
-							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
-								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Bulk Companions</button>
+						</div>
+
+						<!-- MODAL FOOTER ACTIONS -->
+						<div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-4">
+							<div class="text-xs font-medium text-hp-text-muted">
+								<span id="modalCompanionFooterSummary">0 companions added so far</span>
 							</div>
-						</form>
+							<div class="flex flex-wrap items-center gap-2.5">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
+								<button type="button" id="modalConfirmAllCompanionsBtn" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98]" data-close-companion-modal="true">
+									<i class="bi bi-check2-circle text-base"></i>
+									<span>Add All Companions Created</span>
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Duplicate Companion Warning Modal -->
+				<div class="guest-modal hidden" id="duplicateCompanionModal" aria-hidden="true" style="z-index: 1065;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-duplicate-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[440px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="duplicateCompanionTitle">
+						<div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+							<i class="bi bi-exclamation-triangle-fill text-2xl"></i>
+						</div>
+						<h3 id="duplicateCompanionTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Companion Already Exists</h3>
+						<p id="duplicateCompanionMessage" class="mt-2 mb-5 text-xs leading-relaxed text-hp-text-muted">
+							A companion with identical information has already been created.
+						</p>
+						<div class="flex justify-center">
+							<button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-hp-green-dark active:scale-[0.98]" data-close-duplicate-modal="true">
+								Got It
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Remove Companion Confirmation Modal -->
+				<div class="guest-modal hidden" id="removeCompanionConfirmModal" aria-hidden="true" style="z-index: 1070;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-remove-companion-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[420px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="removeCompanionModalTitle">
+						<div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/20 shadow-xs">
+							<i class="bi bi-trash3-fill text-2xl"></i>
+						</div>
+						<h3 id="removeCompanionModalTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Remove Companion?</h3>
+						<p id="removeCompanionModalMessage" class="mt-2 mb-5 text-xs leading-relaxed text-hp-text-muted">
+							Are you sure you want to remove this companion? This action cannot be undone.
+						</p>
+						<div class="flex items-center justify-center gap-2.5">
+							<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover active:scale-[0.98]" data-close-remove-companion-modal="true">
+								Cancel
+							</button>
+							<button type="button" id="confirmRemoveCompanionBtn" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-red-700 active:scale-[0.98]">
+								<i class="bi bi-trash3 text-xs"></i>
+								<span>Yes, Remove</span>
+							</button>
+						</div>
 					</div>
 				</div>
 

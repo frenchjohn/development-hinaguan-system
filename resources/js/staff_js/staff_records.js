@@ -124,9 +124,9 @@ window.AppPage['staff_records'] = function () {
             const isActive = button.dataset.tab === tabName;
             button.classList.toggle('records-tab-btn--active', isActive);
             if (isActive) {
-                button.className = 'records-tab-btn records-tab-btn--active cursor-pointer rounded-full border border-transparent bg-[#178a52] px-6 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#126e41] focus:outline-none';
+                button.className = 'records-tab-btn records-tab-btn--active inline-flex items-center gap-2 cursor-pointer rounded-xl border border-transparent bg-[#178a52] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#126e41] focus:outline-none';
             } else {
-                button.className = 'records-tab-btn cursor-pointer rounded-full border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-6 py-2 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] focus:outline-none';
+                button.className = 'records-tab-btn inline-flex items-center gap-2 cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-5 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] focus:outline-none';
             }
             button.setAttribute('aria-selected', isActive ? 'true' : 'false');
             button.setAttribute('tabindex', isActive ? '0' : '-1');
@@ -386,8 +386,8 @@ window.AppPage['staff_records'] = function () {
             btn.type = 'button';
             btn.textContent = page;
             btn.className = page === current
-                ? 'cursor-pointer rounded-lg bg-[#178a52] px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-[#126e41] border-0 shadow-sm'
-                : 'cursor-pointer rounded-lg border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-2.5 py-1 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#141715] shadow-sm';
+                ? 'cursor-pointer rounded-xl bg-[#178a52] px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#126e41] border-0 shadow-xs'
+                : 'cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-1.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] transition-colors hover:bg-[#f4f7f5] dark:hover:bg-[#202722] shadow-xs';
             btn.addEventListener('click', () => onSelect(page));
             return btn;
         };
