@@ -159,12 +159,81 @@
                         </div>
                     </article>
                 </div>
+                
+                {{-- AI Executive Feedback Intelligence Widget --}}
+                <section class="mb-6 rounded-[var(--radius-lg)] border border-[rgba(200,164,93,0.35)] bg-gradient-to-br from-[var(--surface)] via-[var(--surface)] to-[rgba(200,164,93,0.06)] p-5 shadow-[var(--shadow-sm)]">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[#244A2D] to-[#17281c] text-[#c8a45d] shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/></svg>
+                            </span>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="m-0 text-base font-bold text-[var(--ink)]">AI Feedback Intelligence</h3>
+                                    <span class="rounded-full bg-[rgba(200,164,93,0.2)] px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-[#c8a45d]">Automated Analysis</span>
+                                </div>
+                                <p class="m-0 text-xs text-[var(--ink-muted)]">Real-time sentiment detection from visitor reviews · <span id="fbAiAnalyzedAt">Analyzed {{ $aiInsights['analyzed_at'] }}</span></p>
+                            </div>
+                        </div>
+                        <button type="button" id="fbAiRefreshBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition-colors hover:border-[#c8a45d] hover:text-[#c8a45d]">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                            <span>Refresh AI Insights</span>
+                        </button>
+                    </div>
+
+                    {{-- Sentiment distribution progress bar & stat cards --}}
+                    <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
+                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+                            <div class="mb-2 flex items-center justify-between text-xs font-semibold text-[var(--ink-muted)]">
+                                <span>Sentiment Distribution</span>
+                                <span id="fbAiPositivePctBadge" class="font-bold text-emerald-600 dark:text-emerald-400">{{ $aiInsights['positive_percent'] }}% Positive</span>
+                            </div>
+                            <div class="mb-3 flex h-3.5 w-full overflow-hidden rounded-full bg-[var(--surface-alt)] p-0.5">
+                                <div id="fbAiPosBar" class="h-full rounded-l-full bg-emerald-500 transition-all duration-500" style="width: {{ $aiInsights['positive_percent'] }}%;" title="Positive: {{ $aiInsights['positive_count'] }} ({{ $aiInsights['positive_percent'] }}%)"></div>
+                                <div id="fbAiNeuBar" class="h-full bg-amber-400 transition-all duration-500" style="width: {{ $aiInsights['neutral_percent'] }}%;" title="Neutral: {{ $aiInsights['neutral_count'] }} ({{ $aiInsights['neutral_percent'] }}%)"></div>
+                                <div id="fbAiNegBar" class="h-full rounded-r-full bg-rose-500 transition-all duration-500" style="width: {{ $aiInsights['negative_percent'] }}%;" title="Negative: {{ $aiInsights['negative_count'] }} ({{ $aiInsights['negative_percent'] }}%)"></div>
+                            </div>
+                            <div class="flex items-center justify-between text-[0.72rem] text-[var(--ink-muted)]">
+                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-emerald-500"></span> Positive: <strong id="fbAiPosCount" class="text-[var(--ink)]">{{ $aiInsights['positive_count'] }}</strong></span>
+                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-amber-400"></span> Neutral: <strong id="fbAiNeuCount" class="text-[var(--ink)]">{{ $aiInsights['neutral_count'] }}</strong></span>
+                                <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Negative: <strong id="fbAiNegCount" class="text-[var(--ink)]">{{ $aiInsights['negative_count'] }}</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">✨ Key Highlights & Praises</p>
+                            <ul id="fbAiPraisesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-[var(--ink)]">
+                                @foreach ($aiInsights['top_praises'] as $praise)
+                                    <li>{{ $praise }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">⚠️ Reported Concerns / Issues</p>
+                            <ul id="fbAiIssuesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-[var(--ink)]">
+                                @foreach ($aiInsights['top_issues'] as $issue)
+                                    <li>{{ $issue }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </section>
 
                 <section class="rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)] overflow-hidden">
                     <div class="flex flex-wrap items-end gap-4 border-b border-[var(--border)] p-4">
                         <div class="min-w-[180px] flex-1">
                             <label for="feedbackSearch" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Search by name</label>
                             <input id="feedbackSearch" type="search" placeholder="Search guest name..." autocomplete="off" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                        </div>
+                        <div class="min-w-[130px]">
+                            <label for="feedbackSentimentFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">AI Sentiment</label>
+                            <select id="feedbackSentimentFilter" class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-alt)] px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--green)]">
+                                <option value="all">All sentiments</option>
+                                <option value="positive">🟢 Positive (Good)</option>
+                                <option value="neutral">🟡 Neutral</option>
+                                <option value="negative">🔴 Negative (Bad)</option>
+                            </select>
                         </div>
                         <div class="min-w-[120px]">
                             <label for="feedbackStarFilter" class="mb-1 block text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-[var(--ink-muted)]">Star rating</label>
@@ -200,34 +269,70 @@
                                 <tr>
                                     <th class="px-4 py-3">Guest</th>
                                     <th class="px-4 py-3">Rating</th>
+                                    <th class="px-4 py-3">AI Sentiment</th>
                                     <th class="px-4 py-3">Date</th>
                                     <th class="px-4 py-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="feedbackTableBody">
                                 @forelse ($feedbacks as $feedback)
+                                    @php
+                                        $imagesCount = $feedback->images ? $feedback->images->count() : 0;
+                                        $imagesArray = $feedback->images ? $feedback->images->map(fn($img) => [
+                                            'id' => $img->id,
+                                            'url' => $img->image_url,
+                                        ])->values()->all() : [];
+
+                                        $sentiment = $feedback->ai_sentiment;
+                                        $sentimentBadgeClass = match($sentiment) {
+                                            'positive' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+                                            'negative' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200 dark:border-rose-800',
+                                            default => 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+                                        };
+                                    @endphp
                                     <tr
                                         class="feedback-row cursor-pointer border-t border-[var(--border)] transition-colors hover:bg-[var(--surface-alt)]/70"
                                         data-feedback-id="{{ $feedback->id }}"
                                         data-guest-name="{{ strtolower($feedback->full_name) }}"
                                         data-stars="{{ $feedback->stars }}"
+                                        data-sentiment="{{ $feedback->ai_sentiment }}"
                                         data-visibility="{{ $feedback->is_shown ? 'shown' : 'hidden' }}"
                                         data-created-timestamp="{{ $feedback->created_at->timestamp }}"
                                         data-created-date="{{ $feedback->created_at->toDateString() }}"
-                                        data-created-formatted="{{ $feedback->created_at->format('M j, Y') }}"
-                                        data-full-name="{{ $feedback->full_name }}"
-                                        data-initials="{{ $feedback->initials }}"
-                                        data-is-anonymous="{{ $feedback->is_anonymous ? '1' : '0' }}"
-                                        data-description="{{ $feedback->description }}"
                                         tabindex="0"
                                         role="button"
                                         aria-label="View feedback from {{ $feedback->full_name }}"
                                     >
+                                        <script type="application/json" class="fb-admin-row-data">
+                                        {!! json_encode([
+                                            'id' => $feedback->id,
+                                            'fullName' => $feedback->full_name,
+                                            'initials' => $feedback->initials,
+                                            'isAnonymous' => (bool) $feedback->is_anonymous,
+                                            'stars' => (int) $feedback->stars,
+                                            'description' => $feedback->description,
+                                            'createdFormatted' => $feedback->created_at->format('M j, Y'),
+                                            'visibility' => $feedback->is_shown ? 'shown' : 'hidden',
+                                            'sentiment' => $feedback->ai_sentiment,
+                                            'sentimentLabel' => $feedback->ai_sentiment_label,
+                                            'sentimentEmoji' => $feedback->ai_sentiment_emoji,
+                                            'points' => $feedback->ai_points,
+                                            'images' => $imagesArray,
+                                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}
+                                        </script>
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-3">
                                                 <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-xs font-bold text-white">{{ $feedback->initials }}</span>
                                                 <div>
-                                                    <p class="m-0 text-sm font-semibold text-[var(--ink)]">{{ $feedback->full_name }}</p>
+                                                    <div class="flex items-center gap-2">
+                                                        <p class="m-0 text-sm font-semibold text-[var(--ink)]">{{ $feedback->full_name }}</p>
+                                                        @if ($imagesCount > 0)
+                                                            <span class="inline-flex items-center gap-1 rounded-full bg-[rgba(200,164,93,0.15)] px-2 py-0.5 text-[0.68rem] font-semibold text-[#c8a45d]" title="{{ $imagesCount }} photo(s) attached">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-3 w-3"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                                                                {{ $imagesCount }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
                                                     @if ($feedback->is_anonymous)
                                                         <p class="m-0 text-[0.72rem] text-[var(--ink-muted)]">Anonymous submission</p>
                                                     @endif
@@ -236,10 +341,16 @@
                                         </td>
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-0.5 text-[#c8a45d]" aria-label="{{ $feedback->stars }} out of 5 stars">
-                                                @for ($s = 1; $s <= 5; $s++)
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 {{ $s <= $feedback->stars ? 'fill-current' : 'fill-none stroke-current' }}" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                                                @endfor
+                                                 @for ($s = 1; $s <= 5; $s++)
+                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 {{ $s <= $feedback->stars ? 'fill-current' : 'fill-none stroke-current' }}" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                                 @endfor
                                             </div>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold {{ $sentimentBadgeClass }}">
+                                                <span>{{ $feedback->ai_sentiment_emoji }}</span>
+                                                <span>{{ $feedback->ai_sentiment_label }}</span>
+                                            </span>
                                         </td>
                                         <td class="whitespace-nowrap px-4 py-3 text-sm text-[var(--ink-muted)]">{{ $feedback->created_at->format('M j, Y') }}</td>
                                         <td class="px-4 py-3">
@@ -250,7 +361,7 @@
                                     </tr>
                                 @empty
                                     <tr id="feedbackEmptyRow">
-                                        <td colspan="4" class="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">No guest feedback yet.</td>
+                                        <td colspan="5" class="px-4 py-10 text-center text-sm text-[var(--ink-muted)]">No guest feedback yet.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -303,12 +414,34 @@
             </div>
 
             <div class="flex-1 overflow-y-auto px-6 py-5">
-                <div class="mb-4 flex flex-wrap items-center gap-3">
-                    <div id="fbDetailStars" class="flex items-center gap-0.5 text-[#c8a45d]" aria-label="Rating"></div>
-                    <span id="fbDetailRatingLabel" class="text-sm font-bold text-[var(--ink)]"></span>
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div id="fbDetailStars" class="flex items-center gap-0.5 text-[#c8a45d]" aria-label="Rating"></div>
+                        <span id="fbDetailRatingLabel" class="text-sm font-bold text-[var(--ink)]"></span>
+                    </div>
+                    <span id="fbDetailAiSentimentBadge" class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold"></span>
                 </div>
-                <p class="m-0 mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--ink-muted)]">Feedback</p>
+
+                {{-- Clean AI Sentiment Breakdown --}}
+                <div id="fbDetailAiSection" class="mb-4 rounded-xl border border-[var(--border)] bg-[var(--surface-alt)] p-3.5">
+                    <div class="mb-2 flex items-center gap-1.5 border-b border-[var(--border)] pb-2">
+                        <span class="text-sm">✨</span>
+                        <span class="text-[0.72rem] font-bold uppercase tracking-wider text-[#c8a45d]">AI Sentiment Breakdown</span>
+                    </div>
+                    <div id="fbDetailAiPointsList" class="space-y-2"></div>
+                </div>
+
+                <p class="m-0 mb-2 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--ink-muted)]">Full Feedback</p>
                 <p id="fbDetailDescription" class="m-0 whitespace-pre-line rounded-xl bg-[var(--surface-alt)] p-4 text-sm leading-relaxed text-[var(--ink)]"></p>
+
+                {{-- Attached Photos Gallery in Admin Modal --}}
+                <div id="fbDetailImagesSection" class="mt-4 hidden border-t border-[var(--border)] pt-4">
+                    <div class="mb-2 flex items-center justify-between">
+                        <p class="m-0 text-[0.72rem] font-semibold uppercase tracking-[0.06em] text-[var(--ink-muted)]">Attached Photos</p>
+                        <span id="fbDetailImagesCount" class="text-xs font-semibold text-[#c8a45d]"></span>
+                    </div>
+                    <div id="fbDetailImagesGrid" class="grid grid-cols-3 gap-2.5 sm:grid-cols-4"></div>
+                </div>
             </div>
 
             <div class="border-t border-[var(--border)] px-6 py-4">
@@ -338,6 +471,15 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- Admin Photo Inspection Lightbox --}}
+    <div class="fixed inset-0 z-[2500] hidden items-center justify-center p-5 [&.is-open]:flex" id="adminPhotoLightbox" aria-hidden="true" role="dialog" aria-label="Photo Preview">
+        <div class="absolute inset-0 bg-black/85 backdrop-blur-sm" data-admin-lightbox-close></div>
+        <div class="relative z-10 flex max-h-[90vh] max-w-4xl flex-col items-center justify-center">
+            <button type="button" class="absolute -top-10 right-0 grid h-8 w-8 place-items-center rounded-full bg-white/20 text-white transition-colors hover:bg-red-600" data-admin-lightbox-close aria-label="Close">&times;</button>
+            <img id="adminLightboxImg" src="" alt="Full size preview" class="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl">
         </div>
     </div>
 </body>

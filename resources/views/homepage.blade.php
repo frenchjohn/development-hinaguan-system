@@ -292,7 +292,7 @@
                         most enchanting destinations.
                     </p>
                     <p>
-                        From bamboo groves and natural swimming spots to cozy cottages and open-air dining, every corner
+                        From natural river streams and fresh swimming spots to cozy cottages and open-air dining, every corner
                         of Hinaguan is designed to bring you closer to the beauty of the outdoors.
                     </p>
 
@@ -327,7 +327,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg>
                     </div>
                     <h3 class="hp-amenity__title">Cottages &amp; Huts</h3>
-                    <p class="hp-amenity__desc">Rustic bamboo cottages and open huts perfect for day visits or overnight stays with family and friends.</p>
+                    <p class="hp-amenity__desc">Rustic cottages and open huts perfect for day visits or overnight stays with family and friends.</p>
                 </div>
                 <div class="hp-amenity" data-animate="fade-up" data-delay="80">
                     <div class="hp-amenity__icon">
@@ -341,14 +341,14 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     </div>
                     <h3 class="hp-amenity__title">Scenic Views</h3>
-                    <p class="hp-amenity__desc">Panoramic river views, bamboo forests, and photo-worthy spots at every turn of the park.</p>
+                    <p class="hp-amenity__desc">Panoramic river views, lush natural landscapes, and photo-worthy spots at every turn of the park.</p>
                 </div>
                 <div class="hp-amenity" data-animate="fade-up" data-delay="240">
                     <div class="hp-amenity__icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 9c1.5 0 2.5-.75 4.25-.75s2.75.75 4.25.75 2.75-.75 4.25-.75 2.75.75 4.25.75M3.75 14c1.5 0 2.5-.75 4.25-.75s2.75.75 4.25.75 2.75-.75 4.25-.75 2.75.75 4.25.75M3.75 19c1.5 0 2.5-.75 4.25-.75s2.75.75 4.25.75 2.75-.75 4.25-.75 2.75.75 4.25.75"/></svg>
                     </div>
-                    <h3 class="hp-amenity__title">Bamboo Grove</h3>
-                    <p class="hp-amenity__desc">Walk through a tranquil bamboo forest — a signature highlight and the most photographed area of the park.</p>
+                    <h3 class="hp-amenity__title">Natural River</h3>
+                    <p class="hp-amenity__desc">Relax by the crystal-clear river waters — enjoy gentle currents, shallow wading spots, and a peaceful riverside breeze.</p>
                 </div>
                 <div class="hp-amenity" data-animate="fade-up" data-delay="320">
                     <div class="hp-amenity__icon">
@@ -417,7 +417,7 @@
                     </div>
                     <div class="hp-activity-card__body">
                         <h3>Photography</h3>
-                        <p>Capture stunning shots at the bamboo grove, river views, and rustic cottages — a content creator's paradise.</p>
+                        <p>Capture stunning shots along the riverside, scenic landscapes, and rustic cottages — a content creator's paradise.</p>
                     </div>
                 </article>
             </div>

@@ -122,4 +122,57 @@ class FeedbackSystemTest extends TestCase
 
         $this->assertDatabaseMissing('feedbacks', ['id' => $feedback->id]);
     }
+
+    public function test_guest_can_submit_feedback_with_images(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $file1 = \Illuminate\Http\UploadedFile::fake()->create('nature1.jpg', 100, 'image/jpeg');
+        $file2 = \Illuminate\Http\UploadedFile::fake()->create('nature2.png', 100, 'image/png');
+
+        $response = $this->post('/feedback', [
+            'full_name' => 'Photographer Guest',
+            'is_anonymous' => '0',
+            'description' => 'Took great pictures of the river and pool!',
+            'stars' => 5,
+            'images' => [$file1, $file2],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('feedbacks', [
+            'full_name' => 'Photographer Guest',
+            'stars' => 5,
+        ]);
+
+        $feedback = Feedback::where('full_name', 'Photographer Guest')->first();
+        $this->assertNotNull($feedback);
+        $this->assertCount(2, $feedback->images);
+        $this->assertDatabaseHas('feedback_images', [
+            'feedback_id' => $feedback->id,
+        ]);
+    }
+
+    public function test_feedback_image_upload_rejects_more_than_5_images(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+
+        $files = [
+            \Illuminate\Http\UploadedFile::fake()->create('img1.jpg', 50, 'image/jpeg'),
+            \Illuminate\Http\UploadedFile::fake()->create('img2.jpg', 50, 'image/jpeg'),
+            \Illuminate\Http\UploadedFile::fake()->create('img3.jpg', 50, 'image/jpeg'),
+            \Illuminate\Http\UploadedFile::fake()->create('img4.jpg', 50, 'image/jpeg'),
+            \Illuminate\Http\UploadedFile::fake()->create('img5.jpg', 50, 'image/jpeg'),
+            \Illuminate\Http\UploadedFile::fake()->create('img6.jpg', 50, 'image/jpeg'),
+        ];
+
+        $response = $this->post('/feedback', [
+            'full_name' => 'Overlimit Guest',
+            'is_anonymous' => '0',
+            'description' => 'Tried uploading 6 pictures.',
+            'stars' => 4,
+            'images' => $files,
+        ], ['Accept' => 'application/json']);
+
+        $response->assertStatus(422);
+    }
 }

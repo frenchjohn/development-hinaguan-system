@@ -55,8 +55,62 @@ class Feedback extends Model
         return strtoupper($first.$last);
     }
 
+    public function images(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FeedbackImage::class, 'feedback_id');
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return $this->full_name;
+    }
+
+    public function getAiAnalysisAttribute(): array
+    {
+        return app(\App\Services\FeedbackAiService::class)->analyzeSentiment($this);
+    }
+
+    public function getAiSentimentAttribute(): string
+    {
+        return $this->ai_analysis['sentiment'] ?? 'neutral';
+    }
+
+    public function getAiSentimentLabelAttribute(): string
+    {
+        return $this->ai_analysis['label'] ?? 'Neutral';
+    }
+
+    public function getAiSentimentEmojiAttribute(): string
+    {
+        return $this->ai_analysis['emoji'] ?? '🟡';
+    }
+
+    public function getAiSummaryAttribute(): string
+    {
+        return $this->ai_analysis['summary'] ?? $this->description;
+    }
+
+    public function getAiToneAttribute(): string
+    {
+        return $this->ai_analysis['tone'] ?? 'General';
+    }
+
+    public function getAiExplanationAttribute(): string
+    {
+        return $this->ai_analysis['explanation'] ?? '';
+    }
+
+    public function getAiPointsAttribute(): array
+    {
+        return $this->ai_analysis['points'] ?? [];
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Feedback $feedback) {
+            foreach ($feedback->images as $image) {
+                $image->delete();
+            }
+        });
     }
 }

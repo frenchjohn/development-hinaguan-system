@@ -814,7 +814,7 @@ Route::get('/amenities', function (Request $request) use ($getReservationAmenity
 
 Route::get('/feedback', function () {
     $parkSettings = \App\Models\ParkSetting::first();
-    $feedbacks = Feedback::visible()->topRated()->get();
+    $feedbacks = Feedback::with('images')->visible()->topRated()->get();
 
     return view('feedback', compact('parkSettings', 'feedbacks'));
 })->name('feedback');
@@ -826,6 +826,8 @@ Route::post('/feedback', function (Request $request) {
         'full_name' => [$isAnonymous ? 'nullable' : 'required', 'string', 'max:255'],
         'description' => ['required', 'string', 'max:2000'],
         'stars' => ['required', 'integer', 'min:1', 'max:5'],
+        'images' => ['nullable', 'array', 'max:5'],
+        'images.*' => ['image', 'mimes:jpeg,png,jpg,webp,avif', 'max:5120'],
     ]);
 
     $fullName = $isAnonymous
@@ -840,6 +842,17 @@ Route::post('/feedback', function (Request $request) {
         'is_shown' => true,
     ]);
 
+    if ($request->hasFile('images')) {
+        foreach ($request->file('images') as $file) {
+            $path = $file->store('feedback_images', 'public');
+            $feedback->images()->create([
+                'image_path' => $path,
+            ]);
+        }
+    }
+
+    $feedback->load('images');
+
     if ($request->expectsJson()) {
         return response()->json([
             'success' => true,
@@ -851,6 +864,10 @@ Route::post('/feedback', function (Request $request) {
                 'description' => $feedback->description,
                 'stars' => $feedback->stars,
                 'created_at' => $feedback->created_at->format('M j, Y'),
+                'images' => $feedback->images->map(fn ($img) => [
+                    'id' => $img->id,
+                    'image_url' => $img->image_url,
+                ])->values(),
             ],
         ]);
     }
@@ -1920,7 +1937,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
-        $feedbacks = Feedback::orderByDesc('created_at')->get();
+        $feedbacks = Feedback::with('images')->orderByDesc('created_at')->get();
+        $aiService = app(\App\Services\FeedbackAiService::class);
+        $aiInsights = $aiService->generateExecutiveInsights($feedbacks);
 
         return view('admin.admin_feedback', [
             'feedbacks' => $feedbacks,
@@ -1929,8 +1948,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'hiddenFeedbacks' => $feedbacks->where('is_shown', false)->count(),
             'averageStars' => $feedbacks->count() > 0 ? round($feedbacks->avg('stars'), 1) : 0,
             'todayFeedbacks' => $feedbacks->filter(fn ($f) => $f->created_at->isToday())->count(),
+            'aiInsights' => $aiInsights,
         ]);
     })->name('feedback');
+
+    Route::post('/feedback/ai-insights/refresh', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $feedbacks = Feedback::with('images')->orderByDesc('created_at')->get();
+        $aiService = app(\App\Services\FeedbackAiService::class);
+        $aiInsights = $aiService->generateExecutiveInsights($feedbacks, forceFresh: true);
+
+        return response()->json([
+            'success' => true,
+            'insights' => $aiInsights,
+        ]);
+    })->name('feedback.ai.refresh');
 
     Route::patch('/feedback/{feedback}/visibility', function (Request $request, Feedback $feedback) {
         $user = $request->session()->get('auth_user');
