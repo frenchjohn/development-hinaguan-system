@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\AdminAccount;
 use App\Models\Amenity;
+use App\Models\AmenityBenefit;
 use App\Models\Customer;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
@@ -45,13 +46,11 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        Amenity::create([
+        $ahouse1 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'A-House 1',
             'daytime_price' => 300,
             'nighttime_price' => 500,
-            'daytime_aircon_price' => 700,
-            'nighttime_aircon_price' => 1000,
             'additional_per_head' => 100,
             'minimum_capacity' => 1,
             'maximum_capacity' => 2,
@@ -59,14 +58,18 @@ class DatabaseSeeder extends Seeder
             'image' => null,
             'status' => true,
         ]);
+        AmenityBenefit::create([
+            'amenity_id' => $ahouse1->id,
+            'is_aircon' => true,
+            'free_entrance' => true,
+            'free_pool' => true,
+        ]);
 
-        Amenity::create([
+        $ahouse2 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'A-House 2',
             'daytime_price' => 300,
             'nighttime_price' => 500,
-            'daytime_aircon_price' => 700,
-            'nighttime_aircon_price' => 1000,
             'additional_per_head' => 100,
             'minimum_capacity' => 1,
             'maximum_capacity' => 2,
@@ -74,14 +77,18 @@ class DatabaseSeeder extends Seeder
             'image' => null,
             'status' => true,
         ]);
+        AmenityBenefit::create([
+            'amenity_id' => $ahouse2->id,
+            'is_aircon' => false,
+            'free_entrance' => true,
+            'free_pool' => true,
+        ]);
 
-        Amenity::create([
+        $cottage1 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'Cottage 1',
             'daytime_price' => 200,
             'nighttime_price' => 200,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
             'additional_per_head' => null,
             'minimum_capacity' => 1,
             'maximum_capacity' => null,
@@ -89,14 +96,18 @@ class DatabaseSeeder extends Seeder
             'image' => null,
             'status' => true,
         ]);
+        AmenityBenefit::create([
+            'amenity_id' => $cottage1->id,
+            'is_aircon' => false,
+            'free_entrance' => false,
+            'free_pool' => false,
+        ]);
 
-        Amenity::create([
+        $cottage2 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'Cottage 2',
             'daytime_price' => 200,
             'nighttime_price' => 200,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
             'additional_per_head' => null,
             'minimum_capacity' => 1,
             'maximum_capacity' => null,
@@ -104,14 +115,18 @@ class DatabaseSeeder extends Seeder
             'image' => null,
             'status' => true,
         ]);
+        AmenityBenefit::create([
+            'amenity_id' => $cottage2->id,
+            'is_aircon' => false,
+            'free_entrance' => false,
+            'free_pool' => false,
+        ]);
 
-        Amenity::create([
+        $cottage3 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'Cottage 3',
             'daytime_price' => 200,
             'nighttime_price' => 200,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
             'additional_per_head' => null,
             'minimum_capacity' => 1,
             'maximum_capacity' => null,
@@ -119,20 +134,30 @@ class DatabaseSeeder extends Seeder
             'image' => null,
             'status' => true,
         ]);
+        AmenityBenefit::create([
+            'amenity_id' => $cottage3->id,
+            'is_aircon' => false,
+            'free_entrance' => false,
+            'free_pool' => false,
+        ]);
 
-        Amenity::create([
+        $cottage4 = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => 'Cottage 4',
             'daytime_price' => 200,
             'nighttime_price' => 200,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
             'additional_per_head' => null,
             'minimum_capacity' => 1,
             'maximum_capacity' => null,
             'description' => 'A comfortable open-air cottage complete with chairs and a table, perfect for unwinding and dining with family and friends.',
             'image' => null,
             'status' => true,
+        ]);
+        AmenityBenefit::create([
+            'amenity_id' => $cottage4->id,
+            'is_aircon' => false,
+            'free_entrance' => false,
+            'free_pool' => false,
         ]);
     }
 }

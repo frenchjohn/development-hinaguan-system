@@ -6,6 +6,7 @@ use App\Models\Amenity;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -22,6 +23,8 @@ class CompletedAmenityAvailabilityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Carbon::setTestNow('2026-08-01 08:00:00');
 
         ParkSetting::create([
             'opening_time' => '08:00',

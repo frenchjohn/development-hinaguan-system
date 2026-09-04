@@ -16,8 +16,6 @@ return new class extends Migration
             $table->string('amenities_name');
             $table->string('daytime_price');
             $table->string('nighttime_price');
-            $table->string('daytime_aircon_price')->nullable();
-            $table->string('nighttime_aircon_price')->nullable();
             $table->string('additional_per_head')->nullable();
             $table->string('minimum_capacity');
             $table->string('maximum_capacity')->nullable();

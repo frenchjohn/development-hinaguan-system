@@ -104,24 +104,41 @@
         }
 
         .report-tab-btn {
-            color: var(--hp-text-muted, #64748b);
-            background: transparent;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .report-tab-btn:hover {
-            color: var(--hp-text, #111827);
-            background: rgba(255, 255, 255, 0.45);
+        .report-tab-btn:not(.is-active):hover {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            color: var(--hp-text, #111827) !important;
         }
-        [data-theme="dark"] .report-tab-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
+        [data-theme="dark"] .report-tab-btn:not(.is-active):hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
         }
         .report-tab-btn.is-active {
             color: #ffffff !important;
             background: #1c5c3c !important;
-            box-shadow: 0 4px 14px rgba(28, 92, 60, 0.3);
+            box-shadow: 0 4px 14px rgba(28, 92, 60, 0.3) !important;
         }
         [data-theme="dark"] .report-tab-btn.is-active {
             background: #1c5c3c !important;
             color: #ffffff !important;
+        }
+
+        .matrix-sub-tab {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .matrix-sub-tab:not(.is-active):hover {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            color: var(--hp-text, #111827) !important;
+        }
+        [data-theme="dark"] .matrix-sub-tab:not(.is-active):hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+        }
+        .matrix-sub-tab.is-active {
+            background: #1c5c3c !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(28, 92, 60, 0.25) !important;
         }
         .ai-glass-hero {
             background: linear-gradient(135deg, rgba(28, 92, 60, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%), var(--glass-bg, rgba(255, 255, 255, 0.7));
@@ -153,200 +170,47 @@
             object-fit: cover !important;
         }
 
+        /* Matrix Cell Styling Utilities */
+        .matrix-cell-val {
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 24px;
+            border-radius: 6px;
+        }
+
         /* ===== PRINT SPECIFIC STYLES ===== */
         @media print {
-            /* 1. Hide system UI chrome, sidebars, web headers, controls, and canvas charts */
-            aside,
-            header,
-            nav,
-            .dash-sidebar,
-            .sidebar-wrapper,
-            .header-container,
-            .dash-header-wrap,
-            #reportsFilters,
-            #exportCsvBtn,
-            #printReportsButton,
-            #resetFiltersBtn,
-            .preset-chip,
-            .web-only-section,
-            .web-only-charts,
-            .dash-header {
-                display: none !important;
-            }
+            aside, header, nav, .dash-sidebar, .sidebar-wrapper, .header-container, .dash-header-wrap, #reportsFilters, #exportCsvBtn, #printReportsButton, #resetFiltersBtn, .preset-chip, .matrix-tab-item, .matrix-controls-panel, .web-only-section, .web-only-charts, .dash-header { display: none !important; }
 
-            /* 2. Reset Page Layout & Backgrounds for Pure White Paper */
-            @page {
-                size: A4 portrait;
-                margin: 15mm 15mm 15mm 15mm;
-            }
+            @page { size: A4 portrait; margin: 15mm; }
+            html, body { background: #ffffff !important; color: #000000 !important; font-family: Arial, sans-serif !important; font-size: 10pt !important; }
+            
+            .print-only-header { display: block !important; border-bottom: 2px solid #000 !important; margin-bottom: 20px !important; }
+            .print-meta-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 6px 20px !important; font-size: 9pt !important; color: #000000 !important; background: #ffffff !important; padding: 8px 0 !important; border-top: 1px solid #e5e7eb !important; }
 
-            html, body {
-                background: #ffffff !important;
-                color: #000000 !important;
-                font-family: Arial, Helvetica, sans-serif !important;
-                font-size: 10pt !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
+            /* 4. Official Clean Metric Summary Boxes */
+            .print-summary-box { width: 100% !important; margin-bottom: 20px !important; border: 1px solid #000000 !important; background: #ffffff !important; }
+            .print-summary-row { display: flex !important; width: 100% !important; }
+            .print-summary-cell { flex: 1 !important; padding: 10px 12px !important; text-align: center !important; border-right: 1px solid #000000 !important; }
+            .print-summary-cell:last-child { border-right: none !important; }
+            .print-summary-val { display: block !important; font-size: 13pt !important; font-weight: 700 !important; color: #000000 !important; margin-bottom: 2px !important; }
+            .print-summary-lbl { display: block !important; font-size: 8pt !important; text-transform: uppercase !important; font-weight: 600 !important; color: #4b5563 !important; }
 
-            .dash-layout, .dash-main, .dash-content {
-                display: block !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                background: transparent !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-
-            /* 3. Official Clean Print Header (No Colors) */
-            .print-only-header {
-                display: block !important;
-                margin-bottom: 20px !important;
-                border-bottom: 2px solid #000000 !important;
-                padding-bottom: 12px !important;
-            }
-
-            .print-header-top {
-                display: flex !important;
-                align-items: center !important;
-                gap: 16px !important;
-                margin-bottom: 12px !important;
-            }
-
-            .print-title {
-                font-size: 16pt !important;
-                font-weight: 700 !important;
-                margin: 0 !important;
-                letter-spacing: 0.5px !important;
-                color: #000000 !important;
-                text-transform: uppercase !important;
-            }
-
-            .print-subtitle {
-                font-size: 9.5pt !important;
-                color: #333333 !important;
-                margin: 2px 0 0 0 !important;
-                text-transform: uppercase !important;
-                letter-spacing: 0.5px !important;
-            }
-
-            .print-meta-grid {
-                display: grid !important;
-                grid-template-columns: repeat(2, 1fr) !important;
-                gap: 6px 20px !important;
-                font-size: 9pt !important;
-                color: #000000 !important;
-                background: #ffffff !important;
-                padding: 8px 12px !important;
-                border: 1px solid #000000 !important;
-            }
-
-            /* 4. Clean Monochrome Summary Grid Table */
-            .print-summary-box {
-                display: table !important;
-                width: 100% !important;
-                margin-bottom: 20px !important;
-                border-collapse: collapse !important;
-            }
-
-            .print-summary-row {
-                display: table-row !important;
-            }
-
-            .print-summary-cell {
-                display: table-cell !important;
-                padding: 8px 10px !important;
-                border: 1px solid #000000 !important;
-                text-align: center !important;
-                width: 25% !important;
-                background: #ffffff !important;
-            }
-
-            .print-summary-val {
-                font-size: 13pt !important;
-                font-weight: bold !important;
-                display: block !important;
-                color: #000000 !important;
-            }
-
-            .print-summary-lbl {
-                font-size: 8pt !important;
-                text-transform: uppercase !important;
-                letter-spacing: 0.5px !important;
-                color: #222222 !important;
-            }
-
-            /* 5. Clean Monochrome Ledger Table */
-            .print-ledger-section {
-                border: none !important;
-                box-shadow: none !important;
-                background: transparent !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-
-            .print-ledger-title {
-                font-size: 11pt !important;
-                font-weight: bold !important;
-                text-transform: uppercase !important;
-                margin-bottom: 8px !important;
-                color: #000000 !important;
-            }
-
-            .dash-table-wrap {
-                overflow: visible !important;
-            }
-
-            table.dash-table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                margin-top: 6px !important;
-                font-size: 9pt !important;
-            }
-
-            table.dash-table th {
-                background-color: #f0f0f0 !important;
-                color: #000000 !important;
-                border: 1px solid #000000 !important;
-                padding: 6px 8px !important;
-                font-weight: bold !important;
-                text-transform: uppercase !important;
-                font-size: 8pt !important;
-                text-align: left !important;
-            }
-
-            table.dash-table td {
-                border: 1px solid #000000 !important;
-                padding: 6px 8px !important;
-                color: #000000 !important;
-                background: transparent !important;
-            }
-
-            table.dash-table tr {
-                page-break-inside: avoid !important;
-            }
-
-            .status-pill {
-                background: transparent !important;
-                color: #000000 !important;
-                border: none !important;
-                padding: 0 !important;
-                font-weight: bold !important;
-                font-size: 8.5pt !important;
-                text-transform: capitalize !important;
-            }
-
-            .mono-cell {
-                font-family: inherit !important;
-            }
+            /* 5. Clean Official Ledger Table */
+            .print-ledger-title { display: block !important; font-size: 11pt !important; font-weight: 700 !important; text-transform: uppercase !important; margin: 16px 0 8px 0 !important; color: #000000 !important; letter-spacing: 0.3px !important; }
+            .print-table-wrapper { overflow: visible !important; border: 1px solid #000000 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
+            table { width: 100% !important; border-collapse: collapse !important; font-size: 8.5pt !important; }
+            thead th { background: #f3f4f6 !important; color: #000000 !important; font-weight: 700 !important; text-transform: uppercase !important; border: 1px solid #000000 !important; padding: 6px 8px !important; }
+            tbody td { border: 1px solid #e5e7eb !important; padding: 6px 8px !important; color: #000000 !important; }
+            tbody tr:nth-child(even) { background-color: #fafafa !important; }
+            .status-pill { border: none !important; background: transparent !important; padding: 0 !important; font-weight: 600 !important; color: #000000 !important; }
         }
     </style>
 </head>
-<body class="antialiased admin-portal">
+<body class="admin-portal font-sans antialiased text-hp-text">
     <div class="dash-layout">
         <x-admin_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Admin User' }}" userRole="Admin" />
 
@@ -361,13 +225,19 @@
                 <!-- SECTION NAVIGATION TABS -->
                 <div class="web-only-section mb-6 flex flex-wrap items-center justify-between gap-4">
                     <div class="inline-flex rounded-2xl border border-glass-border bg-glass p-1.5 shadow-glass backdrop-blur-md">
-                        <button type="button" id="tabStandardReports" class="report-tab-btn is-active flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer">
+                        <button type="button" id="tabMatrixReports" class="report-tab-btn is-active flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer bg-[#1c5c3c] text-white shadow-md shadow-[#1c5c3c]/20">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <span>Daily Occupancy Matrix</span>
+                        </button>
+                        <button type="button" id="tabStandardReports" class="report-tab-btn flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer text-hp-text-muted hover:text-hp-text hover:bg-glass-hover">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                             </svg>
                             <span>Standard Reports</span>
                         </button>
-                        <button type="button" id="tabAiReports" class="report-tab-btn flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer">
+                        <button type="button" id="tabAiReports" class="report-tab-btn flex items-center gap-2.5 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer text-hp-text-muted hover:text-hp-text hover:bg-glass-hover">
                             <svg class="h-4 w-4 text-emerald-500 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                             </svg>
@@ -382,10 +252,376 @@
                     </div>
                 </div>
 
+                <!-- ========================================================= -->
+                <!-- SECTION 1: DAILY AMENITY & ROOM OCCUPANCY MATRIX         -->
+                <!-- ========================================================= -->
+                <div id="matrixReportsSection" class="transition-opacity duration-300">
+                    <section class="mb-8 overflow-hidden rounded-3xl border border-glass-border bg-glass p-6 md:p-8 shadow-glass transition-all duration-300" id="amenityMatrixSection">
+                        {{-- Top Header matching user's official Excel format --}}
+                        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 border-b border-glass-border pb-6 mb-6">
+                            <div class="flex items-start gap-4">
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c] shadow-sm">
+                                    <svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1.5">
+                                        <span class="rounded-md bg-hp-green-mid/15 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-hp-green-mid" id="matrixActiveMonthLabel">
+                                            SEPTEMBER 2026
+                                        </span>
+                                    </div>
+                                    <h2 class="m-0 font-display text-2xl font-bold text-hp-text">
+                                        Daily Amenity & Room Occupancy Matrix
+                                    </h2>
+                                    <p class="m-0 text-xs text-hp-text-muted mt-0.5" id="matrixSubtitlePeriod">
+                                        Sep 1, 2026 to Sep 30, 2026 (30 days)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                                <button type="button" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text shadow-sm transition-all hover:bg-glass-hover active:scale-95" id="exportMatrixCsvBtn">
+                                    <svg class="h-4 w-4 text-emerald-600 dark:text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                    </svg>
+                                    <span>Download CSV</span>
+                                </button>
+                                <button type="button" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-hp-green-mid px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-hp-green-mid/20 transition-all hover:bg-[#15462e] active:scale-95" id="printMatrixPdfBtn">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                    </svg>
+                                    <span>Download / Print PDF</span>
+                                </button>
+                            </div>
+                        </div>                        {{-- SUB-VIEW SWITCHER INSIDE DAILY OCCUPANCY SECTION --}}
+                        <div class="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-glass-border pb-4">
+                            <div class="inline-flex rounded-2xl border border-glass-border bg-glass p-1.5 shadow-xs">
+                                <button type="button" id="subTabRoomsMatrix" class="matrix-sub-tab is-active flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 cursor-pointer bg-[#1c5c3c] text-white shadow-xs">
+                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>Amenity & Room Occupancy Matrix</span>
+                                </button>
+                                <button type="button" id="subTabGuestsMatrix" class="matrix-sub-tab flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-hp-text-muted hover:text-hp-text hover:bg-glass-hover transition-all duration-200 cursor-pointer">
+                                    <svg class="h-4 w-4 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span>Number of Guests Matrix (Demographics)</span>
+                                </button>
+                            </div>
+                            
+                            <div class="text-xs text-hp-text-muted">
+                                <span class="font-medium">Active Sheet:</span>
+                                <span id="matrixCurrentViewLabel" class="font-bold text-hp-text ml-1">Monthly Room Occupancy</span>
+                            </div>
+                        </div>
+
+                        {{-- Control & Filter Toolbar for Matrix --}}
+                        <div class="matrix-controls-panel mb-6 flex flex-col gap-5 rounded-2xl border border-glass-border bg-glass p-5 shadow-sm">
+                            {{-- Row 1: Quick Presets & Custom Date Range --}}
+                            <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-hp-text mr-1">
+                                        <svg class="h-3.5 w-3.5 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Time Presets:
+                                    </span>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="today">Today</button>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="7d">Last 7 Days</button>
+                                    <button type="button" class="matrix-tab-item is-active cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[#1c5c3c] bg-[#1c5c3c] text-white shadow-xs transition-all" data-matrix-preset="1m">This Month (1 Month)</button>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="last_month">Last Month</button>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="3m">Last 3 Months</button>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="1y">1 Year (This Year)</button>
+                                    <button type="button" class="matrix-tab-item cursor-pointer inline-flex items-center justify-center px-3.5 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1a201c] text-gray-700 dark:text-gray-200 shadow-xs hover:border-hp-green-mid hover:text-hp-green-mid transition-all" data-matrix-preset="all">All Time</button>
+                                </div>
+
+                                <div class="flex items-center gap-2.5 shrink-0 bg-white dark:bg-[#1a201c] p-1.5 rounded-xl border border-gray-300/80 dark:border-gray-700/80 shadow-xs">
+                                    <span class="text-xs font-bold text-hp-text-muted px-1">Date Range:</span>
+                                    <input id="matrixDateFrom" type="date" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-black/20 px-2.5 py-1 text-xs text-hp-text outline-none focus:border-hp-green-mid" />
+                                    <span class="text-xs text-hp-text-muted font-bold">→</span>
+                                    <input id="matrixDateTo" type="date" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-black/20 px-2.5 py-1 text-xs text-hp-text outline-none focus:border-hp-green-mid" />
+                                    <button type="button" id="matrixApplyDateBtn" class="cursor-pointer rounded-lg bg-hp-green-mid px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-[#15462e] transition-colors">
+                                        Apply
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Row 2: Clean Columns Bar with Modal Launcher (Only visible in Rooms Matrix view) --}}
+                            <div id="matrixRoomsControlsRow" class="border-t border-glass-border/60 pt-3 flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <button type="button" id="openMatrixColumnsModalBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-hp-green-mid/40 bg-hp-green-mid/10 hover:bg-hp-green-mid/20 dark:bg-hp-green-mid/15 dark:hover:bg-hp-green-mid/25 px-3.5 py-2 text-xs font-bold text-hp-green-mid transition-all active:scale-95 shadow-xs">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                        </svg>
+                                        <span>Select Columns / Amenities</span>
+                                        <span id="matrixActiveColumnsBadge" class="rounded-full bg-hp-green-mid text-white px-2 py-0.5 text-[0.65rem] font-extrabold tracking-wide shadow-xs">
+                                            {{ $allAmenities->count() }} of {{ $allAmenities->count() }} Active
+                                        </span>
+                                    </button>
+                                    <span id="matrixColumnsSummaryText" class="text-xs text-hp-text-muted font-medium">
+                                        Showing all {{ $allAmenities->count() }} amenities
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="matrixQuickResetAllBtn" class="text-xs font-semibold text-hp-green-mid hover:underline cursor-pointer flex items-center gap-1.5 transition-colors">
+                                        <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                        <span>Reset to All Amenities</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- MODAL: CUSTOMIZE COLUMNS / AMENITIES --}}
+                        <div id="matrixColumnsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+                            <div class="matrix-modal-card relative w-full max-w-2xl rounded-3xl border border-glass-border bg-white dark:bg-[#161a17] text-hp-text shadow-2xl overflow-hidden flex flex-col max-h-[85vh] transform scale-95 transition-transform duration-200">
+                                {{-- Modal Header --}}
+                                <div class="flex items-center justify-between border-b border-glass-border px-6 py-5 bg-gray-50/50 dark:bg-white/[0.02]">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c] shadow-xs">
+                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-base font-bold text-hp-text">Select Columns / Amenities</h3>
+                                            <p class="text-xs text-hp-text-muted">Choose which rooms or cottages appear in the matrix ledger</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="closeMatrixColumnsModalBtn" class="h-8 w-8 rounded-full border border-glass-border flex items-center justify-center text-hp-text-muted hover:text-hp-text hover:bg-glass-hover transition-colors cursor-pointer">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+
+                                {{-- Modal Search & Master Bar --}}
+                                <div class="px-6 py-3.5 border-b border-glass-border bg-white dark:bg-[#161a17] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                    <div class="relative flex-1">
+                                        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                        <input type="text" id="matrixAmenitySearchInput" placeholder="Search amenities (e.g. A-House 1, Bamboo...)" class="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/20 text-hp-text outline-none focus:border-hp-green-mid" />
+                                    </div>
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <button type="button" id="matrixSelectAllAmenitiesBtn" class="text-xs font-semibold text-hp-green-mid hover:underline cursor-pointer">Select All</button>
+                                        <span class="text-gray-300 dark:text-gray-700">|</span>
+                                        <button type="button" id="matrixClearAllAmenitiesBtn" class="text-xs font-semibold text-hp-text-muted hover:text-rose-500 cursor-pointer">Clear All</button>
+                                    </div>
+                                </div>
+
+                                {{-- Modal Body: Categorized Amenity Checklist --}}
+                                <div class="px-6 py-5 overflow-y-auto max-h-[50vh] space-y-5 bg-gray-50/30 dark:bg-black/10" id="matrixModalAmenityList">
+                                    {{-- Master Select All Row --}}
+                                    <label class="flex items-center justify-between p-3.5 rounded-2xl border border-hp-green-mid/30 bg-hp-green-mid/5 hover:bg-hp-green-mid/10 transition-colors cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <input type="checkbox" id="matrixToggleAllCheckbox" class="h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" checked>
+                                            <span class="text-xs font-bold text-hp-text">All Amenities (Default)</span>
+                                        </div>
+                                        <span class="text-xs text-hp-green-mid font-semibold">{{ $allAmenities->count() }} Total Units</span>
+                                    </label>
+
+                                    @if(isset($amenityCategories['a_houses']) && $amenityCategories['a_houses']['count'] > 0)
+                                    <div class="category-group-block rounded-2xl border border-glass-border bg-glass/60 p-4">
+                                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-glass-border/60">
+                                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                                <input type="checkbox" id="matrixToggleCategoryAHouses" class="matrix-category-cb h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" data-category="a_houses" checked>
+                                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text">A-Houses</span>
+                                            </label>
+                                            <span class="rounded-full bg-hp-green-mid/15 px-2.5 py-0.5 text-[0.65rem] font-bold text-hp-green-mid">
+                                                {{ $amenityCategories['a_houses']['count'] }} Units
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            @foreach($allAmenities as $amenity)
+                                                @php
+                                                    $catKey = (stripos($amenity->amenities_name, 'A-House') !== false || stripos($amenity->amenities_name, 'A House') !== false) ? 'a_houses' : ((stripos($amenity->amenities_name, 'Cottage') !== false) ? 'cottages' : 'rooms_others');
+                                                @endphp
+                                                @if($catKey === 'a_houses')
+                                                <label class="amenity-item-card flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a201c] hover:border-hp-green-mid transition-all cursor-pointer shadow-2xs" data-amenity-name="{{ strtolower($amenity->amenities_name) }}">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <input type="checkbox" 
+                                                            class="matrix-amenity-checkbox h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" 
+                                                            value="{{ $amenity->id }}" 
+                                                            data-id="{{ $amenity->id }}" 
+                                                            data-name="{{ $amenity->amenities_name }}" 
+                                                            data-category="a_houses"
+                                                            checked>
+                                                        <span class="text-xs font-semibold text-hp-text">{{ $amenity->amenities_name }}</span>
+                                                    </div>
+                                                    <span class="text-[0.65rem] font-medium text-hp-text-muted">A-House</span>
+                                                </label>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if(isset($amenityCategories['cottages']) && $amenityCategories['cottages']['count'] > 0)
+                                    <div class="category-group-block rounded-2xl border border-glass-border bg-glass/60 p-4">
+                                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-glass-border/60">
+                                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                                <input type="checkbox" id="matrixToggleCategoryCottages" class="matrix-category-cb h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" data-category="cottages" checked>
+                                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text">Cottages</span>
+                                            </label>
+                                            <span class="rounded-full bg-blue-500/15 px-2.5 py-0.5 text-[0.65rem] font-bold text-blue-700 dark:text-blue-400">
+                                                {{ $amenityCategories['cottages']['count'] }} Units
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            @foreach($allAmenities as $amenity)
+                                                @php
+                                                    $catKey = (stripos($amenity->amenities_name, 'A-House') !== false || stripos($amenity->amenities_name, 'A House') !== false) ? 'a_houses' : ((stripos($amenity->amenities_name, 'Cottage') !== false) ? 'cottages' : 'rooms_others');
+                                                @endphp
+                                                @if($catKey === 'cottages')
+                                                <label class="amenity-item-card flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a201c] hover:border-hp-green-mid transition-all cursor-pointer shadow-2xs" data-amenity-name="{{ strtolower($amenity->amenities_name) }}">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <input type="checkbox" 
+                                                            class="matrix-amenity-checkbox h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" 
+                                                            value="{{ $amenity->id }}" 
+                                                            data-id="{{ $amenity->id }}" 
+                                                            data-name="{{ $amenity->amenities_name }}" 
+                                                            data-category="cottages"
+                                                            checked>
+                                                        <span class="text-xs font-semibold text-hp-text">{{ $amenity->amenities_name }}</span>
+                                                    </div>
+                                                    <span class="text-[0.65rem] font-medium text-hp-text-muted">Cottage</span>
+                                                </label>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if(isset($amenityCategories['rooms_others']) && $amenityCategories['rooms_others']['count'] > 0)
+                                    <div class="category-group-block rounded-2xl border border-glass-border bg-glass/60 p-4">
+                                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-glass-border/60">
+                                            <label class="flex items-center gap-2.5 cursor-pointer">
+                                                <input type="checkbox" id="matrixToggleCategoryRoomsOthers" class="matrix-category-cb h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" data-category="rooms_others" checked>
+                                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text">Rooms & Others</span>
+                                            </label>
+                                            <span class="rounded-full bg-purple-500/15 px-2.5 py-0.5 text-[0.65rem] font-bold text-purple-700 dark:text-purple-400">
+                                                {{ $amenityCategories['rooms_others']['count'] }} Units
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                            @foreach($allAmenities as $amenity)
+                                                @php
+                                                    $catKey = (stripos($amenity->amenities_name, 'A-House') !== false || stripos($amenity->amenities_name, 'A House') !== false) ? 'a_houses' : ((stripos($amenity->amenities_name, 'Cottage') !== false) ? 'cottages' : 'rooms_others');
+                                                @endphp
+                                                @if($catKey === 'rooms_others')
+                                                <label class="amenity-item-card flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#1a201c] hover:border-hp-green-mid transition-all cursor-pointer shadow-2xs" data-amenity-name="{{ strtolower($amenity->amenities_name) }}">
+                                                    <div class="flex items-center gap-2.5">
+                                                        <input type="checkbox" 
+                                                            class="matrix-amenity-checkbox h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer" 
+                                                            value="{{ $amenity->id }}" 
+                                                            data-id="{{ $amenity->id }}" 
+                                                            data-name="{{ $amenity->amenities_name }}" 
+                                                            data-category="rooms_others"
+                                                            checked>
+                                                        <span class="text-xs font-semibold text-hp-text">{{ $amenity->amenities_name }}</span>
+                                                    </div>
+                                                    <span class="text-[0.65rem] font-medium text-hp-text-muted">Room / Other</span>
+                                                </label>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+
+                                {{-- Modal Footer --}}
+                                <div class="border-t border-glass-border px-6 py-4 bg-gray-50/50 dark:bg-white/[0.02] flex items-center justify-between gap-3">
+                                    <div class="text-xs text-hp-text font-semibold">
+                                        <span id="matrixModalSelectedCount">{{ $allAmenities->count() }}</span> of {{ $allAmenities->count() }} Amenities Selected
+                                    </div>
+                                    <div class="flex items-center gap-2.5">
+                                        <button type="button" id="cancelMatrixColumnsModalBtn" class="px-4 py-2 rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-xs font-semibold text-hp-text hover:bg-glass-hover transition-all cursor-pointer">
+                                            Cancel
+                                        </button>
+                                        <button type="button" id="applyMatrixColumnsModalBtn" class="px-5 py-2 rounded-xl bg-hp-green-mid text-xs font-bold text-white shadow-md shadow-hp-green-mid/20 hover:bg-[#15462e] active:scale-95 transition-all cursor-pointer">
+                                            Apply Columns
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- VIEW 1: Excel-Style Daily Amenity & Room Occupancy Matrix Grid Table --}}
+                        <div id="matrixRoomsContainer" class="block">
+                            <div class="relative max-h-[620px] overflow-x-auto overflow-y-auto rounded-2xl border border-glass-border bg-glass-hover/20 shadow-inner">
+                                <table class="w-full border-collapse text-center text-xs" id="amenityDailyMatrixTable">
+                                    <thead>
+                                        <!-- Super Header Row (Row 1) -->
+                                        <tr class="bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem]">
+                                            <th rowspan="2" class="sticky top-0 left-0 z-40 w-[65px] min-w-[65px] max-w-[65px] py-2 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle box-border">DATE</th>
+                                            <th rowspan="2" class="sticky top-0 left-[65px] z-40 w-[105px] min-w-[105px] max-w-[105px] py-2 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)] box-border">DAY</th>
+                                            <th id="matrixSuperHeaderAmenity" colspan="{{ $allAmenities->count() }}" class="sticky top-0 z-20 h-8 max-h-8 leading-8 py-0 px-3 border border-white/20 bg-[#15462e] tracking-widest text-[0.75rem] font-bold text-white uppercase align-middle box-border">
+                                                ROOM / AMENITY IDENTIFICATION
+                                            </th>
+                                            <th rowspan="2" class="sticky top-0 z-20 py-2 px-3 border border-white/20 min-w-[100px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle leading-tight box-border">NUMBER OF GUEST CHECK IN</th>
+                                            <th rowspan="2" class="sticky top-0 z-20 py-2 px-3 border border-white/20 min-w-[100px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle leading-tight box-border">NUMBER OF GUESTS STAYED OVERNIGHT</th>
+                                            <th rowspan="2" class="sticky top-0 z-20 py-2 px-3 border border-white/20 min-w-[95px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle leading-tight box-border">NUMBER OF ROOMS OCCUPIED</th>
+                                        </tr>
+                                        <!-- Sub Header Row (Row 2: Dynamic Amenity Columns) -->
+                                        <tr id="matrixAmenitySubHeaderRow" class="bg-[#246b47] text-white font-semibold text-[0.68rem] tracking-wide">
+                                            @foreach($allAmenities as $amenity)
+                                                <th class="sticky top-8 z-10 py-1.5 px-2.5 border border-white/20 bg-[#246b47] text-white text-[0.68rem] font-bold tracking-wide align-middle min-w-[85px] box-border" data-col-amenity-id="{{ $amenity->id }}">
+                                                    {{ strtoupper($amenity->amenities_name) }}
+                                                </th>
+                                            @endforeach
+                                        </tr>
+                                    </thead>
+                                    <tbody id="matrixTableBody" class="divide-y divide-glass-border bg-glass">
+                                        <!-- Populated dynamically by JS -->
+                                    </tbody>
+                                    <tfoot id="matrixTableFoot" class="font-bold bg-[#eaf3ed] dark:bg-[#1a231d] text-hp-text border-t-2 border-[#1c5c3c]">
+                                        <!-- Populated dynamically by JS -->
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- VIEW 2: Excel-Style Number of Guests Breakdown (Male / Female / Foreigner / Total) Table --}}
+                        <div id="matrixGuestsContainer" class="hidden">
+                            <div class="relative max-h-[620px] overflow-x-auto overflow-y-auto rounded-2xl border border-glass-border bg-glass-hover/20 shadow-inner">
+                                <table class="w-full border-collapse text-center text-xs" id="amenityGuestsMatrixTable">
+                                    <thead>
+                                        <tr class="bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.72rem]">
+                                            <th class="sticky top-0 left-0 z-40 w-[80px] min-w-[80px] max-w-[80px] py-2.5 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase align-middle box-border">DATE</th>
+                                            <th class="sticky top-0 left-[80px] z-40 w-[110px] min-w-[110px] max-w-[110px] py-2.5 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)] box-border">DAY</th>
+                                            <th class="sticky top-0 z-20 py-2.5 px-3 border border-white/20 min-w-[120px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase align-middle box-border">MALE</th>
+                                            <th class="sticky top-0 z-20 py-2.5 px-3 border border-white/20 min-w-[120px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase align-middle box-border">FEMALE</th>
+                                            <th class="sticky top-0 z-20 py-2.5 px-3 border border-white/20 min-w-[120px] bg-[#1e4a33] text-white font-bold tracking-wider uppercase align-middle box-border">FOREIGNER</th>
+                                            <th class="sticky top-0 z-20 py-2.5 px-3 border border-white/20 min-w-[130px] bg-[#15462e] text-white font-bold tracking-wider uppercase align-middle box-border">TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="matrixGuestsTableBody" class="divide-y divide-glass-border bg-glass">
+                                        <!-- Populated dynamically by JS -->
+                                    </tbody>
+                                    <tfoot id="matrixGuestsTableFoot" class="font-bold bg-[#eaf3ed] dark:bg-[#1a231d] text-hp-text border-t-2 border-[#1c5c3c]">
+                                        <!-- Populated dynamically by JS -->
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- Dynamic Month Quick Tabs at bottom (like Excel Tabs in user photo) --}}
+                        <div class="mt-4 flex flex-wrap items-center gap-2 pt-2 border-t border-glass-border text-xs text-hp-text-muted">
+                            <span class="font-bold uppercase tracking-wider text-[0.7rem] mr-1">Sheet Quick Tabs:</span>
+                            <div id="matrixSheetMonthTabs" class="flex flex-wrap items-center gap-2">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
                 <!-- ========================================== -->
-                <!-- SECTION 1: STANDARD OPERATIONAL REPORTS   -->
+                <!-- SECTION 2: STANDARD OPERATIONAL REPORTS   -->
                 <!-- ========================================== -->
-                <div id="standardReportsSection" class="transition-opacity duration-300">
+                <div id="standardReportsSection" class="hidden transition-opacity duration-300">
                     <!-- PRINT ONLY OFFICIAL REPORT HEADER -->
                     <div class="print-only-header hidden print:block">
                         <div class="print-header-top">
@@ -833,22 +1069,7 @@
     </div>
 
     <script>
-        window.reportData = {
-            rawRows: [
-                @foreach($reservations as $r)
-                {
-                    id: {{ $r->id }},
-                    customer_name: @json($r->booker_name),
-                    amenities: @json($r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ')),
-                    status: @json($r->status),
-                    payment_status: @json($r->payment_status ?? 'Paid'),
-                    check_in: @json($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null),
-                    amount: {{ (float)$r->amount_paid }},
-                    guests: {{ (int)$r->number_of_guests }}
-                }@if(!$loop->last),@endif
-                @endforeach
-            ]
-        };
+        window.reportData = {!! json_encode($reportData ?? []) !!};
     </script>
     {{-- Admin AI Intelligence Chatbot --}}
     <x-admin_chatbot />

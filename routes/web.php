@@ -578,7 +578,8 @@ Route::get('/api/amenities/availability', function (Request $request) use ($occu
     $occupiedIds = $occupiedAmenityIdsForContinuousRange($startDate, $endDate, $startSlot, $endSlot);
     $occupiedIdsStr = array_map('strval', $occupiedIds);
 
-    $allAmenities = Amenity::where('status', true)
+    $allAmenities = Amenity::with('benefits')
+        ->where('status', true)
         ->orderBy('amenities_name')
         ->get();
 
@@ -591,8 +592,9 @@ Route::get('/api/amenities/availability', function (Request $request) use ($occu
                 'description' => $amenity->description,
                 'daytime_price' => (float) ($amenity->daytime_price ?? 0),
                 'nighttime_price' => (float) ($amenity->nighttime_price ?? 0),
-                'daytime_aircon_price' => $amenity->daytime_aircon_price !== null ? (float) $amenity->daytime_aircon_price : null,
-                'nighttime_aircon_price' => $amenity->nighttime_aircon_price !== null ? (float) $amenity->nighttime_aircon_price : null,
+                'is_aircon' => (bool) ($amenity->benefits?->is_aircon ?? false),
+                'free_entrance' => (bool) ($amenity->benefits?->free_entrance ?? false),
+                'free_pool' => (bool) ($amenity->benefits?->free_pool ?? false),
                 'minimum_capacity' => $amenity->minimum_capacity,
                 'maximum_capacity' => $amenity->maximum_capacity,
                 'is_available' => ! in_array((string) $amenity->id, $occupiedIdsStr, true),
@@ -602,7 +604,8 @@ Route::get('/api/amenities/availability', function (Request $request) use ($occu
 })->name('api.amenities.availability');
 
 Route::get('/amenities', function (Request $request) use ($getReservationAmenityTimeline) {
-    $amenities = Amenity::where('status', true)
+    $amenities = Amenity::with('benefits')
+        ->where('status', true)
         ->orderBy('amenities_name')
         ->get();
 
@@ -1092,25 +1095,27 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
 })->name('reservation.availability.calendar');
 
 Route::get('/reservation', function (WeatherService $weather) {
-    $amenities = Amenity::where('status', true)
+    $amenities = Amenity::with('benefits')
+        ->where('status', true)
         ->orderBy('amenities_name')
         ->get();
 
     if ($amenities->isEmpty()) {
         $sampleAmenities = [
-            ['id' => 'amenity-1', 'amenities_name' => 'Cottage A', 'daytime_price' => 500, 'nighttime_price' => 700, 'daytime_aircon_price' => 800, 'nighttime_aircon_price' => 900, 'additional_per_head' => 100, 'minimum_capacity' => 10, 'maximum_capacity' => 20, 'description' => 'Cozy cottage with garden view.', 'image' => null, 'status' => true],
-            ['id' => 'amenity-2', 'amenities_name' => 'Cottage B', 'daytime_price' => 550, 'nighttime_price' => 750, 'daytime_aircon_price' => 850, 'nighttime_aircon_price' => 950, 'additional_per_head' => 100, 'minimum_capacity' => 12, 'maximum_capacity' => 22, 'description' => 'Spacious cottage for family gatherings.', 'image' => null, 'status' => true],
-            ['id' => 'amenity-3', 'amenities_name' => 'Picnic Area', 'daytime_price' => 300, 'nighttime_price' => 450, 'daytime_aircon_price' => null, 'nighttime_aircon_price' => null, 'additional_per_head' => 50, 'minimum_capacity' => 8, 'maximum_capacity' => 15, 'description' => 'Open picnic ground near the river.', 'image' => null, 'status' => true],
-            ['id' => 'amenity-4', 'amenities_name' => 'Camping Ground', 'daytime_price' => 350, 'nighttime_price' => 500, 'daytime_aircon_price' => null, 'nighttime_aircon_price' => null, 'additional_per_head' => 75, 'minimum_capacity' => 6, 'maximum_capacity' => 20, 'description' => 'Camping spot with a scenic view.', 'image' => null, 'status' => true],
-            ['id' => 'amenity-5', 'amenities_name' => 'Function Hall', 'daytime_price' => 1200, 'nighttime_price' => 1600, 'daytime_aircon_price' => 1500, 'nighttime_aircon_price' => 1900, 'additional_per_head' => 120, 'minimum_capacity' => 20, 'maximum_capacity' => 50, 'description' => 'Indoor hall for events and gatherings.', 'image' => null, 'status' => true],
-            ['id' => 'amenity-6', 'amenities_name' => 'Viewing Deck', 'daytime_price' => 400, 'nighttime_price' => 600, 'daytime_aircon_price' => null, 'nighttime_aircon_price' => null, 'additional_per_head' => 50, 'minimum_capacity' => 5, 'maximum_capacity' => 12, 'description' => 'A scenic viewing deck for small groups.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-1', 'amenities_name' => 'Cottage A', 'daytime_price' => 500, 'nighttime_price' => 700, 'additional_per_head' => 100, 'minimum_capacity' => 10, 'maximum_capacity' => 20, 'description' => 'Cozy cottage with garden view.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-2', 'amenities_name' => 'Cottage B', 'daytime_price' => 550, 'nighttime_price' => 750, 'additional_per_head' => 100, 'minimum_capacity' => 12, 'maximum_capacity' => 22, 'description' => 'Spacious cottage for family gatherings.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-3', 'amenities_name' => 'Picnic Area', 'daytime_price' => 300, 'nighttime_price' => 450, 'additional_per_head' => 50, 'minimum_capacity' => 8, 'maximum_capacity' => 15, 'description' => 'Open picnic ground near the river.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-4', 'amenities_name' => 'Camping Ground', 'daytime_price' => 350, 'nighttime_price' => 500, 'additional_per_head' => 75, 'minimum_capacity' => 6, 'maximum_capacity' => 20, 'description' => 'Camping spot with a scenic view.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-5', 'amenities_name' => 'Function Hall', 'daytime_price' => 1200, 'nighttime_price' => 1600, 'additional_per_head' => 120, 'minimum_capacity' => 20, 'maximum_capacity' => 50, 'description' => 'Indoor hall for events and gatherings.', 'image' => null, 'status' => true],
+            ['id' => 'amenity-6', 'amenities_name' => 'Viewing Deck', 'daytime_price' => 400, 'nighttime_price' => 600, 'additional_per_head' => 50, 'minimum_capacity' => 5, 'maximum_capacity' => 12, 'description' => 'A scenic viewing deck for small groups.', 'image' => null, 'status' => true],
         ];
 
         foreach ($sampleAmenities as $sampleAmenity) {
             Amenity::firstOrCreate(['id' => $sampleAmenity['id']], $sampleAmenity);
         }
 
-        $amenities = Amenity::where('status', true)
+        $amenities = Amenity::with('benefits')
+            ->where('status', true)
             ->orderBy('amenities_name')
             ->get();
     }
@@ -1920,7 +1925,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
-        $amenities = Amenity::orderBy('amenities_name')->get();
+        $amenities = Amenity::with('benefits')->orderBy('amenities_name')->get();
 
         return view('admin.admin_amenitiesmanagement', [
             'amenities' => $amenities,
@@ -2033,8 +2038,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'amenities_name' => ['required', 'string', 'max:255'],
             'daytime_price' => ['required', 'numeric'],
             'nighttime_price' => ['required', 'numeric'],
-            'daytime_aircon_price' => ['nullable', 'numeric'],
-            'nighttime_aircon_price' => ['nullable', 'numeric'],
             'additional_per_head' => ['nullable', 'numeric'],
             'minimum_capacity' => ['nullable', 'numeric'],
             'maximum_capacity' => ['nullable', 'numeric'],
@@ -2042,6 +2045,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'image' => ['nullable', 'file', 'image', 'max:4096'],
             'status' => ['nullable', 'in:enabled,disabled'],
             'sale_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'is_aircon' => ['nullable', 'boolean'],
+            'free_entrance' => ['nullable', 'boolean'],
+            'free_pool' => ['nullable', 'boolean'],
         ]);
 
         $imagePath = null;
@@ -2052,26 +2058,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $salePercentage = $data['sale_percentage'] ?? 0;
         $daytimePrice = $data['daytime_price'];
         $nighttimePrice = $data['nighttime_price'];
-        $daytimeAirconPrice = $data['daytime_aircon_price'] ?? null;
-        $nighttimeAirconPrice = $data['nighttime_aircon_price'] ?? null;
 
         // Calculate current prices based on sale percentage
         $currentDaytimePrice = $salePercentage > 0 ? $daytimePrice * (1 - $salePercentage / 100) : $daytimePrice;
         $currentNighttimePrice = $salePercentage > 0 ? $nighttimePrice * (1 - $salePercentage / 100) : $nighttimePrice;
-        $currentDaytimeAirconPrice = $daytimeAirconPrice && $salePercentage > 0 ? $daytimeAirconPrice * (1 - $salePercentage / 100) : $daytimeAirconPrice;
-        $currentNighttimeAirconPrice = $nighttimeAirconPrice && $salePercentage > 0 ? $nighttimeAirconPrice * (1 - $salePercentage / 100) : $nighttimeAirconPrice;
 
-        Amenity::create([
+        $amenity = Amenity::create([
             'id' => Str::uuid(),
             'amenities_name' => $data['amenities_name'],
             'daytime_price' => $currentDaytimePrice,
             'nighttime_price' => $currentNighttimePrice,
-            'daytime_aircon_price' => $currentDaytimeAirconPrice,
-            'nighttime_aircon_price' => $currentNighttimeAirconPrice,
             'original_daytime_price' => $daytimePrice,
             'original_nighttime_price' => $nighttimePrice,
-            'original_daytime_aircon_price' => $daytimeAirconPrice,
-            'original_nighttime_aircon_price' => $nighttimeAirconPrice,
             'additional_per_head' => $data['additional_per_head'] ?? null,
             'minimum_capacity' => $data['minimum_capacity'] ?? null,
             'maximum_capacity' => $data['maximum_capacity'] ?? null,
@@ -2080,6 +2078,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'status' => ($data['status'] ?? 'enabled') === 'enabled',
             'sale_percentage' => $salePercentage,
         ]);
+
+        \App\Models\AmenityBenefit::updateOrCreate(
+            ['amenity_id' => $amenity->id],
+            [
+                'is_aircon' => $request->boolean('is_aircon'),
+                'free_entrance' => $request->boolean('free_entrance'),
+                'free_pool' => $request->boolean('free_pool'),
+            ]
+        );
 
         return redirect()->route('admin.amenities')->with('success', 'Amenity created successfully.');
     })->name('amenities.store');
@@ -2094,8 +2101,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'amenities_name' => ['required', 'string', 'max:255'],
             'daytime_price' => ['required', 'numeric'],
             'nighttime_price' => ['required', 'numeric'],
-            'daytime_aircon_price' => ['nullable', 'numeric'],
-            'nighttime_aircon_price' => ['nullable', 'numeric'],
             'additional_per_head' => ['nullable', 'numeric'],
             'minimum_capacity' => ['nullable', 'numeric'],
             'maximum_capacity' => ['nullable', 'numeric'],
@@ -2104,6 +2109,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'existing_image' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'in:enabled,disabled'],
             'sale_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'is_aircon' => ['nullable', 'boolean'],
+            'free_entrance' => ['nullable', 'boolean'],
+            'free_pool' => ['nullable', 'boolean'],
         ]);
 
         $imagePath = $data['existing_image'] ?? $amenity->image;
@@ -2117,25 +2125,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $salePercentage = $data['sale_percentage'] ?? 0;
         $daytimePrice = $data['daytime_price'];
         $nighttimePrice = $data['nighttime_price'];
-        $daytimeAirconPrice = $data['daytime_aircon_price'] ?? null;
-        $nighttimeAirconPrice = $data['nighttime_aircon_price'] ?? null;
 
         // Calculate current prices based on sale percentage
         $currentDaytimePrice = $salePercentage > 0 ? $daytimePrice * (1 - $salePercentage / 100) : $daytimePrice;
         $currentNighttimePrice = $salePercentage > 0 ? $nighttimePrice * (1 - $salePercentage / 100) : $nighttimePrice;
-        $currentDaytimeAirconPrice = $daytimeAirconPrice && $salePercentage > 0 ? $daytimeAirconPrice * (1 - $salePercentage / 100) : $daytimeAirconPrice;
-        $currentNighttimeAirconPrice = $nighttimeAirconPrice && $salePercentage > 0 ? $nighttimeAirconPrice * (1 - $salePercentage / 100) : $nighttimeAirconPrice;
 
         $amenity->update([
             'amenities_name' => $data['amenities_name'],
             'daytime_price' => $currentDaytimePrice,
             'nighttime_price' => $currentNighttimePrice,
-            'daytime_aircon_price' => $currentDaytimeAirconPrice,
-            'nighttime_aircon_price' => $currentNighttimeAirconPrice,
             'original_daytime_price' => $daytimePrice,
             'original_nighttime_price' => $nighttimePrice,
-            'original_daytime_aircon_price' => $daytimeAirconPrice,
-            'original_nighttime_aircon_price' => $nighttimeAirconPrice,
             'additional_per_head' => $data['additional_per_head'] ?? null,
             'minimum_capacity' => $data['minimum_capacity'] ?? null,
             'maximum_capacity' => $data['maximum_capacity'] ?? null,
@@ -2144,6 +2144,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'status' => ($data['status'] ?? 'enabled') === 'enabled',
             'sale_percentage' => $salePercentage,
         ]);
+
+        \App\Models\AmenityBenefit::updateOrCreate(
+            ['amenity_id' => $amenity->id],
+            [
+                'is_aircon' => $request->boolean('is_aircon'),
+                'free_entrance' => $request->boolean('free_entrance'),
+                'free_pool' => $request->boolean('free_pool'),
+            ]
+        );
 
         return redirect()->route('admin.amenities')->with('success', 'Amenity updated successfully.');
     })->name('amenities.update');
@@ -2293,8 +2302,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return redirect()->route('login');
         }
 
-        // Optimize by fetching only needed fields for aggregations
-        $reservations = Reservation::select('id', 'reservation_type', 'payment_status', 'amount_paid', 'status', 'number_of_guests', 'booker_name', 'reservation_date', 'created_at')
+        // Fetch all park amenities for column customizer & monitoring matrix
+        $allAmenities = \App\Models\Amenity::orderBy('amenities_name', 'asc')->get();
+
+        // Optimize by fetching needed fields for aggregations and daily guest occupancy matrix
+        $reservations = Reservation::select('id', 'reservation_type', 'payment_status', 'amount_paid', 'status', 'number_of_guests', 'booker_name', 'reservation_date', 'end_date', 'start_slot', 'end_slot', 'total_days', 'check_in', 'check_out', 'created_at')
             ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
             ->orderByDesc('created_at')
             ->get();
@@ -2375,11 +2387,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $peakBookedMonth = $monthlyBookingCounts->keys()->first() ?? null;
         $peakBookedMonthCount = $monthlyBookingCounts->first() ?? 0;
 
-        $amenityOptions = $amenityBreakdown
-            ->pluck('name')
-            ->unique()
-            ->sort()
-            ->values();
+        // Collect all distinct amenity names for standard filter & matrix
+        $amenityOptions = $allAmenities->pluck('amenities_name')->unique()->sort()->values();
+        if ($amenityOptions->isEmpty()) {
+            $amenityOptions = $amenityBreakdown->pluck('name')->unique()->sort()->values();
+        }
 
         $statusOptions = $reservations
             ->pluck('status')
@@ -2393,10 +2405,75 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->sort()
             ->values();
 
-        $firstCheckInDate = $checkInDates->first() ?: now()->toDateString();
-        $lastCheckInDate = $checkInDates->last() ?: now()->toDateString();
+        $firstCheckInDate = $checkInDates->first() ? \Illuminate\Support\Carbon::parse($checkInDates->first())->toDateString() : now()->toDateString();
+        $lastCheckInDate = $checkInDates->last() ? \Illuminate\Support\Carbon::parse($checkInDates->last())->toDateString() : now()->toDateString();
+
+        // Compute amenity categories for quick grouping
+        $amenityCategories = [
+            'a_houses' => [
+                'name' => 'A-Houses',
+                'ids' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'A-House') !== false || stripos($a->amenities_name, 'A House') !== false)->pluck('id')->values()->all(),
+                'count' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'A-House') !== false || stripos($a->amenities_name, 'A House') !== false)->count(),
+            ],
+            'cottages' => [
+                'name' => 'Cottages',
+                'ids' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'Cottage') !== false)->pluck('id')->values()->all(),
+                'count' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'Cottage') !== false)->count(),
+            ],
+            'rooms_others' => [
+                'name' => 'Rooms & Other Amenities',
+                'ids' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'A-House') === false && stripos($a->amenities_name, 'A House') === false && stripos($a->amenities_name, 'Cottage') === false)->pluck('id')->values()->all(),
+                'count' => $allAmenities->filter(fn ($a) => stripos($a->amenities_name, 'A-House') === false && stripos($a->amenities_name, 'A House') === false && stripos($a->amenities_name, 'Cottage') === false)->count(),
+            ],
+        ];
+
+        // Prepare complete client-safe report dataset for standard view & monitoring matrix
+        $reportData = [
+            'allAmenities' => $allAmenities->map(fn ($a) => [
+                'id' => (string) $a->id,
+                'name' => (string) $a->amenities_name,
+                'category' => (stripos($a->amenities_name, 'A-House') !== false || stripos($a->amenities_name, 'A House') !== false) 
+                    ? 'a_houses' 
+                    : ((stripos($a->amenities_name, 'Cottage') !== false) ? 'cottages' : 'rooms_others'),
+            ])->values()->all(),
+            'rawRows' => $reservations->map(fn ($r) => [
+                'id' => (int) $r->id,
+                'customer_name' => (string) $r->booker_name,
+                'amenities' => (string) ($r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None'),
+                'status' => (string) $r->status,
+                'payment_status' => (string) ($r->payment_status ?? 'Paid'),
+                'check_in' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null,
+                'amount' => (float) $r->amount_paid,
+                'guests' => (int) $r->number_of_guests,
+            ])->values()->all(),
+            'reservations' => $reservations->map(fn ($r) => [
+                'id' => (int) $r->id,
+                'customer_name' => (string) $r->booker_name,
+                'status' => (string) $r->status,
+                'payment_status' => (string) ($r->payment_status ?? 'Paid'),
+                'reservation_type' => (string) $r->reservation_type,
+                'check_in' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null,
+                'end_date' => $r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : null,
+                'total_days' => (int) ($r->total_days ?? 1),
+                'guests' => (int) $r->number_of_guests,
+                'amount' => (float) $r->amount_paid,
+                'male_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'male' && !($g->customer?->is_foreigner ?? false))->count(),
+                'female_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'female' && !($g->customer?->is_foreigner ?? false))->count(),
+                'foreigner_count' => (int) $r->reservationGuests->filter(fn ($g) => (bool) ($g->customer?->is_foreigner ?? false))->count(),
+                'amenities' => $r->reservationAmenities->map(fn ($ra) => [
+                    'amenity_id' => (string) $ra->amenity_id,
+                    'amenity_name' => (string) ($ra->amenity?->amenities_name ?? 'Unknown'),
+                    'start_date' => $ra->start_date ? \Illuminate\Support\Carbon::parse($ra->start_date)->format('Y-m-d') : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null),
+                    'end_date' => $ra->end_date ? \Illuminate\Support\Carbon::parse($ra->end_date)->format('Y-m-d') : ($r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : null),
+                    'quantity' => (int) ($ra->quantity ?? 1),
+                ])->values()->all(),
+            ])->values()->all(),
+        ];
 
         return view('admin.admin_reports', [
+            'allAmenities' => $allAmenities,
+            'amenityCategories' => $amenityCategories,
+            'reportData' => $reportData,
             'reservations' => $reservations,
             'totalReservations' => $totalReservations,
             'checkedInGuests' => $checkedInGuests,
@@ -3422,8 +3499,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'amenities_name' => $reservationAmenity->amenity?->amenities_name,
                             'daytime_price' => (float) ($reservationAmenity->amenity?->daytime_price ?? 0),
                             'nighttime_price' => (float) ($reservationAmenity->amenity?->nighttime_price ?? 0),
-                            'daytime_aircon_price' => $reservationAmenity->amenity?->daytime_aircon_price !== null ? (float) $reservationAmenity->amenity->daytime_aircon_price : null,
-                            'nighttime_aircon_price' => $reservationAmenity->amenity?->nighttime_aircon_price !== null ? (float) $reservationAmenity->amenity->nighttime_aircon_price : null,
+                            'is_aircon' => (bool) ($reservationAmenity->amenity?->benefits?->is_aircon ?? false),
+                            'free_entrance' => (bool) ($reservationAmenity->amenity?->benefits?->free_entrance ?? false),
+                            'free_pool' => (bool) ($reservationAmenity->amenity?->benefits?->free_pool ?? false),
                             'minimum_capacity' => $reservationAmenity->amenity?->minimum_capacity,
                             'maximum_capacity' => $reservationAmenity->amenity?->maximum_capacity !== null && $reservationAmenity->amenity?->maximum_capacity !== '' ? (int) $reservationAmenity->amenity->maximum_capacity : null,
                             'additional_per_head' => (float) ($reservationAmenity->amenity?->additional_per_head ?? 0),
@@ -3892,6 +3970,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'end_slot' => $raEndSlot,
                         'day_slots_count' => $amenity->day_slots_count,
                         'night_slots_count' => $amenity->night_slots_count,
+                        'free_entrance' => (bool) ($amenity->amenity?->benefits?->free_entrance ?? false),
+                        'free_pool' => (bool) ($amenity->amenity?->benefits?->free_pool ?? false),
+                        'is_aircon' => (bool) ($amenity->amenity?->benefits?->is_aircon ?? false),
                         'starts_at' => $amStartsAt?->toIso8601String(),
                         'checkout_at' => $amCheckoutAt?->toIso8601String(),
                     ];
@@ -3906,7 +3987,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
-        $amenities = Amenity::where('status', true)
+        $amenities = Amenity::with('benefits')
+            ->where('status', true)
             ->orderBy('amenities_name')
             ->get();
 
@@ -4498,10 +4580,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
 
             $itemCounts = $calculateContinuousSlotsCount($itemStartDate, $itemEndDate, $itemStartSlot, $itemEndSlot);
-            $hasAircon = ! empty($item['is_aircon']) || str_contains((string) ($item['pricing_type'] ?? ''), 'Aircon');
+            $hasAircon = ! empty($item['is_aircon']) || str_contains((string) ($item['pricing_type'] ?? ''), 'Aircon') || (bool) ($amenity->benefits?->is_aircon ?? false);
 
-            $dayPrice = $hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) ($amenity->daytime_price ?? 0);
-            $nightPrice = $hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) ($amenity->nighttime_price ?? 0);
+            $dayPrice = (float) ($amenity->daytime_price ?? 0);
+            $nightPrice = (float) ($amenity->nighttime_price ?? 0);
 
             $quantity = max(1, (int) ($item['quantity'] ?? 1));
             $calculatedPrice = (($itemCounts['day_count'] * $dayPrice) + ($itemCounts['night_count'] * $nightPrice)) * $quantity;
@@ -5001,6 +5083,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
             'companions.*.has_pool_access' => ['nullable'],
+            'entrance_option' => ['nullable', 'in:all_paid,specific,all_free'],
             'pool_option' => ['nullable', 'in:no_pool,specific,all_paid,all_free'],
             'include_pool' => ['nullable'],
         ]);
@@ -5165,7 +5248,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0);
         }
 
-        $entranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
+        $entranceOption = $data['entrance_option'] ?? 'all_paid';
+        if ($entranceOption === 'all_free') {
+            $entranceTotal = 0.0;
+        } else {
+            $entranceTotal = round(($adultCount * $adultRate) + ($childCount * $childRate), 2);
+        }
 
         $dayPool = (float) ($settings->day_pool_fee ?? 0);
         $nightPool = (float) ($settings->night_pool_fee ?? 0);
@@ -5682,9 +5770,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         // Calculate extra cost for the added slots
         $amenity = $reservationAmenity->amenity;
-        $hasAircon = str_contains((string) $reservationAmenity->pricing_type, 'Aircon');
-        $dayPrice = $hasAircon && $amenity?->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) ($amenity?->daytime_price ?? 0);
-        $nightPrice = $hasAircon && $amenity?->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) ($amenity?->nighttime_price ?? 0);
+        $hasAircon = str_contains((string) $reservationAmenity->pricing_type, 'Aircon') || (bool) ($amenity?->benefits?->is_aircon ?? false);
+        $dayPrice = (float) ($amenity?->daytime_price ?? 0);
+        $nightPrice = (float) ($amenity?->nighttime_price ?? 0);
 
         $extraDayCount = 0;
         $extraNightCount = 0;
@@ -5850,10 +5938,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $itemCounts = $calculateContinuousSlotsCount($startDate, $endDate, $startSlot, $endSlot);
-        $hasAircon = ! empty($data['is_aircon']);
+        $hasAircon = ! empty($data['is_aircon']) || (bool) ($amenity->benefits?->is_aircon ?? false);
 
-        $dayPrice = $hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) ($amenity->daytime_price ?? 0);
-        $nightPrice = $hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) ($amenity->nighttime_price ?? 0);
+        $dayPrice = (float) ($amenity->daytime_price ?? 0);
+        $nightPrice = (float) ($amenity->nighttime_price ?? 0);
 
         $quantity = max(1, (int) ($data['quantity'] ?? 1));
         $totalAmenityCost = round((($itemCounts['day_count'] * $dayPrice) + ($itemCounts['night_count'] * $nightPrice)) * $quantity, 2);
@@ -6120,11 +6208,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $combos = $amenityItems
                 ->filter(fn ($ra) => ! empty($ra->amenity_id))
                 ->map(function ($ra) {
-                    $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon');
+                    $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon') || (bool) ($ra->amenity?->benefits?->is_aircon ?? false);
                     $amenity = $ra->amenity;
 
-                    $dayPrice = $amenity ? ($hasAircon && $amenity->daytime_aircon_price ? (float) $amenity->daytime_aircon_price : (float) $amenity->daytime_price) : 0;
-                    $nightPrice = $amenity ? ($hasAircon && $amenity->nighttime_aircon_price ? (float) $amenity->nighttime_aircon_price : (float) $amenity->nighttime_price) : 0;
+                    $dayPrice = $amenity ? (float) $amenity->daytime_price : 0;
+                    $nightPrice = $amenity ? (float) $amenity->nighttime_price : 0;
 
                     return [
                         'id' => $ra->id,
@@ -6509,10 +6597,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $amenityModel = \App\Models\Amenity::find($amenityId);
 
             $counts = $calculateContinuousSlotsCount($item['start_date'], $item['end_date'], $item['start_slot'], $item['end_slot']);
-            $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon');
+            $hasAircon = str_contains((string) $ra->pricing_type, 'Aircon') || (bool) ($amenityModel?->benefits?->is_aircon ?? false);
 
-            $dayPrice = $amenityModel ? ($hasAircon && $amenityModel->daytime_aircon_price ? (float) $amenityModel->daytime_aircon_price : (float) $amenityModel->daytime_price) : 0;
-            $nightPrice = $amenityModel ? ($hasAircon && $amenityModel->nighttime_aircon_price ? (float) $amenityModel->nighttime_aircon_price : (float) $amenityModel->nighttime_price) : 0;
+            $dayPrice = $amenityModel ? (float) $amenityModel->daytime_price : 0;
+            $nightPrice = $amenityModel ? (float) $amenityModel->nighttime_price : 0;
 
             $quantity = max(1, (int) $ra->quantity);
             $amenityPrice = (($counts['day_count'] * $dayPrice) + ($counts['night_count'] * $nightPrice)) * $quantity;
@@ -6601,8 +6689,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'amenities_name' => $ra->amenity?->amenities_name,
                             'daytime_price' => (float) ($ra->amenity?->daytime_price ?? 0),
                             'nighttime_price' => (float) ($ra->amenity?->nighttime_price ?? 0),
-                            'daytime_aircon_price' => $ra->amenity?->daytime_aircon_price !== null ? (float) $ra->amenity->daytime_aircon_price : null,
-                            'nighttime_aircon_price' => $ra->amenity?->nighttime_aircon_price !== null ? (float) $ra->amenity->nighttime_aircon_price : null,
+                            'is_aircon' => (bool) ($ra->amenity?->benefits?->is_aircon ?? false),
+                            'free_entrance' => (bool) ($ra->amenity?->benefits?->free_entrance ?? false),
+                            'free_pool' => (bool) ($ra->amenity?->benefits?->free_pool ?? false),
                         ],
                     ];
                 })->values(),
@@ -6617,7 +6706,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $reservations = Reservation::query()
-            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+            ->with(['reservationAmenities.amenity.benefits', 'reservationGuests.customer'])
             ->where('reservation_type', 'online')
             ->where('payment_status', '!=', 'Unpaid')
             ->where(function ($query) {
@@ -6688,8 +6777,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'amenities_name' => $reservationAmenity->amenity?->amenities_name,
                             'daytime_price' => (float) ($reservationAmenity->amenity?->daytime_price ?? 0),
                             'nighttime_price' => (float) ($reservationAmenity->amenity?->nighttime_price ?? 0),
-                            'daytime_aircon_price' => $reservationAmenity->amenity?->daytime_aircon_price !== null ? (float) $reservationAmenity->amenity->daytime_aircon_price : null,
-                            'nighttime_aircon_price' => $reservationAmenity->amenity?->nighttime_aircon_price !== null ? (float) $reservationAmenity->amenity->nighttime_aircon_price : null,
+                            'is_aircon' => (bool) ($reservationAmenity->amenity?->benefits?->is_aircon ?? false),
+                            'free_entrance' => (bool) ($reservationAmenity->amenity?->benefits?->free_entrance ?? false),
+                            'free_pool' => (bool) ($reservationAmenity->amenity?->benefits?->free_pool ?? false),
                         ],
                     ];
                 })->values(),

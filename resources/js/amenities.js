@@ -81,8 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDesc = document.getElementById('infoModalDescription');
     const modalDaytimePrice = document.getElementById('infoModalDayPrice');
     const modalNighttimePrice = document.getElementById('infoModalNightPrice');
-    const modalDayAircon = document.getElementById('infoModalDayAircon');
-    const modalNightAircon = document.getElementById('infoModalNightAircon');
+    const modalBenefitsWrap = document.getElementById('infoModalBenefitsWrap');
     const modalAddHead = document.getElementById('infoModalAddHead');
     const modalCapacity = document.getElementById('infoModalCapacity');
     const modalStatusList = document.getElementById('modalStatusList');
@@ -97,8 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const description = card.dataset.description || 'No description available.';
         const daytimePrice = card.dataset.daytimePrice || 'N/A';
         const nighttimePrice = card.dataset.nighttimePrice || 'N/A';
-        const daytimeAirconPrice = card.dataset.daytimeAirconPrice || 'N/A';
-        const nighttimeAirconPrice = card.dataset.nighttimeAirconPrice || 'N/A';
+        const isAircon = card.dataset.isAircon === '1';
+        const freeEntrance = card.dataset.freeEntrance === '1';
+        const freePool = card.dataset.freePool === '1';
         const additionalPerHead = card.dataset.additionalPerHead || 'N/A';
         const minCap = card.dataset.minCap || 'N/A';
         const maxCap = card.dataset.maxCap || 'N/A';
@@ -114,10 +114,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalDesc) modalDesc.textContent = description;
         if (modalDaytimePrice) modalDaytimePrice.textContent = daytimePrice;
         if (modalNighttimePrice) modalNighttimePrice.textContent = nighttimePrice;
-        if (modalDayAircon) modalDayAircon.textContent = daytimeAirconPrice;
-        if (modalNightAircon) modalNightAircon.textContent = nighttimeAirconPrice;
         if (modalAddHead) modalAddHead.textContent = additionalPerHead;
         if (modalCapacity) modalCapacity.textContent = `${minCap} - ${maxCap} guests`;
+
+        if (modalBenefitsWrap) {
+            modalBenefitsWrap.innerHTML = '';
+            if (isAircon) {
+                modalBenefitsWrap.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-2.5 py-1 text-xs font-bold text-cyan-300"><i class="bi bi-snow"></i> Air-conditioned</span>';
+            }
+            if (freePool) {
+                modalBenefitsWrap.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-950/70 px-2.5 py-1 text-xs font-bold text-blue-300"><i class="bi bi-water"></i> Free Pool Access</span>';
+            }
+            if (freeEntrance) {
+                modalBenefitsWrap.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-xs font-bold text-emerald-300"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+            }
+        }
 
         if (imageSrc) {
             modalImg.src = imageSrc;

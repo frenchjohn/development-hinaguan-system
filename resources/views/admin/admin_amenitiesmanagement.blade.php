@@ -15,6 +15,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -169,8 +170,6 @@
                                 <option value="">None</option>
                                 <option value="daytimePrice">Day price</option>
                                 <option value="nighttimePrice">Night price</option>
-                                <option value="daytimeAirconPrice">Daytime aircon price</option>
-                                <option value="nighttimeAirconPrice">Nighttime aircon price</option>
                                 <option value="additionalPerHead">Additional per head</option>
                                 <option value="minimumCapacity">Minimum capacity</option>
                                 <option value="maximumCapacity">Maximum capacity</option>
@@ -199,6 +198,7 @@
                                 <th>Name</th>
                                 <th>Day price</th>
                                 <th>Night price</th>
+                                <th>Benefits</th>
                                 <th>Min cap</th>
                                 <th>Max cap</th>
                                 <th>Sale %</th>
@@ -213,8 +213,9 @@
                                     data-amenities-name="{{ e($amenity->amenities_name) }}"
                                     data-daytime-price="{{ $amenity->daytime_price }}"
                                     data-nighttime-price="{{ $amenity->nighttime_price }}"
-                                    data-daytime-aircon-price="{{ $amenity->daytime_aircon_price }}"
-                                    data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price }}"
+                                    data-is-aircon="{{ $amenity->benefits?->is_aircon ? '1' : '0' }}"
+                                    data-free-entrance="{{ $amenity->benefits?->free_entrance ? '1' : '0' }}"
+                                    data-free-pool="{{ $amenity->benefits?->free_pool ? '1' : '0' }}"
                                     data-additional-per-head="{{ $amenity->additional_per_head }}"
                                     data-minimum-capacity="{{ $amenity->minimum_capacity }}"
                                     data-maximum-capacity="{{ $amenity->maximum_capacity }}"
@@ -225,8 +226,6 @@
                                     data-sale-percentage="{{ $amenity->sale_percentage ?? 0 }}"
                                     data-original-daytime-price="{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}"
                                     data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}"
-                                    data-original-daytime-aircon-price="{{ $amenity->original_daytime_aircon_price ?? $amenity->daytime_aircon_price }}"
-                                    data-original-nighttime-aircon-price="{{ $amenity->original_nighttime_aircon_price ?? $amenity->nighttime_aircon_price }}"
                                     class="amenity-row {{ $amenity->sale_percentage && $amenity->sale_percentage > 0 ? 'amenity-row--sale' : '' }}"
                                 >
                                     <td>
@@ -237,7 +236,7 @@
                                     </td>
                                     <td class="num-cell">
                                         @if($amenity->sale_percentage && $amenity->sale_percentage > 0)
-                                            <span class="price-old">₱{{ number_format($amenity->original_daytime_price ?? $amenity->daytime_price, 2) }}</span>
+                                             <span class="price-old">₱{{ number_format($amenity->original_daytime_price ?? $amenity->daytime_price, 2) }}</span>
                                             <span class="price-now">₱{{ number_format($amenity->daytime_price, 2) }}</span>
                                         @else
                                             <span>₱{{ number_format($amenity->daytime_price, 2) }}</span>
@@ -250,6 +249,28 @@
                                         @else
                                             <span>₱{{ number_format($amenity->nighttime_price, 2) }}</span>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-1">
+                                            @if($amenity->benefits?->is_aircon)
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-cyan-700 dark:text-cyan-300">
+                                                    <i class="bi bi-snow"></i> Aircon
+                                                </span>
+                                            @endif
+                                            @if($amenity->benefits?->free_entrance)
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">
+                                                    <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
+                                                </span>
+                                            @endif
+                                            @if($amenity->benefits?->free_pool)
+                                                <span class="inline-flex items-center gap-1 rounded-md bg-blue-500/15 border border-blue-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-700 dark:text-blue-300">
+                                                    <i class="bi bi-water"></i> Free Pool
+                                                </span>
+                                            @endif
+                                            @if(!$amenity->benefits?->is_aircon && !$amenity->benefits?->free_entrance && !$amenity->benefits?->free_pool)
+                                                <span class="text-xs text-hp-text-muted">—</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="num-cell">{{ $amenity->minimum_capacity !== null && $amenity->minimum_capacity !== '' ? $amenity->minimum_capacity : '—' }}</td>
                                     <td class="num-cell">{{ $amenity->maximum_capacity !== null && $amenity->maximum_capacity !== '' ? $amenity->maximum_capacity : '—' }}</td>
@@ -276,7 +297,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="table-empty">No amenities found yet.</td>
+                                    <td colspan="9" class="table-empty">No amenities found yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -322,16 +343,22 @@
                     <small style="color: var(--hp-text-muted); font-size: 0.8rem;">Base price before sale discount</small>
                 </div>
 
-                <div class="modal-form__row">
-                    <label for="daytime_aircon_price">Original Daytime Aircon Price</label>
-                    <input id="daytime_aircon_price" name="daytime_aircon_price" type="number" step="0.01" min="0" inputmode="decimal">
-                    <small style="color: var(--hp-text-muted); font-size: 0.8rem;">Base price before sale discount</small>
-                </div>
-
-                <div class="modal-form__row">
-                    <label for="nighttime_aircon_price">Original Nighttime Aircon Price</label>
-                    <input id="nighttime_aircon_price" name="nighttime_aircon_price" type="number" step="0.01" min="0" inputmode="decimal">
-                    <small style="color: var(--hp-text-muted); font-size: 0.8rem;">Base price before sale discount</small>
+                <div class="modal-form__row modal-form__row--full">
+                    <label class="block mb-2 font-semibold">Included Benefits & Perks</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl border border-glass-border bg-glass">
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" id="is_aircon" name="is_aircon" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
+                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-snow text-cyan-600 dark:text-cyan-400"></i> Has Aircon</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" id="free_entrance" name="free_entrance" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
+                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-ticket-perforated-fill text-emerald-600 dark:text-emerald-400"></i> Free Entrance</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" id="free_pool" name="free_pool" value="1" class="h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500">
+                            <span class="inline-flex items-center gap-1.5"><i class="bi bi-water text-blue-600 dark:text-blue-400"></i> Free Pool Access</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="modal-form__row">

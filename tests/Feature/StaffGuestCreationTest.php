@@ -21,8 +21,6 @@ class StaffGuestCreationTest extends TestCase
             'amenities_name' => 'Mountain Picnic Hut',
             'daytime_price' => 2500,
             'nighttime_price' => 3000,
-            'daytime_aircon_price' => null,
-            'nighttime_aircon_price' => null,
             'additional_per_head' => 150,
             'minimum_capacity' => 5,
             'maximum_capacity' => 15,

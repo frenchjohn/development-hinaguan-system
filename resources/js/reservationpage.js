@@ -626,16 +626,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const getAmenityContinuousPrice = (card, choice, startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
-        const isAircon = choice === 'with';
         const { dayCount, nightCount } = calculateContinuousSlots(startDateStr, endDateStr, startSlot, endSlot);
 
-        const dayPrice = isAircon
-            ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0)
-            : Number(card.dataset.daytimePrice || 0);
-
-        const nightPrice = isAircon
-            ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0)
-            : Number(card.dataset.nighttimePrice || 0);
+        const dayPrice = Number(card.dataset.daytimePrice || 0);
+        const nightPrice = Number(card.dataset.nighttimePrice || 0);
 
         return (dayCount * dayPrice) + (nightCount * nightPrice);
     };
@@ -1673,18 +1667,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
             const singlePrice = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
 
-            const dayPrice = isAircon ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0) : Number(card.dataset.daytimePrice || 0);
-            const nightPrice = isAircon ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0) : Number(card.dataset.nighttimePrice || 0);
+            const dayPrice = Number(card.dataset.daytimePrice || 0);
+            const nightPrice = Number(card.dataset.nighttimePrice || 0);
 
-            modalPriceLabel.textContent = isAircon ? 'Aircon package' : 'Standard package';
+            modalPriceLabel.textContent = 'Package price';
             modalPriceValue.textContent = `₱${singlePrice.toFixed(2)}`;
             modalPriceHint.textContent = `${totalDays} Day${totalDays > 1 ? 's' : ''} Stay (${dayCount} Daytime${dayCount > 1 ? 's' : ''} × ₱${dayPrice.toFixed(2)} + ${nightCount} Nighttime${nightCount > 1 ? 's' : ''} × ₱${nightPrice.toFixed(2)}) = ₱${singlePrice.toFixed(2)}`;
 
             const salePercentage = parseFloat(card.dataset.salePercentage) || 0;
             if (salePercentage > 0) {
-                const originalPrice = isAircon
-                    ? (card.dataset.originalDaytimeAirconPrice || card.dataset.originalNighttimeAirconPrice || singlePrice)
-                    : (card.dataset.originalDaytimePrice || card.dataset.originalNighttimePrice || singlePrice);
+                const originalPrice = card.dataset.originalDaytimePrice || card.dataset.originalNighttimePrice || singlePrice;
                 modalSaleInfo.style.display = 'flex';
                 modalOriginalPrice.textContent = `₱${parseFloat(originalPrice).toFixed(2)}`;
                 modalSalePercentage.textContent = `${salePercentage}% OFF`;
@@ -2157,11 +2149,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const sSlot = mainStartSlot || selectedSlot;
         const eSlot = mainEndSlot || selectedSlot;
 
-        if (multiSelectionEnabled && hasAircon) {
-            openMultiAirconModal(card);
-            return;
-        }
-
         selectedCards.push(card);
         multiSelectionChoices[amenityId] = 'without';
         amenityStayConfig[amenityId] = {
@@ -2210,19 +2197,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalCapacity.textContent = `${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
 
-        const hasAircon = card.dataset.hasAircon === '1';
-        if (hasAircon && (!multiSelectionEnabled || selectedCards.length <= 1)) {
-            airconChoice.innerHTML = `
-                <button type="button" class="rp-choice-btn ${currentChoice === 'with' ? 'is-selected' : ''}" data-aircon-choice="with">With Aircon</button>
-                <button type="button" class="rp-choice-btn ${currentChoice === 'without' ? 'is-selected' : ''}" data-aircon-choice="without">Without Aircon</button>
-            `;
-            airconChoice.style.display = 'flex';
-            renderBookingSelection(card, currentChoice);
-        } else {
+        const modalBenefits = document.getElementById('modalBenefits');
+        if (modalBenefits) {
+            modalBenefits.innerHTML = '';
+            if (card.dataset.isAircon === '1') {
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-2.5 py-1 text-xs font-bold text-cyan-300"><i class="bi bi-snow"></i> Aircon Included</span>';
+            }
+            if (card.dataset.freePool === '1') {
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-950/70 px-2.5 py-1 text-xs font-bold text-blue-300"><i class="bi bi-water"></i> Free Pool Access</span>';
+            }
+            if (card.dataset.freeEntrance === '1') {
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-xs font-bold text-emerald-300"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+            }
+        }
+
+        if (airconChoice) {
             airconChoice.innerHTML = '';
             airconChoice.style.display = 'none';
-            renderBookingSelection(card, 'without');
         }
+        renderBookingSelection(card, 'without');
 
         if (selectionFloatingBar) {
             selectionFloatingBar.hidden = true;

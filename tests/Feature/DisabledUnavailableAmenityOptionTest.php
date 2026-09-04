@@ -24,8 +24,6 @@ class DisabledUnavailableAmenityOptionTest extends TestCase
             'amenities_name' => $name . ' ' . $id,
             'daytime_price' => '500',
             'nighttime_price' => '700',
-            'daytime_aircon_price' => '800',
-            'nighttime_aircon_price' => '1000',
             'additional_per_head' => '100',
             'minimum_capacity' => '5',
             'maximum_capacity' => '15',

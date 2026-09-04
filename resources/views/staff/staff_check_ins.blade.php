@@ -1589,6 +1589,42 @@
 								</div>
 							@endif
 
+							<!-- Amenities Section with Mixed Times / Schedule Customizer (Placed First) -->
+							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
+								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
+									<div>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Amenities</h4>
+										<p class="m-0 text-xs text-hp-text-muted">Add available amenities and customize individual stay schedules</p>
+									</div>
+									<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="chooseAmenitiesBtn">
+										<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+										</svg>
+										<span>Choose Amenities</span>
+									</button>
+								</div>
+								<div id="selectedAmenitiesContainer" class="grid gap-2.5">
+									<div class="m-0 flex flex-col items-center justify-center rounded-xl border border-dashed border-glass-border bg-glass/60 p-5 text-center dark:border-white/10 dark:bg-white/5" id="noAmenitiesNotice">
+										<p class="m-0 text-xs font-medium text-hp-text-muted">No amenities selected yet for this walk-in.</p>
+										<button type="button" class="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-hp-green/40 bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-colors hover:bg-hp-green hover:text-white" onclick="document.getElementById('chooseAmenitiesBtn')?.click()">
+											<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+												<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+											</svg>
+											<span>+ Add Amenities</span>
+										</button>
+									</div>
+								</div>
+								<div id="amenitiesHiddenInputs"></div>
+								<div class="guest-form__summary mt-3 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text">
+									<span>Amenities Subtotal</span>
+									<strong class="text-hp-green" id="walkInAmenitiesSubtotal">₱0.00</strong>
+								</div>
+								<div class="guest-form__summary mt-2 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text" id="walkInExtraHeadFeeSummaryWrap" style="display: none;">
+									<span>Extra Head Fee (Capacity Limit)</span>
+									<strong class="text-[#e65100] dark:text-[#ffb74d]" id="walkInExtraHeadSubtotal">₱0.00</strong>
+								</div>
+							</div>
+
 							<div class="guest-form__grid grid grid-cols-1 gap-4 lg:grid-cols-2">
 								<div class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 									<div class="guest-form__section-header mb-2 flex items-center justify-between">
@@ -1792,42 +1828,6 @@
 
 								<div id="companionList" class="guest-companion-list grid gap-2 max-h-[290px] overflow-y-auto overflow-x-hidden pr-1"></div>
 								<div id="companionHiddenFields"></div>
-							</div>
-
-							<!-- Amenities Section with Mixed Times / Schedule Customizer -->
-							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
-								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
-									<div>
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Amenities</h4>
-										<p class="m-0 text-xs text-hp-text-muted">Add available amenities and customize individual stay schedules</p>
-									</div>
-									<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="chooseAmenitiesBtn">
-										<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-										</svg>
-										<span>Choose Amenities</span>
-									</button>
-								</div>
-								<div id="selectedAmenitiesContainer" class="grid gap-2.5">
-									<div class="m-0 flex flex-col items-center justify-center rounded-xl border border-dashed border-glass-border bg-glass/60 p-5 text-center dark:border-white/10 dark:bg-white/5" id="noAmenitiesNotice">
-										<p class="m-0 text-xs font-medium text-hp-text-muted">No amenities selected yet for this walk-in.</p>
-										<button type="button" class="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-hp-green/40 bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-colors hover:bg-hp-green hover:text-white" onclick="document.getElementById('chooseAmenitiesBtn')?.click()">
-											<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-											</svg>
-											<span>+ Add Amenities</span>
-										</button>
-									</div>
-								</div>
-								<div id="amenitiesHiddenInputs"></div>
-								<div class="guest-form__summary mt-3 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text">
-									<span>Amenities Subtotal</span>
-									<strong class="text-hp-green" id="walkInAmenitiesSubtotal">₱0.00</strong>
-								</div>
-								<div class="guest-form__summary mt-2 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text" id="walkInExtraHeadFeeSummaryWrap" style="display: none;">
-									<span>Extra Head Fee (Capacity Limit)</span>
-									<strong class="text-[#e65100] dark:text-[#ffb74d]" id="walkInExtraHeadSubtotal">₱0.00</strong>
-								</div>
 							</div>
 
 							<!-- Overall Total Banner -->
@@ -2127,7 +2127,7 @@
 
 										<div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
 											<div class="flex items-center gap-2">
-												<span class="text-base">🏊</span>
+												<i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
 												<div>
 													<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Include Pool Pass</p>
 													<p class="m-0 text-[0.68rem] text-hp-text-muted">Grant pool access under specific pool policy</p>

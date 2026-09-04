@@ -24,8 +24,6 @@ class StaffReservationAmenityEditTest extends TestCase
             'amenities_name' => $name . ' ' . $id,
             'daytime_price' => (string) $dayPrice,
             'nighttime_price' => (string) $nightPrice,
-            'daytime_aircon_price' => (string) ($dayPrice + 300),
-            'nighttime_aircon_price' => (string) ($nightPrice + 300),
             'additional_per_head' => '100',
             'minimum_capacity' => '5',
             'maximum_capacity' => '15',

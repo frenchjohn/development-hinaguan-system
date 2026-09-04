@@ -17,6 +17,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -664,16 +665,14 @@
                                         data-max-price="{{ $maxPrice }}"
                                         data-daytime-price="{{ $amenity->daytime_price }}"
                                         data-nighttime-price="{{ $amenity->nighttime_price }}"
-                                        data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ?? '' }}"
-                                        data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ?? '' }}"
-                                        data-has-aircon="{{ (!empty($amenity->daytime_aircon_price) || !empty($amenity->nighttime_aircon_price)) ? '1' : '0' }}"
+                                        data-is-aircon="{{ $amenity->benefits?->is_aircon ? '1' : '0' }}"
+                                        data-free-entrance="{{ $amenity->benefits?->free_entrance ? '1' : '0' }}"
+                                        data-free-pool="{{ $amenity->benefits?->free_pool ? '1' : '0' }}"
                                         data-additional="{{ $amenity->additional_per_head ?? '0' }}"
                                         data-description="{{ $amenity->description ?? '' }}"
                                         data-sale-percentage="{{ $amenity->sale_percentage ?? 0 }}"
                                         data-original-daytime-price="{{ $amenity->original_daytime_price ?? $amenity->daytime_price }}"
-                                        data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}"
-                                        data-original-daytime-aircon-price="{{ $amenity->original_daytime_aircon_price ?? $amenity->daytime_aircon_price }}"
-                                        data-original-nighttime-aircon-price="{{ $amenity->original_nighttime_aircon_price ?? $amenity->nighttime_aircon_price }}">
+                                        data-original-nighttime-price="{{ $amenity->original_nighttime_price ?? $amenity->nighttime_price }}">
 
                                         {{-- Individual Amenity Selection Button / Checkbox --}}
                                         <button type="button" class="rp-card__select-btn" data-card-select aria-pressed="false" aria-label="Select {{ $amenity->amenities_name }} for multi-booking" title="Select this amenity">
@@ -702,6 +701,22 @@
                                                     <span class="rp-card__chip rp-card__chip--price">
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                                         from &#8369;{{ number_format($minPrice) }}
+                                                    </span>
+                                                @endif
+
+                                                @if($amenity->benefits?->is_aircon)
+                                                    <span class="rp-card__chip rp-card__chip--aircon bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
+                                                        <i class="bi bi-snow"></i> Aircon
+                                                    </span>
+                                                @endif
+                                                @if($amenity->benefits?->free_pool)
+                                                    <span class="rp-card__chip rp-card__chip--pool bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                                                        <i class="bi bi-water"></i> Free Pool
+                                                    </span>
+                                                @endif
+                                                @if($amenity->benefits?->free_entrance)
+                                                    <span class="rp-card__chip rp-card__chip--entrance bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                                                        <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
                                                     </span>
                                                 @endif
 
@@ -954,7 +969,9 @@
 
                             </div>
 
-                            <div id="airconChoice" class="rp-modal__aircon"></div>
+                            <div id="modalBenefits" class="rp-modal__benefits flex flex-wrap gap-1.5 my-2"></div>
+
+                            <div id="airconChoice" class="rp-modal__aircon" style="display: none;"></div>
 
                             <p class="rp-modal__text" id="modalDescription"></p>
 
@@ -1374,11 +1391,11 @@
                             </div>
                             <div class="rp-dp-session-pick" role="group" aria-label="Check-in session">
                                 <button type="button" class="rp-session-btn is-active" data-dp-start-slot="Daytime" id="dpStartSlotDaytime">
-                                    <span>☀️ Daytime</span>
+                                    <span><i class="bi bi-sun-fill text-amber-400 me-1"></i> Daytime</span>
                                     <small class="rp-session-time" id="dpCheckInDaytimeTimeLabel">{{ $daytimeStartFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-dp-start-slot="Nighttime" id="dpStartSlotNighttime">
-                                    <span>🌙 Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="dpCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
@@ -1393,11 +1410,11 @@
                             </div>
                             <div class="rp-dp-session-pick" role="group" aria-label="Check-out session">
                                 <button type="button" class="rp-session-btn is-active" data-dp-end-slot="Daytime" id="dpEndSlotDaytime">
-                                    <span>☀️ Daytime</span>
+                                    <span><i class="bi bi-sun-fill text-amber-400 me-1"></i> Daytime</span>
                                     <small class="rp-session-time" id="dpCheckOutDaytimeTimeLabel">{{ $daytimeEndFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-dp-end-slot="Nighttime" id="dpEndSlotNighttime">
-                                    <span>🌙 Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="dpCheckOutOvernightTimeLabel">{{ $nighttimeEndFormatted }} next day</small>
                                 </button>
                             </div>
@@ -1494,11 +1511,11 @@
                             </div>
                             <div class="rp-dp-session-pick" role="group" aria-label="Check-in session">
                                 <button type="button" class="rp-session-btn is-active" data-av-start-slot="Daytime" id="avStartSlotDaytime">
-                                    <span>☀️ Daytime</span>
+                                    <span><i class="bi bi-sun-fill text-amber-400 me-1"></i> Daytime</span>
                                     <small class="rp-session-time" id="avCheckInDaytimeTimeLabel">{{ $daytimeStartFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-av-start-slot="Nighttime" id="avStartSlotNighttime">
-                                    <span>🌙 Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="avCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
@@ -1513,11 +1530,11 @@
                             </div>
                             <div class="rp-dp-session-pick" role="group" aria-label="Check-out session">
                                 <button type="button" class="rp-session-btn is-active" data-av-end-slot="Daytime" id="avEndSlotDaytime">
-                                    <span>☀️ Daytime</span>
+                                    <span><i class="bi bi-sun-fill text-amber-400 me-1"></i> Daytime</span>
                                     <small class="rp-session-time" id="avCheckOutDaytimeTimeLabel">{{ $daytimeEndFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-av-end-slot="Nighttime" id="avEndSlotNighttime">
-                                    <span>🌙 Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="avCheckOutOvernightTimeLabel">{{ $nighttimeEndFormatted }} next day</small>
                                 </button>
                             </div>
@@ -1706,14 +1723,14 @@
 
                             <div class="rp-modal__success-notice">
 
-                                <strong>📩 All Booking Details &amp; QR Pass Sent to Your Email!</strong>
+                                <strong><i class="bi bi-envelope-check-fill me-1"></i> All Booking Details &amp; QR Pass Sent to Your Email!</strong>
                                 We have emailed your <strong>official entry QR code</strong>, <strong>scheduled arrival time &amp; date</strong>, <strong>availed amenities</strong>, and <strong>complete billing breakdown</strong> to your email address. Everything you need for your visit has been sent — please check your inbox (or spam folder)!
 
                             </div>
 
                             <div class="rp-modal__success-notice" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.5); text-align: left;">
 
-                                <strong style="color: #fde047; margin-bottom: 0.35rem;">⚠️ IMPORTANT CHECK-IN NOTICE:</strong>
+                                <strong style="color: #fde047; margin-bottom: 0.35rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> IMPORTANT CHECK-IN NOTICE:</strong>
                                 Please <strong>bring your Entry QR Code</strong> (on your phone or printed). It is <strong>required upon arrival</strong> to automatically verify your identity and confirm that you are the rightful owner of this reservation for express check-in.
 
                             </div>

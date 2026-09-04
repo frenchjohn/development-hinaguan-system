@@ -17,8 +17,6 @@ class AmenitiesPageTest extends TestCase
             'amenities_name' => 'Picnic Area',
             'daytime_price' => '500',
             'nighttime_price' => '700',
-            'daytime_aircon_price' => '800',
-            'nighttime_aircon_price' => '900',
             'additional_per_head' => '100',
             'minimum_capacity' => '10',
             'maximum_capacity' => '20',

@@ -210,7 +210,7 @@
                         </div>
 
                         <div class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
-                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">⚠️ Reported Concerns / Issues</p>
+                            <p class="m-0 mb-2 text-[0.72rem] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400"><i class="bi bi-exclamation-triangle-fill me-1"></i> Reported Concerns / Issues</p>
                             <ul id="fbAiIssuesList" class="m-0 list-disc space-y-1 pl-4 text-xs leading-relaxed text-[var(--ink)]">
                                 @foreach ($aiInsights['top_issues'] as $issue)
                                     <li>{{ $issue }}</li>

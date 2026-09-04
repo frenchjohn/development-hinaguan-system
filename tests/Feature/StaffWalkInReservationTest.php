@@ -43,8 +43,6 @@ class StaffWalkInReservationTest extends TestCase
             'description' => 'Spacious cottage',
             'daytime_price' => 500,
             'nighttime_price' => 600,
-            'daytime_aircon_price' => 700,
-            'nighttime_aircon_price' => 800,
             'minimum_capacity' => 2,
             'maximum_capacity' => 10,
             'status' => true,
@@ -87,7 +85,7 @@ class StaffWalkInReservationTest extends TestCase
                     'start_slot' => 'Nighttime',
                     'end_slot' => 'Daytime',
                     'is_aircon' => 1,
-                    'pricing_type' => 'Continuous Stay (2D) Aircon',
+                    'pricing_type' => 'Continuous Stay (2D)',
                 ],
             ],
             'total_amount' => 2000,
@@ -118,7 +116,7 @@ class StaffWalkInReservationTest extends TestCase
         $this->assertEquals('Daytime', $resAmenity->end_slot);
         $this->assertEquals(1, $resAmenity->day_slots_count);
         $this->assertEquals(1, $resAmenity->night_slots_count);
-        $this->assertEquals(1500, $resAmenity->price_at_booking); // 800 (night AC) + 700 (day AC)
+        $this->assertEquals(1100, $resAmenity->price_at_booking); // 600 (night) + 500 (day)
         $this->assertEquals('Active', $resAmenity->status);
 
         // Check entrance fees
@@ -491,8 +489,6 @@ class StaffWalkInReservationTest extends TestCase
             'amenities_name' => 'Cottage Online',
             'daytime_price' => 500,
             'nighttime_price' => 600,
-            'daytime_aircon_price' => 700,
-            'nighttime_aircon_price' => 800,
             'minimum_capacity' => 2,
             'maximum_capacity' => 10,
             'status' => true,

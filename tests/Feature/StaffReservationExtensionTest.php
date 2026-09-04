@@ -16,6 +16,7 @@ class StaffReservationExtensionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \Illuminate\Support\Carbon::setTestNow('2026-09-01 09:00:00');
 
         ParkSetting::create([
             'park_name' => 'Hinaguan Nature Park',
@@ -52,8 +53,6 @@ class StaffReservationExtensionTest extends TestCase
             'description' => 'Test Amenity',
             'daytime_price' => $day,
             'nighttime_price' => $night,
-            'daytime_aircon_price' => $day + 200,
-            'nighttime_aircon_price' => $night + 200,
             'minimum_capacity' => 1,
             'maximum_capacity' => 10,
             'status' => true,

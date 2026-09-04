@@ -2,6 +2,8 @@ window.AppPage = window.AppPage || {};
 window.AppPage['admin_reports'] = function () {
     const data = window.reportData || {};
     const rawRows = data.rawRows || [];
+    const allAmenities = data.allAmenities || [];
+    const reservationsList = data.reservations || [];
 
     const printButton = document.getElementById('printReportsButton');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
@@ -15,6 +17,911 @@ window.AppPage['admin_reports'] = function () {
     const presetChips = document.querySelectorAll('.preset-chip');
 
     const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    // =========================================================
+    // DAILY AMENITY & ROOM OCCUPANCY MONITORING MATRIX ENGINE
+    // =========================================================
+    const matrixTableBody = document.getElementById('matrixTableBody');
+    const matrixTableFoot = document.getElementById('matrixTableFoot');
+    const matrixAmenitySubHeaderRow = document.getElementById('matrixAmenitySubHeaderRow');
+    const matrixSuperHeaderAmenity = document.getElementById('matrixSuperHeaderAmenity');
+    const matrixDateFromInput = document.getElementById('matrixDateFrom');
+    const matrixDateToInput = document.getElementById('matrixDateTo');
+    const matrixApplyDateBtn = document.getElementById('matrixApplyDateBtn');
+    const matrixPresetBtns = document.querySelectorAll('.matrix-tab-item[data-matrix-preset]');
+    const matrixAmenityCheckboxes = document.querySelectorAll('.matrix-amenity-checkbox');
+    const matrixToggleAllCheckbox = document.getElementById('matrixToggleAllCheckbox');
+    const matrixCategoryCheckboxes = document.querySelectorAll('.matrix-category-cb');
+    const matrixSelectAllBtn = document.getElementById('matrixSelectAllAmenitiesBtn');
+    const matrixClearAllBtn = document.getElementById('matrixClearAllAmenitiesBtn');
+    const exportMatrixCsvBtn = document.getElementById('exportMatrixCsvBtn');
+    const printMatrixPdfBtn = document.getElementById('printMatrixPdfBtn');
+    const matrixSheetMonthTabs = document.getElementById('matrixSheetMonthTabs');
+    const matrixSubtitlePeriod = document.getElementById('matrixSubtitlePeriod');
+    const matrixTotalRoomsLabel = document.getElementById('matrixTotalRoomsLabel');
+    const matrixActiveMonthLabel = document.getElementById('matrixActiveMonthLabel');
+    const matrixActiveMonthBanner = document.getElementById('matrixActiveMonthBanner');
+    const matrixActiveDateRangePill = document.getElementById('matrixActiveDateRangePill');
+    const subTabRoomsMatrix = document.getElementById('subTabRoomsMatrix');
+    const subTabGuestsMatrix = document.getElementById('subTabGuestsMatrix');
+    const matrixRoomsContainer = document.getElementById('matrixRoomsContainer');
+    const matrixGuestsContainer = document.getElementById('matrixGuestsContainer');
+    const matrixRoomsControlsRow = document.getElementById('matrixRoomsControlsRow');
+    const matrixGuestsTableBody = document.getElementById('matrixGuestsTableBody');
+    const matrixGuestsTableFoot = document.getElementById('matrixGuestsTableFoot');
+    const matrixCurrentViewLabel = document.getElementById('matrixCurrentViewLabel');
+
+    let currentMatrixView = 'rooms'; // 'rooms' or 'guests'
+
+    // Selected amenities state (defaults to all)
+    let selectedAmenityIds = new Set(allAmenities.map(a => String(a.id)));
+
+    // Date range helper for Month calculations
+    const getMonthRange = (year, monthIndex) => {
+        const start = new Date(year, monthIndex, 1);
+        const end = new Date(year, monthIndex + 1, 0);
+        return { start: isoDate(start), end: isoDate(end) };
+    };
+
+    const now = new Date();
+    let currentMatrixStartDate = getMonthRange(now.getFullYear(), now.getMonth()).start;
+    let currentMatrixEndDate = getMonthRange(now.getFullYear(), now.getMonth()).end;
+
+    if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
+    if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
+
+    const getDatesInRange = (startDateStr, endDateStr) => {
+        const dates = [];
+        if (!startDateStr || !endDateStr) return dates;
+        const curr = new Date(startDateStr + 'T00:00:00');
+        const end = new Date(endDateStr + 'T00:00:00');
+        
+        let count = 0;
+        while (curr <= end && count <= 366) {
+            dates.push(isoDate(curr));
+            curr.setDate(curr.getDate() + 1);
+            count++;
+        }
+        return dates;
+    };
+
+    const computeMatrixData = (dateList, activeAmenityIds) => {
+        const amenityIdList = Array.from(activeAmenityIds);
+        const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        
+        const rows = [];
+        const columnTotals = {};
+        amenityIdList.forEach(id => columnTotals[id] = 0);
+        let grandTotalCheckIn = 0;
+        let grandTotalOvernight = 0;
+        let grandTotalRoomsOccupied = 0;
+
+        dateList.forEach(dateStr => {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const dayNum = dateObj.getDate();
+            const dayName = dayNames[dateObj.getDay()];
+
+            const amenityGuestsMap = {};
+            amenityIdList.forEach(id => amenityGuestsMap[id] = 0);
+
+            let dayGuestsCheckIn = 0;
+            let dayGuestsOvernight = 0;
+
+            reservationsList.forEach(r => {
+                // Strictly only include reservations that have Checked In (or Completed/Checked-Out)
+                // Do NOT include Pending, Confirmed, Cancelled, etc.
+                const statusNormalized = String(r.status || '').trim().toLowerCase();
+                const isCheckedInOrCompleted = statusNormalized === 'checked in' || statusNormalized === 'checked-in' || statusNormalized === 'completed';
+                if (!isCheckedInOrCompleted) return;
+
+                const resCheckIn = r.check_in ? String(r.check_in).slice(0, 10) : null;
+                const resEnd = r.end_date ? String(r.end_date).slice(0, 10) : null;
+                const totalDays = Number(r.total_days) || 1;
+                const guests = Number(r.guests) || 0;
+
+                if (!resCheckIn) return;
+
+                let isOccupiedOnThisDate = false;
+
+                // Multi-day stay rule: covers from resCheckIn to resEnd inclusive
+                if (resEnd && resEnd > resCheckIn && totalDays > 1) {
+                    if (dateStr >= resCheckIn && dateStr <= resEnd) {
+                        isOccupiedOnThisDate = true;
+                    }
+                } else {
+                    // Single-day or overnight checkout next morning rule: only counts on check-in day
+                    if (dateStr === resCheckIn) {
+                        isOccupiedOnThisDate = true;
+                    }
+                }
+
+                if (isOccupiedOnThisDate) {
+                    let hasMatchingActiveAmenity = false;
+                    if (r.amenities && r.amenities.length > 0) {
+                        r.amenities.forEach(ra => {
+                            const aId = String(ra.amenity_id);
+                            if (activeAmenityIds.has(aId)) {
+                                amenityGuestsMap[aId] = (amenityGuestsMap[aId] || 0) + guests;
+                                hasMatchingActiveAmenity = true;
+                            }
+                        });
+                    }
+
+                    // Strictly only include in Check-In and Overnight counts if at least one booked amenity is currently selected/active
+                    if (hasMatchingActiveAmenity) {
+                        if (dateStr === resCheckIn) {
+                            dayGuestsCheckIn += guests;
+                        }
+                        if (r.reservation_type === 'overnight' || totalDays >= 1) {
+                            dayGuestsOvernight += guests;
+                        }
+                    }
+                }
+            });
+
+            // Calculate distinct rooms occupied on this day
+            let dayRoomsOccupied = 0;
+            amenityIdList.forEach(id => {
+                if (amenityGuestsMap[id] > 0) {
+                    dayRoomsOccupied += 1;
+                }
+                columnTotals[id] = (columnTotals[id] || 0) + (amenityGuestsMap[id] || 0);
+            });
+
+            grandTotalCheckIn += dayGuestsCheckIn;
+            grandTotalOvernight += dayGuestsOvernight;
+            grandTotalRoomsOccupied += dayRoomsOccupied;
+
+            rows.push({
+                dateStr,
+                dayNum,
+                dayName,
+                amenityGuestsMap,
+                dayGuestsCheckIn,
+                dayGuestsOvernight,
+                dayRoomsOccupied
+            });
+        });
+
+        return {
+            rows,
+            columnTotals,
+            grandTotalCheckIn,
+            grandTotalOvernight,
+            grandTotalRoomsOccupied
+        };
+    };
+
+    const renderAmenityMatrix = () => {
+        if (!matrixTableBody) return;
+
+        const visibleAmenities = allAmenities.filter(a => selectedAmenityIds.has(String(a.id)));
+        
+        if (matrixTotalRoomsLabel) {
+            matrixTotalRoomsLabel.textContent = `${visibleAmenities.length} of ${allAmenities.length} Rooms Active`;
+        }
+
+        // Update superheader colspan
+        if (matrixSuperHeaderAmenity) {
+            matrixSuperHeaderAmenity.colSpan = Math.max(visibleAmenities.length, 1);
+        }
+
+        // Update subheader columns
+        if (matrixAmenitySubHeaderRow) {
+            if (visibleAmenities.length === 0) {
+                matrixAmenitySubHeaderRow.innerHTML = '<th class="py-2 px-3 border border-white/20 text-center italic text-xs text-white">No amenities selected</th>';
+            } else {
+                matrixAmenitySubHeaderRow.innerHTML = visibleAmenities.map(a => `
+                    <th class="sticky top-8 z-10 py-1.5 px-2.5 border border-white/20 bg-[#246b47] text-white text-[0.68rem] font-bold tracking-wide align-middle min-w-[85px] box-border" data-col-amenity-id="${a.id}">
+                        ${a.name.toUpperCase()}
+                    </th>
+                `).join('');
+            }
+        }
+
+        const dateList = getDatesInRange(currentMatrixStartDate, currentMatrixEndDate);
+
+        // Format Month and Date Range Labels
+        const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
+        const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
+        const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
+        const startYear = dStart.getFullYear();
+        const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
+        const endYear = dEnd.getFullYear();
+
+        let monthLabelText = '';
+        let bannerText = '';
+        if (startMonthName === endMonthName && startYear === endYear) {
+            monthLabelText = `${startMonthName.toUpperCase()} ${startYear}`;
+            bannerText = `FOR THE MONTH OF: ${startMonthName.toUpperCase()} ${startYear}`;
+        } else {
+            monthLabelText = `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} – ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
+            bannerText = `PERIOD: ${monthLabelText}`;
+        }
+
+        if (matrixActiveMonthLabel) {
+            matrixActiveMonthLabel.textContent = monthLabelText;
+        }
+
+        if (matrixSubtitlePeriod) {
+            const startFmt = dStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const endFmt = dEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            matrixSubtitlePeriod.textContent = `${startFmt} to ${endFmt} (${dateList.length} days)`;
+        }
+
+        if (dateList.length === 0) {
+            matrixTableBody.innerHTML = `
+                <tr>
+                    <td colspan="${visibleAmenities.length + 5}" class="py-10 text-center text-sm text-hp-text-muted">
+                        No valid date range selected.
+                    </td>
+                </tr>
+            `;
+            if (matrixTableFoot) matrixTableFoot.innerHTML = '';
+            return;
+        }
+
+        const { rows, columnTotals, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied } = computeMatrixData(dateList, selectedAmenityIds);
+
+        // Render Table Body Rows
+        matrixTableBody.innerHTML = rows.map(r => {
+            const amenityCells = visibleAmenities.map(a => {
+                const count = r.amenityGuestsMap[String(a.id)] || 0;
+                if (count > 0) {
+                    return `<td class="py-2 px-2 text-center border-r border-b border-gray-200/80 dark:border-white/10 font-bold text-hp-text"><span class="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 rounded-md font-bold bg-[#1c5c3c]/15 text-[#1c5c3c] dark:bg-[#4c9a5f]/25 dark:text-[#6ab88c] text-xs">${count}</span></td>`;
+                }
+                return `<td class="py-2 px-2 text-center border-r border-b border-gray-200/80 dark:border-white/10 text-hp-text-muted/30 font-normal text-xs">-</td>`;
+            }).join('');
+
+            return `
+                <tr class="hover:bg-glass-hover/50 transition-colors">
+                    <td class="sticky left-0 z-10 w-[65px] min-w-[65px] max-w-[65px] py-2.5 px-3 font-semibold text-hp-text bg-white dark:bg-[#161b18] border-r border-b border-gray-200/80 dark:border-white/10 whitespace-nowrap text-center text-xs box-border">${r.dayNum}</td>
+                    <td class="sticky left-[65px] z-10 w-[105px] min-w-[105px] max-w-[105px] py-2.5 px-3 font-medium text-hp-text-muted bg-white dark:bg-[#161b18] border-r border-b border-gray-200/80 dark:border-white/10 whitespace-nowrap text-left text-xs shadow-[3px_0_6px_-2px_rgba(0,0,0,0.12)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)] box-border">${r.dayName}</td>
+                    ${amenityCells}
+                    <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 bg-[#1c5c3c]/5 dark:bg-[#1c5c3c]/10 text-xs">${r.dayGuestsCheckIn > 0 ? r.dayGuestsCheckIn : '-'}</td>
+                    <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 bg-[#1c5c3c]/5 dark:bg-[#1c5c3c]/10 text-xs">${r.dayGuestsOvernight > 0 ? r.dayGuestsOvernight : '-'}</td>
+                    <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 bg-[#1c5c3c]/5 dark:bg-[#1c5c3c]/10 text-xs">${r.dayRoomsOccupied > 0 ? r.dayRoomsOccupied : '0'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Render Table Footer Summary
+        if (matrixTableFoot) {
+            const footerAmenityCells = visibleAmenities.map(a => {
+                const total = columnTotals[String(a.id)] || 0;
+                return `<td class="py-3 px-2 text-center font-bold text-hp-green-mid border-r border-b border-gray-200/80 dark:border-white/10 text-xs">${total}</td>`;
+            }).join('');
+
+            matrixTableFoot.innerHTML = `
+                <tr class="bg-[#eaf3ed] dark:bg-[#1a231d]">
+                    <td class="sticky left-0 z-10 w-[65px] min-w-[65px] py-3 px-3 font-bold uppercase tracking-wider text-hp-text bg-[#e2ede4] dark:bg-[#1a231d] border-r border-b border-gray-200/80 dark:border-white/10 text-center text-xs box-border"></td>
+                    <td class="sticky left-[65px] z-10 w-[105px] min-w-[105px] py-3 px-3 text-left font-bold uppercase tracking-wider text-hp-text bg-[#e2ede4] dark:bg-[#1a231d] border-r border-b border-gray-200/80 dark:border-white/10 text-xs shadow-[3px_0_6px_-2px_rgba(0,0,0,0.12)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)] box-border">TOTAL</td>
+                    ${footerAmenityCells}
+                    <td class="py-3 px-3 text-center font-bold text-hp-green-mid text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalCheckIn}</td>
+                    <td class="py-3 px-3 text-center font-bold text-hp-green-mid text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalOvernight}</td>
+                    <td class="py-3 px-3 text-center font-bold text-hp-green-mid text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalRoomsOccupied}</td>
+                </tr>
+            `;
+        }
+
+        // Seamlessly sync subheader top offset to match superheader height perfectly
+        syncMatrixHeaderTops();
+    };
+
+    const syncMatrixHeaderTops = () => {
+        if (!matrixSuperHeaderAmenity) return;
+        const superHdrHeight = matrixSuperHeaderAmenity.offsetHeight || matrixSuperHeaderAmenity.getBoundingClientRect().height;
+        if (superHdrHeight > 0) {
+            const subRowThs = document.querySelectorAll('#matrixAmenitySubHeaderRow th');
+            subRowThs.forEach(th => {
+                th.style.top = `${Math.round(superHdrHeight)}px`;
+            });
+        }
+    };
+
+    window.addEventListener('resize', syncMatrixHeaderTops);
+    window.addEventListener('load', syncMatrixHeaderTops);
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(syncMatrixHeaderTops);
+    }
+
+    const computeGuestsDemographicsData = (dateList) => {
+        const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        const rows = [];
+        let grandTotalMale = 0;
+        let grandTotalFemale = 0;
+        let grandTotalForeigner = 0;
+        let grandTotalAllGuests = 0;
+
+        dateList.forEach(dateStr => {
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            const dayNum = dateObj.getDate();
+            const dayName = dayNames[dateObj.getDay()];
+
+            let dayMale = 0;
+            let dayFemale = 0;
+            let dayForeigner = 0;
+
+            reservationsList.forEach(r => {
+                const statusNormalized = String(r.status || '').trim().toLowerCase();
+                const isCheckedInOrCompleted = statusNormalized === 'checked in' || statusNormalized === 'checked-in' || statusNormalized === 'completed';
+                if (!isCheckedInOrCompleted) return;
+
+                const resCheckIn = r.check_in ? String(r.check_in).slice(0, 10) : null;
+                const resEnd = r.end_date ? String(r.end_date).slice(0, 10) : null;
+                const totalDays = Number(r.total_days) || 1;
+
+                if (!resCheckIn) return;
+
+                let isOccupiedOnThisDate = false;
+                if (resEnd && resEnd > resCheckIn && totalDays > 1) {
+                    if (dateStr >= resCheckIn && dateStr <= resEnd) {
+                        isOccupiedOnThisDate = true;
+                    }
+                } else {
+                    if (dateStr === resCheckIn) {
+                        isOccupiedOnThisDate = true;
+                    }
+                }
+
+                if (!isOccupiedOnThisDate) return;
+
+                const male = Number(r.male_count) || 0;
+                const female = Number(r.female_count) || 0;
+                const foreigner = Number(r.foreigner_count) || 0;
+                const totalGuests = Number(r.guests) || 0;
+
+                if (male + female + foreigner > 0) {
+                    dayMale += male;
+                    dayFemale += female;
+                    dayForeigner += foreigner;
+                } else if (totalGuests > 0) {
+                    dayMale += Math.ceil(totalGuests / 2);
+                    dayFemale += Math.floor(totalGuests / 2);
+                }
+            });
+
+            const dayTotal = dayMale + dayFemale + dayForeigner;
+            grandTotalMale += dayMale;
+            grandTotalFemale += dayFemale;
+            grandTotalForeigner += dayForeigner;
+            grandTotalAllGuests += dayTotal;
+
+            rows.push({
+                dateStr,
+                dayNum,
+                dayName,
+                dayMale,
+                dayFemale,
+                dayForeigner,
+                dayTotal
+            });
+        });
+
+        return {
+            rows,
+            grandTotalMale,
+            grandTotalFemale,
+            grandTotalForeigner,
+            grandTotalAllGuests
+        };
+    };
+
+    const renderGuestsDemographicsMatrix = () => {
+        if (!matrixGuestsTableBody) return;
+
+        const dateList = getDatesInRange(currentMatrixStartDate, currentMatrixEndDate);
+        const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
+        const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
+        const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
+        const startYear = dStart.getFullYear();
+        const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
+        const endYear = dEnd.getFullYear();
+
+        let monthLabelText = (startMonthName === endMonthName && startYear === endYear)
+            ? `${startMonthName.toUpperCase()} ${startYear}`
+            : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} – ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
+
+        if (matrixActiveMonthLabel) matrixActiveMonthLabel.textContent = `GUESTS - ${monthLabelText}`;
+        if (matrixSubtitlePeriod) {
+            const startFmt = dStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const endFmt = dEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            matrixSubtitlePeriod.textContent = `${startFmt} to ${endFmt} (${dateList.length} days)`;
+        }
+
+        if (dateList.length === 0) {
+            matrixGuestsTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-10 text-center text-sm text-hp-text-muted">
+                        No valid date range selected.
+                    </td>
+                </tr>
+            `;
+            if (matrixGuestsTableFoot) matrixGuestsTableFoot.innerHTML = '';
+            return;
+        }
+
+        const { rows, grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests } = computeGuestsDemographicsData(dateList);
+
+        matrixGuestsTableBody.innerHTML = rows.map(r => `
+            <tr class="hover:bg-glass-hover/50 transition-colors">
+                <td class="sticky left-0 z-10 w-[80px] min-w-[80px] max-w-[80px] py-2.5 px-3 font-semibold text-hp-text bg-white dark:bg-[#161b18] border-r border-b border-gray-200/80 dark:border-white/10 whitespace-nowrap text-center text-xs box-border">${r.dayNum}</td>
+                <td class="sticky left-[80px] z-10 w-[110px] min-w-[110px] max-w-[110px] py-2.5 px-3 font-medium text-hp-text-muted bg-white dark:bg-[#161b18] border-r border-b border-gray-200/80 dark:border-white/10 whitespace-nowrap text-left text-xs shadow-[3px_0_6px_-2px_rgba(0,0,0,0.12)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)] box-border">${r.dayName}</td>
+                <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 text-xs">${r.dayMale > 0 ? `<span class="text-blue-600 dark:text-blue-400 font-bold">${r.dayMale}</span>` : '-'}</td>
+                <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 text-xs">${r.dayFemale > 0 ? `<span class="text-pink-600 dark:text-pink-400 font-bold">${r.dayFemale}</span>` : '-'}</td>
+                <td class="py-2.5 px-3 font-bold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 text-xs">${r.dayForeigner > 0 ? `<span class="text-amber-600 dark:text-amber-400 font-bold">${r.dayForeigner}</span>` : '-'}</td>
+                <td class="py-2.5 px-3 font-extrabold text-hp-text text-center border-r border-b border-gray-200/80 dark:border-white/10 bg-[#1c5c3c]/5 dark:bg-[#1c5c3c]/10 text-xs">${r.dayTotal > 0 ? r.dayTotal : '0'}</td>
+            </tr>
+        `).join('');
+
+        if (matrixGuestsTableFoot) {
+            matrixGuestsTableFoot.innerHTML = `
+                <tr class="bg-[#eaf3ed] dark:bg-[#1a231d]">
+                    <td class="sticky left-0 z-10 w-[80px] min-w-[80px] py-3 px-3 font-bold uppercase tracking-wider text-hp-text bg-[#e2ede4] dark:bg-[#1a231d] border-r border-b border-gray-200/80 dark:border-white/10 text-center text-xs box-border"></td>
+                    <td class="sticky left-[80px] z-10 w-[110px] min-w-[110px] py-3 px-3 text-left font-bold uppercase tracking-wider text-hp-text bg-[#e2ede4] dark:bg-[#1a231d] border-r border-b border-gray-200/80 dark:border-white/10 text-xs shadow-[3px_0_6px_-2px_rgba(0,0,0,0.12)] dark:shadow-[3px_0_6px_-2px_rgba(0,0,0,0.4)] box-border">TOTAL</td>
+                    <td class="py-3 px-3 text-center font-bold text-blue-700 dark:text-blue-400 text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalMale}</td>
+                    <td class="py-3 px-3 text-center font-bold text-pink-700 dark:text-pink-400 text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalFemale}</td>
+                    <td class="py-3 px-3 text-center font-bold text-amber-700 dark:text-amber-400 text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalForeigner}</td>
+                    <td class="py-3 px-3 text-center font-extrabold text-hp-green-mid text-xs border-r border-b border-gray-200/80 dark:border-white/10">${grandTotalAllGuests}</td>
+                </tr>
+            `;
+        }
+    };
+
+    const setSubTabActive = (activeBtn, inactiveBtn) => {
+        if (activeBtn) {
+            activeBtn.classList.remove('text-hp-text-muted', 'hover:bg-glass-hover');
+            activeBtn.classList.add('is-active', 'bg-[#1c5c3c]', 'text-white', 'shadow-xs');
+        }
+        if (inactiveBtn) {
+            inactiveBtn.classList.remove('is-active', 'bg-[#1c5c3c]', 'text-white', 'shadow-xs');
+            inactiveBtn.classList.add('text-hp-text-muted', 'hover:bg-glass-hover');
+        }
+    };
+
+    const renderCurrentMatrixView = () => {
+        if (currentMatrixView === 'rooms') {
+            setSubTabActive(subTabRoomsMatrix, subTabGuestsMatrix);
+            if (matrixRoomsContainer) matrixRoomsContainer.classList.remove('hidden');
+            if (matrixGuestsContainer) matrixGuestsContainer.classList.add('hidden');
+            if (matrixRoomsControlsRow) matrixRoomsControlsRow.classList.remove('hidden');
+            if (matrixCurrentViewLabel) matrixCurrentViewLabel.textContent = 'Monthly Room Occupancy';
+            renderAmenityMatrix();
+        } else {
+            setSubTabActive(subTabGuestsMatrix, subTabRoomsMatrix);
+            if (matrixRoomsContainer) matrixRoomsContainer.classList.add('hidden');
+            if (matrixGuestsContainer) matrixGuestsContainer.classList.remove('hidden');
+            if (matrixRoomsControlsRow) matrixRoomsControlsRow.classList.add('hidden');
+            if (matrixCurrentViewLabel) matrixCurrentViewLabel.textContent = 'Number of Guests (Demographics)';
+            renderGuestsDemographicsMatrix();
+        }
+    };
+
+    if (subTabRoomsMatrix) {
+        subTabRoomsMatrix.addEventListener('click', () => {
+            currentMatrixView = 'rooms';
+            renderMonthQuickTabs();
+            renderCurrentMatrixView();
+        });
+    }
+
+    if (subTabGuestsMatrix) {
+        subTabGuestsMatrix.addEventListener('click', () => {
+            currentMatrixView = 'guests';
+            renderMonthQuickTabs();
+            renderCurrentMatrixView();
+        });
+    }
+
+    const renderMonthQuickTabs = () => {
+        if (!matrixSheetMonthTabs) return;
+
+        const tabs = [];
+        const d = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const targetDate = new Date(d.getFullYear(), d.getMonth() - i, 1);
+            const mName = targetDate.toLocaleDateString('en-US', { month: 'long' });
+            const year = targetDate.getFullYear();
+            const range = getMonthRange(year, targetDate.getMonth());
+
+            const isCurrentRange = range.start === currentMatrixStartDate && range.end === currentMatrixEndDate;
+
+            tabs.push({
+                label: `MONTHLY REPORT - ${mName.toUpperCase()}`,
+                view: 'rooms',
+                range,
+                isActive: isCurrentRange && currentMatrixView === 'rooms'
+            });
+
+            tabs.push({
+                label: `GUESTS - ${mName.toUpperCase()}`,
+                view: 'guests',
+                range,
+                isActive: isCurrentRange && currentMatrixView === 'guests'
+            });
+        }
+
+        matrixSheetMonthTabs.innerHTML = tabs.map(t => `
+            <button type="button" class="matrix-sheet-tab rounded-lg border border-glass-border px-3 py-1.5 text-[0.72rem] font-bold tracking-wide transition-all hover:bg-glass-hover cursor-pointer ${t.isActive ? 'bg-[#1c5c3c] text-white border-[#1c5c3c] shadow-xs' : 'bg-glass text-hp-text'}" 
+                data-start="${t.range.start}" data-end="${t.range.end}" data-view="${t.view}">
+                ${t.label}
+            </button>
+        `).join('');
+
+        matrixSheetMonthTabs.querySelectorAll('.matrix-sheet-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentMatrixStartDate = btn.dataset.start;
+                currentMatrixEndDate = btn.dataset.end;
+                currentMatrixView = btn.dataset.view;
+
+                if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
+                if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
+                
+                updatePresetButtonStyles(null);
+                renderMonthQuickTabs();
+                renderCurrentMatrixView();
+            });
+        });
+    };
+
+    // Matrix Quick Preset Buttons
+    const updatePresetButtonStyles = (activeBtn) => {
+        matrixPresetBtns.forEach(p => {
+            p.classList.remove('is-active', 'bg-[#1c5c3c]', 'text-white', 'border-[#1c5c3c]');
+            p.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+        });
+        if (activeBtn) {
+            activeBtn.classList.add('is-active', 'bg-[#1c5c3c]', 'text-white', 'border-[#1c5c3c]');
+            activeBtn.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+        }
+    };
+
+    // Set initial active preset style
+    const initialActivePreset = document.querySelector('.matrix-tab-item[data-matrix-preset="1m"]');
+    if (initialActivePreset) {
+        updatePresetButtonStyles(initialActivePreset);
+    }
+
+    matrixPresetBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            updatePresetButtonStyles(btn);
+
+            const preset = btn.dataset.matrixPreset;
+            const today = new Date();
+
+            if (preset === 'today') {
+                currentMatrixStartDate = isoDate(today);
+                currentMatrixEndDate = isoDate(today);
+            } else if (preset === '7d') {
+                const past7 = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6);
+                currentMatrixStartDate = isoDate(past7);
+                currentMatrixEndDate = isoDate(today);
+            } else if (preset === '1m') {
+                const range = getMonthRange(today.getFullYear(), today.getMonth());
+                currentMatrixStartDate = range.start;
+                currentMatrixEndDate = range.end;
+            } else if (preset === 'last_month') {
+                const range = getMonthRange(today.getFullYear(), today.getMonth() - 1);
+                currentMatrixStartDate = range.start;
+                currentMatrixEndDate = range.end;
+            } else if (preset === '3m') {
+                const past3m = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+                const rangeEnd = getMonthRange(today.getFullYear(), today.getMonth()).end;
+                currentMatrixStartDate = isoDate(past3m);
+                currentMatrixEndDate = rangeEnd;
+            } else if (preset === '1y') {
+                currentMatrixStartDate = `${today.getFullYear()}-01-01`;
+                currentMatrixEndDate = `${today.getFullYear()}-12-31`;
+            } else if (preset === 'all') {
+                currentMatrixStartDate = '2026-01-01';
+                currentMatrixEndDate = `${today.getFullYear()}-12-31`;
+            }
+
+            if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
+            if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
+
+            renderMonthQuickTabs();
+            renderCurrentMatrixView();
+        });
+    });
+
+    if (matrixApplyDateBtn) {
+        matrixApplyDateBtn.addEventListener('click', () => {
+            if (matrixDateFromInput && matrixDateFromInput.value) {
+                currentMatrixStartDate = matrixDateFromInput.value;
+            }
+            if (matrixDateToInput && matrixDateToInput.value) {
+                currentMatrixEndDate = matrixDateToInput.value;
+            }
+            updatePresetButtonStyles(null);
+            renderMonthQuickTabs();
+            renderCurrentMatrixView();
+        });
+    }
+
+    // Modal Elements for Columns Customizer
+    const matrixColumnsModal = document.getElementById('matrixColumnsModal');
+    const openMatrixColumnsModalBtn = document.getElementById('openMatrixColumnsModalBtn');
+    const closeMatrixColumnsModalBtn = document.getElementById('closeMatrixColumnsModalBtn');
+    const cancelMatrixColumnsModalBtn = document.getElementById('cancelMatrixColumnsModalBtn');
+    const applyMatrixColumnsModalBtn = document.getElementById('applyMatrixColumnsModalBtn');
+    const matrixAmenitySearchInput = document.getElementById('matrixAmenitySearchInput');
+    const matrixActiveColumnsBadge = document.getElementById('matrixActiveColumnsBadge');
+    const matrixColumnsSummaryText = document.getElementById('matrixColumnsSummaryText');
+    const matrixModalSelectedCount = document.getElementById('matrixModalSelectedCount');
+    const matrixQuickResetAllBtn = document.getElementById('matrixQuickResetAllBtn');
+
+    const openColumnsModal = () => {
+        if (!matrixColumnsModal) return;
+        matrixColumnsModal.classList.remove('opacity-0', 'pointer-events-none');
+        matrixColumnsModal.classList.add('opacity-100', 'pointer-events-auto');
+        const card = matrixColumnsModal.querySelector('.matrix-modal-card');
+        if (card) {
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+        if (matrixAmenitySearchInput) {
+            matrixAmenitySearchInput.value = '';
+            filterAmenityCards('');
+            setTimeout(() => matrixAmenitySearchInput.focus(), 50);
+        }
+        updateMasterAndCategoryCheckboxes();
+    };
+
+    const closeColumnsModal = () => {
+        if (!matrixColumnsModal) return;
+        const card = matrixColumnsModal.querySelector('.matrix-modal-card');
+        if (card) {
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+        }
+        matrixColumnsModal.classList.remove('opacity-100', 'pointer-events-auto');
+        matrixColumnsModal.classList.add('opacity-0', 'pointer-events-none');
+    };
+
+    const filterAmenityCards = (query) => {
+        const q = (query || '').toLowerCase().trim();
+        const cards = document.querySelectorAll('.amenity-item-card');
+        const categoryBlocks = document.querySelectorAll('.category-group-block');
+
+        cards.forEach(card => {
+            const name = card.dataset.amenityName || '';
+            const match = !q || name.includes(q);
+            card.style.display = match ? 'flex' : 'none';
+        });
+
+        categoryBlocks.forEach(block => {
+            const visibleCards = block.querySelectorAll('.amenity-item-card:not([style*="display: none"])');
+            block.style.display = visibleCards.length > 0 ? 'block' : 'none';
+        });
+    };
+
+    openMatrixColumnsModalBtn?.addEventListener('click', openColumnsModal);
+    closeMatrixColumnsModalBtn?.addEventListener('click', closeColumnsModal);
+    cancelMatrixColumnsModalBtn?.addEventListener('click', closeColumnsModal);
+    applyMatrixColumnsModalBtn?.addEventListener('click', () => {
+        closeColumnsModal();
+        renderAmenityMatrix();
+    });
+
+    matrixColumnsModal?.addEventListener('click', (e) => {
+        if (e.target === matrixColumnsModal) closeColumnsModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && matrixColumnsModal && !matrixColumnsModal.classList.contains('pointer-events-none')) {
+            closeColumnsModal();
+        }
+    });
+
+    matrixAmenitySearchInput?.addEventListener('input', (e) => {
+        filterAmenityCards(e.target.value);
+    });
+
+    // Amenity Checkboxes Event Handlers
+    const updateMasterAndCategoryCheckboxes = () => {
+        const total = matrixAmenityCheckboxes.length;
+        const checkedCount = selectedAmenityIds.size;
+
+        if (matrixActiveColumnsBadge) {
+            matrixActiveColumnsBadge.textContent = `${checkedCount} of ${total} Active`;
+        }
+        if (matrixModalSelectedCount) {
+            matrixModalSelectedCount.textContent = checkedCount;
+        }
+        if (matrixColumnsSummaryText) {
+            if (checkedCount === total) {
+                matrixColumnsSummaryText.textContent = `Showing all ${total} amenities`;
+            } else if (checkedCount === 0) {
+                matrixColumnsSummaryText.textContent = `No amenities selected (0 visible)`;
+            } else {
+                matrixColumnsSummaryText.textContent = `Custom view: ${checkedCount} of ${total} amenities active`;
+            }
+        }
+
+        if (matrixToggleAllCheckbox) {
+            matrixToggleAllCheckbox.checked = checkedCount === total;
+            matrixToggleAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < total;
+        }
+
+        matrixCategoryCheckboxes.forEach(catCb => {
+            const cat = catCb.dataset.category;
+            const catCbs = Array.from(matrixAmenityCheckboxes).filter(cb => cb.dataset.category === cat);
+            const catChecked = catCbs.filter(cb => selectedAmenityIds.has(String(cb.value))).length;
+            catCb.checked = catChecked === catCbs.length && catCbs.length > 0;
+            catCb.indeterminate = catChecked > 0 && catChecked < catCbs.length;
+        });
+    };
+
+    if (matrixToggleAllCheckbox) {
+        matrixToggleAllCheckbox.addEventListener('change', () => {
+            const checked = matrixToggleAllCheckbox.checked;
+            matrixAmenityCheckboxes.forEach(cb => {
+                cb.checked = checked;
+                if (checked) {
+                    selectedAmenityIds.add(String(cb.value));
+                } else {
+                    selectedAmenityIds.delete(String(cb.value));
+                }
+            });
+            matrixCategoryCheckboxes.forEach(catCb => catCb.checked = checked);
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    }
+
+    matrixCategoryCheckboxes.forEach(catCb => {
+        catCb.addEventListener('change', () => {
+            const cat = catCb.dataset.category;
+            const checked = catCb.checked;
+            matrixAmenityCheckboxes.forEach(cb => {
+                if (cb.dataset.category === cat) {
+                    cb.checked = checked;
+                    if (checked) {
+                        selectedAmenityIds.add(String(cb.value));
+                    } else {
+                        selectedAmenityIds.delete(String(cb.value));
+                    }
+                }
+            });
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    });
+
+    matrixAmenityCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+            const id = String(cb.value);
+            if (cb.checked) {
+                selectedAmenityIds.add(id);
+            } else {
+                selectedAmenityIds.delete(id);
+            }
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    });
+
+    if (matrixSelectAllBtn) {
+        matrixSelectAllBtn.addEventListener('click', () => {
+            matrixAmenityCheckboxes.forEach(cb => {
+                cb.checked = true;
+                selectedAmenityIds.add(String(cb.value));
+            });
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    }
+
+    if (matrixClearAllBtn) {
+        matrixClearAllBtn.addEventListener('click', () => {
+            matrixAmenityCheckboxes.forEach(cb => {
+                cb.checked = false;
+                selectedAmenityIds.delete(String(cb.value));
+            });
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    }
+
+    if (matrixQuickResetAllBtn) {
+        matrixQuickResetAllBtn.addEventListener('click', () => {
+            matrixAmenityCheckboxes.forEach(cb => {
+                cb.checked = true;
+                selectedAmenityIds.add(String(cb.value));
+            });
+            updateMasterAndCategoryCheckboxes();
+            renderAmenityMatrix();
+        });
+    }
+
+    // Matrix CSV Export
+    if (exportMatrixCsvBtn) {
+        exportMatrixCsvBtn.addEventListener('click', () => {
+            const dateList = getDatesInRange(currentMatrixStartDate, currentMatrixEndDate);
+            if (dateList.length === 0) {
+                alert('No data to export.');
+                return;
+            }
+
+            const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
+            const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
+            const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
+            const startYear = dStart.getFullYear();
+            const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
+            const endYear = dEnd.getFullYear();
+            const monthLabelText = (startMonthName === endMonthName && startYear === endYear)
+                ? `${startMonthName.toUpperCase()} ${startYear}`
+                : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} - ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
+
+            if (currentMatrixView === 'guests') {
+                const { rows, grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests } = computeGuestsDemographicsData(dateList);
+                let csv = '\uFEFF';
+                csv += 'ESTABLISHMENT NAME:,HINAGUAN NATURE PARK\n';
+                csv += `NUMBER OF GUESTS - ${monthLabelText}\n`;
+                csv += `REPORTING PERIOD:,${currentMatrixStartDate} to ${currentMatrixEndDate}\n\n`;
+
+                csv += 'DATE,DAY,MALE,FEMALE,FOREIGNER,TOTAL\n';
+                rows.forEach(r => {
+                    csv += [r.dayNum, `"${r.dayName}"`, r.dayMale, r.dayFemale, r.dayForeigner, r.dayTotal].join(',') + '\n';
+                });
+                csv += ['TOTAL', '', grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests].join(',') + '\n';
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `Hinaguan_Park_Number_of_Guests_${currentMatrixStartDate}_${currentMatrixEndDate}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                return;
+            }
+
+            // Room / Amenity Matrix CSV Export
+            const visibleAmenities = allAmenities.filter(a => selectedAmenityIds.has(String(a.id)));
+            const { rows, columnTotals, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied } = computeMatrixData(dateList, selectedAmenityIds);
+
+            let csv = '\uFEFF';
+            csv += 'ESTABLISHMENT NAME:,HINAGUAN NATURE PARK\n';
+            csv += `TOTAL NUMBER OF ROOMS:,${visibleAmenities.length} ROOMS\n`;
+            csv += `FOR THE MONTH OF:,${monthLabelText}\n`;
+            csv += `REPORTING PERIOD:,${currentMatrixStartDate} to ${currentMatrixEndDate}\n\n`;
+
+            const headerCols = ['DATE', 'DAY', ...visibleAmenities.map(a => `"${a.name.replace(/"/g, '""')}"`), 'NUMBER OF GUEST CHECK IN', 'NUMBER OF GUESTS STAYED OVERNIGHT', 'NUMBER OF ROOMS OCCUPIED'];
+            csv += headerCols.join(',') + '\n';
+
+            rows.forEach(r => {
+                const amenityValues = visibleAmenities.map(a => r.amenityGuestsMap[String(a.id)] || 0);
+                const line = [r.dayNum, `"${r.dayName}"`, ...amenityValues, r.dayGuestsCheckIn, r.dayGuestsOvernight, r.dayRoomsOccupied];
+                csv += line.join(',') + '\n';
+            });
+
+            const totalAmenityValues = visibleAmenities.map(a => columnTotals[String(a.id)] || 0);
+            const totalRow = ['TOTAL', '', ...totalAmenityValues, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied];
+            csv += totalRow.join(',') + '\n';
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Hinaguan_Park_Amenity_Monitoring_Matrix_${currentMatrixStartDate}_${currentMatrixEndDate}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // Matrix Print / PDF Export
+    if (printMatrixPdfBtn) {
+        printMatrixPdfBtn.addEventListener('click', () => {
+            window.print();
+        });
+    }
+
+    // Initial render of Matrix Table and Tabs
+    renderMonthQuickTabs();
+    renderCurrentMatrixView();
 
     const matchesFilter = (row) => {
         const amenity = (row.amenities || row.dataset?.amenity || '').toLowerCase();
@@ -393,39 +1300,65 @@ window.AppPage['admin_reports'] = function () {
     }
 
     // ==========================================
-    // SECTION SWITCHING (Standard vs AI Studio)
+    // SECTION SWITCHING (Matrix vs Standard vs AI Studio)
     // ==========================================
+    const tabMatrix = document.getElementById('tabMatrixReports');
     const tabStandard = document.getElementById('tabStandardReports');
     const tabAi = document.getElementById('tabAiReports');
+    const sectionMatrix = document.getElementById('matrixReportsSection');
     const sectionStandard = document.getElementById('standardReportsSection');
     const sectionAi = document.getElementById('aiReportsSection');
 
+    const tabActiveClasses = ['is-active', 'bg-[#1c5c3c]', 'text-white', 'shadow-md', 'shadow-[#1c5c3c]/20'];
+    const tabInactiveClasses = ['text-hp-text-muted', 'hover:text-hp-text', 'hover:bg-glass-hover'];
+
+    const setTabButtonActive = (activeBtn, allBtns) => {
+        allBtns.forEach(btn => {
+            if (!btn) return;
+            if (btn === activeBtn) {
+                btn.classList.remove(...tabInactiveClasses);
+                btn.classList.add(...tabActiveClasses);
+            } else {
+                btn.classList.remove(...tabActiveClasses);
+                btn.classList.add(...tabInactiveClasses);
+            }
+        });
+    };
+
     const switchSection = (mode) => {
+        const tabs = [tabMatrix, tabStandard, tabAi];
+        [sectionMatrix, sectionStandard, sectionAi].forEach(s => s?.classList.add('hidden'));
+
         if (mode === 'ai') {
-            tabStandard?.classList.remove('is-active');
-            tabAi?.classList.add('is-active');
-            sectionStandard?.classList.add('hidden');
+            setTabButtonActive(tabAi, tabs);
             sectionAi?.classList.remove('hidden');
             localStorage.setItem('admin_reports_active_tab', 'ai');
-        } else {
-            tabAi?.classList.remove('is-active');
-            tabStandard?.classList.add('is-active');
-            sectionAi?.classList.add('hidden');
+        } else if (mode === 'standard') {
+            setTabButtonActive(tabStandard, tabs);
             sectionStandard?.classList.remove('hidden');
             localStorage.setItem('admin_reports_active_tab', 'standard');
             // Trigger chart resize if needed
             if (revenueChart) revenueChart.resize();
-            if (statusDonutChart) statusDonutChart.resize();
+            if (donutChart) donutChart.resize();
+        } else {
+            setTabButtonActive(tabMatrix, tabs);
+            sectionMatrix?.classList.remove('hidden');
+            localStorage.setItem('admin_reports_active_tab', 'matrix');
         }
     };
 
+    tabMatrix?.addEventListener('click', () => switchSection('matrix'));
     tabStandard?.addEventListener('click', () => switchSection('standard'));
     tabAi?.addEventListener('click', () => switchSection('ai'));
 
     // Check saved tab state or hash
     const savedTab = localStorage.getItem('admin_reports_active_tab');
-    if (savedTab === 'ai' || window.location.hash === '#ai') {
+    if (window.location.hash === '#ai' || savedTab === 'ai') {
         switchSection('ai');
+    } else if (window.location.hash === '#standard' || window.location.hash === '#ledger' || savedTab === 'standard') {
+        switchSection('standard');
+    } else {
+        switchSection('matrix');
     }
 
     // ==========================================

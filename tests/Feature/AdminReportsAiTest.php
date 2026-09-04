@@ -46,9 +46,9 @@ class AdminReportsAiTest extends TestCase
         $response->assertSee('AI Report Studio');
         $response->assertSee('Ask What Data You Need, AI Delivers');
         $response->assertSee('Quick Analytical Audits');
-        $response->assertSee('Revenue & Financials');
-        $response->assertSee('Peak Days & Forecast');
-        $response->assertSee('Amenity Utilization');
+        $response->assertSee('Revenue & Financials', false);
+        $response->assertSee('Peak Days & Forecast', false);
+        $response->assertSee('Amenity Utilization', false);
     }
 
     public function test_authenticated_admin_can_generate_ai_report(): void

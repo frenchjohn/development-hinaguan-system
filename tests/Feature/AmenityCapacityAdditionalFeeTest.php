@@ -52,9 +52,7 @@ class AmenityCapacityAdditionalFeeTest extends TestCase
             'maximum_capacity' => 2,
             'additional_per_head' => 100,
             'daytime_price' => 300,
-            'daytime_aircon_price' => 700,
             'nighttime_price' => 500,
-            'nighttime_aircon_price' => 1000,
             'status' => true,
         ]);
 

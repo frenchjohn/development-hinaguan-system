@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::table('amenities', function (Blueprint $table) {
             $table->decimal('original_daytime_price', 10, 2)->nullable()->after('daytime_price');
             $table->decimal('original_nighttime_price', 10, 2)->nullable()->after('nighttime_price');
-            $table->decimal('original_daytime_aircon_price', 10, 2)->nullable()->after('daytime_aircon_price');
-            $table->decimal('original_nighttime_aircon_price', 10, 2)->nullable()->after('nighttime_aircon_price');
         });
     }
 
@@ -25,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('amenities', function (Blueprint $table) {
-            $table->dropColumn(['original_daytime_price', 'original_nighttime_price', 'original_daytime_aircon_price', 'original_nighttime_aircon_price']);
+            $table->dropColumn(['original_daytime_price', 'original_nighttime_price']);
         });
     }
 };

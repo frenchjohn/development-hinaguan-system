@@ -7,6 +7,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
         'resources/css/amenities.css',
@@ -273,8 +274,9 @@
                          data-display-name="{{ e($amenity->amenities_name) }}"
                          data-daytime-price="₱{{ number_format($amenity->daytime_price, 2) }}"
                          data-nighttime-price="₱{{ number_format($amenity->nighttime_price, 2) }}"
-                         data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ? '₱'.number_format($amenity->daytime_aircon_price, 2) : 'N/A' }}"
-                         data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ? '₱'.number_format($amenity->nighttime_aircon_price, 2) : 'N/A' }}"
+                         data-is-aircon="{{ $amenity->benefits?->is_aircon ? '1' : '0' }}"
+                         data-free-entrance="{{ $amenity->benefits?->free_entrance ? '1' : '0' }}"
+                         data-free-pool="{{ $amenity->benefits?->free_pool ? '1' : '0' }}"
                          data-additional-per-head="{{ $amenity->additional_per_head ? '₱'.number_format($amenity->additional_per_head, 2) : 'N/A' }}"
                          data-min-cap="{{ $amenity->minimum_capacity ?? 'N/A' }}"
                          data-max-cap="{{ $amenity->maximum_capacity ?? 'N/A' }}"
@@ -351,7 +353,7 @@
                                 <span class="shrink-0 text-xs font-bold text-[#c8a45d]">₱{{ number_format($amenity->daytime_price, 2) }}<small class="text-[0.6rem] font-medium text-white/60">/day</small></span>
                             </div>
 
-                            <!-- Availability Slot Chips -->
+                            <!-- Availability Slot Chips & Benefits -->
                             <div class="flex flex-wrap gap-1.5">
                                 <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider {{ $hasDay ? 'border-emerald-500/40 bg-emerald-950/70 text-emerald-300' : 'border-red-500/40 bg-red-950/70 text-red-300' }}">
                                     <i class="h-1 w-1 rounded-full {{ $hasDay ? 'bg-emerald-400' : 'bg-red-400' }}"></i>Daytime
@@ -359,6 +361,21 @@
                                 <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider {{ $hasNight ? 'border-emerald-500/40 bg-emerald-950/70 text-emerald-300' : 'border-red-500/40 bg-red-950/70 text-red-300' }}">
                                     <i class="h-1 w-1 rounded-full {{ $hasNight ? 'bg-emerald-400' : 'bg-red-400' }}"></i>Nighttime
                                 </span>
+                                @if($amenity->benefits?->is_aircon)
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-2 py-0.5 text-[0.62rem] font-bold text-cyan-300">
+                                        <i class="bi bi-snow"></i> Aircon
+                                    </span>
+                                @endif
+                                @if($amenity->benefits?->free_pool)
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-blue-500/40 bg-blue-950/70 px-2 py-0.5 text-[0.62rem] font-bold text-blue-300">
+                                        <i class="bi bi-water"></i> Free Pool
+                                    </span>
+                                @endif
+                                @if($amenity->benefits?->free_entrance)
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2 py-0.5 text-[0.62rem] font-bold text-emerald-300">
+                                        <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
+                                    </span>
+                                @endif
                             </div>
 
                             <div class="flex items-center justify-between border-t border-[rgba(200,164,93,0.15)] pt-2 text-[0.7rem] text-white/70">
@@ -408,6 +425,9 @@
 
                 <p class="m-0 text-xs leading-relaxed text-white/85" id="infoModalDescription"></p>
 
+                <!-- Included Benefits Badges -->
+                <div id="infoModalBenefitsWrap" class="flex flex-wrap items-center gap-1.5"></div>
+
                 <!-- Pricing & Details Grid -->
                 <div class="grid grid-cols-2 gap-3 rounded-lg border border-[rgba(200,164,93,0.2)] bg-[#061810] p-3.5">
                     <div class="flex flex-col gap-0.5">
@@ -417,14 +437,6 @@
                     <div class="flex flex-col gap-0.5">
                         <span class="text-[0.6rem] font-bold uppercase tracking-wider text-white/50">Nighttime Price</span>
                         <span class="text-sm font-bold text-[#c8a45d]" id="infoModalNightPrice"></span>
-                    </div>
-                    <div class="flex flex-col gap-0.5">
-                        <span class="text-[0.6rem] font-bold uppercase tracking-wider text-white/50">Day Aircon</span>
-                        <span class="text-xs font-semibold text-white/90" id="infoModalDayAircon"></span>
-                    </div>
-                    <div class="flex flex-col gap-0.5">
-                        <span class="text-[0.6rem] font-bold uppercase tracking-wider text-white/50">Night Aircon</span>
-                        <span class="text-xs font-semibold text-white/90" id="infoModalNightAircon"></span>
                     </div>
                     <div class="flex flex-col gap-0.5">
                         <span class="text-[0.6rem] font-bold uppercase tracking-wider text-white/50">Add'l / Head</span>

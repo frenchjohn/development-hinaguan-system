@@ -1,4 +1,4 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['admin_amenitiesmanagement'] = function () {
 
 
@@ -20,8 +20,9 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         amenities_name: document.getElementById('amenities_name'),
         daytime_price: document.getElementById('daytime_price'),
         nighttime_price: document.getElementById('nighttime_price'),
-        daytime_aircon_price: document.getElementById('daytime_aircon_price'),
-        nighttime_aircon_price: document.getElementById('nighttime_aircon_price'),
+        is_aircon: document.getElementById('is_aircon'),
+        free_entrance: document.getElementById('free_entrance'),
+        free_pool: document.getElementById('free_pool'),
         additional_per_head: document.getElementById('additional_per_head'),
         minimum_capacity: document.getElementById('minimum_capacity'),
         maximum_capacity: document.getElementById('maximum_capacity'),
@@ -41,7 +42,7 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
 
     const setFormReadOnly = (readOnly) => {
         Object.values(fields).forEach(field => {
-            field.disabled = readOnly;
+            if (field) field.disabled = readOnly;
         });
         if (readOnly) {
             dropZone.classList.add('dropzone--disabled');
@@ -112,6 +113,9 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
     const closeModal = () => {
         modal.classList.remove('is-open');
         form.reset();
+        if (fields.is_aircon) fields.is_aircon.checked = false;
+        if (fields.free_entrance) fields.free_entrance.checked = false;
+        if (fields.free_pool) fields.free_pool.checked = false;
         amenityIdInput.value = '';
         document.getElementById('existingImage').value = '';
         modalTitle.textContent = 'Add New Amenity';
@@ -135,8 +139,9 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
             amenities_name: row.dataset.amenitiesName,
             daytime_price: row.dataset.originalDaytimePrice || row.dataset.daytimePrice || row.querySelector('td:nth-child(2)').textContent.trim(),
             nighttime_price: row.dataset.originalNighttimePrice || row.dataset.nighttimePrice || row.querySelector('td:nth-child(3)').textContent.trim(),
-            daytime_aircon_price: row.dataset.originalDaytimeAirconPrice || row.dataset.daytimeAirconPrice || '',
-            nighttime_aircon_price: row.dataset.originalNighttimeAirconPrice || row.dataset.nighttimeAirconPrice || '',
+            is_aircon: row.dataset.isAircon === '1',
+            free_entrance: row.dataset.freeEntrance === '1',
+            free_pool: row.dataset.freePool === '1',
             additional_per_head: row.dataset.additionalPerHead || '',
             minimum_capacity: row.dataset.minimumCapacity || '',
             maximum_capacity: row.dataset.maximumCapacity || '',
@@ -163,8 +168,9 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         fields.amenities_name.value = data.amenities_name;
         fields.daytime_price.value = data.daytime_price;
         fields.nighttime_price.value = data.nighttime_price;
-        fields.daytime_aircon_price.value = data.daytime_aircon_price;
-        fields.nighttime_aircon_price.value = data.nighttime_aircon_price;
+        if (fields.is_aircon) fields.is_aircon.checked = data.is_aircon;
+        if (fields.free_entrance) fields.free_entrance.checked = data.free_entrance;
+        if (fields.free_pool) fields.free_pool.checked = data.free_pool;
         fields.additional_per_head.value = data.additional_per_head;
         fields.minimum_capacity.value = data.minimum_capacity;
         fields.maximum_capacity.value = data.maximum_capacity;

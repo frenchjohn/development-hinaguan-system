@@ -361,7 +361,7 @@
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
                                                 <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} {{ $totalDays > 1 ? 'Days Stay' : 'Day Stay' }})</div>
                                                 @if ($isPastArrival)
-                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5">⚠️ Overdue Arrival</div>
+                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>
                                                 @endif
                                             </div>
                                         @else
@@ -369,7 +369,7 @@
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }}</span>
                                                 <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">(1 Day Stay)</div>
                                                 @if ($isPastArrival)
-                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5">⚠️ Overdue Arrival</div>
+                                                    <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>
                                                 @endif
                                             </div>
                                         @endif
@@ -716,7 +716,7 @@
 
                     <div id="checkInPrimaryGuestPoolWrap" class="mt-2 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
                         <div class="flex items-center gap-2">
-                            <span class="text-base">🏊</span>
+                            <i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
                             <div>
                                 <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Primary Guest Pool Access</p>
                                 <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">Include pool pass for the main guest under specific pool policy</p>
@@ -792,6 +792,17 @@
                         <span id="checkInEffectivePeriodBadge" class="inline-flex items-center rounded-full border border-glass-border bg-[rgba(255,152,0,0.15)] px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">—</span>
                     </div>
 
+                    <!-- Entrance Fee Policy Selector -->
+                    <div class="guest-form__field-group mb-1 grid gap-1.5">
+                        <label class="guest-form__label text-sm font-semibold text-hp-text" for="checkInEntranceOption">Entrance Fee Policy</label>
+                        <select name="entrance_option" id="checkInEntranceOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                            <option value="all_paid" selected>All Pay Entrance Fee (Standard Rate)</option>
+                            <option value="all_free">All Free Entrance Fee (Promo • ₱0.00)</option>
+                        </select>
+                        <p class="m-0 text-[0.72rem] text-hp-text-muted" id="checkInEntranceOptionHelp">All guests will pay the standard entrance fee based on age.</p>
+                    </div>
+
+                    <!-- Pool Access Policy Selector -->
                     <div class="guest-form__field-group mb-1 grid gap-1.5">
                         <label class="guest-form__label text-sm font-semibold text-hp-text" for="checkInPoolOption">Pool Access Policy</label>
                         <select name="pool_option" id="checkInPoolOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
@@ -956,7 +967,7 @@
                             </div>
                             <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5" id="checkInCompanionPoolWrap">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-base">🏊</span>
+                                    <i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
                                     <div>
                                         <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Include Pool Pass</p>
                                         <p class="m-0 text-[0.68rem] text-hp-text-muted">Grant pool access under specific pool policy</p>

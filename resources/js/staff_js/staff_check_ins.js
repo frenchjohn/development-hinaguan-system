@@ -5229,12 +5229,12 @@ window.AppPage['staff_check_ins'] = function () {
 
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Pool Pass</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
             } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 Free Pool</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass">🏊 Pool Pass ✓</button>`
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water"></i> Pool Pass ✓</button>`
                     : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass">+ Pool</button>`;
             }
 
@@ -5251,7 +5251,7 @@ window.AppPage['staff_check_ins'] = function () {
             if (selectedAmenities.length > 1 && companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
@@ -5299,14 +5299,14 @@ window.AppPage['staff_check_ins'] = function () {
 
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All with Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All with Pool</span>`;
             } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold">🏊 All Free Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
                 const pQty = group.pool_quantity || 0;
                 bulkPoolBadgeHtml = `
                     <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
-                        <span>🏊</span>
+                        <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
                         <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${groupIndex}">−</button>
                         <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
                         <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${groupIndex}">+</button>
@@ -5334,7 +5334,7 @@ window.AppPage['staff_check_ins'] = function () {
             if (selectedAmenities.length > 1 && group.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
@@ -6670,6 +6670,8 @@ window.AppPage['staff_check_ins'] = function () {
                 const isAvailable = Boolean(amenity.is_available);
                 const isAlreadySelected = selectedAmenities.some(a => String(a.amenity_id) === String(amenity.id));
                 const hasAc = amenity.daytime_aircon_price !== null || amenity.nighttime_aircon_price !== null;
+                const hasFreeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
+                const hasFreePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
 
                 const dayP = parseFloat(amenity.daytime_price) || 0;
                 const nightP = parseFloat(amenity.nighttime_price) || 0;
@@ -6684,12 +6686,14 @@ window.AppPage['staff_check_ins'] = function () {
 
                 card.innerHTML = `
                     <div class="flex-1 min-w-[200px]">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
                             ${isAvailable
                         ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
                         : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
                     }
+                            ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
+                            ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
                             ${hasAc ? '<span class="rounded bg-blue-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-600 dark:text-blue-400">AC Option</span>' : ''}
                         </div>
                         <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
@@ -6765,6 +6769,8 @@ window.AppPage['staff_check_ins'] = function () {
             const dayPrice = parseFloat(amenity.daytime_price) || 0;
             const nightPrice = parseFloat(amenity.nighttime_price) || 0;
             const price = (counts.dayCount * dayPrice) + (counts.nightCount * nightPrice);
+            const freeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
+            const freePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
 
             selectedAmenities.push({
                 amenity_id: amenity.id,
@@ -6777,6 +6783,8 @@ window.AppPage['staff_check_ins'] = function () {
                 start_slot: walkInSchedule.startSlot,
                 end_slot: walkInSchedule.endSlot,
                 is_aircon: false,
+                free_entrance: freeEntrance,
+                free_pool: freePool,
                 quantity: 1,
                 day_count: counts.dayCount,
                 night_count: counts.nightCount,
@@ -6787,6 +6795,19 @@ window.AppPage['staff_check_ins'] = function () {
                 daytime_aircon_price: amenity.daytime_aircon_price !== null ? parseFloat(amenity.daytime_aircon_price) : null,
                 nighttime_aircon_price: amenity.nighttime_aircon_price !== null ? parseFloat(amenity.nighttime_aircon_price) : null,
             });
+
+            // Auto-select free entrance and free pool if included in any selected amenity
+            const hasFreeEnt = selectedAmenities.some(a => a.free_entrance);
+            const hasFreeP = selectedAmenities.some(a => a.free_pool);
+
+            if (hasFreeEnt && walkInEntranceOption) {
+                walkInEntranceOption.value = 'all_free';
+                walkInEntranceOption.dispatchEvent(new Event('change'));
+            }
+            if (hasFreeP && walkInPoolOption) {
+                walkInPoolOption.value = 'all_free';
+                walkInPoolOption.dispatchEvent(new Event('change'));
+            }
 
             renderSelectedAmenities();
             updateGrandTotal();
@@ -6826,7 +6847,11 @@ window.AppPage['staff_check_ins'] = function () {
             card.innerHTML = `
                 <div class="flex flex-wrap items-start justify-between gap-2 border-b border-glass-border/50 pb-2.5">
                     <div>
-                        <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${am.amenity_name}</strong>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${am.amenity_name}</strong>
+                            ${am.free_entrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
+                            ${am.free_pool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
+                        </div>
                         <div class="text-xs text-hp-text-muted">Capacity: ${maxCapText}</div>
                     </div>
                     <div class="text-right">

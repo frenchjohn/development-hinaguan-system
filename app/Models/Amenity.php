@@ -19,12 +19,8 @@ class Amenity extends Model
         'amenities_name',
         'daytime_price',
         'nighttime_price',
-        'daytime_aircon_price',
-        'nighttime_aircon_price',
         'original_daytime_price',
         'original_nighttime_price',
-        'original_daytime_aircon_price',
-        'original_nighttime_aircon_price',
         'additional_per_head',
         'minimum_capacity',
         'maximum_capacity',
@@ -37,4 +33,14 @@ class Amenity extends Model
     protected $casts = [
         'status' => 'boolean',
     ];
+
+    public function benefits()
+    {
+        return $this->hasOne(AmenityBenefit::class, 'amenity_id', 'id');
+    }
+
+    public function benefit()
+    {
+        return $this->hasOne(AmenityBenefit::class, 'amenity_id', 'id');
+    }
 }
