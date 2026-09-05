@@ -75,9 +75,6 @@
             <label for="chatbotModel" class="chatbot-model-label">AI Model</label>
             <select id="chatbotModel" class="chatbot-model-select">
                 <option value="openrouter/free" selected>OpenRouter Free (Auto)</option>
-                <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (Free)</option>
-                <option value="meta-llama/llama-3-8b-instruct:free">Llama 3 8B (Free)</option>
-                <option value="google/gemma-3-4b-it:free">Gemma 3 4B (Free)</option>
             </select>
         </div>
 

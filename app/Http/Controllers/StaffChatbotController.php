@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Amenity;
 use App\Models\ChatbotMessage;
 use App\Models\Customer;
+use App\Models\Feedback;
+use App\Models\ParkEvent;
+use App\Models\ParkRule;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
@@ -111,14 +114,15 @@ class StaffChatbotController extends Controller
             . "- NEVER output numbered analysis steps (e.g. '1. Analyze User Input:', '2. Check Knowledge Base:', '3. Formulate Response:').\n"
             . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your message to the staff member.\n"
             . "- Keep your response natural, warm, and concise (1 to 3 clear, flowing sentences) unless the staff member specifically asks for a full list or report.\n"
-            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n\n"
+            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
+            . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote fees, rates, operating hours, amenities, rules, and events EXACTLY as listed in the LIVE STAFF OPERATIONS & DATABASE CONTEXT below. NEVER guess, assume, or use outdated prices (e.g. NEVER quote ₱70/₱50 entrance or ₱100/₱150 pool if the database says otherwise).\n\n"
             . "CORE KNOWLEDGE & CAPABILITIES:\n"
             . "1. OPERATIONS: Checked-in guests, departures/due checkouts today, countdowns, upcoming arrivals, stay extensions, and checkout procedures.\n"
             . "2. CASHIER & BALANCES: Total sales collected, and reservations with unpaid remaining balances.\n"
-            . "3. WALK-IN PRICE CALCULATOR: Calculate total walk-in cost for staff (Adults × Entrance + Kids × Entrance + Pool + Amenity).\n"
+            . "3. WALK-IN PRICE CALCULATOR: Calculate walk-in costs for staff using the live entrance, pool, and amenity rates from the database context.\n"
             . "4. DEMOGRAPHICS MINING: Guest counts for Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female vs Male), and Nationality.\n"
-            . "5. PARK RATES: Daytime Entrance: Adult ₱70, Child ₱50 | Nighttime Entrance: Adult ₱100, Child ₱70 | Pool: Day ₱100, Night ₱150.\n\n"
-            . "=== LIVE STAFF OPERATIONS & ANALYTICS CONTEXT ===\n"
+            . "5. PARK SETTINGS & POLICIES: Park status, operating hours, day/night sessions, live entrance & pool fees, park rules, events, and Brenda Mage presence.\n\n"
+            . "=== LIVE STAFF OPERATIONS & DATABASE CONTEXT ===\n"
             . $staffContext;
 
         $messagesPayload = [
@@ -573,10 +577,49 @@ class StaffChatbotController extends Controller
         $context .= "Current Date/Time: {$currentTimeStr}\n";
 
         $settings = ParkSetting::first();
-        $statusStr = ($settings?->park_status ?? 'open') === 'closed' 
-            ? "CLOSED (Reason: " . ($settings?->close_description ?: 'Temporarily closed for maintenance') . ")" 
-            : "OPEN (Operating normally for all day and night visitors)";
-        $context .= "Live Park Operational Status: {$statusStr}\n";
+        if ($settings) {
+            $isOpen = ($settings->park_status ?? 'open') === 'open';
+            $statusStr = $isOpen 
+                ? "OPEN (Operating normally for day and night visitors)" 
+                : "CLOSED (Reason: " . ($settings->close_description ?: 'Temporarily closed for maintenance') . ")";
+
+            $dayStart = $settings->daytime_start ? Carbon::parse($settings->daytime_start)->format('g:i A') : '8:00 AM';
+            $dayEnd = $settings->daytime_end ? Carbon::parse($settings->daytime_end)->format('g:i A') : '5:00 PM';
+            $nightStart = $settings->nighttime_start ? Carbon::parse($settings->nighttime_start)->format('g:i A') : '6:00 PM';
+            $nightEnd = $settings->nighttime_end ? Carbon::parse($settings->nighttime_end)->format('g:i A') : '8:00 AM';
+
+            $openTime = $settings->opening_time ? Carbon::parse($settings->opening_time)->format('g:i A') : '8:00 AM';
+            $closeTime = $settings->closing_time ? Carbon::parse($settings->closing_time)->format('g:i A') : '5:00 PM';
+
+            $dayAdult = number_format((float) ($settings->daytime_adult_entrance_fee ?? 0), 2);
+            $dayChild = (float) ($settings->daytime_child_entrance_fee ?? 0);
+            $dayChildStr = $dayChild > 0 ? "₱" . number_format($dayChild, 2) : "₱0.00 (FREE for children)";
+
+            $nightAdult = number_format((float) ($settings->nighttime_adult_entrance_fee ?? 0), 2);
+            $nightChild = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+            $nightChildStr = $nightChild > 0 ? "₱" . number_format($nightChild, 2) : "₱0.00 (FREE for children)";
+
+            $dayPool = number_format((float) ($settings->day_pool_fee ?? 0), 2);
+            $nightPool = number_format((float) ($settings->night_pool_fee ?? 0), 2);
+
+            $brendaStatus = $settings->brenda_available ? "YES (Brenda Mage is available / at the park)" : "NO (Brenda Mage is not available today)";
+
+            $context .= "\n[OFFICIAL PARK SETTINGS & LIVE RATES (SOURCE OF TRUTH FROM DATABASE)]:\n"
+                . "- Park Status: {$statusStr}\n"
+                . "- General Operating Hours: {$openTime} to {$closeTime}\n"
+                . "- Daytime Session Hours: {$dayStart} - {$dayEnd}\n"
+                . "  * Adult Entrance Fee: ₱{$dayAdult}\n"
+                . "  * Child (12 & below) Entrance Fee: {$dayChildStr}\n"
+                . "- Nighttime Session Hours: {$nightStart} - {$nightEnd}\n"
+                . "  * Adult Entrance Fee: ₱{$nightAdult}\n"
+                . "  * Child (12 & below) Entrance Fee: {$nightChildStr}\n"
+                . "- Swimming Pool Access Fees:\n"
+                . "  * Day Swim Pool: ₱{$dayPool} per person\n"
+                . "  * Night Swim Pool: ₱{$nightPool} per person\n"
+                . "- Brenda Mage Availability: {$brendaStatus}\n"
+                . "- Official Contact Number: " . ($settings->contact_number ?: '0985-323-9532') . "\n"
+                . "- Official Email: " . ($settings->email ?: 'parkhinaguan@gmail.com') . "\n";
+        }
 
         // 1. CURRENTLY CHECKED-IN ACTIVE GUESTS & HEADCOUNT
         $checkedIn = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
@@ -669,11 +712,19 @@ class StaffChatbotController extends Controller
             . "- Total Guests: {$allGuests->count()} | Kids (0-12): {$kids}, Teens (13-17): {$teens}, Adults (18-59): {$adults}, Seniors (60+): {$seniors}\n"
             . "- Gender: Female: {$females}, Male: {$males} | Locals: {$locals}, Foreigners: {$foreigners}\n";
 
-        // 6. AMENITIES RATES
-        $amenities = Amenity::where('status', true)->get();
-        $context .= "\n[AMENITIES & RATES]:\n";
+        // 6. OFFICIAL AMENITIES, CAPACITIES & RATES (FROM DATABASE)
+        $amenities = Amenity::with('benefits')->where('status', true)->get();
+        $context .= "\n[OFFICIAL AMENITIES, CAPACITIES & INCLUSIONS (FROM DATABASE)]:\n";
         foreach ($amenities as $am) {
-            $context .= "- {$am->amenities_name} (Cap {$am->minimum_capacity}-{$am->maximum_capacity}): Day ₱{$am->daytime_price}, Night ₱{$am->nighttime_price}\n";
+            $benefit = $am->benefits;
+            $freeEntrance = ($benefit && $benefit->free_entrance) ? 'YES (Free entrance included)' : 'NO (Regular entrance fees apply)';
+            $freePool = ($benefit && $benefit->free_pool) ? 'YES (Free pool access included)' : 'NO (Separate pool fee required)';
+            $aircon = ($benefit && $benefit->is_aircon) ? 'YES (Air-conditioned)' : 'NO (Open-air / Non-aircon)';
+            $addHead = number_format((float) $am->additional_per_head, 2);
+
+            $context .= "- {$am->amenities_name} (Capacity: {$am->minimum_capacity} to {$am->maximum_capacity} pax):\n"
+                . "  * Rates: Daytime: ₱" . number_format((float) $am->daytime_price, 2) . " | Nighttime: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead}\n"
+                . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
         }
 
         // 7. SPECIFIC DEEP SEARCH
@@ -691,12 +742,32 @@ class StaffChatbotController extends Controller
         }
 
         // 8. OFFICIAL PARK RULES & GUIDELINES FROM DATABASE
-        $rules = \App\Models\ParkRule::all();
+        $rules = ParkRule::all();
         if ($rules->isNotEmpty()) {
-            $context .= "\n[OFFICIAL PARK RULES & GUIDELINES]:\n";
+            $context .= "\n[OFFICIAL PARK RULES & GUIDELINES (FROM DATABASE)]:\n";
             foreach ($rules as $r) {
                 $context .= "- {$r->rule_name}: {$r->rule_descriptions}\n";
             }
+        }
+
+        // 9. ACTIVE PARK EVENTS & ACTIVITIES FROM DATABASE
+        $events = ParkEvent::where('is_active', true)->orderBy('date')->get();
+        if ($events->isNotEmpty()) {
+            $context .= "\n[ACTIVE PARK EVENTS & HAPPENINGS (FROM DATABASE)]:\n";
+            foreach ($events as $ev) {
+                $dateStr = $ev->date ? Carbon::parse($ev->date)->format('M d, Y') : 'Date TBA';
+                $dayStr = $ev->day ? " ({$ev->day})" : "";
+                $timeStr = $ev->time ? " at {$ev->time}" : "";
+                $context .= "- {$ev->title}: {$dateStr}{$dayStr}{$timeStr} - {$ev->event}\n";
+            }
+        }
+
+        // 10. GUEST RATINGS & FEEDBACK OVERVIEW
+        $feedbackCount = Feedback::count();
+        if ($feedbackCount > 0) {
+            $avgStars = number_format((float) Feedback::avg('stars'), 1);
+            $context .= "\n[GUEST REVIEWS & RATINGS (FROM DATABASE)]:\n"
+                . "- Total Reviews: {$feedbackCount} | Average Rating: {$avgStars} / 5.0 stars\n";
         }
 
         return $context;

@@ -144,34 +144,83 @@
         <div class="hp-hero__overlay" aria-hidden="true"></div>
 
         @if ($weather || !empty($parkSettings->brenda_available) || $nearEvent)
-            <div class="hp-hero__side-widgets" data-animate="fade-left">
+            <div class="hp-hero__side-widgets" data-animate="fade-up">
                 @if ($weather)
                     <aside class="hp-weather" aria-label="Today's weather">
-                        <p class="hp-weather__label">Today's Weather</p>
-                        <div class="hp-weather__main">
-                            @if ($weather['icon'])
-                                <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="44" height="44">
-                            @endif
-                            <div class="hp-weather__info">
-                                <p class="hp-weather__temp">{{ round($weather['temp_c']) }}°C</p>
-                                <p class="hp-weather__condition">{{ $weather['condition'] }}</p>
+                        <div class="hp-weather__shimmer" aria-hidden="true"></div>
+
+                        {{-- Header / Status Bar --}}
+                        <div class="hp-weather__header">
+                            <div class="hp-weather__status-pill">
+                                <span class="hp-weather__beacon">
+                                    <span class="hp-weather__ping"></span>
+                                </span>
+                                <span>Live Weather</span>
+                            </div>
+                            <div class="hp-weather__location-tag">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <span>{{ $weather['location'] }}</span>
                             </div>
                         </div>
-                        <p class="hp-weather__location">{{ $weather['location'] }}{{ !empty($weather['region']) ? ', '.$weather['region'] : '' }}</p>
-                        <p class="hp-weather__meta">Feels like {{ round($weather['feelslike_c']) }}°C &middot; {{ $weather['humidity'] }}% humidity</p>
 
+                        {{-- Hero Section: Temp & Condition + Weather Visual Orb --}}
+                        <div class="hp-weather__hero">
+                            <div class="hp-weather__hero-main">
+                                <div class="hp-weather__temp-wrap">
+                                    <span class="hp-weather__temp-num">{{ round($weather['temp_c']) }}</span>
+                                    <span class="hp-weather__temp-unit">°C</span>
+                                </div>
+                                <div class="hp-weather__condition-badge">
+                                    {{ $weather['condition'] }}
+                                </div>
+                            </div>
+                            <div class="hp-weather__hero-orb">
+                                @if ($weather['icon'])
+                                    <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="48" height="48">
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Metrics Strip: 3 Micro Stat Badges --}}
+                        <div class="hp-weather__metrics-strip">
+                            <div class="hp-weather__metric-chip" title="Feels like">
+                                <i class="bi bi-thermometer-half"></i>
+                                <span>Feels <strong>{{ round($weather['feelslike_c']) }}°</strong></span>
+                            </div>
+                            <div class="hp-weather__metric-chip" title="Humidity">
+                                <i class="bi bi-droplet-half"></i>
+                                <span><strong>{{ $weather['humidity'] }}%</strong></span>
+                            </div>
+                            @if (!empty($weather['wind_kph']))
+                                <div class="hp-weather__metric-chip" title="Wind speed">
+                                    <i class="bi bi-wind"></i>
+                                    <span><strong>{{ round($weather['wind_kph']) }}</strong> km/h</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Hourly Timeline Outlook --}}
                         @if (!empty($weather['next_3_hours']))
-                            <div class="hp-weather__hourly mt-2 pt-2 border-t border-white/20">
-                                <p class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-gold mb-1.5">Next 3 Hours</p>
-                                <div class="grid grid-cols-3 gap-1.5 text-center">
+                            <div class="hp-weather__timeline">
+                                <div class="hp-weather__timeline-header">
+                                    <span class="hp-weather__timeline-title">
+                                        <i class="bi bi-clock-history"></i> Next Hours
+                                    </span>
+                                    <span class="hp-weather__timeline-hint">Forecast</span>
+                                </div>
+                                <div class="hp-weather__timeline-grid">
                                     @foreach ($weather['next_3_hours'] as $hour)
-                                        <div class="rounded-lg bg-white/10 p-1.5 backdrop-blur-sm flex flex-col items-center">
-                                            <span class="text-[0.65rem] font-semibold text-white/90">{{ $hour['time_label'] }}</span>
-                                            @if (!empty($hour['icon']))
-                                                <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="h-6 w-6 my-0.5">
-                                            @endif
-                                            <span class="text-[0.72rem] font-bold text-white">{{ round($hour['temp_c']) }}°C</span>
-                                            <span class="text-[0.58rem] text-[#6ab88c]">{{ $hour['chance_of_rain'] ?? 0 }}% rain</span>
+                                        <div class="hp-weather__timeline-item">
+                                            <span class="hp-weather__timeline-time">{{ $hour['time_label'] }}</span>
+                                            <div class="hp-weather__timeline-icon-box">
+                                                @if (!empty($hour['icon']))
+                                                    <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="hp-weather__timeline-icon" width="26" height="26">
+                                                @endif
+                                            </div>
+                                            <span class="hp-weather__timeline-temp">{{ round($hour['temp_c']) }}°</span>
+                                            <span class="hp-weather__timeline-rain" title="Rain probability">
+                                                <i class="bi bi-cloud-rain-fill"></i> {{ $hour['chance_of_rain'] ?? 0 }}%
+                                            </span>
                                         </div>
                                     @endforeach
                                 </div>

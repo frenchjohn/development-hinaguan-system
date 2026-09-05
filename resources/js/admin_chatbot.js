@@ -164,8 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Restore model selection
     const modelSelect = document.getElementById('chatbotModel');
-    if (modelSelect && selectedModel) {
-        modelSelect.value = selectedModel;
+    if (modelSelect) {
+        if (selectedModel) {
+            modelSelect.value = selectedModel;
+        }
+        if (!modelSelect.value || modelSelect.value !== 'openrouter/free') {
+            modelSelect.value = 'openrouter/free';
+        }
+        selectedModel = modelSelect.value;
+        savePreferences(isOpen, selectedModel);
     }
 
     modelSelect?.addEventListener('change', (e) => {

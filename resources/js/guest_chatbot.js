@@ -128,8 +128,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Restore selected model
     const modelSelect = document.getElementById('chatbotModel');
-    if (selectedModel && modelSelect) {
-        modelSelect.value = selectedModel;
+    if (modelSelect) {
+        if (selectedModel) {
+            modelSelect.value = selectedModel;
+        }
+        if (!modelSelect.value || modelSelect.value !== 'openrouter/free') {
+            modelSelect.value = 'openrouter/free';
+        }
+        selectedModel = modelSelect.value;
+        saveState(isOpen, messages, selectedModel);
     }
 
     // Save selected model when changed
