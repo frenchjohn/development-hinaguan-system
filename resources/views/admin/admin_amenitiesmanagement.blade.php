@@ -106,15 +106,6 @@
             />
             <!-- Page transition overlay with skeleton loading -->
             <main class="dash-content p-6">
-                <section class="mb-7 flex flex-wrap items-start justify-between gap-6">
-                    <div>
-                        <p class="mb-3 inline-flex rounded-full bg-[rgba(200,164,93,0.12)] px-[0.95rem] py-[0.45rem] text-[0.85rem] font-bold uppercase tracking-[0.14em] text-[var(--hp-gold-dark)]">Manage Amenities</p>
-                        <h2 class="m-0 text-[1.85rem] font-bold text-[var(--hp-text)]">All amenities</h2>
-                        <p class="m-0 mt-[0.65rem] max-w-[38rem] leading-[1.75] text-[var(--hp-text-muted)]">View amenity details, enable or disable availability, and add new park services.</p>
-                    </div>
-                    <button type="button" class="btn btn--primary" data-open-amenity-modal>New Amenity</button>
-                </section>
-
                 <div class="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]">
                         <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green)]">
@@ -160,39 +151,50 @@
 
                 <section class="amenities-table-wrap">
                     <div class="amenities-table-toolbar">
-                        <div class="amenities-table-toolbar__item">
-                            <label for="amenitySearch">Search amenities</label>
-                            <input id="amenitySearch" type="search" placeholder="Search by name..." autocomplete="off">
+                        <div class="amenities-table-toolbar__filters">
+                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--search">
+                                <label for="amenitySearch">Search amenities</label>
+                                <input id="amenitySearch" type="search" placeholder="Search by name..." autocomplete="off">
+                            </div>
+                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
+                                <label for="amenitySortColumn">Sort column</label>
+                                <select id="amenitySortColumn">
+                                    <option value="">None</option>
+                                    <option value="daytimePrice">Day price</option>
+                                    <option value="nighttimePrice">Night price</option>
+                                    <option value="additionalPerHead">Additional per head</option>
+                                    <option value="minimumCapacity">Minimum capacity</option>
+                                    <option value="maximumCapacity">Maximum capacity</option>
+                                </select>
+                            </div>
+                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
+                                <label for="amenitySortOrder">Sort order</label>
+                                <select id="amenitySortOrder">
+                                    <option value="none">None</option>
+                                    <option value="asc">Low to high</option>
+                                    <option value="desc">High to low</option>
+                                </select>
+                            </div>
+                            <div class="amenities-table-toolbar__item amenities-table-toolbar__item--select">
+                                <label for="amenityStatus">Status</label>
+                                <select id="amenityStatus">
+                                    <option value="all">All statuses</option>
+                                    <option value="enabled">Enabled only</option>
+                                    <option value="disabled">Disabled only</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="amenities-table-toolbar__item">
-                            <label for="amenitySortColumn">Sort column</label>
-                            <select id="amenitySortColumn">
-                                <option value="">None</option>
-                                <option value="daytimePrice">Day price</option>
-                                <option value="nighttimePrice">Night price</option>
-                                <option value="additionalPerHead">Additional per head</option>
-                                <option value="minimumCapacity">Minimum capacity</option>
-                                <option value="maximumCapacity">Maximum capacity</option>
-                            </select>
-                        </div>
-                        <div class="amenities-table-toolbar__item">
-                            <label for="amenitySortOrder">Sort order</label>
-                            <select id="amenitySortOrder">
-                                <option value="none">None</option>
-                                <option value="asc">Low to high</option>
-                                <option value="desc">High to low</option>
-                            </select>
-                        </div>
-                        <div class="amenities-table-toolbar__item">
-                            <label for="amenityStatus">Status</label>
-                            <select id="amenityStatus">
-                                <option value="all">All statuses</option>
-                                <option value="enabled">Enabled only</option>
-                                <option value="disabled">Disabled only</option>
-                            </select>
+                        <div class="amenities-table-toolbar__action">
+                            <button type="button" class="btn btn--primary" data-open-amenity-modal>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-4 w-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                <span>New Amenity</span>
+                            </button>
                         </div>
                     </div>
-                    <table class="amenities-table">
+                    <div class="amenities-table-scroll">
+                        <table class="amenities-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -302,7 +304,8 @@
                             @endforelse
                         </tbody>
                     </table>
-                </section>
+                </div>
+            </section>
             </main>
         </div>
     </div>

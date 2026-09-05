@@ -108,11 +108,23 @@ window.AppPage['admin_reports'] = function () {
             let dayGuestsOvernight = 0;
 
             reservationsList.forEach(r => {
-                // Strictly only include reservations that have Checked In (or Completed/Checked-Out)
-                // Do NOT include Pending, Confirmed, Cancelled, etc.
+                // Strictly include actual stays that have Checked In, Checked Out, or Completed
+                // Do NOT include Pending, Confirmed, Cancelled, or No Show
                 const statusNormalized = String(r.status || '').trim().toLowerCase();
-                const isCheckedInOrCompleted = statusNormalized === 'checked in' || statusNormalized === 'checked-in' || statusNormalized === 'completed';
-                if (!isCheckedInOrCompleted) return;
+                const isExcluded = statusNormalized === 'pending' || 
+                                   statusNormalized === 'confirmed' || 
+                                   statusNormalized === 'cancelled' || 
+                                   statusNormalized === 'cancel' || 
+                                   statusNormalized === 'no show' || 
+                                   statusNormalized === 'no_show';
+                const isEligibleStay = statusNormalized === 'checked in' || 
+                                       statusNormalized === 'checked-in' || 
+                                       statusNormalized === 'checked out' || 
+                                       statusNormalized === 'checked-out' || 
+                                       statusNormalized === 'checkedout' || 
+                                       statusNormalized === 'completed' || 
+                                       (Boolean(r.check_in) && !isExcluded);
+                if (isExcluded || !isEligibleStay) return;
 
                 const resCheckIn = r.check_in ? String(r.check_in).slice(0, 10) : null;
                 const resEnd = r.end_date ? String(r.end_date).slice(0, 10) : null;
@@ -344,8 +356,20 @@ window.AppPage['admin_reports'] = function () {
 
             reservationsList.forEach(r => {
                 const statusNormalized = String(r.status || '').trim().toLowerCase();
-                const isCheckedInOrCompleted = statusNormalized === 'checked in' || statusNormalized === 'checked-in' || statusNormalized === 'completed';
-                if (!isCheckedInOrCompleted) return;
+                const isExcluded = statusNormalized === 'pending' || 
+                                   statusNormalized === 'confirmed' || 
+                                   statusNormalized === 'cancelled' || 
+                                   statusNormalized === 'cancel' || 
+                                   statusNormalized === 'no show' || 
+                                   statusNormalized === 'no_show';
+                const isEligibleStay = statusNormalized === 'checked in' || 
+                                       statusNormalized === 'checked-in' || 
+                                       statusNormalized === 'checked out' || 
+                                       statusNormalized === 'checked-out' || 
+                                       statusNormalized === 'checkedout' || 
+                                       statusNormalized === 'completed' || 
+                                       (Boolean(r.check_in) && !isExcluded);
+                if (isExcluded || !isEligibleStay) return;
 
                 const resCheckIn = r.check_in ? String(r.check_in).slice(0, 10) : null;
                 const resEnd = r.end_date ? String(r.end_date).slice(0, 10) : null;

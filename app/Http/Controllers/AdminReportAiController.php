@@ -74,7 +74,8 @@ class AdminReportAiController extends Controller
 
         $statusCounts = $reservations->groupBy('status')->map->count()->toArray();
         $confirmedCount = $statusCounts['Confirmed'] ?? 0;
-        $checkedInCount = $statusCounts['Checked-in'] ?? 0;
+        $checkedInCount = ($statusCounts['Checked In'] ?? 0) + ($statusCounts['Checked-in'] ?? 0);
+        $checkedOutCount = ($statusCounts['Checked Out'] ?? 0) + ($statusCounts['Checked-out'] ?? 0);
         $pendingCount = $statusCounts['Pending'] ?? 0;
         $cancelledCount = $statusCounts['Cancelled'] ?? 0;
         $cancellationRate = $totalReservations > 0 ? round(($cancelledCount / $totalReservations) * 100, 1) : 0;

@@ -2400,13 +2400,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->values();
 
         $checkInDates = $reservations
-            ->pluck('reservation_date')
+            ->map(fn ($r) => $r->check_in ?? $r->reservation_date)
             ->filter()
             ->sort()
             ->values();
 
-        $firstCheckInDate = $checkInDates->first() ? \Illuminate\Support\Carbon::parse($checkInDates->first())->toDateString() : now()->toDateString();
-        $lastCheckInDate = $checkInDates->last() ? \Illuminate\Support\Carbon::parse($checkInDates->last())->toDateString() : now()->toDateString();
+        $firstCheckInDate = $checkInDates->first() ? \Illuminate\Support\Carbon::parse($checkInDates->first())->timezone(config('app.timezone', 'Asia/Manila'))->toDateString() : now()->toDateString();
+        $lastCheckInDate = $checkInDates->last() ? \Illuminate\Support\Carbon::parse($checkInDates->last())->timezone(config('app.timezone', 'Asia/Manila'))->toDateString() : now()->toDateString();
 
         // Compute amenity categories for quick grouping
         $amenityCategories = [
@@ -2436,38 +2436,59 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     ? 'a_houses' 
                     : ((stripos($a->amenities_name, 'Cottage') !== false) ? 'cottages' : 'rooms_others'),
             ])->values()->all(),
-            'rawRows' => $reservations->map(fn ($r) => [
-                'id' => (int) $r->id,
-                'customer_name' => (string) $r->booker_name,
-                'amenities' => (string) ($r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None'),
-                'status' => (string) $r->status,
-                'payment_status' => (string) ($r->payment_status ?? 'Paid'),
-                'check_in' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null,
-                'amount' => (float) $r->amount_paid,
-                'guests' => (int) $r->number_of_guests,
-            ])->values()->all(),
-            'reservations' => $reservations->map(fn ($r) => [
-                'id' => (int) $r->id,
-                'customer_name' => (string) $r->booker_name,
-                'status' => (string) $r->status,
-                'payment_status' => (string) ($r->payment_status ?? 'Paid'),
-                'reservation_type' => (string) $r->reservation_type,
-                'check_in' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null,
-                'end_date' => $r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : null,
-                'total_days' => (int) ($r->total_days ?? 1),
-                'guests' => (int) $r->number_of_guests,
-                'amount' => (float) $r->amount_paid,
-                'male_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'male' && !($g->customer?->is_foreigner ?? false))->count(),
-                'female_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'female' && !($g->customer?->is_foreigner ?? false))->count(),
-                'foreigner_count' => (int) $r->reservationGuests->filter(fn ($g) => (bool) ($g->customer?->is_foreigner ?? false))->count(),
-                'amenities' => $r->reservationAmenities->map(fn ($ra) => [
-                    'amenity_id' => (string) $ra->amenity_id,
-                    'amenity_name' => (string) ($ra->amenity?->amenities_name ?? 'Unknown'),
-                    'start_date' => $ra->start_date ? \Illuminate\Support\Carbon::parse($ra->start_date)->format('Y-m-d') : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null),
-                    'end_date' => $ra->end_date ? \Illuminate\Support\Carbon::parse($ra->end_date)->format('Y-m-d') : ($r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : null),
-                    'quantity' => (int) ($ra->quantity ?? 1),
-                ])->values()->all(),
-            ])->values()->all(),
+            'rawRows' => $reservations->map(function ($r) {
+                $effectiveCheckIn = $r->check_in 
+                    ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d')
+                    : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null);
+
+                return [
+                    'id' => (int) $r->id,
+                    'customer_name' => (string) $r->booker_name,
+                    'amenities' => (string) ($r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None'),
+                    'status' => (string) $r->status,
+                    'payment_status' => (string) ($r->payment_status ?? 'Paid'),
+                    'check_in' => $effectiveCheckIn,
+                    'amount' => (float) $r->amount_paid,
+                    'guests' => (int) $r->number_of_guests,
+                ];
+            })->values()->all(),
+            'reservations' => $reservations->map(function ($r) {
+                $totalDays = (int) ($r->total_days ?? 1);
+                $effectiveCheckIn = $r->check_in 
+                    ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d')
+                    : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null);
+
+                // Stays are recorded based on the check-in date. Even if check-out occurs the next day (e.g., overnight checkout morning),
+                // for a 1-day/overnight stay (totalDays <= 1), the room occupancy is strictly recorded on the check-in date.
+                $effectiveEndDate = ($r->check_in && $effectiveCheckIn)
+                    ? ($totalDays > 1 
+                        ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->addDays($totalDays - 1)->format('Y-m-d')
+                        : $effectiveCheckIn)
+                    : ($r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : $effectiveCheckIn);
+
+                return [
+                    'id' => (int) $r->id,
+                    'customer_name' => (string) $r->booker_name,
+                    'status' => (string) $r->status,
+                    'payment_status' => (string) ($r->payment_status ?? 'Paid'),
+                    'reservation_type' => (string) $r->reservation_type,
+                    'check_in' => $effectiveCheckIn,
+                    'end_date' => $effectiveEndDate,
+                    'total_days' => $totalDays,
+                    'guests' => (int) $r->number_of_guests,
+                    'amount' => (float) $r->amount_paid,
+                    'male_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'male' && !($g->customer?->is_foreigner ?? false))->count(),
+                    'female_count' => (int) $r->reservationGuests->filter(fn ($g) => strtolower($g->customer?->gender ?? '') === 'female' && !($g->customer?->is_foreigner ?? false))->count(),
+                    'foreigner_count' => (int) $r->reservationGuests->filter(fn ($g) => (bool) ($g->customer?->is_foreigner ?? false))->count(),
+                    'amenities' => $r->reservationAmenities->map(fn ($ra) => [
+                        'amenity_id' => (string) $ra->amenity_id,
+                        'amenity_name' => (string) ($ra->amenity?->amenities_name ?? 'Unknown'),
+                        'start_date' => $effectiveCheckIn ?? ($ra->start_date ? \Illuminate\Support\Carbon::parse($ra->start_date)->format('Y-m-d') : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null)),
+                        'end_date' => $effectiveEndDate ?? ($ra->end_date ? \Illuminate\Support\Carbon::parse($ra->end_date)->format('Y-m-d') : ($r->end_date ? \Illuminate\Support\Carbon::parse($r->end_date)->format('Y-m-d') : null)),
+                        'quantity' => (int) ($ra->quantity ?? 1),
+                    ])->values()->all(),
+                ];
+            })->values()->all(),
         ];
 
         return view('admin.admin_reports', [

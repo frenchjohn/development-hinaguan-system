@@ -896,7 +896,8 @@
                                     @forelse($reservations as $r)
                                         @php
                                             $amenitiesStr = $r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None';
-                                            $checkInStr = $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : '';
+                                            $effectiveCheckIn = $r->check_in ?? $r->reservation_date;
+                                            $checkInStr = $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d') : '';
                                         @endphp
                                         <tr class="border-b border-glass-border/50 hover:bg-glass-hover"
                                             data-amenity="{{ strtolower($amenitiesStr) }}"
@@ -904,7 +905,7 @@
                                             data-checkin="{{ $checkInStr }}">
                                             <td class="py-3 px-3 font-medium text-hp-text">{{ $r->booker_name }}</td>
                                             <td class="py-3 px-3 text-xs text-hp-text-muted">{{ $amenitiesStr }}</td>
-                                            <td class="mono-cell py-3 px-3 text-xs text-hp-text-muted">{{ $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('M d, Y') : 'N/A' }}</td>
+                                            <td class="mono-cell py-3 px-3 text-xs text-hp-text-muted">{{ $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('M d, Y') : 'N/A' }}</td>
                                             <td class="py-3 px-3 text-xs text-hp-text">{{ $r->number_of_guests }}</td>
                                             <td class="py-3 px-3 font-semibold text-hp-text">₱{{ number_format($r->amount_paid, 2) }}</td>
                                             <td class="py-3 px-3">
