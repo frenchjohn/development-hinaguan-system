@@ -245,6 +245,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const availabilityCloseButtons = document.querySelectorAll('[data-close-availability-modal]');
 
+    // Amenity Info Modal elements
+    const amenityInfoModal = document.getElementById('amenityInfoModal');
+    const infoModalCategory = document.getElementById('infoModalCategory');
+    const infoModalName = document.getElementById('infoModalName');
+    const infoModalImage = document.getElementById('infoModalImage');
+    const infoModalCapacityText = document.getElementById('infoModalCapacityText');
+    const infoModalSaleTag = document.getElementById('infoModalSaleTag');
+    const infoModalBenefits = document.getElementById('infoModalBenefits');
+    const infoModalDayPrice = document.getElementById('infoModalDayPrice');
+    const infoModalNightPrice = document.getElementById('infoModalNightPrice');
+    const infoModalOrigDayPrice = document.getElementById('infoModalOrigDayPrice');
+    const infoModalOrigNightPrice = document.getElementById('infoModalOrigNightPrice');
+    const infoModalExtraFee = document.getElementById('infoModalExtraFee');
+    const infoModalExtraFeeValue = document.getElementById('infoModalExtraFeeValue');
+    const infoModalDescription = document.getElementById('infoModalDescription');
+    const infoModalBookBtn = document.getElementById('infoModalBookBtn');
+    const infoModalCloseButtons = document.querySelectorAll('[data-close-amenity-info-modal]');
+    let infoModalActiveCard = null;
+
     const urlParams = new URLSearchParams(window.location.search);
 
     const preselectedAmenityId = urlParams.get('amenity');
@@ -1168,6 +1187,9 @@ document.addEventListener('DOMContentLoaded', () => {
         availabilityModal.classList.remove('is-open');
         availabilityModal.setAttribute('aria-hidden', 'true');
         updateOverlayScrollLock();
+        calendarSourceCard = null;
+        calendarAmenityId = null;
+        activeAmenity = null;
     };
 
     const isRangeAvailable = (startDate, endDate, startSlot, endSlot, availList) => {
@@ -2482,15 +2504,6 @@ document.addEventListener('DOMContentLoaded', () => {
             closeDatePickerModal();
             refreshAvailability();
             fetchWeatherForDate(mainStartDate);
-
-            const targetCard = (multiSelectionEnabled && selectedCards.length > 0)
-                ? selectedCards[0]
-                : (calendarSourceCard || activeAmenity);
-            if (targetCard) {
-                window.setTimeout(() => {
-                    openModal(targetCard);
-                }, 100);
-            }
         });
     }
 
@@ -2618,6 +2631,9 @@ document.addEventListener('DOMContentLoaded', () => {
         datePickerModal.setAttribute('aria-hidden', 'true');
         updateOverlayScrollLock();
         syncDateSections();
+        calendarSourceCard = null;
+        calendarAmenityId = null;
+        activeAmenity = null;
     };
 
     const renderDatePickerDays = () => {
@@ -2908,6 +2924,147 @@ document.addEventListener('DOMContentLoaded', () => {
     syncDateSections();
     applyFilters();
 
+    const closeAmenityInfoModal = () => {
+        if (amenityInfoModal) {
+            amenityInfoModal.classList.remove('is-open');
+            amenityInfoModal.setAttribute('aria-hidden', 'true');
+            updateOverlayScrollLock();
+        }
+        infoModalActiveCard = null;
+        activeAmenity = null;
+        calendarSourceCard = null;
+        calendarAmenityId = null;
+    };
+
+    const openAmenityInfoModal = (card) => {
+        if (!amenityInfoModal || !card) return;
+        infoModalActiveCard = card;
+
+        // Populate Category & Title
+        if (infoModalCategory) {
+            infoModalCategory.textContent = card.dataset.category || 'Amenity Overview';
+        }
+        if (infoModalName) {
+            infoModalName.textContent = card.dataset.name || 'Amenity Name';
+        }
+
+        // Image background
+        if (infoModalImage) {
+            const cardImgEl = card.querySelector('.rp-card__image');
+            if (cardImgEl && cardImgEl.style.backgroundImage) {
+                infoModalImage.style.backgroundImage = cardImgEl.style.backgroundImage;
+                infoModalImage.classList.remove('rp-card__image--empty');
+            } else {
+                infoModalImage.style.backgroundImage = '';
+                infoModalImage.classList.add('rp-card__image--empty');
+            }
+        }
+
+        // Capacity
+        if (infoModalCapacityText) {
+            const minCap = card.dataset.minCapacity || '0';
+            const maxCap = card.dataset.maxCapacity || minCap;
+            infoModalCapacityText.textContent = `${minCap}–${maxCap} pax`;
+        }
+
+        // Sale Tag
+        const salePercentage = parseFloat(card.dataset.salePercentage || 0);
+        if (infoModalSaleTag) {
+            if (salePercentage > 0) {
+                infoModalSaleTag.textContent = `${salePercentage}% OFF`;
+                infoModalSaleTag.style.display = 'inline-block';
+            } else {
+                infoModalSaleTag.style.display = 'none';
+            }
+        }
+
+        // Inclusions / Benefits
+        if (infoModalBenefits) {
+            infoModalBenefits.innerHTML = '';
+            const isAircon = card.dataset.isAircon === '1';
+            const freePool = card.dataset.freePool === '1';
+            const freeEntrance = card.dataset.freeEntrance === '1';
+
+            if (isAircon) {
+                infoModalBenefits.innerHTML += `
+                    <span class="rp-info-modal__badge rp-info-modal__badge--aircon">
+                        <i class="bi bi-snow"></i> Air-conditioned
+                    </span>
+                `;
+            }
+            if (freePool) {
+                infoModalBenefits.innerHTML += `
+                    <span class="rp-info-modal__badge rp-info-modal__badge--pool">
+                        <i class="bi bi-water"></i> Free Pool Access
+                    </span>
+                `;
+            }
+            if (freeEntrance) {
+                infoModalBenefits.innerHTML += `
+                    <span class="rp-info-modal__badge rp-info-modal__badge--entrance">
+                        <i class="bi bi-ticket-perforated-fill"></i> Free Park Entrance
+                    </span>
+                `;
+            }
+
+            if (!isAircon && !freePool && !freeEntrance) {
+                infoModalBenefits.innerHTML = '<span class="text-xs text-white/50 italic">Standard park guidelines apply.</span>';
+            }
+        }
+
+        // Pricing: Daytime and Nighttime / Overnight
+        const dayPrice = parseFloat(card.dataset.daytimePrice || 0);
+        const nightPrice = parseFloat(card.dataset.nighttimePrice || 0);
+        const origDayPrice = parseFloat(card.dataset.originalDaytimePrice || 0);
+        const origNightPrice = parseFloat(card.dataset.originalNighttimePrice || 0);
+
+        if (infoModalDayPrice) {
+            infoModalDayPrice.textContent = `₱${dayPrice.toLocaleString()}`;
+        }
+        if (infoModalNightPrice) {
+            infoModalNightPrice.textContent = `₱${nightPrice.toLocaleString()}`;
+        }
+
+        if (infoModalOrigDayPrice) {
+            if (salePercentage > 0 && origDayPrice > dayPrice) {
+                infoModalOrigDayPrice.textContent = `₱${origDayPrice.toLocaleString()}`;
+                infoModalOrigDayPrice.style.display = 'block';
+            } else {
+                infoModalOrigDayPrice.style.display = 'none';
+            }
+        }
+
+        if (infoModalOrigNightPrice) {
+            if (salePercentage > 0 && origNightPrice > nightPrice) {
+                infoModalOrigNightPrice.textContent = `₱${origNightPrice.toLocaleString()}`;
+                infoModalOrigNightPrice.style.display = 'block';
+            } else {
+                infoModalOrigNightPrice.style.display = 'none';
+            }
+        }
+
+        // Extra fee per additional head
+        const additionalFee = parseFloat(card.dataset.additional || 0);
+        if (infoModalExtraFee && infoModalExtraFeeValue) {
+            if (additionalFee > 0) {
+                infoModalExtraFeeValue.textContent = `₱${additionalFee.toLocaleString()}`;
+                infoModalExtraFee.style.display = 'inline-flex';
+            } else {
+                infoModalExtraFee.style.display = 'none';
+            }
+        }
+
+        // Description
+        if (infoModalDescription) {
+            const desc = card.dataset.description;
+            infoModalDescription.textContent = desc && desc.trim() ? desc : 'Relax and unwind with this serene amenity at Hinaguan Nature Park. Perfect for family gatherings, friends, or restful getaways.';
+        }
+
+        amenityInfoModal.classList.add('is-open');
+        amenityInfoModal.setAttribute('aria-hidden', 'false');
+        updateOverlayScrollLock();
+    };
+
     document.querySelectorAll('[data-open-modal]').forEach(button => {
         button.addEventListener('click', (e) => {
             if (isLoadingAvailability) {
@@ -2919,6 +3076,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Multiple amenities selected: toggle selection directly, skip single info modal
             if (selectedCards.length > 0) {
                 toggleCardSelection(card);
                 return;
@@ -2928,16 +3086,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // If no date selected yet, open the calendar modal first
+            // Single amenity clicked: display amenity overview info modal first
+            openAmenityInfoModal(card);
+        });
+    });
+
+    // "Book this amenity" button inside Amenity Info Modal
+    if (infoModalBookBtn) {
+        infoModalBookBtn.addEventListener('click', () => {
+            const targetCard = infoModalActiveCard;
+            if (!targetCard) return;
+
+            closeAmenityInfoModal();
+
+            // Proceed to booking flow: calendar if no date yet, else booking form
             if (!dateInput || !dateInput.value) {
-                openAvailabilityModal(card);
+                openAvailabilityModal(targetCard);
                 return;
             }
 
-            // Date is already selected, open the booking details modal
-            openModal(card);
+            openModal(targetCard);
         });
+    }
+
+    // Close Amenity Info Modal on cancel/close buttons
+    infoModalCloseButtons.forEach(btn => {
+        btn.addEventListener('click', closeAmenityInfoModal);
     });
+
+    if (amenityInfoModal) {
+        amenityInfoModal.addEventListener('click', (e) => {
+            if (e.target === amenityInfoModal) {
+                closeAmenityInfoModal();
+            }
+        });
+    }
 
     if (selectionCheckoutBtn) {
         selectionCheckoutBtn.addEventListener('click', () => {

@@ -972,7 +972,7 @@ window.AppPage['staff_reservations'] = function () {
 
         const isToday = reservationDate === today;
 
-        const { adultCount, childCount, adultRate, childRate, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
+        const { adultCount, childCount, adultRate, childRate, entranceOpt, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
         const balance = Number(currentReservationData?.remaining_balance || 0);
         const grandTotal = total + balance;
 
@@ -4148,8 +4148,10 @@ window.AppPage['staff_reservations'] = function () {
             }
             closeCheckInModal();
             closeCompanionSummaryModal?.();
+            closeModal?.();
             window.dispatchEvent(new CustomEvent('app:data-mutated'));
-            showToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
+            queueToast(`Reservation #${pendingReservationId} checked in successfully and marked as Paid.`);
+            window.location.reload();
         } catch (error) {
             window.alert(error.message || 'Unable to check in this reservation.');
             if (submitButton) {

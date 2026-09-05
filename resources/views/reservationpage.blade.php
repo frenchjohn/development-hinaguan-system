@@ -941,7 +941,95 @@
 
 
 
-        {{-- ── Amenity detail / booking modal ── --}}
+        {{-- ── Amenity Overview / Info Modal (Prior to Booking) ── --}}
+        <div class="rp-modal" id="amenityInfoModal" aria-hidden="true">
+            <div class="rp-modal__backdrop" data-close-amenity-info-modal></div>
+            <div class="rp-modal__panel rp-info-modal__panel rp-modal__panel--scroll">
+                <div class="rp-modal__header">
+                    <div>
+                        <p class="rp-modal__eyebrow" id="infoModalCategory">Amenity Overview</p>
+                        <h2 id="infoModalName">Amenity Name</h2>
+                    </div>
+                    <button type="button" class="rp-modal__close" data-close-amenity-info-modal aria-label="Close overview modal">&times;</button>
+                </div>
+
+                <div class="rp-info-modal__body">
+                    {{-- Media Column --}}
+                    <div class="rp-info-modal__media-col">
+                        <div class="rp-info-modal__img-box">
+                            <div class="rp-info-modal__img" id="infoModalImage"></div>
+                            <span class="rp-info-modal__cap-badge" id="infoModalCapacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span id="infoModalCapacityText">0–0 pax</span>
+                            </span>
+                            <span class="rp-info-modal__sale-tag" id="infoModalSaleTag" style="display: none;">0% OFF</span>
+                        </div>
+
+                        {{-- Benefits & Inclusions badges --}}
+                        <div class="rp-info-modal__benefits-wrap">
+                            <span class="rp-info-modal__subheading">Package Inclusions</span>
+                            <div class="rp-info-modal__benefits" id="infoModalBenefits">
+                                {{-- Populated via JS --}}
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Details Column --}}
+                    <div class="rp-info-modal__details-col">
+                        {{-- Rates Card --}}
+                        <div class="rp-info-modal__rates-card">
+                            <div class="rp-info-modal__rates-head">
+                                <span class="rp-info-modal__rates-title">Standard Rates</span>
+                                <span class="rp-info-modal__rates-note">Per session schedule</span>
+                            </div>
+                            <div class="rp-info-modal__rates-grid" id="infoModalRatesGrid">
+                                <div class="rp-info-modal__rate-slot" id="infoModalDaytimeSlot">
+                                    <div class="rp-info-modal__rate-label">
+                                        <i class="bi bi-sun-fill text-amber-400"></i> Daytime Visit
+                                    </div>
+                                    <div class="rp-info-modal__rate-value" id="infoModalDayPrice">&#8369;0</div>
+                                    <div class="rp-info-modal__rate-original" id="infoModalOrigDayPrice" style="display: none;">&#8369;0</div>
+                                </div>
+                                <div class="rp-info-modal__rate-slot" id="infoModalNighttimeSlot">
+                                    <div class="rp-info-modal__rate-label">
+                                        <i class="bi bi-moon-stars-fill text-indigo-300"></i> Overnight Stay
+                                    </div>
+                                    <div class="rp-info-modal__rate-value" id="infoModalNightPrice">&#8369;0</div>
+                                    <div class="rp-info-modal__rate-original" id="infoModalOrigNightPrice" style="display: none;">&#8369;0</div>
+                                </div>
+                            </div>
+                            <div class="rp-info-modal__extra-fee" id="infoModalExtraFee" style="display: none;">
+                                <i class="bi bi-person-plus-fill"></i>
+                                <span>Additional guest: <strong id="infoModalExtraFeeValue">&#8369;0</strong> / head</span>
+                            </div>
+                        </div>
+
+                        {{-- Description / Notes --}}
+                        <div class="rp-info-modal__desc-wrap">
+                            <span class="rp-info-modal__subheading">Description &amp; Highlights</span>
+                            <div class="rp-info-modal__desc" id="infoModalDescription">
+                                No description provided for this amenity.
+                            </div>
+                        </div>
+
+                        {{-- Modal Action Buttons --}}
+                        <div class="rp-info-modal__actions">
+                            <button type="button" class="rp-modal__btn rp-modal__btn--secondary rp-info-modal__close-btn" data-close-amenity-info-modal>
+                                Close
+                            </button>
+                            <button type="button" class="rp-booking-form__button rp-info-modal__book-btn" id="infoModalBookBtn">
+                                <span>Book this amenity</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {{-- ── Amenity detail / booking modal ── --}}
 
