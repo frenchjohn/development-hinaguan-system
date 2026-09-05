@@ -547,6 +547,212 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
+/* ── Celebrity Spotlight Widget (Brenda in the Park - Directly Under Weather) ── */
+.hp-brenda-widget {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.9rem 1.05rem;
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.24) 0%, rgba(11, 36, 24, 0.88) 55%, rgba(13, 50, 31, 0.95) 100%);
+    border: 1px solid rgba(200, 164, 93, 0.48);
+    border-radius: 0.85rem;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28), 0 0 20px rgba(200, 164, 93, 0.16);
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 0.3s ease,
+                box-shadow 0.35s ease,
+                background 0.3s ease;
+    cursor: default;
+}
+
+.hp-brenda-widget:hover,
+.hp-brenda-widget:focus-within {
+    transform: translateY(-2px);
+    border-color: rgba(230, 195, 125, 0.8);
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.38), 0 0 28px rgba(200, 164, 93, 0.32);
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.32) 0%, rgba(11, 36, 24, 0.92) 50%, rgba(13, 50, 31, 0.98) 100%);
+}
+
+.hp-brenda-widget__shimmer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #f5d485, #c8a45d, transparent);
+    opacity: 0.85;
+}
+
+.hp-brenda-widget__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.hp-brenda-widget__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #f7e7be;
+    background: rgba(200, 164, 93, 0.18);
+    border: 1px solid rgba(200, 164, 93, 0.35);
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+}
+
+.hp-brenda-widget__dot {
+    position: relative;
+    display: inline-flex;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #4ade80;
+}
+
+.hp-brenda-widget__ping {
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: hp-brenda-radar 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    opacity: 0.75;
+}
+
+.hp-brenda-widget__sparkle {
+    color: var(--hp-gold);
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    animation: hp-brenda-sparkle 3s ease-in-out infinite;
+}
+
+.hp-brenda-widget__body {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.55rem;
+}
+
+.hp-brenda-widget__avatar {
+    flex-shrink: 0;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5d485 0%, #c8a45d 50%, #8e6c27 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0b2418;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 10px rgba(200, 164, 93, 0.35);
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    transition: transform 0.3s ease;
+}
+
+.hp-brenda-widget:hover .hp-brenda-widget__avatar {
+    transform: scale(1.08) rotate(4deg);
+}
+
+.hp-brenda-widget__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.hp-brenda-widget__name {
+    margin: 0;
+    font-family: var(--hp-font-display);
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.hp-brenda-widget__subtitle {
+    margin: 0.2rem 0 0;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.82);
+    font-weight: 500;
+}
+
+.hp-brenda-widget__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.45rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.hp-brenda-widget__loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hp-brenda-widget__loc i {
+    color: var(--hp-gold);
+    font-size: 0.72rem;
+}
+
+.hp-brenda-widget__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 0.15rem 0.45rem;
+    border-radius: 9999px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hp-brenda-widget__pill i {
+    color: #f7e7be;
+    font-size: 0.65rem;
+}
+
+@keyframes hp-brenda-radar {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(2.4);
+        opacity: 0;
+    }
+}
+
+@keyframes hp-brenda-sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.15) rotate(12deg);
+        filter: brightness(1.3);
+    }
+}
+
 /* ── Near Event Widget (Below Weather) ── */
 .hp-near-event-widget {
     position: relative;
@@ -1563,14 +1769,27 @@ body {
         justify-content: center;
     }
 
+    .hp-hero__side-widgets {
+        position: relative;
+        top: auto;
+        right: auto;
+        width: 100%;
+        max-width: 32rem;
+        margin: 0 auto 1.5rem;
+    }
+
     .hp-weather {
         position: relative;
         top: auto;
         right: auto;
         width: 100%;
         max-width: none;
-        margin: 0 auto 1.5rem;
+        margin: 0;
         padding: 0.875rem 1rem;
+    }
+
+    .hp-brenda-widget {
+        padding: 0.8rem 0.95rem;
     }
 
     .hp-weather__icon {

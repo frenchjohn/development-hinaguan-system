@@ -73,14 +73,14 @@ window.AppPage['admin_settings'] = function () {
 
     // Store original values for cancel functionality
     let originalParkSettingsValues = {};
-    let originalParkStatus = 'open';
+    let originalRadioValues = {};
 
     editParkSettingsBtn?.addEventListener('click', () => {
         // Store original values
         parkSettingsInputs.forEach(input => {
             if (input.type === 'radio') {
                 if (input.checked) {
-                    originalParkStatus = input.value;
+                    originalRadioValues[input.name] = input.value;
                 }
             } else {
                 originalParkSettingsValues[input.id || input.name] = input.value;
@@ -97,7 +97,7 @@ window.AppPage['admin_settings'] = function () {
         // Restore original values
         parkSettingsInputs.forEach(input => {
             if (input.type === 'radio') {
-                input.checked = (input.value === originalParkStatus);
+                input.checked = (originalRadioValues[input.name] === input.value);
             } else {
                 input.value = originalParkSettingsValues[input.id || input.name] || '';
             }
@@ -130,9 +130,12 @@ window.AppPage['admin_settings'] = function () {
                 const data = await response.json();
 
                 // Update original values
-                originalParkStatus = parkStatusClosed?.checked ? 'closed' : 'open';
                 parkSettingsInputs.forEach(input => {
-                    if (input.type !== 'radio') {
+                    if (input.type === 'radio') {
+                        if (input.checked) {
+                            originalRadioValues[input.name] = input.value;
+                        }
+                    } else {
                         originalParkSettingsValues[input.id || input.name] = input.value;
                     }
                     input.disabled = true;

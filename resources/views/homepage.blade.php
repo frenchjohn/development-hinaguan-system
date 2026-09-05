@@ -10,6 +10,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     @vite(['resources/css/app.css', 'resources/css/homepage.css', 'resources/css/chatbot.css', 'resources/js/homepage.js', 'resources/js/guest_chatbot.js'])
 </head>
@@ -76,6 +77,7 @@
                     <li><a href="#directions" data-nav-link>Directions</a></li>
                 </ul>
 
+
                 <!-- Live Status Pill with Hover Tooltip -->
                 <div class="hp-nav-status relative group shrink-0">
                     @if (($parkSettings->park_status ?? 'open') === 'closed')
@@ -113,7 +115,7 @@
 
     {{-- Mobile nav --}}
     <nav class="hp-mobile-nav" aria-hidden="true">
-        <div class="px-4 py-2 mb-2">
+        <div class="px-4 py-2 mb-2 flex flex-col gap-1.5">
             @if (($parkSettings->park_status ?? 'open') === 'closed')
                 <div class="inline-flex items-center gap-2 py-1.5 px-3 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-semibold">
                     <span class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -141,7 +143,7 @@
         <div class="hp-hero__bg" style="background-image: url('{{ asset('images/background.jpeg') }}')" aria-hidden="true"></div>
         <div class="hp-hero__overlay" aria-hidden="true"></div>
 
-        @if ($weather || $nearEvent)
+        @if ($weather || !empty($parkSettings->brenda_available) || $nearEvent)
             <div class="hp-hero__side-widgets" data-animate="fade-left">
                 @if ($weather)
                     <aside class="hp-weather" aria-label="Today's weather">
@@ -176,6 +178,45 @@
                             </div>
                         @endif
                     </aside>
+                @endif
+
+                @if (!empty($parkSettings->brenda_available))
+                    {{-- Celebrity Host Spotlight Widget (Directly Under Weather) --}}
+                    <div class="hp-brenda-widget group" tabindex="0" aria-label="Celebrity host Brenda Mage is in the park today">
+                        <div class="hp-brenda-widget__shimmer" aria-hidden="true"></div>
+                        <div class="hp-brenda-widget__header">
+                            <span class="hp-brenda-widget__badge">
+                                <span class="hp-brenda-widget__dot">
+                                    <span class="hp-brenda-widget__ping"></span>
+                                </span>
+                                <span>Celebrity In Park</span>
+                            </span>
+                            <span class="hp-brenda-widget__sparkle" title="Celebrity presence">
+                                <i class="bi bi-stars"></i>
+                            </span>
+                        </div>
+
+                        <div class="hp-brenda-widget__body">
+                            <div class="hp-brenda-widget__avatar" aria-hidden="true">
+                                <i class="bi bi-patch-check-fill"></i>
+                            </div>
+                            <div class="hp-brenda-widget__info">
+                                <h3 class="hp-brenda-widget__name">Brenda is in the park!</h3>
+                                <p class="hp-brenda-widget__subtitle">Celebrity owner Brenda Mage is on-site today</p>
+                            </div>
+                        </div>
+
+                        <div class="hp-brenda-widget__footer">
+                            <div class="hp-brenda-widget__loc">
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <span>Hinaguan Nature Park</span>
+                            </div>
+                            <span class="hp-brenda-widget__pill">
+                                <i class="bi bi-camera-fill"></i>
+                                <span>Meet &amp; Greet</span>
+                            </span>
+                        </div>
+                    </div>
                 @endif
 
                 @if ($nearEvent)

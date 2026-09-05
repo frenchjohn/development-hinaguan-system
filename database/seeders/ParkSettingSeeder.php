@@ -33,6 +33,7 @@ class ParkSettingSeeder extends Seeder
             'night_pool_fee' => 70,
 
             'facebook_link' => null,
+            'brenda_available' => true,
         ]);
     }
 }

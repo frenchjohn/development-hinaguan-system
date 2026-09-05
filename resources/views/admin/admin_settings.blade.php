@@ -209,6 +209,32 @@
                                         </div>
                                     </div>
 
+                                    <!-- Brenda's Park Availability Status Card -->
+                                    <div class="admin-settings__group admin-settings__group--full p-4 rounded-2xl bg-[#f4f7f5] dark:bg-[#091710] border border-[#dbe3de] dark:border-[#242a26]">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div>
+                                                <label class="admin-settings__label text-sm font-bold text-[#0d2c1d] dark:text-[#f5f5f0] mb-0.5">Brenda's Park Availability</label>
+                                                <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Set whether Brenda (Brenda Mage) is currently in the park. When active, visitors will see this special status on the homepage.</p>
+                                            </div>
+                                            <div class="inline-flex items-center gap-4 bg-white dark:bg-[#181b19] py-1.5 px-3.5 rounded-xl border border-[#dbe3de] dark:border-[#282c29]">
+                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
+                                                    <input type="radio" name="brenda_available" value="1" id="brenda_available_yes" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" {{ ($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
+                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                        In the Park
+                                                    </span>
+                                                </label>
+                                                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold">
+                                                    <input type="radio" name="brenda_available" value="0" id="brenda_available_no" class="w-4 h-4 text-amber-600 focus:ring-amber-500" {{ !($parkSettings->brenda_available ?? true) ? 'checked' : '' }} disabled>
+                                                    <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                                        Not in the Park
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="admin-settings__group">
                                         <label for="contact_number" class="admin-settings__label">Contact Number</label>
                                         <input type="tel" id="contact_number" name="contact_number" class="admin-settings__input" value="{{ $parkSettings->contact_number ?? '' }}" disabled>

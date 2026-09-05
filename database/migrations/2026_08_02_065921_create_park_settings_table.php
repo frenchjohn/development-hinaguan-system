@@ -39,6 +39,9 @@ return new class extends Migration
             // Social Media
             $table->string('facebook_link')->nullable();
 
+            // Celebrity / Mascot Availability
+            $table->boolean('brenda_available')->default(true);
+
             $table->timestamps();
         });
     }

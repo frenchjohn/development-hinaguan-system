@@ -24,6 +24,11 @@ class ParkSetting extends Model
         'day_pool_fee',
         'night_pool_fee',
         'facebook_link',
+        'brenda_available',
+    ];
+
+    protected $casts = [
+        'brenda_available' => 'boolean',
     ];
 
     protected $table = 'park_settings';

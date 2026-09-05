@@ -70,7 +70,7 @@
 
 </head>
 
-<body class="antialiased rp-page" style="--rp-page-bg: url('{{ asset('images/background.jpeg') }}')">
+<body class="antialiased rp-page" style="--rp-page-bg: url('{{ asset('images/reservation_background_img.jpg') }}')">
 
     {{-- Site header --}}
     <div class="rp-site-header" id="rpSiteHeader">
@@ -647,6 +647,11 @@
                             <div class="rp-grid__list">
                                 @foreach($categoryAmenities as $amenity)
                                     @php
+                                        $dayPrice = (float) ($amenity->daytime_price ?? 0);
+                                        $nightPrice = (float) ($amenity->nighttime_price ?? 0);
+                                        $hasDayPrice = !empty($amenity->daytime_price) && $dayPrice > 0;
+                                        $hasNightPrice = !empty($amenity->nighttime_price) && $nightPrice > 0;
+                                        $isSamePrice = ($hasDayPrice && $hasNightPrice && $dayPrice === $nightPrice);
                                         $minPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->min();
                                         $maxPrice = collect([$amenity->daytime_price, $amenity->nighttime_price])->filter()->max();
                                         $hasSale = $amenity->sale_percentage && $amenity->sale_percentage > 0;
@@ -685,51 +690,85 @@
                                         </button>
 
                                         <button type="button" class="rp-card__button" data-open-modal>
-                                            @if($amenity->image)
-                                                <div class="rp-card__image" style="background-image:url('{{ asset('storage/' . $amenity->image) }}')"></div>
-                                            @else
-                                                <div class="rp-card__image rp-card__image--empty"></div>
-                                            @endif
-
-                                            <div class="rp-card__chips">
-                                                <span class="rp-card__chip rp-card__chip--capacity">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                                    {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
-                                                </span>
-
-                                                @if($minPrice)
-                                                    <span class="rp-card__chip rp-card__chip--price">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                        from &#8369;{{ number_format($minPrice) }}
-                                                    </span>
+                                            <div class="rp-card__media">
+                                                @if($amenity->image)
+                                                    <div class="rp-card__image" style="background-image:url('{{ asset('storage/' . $amenity->image) }}')"></div>
+                                                @else
+                                                    <div class="rp-card__image rp-card__image--empty"></div>
                                                 @endif
 
-                                                @if($amenity->benefits?->is_aircon)
-                                                    <span class="rp-card__chip rp-card__chip--aircon bg-cyan-500/20 text-cyan-200 border border-cyan-400/30">
-                                                        <i class="bi bi-snow"></i> Aircon
+                                                <div class="rp-card__chips">
+                                                    <span class="rp-card__chip rp-card__chip--capacity">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                                        {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
                                                     </span>
-                                                @endif
-                                                @if($amenity->benefits?->free_pool)
-                                                    <span class="rp-card__chip rp-card__chip--pool bg-blue-500/20 text-blue-200 border border-blue-400/30">
-                                                        <i class="bi bi-water"></i> Free Pool
-                                                    </span>
-                                                @endif
-                                                @if($amenity->benefits?->free_entrance)
-                                                    <span class="rp-card__chip rp-card__chip--entrance bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                                                        <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
-                                                    </span>
-                                                @endif
 
-                                                @if($hasSale)
-                                                    <span class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</span>
-                                                @endif
+                                                    @if($hasSale)
+                                                        <span class="rp-card__sale-badge">{{ $amenity->sale_percentage }}% OFF</span>
+                                                    @endif
+                                                </div>
+
+                                                <div class="rp-card__overlay">
+                                                    <span>{{ $amenity->amenities_name }}</span>
+                                                </div>
+
+                                                <span class="rp-card__cta">View &amp; Book</span>
                                             </div>
 
-                                            <div class="rp-card__overlay">
-                                                <span>{{ $amenity->amenities_name }}</span>
-                                            </div>
+                                            <div class="rp-card__bottom">
+                                                {{-- Title below photo --}}
+                                                <h4 class="rp-card__title">{{ $amenity->amenities_name }}</h4>
 
-                                            <span class="rp-card__cta">View &amp; Book</span>
+                                                {{-- Feature Tags in the middle --}}
+                                                @if($amenity->benefits?->is_aircon || $amenity->benefits?->free_pool || $amenity->benefits?->free_entrance)
+                                                    <div class="rp-card__features">
+                                                        @if($amenity->benefits?->is_aircon)
+                                                            <span class="rp-feature-pill rp-feature-pill--aircon" title="Air-conditioned">
+                                                                <i class="bi bi-snow"></i> Aircon
+                                                            </span>
+                                                        @endif
+                                                        @if($amenity->benefits?->free_pool)
+                                                            <span class="rp-feature-pill rp-feature-pill--pool" title="Free pool access included">
+                                                                <i class="bi bi-water"></i> Free Pool
+                                                            </span>
+                                                        @endif
+                                                        @if($amenity->benefits?->free_entrance)
+                                                            <span class="rp-feature-pill rp-feature-pill--entrance" title="Free park entrance included">
+                                                                <i class="bi bi-ticket-perforated-fill"></i> Free Entrance
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+
+                                                {{-- Clean Pricing at the bottom (₱300 / day · ₱500 / overnight) --}}
+                                                <div class="rp-card__pricing">
+                                                    @if($hasDayPrice && $hasNightPrice && !$isSamePrice)
+                                                        <div class="rp-price-item">
+                                                            <span class="rp-price-val">&#8369;{{ number_format($dayPrice) }}</span>
+                                                            <span class="rp-price-unit">/ day</span>
+                                                        </div>
+                                                        <span class="rp-price-sep" aria-hidden="true">&bull;</span>
+                                                        <div class="rp-price-item">
+                                                            <span class="rp-price-val">&#8369;{{ number_format($nightPrice) }}</span>
+                                                            <span class="rp-price-unit">/ overnight</span>
+                                                        </div>
+                                                    @elseif($isSamePrice)
+                                                        <div class="rp-price-item">
+                                                            <span class="rp-price-val">&#8369;{{ number_format($dayPrice) }}</span>
+                                                            <span class="rp-price-unit">/ day &amp; overnight</span>
+                                                        </div>
+                                                    @elseif($hasDayPrice || $hasNightPrice)
+                                                        @php
+                                                            $dispPrice = $hasDayPrice ? $dayPrice : $nightPrice;
+                                                            $dispUnit = $hasDayPrice ? '/ day' : '/ overnight';
+                                                        @endphp
+                                                        <div class="rp-price-item">
+                                                            <span class="rp-price-val">&#8369;{{ number_format($dispPrice) }}</span>
+                                                            <span class="rp-price-unit">{{ $dispUnit }}</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
                                         </button>
                                     </article>
                                 @endforeach
@@ -939,6 +978,8 @@
                                 <div class="rp-modal__meta-item"><span>Time Slots</span><strong id="modalSlot"></strong></div>
 
                                 <div class="rp-modal__meta-item"><span>Capacity</span><strong id="modalCapacity"></strong></div>
+
+                                <div class="rp-modal__meta-item" id="modalRatesBlock"><span>Rates</span><strong id="modalRates">—</strong></div>
 
                             </div>
 

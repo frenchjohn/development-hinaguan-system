@@ -104,14 +104,6 @@
 
             <main class="dash-content p-6">
 
-                <section class="mb-7 flex flex-wrap items-start justify-between gap-6">
-                    <div>
-                        <p class="mb-3 inline-flex rounded-full bg-[rgba(200,164,93,0.12)] px-[0.95rem] py-[0.45rem] text-[0.85rem] font-bold uppercase tracking-[0.14em] text-[var(--hp-gold-dark)]">Manage Reviews</p>
-                        <h2 class="m-0 text-[1.85rem] font-bold text-[var(--hp-text)]">All guest feedback</h2>
-                        <p class="m-0 mt-[0.65rem] max-w-[38rem] leading-[1.75] text-[var(--hp-text-muted)]">Click any row to read the full review, then show, hide, or delete it from there.</p>
-                    </div>
-                </section>
-
                 <div class="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                     <article class="flex items-center gap-[0.9rem] rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface)] p-[1.1rem_1.25rem] shadow-[var(--shadow-sm)]">
                         <span class="grid h-[2.6rem] w-[2.6rem] shrink-0 place-items-center rounded-[var(--radius-md)] bg-[var(--green-soft)] text-[var(--green)]">

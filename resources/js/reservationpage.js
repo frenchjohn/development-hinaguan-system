@@ -2197,6 +2197,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         modalCapacity.textContent = `${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
 
+        const modalRates = document.getElementById('modalRates');
+        if (modalRates) {
+            const dPrice = parseFloat(card.dataset.daytimePrice || 0);
+            const nPrice = parseFloat(card.dataset.nighttimePrice || 0);
+            if (dPrice > 0 && nPrice > 0 && dPrice !== nPrice) {
+                modalRates.textContent = `Daytime: ₱${dPrice.toLocaleString()} · Overnight: ₱${nPrice.toLocaleString()}`;
+            } else {
+                modalRates.textContent = `₱${(dPrice || nPrice).toLocaleString()}`;
+            }
+        }
+
         const modalBenefits = document.getElementById('modalBenefits');
         if (modalBenefits) {
             modalBenefits.innerHTML = '';

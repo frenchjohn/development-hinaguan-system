@@ -2558,7 +2558,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'day_pool_fee' => 'required|numeric|min:0',
             'night_pool_fee' => 'required|numeric|min:0',
             'facebook_link' => 'nullable|url|max:255',
+            'brenda_available' => 'nullable',
         ]);
+
+        $validated['brenda_available'] = $request->boolean('brenda_available', true);
 
         if ($validated['park_status'] === 'open') {
             $validated['close_description'] = null;
@@ -2571,6 +2574,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         $previousStatus = $parkSettings->park_status ?? 'open';
         $previousDesc = $parkSettings->close_description ?? null;
+        $previousBrenda = (bool) ($parkSettings->brenda_available ?? true);
 
         $parkSettings->fill($validated);
         $parkSettings->save();
@@ -2592,12 +2596,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             );
         }
 
+        // Activity Log for Brenda Availability Change
+        if ($previousBrenda !== (bool) $validated['brenda_available']) {
+            $brendaLabel = $validated['brenda_available'] ? 'In the Park' : 'Not Available';
+            \App\Models\ActivityLog::log(
+                activityType: 'brenda_status_updated',
+                title: "Brenda: {$brendaLabel}",
+                description: "Admin updated Brenda's park availability to: {$brendaLabel}",
+                reservationId: null,
+                actorName: $user['name'] ?? 'Admin User',
+                actorRole: $user['role'] ?? 'admin',
+            );
+        }
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Park settings updated successfully.',
                 'park_status' => $parkSettings->park_status,
                 'close_description' => $parkSettings->close_description,
+                'brenda_available' => (bool) $parkSettings->brenda_available,
             ]);
         }
 
@@ -3014,7 +3032,8 @@ Route::get('/api/activity-notifications', function (Request $request) {
     $userRole = $user['role'] ?? 'staff';
     $userId = (int) ($user['id'] ?? 0);
     $dbLastSeenId = \App\Models\UserActivityRead::getLastSeenId($userRole, $userId);
-    $effectiveLastSeenId = $dbLastSeenId;
+    $queryLastSeenId = (int) $request->query('last_seen_id', 0);
+    $effectiveLastSeenId = max($dbLastSeenId, $queryLastSeenId);
 
     $clientLatestId = (int) $request->query('latest_id', 0);
     $sinceId = (int) $request->query('since_id', 0);
