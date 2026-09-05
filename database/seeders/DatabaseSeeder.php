@@ -63,9 +63,17 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // A-Houses (1 to 9)
+        // Clean up historical duplicate amenities or removed A-House 9
+        $ahouse9 = Amenity::where('amenities_name', 'A-House 9')->first();
+        if ($ahouse9) {
+            AmenityBenefit::where('amenity_id', $ahouse9->id)->delete();
+            ReservationAmenity::where('amenity_id', $ahouse9->id)->delete();
+            $ahouse9->delete();
+        }
+
+        // A-Houses (1 to 8)
         $ahouseAircon = [2, 3];
-        for ($i = 1; $i <= 9; $i++) {
+        for ($i = 1; $i <= 8; $i++) {
             $specificImage = "amenities_images/ahouse{$i}.jpg";
             if (file_exists(storage_path("app/public/{$specificImage}"))) {
                 $imageFile = $specificImage;
@@ -105,17 +113,17 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Cottages (1 to 4)
-        $cottages = [
-            1 => 'amenities_images/cottage1.jpg',
-            2 => 'amenities_images/cottage2.jpg',
-            3 => 'amenities_images/cottage3.jpg',
-            4 => file_exists(storage_path('app/public/amenities_images/cottage4.jpg'))
-                ? 'amenities_images/cottage4.jpg'
-                : 'amenities_images/cottage44.jpg',
-        ];
+        // Cottages (1 to 6)
+        for ($num = 1; $num <= 6; $num++) {
+            $specificImage = "amenities_images/cottage{$num}.jpg";
+            if (file_exists(storage_path("app/public/{$specificImage}"))) {
+                $img = $specificImage;
+            } elseif ($num === 4 && file_exists(storage_path('app/public/amenities_images/cottage44.jpg'))) {
+                $img = 'amenities_images/cottage44.jpg';
+            } else {
+                $img = 'amenities_images/cottage' . ((($num - 1) % 4) + 1) . '.jpg';
+            }
 
-        foreach ($cottages as $num => $img) {
             $cottage = Amenity::where('amenities_name', "Cottage {$num}")->first();
             $cottageData = [
                 'daytime_price' => 200,
@@ -146,19 +154,22 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Payags (1 and 2)
-        $payags = [
-            1 => [
-                'image' => 'amenities_images/payag1.jpg',
-                'description' => 'A traditional native Filipino hut with natural bamboo ventilation, providing an authentic and relaxing open-air park stay.',
-            ],
-            2 => [
-                'image' => 'amenities_images/payag2.jpg',
-                'description' => 'A charming riverside native payag surrounded by lush greenery, ideal for relaxing afternoons and tranquil evening getaways.',
-            ],
+        // Payags (1 to 6)
+        $payagDescriptions = [
+            1 => 'A traditional native Filipino hut with natural bamboo ventilation, providing an authentic and relaxing open-air park stay.',
+            2 => 'A charming riverside native payag surrounded by lush greenery, ideal for relaxing afternoons and tranquil evening getaways.',
+            3 => 'A cozy native wooden payag offering refreshing mountain breeze, perfect for small groups and peaceful picnics.',
+            4 => 'An authentic open-air bamboo payag with scenic nature views, ideal for day tours and evening relaxation.',
+            5 => 'A serene garden-side native payag nestled under shade trees, providing a cool and comfortable outdoor haven.',
+            6 => 'A spacious riverside payag crafted with indigenous materials, perfect for dining and bonding with loved ones.',
         ];
 
-        foreach ($payags as $num => $p) {
+        for ($num = 1; $num <= 6; $num++) {
+            $specificImage = "amenities_images/payag{$num}.jpg";
+            $img = file_exists(storage_path("app/public/{$specificImage}"))
+                ? $specificImage
+                : 'amenities_images/payag' . ((($num - 1) % 2) + 1) . '.jpg';
+
             $payag = Amenity::where('amenities_name', "Payag {$num}")->first();
             $payagData = [
                 'daytime_price' => 300,
@@ -166,8 +177,8 @@ class DatabaseSeeder extends Seeder
                 'additional_per_head' => null,
                 'minimum_capacity' => 1,
                 'maximum_capacity' => null,
-                'description' => $p['description'],
-                'image' => $p['image'],
+                'description' => $payagDescriptions[$num] ?? $payagDescriptions[1],
+                'image' => $img,
                 'status' => true,
             ];
 
@@ -188,5 +199,35 @@ class DatabaseSeeder extends Seeder
                 ]
             );
         }
+
+        // Function Hall
+        $functionHall = Amenity::where('amenities_name', 'Function Hall')->first();
+        $functionHallData = [
+            'daytime_price' => 5000,
+            'nighttime_price' => 10000,
+            'additional_per_head' => null,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => null,
+            'description' => 'A spacious and scenic event pavilion surrounded by nature, perfect for celebrations, reunions, gatherings, and special occasions.',
+            'image' => 'amenities_images/function_hall.jpg',
+            'status' => true,
+        ];
+
+        if ($functionHall) {
+            $functionHall->update($functionHallData);
+        } else {
+            $functionHallData['id'] = (string) Str::uuid();
+            $functionHallData['amenities_name'] = 'Function Hall';
+            $functionHall = Amenity::create($functionHallData);
+        }
+
+        AmenityBenefit::updateOrCreate(
+            ['amenity_id' => $functionHall->id],
+            [
+                'is_aircon' => false,
+                'free_entrance' => true,
+                'free_pool' => true,
+            ]
+        );
     }
 }

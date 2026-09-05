@@ -21,10 +21,37 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Update theme text based on current theme
     function updateThemeText() {
-        const themeText = document.querySelector('.dash-sidebar__theme-text');
-        if (themeText) {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-            themeText.textContent = currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        document.querySelectorAll('.dash-sidebar__theme-text, [data-theme-text]').forEach(el => {
+            el.textContent = currentTheme === 'light' ? 'Light Mode' : 'Dark Mode';
+        });
+    }
+
+    // Helper to close user profile dropdown
+    function closeUserDropdown() {
+        document.querySelectorAll('[data-dash-user-dropdown], [data-dash-user-toggle] + div').forEach(dropdown => {
+            dropdown.classList.remove('is-open');
+        });
+        document.querySelectorAll('[data-dash-user-toggle]').forEach(toggle => {
+            toggle.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+        });
+    }
+
+    // Helper to toggle user profile dropdown
+    function toggleUserDropdown(toggleBtn) {
+        const dropdown = toggleBtn.nextElementSibling;
+        if (!dropdown) return;
+        const isOpen = dropdown.classList.contains('is-open');
+        if (isOpen) {
+            dropdown.classList.remove('is-open');
+            toggleBtn.classList.remove('is-open');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+        } else {
+            dropdown.classList.add('is-open');
+            toggleBtn.classList.add('is-open');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+            updateThemeText();
         }
     }
 
@@ -69,57 +96,32 @@ window.addEventListener('DOMContentLoaded', function () {
         overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
     }
 
-    // Sidebar toggle + overlay clicks are delegated at the document level
+    // Global click listener for sidebar toggles, user profile dropdown, theme toggle, and logout modal
     document.addEventListener('click', (e) => {
+        // Sidebar toggle
         if (e.target.closest('[data-dash-sidebar-toggle]')) {
             toggleSidebar(e);
-        } else if (e.target.closest('.dash-sidebar__overlay, [data-sidebar-overlay]')) {
-            closeSidebar();
+            return;
         }
-    });
 
-    // Close sidebar on escape key (mobile only)
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && window.innerWidth <= 992 && dashLayout.classList.contains('sidebar-open')) {
+        // Sidebar overlay (mobile)
+        if (e.target.closest('.dash-sidebar__overlay, [data-sidebar-overlay]')) {
             closeSidebar();
+            return;
         }
-    });
 
-    // Handle user dropdown toggle
-    if (userToggle) {
-        userToggle.addEventListener('click', (e) => {
+        // Profile toggle button
+        const userToggleBtn = e.target.closest('[data-dash-user-toggle]');
+        if (userToggleBtn) {
             e.preventDefault();
             e.stopPropagation();
-            const dropdown = userToggle.nextElementSibling;
-            if (dropdown) {
-                const isOpen = dropdown.classList.contains('is-open');
-                if (isOpen) {
-                    dropdown.classList.remove('is-open');
-                    userToggle.classList.remove('is-open');
-                } else {
-                    dropdown.classList.add('is-open');
-                    userToggle.classList.add('is-open');
-                    updateThemeText();
-                }
-            }
-        });
-    }
-
-    // Close user dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (userToggle) {
-            const dropdown = userToggle.nextElementSibling;
-            const profileSection = userToggle.closest('.dash-sidebar__profile');
-            if (profileSection && !profileSection.contains(e.target)) {
-                dropdown.classList.remove('is-open');
-                userToggle.classList.remove('is-open');
-            }
+            toggleUserDropdown(userToggleBtn);
+            return;
         }
-    });
 
-    // Handle theme toggle
-    if (themeToggle) {
-        themeToggle.addEventListener('click', (e) => {
+        // Theme toggle button
+        const themeBtn = e.target.closest('[data-theme-toggle]');
+        if (themeBtn) {
             e.preventDefault();
             e.stopPropagation();
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
@@ -127,8 +129,66 @@ window.addEventListener('DOMContentLoaded', function () {
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeText();
-        });
-    }
+            return;
+        }
+
+        // Logout confirm trigger (opens confirmation modal, closes profile dropdown)
+        if (e.target.closest('[data-logout-confirm]')) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeUserDropdown();
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+            return;
+        }
+
+        // Logout cancel / backdrop trigger
+        if (e.target.closest('[data-logout-cancel]')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            return;
+        }
+
+        // Logout confirm submit button loading state
+        const confirmSubmitBtn = e.target.closest('.logout-modal__btn--confirm');
+        if (confirmSubmitBtn) {
+            confirmSubmitBtn.classList.add('is-loading');
+        }
+
+        // Auto-close user profile dropdown when clicking outside
+        const openDropdown = document.querySelector('[data-dash-user-dropdown].is-open, [data-dash-user-toggle] + div.is-open');
+        if (openDropdown) {
+            const toggle = document.querySelector('[data-dash-user-toggle]');
+            const isClickInsideToggle = toggle && toggle.contains(e.target);
+            const isClickInsideDropdown = openDropdown.contains(e.target);
+            if (!isClickInsideToggle && !isClickInsideDropdown) {
+                closeUserDropdown();
+            }
+        }
+    });
+
+    // Close on escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (window.innerWidth <= 992 && dashLayout.classList.contains('sidebar-open')) {
+                closeSidebar();
+            }
+            const modal = document.getElementById('logoutModal');
+            if (modal && modal.classList.contains('is-open')) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            closeUserDropdown();
+        }
+    });
 
     // Handle window resize
     window.addEventListener('resize', () => {
@@ -138,53 +198,6 @@ window.addEventListener('DOMContentLoaded', function () {
             dashLayout.classList.remove('sidebar-collapsed');
         }
     });
-
-    // Handle logout confirmation modal
-    const logoutConfirmBtn = document.querySelector('[data-logout-confirm]');
-    const logoutModal = document.getElementById('logoutModal');
-    const logoutCancelBtn = document.querySelector('[data-logout-cancel]');
-    const logoutConfirmSubmitBtn = document.querySelector('.logout-modal__btn--confirm');
-
-    if (logoutConfirmBtn && logoutModal) {
-        logoutConfirmBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            logoutModal.classList.add('is-open');
-            logoutModal.setAttribute('aria-hidden', 'false');
-        });
-    }
-
-    if (logoutCancelBtn && logoutModal) {
-        logoutCancelBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            logoutModal.classList.remove('is-open');
-            logoutModal.setAttribute('aria-hidden', 'true');
-        });
-    }
-
-    if (logoutConfirmSubmitBtn) {
-        logoutConfirmSubmitBtn.addEventListener('click', () => {
-            logoutConfirmSubmitBtn.classList.add('is-loading');
-        });
-    }
-
-    if (logoutModal) {
-        const backdrop = logoutModal.querySelector('.logout-modal__backdrop');
-        if (backdrop) {
-            backdrop.addEventListener('click', () => {
-                logoutModal.classList.remove('is-open');
-                logoutModal.setAttribute('aria-hidden', 'true');
-            });
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && logoutModal.classList.contains('is-open')) {
-                logoutModal.classList.remove('is-open');
-                logoutModal.setAttribute('aria-hidden', 'true');
-            }
-        });
-    }
 
     // ============================================================
     // INSTANT NAVIGATION (SPA-style page swapping with 0ms DOM swap)
@@ -437,8 +450,9 @@ window.addEventListener('DOMContentLoaded', function () {
             // History state
             if (push) history.pushState({ spa: true, url }, '', url);
 
-            // Close mobile sidebar and scroll to top
+            // Close mobile sidebar, close user dropdown, and scroll to top
             if (window.innerWidth <= 992) closeSidebar();
+            closeUserDropdown();
             window.scrollTo({ top: 0, behavior: 'instant' });
 
             // Micro entrance
