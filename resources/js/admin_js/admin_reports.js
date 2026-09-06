@@ -319,6 +319,8 @@ window.AppPage['admin_reports'] = function () {
 
         // Seamlessly sync subheader top offset to match superheader height perfectly
         syncMatrixHeaderTops();
+        requestAnimationFrame(syncMatrixHeaderTops);
+        setTimeout(syncMatrixHeaderTops, 60);
     };
 
     const syncMatrixHeaderTops = () => {
@@ -334,6 +336,9 @@ window.AppPage['admin_reports'] = function () {
 
     window.addEventListener('resize', syncMatrixHeaderTops);
     window.addEventListener('load', syncMatrixHeaderTops);
+    window.addEventListener('spa:navigated', () => {
+        setTimeout(syncMatrixHeaderTops, 50);
+    });
     if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(syncMatrixHeaderTops);
     }

@@ -184,7 +184,7 @@ body.admin-portal {
     color: var(--ink);
     font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 [data-theme="dark"] body.staff-portal,
@@ -295,7 +295,7 @@ body.admin-portal {
     color: var(--ink);
     font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 /* Content: fills the FULL available width — no centering cap, no big side
@@ -375,7 +375,7 @@ body.staff-portal .dash-header,
 body.admin-portal .dash-header {
     position: sticky !important;
     top: 0 !important;
-    z-index: 40 !important;
+    z-index: 100 !important;
     width: 100% !important;
     max-width: 100% !important;
     background: transparent !important;

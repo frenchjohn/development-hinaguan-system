@@ -558,10 +558,10 @@
                         {{-- VIEW 1: Excel-Style Daily Amenity & Room Occupancy Matrix Grid Table --}}
                         <div id="matrixRoomsContainer" class="block">
                             <div class="relative max-h-[620px] overflow-x-auto overflow-y-auto rounded-2xl border border-glass-border bg-glass-hover/20 shadow-inner">
-                                <table class="w-full border-collapse text-center text-xs" id="amenityDailyMatrixTable">
+                                <table class="w-full border-separate border-spacing-0 text-center text-xs" id="amenityDailyMatrixTable">
                                     <thead>
                                         <!-- Super Header Row (Row 1) -->
-                                        <tr class="bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem]">
+                                        <tr id="matrixSuperHeaderRow" class="bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem]">
                                             <th rowspan="2" class="sticky top-0 left-0 z-40 w-[65px] min-w-[65px] max-w-[65px] py-2 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle box-border">DATE</th>
                                             <th rowspan="2" class="sticky top-0 left-[65px] z-40 w-[105px] min-w-[105px] max-w-[105px] py-2 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.7rem] align-middle shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)] box-border">DAY</th>
                                             <th id="matrixSuperHeaderAmenity" colspan="{{ $allAmenities->count() }}" class="sticky top-0 z-20 h-8 max-h-8 leading-8 py-0 px-3 border border-white/20 bg-[#15462e] tracking-widest text-[0.75rem] font-bold text-white uppercase align-middle box-border">
@@ -593,7 +593,7 @@
                         {{-- VIEW 2: Excel-Style Number of Guests Breakdown (Male / Female / Foreigner / Total) Table --}}
                         <div id="matrixGuestsContainer" class="hidden">
                             <div class="relative max-h-[620px] overflow-x-auto overflow-y-auto rounded-2xl border border-glass-border bg-glass-hover/20 shadow-inner">
-                                <table class="w-full border-collapse text-center text-xs" id="amenityGuestsMatrixTable">
+                                <table class="w-full border-separate border-spacing-0 text-center text-xs" id="amenityGuestsMatrixTable">
                                     <thead>
                                         <tr class="bg-[#1c5c3c] text-white font-bold tracking-wider uppercase text-[0.72rem]">
                                             <th class="sticky top-0 left-0 z-40 w-[80px] min-w-[80px] max-w-[80px] py-2.5 px-3 border border-white/20 bg-[#1c5c3c] text-white font-bold tracking-wider uppercase align-middle box-border">DATE</th>
