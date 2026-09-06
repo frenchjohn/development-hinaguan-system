@@ -93,43 +93,118 @@ body {
 .hp-status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.35rem 0.85rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    justify-content: center;
+    width: 2.15rem;
+    height: 2.15rem;
+    padding: 0;
+    border-radius: 50%;
     cursor: pointer;
-    transition: all 0.2s ease;
+    background: transparent;
+    border: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    outline: none;
+}
+
+.hp-status-pill:hover,
+.hp-status-pill:focus-visible {
+    transform: scale(1.15);
 }
 
 .hp-status-pill--open {
     background: rgba(46, 125, 79, 0.25);
-    border: 1px solid rgba(76, 154, 95, 0.45);
-    color: #8fd0ab;
+    border: 1.5px solid rgba(76, 154, 95, 0.55);
+}
+
+.hp-status-pill--open:hover {
+    background: rgba(46, 125, 79, 0.42);
+    border-color: #4ade80;
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.5);
 }
 
 .hp-status-pill--closed {
     background: rgba(220, 38, 38, 0.25);
-    border: 1px solid rgba(220, 38, 38, 0.5);
-    color: #fca5a5;
+    border: 1.5px solid rgba(220, 38, 38, 0.6);
+}
+
+.hp-status-pill--closed:hover {
+    background: rgba(220, 38, 38, 0.42);
+    border-color: #ef4444;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.55);
+}
+
+.hp-status-pill__radar {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.hp-status-pill--open .hp-status-pill__radar {
+    border: 1.5px solid rgba(74, 222, 128, 0.6);
+    animation: hp-radar-ping 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.hp-status-pill--closed .hp-status-pill__radar {
+    border: 1.5px solid rgba(239, 68, 68, 0.65);
+    animation: hp-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes hp-radar-ping {
+    0% {
+        transform: scale(0.65);
+        opacity: 0.95;
+    }
+    75%, 100% {
+        transform: scale(1.75);
+        opacity: 0;
+    }
 }
 
 .hp-status-pill__dot {
-    width: 0.45rem;
-    height: 0.45rem;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 50%;
+    display: block;
+    position: relative;
+    z-index: 2;
+    transition: all 0.2s ease;
 }
 
 .hp-status-pill--open .hp-status-pill__dot {
-    background: #2f9e63;
-    box-shadow: 0 0 6px rgba(47, 158, 99, 0.6);
-    animation: statusPulse 2s infinite ease-in-out;
+    background: #4ade80;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    animation: hp-status-ping 1.8s infinite;
 }
 
 .hp-status-pill--closed .hp-status-pill__dot {
     background: #ef4444;
-    box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.9), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    animation: hp-status-closed-ping 2s infinite;
+}
+
+@keyframes hp-status-ping {
+    0% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.85);
+    }
+    70% {
+        box-shadow: 0 0 0 7px rgba(74, 222, 128, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+    }
+}
+
+@keyframes hp-status-closed-ping {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85);
+    }
+    70% {
+        box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
 }
 
 .hp-status-tooltip {
@@ -511,6 +586,92 @@ body {
     }
 }
 
+.hp-hero__status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+    margin: 0 0 1.75rem;
+}
+
+.hp-hero__status-row .hp-live-status {
+    margin: 0;
+}
+
+.hp-hero-event-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0.75rem 1.125rem;
+    border-radius: 9999px;
+    background: rgba(200, 164, 93, 0.15);
+    border: 1px solid rgba(200, 164, 93, 0.35);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 100%;
+}
+
+.hp-hero-event-badge:hover,
+.hp-hero-event-badge:focus-visible {
+    background: rgba(200, 164, 93, 0.28);
+    border-color: var(--hp-gold);
+    box-shadow: 0 8px 24px rgba(200, 164, 93, 0.25);
+    transform: translateY(-2px);
+}
+
+.hp-hero-event-badge__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    background: var(--hp-gold);
+    box-shadow: 0 0 0 0 rgba(200, 164, 93, 0.7);
+    animation: hp-pulse-gold 1.8s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes hp-pulse-gold {
+    0% {
+        box-shadow: 0 0 0 0 rgba(200, 164, 93, 0.8);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(200, 164, 93, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(200, 164, 93, 0);
+    }
+}
+
+.hp-hero-event-badge__content {
+    color: #fff;
+    min-width: 0;
+}
+
+.hp-hero-event-badge__label {
+    margin: 0;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hp-gold-light);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hp-hero-event-badge__title {
+    margin: 0.1rem 0 0;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+}
+
 .hp-hero__scroll {
     position: absolute;
     bottom: 2rem;
@@ -543,6 +704,21 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+}
+
+.hp-hero__side-widgets-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.hp-mobile-widgets-bar {
+    display: none;
+}
+
+.hp-mobile-widgets-close-bar {
+    display: none;
 }
 
 /* ── Modern Frosted Glass Weather Card (High Transparency & Deep Blur) ── */
@@ -1933,42 +2109,133 @@ body {
     transform: translateY(0);
 }
 
-/* â”€â”€ Mobile nav â”€â”€ */
+/* ── Mobile nav ── */
 .hp-mobile-nav {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 105;
+    z-index: 120;
     background: rgba(11, 36, 24, 0.98);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 1.75rem;
+    justify-content: flex-start;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
-    padding-top: 4rem;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(0.97);
+    padding: 4.5rem 1.5rem 3rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
 }
 
 .hp-mobile-nav.is-open {
     opacity: 1;
     pointer-events: auto;
+    transform: scale(1);
+}
+
+.hp-mobile-nav__close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    z-index: 2;
+    padding: 0;
+}
+
+.hp-mobile-nav__close:hover {
+    background: rgba(200, 164, 93, 0.25);
+    border-color: var(--hp-gold);
+    color: var(--hp-gold);
+    transform: rotate(90deg);
+}
+
+.hp-mobile-nav__status-wrap {
+    width: 100%;
+    max-width: 22rem;
+    margin-bottom: 1.25rem;
+}
+
+.hp-mobile-nav__status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.95rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    line-height: 1.35;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.hp-mobile-nav__status--open {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.hp-mobile-nav__status--closed {
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.hp-mobile-nav__links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.15rem;
+    width: 100%;
+    margin-bottom: 2rem;
 }
 
 .hp-mobile-nav a {
-    color: #fff;
+    color: #ffffff;
     text-decoration: none;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    transition: color 0.2s;
+    transition: color 0.2s, transform 0.2s;
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
 }
 
 .hp-mobile-nav a.is-active,
 .hp-mobile-nav a:hover {
     color: var(--hp-gold);
+    transform: translateY(-1px);
+}
+
+.hp-mobile-nav__action {
+    width: 100%;
+    max-width: 18rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+}
+
+.hp-mobile-nav__action .hp-btn--book {
+    width: 100%;
+    padding: 0.85rem 1.5rem;
+    font-size: 0.875rem;
+    letter-spacing: 0.08em;
+    border-radius: 0.5rem;
+    justify-content: center;
 }
 
 /* â”€â”€ Scroll entrance animations â”€â”€ */
@@ -2041,27 +2308,59 @@ body {
         --hp-header-offset: 6.5rem;
     }
 
+    .hp-topbar {
+        padding: 0.35rem 0;
+    }
+
     .hp-topbar__text {
-        font-size: 0.625rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.6875rem;
+        white-space: normal;
+        line-height: 1.4;
+        overflow: visible;
+        text-overflow: clip;
     }
 
     .hp-topbar__inner {
         padding: 0 1rem;
     }
 
+    .hp-header {
+        padding: 0.625rem 0;
+    }
+
     .hp-header__inner {
         padding: 0 1rem;
+        gap: 0.75rem;
+    }
+
+    .hp-logo {
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .hp-logo__icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        flex-shrink: 0;
+    }
+
+    .hp-logo__icon svg {
+        width: 1.15rem;
+        height: 1.15rem;
     }
 
     .hp-logo__name {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .hp-logo__location {
         font-size: 0.5625rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .hp-nav__links,
@@ -2070,7 +2369,24 @@ body {
     }
 
     .hp-menu-toggle {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .hp-menu-toggle:hover {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: var(--hp-gold);
     }
 
     .hp-mobile-nav {
@@ -2080,47 +2396,279 @@ body {
     .hp-hero {
         min-height: auto;
         padding-top: var(--hp-header-offset);
-        padding-bottom: 4rem;
+        padding-bottom: 3.5rem;
+        display: flex;
+        flex-direction: column;
     }
 
     .hp-hero__content {
-        padding: 2rem 1rem 3rem;
+        order: 1;
+        padding: 1.75rem 1rem 1rem;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .hp-hero__text {
         max-width: 100%;
     }
 
+    .hp-hero__eyebrow {
+        font-size: 0.6875rem;
+        margin-bottom: 0.5rem;
+    }
+
     .hp-hero__title {
-        font-size: clamp(2rem, 8vw, 3rem);
+        font-size: clamp(2rem, 8vw, 2.75rem);
+        line-height: 1.15;
     }
 
     .hp-hero__subtitle {
         font-size: 0.875rem;
+        line-height: 1.55;
+    }
+
+    .hp-hero__status-row {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        width: 100%;
+        margin-bottom: 1.5rem;
     }
 
     .hp-hero__actions {
+        display: flex;
         flex-direction: column;
         width: 100%;
+        gap: 0.75rem;
     }
 
     .hp-hero__actions .hp-btn {
         width: 100%;
         justify-content: center;
+        padding: 0.85rem 1.25rem;
+        box-sizing: border-box;
     }
 
     .hp-live-status {
         width: 100%;
-        justify-content: center;
+        max-width: 100%;
+        box-sizing: border-box;
+        justify-content: flex-start;
+        padding: 0.65rem 0.95rem;
+    }
+
+    .hp-hero-event-badge {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        justify-content: flex-start;
+        padding: 0.65rem 0.95rem;
+    }
+
+    .hp-hero-event-badge__title {
+        max-width: 100%;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .hp-hero__side-widgets {
+        order: 2;
         position: relative;
         top: auto;
         right: auto;
         width: 100%;
-        max-width: 32rem;
-        margin: 0 auto 1.5rem;
+        max-width: 30rem;
+        margin: 0.5rem auto 2rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+    }
+
+    .hp-mobile-widgets-bar {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .hp-mobile-widgets-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 0.75rem 1.15rem;
+        background: rgba(13, 44, 29, 0.82);
+        border: 1px solid rgba(200, 164, 93, 0.45);
+        border-radius: 9999px;
+        color: #ffffff;
+        cursor: pointer;
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        box-sizing: border-box;
+    }
+
+    .hp-mobile-widgets-toggle:hover,
+    .hp-mobile-widgets-toggle.is-active {
+        background: rgba(13, 44, 29, 0.95);
+        border-color: var(--hp-gold);
+        box-shadow: 0 6px 24px rgba(200, 164, 93, 0.3);
+    }
+
+    .hp-mobile-widgets-toggle__left {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
+    }
+
+    .hp-mobile-widgets-toggle__beacon {
+        width: 0.625rem;
+        height: 0.625rem;
+        border-radius: 50%;
+        background: #4ade80;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .hp-mobile-widgets-toggle__ping {
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        background: #4ade80;
+        animation: hp-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    .hp-mobile-widgets-toggle__title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .hp-mobile-widgets-toggle__right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .hp-mobile-widgets-toggle__temp {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--hp-gold);
+        background: rgba(200, 164, 93, 0.15);
+        padding: 0.15rem 0.5rem;
+        border-radius: 9999px;
+        border: 1px solid rgba(200, 164, 93, 0.35);
+    }
+
+    .hp-mobile-widgets-toggle__chevron {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--hp-gold);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hp-mobile-widgets-toggle.is-active .hp-mobile-widgets-toggle__chevron {
+        transform: rotate(180deg);
+    }
+
+    .hp-hero__side-widgets-body {
+        display: none;
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+        animation: hp-widgets-expand 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .hp-hero__side-widgets-body.is-open {
+        display: flex;
+    }
+
+    @keyframes hp-widgets-expand {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hp-mobile-widgets-close-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.45rem 0.85rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .hp-mobile-widgets-close-title {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .hp-mobile-widgets-close-title i {
+        color: var(--hp-gold);
+    }
+
+    .hp-mobile-widgets-close-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: rgba(239, 68, 68, 0.18);
+        border: 1px solid rgba(239, 68, 68, 0.38);
+        color: #fca5a5;
+        border-radius: 9999px;
+        padding: 0.25rem 0.65rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .hp-mobile-widgets-close-btn:hover {
+        background: rgba(239, 68, 68, 0.35);
+        color: #ffffff;
+    }
+
+    .hp-near-event-spotlight__grid {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .hp-near-event-spotlight__date-box {
+        flex-direction: row;
+        width: 100%;
+        padding: 0.65rem 1rem;
+        gap: 0.75rem;
+    }
+
+    .hp-near-event-spotlight__day {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+
+    .hp-near-event-spotlight__action .hp-btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .hp-weather {
@@ -2346,15 +2894,16 @@ body {
     }
 
     .hp-topbar {
-        padding: 0.375rem 0;
+        padding: 0.35rem 0;
     }
 
     .hp-topbar__text {
-        font-size: 0.5625rem;
+        font-size: 0.625rem;
+        line-height: 1.35;
     }
 
     .hp-header {
-        padding: 0.625rem 0;
+        padding: 0.5rem 0;
     }
 
     .hp-logo__icon {
@@ -2368,7 +2917,7 @@ body {
     }
 
     .hp-logo__name {
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
     }
 
     .hp-logo__location {
@@ -2377,11 +2926,11 @@ body {
 
     .hp-hero {
         padding-top: var(--hp-header-offset);
-        padding-bottom: 3rem;
+        padding-bottom: 2.75rem;
     }
 
     .hp-hero__content {
-        padding: 1.5rem 0.875rem 2.5rem;
+        padding: 1.25rem 0.75rem 0.75rem;
     }
 
     .hp-hero__eyebrow {
@@ -2389,7 +2938,7 @@ body {
     }
 
     .hp-hero__title {
-        font-size: clamp(1.75rem, 10vw, 2.5rem);
+        font-size: clamp(1.75rem, 9vw, 2.25rem);
     }
 
     .hp-hero__subtitle {
@@ -2397,7 +2946,7 @@ body {
     }
 
     .hp-live-status {
-        padding: 0.625rem 0.875rem;
+        padding: 0.55rem 0.75rem;
         gap: 0.5rem;
     }
 
@@ -2414,26 +2963,83 @@ body {
         font-size: 0.8125rem;
     }
 
+    .hp-hero-event-badge {
+        padding: 0.55rem 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .hp-hero-event-badge__dot {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+
+    .hp-hero-event-badge__label {
+        font-size: 0.5625rem;
+    }
+
+    .hp-hero-event-badge__title {
+        font-size: 0.8125rem;
+    }
+
+    .hp-hero__side-widgets {
+        padding: 0 0.75rem;
+        margin: 0.25rem auto 1.5rem;
+    }
+
     .hp-weather {
-        padding: 0.85rem 0.95rem;
+        padding: 0.75rem 0.85rem;
     }
 
     .hp-weather__hero-orb {
-        width: 2.85rem;
-        height: 2.85rem;
+        width: 2.75rem;
+        height: 2.75rem;
     }
 
     .hp-weather__icon {
-        width: 2.2rem;
-        height: 2.2rem;
+        width: 2rem;
+        height: 2rem;
     }
 
     .hp-weather__temp-num {
-        font-size: 1.85rem;
+        font-size: 1.75rem;
     }
 
     .hp-weather__condition-badge {
+        font-size: 0.72rem;
+    }
+
+    .hp-weather__metrics-strip {
+        gap: 0.25rem;
+    }
+
+    .hp-weather__metric-chip {
+        font-size: 0.58rem;
+        padding: 0.3rem 0.15rem;
+        gap: 0.2rem;
+    }
+
+    .hp-weather__metric-chip i {
+        font-size: 0.65rem;
+    }
+
+    .hp-weather__timeline-grid {
+        gap: 0.25rem;
+    }
+
+    .hp-weather__timeline-item {
+        padding: 0.35rem 0.15rem;
+    }
+
+    .hp-weather__timeline-time {
+        font-size: 0.56rem;
+    }
+
+    .hp-weather__timeline-temp {
         font-size: 0.75rem;
+    }
+
+    .hp-weather__timeline-rain {
+        font-size: 0.55rem;
     }
 
     .hp-section {
@@ -2724,6 +3330,125 @@ body {
 .hp-section--dark .hp-directions__map {
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Near Event Spotlight Banner ── */
+.hp-near-event-spotlight {
+    margin-bottom: 2.25rem;
+}
+
+.hp-near-event-spotlight__card {
+    position: relative;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, rgba(27, 94, 58, 0.5) 0%, rgba(13, 44, 29, 0.8) 100%);
+    border: 1px solid rgba(200, 164, 93, 0.45);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    padding: 1.5rem 1.75rem;
+    overflow: hidden;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hp-near-event-spotlight__card:hover {
+    border-color: var(--hp-gold);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45), 0 0 24px rgba(200, 164, 93, 0.25);
+    transform: translateY(-2px);
+}
+
+.hp-near-event-spotlight__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    background: rgba(200, 164, 93, 0.2);
+    border: 1px solid rgba(200, 164, 93, 0.4);
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hp-gold-light);
+    margin-bottom: 1.25rem;
+}
+
+.hp-near-event-spotlight__grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1.75rem;
+}
+
+.hp-near-event-spotlight__date-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 5rem;
+    padding: 0.85rem 0.65rem;
+    border-radius: 0.875rem;
+    background: linear-gradient(180deg, var(--hp-gold) 0%, var(--hp-gold-dark) 100%);
+    color: #0d2c1d;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    flex-shrink: 0;
+}
+
+.hp-near-event-spotlight__month {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1;
+}
+
+.hp-near-event-spotlight__day {
+    font-size: 1.75rem;
+    font-weight: 900;
+    line-height: 1.1;
+    font-family: var(--hp-font-display);
+    margin: 0.15rem 0;
+}
+
+.hp-near-event-spotlight__weekday {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+}
+
+.hp-near-event-spotlight__content {
+    min-width: 0;
+}
+
+.hp-near-event-spotlight__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--hp-gold-light);
+    margin-bottom: 0.35rem;
+}
+
+.hp-near-event-spotlight__title {
+    font-family: var(--hp-font-display);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.4rem;
+    line-height: 1.3;
+}
+
+.hp-near-event-spotlight__desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0;
+}
+
+.hp-near-event-spotlight__action {
+    flex-shrink: 0;
 }
 
 /* ── Dark Theme for Events Section ── */
@@ -3602,6 +4327,19 @@ body {
         width: calc(100vw - 2rem);
     }
 
+    .hp-events-week-banner {
+        padding: 0.85rem 1rem;
+        gap: 0.65rem;
+    }
+
+    .hp-events-week-banner__info {
+        gap: 0.5rem;
+    }
+
+    .hp-events-week-banner__dates {
+        font-size: 0.8rem;
+    }
+
     .hp-event-card {
         flex-direction: column;
     }
@@ -3642,4 +4380,183 @@ body {
     .hp-hero__scroll {
         animation: none;
     }
+}
+
+/* ── Luxury Clean Bootstrap Modal: Park Closed Notice ── */
+.hp-park-closed-modal.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1055;
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+}
+
+.hp-park-closed-modal.modal.fade .modal-dialog {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-out;
+    transform: translateY(-28px) scale(0.95);
+    opacity: 0;
+}
+
+.hp-park-closed-modal.modal.show .modal-dialog {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.hp-park-closed-modal .modal-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    margin: 1.75rem auto;
+    pointer-events: none;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.hp-park-closed-modal .modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+
+.hp-simple-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background: #ffffff;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    border: none;
+    overflow: hidden;
+    color: #1e293b;
+    text-align: center;
+    padding: 1.5rem 1.5rem 1.75rem;
+    box-sizing: border-box;
+}
+
+.hp-simple-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.15rem;
+}
+
+.hp-simple-modal__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    background: #fef2f2;
+    color: #dc2626;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hp-simple-modal__dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #ef4444;
+}
+
+.hp-simple-modal__close {
+    background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/0.85em auto no-repeat;
+    border: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s, background-color 0.2s;
+    padding: 0;
+}
+
+.hp-simple-modal__close:hover {
+    opacity: 1;
+    background-color: #f1f5f9;
+}
+
+.hp-simple-modal__icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background: #fef2f2;
+    color: #dc2626;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 0.85rem;
+}
+
+.hp-simple-modal__title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.5rem;
+    line-height: 1.3;
+    font-family: inherit;
+}
+
+.hp-simple-modal__desc {
+    font-size: 0.925rem;
+    line-height: 1.55;
+    color: #475569;
+    margin: 0 0 1.5rem;
+}
+
+.hp-simple-modal__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background: #dc2626;
+    color: #ffffff;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.15s;
+    letter-spacing: 0.02em;
+}
+
+.hp-simple-modal__btn:hover {
+    background: #b91c1c;
+}
+
+.hp-simple-modal__btn:active {
+    transform: scale(0.98);
+}
+
+.hp-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    opacity: 0;
+    transition: opacity 0.25s ease-out;
+}
+
+.hp-modal-backdrop.show {
+    opacity: 0.65;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+body.hp-modal-open {
+    overflow: hidden;
 }

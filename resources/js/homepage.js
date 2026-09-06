@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     onScroll();
 
     // Mobile menu
+    const mobileNavClose = document.getElementById('hpMobileNavClose');
+
     const closeMobileNav = () => {
         mobileNav?.classList.remove('is-open');
         menuToggle?.setAttribute('aria-expanded', 'false');
@@ -43,8 +45,37 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = isOpen ? 'hidden' : '';
     });
 
+    mobileNavClose?.addEventListener('click', closeMobileNav);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileNav?.classList.contains('is-open')) {
+            closeMobileNav();
+        }
+    });
+
     mobileLinks?.forEach((link) => {
         link.addEventListener('click', closeMobileNav);
+    });
+
+    // Mobile weather & Brenda notification toggle (close & open)
+    const mobileWidgetsToggle = document.getElementById('hpMobileWidgetsToggle');
+    const mobileWidgetsCollapse = document.getElementById('hpMobileWidgetsCollapse');
+    const mobileWidgetsClose = document.getElementById('hpMobileWidgetsClose');
+
+    const toggleMobileWidgets = (expand) => {
+        if (!mobileWidgetsCollapse || !mobileWidgetsToggle) return;
+        const shouldExpand = expand !== undefined ? expand : !mobileWidgetsCollapse.classList.contains('is-open');
+        mobileWidgetsCollapse.classList.toggle('is-open', shouldExpand);
+        mobileWidgetsToggle.classList.toggle('is-active', shouldExpand);
+        mobileWidgetsToggle.setAttribute('aria-expanded', String(shouldExpand));
+    };
+
+    mobileWidgetsToggle?.addEventListener('click', () => {
+        toggleMobileWidgets();
+    });
+
+    mobileWidgetsClose?.addEventListener('click', () => {
+        toggleMobileWidgets(false);
     });
 
     // Smooth scroll for anchor links
@@ -214,5 +245,104 @@ document.addEventListener('DOMContentLoaded', () => {
         eventsTrack.addEventListener('scroll', updateEventsNav, { passive: true });
         window.addEventListener('resize', updateEventsNav, { passive: true });
         updateEventsNav();
+    }
+
+    // ── Park Closed Notice Modal Controller ──
+    const parkClosedModal = document.getElementById('parkClosedModal');
+    const closedStatusBtn = document.getElementById('hpStatusClosedBtn');
+
+    if (parkClosedModal) {
+        let bsModalInstance = null;
+        const hasBootstrapJs = typeof window.bootstrap !== 'undefined' && typeof window.bootstrap.Modal !== 'undefined';
+
+        if (hasBootstrapJs) {
+            try {
+                bsModalInstance = new window.bootstrap.Modal(parkClosedModal, {
+                    backdrop: 'static',
+                    keyboard: true
+                });
+            } catch (e) {
+                console.warn('Could not initialize bootstrap.Modal instance, using native fallback', e);
+            }
+        }
+
+        const showNoticeModal = () => {
+            if (bsModalInstance) {
+                bsModalInstance.show();
+                return;
+            }
+
+            // Fallback native modal display
+            let backdrop = document.querySelector('.hp-modal-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.className = 'hp-modal-backdrop';
+                document.body.appendChild(backdrop);
+            }
+
+            document.body.classList.add('hp-modal-open');
+            parkClosedModal.style.display = 'block';
+            parkClosedModal.setAttribute('aria-hidden', 'false');
+
+            // Force reflow for smooth CSS transitions
+            void parkClosedModal.offsetHeight;
+
+            backdrop.classList.add('show');
+            parkClosedModal.classList.add('show');
+        };
+
+        const hideNoticeModal = () => {
+            if (bsModalInstance) {
+                bsModalInstance.hide();
+            } else {
+                parkClosedModal.classList.remove('show');
+                const backdrop = document.querySelector('.hp-modal-backdrop');
+                if (backdrop) {
+                    backdrop.classList.remove('show');
+                    window.setTimeout(() => backdrop.remove(), 300);
+                }
+                window.setTimeout(() => {
+                    parkClosedModal.style.display = 'none';
+                    parkClosedModal.setAttribute('aria-hidden', 'true');
+                    document.body.classList.remove('hp-modal-open');
+                }, 300);
+            }
+
+            try {
+                sessionStorage.setItem('hp_park_closed_modal_dismissed', '1');
+            } catch (e) {}
+        };
+
+        // Open automatically on initial page visit if not already dismissed in this session
+        try {
+            if (!sessionStorage.getItem('hp_park_closed_modal_dismissed')) {
+                window.setTimeout(showNoticeModal, 500);
+            }
+        } catch (e) {
+            window.setTimeout(showNoticeModal, 500);
+        }
+
+        // Clicking the red status dot in the header opens the notice modal
+        closedStatusBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            showNoticeModal();
+        });
+
+        // Dismiss handlers
+        parkClosedModal.querySelectorAll('[data-bs-dismiss="modal"]').forEach((btn) => {
+            btn.addEventListener('click', hideNoticeModal);
+        });
+
+        parkClosedModal.addEventListener('click', (e) => {
+            if (e.target === parkClosedModal) {
+                hideNoticeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && parkClosedModal.classList.contains('show')) {
+                hideNoticeModal();
+            }
+        });
     }
 });
