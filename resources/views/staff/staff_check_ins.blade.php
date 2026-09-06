@@ -793,7 +793,7 @@
 										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
-										Add Guest
+										Walk-in Checkin
 									</button>
 									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="scanQrBtn" aria-label="Scan QR Code">
 										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1284,7 +1284,7 @@
 										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
-										Add Guest
+										Walk-in Checkin
 									</button>
 									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" aria-label="Scan QR Code">
 										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1550,47 +1550,299 @@
 
 	<div class="guest-modal guest-modal--add" id="addGuestModal" aria-hidden="true">
 		<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-add-modal="true"></div>
-		<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
-			<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-add-modal="true" aria-label="Close add guest form">&times;</button>
-			<div class="guest-modal__header mb-4 flex items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
-				<div class="flex items-center gap-3">
+		<div class="guest-modal__content walkin-fixed-modal relative z-[1] w-full max-w-[1060px] h-[720px] max-h-[92vh] flex flex-col overflow-hidden rounded-2xl bg-glass p-5 sm:p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="addGuestModalTitle">
+			
+			<!-- Modal Header at Top -->
+			<div class="guest-modal__header mb-2.5 shrink-0 flex items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
+				<div class="flex items-center gap-2.5">
 					<h3 id="addGuestModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Walk-In Reservation</h3>
-					<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+					<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
 						Walk-In Check-In
 					</span>
 				</div>
+				<button type="button" class="guest-modal__close group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-add-modal="true" aria-label="Close add guest form">
+					<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+				</button>
 			</div>
-						<form id="addGuestForm" class="guest-form grid gap-4" action="{{ route('staff.checkins.guests.store') }}" method="POST">
-							@csrf
-							<input type="hidden" name="guest_mode" value="with_primary">
-							<input type="hidden" name="reservation_type" id="reservation_type" value="walk_in">
-							<input type="hidden" name="check_in" id="check_in" value="{{ now()->toDateString() }}">
-							
-							<!-- Master Reservation Dates & Sessions -->
-							<input type="hidden" name="start_date" id="walkInStartDate" value="{{ now()->toDateString() }}">
-							<input type="hidden" name="end_date" id="walkInEndDate" value="{{ now()->toDateString() }}">
-							<input type="hidden" name="start_slot" id="walkInStartSlot" value="{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}">
-							<input type="hidden" name="end_slot" id="walkInEndSlot" value="{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}">
-							<input type="hidden" name="total_days" id="walkInTotalDays" value="1">
-							<input type="hidden" name="time_period" id="time_period" value="{{ $currentPeriod ?? 'daytime' }}">
 
-							@if ($errors->any())
-								<div class="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-									<ul class="m-0 list-disc pl-5">
-										@foreach ($errors->all() as $error)
-											<li>{{ $error }}</li>
-										@endforeach
-									</ul>
-								</div>
-							@endif
-							@if (session('success'))
-								<div class="rounded-xl border border-hp-green/30 bg-hp-green/10 px-4 py-3 text-sm font-semibold text-hp-green-dark dark:border-hp-green/20 dark:text-[#4ade80]">
-									{{ session('success') }}
-								</div>
-							@endif
+			<form id="addGuestForm" class="guest-form flex flex-col flex-1 min-h-0 overflow-hidden" action="{{ route('staff.checkins.guests.store') }}" method="POST">
+				@csrf
+				<input type="hidden" name="guest_mode" value="with_primary">
+				<input type="hidden" name="reservation_type" id="reservation_type" value="walk_in">
+				<input type="hidden" name="check_in" id="check_in" value="{{ now()->toDateString() }}">
+				
+				<!-- Master Reservation Dates & Sessions -->
+				<input type="hidden" name="start_date" id="walkInStartDate" value="{{ now()->toDateString() }}">
+				<input type="hidden" name="end_date" id="walkInEndDate" value="{{ now()->toDateString() }}">
+				<input type="hidden" name="start_slot" id="walkInStartSlot" value="{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}">
+				<input type="hidden" name="end_slot" id="walkInEndSlot" value="{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}">
+				<input type="hidden" name="total_days" id="walkInTotalDays" value="1">
+				<input type="hidden" name="time_period" id="time_period" value="{{ $currentPeriod ?? 'daytime' }}">
+				<input type="hidden" name="total_amount" id="totalAmountInput" value="0">
 
-							<!-- Amenities Section with Mixed Times / Schedule Customizer (Placed First) -->
-							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5" id="amenitySection">
+				@if ($errors->any())
+					<div class="mb-2 shrink-0 rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+						<ul class="m-0 list-disc pl-5">
+							@foreach ($errors->all() as $error)
+								<li>{{ $error }}</li>
+							@endforeach
+						</ul>
+					</div>
+				@endif
+				@if (session('success'))
+					<div class="mb-2 shrink-0 rounded-xl border border-hp-green/30 bg-hp-green/10 px-4 py-2 text-xs font-semibold text-hp-green-dark dark:border-hp-green/20 dark:text-[#4ade80]">
+						{{ session('success') }}
+					</div>
+				@endif
+
+				<!-- Master Compact Top Bar with Hover-to-Expand Popovers -->
+				<div class="walkin-compact-topbar mb-3 shrink-0 flex flex-wrap items-center justify-between gap-2 p-1.5 px-3 rounded-xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 relative z-20">
+					<div class="flex items-center gap-2 flex-wrap min-w-0">
+						<!-- 1. Stay Schedule & Duration Pill -->
+						<div class="walkin-top-popover-group" tabindex="0">
+							<button type="button" class="walkin-pill-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-glass-border bg-white/80 dark:bg-white/5 text-xs font-semibold text-hp-text transition-all cursor-pointer hover:border-hp-green hover:bg-white dark:hover:bg-white/10" id="walkInOpenCalendarBtn">
+								<div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-hp-green/15 text-hp-green">
+									<i class="bi bi-clock-history text-xs"></i>
+								</div>
+								<span id="walkInStayCompactText" class="font-bold text-hp-text dark:text-[#f3f4f6]">Sep 6 ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }})</span>
+								<span class="rounded bg-hp-green/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-hp-green">Change</span>
+							</button>
+							<div class="walkin-top-popover p-3 rounded-xl border border-glass-border bg-white/95 dark:bg-[#1f1f1f] shadow-xl min-w-[260px]">
+								<div class="mb-1 flex items-center justify-between">
+									<span class="text-[0.68rem] font-bold uppercase tracking-wider text-hp-text-muted">Stay Schedule & Duration</span>
+									<span class="rounded bg-hp-green/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-hp-green">Starts Today</span>
+								</div>
+								<div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]" id="walkInScheduleSummaryText">Today ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}) — 1 Day</div>
+								<div class="text-[0.68rem] text-hp-text-muted mb-2" id="walkInScheduleDatesText">{{ now()->format('M d, Y') }} ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }})</div>
+								<button type="button" class="w-full py-1.5 px-3 rounded-lg bg-hp-green hover:bg-hp-green-dark text-white text-xs font-bold transition-colors cursor-pointer" onclick="document.getElementById('walkInOpenCalendarBtn')?.click()">
+									Change Check-Out Date / Session
+								</button>
+							</div>
+						</div>
+
+						<!-- 2. Entrance Fee Policy Pill -->
+						<div class="walkin-top-popover-group" tabindex="0">
+							<div class="walkin-pill-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-glass-border bg-white/80 dark:bg-white/5 text-xs font-semibold text-hp-text transition-all cursor-pointer hover:border-amber-500 hover:bg-white dark:hover:bg-white/10">
+								<div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+									<i class="bi bi-ticket-perforated-fill text-xs"></i>
+								</div>
+								<span id="walkInEntranceCompactText" class="font-bold text-hp-text dark:text-[#f3f4f6]">Entrance: Standard Rate</span>
+								<i class="bi bi-chevron-down text-[0.65rem] text-hp-text-muted transition-transform"></i>
+							</div>
+							<div class="walkin-top-popover p-3 rounded-xl border border-glass-border bg-white/95 dark:bg-[#1f1f1f] shadow-xl min-w-[280px]">
+								<label class="mb-1.5 block text-[0.68rem] font-bold uppercase tracking-wider text-hp-text-muted" for="walkInEntranceOption">
+									Entrance Fee Policy
+								</label>
+								<select name="entrance_option" id="walkInEntranceOption" class="w-full rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-white/5 dark:text-[#f3f4f6]">
+									<option value="all_paid" selected>All Pay Entrance Fee (Standard Rate)</option>
+									<option value="specific">Specific Pay (Pick Free Guests)</option>
+									<option value="all_free">All Free Entrance (Promo • ₱0.00)</option>
+								</select>
+								<p class="mt-1.5 m-0 text-[0.68rem] text-hp-text-muted" id="walkInEntranceOptionHelp">All guests pay standard entrance based on age.</p>
+							</div>
+						</div>
+
+						<!-- 3. Pool Access Policy Pill -->
+						<div class="walkin-top-popover-group" tabindex="0">
+							<div class="walkin-pill-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-glass-border bg-white/80 dark:bg-white/5 text-xs font-semibold text-hp-text transition-all cursor-pointer hover:border-sky-500 hover:bg-white dark:hover:bg-white/10">
+								<div class="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-sky-500/15 text-sky-600">
+									<i class="bi bi-water text-xs"></i>
+								</div>
+								<span id="walkInPoolCompactText" class="font-bold text-hp-text dark:text-[#f3f4f6]">Pool: None</span>
+								<i class="bi bi-chevron-down text-[0.65rem] text-hp-text-muted transition-transform"></i>
+							</div>
+							<div class="walkin-top-popover p-3 rounded-xl border border-glass-border bg-white/95 dark:bg-[#1f1f1f] shadow-xl min-w-[280px]">
+								<label class="mb-1.5 block text-[0.68rem] font-bold uppercase tracking-wider text-hp-text-muted" for="walkInPoolOption">
+									Pool Access Policy
+								</label>
+								<select name="pool_option" id="walkInPoolOption" class="w-full rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-white/5 dark:text-[#f3f4f6]">
+									<option value="no_pool" selected>No Pool Access (Default • ₱0.00)</option>
+									<option value="specific">Specific Pool Access (Select Guests)</option>
+									<option value="all_paid">All Pool Access (Standard Rate)</option>
+									<option value="all_free">All Pool Access Free (Promo • ₱0.00)</option>
+								</select>
+								<input type="hidden" name="include_pool" id="include_pool_legacy" value="0">
+								<p class="mt-1.5 m-0 text-[0.68rem] text-hp-text-muted" id="walkInPoolOptionHelp">No pool fee will be charged for any guest.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Walk-In Modal Body: Horizontal Two-Column Layout (Fixed Embedded Sidemenu on Left, Scrollable Content on Right) -->
+				<div class="walkin-modal-body flex-1 min-h-0 flex flex-row gap-5 items-stretch overflow-hidden">
+					<!-- Embedded Left Sidemenu (Fixed, no nested container box) -->
+					<aside class="walkin-modal-sidebar shrink-0 w-52 lg:w-56 h-full overflow-hidden flex flex-col justify-between pr-4 border-r border-[rgba(13,44,29,0.1)] dark:border-white/10 pb-1">
+						<div class="flex flex-col gap-1.5">
+							<!-- 1. Main Guest -->
+							<button type="button" class="walkin-tab-btn is-active" data-walkin-target="mainGuestTab">
+								<div class="flex items-center gap-2.5 min-w-0">
+									<div class="walkin-tab-icon">
+										<i class="bi bi-person-fill"></i>
+									</div>
+									<div class="min-w-0 text-left">
+										<div class="walkin-tab-title truncate">Main Guest</div>
+										<div class="walkin-tab-sub truncate">Primary info</div>
+									</div>
+								</div>
+								<span id="walkInMainGuestStatus" class="walkin-status-indicator inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-black shadow-xs shrink-0" title="Required info missing">!</span>
+							</button>
+
+							<!-- 2. Amenities -->
+							<button type="button" class="walkin-tab-btn" data-walkin-target="amenitiesTab">
+								<div class="flex items-center gap-2.5 min-w-0">
+									<div class="walkin-tab-icon">
+										<i class="bi bi-house-door-fill"></i>
+									</div>
+									<div class="min-w-0 text-left">
+										<div class="walkin-tab-title truncate">Amenities</div>
+										<div class="walkin-tab-sub truncate">Cottages & rooms</div>
+									</div>
+								</div>
+								<span id="walkInSidebarAmenitiesBadge" class="walkin-tab-badge inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold shrink-0">0</span>
+							</button>
+
+							<!-- 3. Companions -->
+							<button type="button" class="walkin-tab-btn" data-walkin-target="companionsTab">
+								<div class="flex items-center gap-2.5 min-w-0">
+									<div class="walkin-tab-icon">
+										<i class="bi bi-people-fill"></i>
+									</div>
+									<div class="min-w-0 text-left">
+										<div class="walkin-tab-title truncate">Companions</div>
+										<div class="walkin-tab-sub truncate">Additional guests</div>
+									</div>
+								</div>
+								<span id="walkInSidebarCompanionsBadge" class="walkin-tab-badge inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold shrink-0">0</span>
+							</button>
+
+							<!-- 4. Fees & Summary -->
+							<button type="button" class="walkin-tab-btn" data-walkin-target="feesTab">
+								<div class="flex items-center gap-2.5 min-w-0">
+									<div class="walkin-tab-icon">
+										<i class="bi bi-receipt"></i>
+									</div>
+									<div class="min-w-0 text-left">
+										<div class="walkin-tab-title truncate">Fees & Summary</div>
+										<div class="walkin-tab-sub truncate">Totals & checkout</div>
+									</div>
+								</div>
+								<span id="walkInSidebarFeesBadge" class="walkin-tab-fees-badge inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-bold shrink-0">₱0.00</span>
+							</button>
+						</div>
+
+						<!-- Sidebar Bottom: Total directly above Check In Walk-In button -->
+						<div class="pt-3 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 flex flex-col gap-2">
+							<div class="flex items-center justify-between px-1">
+								<span class="text-[0.7rem] font-bold uppercase tracking-wider text-hp-text-muted">Total:</span>
+								<strong class="text-base font-black text-hp-green dark:text-emerald-400 tracking-tight" id="walkInSidebarGrandTotalText">₱0.00</strong>
+							</div>
+							<button type="submit" class="w-full cursor-pointer rounded-xl border-0 bg-hp-green py-2.5 px-3 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-1.5" id="sidebarCheckInBtn">
+								<i class="bi bi-check2-circle text-sm"></i>
+								<span>Check In Walk-In</span>
+							</button>
+						</div>
+					</aside>
+
+					<!-- Scrollable Right Content Pane (Each section fits the exact same modal size) -->
+					<div class="walkin-modal-content-area flex-1 min-w-0 h-full overflow-y-auto pr-1 flex flex-col justify-between">
+						<!-- Pane 1: Main Guest -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="mainGuestTab">
+							<div id="primaryGuestSection" class="flex-1">
+								<div class="guest-form__section-header mb-3 flex items-center justify-between">
+									<div>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest Information</h4>
+										<p class="m-0 text-xs text-hp-text-muted">Fill out the primary booker / walk-in contact information</p>
+									</div>
+									<div class="flex items-center gap-1.5 flex-wrap">
+										<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>
+										<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Pool Pass</span>
+									</div>
+								</div>
+
+								<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_first_name">First name <span class="text-red-500">*</span></label>
+										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_middle_name">Middle name</label>
+										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Optional" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_last_name">Last name <span class="text-red-500">*</span></label>
+										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+								</div>
+
+								<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+									<div class="guest-form__field-group grid gap-1">
+										<div class="flex items-center justify-between">
+											<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_age">Age</label>
+											<span id="primaryAgeBadge" class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
+										</div>
+										<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_gender">Gender</label>
+										<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="">Select gender</option>
+											<option value="Male">Male</option>
+											<option value="Female">Female</option>
+										</select>
+									</div>
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primaryGuestIsForeigner">Nationality</label>
+										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+											<option value="0" selected>Filipino</option>
+											<option value="1">Foreigner</option>
+										</select>
+									</div>
+								</div>
+
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_phone">Phone Number</label>
+										<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="09xxxxxxxxx" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+									<div class="guest-form__field-group grid gap-1">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_email">Email Address</label>
+										<input type="email" name="primary_guest[email]" id="primary_email" placeholder="example@email.com" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									</div>
+								</div>
+
+								<!-- Primary Guest Free Entrance Fee Toggle -->
+								<div id="primaryGuestFreeEntranceWrap" class="guest-form__field-group mb-2.5 rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+										<div class="flex items-center gap-2">
+											<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
+											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee (Primary Guest)</span>
+										</div>
+										<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+									</label>
+								</div>
+								<!-- Primary Guest Specific Pool Toggle -->
+								<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
+									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
+										<div class="flex items-center gap-2">
+											<i class="bi bi-water text-sky-600 text-base"></i>
+											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for Primary Guest</span>
+										</div>
+										<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
+									</label>
+								</div>
+							</div>
+							<!-- Tab Footer -->
+							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-end">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="amenitiesTab">
+									<span>Next: Amenities</span>
+									<i class="bi bi-arrow-right"></i>
+								</button>
+							</div>
+						</div>
+
+						<!-- Pane 2: Amenities -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="amenitiesTab" style="display: none;">
+							<div class="flex-1" id="amenitySection">
 								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
 									<div>
 										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Amenities</h4>
@@ -1598,190 +1850,47 @@
 									</div>
 									<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="chooseAmenitiesBtn">
 										<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 										</svg>
-										<span>Choose Amenities</span>
+										<span>Select Amenities</span>
 									</button>
 								</div>
-								<div id="selectedAmenitiesContainer" class="grid gap-2.5">
-									<div class="m-0 flex flex-col items-center justify-center rounded-xl border border-dashed border-glass-border bg-glass/60 p-5 text-center dark:border-white/10 dark:bg-white/5" id="noAmenitiesNotice">
-										<p class="m-0 text-xs font-medium text-hp-text-muted">No amenities selected yet for this walk-in.</p>
-										<button type="button" class="mt-2.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-hp-green/40 bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-colors hover:bg-hp-green hover:text-white" onclick="document.getElementById('chooseAmenitiesBtn')?.click()">
-											<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-											</svg>
-											<span>+ Add Amenities</span>
-										</button>
+								<!-- Selected Amenities Container -->
+								<div id="selectedAmenitiesContainer" class="selected-amenities-grid grid gap-3 max-h-[380px] overflow-y-auto pr-1">
+									<div class="flex flex-col items-center justify-center p-8 text-center text-hp-text-muted rounded-xl border border-dashed border-glass-border" id="noAmenitiesNotice">
+										<i class="bi bi-house-door text-3xl mb-1 opacity-50"></i>
+										<span class="text-xs">No amenities selected yet. Click "Select Amenities" to add rooms or cottages.</span>
 									</div>
 								</div>
+								<!-- Hidden inputs container for selected amenities form submission -->
 								<div id="amenitiesHiddenInputs"></div>
-								<div class="guest-form__summary mt-3 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text">
-									<span>Amenities Subtotal</span>
-									<strong class="text-hp-green" id="walkInAmenitiesSubtotal">₱0.00</strong>
-								</div>
-								<div class="guest-form__summary mt-2 flex justify-between rounded-lg border border-glass-border bg-glass px-4 py-3 text-sm font-semibold text-hp-text" id="walkInExtraHeadFeeSummaryWrap" style="display: none;">
-									<span>Extra Head Fee (Capacity Limit)</span>
-									<strong class="text-[#e65100] dark:text-[#ffb74d]" id="walkInExtraHeadSubtotal">₱0.00</strong>
-								</div>
 							</div>
-
-							<div class="guest-form__grid grid grid-cols-1 gap-4 lg:grid-cols-2">
-								<div class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
-									<div class="guest-form__section-header mb-2 flex items-center justify-between">
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Stay & Entrance Details</h4>
-									</div>
-									
-									<!-- Stay Dates & Sessions Selector -->
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text">Stay Schedule & Duration</label>
-										<button type="button" class="flex w-full cursor-pointer items-center justify-between rounded-xl border border-glass-border bg-glass p-3 text-left transition-all duration-200 hover:border-hp-green hover:bg-glass-hover" id="walkInOpenCalendarBtn">
-											<div class="flex items-center gap-3">
-												<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-hp-green/10 text-hp-green dark:bg-hp-green/20">
-													<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-													</svg>
-												</div>
-												<div>
-													<div class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]" id="walkInScheduleSummaryText">Today ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}) — 1 Day</div>
-													<div class="text-xs text-hp-text-muted" id="walkInScheduleDatesText">{{ now()->format('M d, Y') }} ({{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }})</div>
-												</div>
-											</div>
-											<span class="rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green">Change Checkout</span>
-										</button>
-									</div>
-
-									<!-- Entrance Fee Policy Selector -->
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInEntranceOption">Entrance Fee Policy</label>
-										<select name="entrance_option" id="walkInEntranceOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="all_paid" selected>All Pay Entrance Fee (Standard Rate)</option>
-											<option value="specific">Specific Pay Entrance Fee (Pick Free Guests)</option>
-											<option value="all_free">All Free Entrance Fee (Promo • ₱0.00)</option>
-										</select>
-										<p class="m-0 text-[0.72rem] text-hp-text-muted" id="walkInEntranceOptionHelp">All guests will pay the standard entrance fee based on age.</p>
-									</div>
-
-									<!-- Pool Access Policy Selector -->
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="walkInPoolOption">Pool Access Policy</label>
-										<select name="pool_option" id="walkInPoolOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="no_pool" selected>No Pool Access (Default • ₱0.00)</option>
-											<option value="specific">Specific Pool Access (Select Guests / Groups)</option>
-											<option value="all_paid">All Pool Access (Standard Rate)</option>
-											<option value="all_free">All Pool Access Free (Promo • ₱0.00)</option>
-										</select>
-										<input type="hidden" name="include_pool" id="include_pool_legacy" value="0">
-										<p class="m-0 text-[0.72rem] text-hp-text-muted" id="walkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
-									</div>
-
-									<div class="guest-form__field-group grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text">Entrance Fees Summary</label>
-										<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
-											<div class="guest-form__fee-item flex justify-between">
-												<span>Adult Entrance Fee:</span>
-												<strong class="text-hp-text" id="adultEntranceFee">₱0.00</strong>
-											</div>
-											<div class="guest-form__fee-item flex justify-between">
-												<span>Child Entrance Fee:</span>
-												<strong class="text-hp-text" id="childEntranceFee">₱0.00</strong>
-											</div>
-											<div class="guest-form__fee-item flex justify-between">
-												<span>Pool Fee:</span>
-												<strong class="text-hp-text" id="poolFee">₱0.00</strong>
-											</div>
-											<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
-												<span>Entrance Subtotal:</span>
-												<strong class="text-hp-green" id="totalEntranceFee">₱0.00</strong>
-											</div>
-										</div>
-									</div>
-								</div>
-
-								<div id="primaryGuestSection" class="guest-form__section guest-form__section--compact rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
-									<div class="guest-form__section-header mb-2 flex items-center justify-between">
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest</h4>
-										<div class="flex items-center gap-1.5 flex-wrap">
-											<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>
-											<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Pool Pass</span>
-										</div>
-									</div>
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_first_name">First name</label>
-										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_middle_name">Middle name</label>
-										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_last_name">Last name</label>
-										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__row guest-form__row--two mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-										<div class="guest-form__field-group grid gap-1.5">
-											<div class="flex items-center justify-between">
-												<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_age">Age</label>
-												<span id="primaryAgeBadge" class="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">Adult Rate</span>
-											</div>
-											<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										</div>
-										<div class="guest-form__field-group grid gap-1.5">
-											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_gender">Gender</label>
-											<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-												<option value="">Select gender</option>
-												<option value="Male">Male</option>
-												<option value="Female">Female</option>
-											</select>
-										</div>
-									</div>
-									<div class="guest-form__field-group mb-3 grid gap-1.5">
-										<label class="guest-form__label text-sm font-semibold text-hp-text" for="primaryGuestIsForeigner">Nationality</label>
-										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="0" selected>Filipino</option>
-											<option value="1">Foreigner</option>
-										</select>
-									</div>
-									<div class="guest-form__row guest-form__row--two mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-										<div class="guest-form__field-group grid gap-1.5">
-											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_phone">Phone</label>
-											<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										</div>
-										<div class="guest-form__field-group grid gap-1.5">
-											<label class="guest-form__label text-sm font-semibold text-hp-text" for="primary_email">Email</label>
-											<input type="email" name="primary_guest[email]" id="primary_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										</div>
-									</div>
-									<!-- Primary Guest Free Entrance Fee Toggle -->
-									<div id="primaryGuestFreeEntranceWrap" class="guest-form__field-group mb-3 rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
-										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-											<div class="flex items-center gap-2">
-												<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
-												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee (Primary Guest)</span>
-											</div>
-											<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-										</label>
-									</div>
-									<!-- Primary Guest Specific Pool Toggle -->
-									<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
-										<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-											<div class="flex items-center gap-2">
-												<i class="bi bi-water text-sky-600 text-base"></i>
-												<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for Primary Guest</span>
-											</div>
-											<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-										</label>
-									</div>
-								</div>
+							<!-- Tab Footer -->
+							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-between">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="mainGuestTab">
+									<i class="bi bi-arrow-left"></i>
+									<span>Main Guest</span>
+								</button>
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="companionsTab">
+									<span>Next: Companions</span>
+									<i class="bi bi-arrow-right"></i>
+								</button>
 							</div>
+						</div>
 
-							<div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+						<!-- Pane 3: Companions -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="companionsTab" style="display: none;">
+							<div class="flex-1" id="companionSection">
 								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
 									<div>
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
-										<p class="m-0 text-xs text-hp-text-muted" id="walkInCompanionCountBadge">0 companions added</p>
+										<div class="flex items-center gap-2">
+											<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
+											<span id="walkInCompanionCountBadge" class="rounded-full bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+										</div>
+										<p class="m-0 text-xs text-hp-text-muted">Register additional guests individually or quickly add groups in bulk</p>
 									</div>
 									<div class="flex items-center gap-2">
-										<button type="button" id="toggleCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong active:scale-[0.98]" title="Toggle companion search & filters">
+										<button type="button" id="toggleCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" title="Toggle Search & Filters">
 											<i class="bi bi-funnel text-xs text-hp-green"></i>
 											<span>Filter & Search</span>
 										</button>
@@ -1794,13 +1903,10 @@
 									</div>
 								</div>
 								<div id="companionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
-									<!-- Search single companion by name -->
 									<div class="relative flex-1 min-w-[170px]">
 										<i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
 										<input type="text" id="companionSearchInput" placeholder="Search single companion..." class="w-full rounded-xl border border-glass-border bg-glass py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 									</div>
-									
-									<!-- Filter bulk: Gender -->
 									<div class="w-auto min-w-[110px]">
 										<select id="companionFilterGender" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											<option value="">All Genders</option>
@@ -1808,8 +1914,6 @@
 											<option value="Female">Female</option>
 										</select>
 									</div>
-
-									<!-- Filter bulk: Age Group -->
 									<div class="w-auto min-w-[125px]">
 										<select id="companionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											<option value="">All Age Groups</option>
@@ -1819,101 +1923,213 @@
 											<option value="60+">Seniors (60+)</option>
 										</select>
 									</div>
-
 									<button type="button" id="companionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
 										<i class="bi bi-x-circle"></i>
 										<span>Reset</span>
 									</button>
 								</div>
-
-								<div id="companionList" class="guest-companion-list grid gap-2 max-h-[290px] overflow-y-auto overflow-x-hidden pr-1"></div>
+								<div id="companionList" class="guest-companion-list grid gap-2 max-h-[350px] overflow-y-auto overflow-x-hidden pr-1"></div>
 								<div id="companionHiddenFields"></div>
 							</div>
+							<!-- Tab Footer -->
+							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-between">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="amenitiesTab">
+									<i class="bi bi-arrow-left"></i>
+									<span>Amenities</span>
+								</button>
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="feesTab">
+									<span>Next: Fees & Summary</span>
+									<i class="bi bi-arrow-right"></i>
+								</button>
+							</div>
+						</div>
 
-							<!-- Overall Total Banner -->
-							<div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-hp-green/30 bg-hp-green/10 p-4 dark:bg-hp-green/5">
-								<div>
-									<div class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Total Amount (Entrance + Amenities)</div>
-									<div class="text-2xl font-extrabold text-hp-green" id="reservationTotal">₱0.00</div>
+						<!-- Pane 4: Fees & Summary -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="feesTab" style="display: none;">
+							<div class="flex-1">
+								<div class="guest-form__section-header mb-3 flex items-center justify-between">
+									<div>
+										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Fees & Summary</h4>
+										<p class="m-0 text-xs text-hp-text-muted">Review entrance fees, pool access, amenities subtotal, and extra charges</p>
+									</div>
 								</div>
-								<div class="guest-form__actions flex flex-wrap gap-2">
-									<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-add-modal="true">Cancel</button>
-									<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-sm font-bold text-white transition-colors duration-200 hover:bg-hp-green-dark">Check In Walk-In</button>
+
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+									<!-- Entrance & Pool Breakdown -->
+									<div class="rounded-xl border border-glass-border bg-glass p-4">
+										<div class="text-xs font-bold text-hp-text mb-2.5 flex items-center gap-1.5">
+											<i class="bi bi-ticket-detailed text-hp-green"></i> Entrance & Pool Fees
+										</div>
+										<div class="flex flex-col gap-2 text-xs text-hp-text-muted">
+											<div class="flex justify-between">
+												<span>Adult Entrance:</span>
+												<strong class="text-hp-text" id="adultEntranceFee">₱0.00</strong>
+											</div>
+											<div class="flex justify-between">
+												<span>Child Entrance:</span>
+												<strong class="text-hp-text" id="childEntranceFee">₱0.00</strong>
+											</div>
+											<div class="flex justify-between">
+												<span>Pool Fee:</span>
+												<strong class="text-hp-text" id="poolFee">₱0.00</strong>
+											</div>
+											<div class="flex justify-between border-t border-glass-border pt-2 font-bold">
+												<span class="text-hp-text">Entrance Subtotal:</span>
+												<strong class="text-hp-green" id="totalEntranceFee">₱0.00</strong>
+											</div>
+										</div>
+									</div>
+
+									<!-- Amenities & Extra Head Breakdown -->
+									<div class="rounded-xl border border-glass-border bg-glass p-4 flex flex-col justify-between">
+										<div>
+											<div class="text-xs font-bold text-hp-text mb-2.5 flex items-center gap-1.5">
+												<i class="bi bi-house-door text-hp-green"></i> Amenities & Extras
+											</div>
+											<div class="flex flex-col gap-2 text-xs text-hp-text-muted">
+												<div class="flex justify-between">
+													<span>Amenities Subtotal:</span>
+													<strong class="text-hp-text" id="walkInAmenitiesSubtotal">₱0.00</strong>
+												</div>
+												<div id="walkInExtraHeadFeeSummaryWrap" class="flex justify-between" style="display: none;">
+													<span>Extra Head Fee:</span>
+													<strong class="text-hp-text" id="walkInExtraHeadSubtotal">₱0.00</strong>
+												</div>
+											</div>
+										</div>
+										<div class="mt-3 rounded-lg bg-hp-green/5 p-2.5 text-[0.7rem] text-hp-text-muted">
+											Policy & stay range can be adjusted anytime at the top bar.
+										</div>
+									</div>
 								</div>
 							</div>
-							<input type="hidden" name="total_amount" id="totalAmountInput" value="0">
-						</form>
+
+							<!-- Overall Total Banner & Actions -->
+							<div class="mt-auto flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-hp-green/30 bg-hp-green/10 p-4 dark:bg-hp-green/5">
+								<div>
+									<div class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Grand Total Amount</div>
+									<div class="text-2xl font-black text-hp-green" id="reservationTotal">₱0.00</div>
+								</div>
+								<div class="guest-form__actions flex flex-wrap gap-2">
+									<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="companionsTab">
+										<i class="bi bi-arrow-left"></i>
+										<span>Companions</span>
+									</button>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
+			</form>
+		</div>
+	</div>
 
 				<!-- Walk-In Range Calendar Modal -->
 				<div class="guest-modal guest-modal--calendar" id="walkInCalendarModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-calendar="true"></div>
-					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="walkInCalendarModalTitle">
-						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-walkin-calendar="true" aria-label="Close calendar">&times;</button>
-						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
-							<div>
-								<h3 id="walkInCalendarModalTitle" class="guest-modal__title m-0 font-display text-lg text-hp-text">Select Stay Duration</h3>
+					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="walkInCalendarModalTitle">
+						<!-- Header with cleanly aligned close button -->
+						<div class="guest-modal__header mb-2.5 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
+							<div class="min-w-0">
+								<h3 id="walkInCalendarModalTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg text-hp-text">Select Stay Duration</h3>
 								<p class="m-0 text-xs text-hp-text-muted">Check-in is locked to <strong>Today</strong>. Select your Check-Out Date and Session.</p>
 							</div>
-							<span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[0.8rem] font-bold text-emerald-600 dark:text-emerald-400" id="walkInCalCurrentBadge">Walk-In</span>
+							<div class="flex items-center gap-2 shrink-0">
+								<span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400" id="walkInCalCurrentBadge">1D Stay</span>
+								<button type="button" class="cursor-pointer w-7 h-7 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-150 shadow-xs" data-close-walkin-calendar="true" aria-label="Close calendar">
+									<i class="bi bi-x-lg text-[0.65rem] font-bold"></i>
+								</button>
+							</div>
 						</div>
 
-						<!-- Check-in info & Check-out Session Selector -->
-						<div class="mb-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 rounded-xl border border-glass-border bg-glass p-3 dark:border-white/10 dark:bg-white/5">
-							<div class="grid gap-1">
-								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-In (Now / Fixed)</span>
-								<div class="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300" id="walkInFixedStartBanner">
-									<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-										<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-									</svg>
-									<span>Today • <span id="walkInFixedStartSessionText">{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}</span></span>
+						<!-- Check-in & Check-out Clear Summary Bar -->
+						<div class="mb-2.5 rounded-xl border border-glass-border bg-glass p-2.5 dark:border-white/10 dark:bg-white/5">
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+								<!-- Check-In Box -->
+								<div class="flex items-center gap-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs">
+									<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white font-black text-[0.7rem] shadow-xs">IN</div>
+									<div class="min-w-0">
+										<div class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-text-muted">Check-In (Now)</div>
+										<div class="font-black text-emerald-800 dark:text-emerald-300 text-xs sm:text-[0.82rem] truncate" id="walkInTopCheckInText">
+											{{ now()->format('M d, Y') }} · {{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime (8:00 PM)' : 'Daytime (8:00 AM)' }}
+										</div>
+									</div>
+								</div>
+
+								<!-- Check-Out Box (States the whole date & time) -->
+								<div class="flex items-center gap-2.5 rounded-lg border-2 border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-xs shadow-xs">
+									<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green text-white shadow-xs">
+										<i class="bi bi-box-arrow-right text-sm"></i>
+									</div>
+									<div class="min-w-0 flex-1">
+										<div class="text-[0.62rem] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+											Check-Out Date & Time
+										</div>
+										<div class="font-black text-hp-text dark:text-white text-xs sm:text-[0.85rem] tracking-tight truncate" id="walkInTopCheckoutFullText">
+											{{ (($currentPeriod ?? '') === 'nighttime' ? now()->addDay() : now())->format('M d, Y') }} · {{ ($currentPeriod ?? '') === 'nighttime' ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)' }}
+										</div>
+									</div>
 								</div>
 							</div>
-							<div class="grid gap-1">
-								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-Out Session</span>
-								<div class="flex gap-1.5" id="walkInEndSlotGroup">
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Daytime" data-active="true">Daytime</button>
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Nighttime">Nighttime</button>
+
+							<!-- Check-out Session Selector Toggle -->
+							<div class="mt-2 pt-2 border-t border-glass-border dark:border-white/10 flex items-center justify-between gap-2 flex-wrap">
+								<span class="text-[0.68rem] font-bold text-hp-text-muted">Choose Check-Out Session:</span>
+								<div class="flex gap-2 flex-1 max-w-[320px]" id="walkInEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 text-xs" data-slot-type="end" data-slot-val="Daytime">
+										<i class="bi bi-sun-fill text-[0.8rem] text-amber-500"></i>
+										<span class="font-bold">Daytime (5 PM)</span>
+									</button>
+									<button type="button" class="session-pill-btn flex-1 flex items-center justify-center gap-1.5 py-1 px-2.5 text-xs" data-slot-type="end" data-slot-val="Nighttime">
+										<i class="bi bi-moon-stars-fill text-[0.8rem] text-indigo-400"></i>
+										<span class="font-bold">Nighttime (8 AM)</span>
+									</button>
 								</div>
 							</div>
 						</div>
 
 						<!-- Calendar Component -->
-						<div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
-							<div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalPrev" aria-label="Previous month">&lsaquo;</button>
+						<div class="edit-calendar edit-calendar--modal rounded-xl border border-glass-border bg-hp-cream p-3 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+							<div class="edit-calendar__head mb-1.5 flex items-center justify-between gap-2">
+								<button type="button" class="edit-calendar__nav inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-glass text-base leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalPrev" aria-label="Previous month">&lsaquo;</button>
 								<div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-									<div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="walkInCalTitle">&mdash;</div>
-									<select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalYear" aria-label="Select year"></select>
+									<div class="edit-calendar__title text-sm font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="walkInCalTitle">&mdash;</div>
+									<select class="edit-calendar__year cursor-pointer rounded-md border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalYear" aria-label="Select year"></select>
 								</div>
-								<button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalNext" aria-label="Next month">&rsaquo;</button>
+								<button type="button" class="edit-calendar__nav inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-glass text-base leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="walkInCalNext" aria-label="Next month">&rsaquo;</button>
 							</div>
 
-							<div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
-								<span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+							<div class="edit-calendar__weekdays mt-1 grid grid-cols-7 gap-1">
+								<span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
 							</div>
 
-							<div class="edit-calendar__grid relative mt-1 grid min-h-[220px] grid-cols-7 gap-1 transition-opacity duration-250" id="walkInCalGrid"></div>
+							<div class="edit-calendar__grid relative mt-1 grid min-h-[170px] grid-cols-7 gap-1 transition-opacity duration-250" id="walkInCalGrid"></div>
 
-							<div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.72rem] text-hp-text-muted dark:border-white/10">
+							<div class="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-1.5 text-[0.68rem] text-hp-text-muted dark:border-white/10">
 								<div class="flex flex-wrap items-center gap-2">
-									<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-hp-green"></span> Selected Stay</span>
-									<span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Available</span>
+									<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Selected Stay</span>
+									<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Available</span>
 								</div>
-								<span id="walkInCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click any date to set Check-Out</span>
+								<span id="walkInCalStepHelp" class="font-semibold text-hp-green dark:text-emerald-400">Click date to set Check-Out</span>
 							</div>
 						</div>
 
 						<!-- Modal Footer: Summary & Apply button -->
-						<div class="edit-calendar__footer mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border pt-3 dark:border-white/10">
+						<div class="mt-2.5 flex items-center justify-between gap-3 border-t border-glass-border pt-2 dark:border-white/10">
 							<div class="min-w-0">
-								<div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]" id="walkInCalSummaryText">Select checkout date</div>
-								<div class="text-[0.72rem] text-hp-text-muted" id="walkInCalSpanText">1 Day Stay</div>
+								<div class="text-xs font-black text-hp-text dark:text-white truncate" id="walkInCalCheckoutDateText">
+									Check-Out: {{ now()->addDay()->format('M d, Y') }} · 8:00 AM (Next Morning)
+								</div>
+								<div class="text-[0.68rem] text-hp-text-muted truncate" id="walkInCalSummaryScheduleText">
+									1 Day Stay (1 Nighttime) • Check-In: {{ now()->format('M d, Y') }}
+								</div>
 							</div>
-							<div class="flex gap-2">
-								<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover" data-close-walkin-calendar="true">Cancel</button>
-								<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark" id="walkInCalApplyBtn">Apply Stay Schedule</button>
+							<div class="flex items-center gap-2 shrink-0">
+								<!-- Hidden legacy elements for JS compatibility -->
+								<div id="walkInCalSummaryText" class="hidden"></div>
+								<div id="walkInCalSpanText" class="hidden"></div>
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover" data-close-walkin-calendar="true">Cancel</button>
+								<button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-1.5 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark shadow-xs whitespace-nowrap" id="walkInCalApplyBtn">Apply Stay Schedule</button>
 							</div>
 						</div>
 					</div>
@@ -1923,7 +2139,9 @@
 				<div class="guest-modal guest-modal--compact" id="walkInAmenityScheduleModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-amenity-schedule="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="walkInAmenityScheduleTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-walkin-amenity-schedule="true" aria-label="Close schedule form">&times;</button>
+						<button type="button" class="guest-modal__close group absolute right-3 top-3 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-walkin-amenity-schedule="true" aria-label="Close schedule form">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
 						<h3 id="walkInAmenityScheduleTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Customize Amenity Stay</h3>
 						<input type="hidden" id="walkInAmenityScheduleAmenityId" value="">
 						
@@ -1994,18 +2212,49 @@
 				<!-- Choose Amenities Modal -->
 				<div class="guest-modal guest-modal--compact" id="amenityModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-amenity-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[680px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-amenity-modal="true" aria-label="Close amenity selection">&times;</button>
-						<div class="guest-modal__header mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[760px] max-h-[min(88vh,800px)] flex flex-col overflow-hidden rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
+						<button type="button" class="guest-modal__close group absolute right-3.5 top-3.5 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-amenity-modal="true" aria-label="Close amenity selection">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
+						<div class="guest-modal__header mb-3 shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10 pr-10">
 							<div>
 								<h3 id="amenityModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Choose Available Amenities</h3>
-								<p class="m-0 text-xs text-hp-text-muted">Showing amenities available for the selected walk-in stay window</p>
+								<p class="m-0 text-xs text-hp-text-muted">Select amenities categorized by type and check real-time availability</p>
 							</div>
 							<div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300" id="amenityModalStayBadge">
 								Today Stay
 							</div>
 						</div>
-						<div class="guest-form__amenities grid gap-3" id="amenitiesContainer">
+
+						<!-- Filter Controls: Availability Status Pills & Category Dropdown -->
+						<div class="mb-3.5 shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-hp-cream/60 p-2 dark:bg-white/5">
+							<!-- Availability Status Filter Pills -->
+							<div class="flex items-center gap-1.5" id="walkInAmenityStatusFilters" role="tablist">
+								<button type="button" class="walkin-filter-pill is-active cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-all bg-hp-green text-white shadow-xs" data-filter-status="available">
+									<span>Available</span>
+									<span class="ms-1 rounded-full bg-white/20 px-1.5 py-0.2 text-[0.65rem]" id="walkInCountAvailable">0</span>
+								</button>
+								<button type="button" class="walkin-filter-pill cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10" data-filter-status="occupied">
+									<span>Occupied</span>
+									<span class="ms-1 rounded-full bg-black/10 px-1.5 py-0.2 text-[0.65rem] dark:bg-white/20" id="walkInCountOccupied">0</span>
+								</button>
+								<button type="button" class="walkin-filter-pill cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10" data-filter-status="all">
+									<span>All</span>
+									<span class="ms-1 rounded-full bg-black/10 px-1.5 py-0.2 text-[0.65rem] dark:bg-white/20" id="walkInCountAll">0</span>
+								</button>
+							</div>
+
+							<!-- Category Filter Dropdown -->
+							<div class="flex items-center gap-2">
+								<label for="walkInAmenityCategorySelect" class="text-xs font-bold text-hp-text-muted shrink-0">Category:</label>
+								<select id="walkInAmenityCategorySelect" class="cursor-pointer rounded-lg border border-glass-border bg-white/90 px-3 py-1.5 text-xs font-semibold text-hp-text shadow-xs transition-colors focus:border-hp-green focus:outline-none dark:bg-[#2a2e2b] dark:text-[#f3f4f6]">
+									<option value="all">All Categories</option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Amenities List Container (Grouped by Category & Scrollable) -->
+						<div class="guest-form__amenities flex-1 min-h-0 overflow-y-auto pr-1 space-y-4" id="amenitiesContainer">
 							<div class="flex items-center justify-center py-8 text-sm text-hp-text-muted">
 								<svg class="mr-2 h-5 w-5 animate-spin text-hp-green" fill="none" viewBox="0 0 24 24">
 									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -2014,7 +2263,12 @@
 								Checking amenity availability...
 							</div>
 						</div>
-						<div class="mt-5 flex justify-end">
+
+						<!-- Modal Footer -->
+						<div class="mt-3.5 shrink-0 flex items-center justify-between border-t border-[rgba(13,44,29,0.1)] pt-3 dark:border-white/10">
+							<div class="text-xs text-hp-text-muted">
+								<span id="walkInAmenityFilterSummaryText">Showing available amenities</span>
+							</div>
 							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark" data-close-amenity-modal="true">Done</button>
 						</div>
 					</div>
@@ -2024,7 +2278,9 @@
 				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
-						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text hover:opacity-75 transition-opacity" data-close-companion-modal="true" aria-label="Close companion form">&times;</button>
+						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-companion-modal="true" aria-label="Close companion form">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
 						
 						<!-- MODAL HEADER -->
 						<div class="guest-modal__header mb-4 flex items-center justify-between border-b border-glass-border pb-3">
@@ -2369,7 +2625,9 @@
 				<div class="guest-modal" id="paymentConfirmModal" aria-hidden="true" style="z-index: 1050;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/75" data-close-payment-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[640px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="paymentConfirmTitle">
-						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-payment-modal="true" aria-label="Close modal">&times;</button>
+						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-payment-modal="true" aria-label="Close modal">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
 						
 						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-glass-border pb-3">
 							<div class="flex h-11 w-11 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
@@ -3095,7 +3353,7 @@
 				{{-- Adjust / Extend Stay Schedule Modal --}}
 				<div class="guest-modal guest-modal--compact" id="extendStayModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-stay-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendStayTitle">
+					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[680px] max-h-[min(92vh,860px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendStayTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-stay-modal="true" aria-label="Close modal">&times;</button>
 						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
 							<div class="flex items-center gap-2.5">
@@ -3125,9 +3383,15 @@
 							{{-- Check-Out Session Selector --}}
 							<div class="grid gap-1">
 								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-Out Session</span>
-								<div class="flex gap-1.5" id="extendStayEndSlotGroup">
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Daytime" data-active="true">Daytime (until 5:00 PM)</button>
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Nighttime">Nighttime (until 6:00 AM)</button>
+								<div class="flex gap-2" id="extendStayEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1" data-slot-val="Daytime" data-active="true">
+										<i class="bi bi-sun-fill text-[0.8rem] opacity-80"></i>
+										<span>Daytime (until 5:00 PM)</span>
+									</button>
+									<button type="button" class="session-pill-btn flex-1" data-slot-val="Nighttime">
+										<i class="bi bi-moon-stars-fill text-[0.8rem] opacity-80"></i>
+										<span>Nighttime (until 6:00 AM)</span>
+									</button>
 								</div>
 							</div>
 
@@ -3170,7 +3434,7 @@
 				{{-- Extend Existing Amenity Modal --}}
 				<div class="guest-modal guest-modal--compact" id="extendAmenityModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extend-amenity-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[560px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendAmenityTitle">
+					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[680px] max-h-[min(92vh,860px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extendAmenityTitle">
 						<button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extend-amenity-modal="true" aria-label="Close modal">&times;</button>
 						<div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
 							<div class="flex items-center gap-2.5">
@@ -3220,9 +3484,15 @@
 							{{-- Check-Out Session Selector --}}
 							<div class="grid gap-1">
 								<span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">New Check-Out Session</span>
-								<div class="flex gap-1.5" id="extendAmenityEndSlotGroup">
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Daytime" data-active="true">Daytime</button>
-									<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-val="Nighttime">Nighttime</button>
+								<div class="flex gap-2" id="extendAmenityEndSlotGroup">
+									<button type="button" class="session-pill-btn flex-1" data-slot-val="Daytime" data-active="true">
+										<i class="bi bi-sun-fill text-[0.8rem] opacity-80"></i>
+										<span>Daytime</span>
+									</button>
+									<button type="button" class="session-pill-btn flex-1" data-slot-val="Nighttime">
+										<i class="bi bi-moon-stars-fill text-[0.8rem] opacity-80"></i>
+										<span>Nighttime</span>
+									</button>
 								</div>
 							</div>
 
@@ -3328,9 +3598,15 @@
 										<span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Amenity Check-In</span>
 										<span id="addAmenityStartDateBadge" class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">Today</span>
 									</div>
-									<div class="flex gap-1.5" id="addAmenityStartSlotGroup">
-										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
-										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
+									<div class="flex gap-2" id="addAmenityStartSlotGroup">
+										<button type="button" class="session-pill-btn flex-1 cursor-pointer" data-slot-val="Daytime" data-active="true">
+											<i class="bi bi-sun-fill text-[0.8rem] opacity-80"></i>
+											<span>Daytime</span>
+										</button>
+										<button type="button" class="session-pill-btn flex-1 cursor-pointer" data-slot-val="Nighttime">
+											<i class="bi bi-moon-stars-fill text-[0.8rem] opacity-80"></i>
+											<span>Nighttime</span>
+										</button>
 									</div>
 								</div>
 								<!-- End Schedule -->
@@ -3339,9 +3615,15 @@
 										<span class="text-[0.7rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Amenity Check-Out</span>
 										<span id="addAmenityEndDateBadge" class="text-xs font-extrabold text-hp-green">Today</span>
 									</div>
-									<div class="flex gap-1.5" id="addAmenityEndSlotGroup">
-										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Daytime" data-active="true">Daytime</button>
-										<button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white cursor-pointer" data-slot-val="Nighttime">Nighttime</button>
+									<div class="flex gap-2" id="addAmenityEndSlotGroup">
+										<button type="button" class="session-pill-btn flex-1 cursor-pointer" data-slot-val="Daytime" data-active="true">
+											<i class="bi bi-sun-fill text-[0.8rem] opacity-80"></i>
+											<span>Daytime</span>
+										</button>
+										<button type="button" class="session-pill-btn flex-1 cursor-pointer" data-slot-val="Nighttime">
+											<i class="bi bi-moon-stars-fill text-[0.8rem] opacity-80"></i>
+											<span>Nighttime</span>
+										</button>
 									</div>
 								</div>
 							</div>

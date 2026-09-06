@@ -15,6 +15,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -94,6 +95,61 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
+
+        /* Fixed Reservation Table Styles */
+        #reservationTableWrap {
+            max-height: none !important;
+            overflow-y: visible !important;
+            overflow-x: auto !important;
+            border: 1px solid #dfe5e0 !important;
+            border-radius: 1rem !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 4px 20px rgba(20, 50, 30, 0.04) !important;
+        }
+        [data-theme="dark"] #reservationTableWrap {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            background-color: #181b19 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+        #reservationTableWrap .guest-table {
+            table-layout: fixed !important;
+            width: 100% !important;
+            min-width: 880px !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+        #reservationTableWrap .guest-table thead th {
+            position: static !important;
+            background-color: #f7faf8 !important;
+            border-bottom: 1px solid #e8eee9 !important;
+        }
+        [data-theme="dark"] #reservationTableWrap .guest-table thead th {
+            background-color: #1e2220 !important;
+            border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        #reservationTableWrap .guest-table td {
+            vertical-align: middle !important;
+            border-top: 1px solid #f0f4ef !important;
+        }
+        [data-theme="dark"] #reservationTableWrap .guest-table td {
+            border-top-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        #reservationTableWrap .guest-table th:nth-child(1),
+        #reservationTableWrap .guest-table td:nth-child(1) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(2),
+        #reservationTableWrap .guest-table td:nth-child(2) { text-align: left !important; }
+        #reservationTableWrap .guest-table th:nth-child(3),
+        #reservationTableWrap .guest-table td:nth-child(3) { text-align: left !important; }
+        #reservationTableWrap .guest-table th:nth-child(4),
+        #reservationTableWrap .guest-table td:nth-child(4) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(5),
+        #reservationTableWrap .guest-table td:nth-child(5) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(6),
+        #reservationTableWrap .guest-table td:nth-child(6) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(7),
+        #reservationTableWrap .guest-table td:nth-child(7) { text-align: right !important; }
+        #reservationTableWrap .guest-table th:nth-child(8),
+        #reservationTableWrap .guest-table td:nth-child(8) { text-align: center !important; }
     </style>
 </head>
 <body class="antialiased staff-portal">
@@ -170,7 +226,7 @@
                         </span>
                         <div class="flex flex-col gap-1 min-w-0">
                             <p class="m-0 text-[0.7rem] font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">SESSION</p>
-                            <span class="inline-flex w-fit items-center rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide {{ $timePeriod === 'Daytime' ? 'bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]' : 'bg-[#ede7f6] text-[#6a1b9a] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8]' }}" id="resvSession">{{ strtoupper($timePeriod) }}</span>
+                            <span class="inline-flex w-fit items-center rounded-md px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide {{ $timePeriod === 'Daytime' ? 'bg-[#fff3e0] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]' : 'bg-[#ede7f6] text-[#6a1b9a] dark:bg-[rgba(103,58,183,0.2)] dark:text-[#ce93d8]' }}" id="resvSession">{{ $timePeriod === 'Nighttime' ? 'OVERNIGHT' : strtoupper($timePeriod) }}</span>
                         </div>
                     </article>
 
@@ -284,17 +340,27 @@
                 </div>
 
                 <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-sm dark:border-white/15 dark:bg-[#181b19]" id="reservationTableWrap">
-                    <table class="guest-table w-full min-w-[760px] border-collapse border-spacing-0 text-left">
+                    <table class="guest-table w-full min-w-[880px] table-fixed border-collapse border-spacing-0 text-left">
+                        <colgroup>
+                            <col style="width: 6%; min-width: 55px;">
+                            <col style="width: 27%; min-width: 220px;">
+                            <col style="width: 21%; min-width: 170px;">
+                            <col style="width: 14%; min-width: 125px;">
+                            <col style="width: 7%; min-width: 65px;">
+                            <col style="width: 11%; min-width: 100px;">
+                            <col style="width: 9%; min-width: 85px;">
+                            <col style="width: 5%; min-width: 50px;">
+                        </colgroup>
                         <thead class="bg-[#f7faf8] dark:bg-[#1e2220]">
                             <tr class="border-b border-[#e8eee9] dark:border-white/10">
-                                <th class="py-3.5 px-3 w-20 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] whitespace-nowrap">ID</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">BOOKER</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">RESERVATION DATE</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">SESSION</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">GUESTS</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">STATUS</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center whitespace-nowrap">ID</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">BOOKER</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">RESERVATION DATE</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">SESSION</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">GUESTS</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">STATUS</th>
                                 <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-right">AMOUNT</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">ACTIONS</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#181b19]">
@@ -328,15 +394,15 @@
                                     data-guests="{{ $reservation->number_of_guests }}"
                                     data-total-amount="{{ (float) $reservation->total_amount }}"
                                     data-is-past="{{ $isPastArrival ? '1' : '0' }}"
-                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : ''))) }}"
+                                    data-search="{{ strtolower(trim($reservation->id . ' #' . $reservation->id . ' ' . ($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . ($reservation->status ?? '') . ($isPastArrival ? ' past overdue' : '') . ($isToday ? ' today' : '') . ' ' . ($reservation->start_slot ?? '') . ' ' . (($reservation->start_slot ?? '') === 'Nighttime' ? 'overnight' : ''))) }}"
                                     tabindex="0"
                                     role="button"
                                     aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
                                 >
-                                    <td class="py-3.5 px-3 w-20 whitespace-nowrap">
+                                    <td class="py-3.5 px-2 text-center whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->id }}</span>
                                     </td>
-                                    <td class="py-3.5 px-4">
+                                    <td class="py-3.5 px-4 text-left">
                                         <div class="resv-booker flex items-center gap-3">
                                             <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
                                             <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
@@ -355,7 +421,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-3.5 px-4">
+                                    <td class="py-3.5 px-4 text-left">
                                         @if ($reservation->end_date && $reservation->end_date !== $reservation->reservation_date)
                                             <div>
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
@@ -374,21 +440,51 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-4">
+                                    <td class="py-3.5 px-2 text-center">
                                         @if ($totalDays > 1)
-                                            <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]">Continuous Stay ({{ $totalDays }}D)</span>
+                                            <span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">
+                                                <i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>
+                                                Continuous Stay ({{ $totalDays }}D)
+                                            </span>
                                         @elseif (!empty($timeSlots))
-                                            <div class="time-slot-labels flex flex-wrap gap-1.5">
+                                            <div class="time-slot-labels flex flex-wrap items-center justify-center gap-1.5">
                                                 @foreach ($timeSlots as $slot)
-                                                    <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]">{{ $slot }}</span>
+                                                    @php
+                                                        $isNight = in_array(strtolower($slot), ['nighttime', 'overnight']);
+                                                    @endphp
+                                                    @if ($isNight)
+                                                        <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap">
+                                                            <i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>
+                                                            Overnight
+                                                        </span>
+                                                    @else
+                                                        <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
+                                                            <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
+                                                            {{ $slot }}
+                                                        </span>
+                                                    @endif
                                                 @endforeach
                                             </div>
                                         @else
-                                            <span class="inline-flex items-center rounded-lg border border-[#c8e6c9] bg-[#e8f5e9] px-2.5 py-1 text-xs font-semibold text-[#2e7d32] dark:border-[#2e7d50] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]">{{ $reservation->start_slot ?? 'Daytime' }}</span>
+                                            @php
+                                                $startSlot = $reservation->start_slot ?? 'Daytime';
+                                                $isNight = in_array(strtolower($startSlot), ['nighttime', 'overnight']);
+                                            @endphp
+                                            @if ($isNight)
+                                                <span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap">
+                                                    <i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>
+                                                    Overnight
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
+                                                    <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
+                                                    {{ $startSlot }}
+                                                </span>
+                                            @endif
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-4 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ $reservation->number_of_guests }}</td>
-                                    <td class="py-3.5 px-4 text-center">
+                                    <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ $reservation->number_of_guests }}</td>
+                                    <td class="py-3.5 px-2 text-center">
                                         @php
                                             $status = ucfirst(strtolower($reservation->status));
                                             $statusClass = match($status) {
@@ -404,7 +500,7 @@
                                         <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize {{ $statusClass }}">{{ $reservation->status }}</span>
                                     </td>
                                     <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                    <td class="py-3.5 px-4 text-center">
+                                    <td class="py-3.5 px-2 text-center">
                                         <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
                                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                         </button>
@@ -547,69 +643,126 @@
 
     <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="editCalendarModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-edit-calendar="true"></div>
-        <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[540px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
-            <button type="button" class="guest-modal__close absolute right-3.5 top-3.5 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-edit-calendar="true" aria-label="Close calendar">&times;</button>
-            <div class="guest-modal__header mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
-                <div>
-                    <h3 id="editCalendarModalTitle" class="guest-modal__title m-0 font-display text-lg text-hp-text">Reschedule Stay</h3>
+        <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
+            <div class="guest-modal__header mb-2.5 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
+                <div class="min-w-0">
+                    <h3 id="editCalendarModalTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg text-hp-text">Reschedule Stay</h3>
                     <p class="m-0 text-xs text-hp-text-muted">Select continuous stay dates (up to 5 years ahead)</p>
                 </div>
-                <span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-glass-border bg-[rgba(200,164,93,0.12)] px-3 py-1 text-[0.8rem] font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editCalModalCurrent"></span>
+                <div class="flex items-center gap-2 shrink-0">
+                    <span class="edit-calendar__modal-date whitespace-nowrap rounded-full border border-glass-border bg-[rgba(200,164,93,0.12)] px-2.5 py-0.5 text-xs font-semibold text-[#8a7a4d] dark:border-[rgba(200,164,93,0.35)] dark:bg-[rgba(200,164,93,0.14)] dark:text-[#c8a45d]" id="editCalModalCurrent"></span>
+                    <button type="button" class="cursor-pointer w-7 h-7 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-150 shadow-xs" data-close-edit-calendar="true" aria-label="Close calendar">
+                        <i class="bi bi-x-lg text-[0.65rem] font-bold"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Sessions Bar: Start Slot & End Slot -->
-            <div class="edit-calendar__sessions-panel mb-3.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2 rounded-xl border border-glass-border bg-glass p-3 dark:border-white/10 dark:bg-white/5">
-                <div class="grid gap-1">
-                    <span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-In Session</span>
-                    <div class="flex gap-1.5" id="editStartSlotGroup">
-                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="start" data-slot-val="Daytime">Daytime</button>
-                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="start" data-slot-val="Nighttime">Nighttime</button>
+            <!-- Check-in & Check-out Clear Summary Bar -->
+            <div class="mb-2.5 rounded-xl border border-glass-border bg-glass p-2.5 dark:border-white/10 dark:bg-white/5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <!-- Check-In Box -->
+                    <div class="flex items-center gap-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white font-black text-[0.7rem] shadow-xs">IN</div>
+                        <div class="min-w-0">
+                            <div class="text-[0.62rem] font-bold uppercase tracking-wider text-hp-text-muted">Check-In Session</div>
+                            <div class="font-black text-emerald-800 dark:text-emerald-300 text-xs sm:text-[0.82rem] truncate" id="editTopCheckInText">
+                                —
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Check-Out Box (States the whole date & time) -->
+                    <div class="flex items-center gap-2.5 rounded-lg border-2 border-emerald-500/40 bg-emerald-500/15 px-3 py-2 text-xs shadow-xs">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green text-white shadow-xs">
+                            <i class="bi bi-box-arrow-right text-sm"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[0.62rem] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                                Check-Out Date & Time
+                            </div>
+                            <div class="font-black text-hp-text dark:text-white text-xs sm:text-[0.85rem] tracking-tight truncate" id="editTopCheckoutFullText">
+                                —
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="grid gap-1">
-                    <span class="text-[0.72rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted">Check-Out Session</span>
-                    <div class="flex gap-1.5" id="editEndSlotGroup">
-                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Daytime">Daytime</button>
-                        <button type="button" class="session-pill-btn flex-1 rounded-lg border border-glass-border bg-glass py-1.5 text-xs font-bold text-hp-text transition-all duration-150 data-[active=true]:border-hp-green data-[active=true]:bg-hp-green data-[active=true]:text-white" data-slot-type="end" data-slot-val="Nighttime">Nighttime</button>
+
+                <!-- Session Pickers -->
+                <div class="mt-2 pt-2 border-t border-glass-border dark:border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-[0.65rem] font-bold text-hp-text-muted block mb-1">Check-In Session:</span>
+                        <div class="grid grid-cols-2 gap-1.5" id="editStartSlotGroup">
+                            <button type="button" class="session-pill-btn flex items-center justify-center gap-1 py-1 px-2 text-xs" data-slot-type="start" data-slot-val="Daytime">
+                                <i class="bi bi-sun-fill text-[0.75rem] text-amber-500"></i>
+                                <span>Daytime (8 AM)</span>
+                            </button>
+                            <button type="button" class="session-pill-btn flex items-center justify-center gap-1 py-1 px-2 text-xs" data-slot-type="start" data-slot-val="Nighttime">
+                                <i class="bi bi-moon-stars-fill text-[0.75rem] text-indigo-400"></i>
+                                <span>Overnight (5 PM)</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-[0.65rem] font-bold text-hp-text-muted block mb-1">Check-Out Session:</span>
+                        <div class="grid grid-cols-2 gap-1.5" id="editEndSlotGroup">
+                            <button type="button" class="session-pill-btn flex items-center justify-center gap-1 py-1 px-2 text-xs" data-slot-type="end" data-slot-val="Daytime">
+                                <i class="bi bi-sun-fill text-[0.75rem] text-amber-500"></i>
+                                <span>Daytime (5 PM)</span>
+                            </button>
+                            <button type="button" class="session-pill-btn flex items-center justify-center gap-1 py-1 px-2 text-xs" data-slot-type="end" data-slot-val="Nighttime">
+                                <i class="bi bi-moon-stars-fill text-[0.75rem] text-indigo-400"></i>
+                                <span>Overnight (8 AM)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Calendar Component -->
-            <div class="edit-calendar edit-calendar--modal rounded-[0.85rem] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
-                <div class="edit-calendar__head mb-2 flex items-center justify-between gap-2">
-                    <button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
+            <div class="edit-calendar edit-calendar--modal rounded-xl border border-glass-border bg-hp-cream p-3 transition-colors duration-300 dark:bg-white/5 dark:border-white/10">
+                <div class="edit-calendar__head mb-1.5 flex items-center justify-between gap-2">
+                    <button type="button" class="edit-calendar__nav inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-glass text-base leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalPrev" aria-label="Previous month">&lsaquo;</button>
                     <div class="edit-calendar__title-wrap flex min-w-0 items-baseline gap-2">
-                        <div class="edit-calendar__title text-[0.95rem] font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="editCalTitle">&mdash;</div>
-                        <select class="edit-calendar__year cursor-pointer rounded-[0.45rem] border border-glass-border bg-glass px-2.5 py-1 text-[0.85rem] font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalYear" aria-label="Select year"></select>
+                        <div class="edit-calendar__title text-sm font-bold capitalize text-hp-text dark:text-[#f3f4f6]" id="editCalTitle">&mdash;</div>
+                        <select class="edit-calendar__year cursor-pointer rounded-md border border-glass-border bg-glass px-2 py-0.5 text-xs font-bold text-hp-text transition-all duration-200 hover:border-hp-green focus:border-hp-green focus:outline-none dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalYear" aria-label="Select year"></select>
                     </div>
-                    <button type="button" class="edit-calendar__nav inline-flex h-[2rem] w-[2rem] cursor-pointer items-center justify-center rounded-[0.55rem] border border-glass-border bg-glass text-lg leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalNext" aria-label="Next month">&rsaquo;</button>
+                    <button type="button" class="edit-calendar__nav inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-glass-border bg-glass text-base leading-none text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-hp-green/10 dark:border-white/12 dark:bg-white/6 dark:text-[#f3f4f6]" id="editCalNext" aria-label="Next month">&rsaquo;</button>
                 </div>
 
-                <div class="edit-calendar__weekdays mt-2 grid grid-cols-7 gap-1">
-                    <span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.65rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
+                <div class="edit-calendar__weekdays mt-1 grid grid-cols-7 gap-1">
+                    <span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Su</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Mo</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Tu</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">We</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Th</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Fr</span><span class="text-center text-[0.68rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Sa</span>
                 </div>
 
-                <div class="edit-calendar__grid relative mt-1 grid min-h-[220px] grid-cols-7 gap-1 transition-opacity duration-250" id="editCalGrid"></div>
+                <div class="edit-calendar__grid relative mt-1 grid min-h-[170px] grid-cols-7 gap-1 transition-opacity duration-250" id="editCalGrid"></div>
 
-                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2 text-[0.72rem] text-hp-text-muted dark:border-white/10">
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-1.5 text-[0.68rem] text-hp-text-muted dark:border-white/10">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-hp-green"></span> Selected Range</span>
-                        <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Unavailable</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Selected Range</span>
+                        <span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Unavailable</span>
                     </div>
-                    <span id="editCalStepHelp" class="font-semibold text-hp-green dark:text-[#9ca3af]">Click date to set check-in</span>
+                    <span id="editCalStepHelp" class="font-semibold text-hp-green dark:text-emerald-400">Click date to set check-in</span>
                 </div>
             </div>
 
-            <!-- Modal Footer: Summary & Apply button -->
-            <div class="edit-calendar__footer mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border pt-3 dark:border-white/10">
+            <!-- Unified Single Action Footer with Prominent Check-Out Date & Time -->
+            <div class="mt-2.5 flex items-center justify-between gap-3 border-t border-glass-border pt-2 dark:border-white/10">
                 <div class="min-w-0">
-                    <div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]" id="editCalSummaryText">Select date range</div>
-                    <div class="text-[0.72rem] text-hp-text-muted" id="editCalCostSummary">₱0.00</div>
+                    <div class="text-xs font-black text-hp-text dark:text-white truncate" id="editCalCheckoutDateText">
+                        —
+                    </div>
+                    <div class="text-[0.68rem] text-hp-text-muted mt-0.5 truncate" id="editCalSummaryScheduleText">
+                        Check-In: <span id="editCalCheckInText">—</span>
+                    </div>
+                    <div class="text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-400 mt-0.5" id="editCalCostSummary">
+                        ₱0.00
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-3.5 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover" data-close-edit-calendar="true">Cancel</button>
-                    <button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-2 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark" id="editCalApplyBtn">Apply Schedule</button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div id="editCalSummaryText" class="hidden"></div>
+                    <div id="editTopCheckoutBadge" class="hidden"></div>
+                    <div id="editCalDaysBadgeText" class="hidden"></div>
+                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover" data-close-edit-calendar="true">Cancel</button>
+                    <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-4 py-1.5 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark shadow-xs whitespace-nowrap" id="editCalApplyBtn">Apply Schedule</button>
                 </div>
             </div>
         </div>

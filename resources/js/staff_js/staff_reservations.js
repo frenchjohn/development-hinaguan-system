@@ -97,8 +97,25 @@ window.AppPage['staff_reservations'] = function () {
 
     const renderTimeSlots = (reservation) => {
         const slots = reservation?.time_slots || [];
-        if (!slots.length) return '<span class="text-muted">—</span>';
-        return `<div class="time-slot-labels">${slots.map(slot => `<span class="time-slot-label time-slot-label--${String(slot).toLowerCase().replace(/\s+/g, '')}">${escapeHtml(slot)}</span>`).join('')}</div>`;
+        const totalDays = Number(reservation?.total_days || 1);
+        if (totalDays > 1) {
+            return `<span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap"><i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>Continuous Stay (${totalDays}D)</span>`;
+        }
+        if (slots.length > 0) {
+            return `<div class="time-slot-labels flex flex-wrap items-center justify-center gap-1.5">${slots.map(slot => {
+                const isNight = ['nighttime', 'overnight'].includes(String(slot).toLowerCase());
+                if (isNight) {
+                    return `<span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
+                }
+                return `<span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>${escapeHtml(slot)}</span>`;
+            }).join('')}</div>`;
+        }
+        const rawSlot = reservation?.start_slot || 'Daytime';
+        const isNight = ['nighttime', 'overnight'].includes(String(rawSlot).toLowerCase());
+        if (isNight) {
+            return `<span class="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-300 whitespace-nowrap"><i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-500 dark:text-indigo-400"></i>Overnight</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap"><i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>${escapeHtml(rawSlot)}</span>`;
     };
 
     // Shared row markup (used by server rows, refresh + fallback renders)
@@ -140,32 +157,42 @@ window.AppPage['staff_reservations'] = function () {
                 </span>`
                 : '');
 
+        const statusColors = {
+            pending: 'bg-[#fff3e0] text-[#e65100] border-[#ffe0b2] dark:bg-[rgba(230,81,0,0.2)] dark:text-[#ffb74d] dark:border-[#ff9800]/30',
+            confirmed: 'bg-[#e8f5e9] text-[#2e7d32] border-[#c8e6c9] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af] dark:border-[#9ca3af]/30',
+            'checked in': 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
+            'checked out': 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
+            cancelled: 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
+            'no show': 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700',
+        };
+        const statusClass = statusColors[statusLower] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300';
+
         return `
-                <td class="py-3.5 px-3 w-20 whitespace-nowrap">
+                <td class="py-3.5 px-2 text-center whitespace-nowrap">
                     <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
                 </td>
-                <td>
+                <td class="py-3.5 px-4 text-left">
                     <div class="resv-booker flex items-center gap-3">
-                        <span class="resv-avatar">${escapeHtml(getInitials(reservation.booker_name))}</span>
-                        <div class="resv-booker__info">
+                        <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">${escapeHtml(getInitials(reservation.booker_name))}</span>
+                        <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
                             <div class="guest-name font-bold text-sm text-[#183d28] dark:text-[#e8f5e9] flex items-center gap-1.5 flex-wrap">
                                 <span>${escapeHtml(reservation.booker_name)}</span>
                                 ${badgeHtml}
                             </div>
-                            <div class="guest-meta">${escapeHtml(reservation.email)}</div>
+                            <div class="guest-meta text-xs text-[#718076] dark:text-[#9baaa1] truncate">${escapeHtml(reservation.email)}</div>
                         </div>
                     </div>
                 </td>
-                <td>${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
-                <td>${renderTimeSlots(reservation)}</td>
-                <td>${escapeHtml(reservation.number_of_guests)}</td>
-                <td>
-                    <span class="reservation-status reservation-status--${String(reservation.status || '').toLowerCase()}">${escapeHtml(reservation.status)}</span>
+                <td class="py-3.5 px-4 text-left">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
+                <td class="py-3.5 px-2 text-center">${renderTimeSlots(reservation)}</td>
+                <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">${escapeHtml(reservation.number_of_guests)}</td>
+                <td class="py-3.5 px-2 text-center">
+                    <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize ${statusClass}">${escapeHtml(reservation.status)}</span>
                 </td>
-                <td>₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
-                <td>
-                    <button type="button" class="resv-row-action" aria-label="View reservation details">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
+                <td class="py-3.5 px-2 text-center">
+                    <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>
                 </td>
             `;
@@ -1122,7 +1149,7 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const getCheckInPeriodLabel = (period) => {
-        const labels = { daytime: 'Daytime', nighttime: 'Nighttime', daytonight: 'Day to Night', nighttoday: 'Night to Day' };
+        const labels = { daytime: 'Daytime', nighttime: 'Overnight', daytonight: 'Day to Night', nighttoday: 'Night to Day' };
         return labels[period] || period;
     };
 
@@ -2167,14 +2194,14 @@ window.AppPage['staff_reservations'] = function () {
         const formatStayDate = (sDate, eDate, totalDays, startSlot, endSlot) => {
             if (!sDate) return 'N/A';
             const sFormatted = formatDate(sDate);
-            const sSlot = startSlot || 'Daytime';
-            const eSlot = endSlot || sSlot;
+            const sSlotDisplay = (startSlot || 'Daytime') === 'Nighttime' ? 'Overnight' : (startSlot || 'Daytime');
+            const eSlotDisplay = (endSlot || startSlot || 'Daytime') === 'Nighttime' ? 'Overnight' : (endSlot || startSlot || 'Daytime');
             if (eDate && eDate !== sDate) {
                 const eFormatted = formatDate(eDate);
                 const daysCount = totalDays || 'Multi-day';
-                return `${sFormatted} (${sSlot}) – ${eFormatted} (${eSlot}) (${daysCount} Days Stay)`;
+                return `${sFormatted} (${sSlotDisplay}) – ${eFormatted} (${eSlotDisplay}) (${daysCount} Days Stay)`;
             }
-            return `${sFormatted} (${sSlot})`;
+            return `${sFormatted} (${sSlotDisplay})`;
         };
 
         const formatExpectedCheckout = (res) => {
@@ -2200,14 +2227,19 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             if (formattedDate === 'N/A' && rawDate) {
-                formattedDate = formatDate(rawDate);
+                const [y, m, d] = rawDate.split('-').map(Number);
+                const dt = new Date(y, m - 1, d);
+                if (session === 'Nighttime') {
+                    dt.setDate(dt.getDate() + 1);
+                }
+                formattedDate = dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             }
 
             return {
                 date: formattedDate,
-                session: session,
+                session: session === 'Nighttime' ? 'Overnight' : 'Daytime',
                 time: formattedTime,
-                fullText: `${formattedDate} · ${session}${formattedTime ? ` (${formattedTime})` : ''}`
+                fullText: `${formattedDate} · ${session === 'Nighttime' ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)'}`
             };
         };
 
@@ -2323,7 +2355,7 @@ window.AppPage['staff_reservations'] = function () {
         const sSlot = reservation.start_slot || 'Daytime';
         const isNight = sSlot.toLowerCase().includes('night');
         const slotPill = isNight
-            ? `<span class="inline-flex items-center gap-1 rounded-full bg-[#1b4332] text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-emerald-300" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg> Nighttime</span>`
+            ? `<span class="inline-flex items-center gap-1 rounded-full bg-indigo-600 text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-indigo-100" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg> Overnight</span>`
             : `<span class="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-amber-100" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg> Daytime</span>`;
 
         const totalAmountNum = Number(reservation.total_amount || 0);
@@ -2433,7 +2465,7 @@ window.AppPage['staff_reservations'] = function () {
                             <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Reservation Stay</div>
                             <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
                                 <svg class="w-4 h-4 text-[#1b4332] dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <span>${escapeHtml(formatDate(reservation.reservation_date))} (${escapeHtml(sSlot)})</span>
+                                <span>${escapeHtml(formatDate(reservation.reservation_date))} (${escapeHtml(sSlot === 'Nighttime' ? 'Overnight' : sSlot)})</span>
                                 ${slotPill}
                             </div>
                         </div>
@@ -2988,7 +3020,7 @@ window.AppPage['staff_reservations'] = function () {
                             <input type="date" class="edit-amenity-start-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]" value="${raStart}" min="${masterStart}" max="${masterEnd}">
                             <select class="edit-amenity-start-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                                 <option value="Daytime" ${raStartSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
-                                <option value="Nighttime" ${raStartSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
+                                <option value="Nighttime" ${raStartSlot === 'Nighttime' ? 'selected' : ''}>Overnight</option>
                             </select>
                         </div>
                     </div>
@@ -2998,7 +3030,7 @@ window.AppPage['staff_reservations'] = function () {
                             <input type="date" class="edit-amenity-end-date flex-1 rounded-lg border border-glass-border bg-glass px-2.5 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]" value="${raEnd}" min="${masterStart}" max="${masterEnd}">
                             <select class="edit-amenity-end-slot rounded-lg border border-glass-border bg-glass px-2 py-1.5 text-xs text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                                 <option value="Daytime" ${raEndSlot === 'Daytime' ? 'selected' : ''}>Daytime</option>
-                                <option value="Nighttime" ${raEndSlot === 'Nighttime' ? 'selected' : ''}>Nighttime</option>
+                                <option value="Nighttime" ${raEndSlot === 'Nighttime' ? 'selected' : ''}>Overnight</option>
                             </select>
                         </div>
                     </div>
@@ -3310,19 +3342,70 @@ window.AppPage['staff_reservations'] = function () {
         const eDate = editCalState.endDate || sDate;
         const sSlot = editCalState.startSlot;
         const eSlot = editCalState.endSlot;
+        const editTopCheckoutBadge = document.getElementById('editTopCheckoutBadge');
+        const editTopCheckInText = document.getElementById('editTopCheckInText');
+        const editTopCheckoutFullText = document.getElementById('editTopCheckoutFullText');
+        const editCalCheckoutDateText = document.getElementById('editCalCheckoutDateText');
+        const editCalCheckoutSessionIcon = document.getElementById('editCalCheckoutSessionIcon');
+        const editCalCheckoutSessionText = document.getElementById('editCalCheckoutSessionText');
+        const editCalCheckInText = document.getElementById('editCalCheckInText');
+        const editCalDaysBadgeText = document.getElementById('editCalDaysBadgeText');
 
         if (!sDate) {
             if (editCalSummaryText) editCalSummaryText.textContent = 'Please select a check-in date';
             if (editCalCostSummary) editCalCostSummary.textContent = '—';
+            if (editCalCheckoutDateText) editCalCheckoutDateText.textContent = '—';
+            if (editCalCheckInText) editCalCheckInText.textContent = '—';
+            if (editCalDaysBadgeText) editCalDaysBadgeText.textContent = '—';
+            if (editTopCheckoutBadge) editTopCheckoutBadge.textContent = '';
+            if (editTopCheckInText) editTopCheckInText.textContent = '—';
+            if (editTopCheckoutFullText) editTopCheckoutFullText.textContent = '—';
             return;
         }
 
         const pricing = calculateReservationPricing(sDate, eDate, sSlot, eSlot);
+        const isNight = eSlot === 'Nighttime';
+        const sLong = formatDateLong(sDate);
+
+        // Physical departure calculation: Overnight checkout is NEXT MORNING at 8:00 AM
+        const [ey, em, ed] = eDate.split('-').map(Number);
+        const eDateObj = new Date(ey, em - 1, ed);
+        if (isNight) {
+            eDateObj.setDate(eDateObj.getDate() + 1);
+        }
+        const checkoutDateFmt = eDateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const checkoutTime = isNight ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)';
+        const sessionLabel = isNight ? 'Overnight' : 'Daytime';
+
+        if (editCalCheckoutDateText) {
+            editCalCheckoutDateText.innerHTML = `${checkoutDateFmt} <span class="text-emerald-700 dark:text-emerald-300 font-bold">· ${checkoutTime}</span>`;
+        }
+        if (editCalCheckoutSessionText) {
+            editCalCheckoutSessionText.textContent = sessionLabel;
+        }
+        if (editCalCheckoutSessionIcon) {
+            editCalCheckoutSessionIcon.className = isNight ? 'bi bi-moon-stars-fill text-[0.65rem] text-indigo-400' : 'bi bi-sun-fill text-[0.65rem] text-amber-500';
+        }
+        const sSlotDisplay = sSlot === 'Nighttime' ? 'Overnight' : sSlot;
+        if (editCalCheckInText) {
+            editCalCheckInText.textContent = `${sLong} (${sSlotDisplay}) • ${pricing.totalDays} Day${pricing.totalDays === 1 ? '' : 's'} (${pricing.dayCount} Daytime, ${pricing.nightCount} Overnight)`;
+        }
+        if (editCalDaysBadgeText) {
+            editCalDaysBadgeText.textContent = `${pricing.totalDays} Day${pricing.totalDays === 1 ? '' : 's'} Stay`;
+        }
+        if (editTopCheckoutBadge) {
+            editTopCheckoutBadge.textContent = `${checkoutDateFmt} · ${isNight ? '8:00 AM' : '5:00 PM'}`;
+        }
+        if (editTopCheckInText) {
+            const inTime = sSlot === 'Nighttime' ? 'Overnight (8:00 PM)' : 'Daytime (8:00 AM)';
+            editTopCheckInText.textContent = `${sLong} · ${inTime}`;
+        }
+        if (editTopCheckoutFullText) {
+            editTopCheckoutFullText.textContent = `${checkoutDateFmt} · ${checkoutTime}`;
+        }
 
         if (editCalSummaryText) {
-            editCalSummaryText.textContent = (sDate === eDate)
-                ? `${formatDateLong(sDate)} (${sSlot} to ${eSlot}) · 1 Day`
-                : `${formatDateLong(sDate)} (${sSlot}) → ${formatDateLong(eDate)} (${eSlot}) · ${pricing.totalDays} Days (${pricing.dayCount}D ${pricing.nightCount}N)`;
+            editCalSummaryText.textContent = `Check-In: ${sLong} (${sSlotDisplay}) → Check-Out: ${checkoutDateFmt} at ${checkoutTime} · ${pricing.totalDays} Days (${pricing.dayCount}D ${pricing.nightCount}N)`;
         }
 
         if (editCalCostSummary) {
@@ -4280,7 +4363,7 @@ window.AppPage['staff_reservations'] = function () {
             } else {
                 if (cur >= ns || cur <= ne) period = 'Nighttime';
             }
-            const label = period.toUpperCase();
+            const label = period === 'Nighttime' ? 'OVERNIGHT' : period.toUpperCase();
             if (resvSessionEl.textContent !== label) {
                 resvSessionEl.textContent = label;
                 resvSessionEl.className = `resv-metric__badge resv-metric__badge--${period.toLowerCase()}`;

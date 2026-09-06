@@ -388,7 +388,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         let rawDate = res.end_date || res.reservation_date;
         let formattedDate = 'N/A';
-        let formattedTime = session === 'Nighttime' ? '6:00 AM (Next Day)' : '6:00 PM';
+        let formattedTime = session === 'Nighttime' ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)';
 
         if (res.checkout_at) {
             const dt = new Date(res.checkout_at);
@@ -399,7 +399,12 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         if (formattedDate === 'N/A' && rawDate) {
-            formattedDate = formatDate(rawDate);
+            const [y, m, d] = rawDate.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            if (session === 'Nighttime') {
+                dt.setDate(dt.getDate() + 1);
+            }
+            formattedDate = dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         }
 
         return {
@@ -4167,6 +4172,9 @@ window.AppPage['staff_check_ins'] = function () {
     // ==========================================
     // Walk-In Guest Reservation & Multi-Day System
     // ==========================================
+    // Currency formatting helper with thousands commas (e.g., 10000 -> 10,000.00, 5000 -> 5,000.00)
+    const formatPeso = (val) => Number(val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
     const addGuestModal = document.getElementById('addGuestModal');
     const addGuestCloseButtons = document.querySelectorAll('[data-close-add-modal="true"]');
     const openAddGuestButtons = document.querySelectorAll('[data-open-add-guest-modal="true"]');
@@ -4280,6 +4288,53 @@ window.AppPage['staff_check_ins'] = function () {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
 
+    const formatShortDate = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, m, d] = dateStr.split('-');
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const getCheckoutDateAndDisplay = (endDateStr, endSlot) => {
+        if (!endDateStr) {
+            return {
+                displayDate: '',
+                time: '5:00 PM',
+                sessionLabel: 'Daytime',
+                fullHtml: '—',
+                textSummary: '—'
+            };
+        }
+        const [y, m, d] = endDateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        const isNight = (endSlot || '').includes('Night');
+
+        if (isNight) {
+            // Overnight checkout is next morning at 8:00 AM
+            dateObj.setDate(dateObj.getDate() + 1);
+            const checkoutFmt = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return {
+                dateObj,
+                displayDate: checkoutFmt,
+                time: '8:00 AM',
+                sessionLabel: 'Nighttime (Overnight)',
+                fullHtml: `${checkoutFmt} <span class="text-emerald-700 dark:text-emerald-300 font-bold">· 8:00 AM (Next Morning)</span>`,
+                textSummary: `${checkoutFmt} at 8:00 AM (Next Morning)`
+            };
+        } else {
+            // Daytime checkout is same date at 5:00 PM
+            const checkoutFmt = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return {
+                dateObj,
+                displayDate: checkoutFmt,
+                time: '5:00 PM',
+                sessionLabel: 'Daytime',
+                fullHtml: `${checkoutFmt} <span class="text-emerald-700 dark:text-emerald-300 font-bold">· 5:00 PM (Daytime)</span>`,
+                textSummary: `${checkoutFmt} at 5:00 PM (Daytime)`
+            };
+        }
+    };
+
     const syncMasterScheduleDisplay = () => {
         const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
         walkInSchedule.totalDays = counts.daysSpan;
@@ -4302,9 +4357,11 @@ window.AppPage['staff_check_ins'] = function () {
         // Visual summary sync
         const summaryText = document.getElementById('walkInScheduleSummaryText');
         const datesText = document.getElementById('walkInScheduleDatesText');
+        const stayCompactText = document.getElementById('walkInStayCompactText');
 
         const sFmt = formatDisplayDate(walkInSchedule.startDate);
-        const eFmt = formatDisplayDate(walkInSchedule.endDate);
+        const sShort = formatShortDate(walkInSchedule.startDate);
+        const checkout = getCheckoutDateAndDisplay(walkInSchedule.endDate, walkInSchedule.endSlot);
 
         if (summaryText) {
             const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
@@ -4312,11 +4369,64 @@ window.AppPage['staff_check_ins'] = function () {
             summaryText.textContent = `${spanLabel} ${breakdown}`;
         }
         if (datesText) {
-            if (walkInSchedule.startDate === walkInSchedule.endDate) {
-                datesText.textContent = `${sFmt} (${walkInSchedule.startSlot}${walkInSchedule.startSlot !== walkInSchedule.endSlot ? ' to ' + walkInSchedule.endSlot : ''})`;
+            datesText.textContent = `Check-In: ${sFmt} (${walkInSchedule.startSlot}) • Check-Out: ${checkout.textSummary}`;
+        }
+        if (stayCompactText) {
+            stayCompactText.textContent = `${sShort} (${walkInSchedule.startSlot}) → Out: ${checkout.displayDate} (${checkout.time})`;
+        }
+    };
+
+    // Walk-in Modal Tab Controller & Validation
+    const switchWalkInTab = (targetTabId) => {
+        if (!targetTabId) return;
+
+        const tabBtns = document.querySelectorAll('.walkin-tab-btn');
+        const tabPanes = document.querySelectorAll('.walkin-tab-pane');
+
+        tabBtns.forEach(btn => {
+            const isMatch = btn.dataset.walkinTarget === targetTabId;
+            btn.classList.toggle('is-active', isMatch);
+        });
+
+        tabPanes.forEach(pane => {
+            if (pane.id === targetTabId) {
+                pane.style.display = 'flex';
             } else {
-                datesText.textContent = `${sFmt} (${walkInSchedule.startSlot}) → ${eFmt} (${walkInSchedule.endSlot})`;
+                pane.style.display = 'none';
             }
+        });
+
+        const tabStepMap = {
+            'mainGuestTab': '1 of 4',
+            'amenitiesTab': '2 of 4',
+            'companionsTab': '3 of 4',
+            'feesTab': '4 of 4'
+        };
+        const stepIndicator = document.getElementById('walkInActiveTabIndicator');
+        if (stepIndicator && tabStepMap[targetTabId]) {
+            stepIndicator.textContent = tabStepMap[targetTabId];
+        }
+    };
+
+    const checkMainGuestValidation = () => {
+        const firstName = document.getElementById('primary_first_name')?.value?.trim() || '';
+        const lastName = document.getElementById('primary_last_name')?.value?.trim() || '';
+        const statusBadge = document.getElementById('walkInMainGuestStatus');
+
+        if (!statusBadge) return;
+
+        const isComplete = firstName.length > 0 && lastName.length > 0;
+
+        if (isComplete) {
+            statusBadge.classList.remove('walkin-status-indicator--error');
+            statusBadge.classList.add('walkin-status-indicator--valid');
+            statusBadge.innerHTML = '<i class="bi bi-check-lg text-xs"></i>';
+            statusBadge.title = 'Main guest details filled';
+        } else {
+            statusBadge.classList.remove('walkin-status-indicator--valid');
+            statusBadge.classList.add('walkin-status-indicator--error');
+            statusBadge.textContent = '!';
+            statusBadge.title = 'Required main guest details missing';
         }
     };
 
@@ -4325,8 +4435,12 @@ window.AppPage['staff_check_ins'] = function () {
         addGuestModal.classList.add('is-open');
         addGuestModal.classList.remove('hidden');
         addGuestModal.setAttribute('aria-hidden', 'false');
+        switchWalkInTab('mainGuestTab');
+        checkMainGuestValidation();
         loadParkSettings();
         syncMasterScheduleDisplay();
+        syncEntranceOptionUI();
+        syncPoolOptionUI();
         renderSelectedAmenities();
         updateGrandTotal();
     };
@@ -4350,10 +4464,27 @@ window.AppPage['staff_check_ins'] = function () {
             e.preventDefault();
             openAddGuestModal();
         }
+
+        const tabBtn = e.target.closest('.walkin-tab-btn');
+        if (tabBtn && tabBtn.dataset.walkinTarget) {
+            e.preventDefault();
+            switchWalkInTab(tabBtn.dataset.walkinTarget);
+        }
+
+        const stepBtn = e.target.closest('.walkin-step-btn[data-step-to]');
+        if (stepBtn && stepBtn.dataset.stepTo) {
+            e.preventDefault();
+            switchWalkInTab(stepBtn.dataset.stepTo);
+        }
     });
 
     addGuestCloseButtons.forEach(button => {
         button.addEventListener('click', closeAddGuestModal);
+    });
+
+    ['input', 'change', 'blur'].forEach(ev => {
+        document.getElementById('primary_first_name')?.addEventListener(ev, checkMainGuestValidation);
+        document.getElementById('primary_last_name')?.addEventListener(ev, checkMainGuestValidation);
     });
 
     // Load park settings from server
@@ -4431,6 +4562,17 @@ window.AppPage['staff_check_ins'] = function () {
             }
         }
 
+        const entranceCompactText = document.getElementById('walkInEntranceCompactText');
+        if (entranceCompactText) {
+            if (isAllPaid) {
+                entranceCompactText.textContent = 'Entrance: Standard Rate';
+            } else if (isSpecific) {
+                entranceCompactText.textContent = 'Entrance: Specific Free';
+            } else if (isAllFree) {
+                entranceCompactText.textContent = 'Entrance: Free Promo';
+            }
+        }
+
         syncBulkFreeQuantityMax();
         renderCompanions();
         updateGrandTotal();
@@ -4441,6 +4583,19 @@ window.AppPage['staff_check_ins'] = function () {
         const isSpecific = opt === 'specific';
         const isAllPaid = opt === 'all_paid';
         const isAllFree = opt === 'all_free';
+
+        const poolCompactText = document.getElementById('walkInPoolCompactText');
+        if (poolCompactText) {
+            if (opt === 'no_pool') {
+                poolCompactText.textContent = 'Pool: None';
+            } else if (isSpecific) {
+                poolCompactText.textContent = 'Pool: Specific Access';
+            } else if (isAllPaid) {
+                poolCompactText.textContent = 'Pool: All Paid';
+            } else if (isAllFree) {
+                poolCompactText.textContent = 'Pool: Free Promo';
+            }
+        }
 
         if (primaryGuestPoolWrap) {
             primaryGuestPoolWrap.style.display = isSpecific ? 'block' : 'none';
@@ -4655,7 +4810,7 @@ window.AppPage['staff_check_ins'] = function () {
             } else {
                 const freeAdults = adultCount - payingAdultCount;
                 const freeTxt = freeAdults > 0 ? ` • ${freeAdults} Free` : '';
-                adultEntranceFee.textContent = `₱${totalAdultFee.toFixed(2)} (${payingAdultCount} × ₱${adultRate.toFixed(2)}${freeTxt})`;
+                adultEntranceFee.textContent = `₱${formatPeso(totalAdultFee)} (${payingAdultCount} × ₱${formatPeso(adultRate)}${freeTxt})`;
             }
         }
         if (childEntranceFee) {
@@ -4664,7 +4819,7 @@ window.AppPage['staff_check_ins'] = function () {
             } else {
                 const freeChildren = childCount - payingChildCount;
                 const freeTxt = freeChildren > 0 ? ` • ${freeChildren} Free` : '';
-                childEntranceFee.textContent = `₱${totalChildFee.toFixed(2)} (${payingChildCount} × ₱${childRate.toFixed(2)}${freeTxt})`;
+                childEntranceFee.textContent = `₱${formatPeso(totalChildFee)} (${payingChildCount} × ₱${formatPeso(childRate)}${freeTxt})`;
             }
         }
         if (poolFee) {
@@ -4673,12 +4828,12 @@ window.AppPage['staff_check_ins'] = function () {
             } else if (poolOpt === 'all_free') {
                 poolFee.textContent = `₱0.00 (Free Promo • All ${totalGuests} guests)`;
             } else if (poolOpt === 'all_paid') {
-                poolFee.textContent = `₱${totalPoolFee.toFixed(2)} (${poolCount} × ₱${poolRate.toFixed(2)})`;
+                poolFee.textContent = `₱${formatPeso(totalPoolFee)} (${poolCount} × ₱${formatPeso(poolRate)})`;
             } else {
-                poolFee.textContent = `₱${totalPoolFee.toFixed(2)} (${poolCount} of ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+                poolFee.textContent = `₱${formatPeso(totalPoolFee)} (${poolCount} of ${totalGuests} guests × ₱${formatPeso(poolRate)})`;
             }
         }
-        if (totalEntranceFee) totalEntranceFee.textContent = `₱${totalEntrance.toFixed(2)}`;
+        if (totalEntranceFee) totalEntranceFee.textContent = `₱${formatPeso(totalEntrance)}`;
 
         return { totalEntrance, adultCount, childCount, payingAdultCount, payingChildCount, freeEntranceCount, totalPoolFee, poolCount, entranceOption: entranceOpt, poolOption: poolOpt, poolRate };
     };
@@ -4743,18 +4898,30 @@ window.AppPage['staff_check_ins'] = function () {
         const grandTotal = totalEntrance + amenitiesTotal + extraHeadTotal;
 
         if (walkInAmenitiesSubtotal) {
-            walkInAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+            walkInAmenitiesSubtotal.textContent = `₱${formatPeso(amenitiesTotal)}`;
         }
         const walkInExtraHeadSubtotal = document.getElementById('walkInExtraHeadSubtotal');
         const walkInExtraHeadFeeSummaryWrap = document.getElementById('walkInExtraHeadFeeSummaryWrap');
         if (walkInExtraHeadSubtotal) {
-            walkInExtraHeadSubtotal.textContent = `₱${extraHeadTotal.toFixed(2)}`;
+            walkInExtraHeadSubtotal.textContent = `₱${formatPeso(extraHeadTotal)}`;
         }
         if (walkInExtraHeadFeeSummaryWrap) {
             walkInExtraHeadFeeSummaryWrap.style.display = extraHeadTotal > 0 ? 'flex' : 'none';
         }
         if (reservationTotal) {
-            reservationTotal.textContent = `₱${grandTotal.toFixed(2)}`;
+            reservationTotal.textContent = `₱${formatPeso(grandTotal)}`;
+        }
+        const sidebarFeesBadge = document.getElementById('walkInSidebarFeesBadge');
+        if (sidebarFeesBadge) {
+            sidebarFeesBadge.textContent = `₱${formatPeso(grandTotal)}`;
+        }
+        const sidebarGrandTotalText = document.getElementById('walkInSidebarGrandTotalText');
+        if (sidebarGrandTotalText) {
+            sidebarGrandTotalText.textContent = `₱${formatPeso(grandTotal)}`;
+        }
+        const topGrandTotalText = document.getElementById('walkInTopGrandTotalText');
+        if (topGrandTotalText) {
+            topGrandTotalText.textContent = `₱${formatPeso(grandTotal)}`;
         }
         if (totalAmountInput) {
             totalAmountInput.value = grandTotal;
@@ -4764,6 +4931,15 @@ window.AppPage['staff_check_ins'] = function () {
         if (companionCountBadge) {
             const totalCompanions = companions.length + bulkCompanionGroups.reduce((acc, g) => acc + (parseInt(g.quantity) || 1), 0);
             companionCountBadge.textContent = `${totalCompanions} companion${totalCompanions === 1 ? '' : 's'}`;
+        }
+        const sidebarCompBadge = document.getElementById('walkInSidebarCompanionsBadge');
+        if (sidebarCompBadge) {
+            const totalCompanions = companions.length + bulkCompanionGroups.reduce((acc, g) => acc + (parseInt(g.quantity) || 1), 0);
+            sidebarCompBadge.textContent = totalCompanions;
+        }
+        const sidebarAmBadge = document.getElementById('walkInSidebarAmenitiesBadge');
+        if (sidebarAmBadge) {
+            sidebarAmBadge.textContent = selectedAmenities.length;
         }
 
         return { entranceFeeTotal: totalEntrance, amenitiesTotal, extraHeadTotal, extraHeadBreakdown, grandTotal };
@@ -4915,12 +5091,12 @@ window.AppPage['staff_check_ins'] = function () {
         if (payConfirmAdultFee) {
             const freeAdults = adultCount - payingAdultCount;
             const freeTxt = freeAdults > 0 ? ` (${freeAdults} Free)` : '';
-            payConfirmAdultFee.textContent = `₱${(payingAdultCount * adultRate).toFixed(2)} (${payingAdultCount} × ₱${adultRate.toFixed(2)}${freeTxt})`;
+            payConfirmAdultFee.textContent = `₱${formatPeso(payingAdultCount * adultRate)} (${payingAdultCount} × ₱${formatPeso(adultRate)}${freeTxt})`;
         }
         if (payConfirmChildFee) {
             const freeChildren = childCount - payingChildCount;
             const freeTxt = freeChildren > 0 ? ` (${freeChildren} Free)` : '';
-            payConfirmChildFee.textContent = `₱${(payingChildCount * childRate).toFixed(2)} (${payingChildCount} × ₱${childRate.toFixed(2)}${freeTxt})`;
+            payConfirmChildFee.textContent = `₱${formatPeso(payingChildCount * childRate)} (${payingChildCount} × ₱${formatPeso(childRate)}${freeTxt})`;
         }
         if (payConfirmPoolFee) {
             if (poolOpt === 'no_pool') {
@@ -4928,12 +5104,12 @@ window.AppPage['staff_check_ins'] = function () {
             } else if (poolOpt === 'all_free') {
                 payConfirmPoolFee.textContent = `₱0.00 (Free Promo • All ${totalGuests} guests)`;
             } else if (poolOpt === 'all_paid') {
-                payConfirmPoolFee.textContent = `₱${totalPoolFee.toFixed(2)} (All ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+                payConfirmPoolFee.textContent = `₱${formatPeso(totalPoolFee)} (All ${totalGuests} guests × ₱${formatPeso(poolRate)})`;
             } else {
-                payConfirmPoolFee.textContent = `₱${totalPoolFee.toFixed(2)} (Specific: ${poolCount} of ${totalGuests} guests × ₱${poolRate.toFixed(2)})`;
+                payConfirmPoolFee.textContent = `₱${formatPeso(totalPoolFee)} (Specific: ${poolCount} of ${totalGuests} guests × ₱${formatPeso(poolRate)})`;
             }
         }
-        if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${totalEntrance.toFixed(2)}`;
+        if (payConfirmEntranceTotal) payConfirmEntranceTotal.textContent = `₱${formatPeso(totalEntrance)}`;
 
         // 4. Amenities
         const payConfirmAmenitiesList = document.getElementById('payConfirmAmenitiesList');
@@ -4957,7 +5133,7 @@ window.AppPage['staff_check_ins'] = function () {
                             <strong class="text-hp-text font-bold">${am.amenity_name}</strong>
                             <span class="text-[0.7rem] text-hp-text-muted"> (${amSFmt} ${am.start_slot} → ${amEFmt} ${am.end_slot}${am.is_aircon ? ' • Aircon' : ''})</span>
                         </div>
-                        <strong class="text-hp-green font-bold">₱${amPrice.toFixed(2)}</strong>
+                        <strong class="text-hp-green font-bold">₱${formatPeso(amPrice)}</strong>
                     `;
                     payConfirmAmenitiesList.appendChild(item);
                 });
@@ -4965,7 +5141,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         if (payConfirmAmenitiesSubtotal) {
-            payConfirmAmenitiesSubtotal.textContent = `₱${amenitiesTotal.toFixed(2)}`;
+            payConfirmAmenitiesSubtotal.textContent = `₱${formatPeso(amenitiesTotal)}`;
         }
 
         // 4b. Extra Head Fee Breakdown
@@ -4978,13 +5154,13 @@ window.AppPage['staff_check_ins'] = function () {
             if (extraHeadTotal > 0) {
                 payConfirmExtraHeadWrap.style.display = 'grid';
                 if (payConfirmExtraHeadSubtotal) {
-                    payConfirmExtraHeadSubtotal.textContent = `₱${extraHeadTotal.toFixed(2)}`;
+                    payConfirmExtraHeadSubtotal.textContent = `₱${formatPeso(extraHeadTotal)}`;
                 }
                 if (payConfirmExtraHeadList) {
                     payConfirmExtraHeadList.innerHTML = extraHeadBreakdown.map(b => `
                         <div class="flex justify-between items-center border-b border-glass-border/20 pb-1">
-                            <span>${b.amenity_name} (${b.excess} extra guest${b.excess > 1 ? 's' : ''} × ₱${b.add_rate.toFixed(2)})</span>
-                            <strong class="text-[#e65100] dark:text-[#ffb74d]">₱${b.fee.toFixed(2)}</strong>
+                            <span>${b.amenity_name} (${b.excess} extra guest${b.excess > 1 ? 's' : ''} × ₱${formatPeso(b.add_rate)})</span>
+                            <strong class="text-[#e65100] dark:text-[#ffb74d]">₱${formatPeso(b.fee)}</strong>
                         </div>
                     `).join('');
                 }
@@ -4997,7 +5173,7 @@ window.AppPage['staff_check_ins'] = function () {
         const grandTotal = totalEntrance + amenitiesTotal + extraHeadTotal;
         const payConfirmGrandTotal = document.getElementById('payConfirmGrandTotal');
         if (payConfirmGrandTotal) {
-            payConfirmGrandTotal.textContent = `₱${grandTotal.toFixed(2)}`;
+            payConfirmGrandTotal.textContent = `₱${formatPeso(grandTotal)}`;
         }
 
         paymentConfirmModal.classList.add('is-open');
@@ -5037,6 +5213,8 @@ window.AppPage['staff_check_ins'] = function () {
 
             if (!primaryFirstName || !primaryLastName) {
                 alert('Please fill in the Primary Guest First Name and Last Name.');
+                switchWalkInTab('mainGuestTab');
+                checkMainGuestValidation();
                 document.getElementById('primary_first_name')?.focus();
                 return;
             }
@@ -5697,6 +5875,10 @@ window.AppPage['staff_check_ins'] = function () {
             walkInCompanionCountBadge.textContent = totalCount === 0 
                 ? '0 companions added' 
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} added`;
+        }
+        const sidebarCompBadge = document.getElementById('walkInSidebarCompanionsBadge');
+        if (sidebarCompBadge) {
+            sidebarCompBadge.textContent = totalCount;
         }
 
         const searchTerm = (companionSearchInput?.value || '').trim().toLowerCase();
@@ -6386,6 +6568,14 @@ window.AppPage['staff_check_ins'] = function () {
     const walkInCalStepHelp = document.getElementById('walkInCalStepHelp');
     const walkInCalApplyBtn = document.getElementById('walkInCalApplyBtn');
     const walkInCalCurrentBadge = document.getElementById('walkInCalCurrentBadge');
+    const walkInTopCheckoutTimeBadge = document.getElementById('walkInTopCheckoutTimeBadge');
+    const walkInCalCheckoutDateText = document.getElementById('walkInCalCheckoutDateText');
+    const walkInCalCheckoutSessionBadge = document.getElementById('walkInCalCheckoutSessionBadge');
+    const walkInCalCheckoutSessionIcon = document.getElementById('walkInCalCheckoutSessionIcon');
+    const walkInCalCheckoutSessionText = document.getElementById('walkInCalCheckoutSessionText');
+    const walkInCalStartSlotText = document.getElementById('walkInCalStartSlotText');
+    const walkInCalSpanDetailText = document.getElementById('walkInCalSpanDetailText');
+    const walkInCalDaysBadgeText = document.getElementById('walkInCalDaysBadgeText');
 
     const walkInCalState = {
         viewYear: new Date().getFullYear(),
@@ -6420,6 +6610,11 @@ window.AppPage['staff_check_ins'] = function () {
         walkInCalState.selectedEndDate = walkInSchedule.endDate || todayStr;
         walkInCalState.selectedEndSlot = walkInSchedule.endSlot || currentServerSession;
 
+        // If checkin is today nighttime and selected checkout is today, force nighttime checkout
+        if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime') {
+            walkInCalState.selectedEndSlot = 'Nighttime';
+        }
+
         const [y, m] = walkInCalState.selectedStartDate.split('-');
         walkInCalState.viewYear = parseInt(y);
         walkInCalState.viewMonth = parseInt(m) - 1;
@@ -6442,9 +6637,23 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Session pills toggle
     const syncWalkInSessionPills = () => {
+        const isSameDayNighttime = (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime');
+
         document.querySelectorAll('#walkInEndSlotGroup [data-slot-val]').forEach(btn => {
             const val = btn.dataset.slotVal;
-            btn.dataset.active = (val === walkInCalState.selectedEndSlot) ? 'true' : 'false';
+            const isActive = (val === walkInCalState.selectedEndSlot);
+            btn.dataset.active = isActive ? 'true' : 'false';
+            btn.classList.toggle('is-active', isActive);
+
+            if (isSameDayNighttime && val === 'Daytime') {
+                btn.disabled = true;
+                btn.classList.add('is-disabled');
+                btn.title = 'Daytime checkout not available for same-day nighttime check-in';
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('is-disabled');
+                btn.removeAttribute('title');
+            }
         });
     };
 
@@ -6464,18 +6673,49 @@ window.AppPage['staff_check_ins'] = function () {
     const updateWalkInCalModalSummary = () => {
         const counts = calculateWalkInSlots(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, walkInCalState.selectedEndSlot);
         const sFmt = formatDisplayDate(walkInCalState.selectedStartDate);
-        const eFmt = formatDisplayDate(walkInCalState.selectedEndDate);
+        const checkout = getCheckoutDateAndDisplay(walkInCalState.selectedEndDate, walkInCalState.selectedEndSlot);
+        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+
+        // Update prominent top summary cards
+        const walkInTopCheckInText = document.getElementById('walkInTopCheckInText');
+        const walkInTopCheckoutFullText = document.getElementById('walkInTopCheckoutFullText');
+        const inTime = walkInCalState.selectedStartSlot === 'Nighttime' ? 'Nighttime (8:00 PM)' : 'Daytime (8:00 AM)';
+        const outDesc = (walkInCalState.selectedEndSlot === 'Nighttime') ? '8:00 AM (Next Morning)' : '5:00 PM (Daytime)';
+        if (walkInTopCheckInText) {
+            walkInTopCheckInText.textContent = `${sFmt} · ${inTime}`;
+        }
+        if (walkInTopCheckoutFullText) {
+            walkInTopCheckoutFullText.textContent = `${checkout.displayDate} · ${outDesc}`;
+        }
+
+        // Update footer and badges
+        if (walkInCalCheckoutDateText) {
+            walkInCalCheckoutDateText.textContent = `Check-Out: ${checkout.displayDate} · ${outDesc}`;
+        }
+        if (walkInCalCheckoutSessionText) {
+            walkInCalCheckoutSessionText.textContent = checkout.sessionLabel;
+        }
+        if (walkInCalStartSlotText) {
+            walkInCalStartSlotText.textContent = walkInCalState.selectedStartSlot;
+        }
+        if (walkInCalSpanDetailText) {
+            walkInCalSpanDetailText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
+        }
+        if (walkInCalSummaryScheduleText) {
+            walkInCalSummaryScheduleText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime) • Check-In: ${sFmt}`;
+        }
+        if (walkInCalDaysBadgeText) {
+            walkInCalDaysBadgeText.textContent = `${spanLabel} Stay`;
+        }
+        if (walkInTopCheckoutTimeBadge) {
+            walkInTopCheckoutTimeBadge.textContent = `${checkout.displayDate} · ${checkout.time}`;
+        }
 
         if (walkInCalSummaryText) {
-            if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate) {
-                walkInCalSummaryText.textContent = `Today: ${sFmt} (${walkInCalState.selectedStartSlot}${walkInCalState.selectedStartSlot !== walkInCalState.selectedEndSlot ? ' to ' + walkInCalState.selectedEndSlot : ''})`;
-            } else {
-                walkInCalSummaryText.textContent = `Check-In Today (${walkInCalState.selectedStartSlot}) → Check-Out ${eFmt} (${walkInCalState.selectedEndSlot})`;
-            }
+            walkInCalSummaryText.textContent = `Check-In Today (${walkInCalState.selectedStartSlot}) → Check-Out ${checkout.textSummary}`;
         }
         if (walkInCalSpanText) {
-            const span = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
-            walkInCalSpanText.textContent = `${span} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
+            walkInCalSpanText.textContent = `${spanLabel} Stay (${counts.dayCount} Daytime, ${counts.nightCount} Nighttime)`;
         }
         if (walkInCalCurrentBadge) {
             walkInCalCurrentBadge.textContent = `${counts.daysSpan}D Stay`;
@@ -6619,6 +6859,209 @@ window.AppPage['staff_check_ins'] = function () {
     const amenityModal = document.getElementById('amenityModal');
     const amenityCloseButtons = document.querySelectorAll('[data-close-amenity-modal="true"]');
     const amenityModalStayBadge = document.getElementById('amenityModalStayBadge');
+    const walkInAmenityCategorySelect = document.getElementById('walkInAmenityCategorySelect');
+    const walkInAmenityStatusFilters = document.getElementById('walkInAmenityStatusFilters');
+    const walkInAmenityFilterSummaryText = document.getElementById('walkInAmenityFilterSummaryText');
+
+    let cachedAmenityList = [];
+    let amenityStatusFilter = 'available'; // Default is 'available' per user request!
+    let amenityCategoryFilter = 'all';
+
+    // Categorization helper: groups like Payags, A-Houses, Cottages, etc.
+    const categorizeAmenity = (name = '') => {
+        const trimmed = (name || '').trim();
+        const lower = trimmed.toLowerCase();
+        if (lower.startsWith('a-house') || lower.startsWith('ahouse') || lower.includes('a-house')) return 'A-Houses';
+        if (lower.startsWith('payag') || lower.includes('payag')) return 'Payags';
+        if (lower.startsWith('cottage') || lower.includes('cottage')) return 'Cottages';
+        if (lower.includes('function') || lower.includes('hall')) return 'Function Halls';
+        if (lower.includes('room') || lower.includes('suite')) return 'Rooms';
+        
+        const words = trimmed.split(/[\s\-_0-9]/).filter(Boolean);
+        if (words.length > 0 && words[0].length > 1) {
+            const base = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
+            return base.endsWith('s') ? base : `${base}s`;
+        }
+        return 'Other Amenities';
+    };
+
+    const syncStatusFilterPills = () => {
+        const pills = document.querySelectorAll('#walkInAmenityStatusFilters [data-filter-status]');
+        pills.forEach(pill => {
+            const st = pill.dataset.filterStatus;
+            if (st === amenityStatusFilter) {
+                pill.className = 'walkin-filter-pill is-active cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition-all bg-hp-green text-white shadow-xs';
+            } else {
+                pill.className = 'walkin-filter-pill cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10';
+            }
+        });
+    };
+
+    // Render Categorized Amenities inside Choose Amenities Modal
+    const renderCategorizedAmenities = () => {
+        const container = document.getElementById('amenitiesContainer');
+        if (!container) return;
+
+        const counts = calculateWalkInSlots(walkInSchedule.startDate, walkInSchedule.endDate, walkInSchedule.startSlot, walkInSchedule.endSlot);
+        const spanLabel = counts.daysSpan === 1 ? '1 Day' : `${counts.daysSpan} Days`;
+
+        // Filter list based on active filters
+        let filtered = cachedAmenityList;
+        if (amenityStatusFilter === 'available') {
+            filtered = filtered.filter(a => a.is_available);
+        } else if (amenityStatusFilter === 'occupied') {
+            filtered = filtered.filter(a => !a.is_available);
+        }
+
+        if (amenityCategoryFilter !== 'all') {
+            filtered = filtered.filter(a => categorizeAmenity(a.amenities_name) === amenityCategoryFilter);
+        }
+
+        // Update footer summary text
+        if (walkInAmenityFilterSummaryText) {
+            const statusLabel = amenityStatusFilter === 'available' ? 'available' : (amenityStatusFilter === 'occupied' ? 'occupied' : 'total');
+            const catLabel = amenityCategoryFilter === 'all' ? 'all categories' : amenityCategoryFilter;
+            walkInAmenityFilterSummaryText.textContent = `Showing ${filtered.length} ${statusLabel} in ${catLabel}`;
+        }
+
+        // Empty state
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="py-12 text-center text-hp-text-muted">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-hp-green/10 text-xl text-hp-green">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <div class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">No amenities found</div>
+                    <p class="text-xs text-hp-text-muted mt-1 max-w-[340px] mx-auto">No amenities match "${amenityStatusFilter}" in "${amenityCategoryFilter === 'all' ? 'All Categories' : amenityCategoryFilter}".</p>
+                    <button type="button" class="mt-3.5 cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all" id="walkInResetAmenityFiltersBtn">
+                        Show All Available Amenities
+                    </button>
+                </div>
+            `;
+            const resetBtn = document.getElementById('walkInResetAmenityFiltersBtn');
+            resetBtn?.addEventListener('click', () => {
+                amenityStatusFilter = 'available';
+                amenityCategoryFilter = 'all';
+                if (walkInAmenityCategorySelect) walkInAmenityCategorySelect.value = 'all';
+                syncStatusFilterPills();
+                renderCategorizedAmenities();
+            });
+            return;
+        }
+
+        // Group by category
+        const groups = {};
+        filtered.forEach(amenity => {
+            const cat = categorizeAmenity(amenity.amenities_name);
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(amenity);
+        });
+
+        // Preferred order of categories: A-Houses, Payags, Cottages, Rooms, Function Halls, Others
+        const preferredOrder = ['A-Houses', 'Payags', 'Cottages', 'Rooms', 'Function Halls'];
+        const sortedCategories = Object.keys(groups).sort((a, b) => {
+            const idxA = preferredOrder.indexOf(a);
+            const idxB = preferredOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        container.innerHTML = '';
+
+        sortedCategories.forEach(cat => {
+            const items = groups[cat];
+            const groupWrap = document.createElement('div');
+            groupWrap.className = 'amenity-category-section space-y-2.5';
+
+            // Category Header
+            const availableCount = items.filter(a => a.is_available).length;
+            const header = document.createElement('div');
+            header.className = 'flex items-center justify-between pb-1.5 border-b border-glass-border/60 sticky top-0 bg-hp-cream/90 dark:bg-[rgba(30,30,30,0.95)] backdrop-blur-sm z-10';
+            header.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-hp-green dark:text-emerald-400">${cat}</span>
+                    <span class="rounded-full bg-hp-green/15 px-2 py-0.2 text-[0.68rem] font-bold text-hp-green dark:text-emerald-400">${items.length}</span>
+                </div>
+                <span class="text-[0.7rem] text-hp-text-muted">${availableCount} available</span>
+            `;
+            groupWrap.appendChild(header);
+
+            // Cards Grid
+            const cardsGrid = document.createElement('div');
+            cardsGrid.className = 'grid gap-2.5';
+
+            items.forEach(amenity => {
+                const isAvailable = Boolean(amenity.is_available);
+                const isAlreadySelected = selectedAmenities.some(a => String(a.amenity_id) === String(amenity.id));
+                const hasFreeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
+                const hasFreePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
+
+                const dayP = parseFloat(amenity.daytime_price) || 0;
+                const nightP = parseFloat(amenity.nighttime_price) || 0;
+                const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+                const card = document.createElement('div');
+                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
+                    ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/10 shadow-xs' : 'border-glass-border bg-glass hover:border-hp-green/60 hover:bg-white/60 dark:hover:bg-white/5')
+                    : 'border-red-300/40 bg-red-50/25 opacity-70 dark:border-red-500/20 dark:bg-red-500/5'
+                }`;
+                card.dataset.amenityId = amenity.id;
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
+                            ${isAvailable
+                                ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
+                                : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Occupied</span>'
+                            }
+                            ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
+                            ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
+                        </div>
+                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
+                            <span>Capacity: ${amenity.minimum_capacity || 1}–${amenity.maximum_capacity || 10} guests</span>
+                            <span>•</span>
+                            <span>Day: ₱${formatPeso(dayP)}</span>
+                            <span>•</span>
+                            <span>Night: ₱${formatPeso(nightP)}</span>
+                        </div>
+                        ${isAvailable ? `
+                            <div class="mt-1 text-xs font-semibold text-hp-green dark:text-emerald-400">
+                                Stay Total: ₱${formatPeso(calculatedPrice)} <span class="font-normal text-hp-text-muted">(${spanLabel} • ${counts.dayCount}D ${counts.nightCount}N)</span>
+                            </div>
+                        ` : `
+                            <div class="mt-1 text-xs text-red-500/80 font-medium">
+                                Booked for this stay window
+                            </div>
+                        `}
+                    </div>
+                    <div>
+                        ${isAlreadySelected ? `
+                            <button type="button" class="rounded-xl border border-hp-green bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-xs cursor-default flex items-center gap-1.5" disabled>
+                                <i class="bi bi-check-lg"></i>
+                                <span>Added</span>
+                            </button>
+                        ` : (isAvailable ? `
+                            <button type="button" class="walkin-add-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white shadow-xs" data-amenity-id="${amenity.id}">
+                                + Add Amenity
+                            </button>
+                        ` : `
+                            <button type="button" class="rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text-muted cursor-not-allowed opacity-60" disabled>
+                                Unavailable
+                            </button>
+                        `)}
+                    </div>
+                `;
+
+                cardsGrid.appendChild(card);
+            });
+
+            groupWrap.appendChild(cardsGrid);
+            container.appendChild(groupWrap);
+        });
+    };
 
     const loadAvailableAmenitiesForStay = async () => {
         const container = document.getElementById('amenitiesContainer');
@@ -6658,81 +7101,62 @@ window.AppPage['staff_check_ins'] = function () {
             const res = await fetch(`/api/amenities/availability?${params.toString()}`);
             if (!res.ok) throw new Error('Failed to fetch availability');
             const data = await res.json();
-            const list = data.amenities || [];
+            cachedAmenityList = data.amenities || [];
 
-            if (list.length === 0) {
-                container.innerHTML = '<p class="guest-empty px-4 py-8 text-center text-hp-text-muted">No amenities found in the system.</p>';
-                return;
+            // Update Counts on pills
+            const availableCount = cachedAmenityList.filter(a => a.is_available).length;
+            const occupiedCount = cachedAmenityList.filter(a => !a.is_available).length;
+            const allCount = cachedAmenityList.length;
+
+            const countAvailEl = document.getElementById('walkInCountAvailable');
+            const countOccEl = document.getElementById('walkInCountOccupied');
+            const countAllEl = document.getElementById('walkInCountAll');
+            if (countAvailEl) countAvailEl.textContent = availableCount;
+            if (countOccEl) countOccEl.textContent = occupiedCount;
+            if (countAllEl) countAllEl.textContent = allCount;
+
+            // Populate category dropdown
+            if (walkInAmenityCategorySelect) {
+                const uniqueCategories = Array.from(new Set(cachedAmenityList.map(a => categorizeAmenity(a.amenities_name)))).sort();
+                const currentVal = walkInAmenityCategorySelect.value;
+                walkInAmenityCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+                uniqueCategories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    walkInAmenityCategorySelect.appendChild(opt);
+                });
+                if (uniqueCategories.includes(currentVal)) {
+                    walkInAmenityCategorySelect.value = currentVal;
+                    amenityCategoryFilter = currentVal;
+                } else {
+                    walkInAmenityCategorySelect.value = 'all';
+                    amenityCategoryFilter = 'all';
+                }
             }
 
-            container.innerHTML = '';
-            list.forEach(amenity => {
-                const isAvailable = Boolean(amenity.is_available);
-                const isAlreadySelected = selectedAmenities.some(a => String(a.amenity_id) === String(amenity.id));
-                const hasAc = amenity.daytime_aircon_price !== null || amenity.nighttime_aircon_price !== null;
-                const hasFreeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
-                const hasFreePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
-
-                const dayP = parseFloat(amenity.daytime_price) || 0;
-                const nightP = parseFloat(amenity.nighttime_price) || 0;
-                const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
-
-                const card = document.createElement('div');
-                card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
-                    ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/5' : 'border-glass-border bg-glass hover:border-hp-green')
-                    : 'border-red-300/40 bg-red-50/20 opacity-60 dark:border-red-500/20 dark:bg-red-500/5'
-                    }`;
-                card.dataset.amenityId = amenity.id;
-
-                card.innerHTML = `
-                    <div class="flex-1 min-w-[200px]">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
-                            ${isAvailable
-                        ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
-                        : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Booked for this stay</span>'
-                    }
-                            ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
-                            ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
-                            ${hasAc ? '<span class="rounded bg-blue-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-blue-600 dark:text-blue-400">AC Option</span>' : ''}
-                        </div>
-                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
-                            <span>Capacity: ${amenity.minimum_capacity || 1}–${amenity.maximum_capacity || 10} guests</span>
-                            <span>•</span>
-                            <span>Day: ₱${dayP.toFixed(2)}</span>
-                            <span>•</span>
-                            <span>Night: ₱${nightP.toFixed(2)}</span>
-                        </div>
-                        ${isAvailable ? `
-                            <div class="mt-1.5 text-xs font-semibold text-hp-green">
-                                Stay Total: ₱${calculatedPrice.toFixed(2)} <span class="font-normal text-hp-text-muted">(${spanLabel} • ${counts.dayCount}D ${counts.nightCount}N)</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div>
-                        ${isAlreadySelected ? `
-                            <button type="button" class="rounded-xl border border-hp-green bg-hp-green px-3.5 py-1.5 text-xs font-bold text-white cursor-default" disabled>
-                                <i class="bi bi-check-lg me-1"></i>Added
-                            </button>
-                        ` : (isAvailable ? `
-                            <button type="button" class="walkin-add-amenity-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-3.5 py-1.5 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white" data-amenity-id="${amenity.id}">
-                                + Add Amenity
-                            </button>
-                        ` : `
-                            <button type="button" class="rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text-muted cursor-not-allowed opacity-60" disabled>
-                                Unavailable
-                            </button>
-                        `)}
-                    </div>
-                `;
-
-                container.appendChild(card);
-            });
+            syncStatusFilterPills();
+            renderCategorizedAmenities();
         } catch (err) {
             console.error('Failed to load available amenities:', err);
             container.innerHTML = '<p class="guest-empty px-4 py-8 text-center text-red-500">Failed to load amenity availability. Please close and retry.</p>';
         }
     };
+
+    // Filter listeners
+    walkInAmenityStatusFilters?.addEventListener('click', (e) => {
+        const pill = e.target.closest('[data-filter-status]');
+        if (pill) {
+            amenityStatusFilter = pill.dataset.filterStatus;
+            syncStatusFilterPills();
+            renderCategorizedAmenities();
+        }
+    });
+
+    walkInAmenityCategorySelect?.addEventListener('change', (e) => {
+        amenityCategoryFilter = e.target.value;
+        renderCategorizedAmenities();
+    });
 
     const openAmenityModal = () => {
         if (!amenityModal) return;
@@ -6756,7 +7180,10 @@ window.AppPage['staff_check_ins'] = function () {
         if (addBtn) {
             const amenityId = addBtn.dataset.amenityId;
             const allAmenities = window.ALL_AMENITIES || [];
-            const amenity = allAmenities.find(a => String(a.id) === String(amenityId));
+            let amenity = allAmenities.find(a => String(a.id) === String(amenityId));
+            if (!amenity && cachedAmenityList) {
+                amenity = cachedAmenityList.find(a => String(a.id) === String(amenityId));
+            }
             if (!amenity) return;
 
             // Check if already added
@@ -6822,6 +7249,11 @@ window.AppPage['staff_check_ins'] = function () {
         selectedAmenitiesContainer.innerHTML = '';
         amenitiesHiddenInputs.innerHTML = '';
 
+        const sidebarAmBadge = document.getElementById('walkInSidebarAmenitiesBadge');
+        if (sidebarAmBadge) {
+            sidebarAmBadge.textContent = selectedAmenities.length;
+        }
+
         if (selectedAmenities.length === 0) {
             if (noAmenitiesNotice) noAmenitiesNotice.style.display = 'block';
             selectedAmenitiesContainer.appendChild(noAmenitiesNotice);
@@ -6832,12 +7264,11 @@ window.AppPage['staff_check_ins'] = function () {
         if (noAmenitiesNotice) noAmenitiesNotice.style.display = 'none';
 
         selectedAmenities.forEach((am, index) => {
-            const hasAcOption = am.daytime_aircon_price !== null || am.nighttime_aircon_price !== null;
             const sFmt = formatDisplayDate(am.start_date);
             const eFmt = formatDisplayDate(am.end_date);
             const spanLabel = am.total_days === 1 ? '1 Day' : `${am.total_days} Days`;
             const maxCapText = (am.max_cap !== null && am.max_cap !== undefined && am.max_cap !== '')
-                ? `Max ${am.max_cap} guests${parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : ''}`
+                ? `Max ${am.max_cap} guests${parseFloat(am.additional_per_head) > 0 ? ` (+₱${formatPeso(am.additional_per_head)}/extra head)` : ''}`
                 : 'No limit';
 
             const card = document.createElement('div');
@@ -6855,8 +7286,8 @@ window.AppPage['staff_check_ins'] = function () {
                         <div class="text-xs text-hp-text-muted">Capacity: ${maxCapText}</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-sm font-extrabold text-hp-green">₱${parseFloat(am.price_at_booking).toFixed(2)}</div>
-                        <button type="button" class="walkin-remove-amenity-btn text-[0.75rem] font-bold text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
+                        <div class="text-sm font-extrabold text-hp-green">₱${formatPeso(am.price_at_booking)}</div>
+                        <button type="button" class="walkin-remove-amenity-btn text-[0.75rem] font-bold text-red-500 hover:text-red-700 transition-colors cursor-pointer" data-index="${index}">
                             Remove
                         </button>
                     </div>
@@ -6869,27 +7300,15 @@ window.AppPage['staff_check_ins'] = function () {
                         </svg>
                         <span class="font-semibold">${sFmt} (${am.start_slot}) → ${eFmt} (${am.end_slot}) • ${spanLabel} (${am.day_count}D ${am.night_count}N)</span>
                     </div>
-                    <button type="button" class="walkin-customize-amenity-btn cursor-pointer rounded-lg border border-hp-green/40 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all" data-index="${index}">
-                        Customize Stay
-                    </button>
                 </div>
-
-                ${hasAcOption ? `
-                    <div class="mt-2 flex items-center gap-2 border-t border-glass-border/40 pt-2 text-xs">
-                        <label class="flex cursor-pointer items-center gap-1.5 text-hp-text">
-                            <input type="checkbox" class="walkin-card-ac-toggle h-3.5 w-3.5 accent-hp-green" data-index="${index}" ${am.is_aircon ? 'checked' : ''}>
-                            <span class="font-semibold">Air-Conditioned</span>
-                        </label>
-                    </div>
-                ` : ''}
             `;
 
             selectedAmenitiesContainer.appendChild(card);
 
             // Hidden inputs for backend submission
             const pricingTypeStr = am.total_days > 1
-                ? `Continuous Stay (${am.total_days}D)${am.is_aircon ? ' Aircon' : ''}`
-                : ((am.start_slot === 'Daytime' && am.end_slot === 'Nighttime') ? (am.is_aircon ? 'DayToNight Aircon' : 'DayToNight') : (am.is_aircon ? `${am.start_slot} Aircon` : am.start_slot));
+                ? `Continuous Stay (${am.total_days}D)`
+                : ((am.start_slot === 'Daytime' && am.end_slot === 'Nighttime') ? 'DayToNight' : am.start_slot);
 
             amenitiesHiddenInputs.insertAdjacentHTML('beforeend', `
                 <input type="hidden" name="selected_amenities[${index}][amenity_id]" value="${am.amenity_id}">
@@ -6899,7 +7318,7 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="selected_amenities[${index}][end_slot]" value="${am.end_slot}">
                 <input type="hidden" name="selected_amenities[${index}][pricing_type]" value="${pricingTypeStr}">
                 <input type="hidden" name="selected_amenities[${index}][price_at_booking]" value="${am.price_at_booking}">
-                <input type="hidden" name="selected_amenities[${index}][is_aircon]" value="${am.is_aircon ? '1' : '0'}">
+                <input type="hidden" name="selected_amenities[${index}][is_aircon]" value="0">
                 <input type="hidden" name="selected_amenities[${index}][quantity]" value="${am.quantity || 1}">
             `);
         });
@@ -7093,12 +7512,12 @@ window.AppPage['staff_check_ins'] = function () {
         }
         if (walkInAmenityMathText) {
             const parts = [];
-            if (counts.dayCount > 0) parts.push(`${counts.dayCount}D × ₱${dayP.toFixed(2)}`);
-            if (counts.nightCount > 0) parts.push(`${counts.nightCount}N × ₱${nightP.toFixed(2)}`);
+            if (counts.dayCount > 0) parts.push(`${counts.dayCount}D × ₱${formatPeso(dayP)}`);
+            if (counts.nightCount > 0) parts.push(`${counts.nightCount}N × ₱${formatPeso(nightP)}`);
             walkInAmenityMathText.textContent = parts.join(' + ') || '0 slots';
         }
         if (walkInAmenityTotalPrice) {
-            walkInAmenityTotalPrice.textContent = `₱${totalP.toFixed(2)}`;
+            walkInAmenityTotalPrice.textContent = `₱${formatPeso(totalP)}`;
         }
     };
 
