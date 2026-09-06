@@ -136,4 +136,47 @@ class OnlineBookingReservationAmenitiesTest extends TestCase
         $this->assertCount(1, $resData['reservation_guests']);
         $this->assertEquals('John', $resData['reservation_guests'][0]['customer']['first_name']);
     }
+
+    public function test_create_intent_validates_booker_info()
+    {
+        // 1. Invalid booker name with numbers
+        $res = $this->postJson('/reservation/create-intent', [
+            'booker_name' => 'John123',
+            'phone' => '09123456789',
+            'email' => 'john@example.com',
+            'number_of_guests' => 2,
+        ]);
+        $res->assertStatus(422);
+        $res->assertJsonValidationErrors(['booker_name']);
+
+        // 2. Invalid booker name with symbols
+        $res = $this->postJson('/reservation/create-intent', [
+            'booker_name' => 'John @Doe!',
+            'phone' => '09123456789',
+            'email' => 'john@example.com',
+            'number_of_guests' => 2,
+        ]);
+        $res->assertStatus(422);
+        $res->assertJsonValidationErrors(['booker_name']);
+
+        // 3. Invalid phone number (letters / invalid length)
+        $res = $this->postJson('/reservation/create-intent', [
+            'booker_name' => 'John Doe',
+            'phone' => '12345',
+            'email' => 'john@example.com',
+            'number_of_guests' => 2,
+        ]);
+        $res->assertStatus(422);
+        $res->assertJsonValidationErrors(['phone']);
+
+        // 4. Invalid email format
+        $res = $this->postJson('/reservation/create-intent', [
+            'booker_name' => 'John Doe',
+            'phone' => '09123456789',
+            'email' => 'not-an-email',
+            'number_of_guests' => 2,
+        ]);
+        $res->assertStatus(422);
+        $res->assertJsonValidationErrors(['email']);
+    }
 }

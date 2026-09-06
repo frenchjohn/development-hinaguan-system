@@ -1319,9 +1319,9 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
 
 Route::post('/reservation/create-intent', function (Request $request, \App\Services\PayMongoService $payMongo) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
     $data = $request->validate([
-        'booker_name' => ['required', 'string', 'max:255'],
-        'phone' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'email', 'max:255'],
+        'booker_name' => ['required', 'string', 'max:255', 'regex:/^[\pL\s]+$/u'],
+        'phone' => ['required', 'string', 'regex:/^(\+?63\s?|0)?9[\d\s-]{8,12}$/'],
+        'email' => ['required', 'string', 'email', 'max:255'],
         'number_of_guests' => ['required', 'integer', 'min:1'],
         'check_in' => ['nullable', 'date'],
         'reservation_date' => ['nullable', 'date'],
@@ -1343,7 +1343,20 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
         'amenity_id' => ['nullable', 'string'],
         'pricing_type' => ['nullable', 'string'],
         'price_at_booking' => ['nullable', 'numeric'],
+    ], [
+        'booker_name.regex' => 'The booker name may only contain letters and spaces (no numbers or symbols).',
+        'phone.regex' => 'The phone number must be a valid Philippine mobile number (e.g. +63 9XX XXX XXXX or 09XXXXXXXXX).',
+        'email.email' => 'Please enter a valid email address.',
     ]);
+
+    $cleanPhoneDigits = preg_replace('/\D/', '', $data['phone']);
+    if (str_starts_with($cleanPhoneDigits, '09') && strlen($cleanPhoneDigits) === 11) {
+        $data['phone'] = '+63' . substr($cleanPhoneDigits, 1);
+    } elseif (str_starts_with($cleanPhoneDigits, '639') && strlen($cleanPhoneDigits) === 12) {
+        $data['phone'] = '+' . $cleanPhoneDigits;
+    } elseif (str_starts_with($cleanPhoneDigits, '9') && strlen($cleanPhoneDigits) === 10) {
+        $data['phone'] = '+63' . $cleanPhoneDigits;
+    }
 
     $reservationDate = $data['reservation_date'] ?? $data['check_in'] ?? now()->toDateString();
     $endDate = $data['end_date'] ?? $reservationDate;

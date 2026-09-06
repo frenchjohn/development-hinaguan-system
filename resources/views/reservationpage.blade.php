@@ -854,7 +854,7 @@
                                 </div>
                                 <div class="rp-info-modal__rate-slot" id="infoModalNighttimeSlot">
                                     <div class="rp-info-modal__rate-label">
-                                        <i class="bi bi-moon-stars-fill text-indigo-300"></i> Overnight Stay
+                                        <i class="bi bi-moon-stars-fill text-indigo-600"></i> Overnight Stay
                                     </div>
                                     <div class="rp-info-modal__rate-value" id="infoModalNightPrice">&#8369;0</div>
                                     <div class="rp-info-modal__rate-original" id="infoModalOrigNightPrice" style="display: none;">&#8369;0</div>
@@ -916,30 +916,55 @@
 
                         <div class="rp-modal__summary">
 
-                            <div class="rp-modal__meta" id="modalMetaBlock">
-                                <div class="rp-modal__meta-item">
-                                    <span><i class="bi bi-calendar-event me-1"></i>Stay Duration</span>
-                                    <strong id="modalDate"></strong>
+                            {{-- Master Stay Schedule Block (Visible in both single & multi-amenity mode) --}}
+                            <div class="rp-modal__stay-card" id="modalStayScheduleBlock">
+                                <div class="rp-stay-card__header">
+                                    <span class="rp-stay-card__title">
+                                        <i class="bi bi-calendar2-range me-1 text-emerald-700"></i> Reservation Stay Schedule
+                                    </span>
+                                    <span class="rp-stay-card__badge" id="modalStayBadge">1 Day · Overnight</span>
                                 </div>
-                                <div class="rp-modal__meta-item">
-                                    <span><i class="bi bi-clock-history me-1"></i>Time Slots</span>
-                                    <strong id="modalSlot"></strong>
+                                <div class="rp-stay-card__grid">
+                                    <div class="rp-stay-col rp-stay-col--in">
+                                        <span class="rp-stay-col__tag">
+                                            <i class="bi bi-box-arrow-in-right me-1"></i> CHECK-IN
+                                        </span>
+                                        <strong class="rp-stay-col__date" id="modalScheduleCheckInDate">—</strong>
+                                        <span class="rp-stay-col__time" id="modalScheduleCheckInTime">—</span>
+                                    </div>
+                                    <div class="rp-stay-card__arrow" aria-hidden="true">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </div>
+                                    <div class="rp-stay-col rp-stay-col--out">
+                                        <span class="rp-stay-col__tag">
+                                            <i class="bi bi-box-arrow-right me-1"></i> CHECK-OUT
+                                        </span>
+                                        <strong class="rp-stay-col__date" id="modalScheduleCheckOutDate">—</strong>
+                                        <span class="rp-stay-col__time" id="modalScheduleCheckOutTime">—</span>
+                                    </div>
                                 </div>
-                                <div class="rp-modal__meta-item">
-                                    <span><i class="bi bi-people me-1"></i>Capacity</span>
-                                    <strong id="modalCapacity"></strong>
+                                <div class="rp-stay-card__footer">
+                                    <div class="rp-stay-card__footer-item">
+                                        <i class="bi bi-people me-1 text-emerald-700"></i>
+                                        <span id="modalScheduleCapacity">Capacity: —</span>
+                                    </div>
+                                    <div class="rp-stay-card__footer-item" id="modalScheduleRatesWrap">
+                                        <i class="bi bi-tag me-1 text-emerald-700"></i>
+                                        <span id="modalScheduleRates">—</span>
+                                    </div>
                                 </div>
-                                <div class="rp-modal__meta-item" id="modalRatesBlock">
-                                    <span><i class="bi bi-tag me-1"></i>Rates</span>
-                                    <strong id="modalRates">—</strong>
-                                </div>
+                                {{-- Hidden elements for backward compatibility --}}
+                                <span id="modalDate" style="display: none;"></span>
+                                <span id="modalSlot" style="display: none;"></span>
+                                <span id="modalCapacity" style="display: none;"></span>
+                                <span id="modalRates" style="display: none;"></span>
+                                <div id="modalRatesBlock" style="display: none;"></div>
                             </div>
 
                             {{-- Multi-Amenity Selected Items Container --}}
                             <div id="modalMultiAmenityContainer" class="rp-modal__multi-container" style="display: none;">
                                 <div class="rp-modal__section-header">
-                                    <h4 class="rp-modal__section-title">Selected Amenities & Schedules</h4>
-                                    <span class="rp-modal__section-hint">Click &ldquo;Edit Dates&rdquo; to customize stay</span>
+                                    <h4 class="rp-modal__section-title">Selected Amenities</h4>
                                 </div>
                                 <div id="modalMultiAmenityList" class="rp-selected-amenities-list"></div>
                             </div>
@@ -992,35 +1017,41 @@
 
                             <input type="hidden" name="total_days" id="bookingTotalDays">
 
-                            <label>
+                            <label for="bookingBookerName">
 
-                                Booker name
+                                <span>Booker name <span class="rp-label-hint">(letters only)</span></span>
 
-                                <input type="text" name="booker_name" placeholder="Enter booker name" required>
-
-                            </label>
-
-                            <label>
-
-                                Phone
-
-                                <input type="tel" name="phone" placeholder="Enter phone number" required>
+                                <input type="text" name="booker_name" id="bookingBookerName" placeholder="Enter booker name (letters only)" autocomplete="name" pattern="^[a-zA-Z\s]+$" title="Booker name must contain letters only (no numbers or symbols)" required>
 
                             </label>
 
-                            <label>
+                            <label for="bookingPhoneInput">
 
-                                Email
+                                <span>Phone <span class="rp-label-hint">(Philippine mobile &middot; +63)</span></span>
 
-                                <input type="email" name="email" placeholder="Enter email address" required>
+                                <div class="rp-phone-input-group">
+
+                                    <span class="rp-phone-prefix" title="Philippines (+63)">+63</span>
+
+                                    <input type="tel" name="phone" id="bookingPhoneInput" class="rp-phone-field" placeholder="912 345 6789" maxlength="12" inputmode="numeric" autocomplete="tel-national" required>
+
+                                </div>
 
                             </label>
 
-                            <label>
+                            <label for="bookingEmailInput">
 
-                                Number of guests
+                                <span>Email <span class="rp-label-hint">(valid email address)</span></span>
 
-                                <input type="number" name="number_of_guests" min="1" required>
+                                <input type="email" name="email" id="bookingEmailInput" placeholder="Enter email address (e.g. name@domain.com)" autocomplete="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address" required>
+
+                            </label>
+
+                            <label for="bookingGuestCount">
+
+                                <span>Number of guests</span>
+
+                                <input type="number" name="number_of_guests" id="bookingGuestCount" min="1" required>
 
                             </label>
 
@@ -1388,7 +1419,7 @@
                                     <small class="rp-session-time" id="dpCheckInDaytimeTimeLabel">{{ $daytimeStartFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-dp-start-slot="Nighttime" id="dpStartSlotNighttime">
-                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-600 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="dpCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
@@ -1407,7 +1438,7 @@
                                     <small class="rp-session-time" id="dpCheckOutDaytimeTimeLabel">{{ $daytimeEndFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-dp-end-slot="Nighttime" id="dpEndSlotNighttime">
-                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-600 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="dpCheckOutOvernightTimeLabel">{{ $nighttimeEndFormatted }} next day</small>
                                 </button>
                             </div>
@@ -1508,7 +1539,7 @@
                                     <small class="rp-session-time" id="avCheckInDaytimeTimeLabel">{{ $daytimeStartFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-av-start-slot="Nighttime" id="avStartSlotNighttime">
-                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-600 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="avCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
@@ -1527,7 +1558,7 @@
                                     <small class="rp-session-time" id="avCheckOutDaytimeTimeLabel">{{ $daytimeEndFormatted }}</small>
                                 </button>
                                 <button type="button" class="rp-session-btn" data-av-end-slot="Nighttime" id="avEndSlotNighttime">
-                                    <span><i class="bi bi-moon-stars-fill text-indigo-300 me-1"></i> Overnight</span>
+                                    <span><i class="bi bi-moon-stars-fill text-indigo-600 me-1"></i> Overnight</span>
                                     <small class="rp-session-time" id="avCheckOutOvernightTimeLabel">{{ $nighttimeEndFormatted }} next day</small>
                                 </button>
                             </div>
@@ -1604,6 +1635,14 @@
                         </div>
 
                         <div class="rp-schedule-summary-box">
+                            <div class="rp-schedule-summary-row">
+                                <span class="rp-schedule-summary-label">Check-in:</span>
+                                <strong id="editScheduleCheckInPreview" class="text-emerald-800">—</strong>
+                            </div>
+                            <div class="rp-schedule-summary-row">
+                                <span class="rp-schedule-summary-label">Check-out:</span>
+                                <strong id="editScheduleCheckOutPreview" class="text-amber-800">—</strong>
+                            </div>
                             <div class="rp-schedule-summary-row">
                                 <span class="rp-schedule-summary-label">Stay Duration:</span>
                                 <strong id="editScheduleDurationText">1 Day (1D 0N)</strong>
@@ -1721,9 +1760,9 @@
 
                             </div>
 
-                            <div class="rp-modal__success-notice" style="background: rgba(234, 179, 8, 0.15); border-color: rgba(234, 179, 8, 0.5); text-align: left;">
+                            <div class="rp-modal__success-notice" style="background: #fefce8; border: 1px solid #fde047; color: #374151; text-align: left;">
 
-                                <strong style="color: #fde047; margin-bottom: 0.35rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> IMPORTANT CHECK-IN NOTICE:</strong>
+                                <strong style="color: #854d0e; margin-bottom: 0.35rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> IMPORTANT CHECK-IN NOTICE:</strong>
                                 Please <strong>bring your Entry QR Code</strong> (on your phone or printed). It is <strong>required upon arrival</strong> to automatically verify your identity and confirm that you are the rightful owner of this reservation for express check-in.
 
                             </div>
@@ -1843,14 +1882,13 @@
 
         {{-- ── Terms & Policy Modal (Clean, Plain White) ── --}}
         <div class="rp-modal rp-terms-modal" id="termsPolicyModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="termsPolicyTitle">
-            <div class="rp-modal__backdrop" id="termsPolicyBackdrop" data-close-terms-modal></div>
+            <div class="rp-modal__backdrop" id="termsPolicyBackdrop"></div>
             <div class="rp-terms-modal__panel">
                 <div class="rp-terms-modal__header">
                     <div>
                         <h2 id="termsPolicyTitle" class="rp-terms-modal__title">Terms &amp; Policies</h2>
                         <p class="rp-terms-modal__subtitle">Please review our reservation terms and park policies before proceeding.</p>
                     </div>
-                    <button type="button" class="rp-terms-modal__close" id="closeTermsPolicyModalBtn" data-close-terms-modal aria-label="Close modal">&times;</button>
                 </div>
 
                 <div class="rp-terms-modal__content">

@@ -186,9 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Proceed button click
+        // Proceed button click (only way to close the terms modal)
         proceedTermsBtn?.addEventListener('click', () => {
-            if (agreeTermsCheckbox && !agreeTermsCheckbox.checked) {
+            if (!agreeTermsCheckbox || !agreeTermsCheckbox.checked) {
                 return;
             }
             closeTermsModal();
@@ -202,15 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Close buttons and backdrop
-        document.querySelectorAll('[data-close-terms-modal]').forEach(btn => {
-            btn.addEventListener('click', closeTermsModal);
-        });
-
-        // ESC key handler
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && termsPolicyModal.classList.contains('is-open')) {
-                closeTermsModal();
+        // Strictly prevent clicking outside the modal panel from closing it
+        if (termsPolicyBackdrop) {
+            termsPolicyBackdrop.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        }
+        termsPolicyModal.addEventListener('click', (e) => {
+            if (e.target === termsPolicyModal || e.target === termsPolicyBackdrop) {
+                e.preventDefault();
+                e.stopPropagation();
             }
         });
     }
@@ -396,6 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedCards = [];
 
     let multiSelectionChoices = {};
+
+    let isProceedingToBookingFromReview = false;
 
     let occupiedAmenityIds = [];
 
@@ -1700,7 +1704,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderBookingSelection = (card, choice) => {
         const modalMultiAmenityContainer = document.getElementById('modalMultiAmenityContainer');
         const modalMultiAmenityList = document.getElementById('modalMultiAmenityList');
-        const modalMetaBlock = document.getElementById('modalMetaBlock');
+        const modalStayScheduleBlock = document.getElementById('modalStayScheduleBlock');
+        const modalScheduleCheckInDate = document.getElementById('modalScheduleCheckInDate');
+        const modalScheduleCheckInTime = document.getElementById('modalScheduleCheckInTime');
+        const modalScheduleCheckOutDate = document.getElementById('modalScheduleCheckOutDate');
+        const modalScheduleCheckOutTime = document.getElementById('modalScheduleCheckOutTime');
+        const modalStayBadge = document.getElementById('modalStayBadge');
+        const modalScheduleCapacity = document.getElementById('modalScheduleCapacity');
+        const modalScheduleRatesWrap = document.getElementById('modalScheduleRatesWrap');
+        const modalScheduleRates = document.getElementById('modalScheduleRates');
 
         const sDate = mainStartDate || dateInput.value;
         const eDate = mainEndDate || sDate;
@@ -1709,40 +1721,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const isAircon = choice === 'with';
 
+        // Keep master stay schedule block visible in both single and multi-amenity mode
+        if (modalStayScheduleBlock) modalStayScheduleBlock.style.display = 'block';
+
+        let effectiveFormSDate = sDate;
+        let effectiveFormEDate = eDate;
+        let effectiveFormSSlot = sSlot;
+        let effectiveFormESlot = eSlot;
+
         if (multiSelectionEnabled && selectedCards.length > 0) {
-            if (modalMetaBlock) modalMetaBlock.style.display = selectedCards.length > 1 ? 'none' : 'grid';
             if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'block';
             if (airconChoice) airconChoice.style.display = 'none';
             if (modalDescription) modalDescription.innerHTML = '';
 
-            // Render per-amenity summary cards with "Edit Dates" button
+            // All selected amenities strictly share the fixed reservation dates and session slots
+            selectedCards.forEach(c => {
+                const amenityId = c.dataset.amenityId;
+                amenityStayConfig[amenityId] = {
+                    startDate: sDate,
+                    endDate: eDate,
+                    startSlot: sSlot,
+                    endSlot: eSlot,
+                    choice: multiSelectionChoices[amenityId] || 'without'
+                };
+            });
+
+            effectiveFormSDate = sDate;
+            effectiveFormEDate = eDate;
+            effectiveFormSSlot = sSlot;
+            effectiveFormESlot = eSlot;
+
+            const masterPreview = computeCheckInOutPreview(
+                sDate,
+                eDate,
+                sSlot,
+                eSlot,
+                (sDate !== eDate || sSlot !== eSlot)
+            );
+
+            const totalMinCap = selectedCards.reduce((acc, c) => acc + Number(c.dataset.minCapacity || 1), 0);
+            const totalMaxCap = selectedCards.reduce((acc, c) => acc + Number(c.dataset.maxCapacity || c.dataset.minCapacity || 1), 0);
+
+            if (modalScheduleCheckInDate) modalScheduleCheckInDate.textContent = masterPreview.checkInDate;
+            if (modalScheduleCheckInTime) modalScheduleCheckInTime.textContent = `${masterPreview.checkInTime} ${masterPreview.checkInSession}`;
+            if (modalScheduleCheckOutDate) modalScheduleCheckOutDate.textContent = masterPreview.checkOutDate;
+            if (modalScheduleCheckOutTime) modalScheduleCheckOutTime.textContent = `${masterPreview.checkOutTime} ${masterPreview.checkOutSession}`;
+            if (modalStayBadge) modalStayBadge.textContent = masterPreview.summary;
+            if (modalScheduleCapacity) modalScheduleCapacity.textContent = `Total Capacity: ${totalMinCap}–${totalMaxCap} guests (${selectedCards.length} amenities)`;
+            if (modalScheduleRatesWrap) modalScheduleRatesWrap.style.display = 'none';
+
+            // Also update legacy compatibility elements
+            if (modalDate) modalDate.textContent = (sDate === eDate) ? `${masterPreview.checkInDate} (1 Day)` : `${masterPreview.checkInDate} – ${masterPreview.checkOutDate}`;
+            if (modalSlot) modalSlot.textContent = `${sSlot} → ${eSlot}`;
+            if (modalCapacity) modalCapacity.textContent = `${totalMinCap}–${totalMaxCap} guests`;
+
+            // Render per-amenity summary cards with detailed check-in / check-out (Fixed Date mode)
             if (modalMultiAmenityList) {
                 modalMultiAmenityList.innerHTML = selectedCards.map(c => {
                     const amenityId = c.dataset.amenityId;
-                    if (!amenityStayConfig[amenityId]) {
-                        amenityStayConfig[amenityId] = {
-                            startDate: sDate,
-                            endDate: eDate,
-                            startSlot: sSlot,
-                            endSlot: eSlot,
-                            choice: multiSelectionChoices[amenityId] || 'without'
-                        };
-                    }
-                    const cfg = amenityStayConfig[amenityId];
+                    const cfg = amenityStayConfig[amenityId] || {};
                     const hasAc = c.dataset.hasAircon === '1';
                     const itemChoice = cfg.choice === 'with';
 
-                    const { dayCount, nightCount, totalDays } = calculateContinuousSlots(cfg.startDate, cfg.endDate, cfg.startSlot, cfg.endSlot);
-                    const itemPrice = getAmenityContinuousPrice(c, cfg.choice, cfg.startDate, cfg.endDate, cfg.startSlot, cfg.endSlot);
-
-                    const sObj = new Date(cfg.startDate + 'T00:00:00');
-                    const eObj = new Date(cfg.endDate + 'T00:00:00');
-                    const sDateFormatted = sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const eDateFormatted = eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-                    const dateRangeDisplay = (cfg.startDate === cfg.endDate)
-                        ? `${sDateFormatted} · 1 Day (${cfg.startSlot === cfg.endSlot ? cfg.startSlot : cfg.startSlot + ' → ' + cfg.endSlot})`
-                        : `${sDateFormatted} (${cfg.startSlot}) → ${eDateFormatted} (${cfg.endSlot}) · ${totalDays} Days (${dayCount}D ${nightCount}N)`;
+                    const itemPrice = getAmenityContinuousPrice(c, cfg.choice || 'without', sDate, eDate, sSlot, eSlot);
+                    const itemPreview = masterPreview;
 
                     const packageBadge = hasAc
                         ? (itemChoice ? '<span class="rp-item-badge rp-item-badge--ac">With Aircon</span>' : '<span class="rp-item-badge">Standard</span>')
@@ -1756,34 +1798,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${packageBadge}
                                 </div>
                                 <div class="rp-selected-amenity-meta">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
-                                    <span>${dateRangeDisplay}</span>
+                                    <span>${c.dataset.minCapacity || 1}–${c.dataset.maxCapacity || 2} guests</span>
                                 </div>
                             </div>
                             <div class="rp-selected-amenity-actions">
                                 <span class="rp-selected-amenity-price" id="cfgPrice_${amenityId}">₱${itemPrice.toFixed(2)}</span>
-                                <button type="button" class="rp-edit-schedule-btn" data-edit-amenity-id="${amenityId}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                    </svg>
-                                    Edit Dates
-                                </button>
                             </div>
                         </div>
                     `;
                 }).join('');
-
-                // Attach click listeners to "Edit Dates" buttons
-                modalMultiAmenityList.querySelectorAll('[data-edit-amenity-id]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const amenityId = btn.dataset.editAmenityId;
-                        openEditAmenityScheduleModal(amenityId);
-                    });
-                });
             }
 
             const grandTotal = getSelectionTotal();
@@ -1797,14 +1823,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
             // Single Amenity Mode
-            if (modalMetaBlock) modalMetaBlock.style.display = 'grid';
             if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'none';
 
+            const singlePreview = computeCheckInOutPreview(sDate, eDate, sSlot, eSlot, (sDate !== eDate || sSlot !== eSlot));
             const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
             const singlePrice = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
 
             const dayPrice = Number(card.dataset.daytimePrice || 0);
             const nightPrice = Number(card.dataset.nighttimePrice || 0);
+
+            if (modalScheduleCheckInDate) modalScheduleCheckInDate.textContent = singlePreview.checkInDate;
+            if (modalScheduleCheckInTime) modalScheduleCheckInTime.textContent = `${singlePreview.checkInTime} ${singlePreview.checkInSession}`;
+            if (modalScheduleCheckOutDate) modalScheduleCheckOutDate.textContent = singlePreview.checkOutDate;
+            if (modalScheduleCheckOutTime) modalScheduleCheckOutTime.textContent = `${singlePreview.checkOutTime} ${singlePreview.checkOutSession}`;
+            if (modalStayBadge) modalStayBadge.textContent = singlePreview.summary;
+            if (modalScheduleCapacity) modalScheduleCapacity.textContent = `Capacity: ${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
+
+            if (modalScheduleRatesWrap && modalScheduleRates) {
+                modalScheduleRatesWrap.style.display = 'inline-flex';
+                if (dayPrice > 0 && nightPrice > 0 && dayPrice !== nightPrice) {
+                    modalScheduleRates.textContent = `Rates: Daytime ₱${dayPrice.toLocaleString()} · Overnight ₱${nightPrice.toLocaleString()}`;
+                } else {
+                    modalScheduleRates.textContent = `Rate: ₱${(dayPrice || nightPrice).toLocaleString()}`;
+                }
+            }
+
+            // Legacy elements
+            if (modalDate) modalDate.textContent = (sDate === eDate) ? `${singlePreview.checkInDate} (1 Day)` : `${singlePreview.checkInDate} – ${singlePreview.checkOutDate} (${totalDays} Days)`;
+            if (modalSlot) modalSlot.textContent = (sDate === eDate && sSlot === eSlot) ? sSlot : `${sSlot} → ${eSlot} (${dayCount}D ${nightCount}N)`;
+            if (modalCapacity) modalCapacity.textContent = `${card.dataset.minCapacity}–${card.dataset.maxCapacity} guests`;
 
             modalPriceLabel.textContent = 'Package price';
             modalPriceValue.textContent = `₱${singlePrice.toFixed(2)}`;
@@ -1833,18 +1880,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookingEndSlot = document.getElementById('bookingEndSlot');
         const bookingTotalDays = document.getElementById('bookingTotalDays');
 
-        const { totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+        const { totalDays: finalTotalDays } = calculateContinuousSlots(effectiveFormSDate, effectiveFormEDate, effectiveFormSSlot, effectiveFormESlot);
 
-        if (checkInInput) checkInInput.value = sDate;
-        if (checkOutInput) checkOutInput.value = eDate;
-        if (bookingReservationDate) bookingReservationDate.value = sDate;
-        if (bookingEndDate) bookingEndDate.value = eDate;
-        if (bookingStartSlot) bookingStartSlot.value = sSlot;
-        if (bookingEndSlot) bookingEndSlot.value = eSlot;
-        if (bookingTotalDays) bookingTotalDays.value = totalDays;
+        if (checkInInput) checkInInput.value = effectiveFormSDate;
+        if (checkOutInput) checkOutInput.value = effectiveFormEDate;
+        if (bookingReservationDate) bookingReservationDate.value = effectiveFormSDate;
+        if (bookingEndDate) bookingEndDate.value = effectiveFormEDate;
+        if (bookingStartSlot) bookingStartSlot.value = effectiveFormSSlot;
+        if (bookingEndSlot) bookingEndSlot.value = effectiveFormESlot;
+        if (bookingTotalDays) bookingTotalDays.value = finalTotalDays;
 
         const guestInput = bookingForm.querySelector('input[name="number_of_guests"]');
-        if (guestInput) guestInput.value = card.dataset.minCapacity || '1';
+        if (guestInput) {
+            const currentGuestVal = parseInt(guestInput.value, 10) || 0;
+            const minAllowed = (multiSelectionEnabled && selectedCards.length > 0)
+                ? selectedCards.reduce((acc, c) => acc + Number(c.dataset.minCapacity || 1), 0)
+                : Number(card.dataset.minCapacity || 1);
+            if (currentGuestVal < minAllowed) {
+                guestInput.value = minAllowed;
+            }
+        }
     };
 
     const updateSelectionSummary = () => {
@@ -2184,6 +2239,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayPrice = choice === 'with' ? Number(card.dataset.daytimeAirconPrice || card.dataset.daytimePrice || 0) : Number(card.dataset.daytimePrice || 0);
         const nightPrice = choice === 'with' ? Number(card.dataset.nighttimeAirconPrice || card.dataset.nighttimePrice || 0) : Number(card.dataset.nighttimePrice || 0);
 
+        const editScheduleCheckInPreview = document.getElementById('editScheduleCheckInPreview');
+        const editScheduleCheckOutPreview = document.getElementById('editScheduleCheckOutPreview');
+        const itemPreview = computeCheckInOutPreview(sDate, eDate, sSlot, eSlot, (sDate !== eDate || sSlot !== eSlot));
+
+        if (editScheduleCheckInPreview) {
+            editScheduleCheckInPreview.textContent = `${itemPreview.checkInDate} at ${itemPreview.checkInTime} ${itemPreview.checkInSession}`;
+        }
+        if (editScheduleCheckOutPreview) {
+            editScheduleCheckOutPreview.textContent = `${itemPreview.checkOutDate} at ${itemPreview.checkOutTime} ${itemPreview.checkOutSession}`;
+        }
+
         if (editScheduleDurationText) {
             editScheduleDurationText.textContent = (sDate === eDate && sSlot === eSlot)
                 ? `1 Day (${sSlot})`
@@ -2375,13 +2441,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalBenefits) {
             modalBenefits.innerHTML = '';
             if (card.dataset.isAircon === '1') {
-                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/70 px-2.5 py-1 text-xs font-bold text-cyan-300"><i class="bi bi-snow"></i> Aircon Included</span>';
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-cyan-300 bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-800"><i class="bi bi-snow"></i> Aircon Included</span>';
             }
             if (card.dataset.freePool === '1') {
-                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-blue-500/40 bg-blue-950/70 px-2.5 py-1 text-xs font-bold text-blue-300"><i class="bi bi-water"></i> Free Pool Access</span>';
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-800"><i class="bi bi-water"></i> Free Pool Access</span>';
             }
             if (card.dataset.freeEntrance === '1') {
-                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-xs font-bold text-emerald-300"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+                modalBenefits.innerHTML += '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
             }
         }
 
@@ -2629,9 +2695,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const shouldProceedToBooking = Boolean(isProceedingToBookingFromReview || (selectedCards && selectedCards.length > 0));
+            isProceedingToBookingFromReview = false;
+            const targetToOpen = (selectedCards && selectedCards.length > 0) ? selectedCards[0] : null;
+
             closeDatePickerModal();
             refreshAvailability();
             fetchWeatherForDate(mainStartDate);
+
+            if (shouldProceedToBooking && targetToOpen) {
+                setTimeout(() => {
+                    openModal(targetToOpen);
+                }, 150);
+            }
         });
     }
 
@@ -2755,7 +2831,6 @@ document.addEventListener('DOMContentLoaded', () => {
         syncDateSections();
         calendarSourceCard = null;
         calendarAmenityId = null;
-        activeAmenity = null;
     };
 
     const renderDatePickerDays = () => {
@@ -3131,7 +3206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (!isAircon && !freePool && !freeEntrance) {
-                infoModalBenefits.innerHTML = '<span class="text-xs text-white/50 italic">Standard park guidelines apply.</span>';
+                infoModalBenefits.innerHTML = '<span class="text-xs text-gray-500 italic">Standard park guidelines apply.</span>';
             }
         }
 
@@ -3271,6 +3346,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // After reviewing amenities, if no date selected yet, open date picker
             if (!dateInput || !dateInput.value) {
+                isProceedingToBookingFromReview = true;
                 openDatePickerModal();
                 return;
             }
@@ -3913,6 +3989,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // Restrict Booker Name: letters only, no numbers, no symbols
+    const bookingBookerNameInput = document.getElementById('bookingBookerName') || (bookingForm ? bookingForm.querySelector('input[name="booker_name"]') : null);
+    if (bookingBookerNameInput) {
+        bookingBookerNameInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'].includes(e.key)) return;
+            if (!/^[a-zA-Z\s]$/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+        bookingBookerNameInput.addEventListener('input', (e) => {
+            const cur = e.target.value;
+            const cleaned = cur.replace(/[^a-zA-Z\s]/g, '').replace(/\s{2,}/g, ' ');
+            if (cur !== cleaned) {
+                e.target.value = cleaned;
+            }
+        });
+    }
+
+    // Restrict Phone: Philippine mobile number (only numbers, +63 prefix handled)
+    const bookingPhoneInput = document.getElementById('bookingPhoneInput') || (bookingForm ? bookingForm.querySelector('input[name="phone"]') : null);
+    if (bookingPhoneInput) {
+        bookingPhoneInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'].includes(e.key)) return;
+            if (!/^[0-9]$/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+        bookingPhoneInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            // Strip leading 63 or 0 if pasted
+            if (val.startsWith('639')) {
+                val = val.slice(2);
+            } else if (val.startsWith('09')) {
+                val = val.slice(1);
+            }
+            if (val.length > 10) {
+                val = val.slice(0, 10);
+            }
+            if (val.length > 6) {
+                e.target.value = `${val.slice(0, 3)} ${val.slice(3, 6)} ${val.slice(6)}`;
+            } else if (val.length > 3) {
+                e.target.value = `${val.slice(0, 3)} ${val.slice(3)}`;
+            } else {
+                e.target.value = val;
+            }
+        });
+    }
+
+    // Email Input
+    const bookingEmailInput = document.getElementById('bookingEmailInput') || (bookingForm ? bookingForm.querySelector('input[name="email"]') : null);
+    if (bookingEmailInput) {
+        bookingEmailInput.addEventListener('blur', (e) => {
+            e.target.value = e.target.value.trim();
+        });
+    }
+
     bookingForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -3924,6 +4058,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const formData = new FormData(bookingForm);
+
+        // Validate Booker Name: letters only, no numbers or symbols
+        const rawBookerName = (formData.get('booker_name') || '').trim();
+        if (!rawBookerName) {
+            bookingNotice.textContent = 'Please enter the booker name.';
+            if (bookingBookerNameInput) bookingBookerNameInput.focus();
+            return;
+        }
+        if (!/^[a-zA-Z\s]+$/.test(rawBookerName) || rawBookerName.replace(/\s/g, '').length < 2) {
+            bookingNotice.textContent = 'Booker name must contain letters only (no numbers or symbols).';
+            if (bookingBookerNameInput) bookingBookerNameInput.focus();
+            return;
+        }
+
+        // Validate Phone: Philippine mobile starting with 9 (10 digits)
+        const rawPhoneDigits = (formData.get('phone') || '').replace(/\D/g, '');
+        let mobileTenDigits = rawPhoneDigits;
+        if (mobileTenDigits.startsWith('639')) {
+            mobileTenDigits = mobileTenDigits.slice(2);
+        } else if (mobileTenDigits.startsWith('09')) {
+            mobileTenDigits = mobileTenDigits.slice(1);
+        }
+        if (!mobileTenDigits.startsWith('9') || mobileTenDigits.length !== 10) {
+            bookingNotice.textContent = 'Please enter a valid 10-digit Philippine mobile number starting with 9 (e.g. +63 912 345 6789).';
+            if (bookingPhoneInput) bookingPhoneInput.focus();
+            return;
+        }
+        const fullPhoneNumber = `+63${mobileTenDigits}`;
+
+        // Validate Email: valid email format
+        const rawEmail = (formData.get('email') || '').trim();
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!rawEmail || !emailRegex.test(rawEmail)) {
+            bookingNotice.textContent = 'Please enter a valid email address (e.g. name@example.com).';
+            if (bookingEmailInput) bookingEmailInput.focus();
+            return;
+        }
 
         const sDate = mainStartDate || dateInput.value;
         const eDate = mainEndDate || sDate;
@@ -3938,20 +4109,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const amenityId = card.dataset.amenityId;
                 const cfg = amenityStayConfig[amenityId] || {};
                 const choice = cfg.choice || multiSelectionChoices[amenityId] || 'without';
-                const itemSDate = cfg.startDate || sDate;
-                const itemEDate = cfg.endDate || eDate || itemSDate;
-                const itemSSlot = cfg.startSlot || sSlot;
-                const itemESlot = cfg.endSlot || eSlot;
-                const price = getAmenityContinuousPrice(card, choice, itemSDate, itemEDate, itemSSlot, itemESlot);
-                const { dayCount, nightCount } = calculateContinuousSlots(itemSDate, itemEDate, itemSSlot, itemESlot);
-                const pricingType = choice === 'with' ? `${itemSSlot} Aircon` : itemSSlot;
+                const price = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
+                const { dayCount, nightCount } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+                const pricingType = choice === 'with' ? `${sSlot} Aircon` : sSlot;
 
                 return {
                     amenity_id: amenityId,
-                    start_date: itemSDate,
-                    end_date: itemEDate,
-                    start_slot: itemSSlot,
-                    end_slot: itemESlot,
+                    start_date: sDate,
+                    end_date: eDate,
+                    start_slot: sSlot,
+                    end_slot: eSlot,
                     pricing_type: pricingType,
                     price_at_booking: price,
                     day_slots_count: dayCount,
@@ -3978,9 +4145,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const payload = {
-            booker_name: formData.get('booker_name'),
-            phone: formData.get('phone'),
-            email: formData.get('email'),
+            booker_name: rawBookerName,
+            phone: fullPhoneNumber,
+            email: rawEmail,
             number_of_guests: Number(formData.get('number_of_guests')),
             reservation_date: sDate,
             end_date: eDate,
@@ -4046,7 +4213,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateOverlayScrollLock();
                     }
                 } else {
-                    bookingNotice.textContent = result.message || 'Reservation could not be initialized.';
+                    const firstError = result.errors ? Object.values(result.errors).flat()[0] : null;
+                    bookingNotice.textContent = firstError || result.message || 'Reservation could not be initialized.';
                 }
             }
         } catch (error) {
