@@ -193,173 +193,30 @@
 
     <main class="rp-main">
 
-        {{-- ── Hero ── --}}
-
-        <section class="rp-hero">
-
-            <div class="rp-hero__content">
-
-                <div class="rp-hero__intro" data-animate="fade-up">
-
-                    <a href="{{ route('home') }}" class="rp-back-button">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-
-                        </svg>
-
-                        Back to Homepage
-
-                    </a>
-
-                    <span class="rp-label">Book Your Visit</span>
-
-                    <h1 class="rp-title">Reserve Your Stay at <em>Hinaguan</em></h1>
-
-                    <p class="rp-desc">Experience serenity by the riverside with nature-crafted cottages and cozy A-houses. Select your date below, review our simple guidelines, and secure your spot today.</p>
-
-                </div>
-
-
-
-                <div class="rp-policies" data-animate="fade-up" data-delay="150">
-
-                    <div class="rp-policy-card">
-                        <div class="rp-policy-card__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="m9 12 2 2 4-4"/>
-                            </svg>
-                        </div>
-                        <div class="rp-policy-card__text">
-                            <strong>Instant Reservation</strong>
-                            <span>Automatically reserved immediately upon booking — no waiting for confirmation.</span>
-                        </div>
-                    </div>
-
-                    <div class="rp-policy-card">
-                        <div class="rp-policy-card__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect width="20" height="14" x="2" y="5" rx="2"/>
-                                <line x1="2" x2="22" y1="10" y2="10"/>
-                            </svg>
-                        </div>
-                        <div class="rp-policy-card__text">
-                            <strong>50% Downpayment</strong>
-                            <span>A 50% initial downpayment is required to lock in and secure your reserved slot.</span>
-                        </div>
-                    </div>
-
-                    <div class="rp-policy-card">
-                        <div class="rp-policy-card__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/>
-                            </svg>
-                        </div>
-                        <div class="rp-policy-card__text">
-                            <strong>Strictly No Refund</strong>
-                            <span>All payments, reservation fees, and deposits are final and non-refundable.</span>
-                        </div>
-                    </div>
-
-                    <div class="rp-policy-card">
-                        <div class="rp-policy-card__icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                            </svg>
-                        </div>
-                        <div class="rp-policy-card__text">
-                            <strong>Active Contact Info</strong>
-                            <span>Please provide active contact details so our staff can reach you with stay updates.</span>
-                        </div>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        {{-- ── Scroll-to-booking hint (floats until the booking area is in view) ── --}}
-
-        <button type="button" class="rp-scroll-hint" id="scrollHint" aria-label="Scroll down to the booking section">
-
-            <span class="rp-scroll-hint__label">Start booking below</span>
-
-            <span class="rp-scroll-hint__arrow" aria-hidden="true">
-
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-
+        {{-- ── Sticky Top-Left Navigation Bar ── --}}
+        <div class="rp-sticky-top-bar">
+            <a href="{{ route('home') }}" class="rp-back-button" title="Back to Homepage">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
+                <span>Back to Homepage</span>
+            </a>
 
-            </span>
-
-        </button>
+            <button type="button" class="rp-terms-trigger-btn" id="openTermsPolicyBtn" data-open-terms-modal title="View Park Rules and Reservation Policies">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Terms &amp; Policies</span>
+            </button>
+        </div>
 
 
 
         {{-- ── Main Booking Content ── --}}
         <div class="rp-booking-content" id="mainBookingContent">
 
-            {{-- ── Date selection CTA (compact banner) ── --}}
-
-            <section class="rp-date-cta" data-animate="fade-up" data-delay="100" id="dateCtaSection">
-
-            <div class="rp-date-cta__inner">
-
-                <div class="rp-date-cta__left">
-
-                    <span class="rp-date-cta__icon" aria-hidden="true">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-
-                        </svg>
-
-                    </span>
-
-                    <div class="rp-date-cta__text">
-
-                        <h2>Ready to reserve?</h2>
-
-                        <p>Pick your visit date first to browse available spots, or tap any amenity below.</p>
-
-                    </div>
-
-                </div>
-
-                <div class="rp-date-cta__action">
-
-                    <button type="button" id="pickDateBtn" class="rp-date-cta__button">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-
-                        </svg>
-
-                        <span>Pick a Date</span>
-
-                    </button>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
         {{-- ── Unified Reservation Date, Weather & Stay Panel ── --}}
-
-        <section class="rp-booking-panel" data-animate="fade-up" data-delay="100" id="dateControlsSection" hidden>
+        <section class="rp-booking-panel" data-animate="fade-up" data-delay="100" id="dateControlsSection">
 
             <div class="rp-bp-card">
 
@@ -413,9 +270,9 @@
 
                                 <div class="rp-weather-preview__content">
 
-                                    <strong id="weatherCondition">Checking forecast...</strong>
+                                    <strong id="weatherCondition">No date selected</strong>
 
-                                    <span id="weatherTemp"></span>
+                                    <span id="weatherTemp">Select a date above to view forecast</span>
 
                                 </div>
 
@@ -423,7 +280,7 @@
 
                             <p class="rp-weather-preview__empty" id="weatherEmpty" hidden>Weather forecast is available for up to 3 days ahead.</p>
 
-                            <div class="rp-weather-preview__skeleton" id="weatherSkeleton">
+                            <div class="rp-weather-preview__skeleton" id="weatherSkeleton" hidden>
 
                                 <div class="rp-weather-preview__skeleton-icon"></div>
 
@@ -933,7 +790,10 @@
 
                 <ul class="rp-selection-sheet__list" id="selectionSummaryList"></ul>
 
-                <button type="button" id="selectionContinueBtn" class="rp-booking-form__button">Continue booking</button>
+                <button type="button" id="selectionContinueBtn" class="rp-booking-form__button">
+                    <span>Proceed to Booking</span>
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </button>
 
             </div>
 
@@ -1020,10 +880,7 @@
                                 Close
                             </button>
                             <button type="button" class="rp-booking-form__button rp-info-modal__book-btn" id="infoModalBookBtn">
-                                <span>Book this amenity</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                                </svg>
+                                <span><i class="bi bi-check2-circle me-1"></i> Select this amenity</span>
                             </button>
                         </div>
                     </div>
@@ -1060,15 +917,22 @@
                         <div class="rp-modal__summary">
 
                             <div class="rp-modal__meta" id="modalMetaBlock">
-
-                                <div class="rp-modal__meta-item"><span>Stay Duration</span><strong id="modalDate"></strong></div>
-
-                                <div class="rp-modal__meta-item"><span>Time Slots</span><strong id="modalSlot"></strong></div>
-
-                                <div class="rp-modal__meta-item"><span>Capacity</span><strong id="modalCapacity"></strong></div>
-
-                                <div class="rp-modal__meta-item" id="modalRatesBlock"><span>Rates</span><strong id="modalRates">—</strong></div>
-
+                                <div class="rp-modal__meta-item">
+                                    <span><i class="bi bi-calendar-event me-1"></i>Stay Duration</span>
+                                    <strong id="modalDate"></strong>
+                                </div>
+                                <div class="rp-modal__meta-item">
+                                    <span><i class="bi bi-clock-history me-1"></i>Time Slots</span>
+                                    <strong id="modalSlot"></strong>
+                                </div>
+                                <div class="rp-modal__meta-item">
+                                    <span><i class="bi bi-people me-1"></i>Capacity</span>
+                                    <strong id="modalCapacity"></strong>
+                                </div>
+                                <div class="rp-modal__meta-item" id="modalRatesBlock">
+                                    <span><i class="bi bi-tag me-1"></i>Rates</span>
+                                    <strong id="modalRates">—</strong>
+                                </div>
                             </div>
 
                             {{-- Multi-Amenity Selected Items Container --}}
@@ -1975,6 +1839,78 @@
 
             </div>
 
+        </div>
+
+        {{-- ── Terms & Policy Modal (Clean, Plain White) ── --}}
+        <div class="rp-modal rp-terms-modal" id="termsPolicyModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="termsPolicyTitle">
+            <div class="rp-modal__backdrop" id="termsPolicyBackdrop" data-close-terms-modal></div>
+            <div class="rp-terms-modal__panel">
+                <div class="rp-terms-modal__header">
+                    <div>
+                        <h2 id="termsPolicyTitle" class="rp-terms-modal__title">Terms &amp; Policies</h2>
+                        <p class="rp-terms-modal__subtitle">Please review our reservation terms and park policies before proceeding.</p>
+                    </div>
+                    <button type="button" class="rp-terms-modal__close" id="closeTermsPolicyModalBtn" data-close-terms-modal aria-label="Close modal">&times;</button>
+                </div>
+
+                <div class="rp-terms-modal__content">
+                    <section class="rp-terms-section">
+                        <h3>1. Reservation &amp; Downpayment Terms</h3>
+                        <ul>
+                            <li><strong>Instant Reservation:</strong> Your reservation is confirmed and locked immediately upon successful completion of the booking process.</li>
+                            <li><strong>50% Downpayment Required:</strong> A 50% initial downpayment is required to lock in and secure your reserved slot. The remaining 50% balance must be settled at the park counter upon arrival.</li>
+                            <li><strong>Strictly No Refund:</strong> All payments, reservation fees, and deposits are final and strictly non-refundable. Rescheduling is subject to park management availability and approval.</li>
+                            <li><strong>Active Contact Details:</strong> Guests must provide valid and active contact numbers and email addresses to receive check-in updates and reservation passes.</li>
+                        </ul>
+                    </section>
+
+                    <section class="rp-terms-section">
+                        <h3>2. Arrival &amp; Entry QR Pass</h3>
+                        <ul>
+                            <li><strong>QR Pass Verification:</strong> An official entry QR code will be generated and emailed to you upon booking confirmation. You must present this QR code (digital or printed) at the entrance counter for identity verification and express check-in.</li>
+                            <li><strong>Park Hours:</strong> Daytime visits run from {{ $daytimeStartFormatted ?? '8:00 AM' }} to {{ $daytimeEndFormatted ?? '5:00 PM' }}. Overnight stays begin at {{ $nighttimeStartFormatted ?? '6:00 PM' }} and conclude at {{ $nighttimeEndFormatted ?? '8:00 AM' }} the following morning.</li>
+                        </ul>
+                    </section>
+
+                    <section class="rp-terms-section">
+                        <h3>3. Park Rules &amp; Guidelines</h3>
+                        <ul>
+                            @if(isset($parkRules) && $parkRules->count() > 0)
+                                @foreach($parkRules as $rule)
+                                    <li><strong>{{ $rule->rule_name }}:</strong> {{ $rule->rule_descriptions }}</li>
+                                @endforeach
+                            @else
+                                <li><strong>Proper Swimming Pool Attire:</strong> Proper swimwear (rash guards, swim trunks, bathing suits) is required when entering swimming pools. Cotton shirts, denim pants, and undergarments are strictly prohibited in the pool.</li>
+                                <li><strong>Outside Food &amp; Corkage:</strong> Guests may bring outside food and non-alcoholic beverages with zero corkage fee. Free outdoor grilling stations are available (please bring your own charcoal and utensils).</li>
+                                <li><strong>Quiet Hours:</strong> Quiet hours are observed from 10:00 PM to 6:00 AM for the peace and comfort of overnight guests and nature. High-volume sound systems must be lowered.</li>
+                                <li><strong>Clean As You Go (CLAYGO):</strong> Guests are requested to practice CLAYGO. Segregate and dispose of all trash into labeled waste bins before checkout.</li>
+                                <li><strong>Pet Policy:</strong> Pets are allowed but must remain leashed and supervised at all times. Owners must clean up after their pets immediately.</li>
+                                <li><strong>Designated Smoking Areas:</strong> Smoking and vaping are only permitted in designated outdoor smoking zones away from cottages and pools.</li>
+                            @endif
+                        </ul>
+                    </section>
+
+                    <section class="rp-terms-section">
+                        <h3>4. Safety &amp; Regulations</h3>
+                        <ul>
+                            <li>Please supervise minors around swimming pools and riverbanks at all times.</li>
+                            <li>The park management is not liable for lost or unattended personal belongings.</li>
+                            <li>Park staff reserve the right to refuse entry or ask guests to leave for misconduct or violation of park policies.</li>
+                        </ul>
+                    </section>
+                </div>
+
+                <div class="rp-terms-modal__footer">
+                    <label class="rp-terms-modal__checkbox-label" for="agreeTermsCheckbox">
+                        <input type="checkbox" id="agreeTermsCheckbox" class="rp-terms-modal__checkbox">
+                        <span>I have read, understood, and agree to the <strong>Terms, Policies, and Park Rules</strong>.</span>
+                    </label>
+
+                    <button type="button" id="proceedTermsBtn" class="rp-terms-modal__proceed-btn" disabled>
+                        <span>Proceed</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
     </main>

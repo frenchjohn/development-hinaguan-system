@@ -1124,12 +1124,14 @@ Route::get('/reservation', function (WeatherService $weather) {
     $maxReservationDate = now()->addDays(3)->toDateString();
     $weatherPreview = $weather->getForecastForDate($selectedDate);
     $parkSettings = \App\Models\ParkSetting::first();
+    $parkRules = \App\Models\ParkRule::orderBy('id', 'asc')->get();
 
     return response()->view('reservationpage', [
         'amenities' => $amenities,
         'weatherPreview' => $weatherPreview,
         'maxReservationDate' => $maxReservationDate,
         'parkSettings' => $parkSettings,
+        'parkRules' => $parkRules,
     ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       ->header('Pragma', 'no-cache');
 })->name('reservation');

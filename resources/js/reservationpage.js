@@ -153,6 +153,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cancelConfirmModal = document.getElementById('cancelConfirmModal');
 
+    // ── Terms & Policy Modal ──
+    const termsPolicyModal = document.getElementById('termsPolicyModal');
+    const agreeTermsCheckbox = document.getElementById('agreeTermsCheckbox');
+    const proceedTermsBtn = document.getElementById('proceedTermsBtn');
+    const openTermsPolicyBtn = document.getElementById('openTermsPolicyBtn');
+    const closeTermsPolicyModalBtn = document.getElementById('closeTermsPolicyModalBtn');
+    const termsPolicyBackdrop = document.getElementById('termsPolicyBackdrop');
+
+    const openTermsModal = () => {
+        if (!termsPolicyModal) return;
+        termsPolicyModal.classList.add('is-open');
+        termsPolicyModal.setAttribute('aria-hidden', 'false');
+        updateOverlayScrollLock();
+    };
+
+    const closeTermsModal = () => {
+        if (!termsPolicyModal) return;
+        termsPolicyModal.classList.remove('is-open');
+        termsPolicyModal.setAttribute('aria-hidden', 'true');
+        updateOverlayScrollLock();
+    };
+
+    if (termsPolicyModal) {
+        // Open modal automatically at the start of guest reservation page
+        openTermsModal();
+
+        // Checkbox listener to toggle Proceed button disabled state
+        agreeTermsCheckbox?.addEventListener('change', () => {
+            if (proceedTermsBtn) {
+                proceedTermsBtn.disabled = !agreeTermsCheckbox.checked;
+            }
+        });
+
+        // Proceed button click
+        proceedTermsBtn?.addEventListener('click', () => {
+            if (agreeTermsCheckbox && !agreeTermsCheckbox.checked) {
+                return;
+            }
+            closeTermsModal();
+        });
+
+        // Reopen trigger buttons
+        document.querySelectorAll('[data-open-terms-modal]').forEach(trigger => {
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                openTermsModal();
+            });
+        });
+
+        // Close buttons and backdrop
+        document.querySelectorAll('[data-close-terms-modal]').forEach(btn => {
+            btn.addEventListener('click', closeTermsModal);
+        });
+
+        // ESC key handler
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && termsPolicyModal.classList.contains('is-open')) {
+                closeTermsModal();
+            }
+        });
+    }
+
     const gridSkeleton = document.getElementById('gridSkeleton');
 
     const datePickerModal = document.getElementById('datePickerModal');
@@ -430,9 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 summary: 'Select date'
             };
         }
-        const finalEnd = (isRange && endDate) ? endDate : startDate;
+        const finalEnd = endDate || startDate;
         const finalStartSlot = startSlot || 'Daytime';
-        const finalEndSlot = (isRange && endSlot) ? endSlot : (isRange ? 'Daytime' : finalStartSlot);
+        const finalEndSlot = endSlot || finalStartSlot;
 
         const { dayStart, dayEnd, nightStart, nightEnd } = getParkTimes();
 
@@ -454,8 +516,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { dayCount, nightCount, totalDays } = calculateContinuousSlots(startDate, finalEnd, finalStartSlot, finalEndSlot);
         let summaryText = `${totalDays} Day${totalDays > 1 ? 's' : ''} (${dayCount}D ${nightCount}N)`;
-        if (startDate === finalEnd && finalStartSlot === finalEndSlot) {
-            summaryText = `1 Day · ${finalStartSlot === 'Nighttime' ? 'Overnight' : 'Daytime'}`;
+        if (startDate === finalEnd) {
+            if (finalStartSlot === finalEndSlot) {
+                summaryText = `1 Day · ${finalStartSlot === 'Nighttime' ? 'Overnight' : 'Daytime'}`;
+            } else if (finalStartSlot === 'Daytime' && finalEndSlot === 'Nighttime') {
+                summaryText = `1 Day · Daytime → Overnight (1D 1N)`;
+            } else {
+                summaryText = `1 Day · ${dayCount}D ${nightCount}N`;
+            }
         }
 
         const checkInTime = finalStartSlot === 'Nighttime' ? nightStart : dayStart;
@@ -494,6 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const reservationDateText = document.getElementById('reservationDateText');
 
         if (!sDate) {
+            if (reservationDateText) reservationDateText.textContent = 'Select reservation date';
             if (mainCheckInDate) mainCheckInDate.textContent = '—';
             if (mainCheckInTime) mainCheckInTime.textContent = '—';
             if (mainCheckInSession) mainCheckInSession.textContent = '';
@@ -502,6 +571,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (mainCheckOutSession) mainCheckOutSession.textContent = '';
             if (mainPreviewCheckIn) mainPreviewCheckIn.textContent = '—';
             if (mainPreviewCheckOut) mainPreviewCheckOut.textContent = '—';
+
+            const weatherIcon = document.getElementById('weatherIcon');
+            const weatherCondition = document.getElementById('weatherCondition');
+            const weatherTemp = document.getElementById('weatherTemp');
+            const weatherSkeleton = document.getElementById('weatherSkeleton');
+            const weatherEmpty = document.getElementById('weatherEmpty');
+
+            if (weatherIcon) weatherIcon.hidden = true;
+            if (weatherSkeleton) weatherSkeleton.hidden = true;
+            if (weatherEmpty) weatherEmpty.hidden = true;
+            if (weatherCondition) weatherCondition.textContent = 'No date selected';
+            if (weatherTemp) weatherTemp.textContent = 'Select a date above to view forecast';
             return;
         }
 
@@ -1052,10 +1133,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-av-start-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
             const slot = btn.dataset.avStartSlot;
-            if (calendarRangeStart && isNighttimeForToday(calendarRangeStart) && slot === 'Daytime') {
+            const curDate = calendarRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
+            if (curDate && isNighttimeForToday(curDate) && slot === 'Daytime') {
                 return;
             }
             calendarRangeStartSlot = slot;
+            const curEndDate = calendarRangeEnd || curDate;
+            const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
+            if (isSingleDay && calendarRangeStartSlot === 'Nighttime') {
+                calendarRangeEndSlot = 'Nighttime';
+            }
             updateAvRangeDisplay();
             renderAvailabilityCalendar();
         });
@@ -1063,6 +1150,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-av-end-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
+            const curDate = calendarRangeStart || (dateInput ? dateInput.value : '');
+            const curEndDate = calendarRangeEnd || curDate;
+            const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
+            if (isSingleDay && calendarRangeStartSlot === 'Nighttime' && btn.dataset.avEndSlot === 'Daytime') {
+                return;
+            }
             calendarRangeEndSlot = btn.dataset.avEndSlot;
             updateAvRangeDisplay();
             renderAvailabilityCalendar();
@@ -1072,7 +1165,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateAvRangeDisplay = () => {
         const curDate = calendarRangeStart || (dateInput ? dateInput.value : '');
         const curEndDate = calendarRangeEnd || curDate;
-        const isRange = Boolean(calendarRangeStart && calendarRangeEnd && calendarRangeStart !== calendarRangeEnd);
+        const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
+
+        // Single-day overnight check-in conflicts with daytime check-out: disable daytime check-out and default to overnight
+        const avEndDaytimeBtn = document.querySelector('[data-av-end-slot="Daytime"]');
+        if (isSingleDay && calendarRangeStartSlot === 'Nighttime') {
+            if (avEndDaytimeBtn) {
+                avEndDaytimeBtn.disabled = true;
+                avEndDaytimeBtn.classList.add('is-disabled-slot');
+                avEndDaytimeBtn.setAttribute('title', 'Daytime check-out is not available when checking in overnight on the same day');
+            }
+            calendarRangeEndSlot = 'Nighttime';
+        } else {
+            if (avEndDaytimeBtn) {
+                avEndDaytimeBtn.disabled = false;
+                avEndDaytimeBtn.classList.remove('is-disabled-slot');
+                avEndDaytimeBtn.removeAttribute('title');
+            }
+        }
+
+        const isRange = Boolean((calendarRangeStart && calendarRangeEnd && calendarRangeStart !== calendarRangeEnd) || (calendarRangeStartSlot !== calendarRangeEndSlot));
 
         document.querySelectorAll('[data-av-start-slot]').forEach(b => {
             b.classList.toggle('is-active', b.dataset.avStartSlot === calendarRangeStartSlot);
@@ -1283,8 +1395,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const days = Array.from({ length: daysInMonth }, (_, index) => {
             const date = new Date(selectedYear, selectedMonth, index + 1);
-            const isoDate = date.getFullYear() + '-' + 
-                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+            const isoDate = date.getFullYear() + '-' +
+                String(date.getMonth() + 1).padStart(2, '0') + '-' +
                 String(date.getDate()).padStart(2, '0');
 
             let isAvailable = false;
@@ -1598,6 +1710,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isAircon = choice === 'with';
 
         if (multiSelectionEnabled && selectedCards.length > 0) {
+            if (modalMetaBlock) modalMetaBlock.style.display = selectedCards.length > 1 ? 'none' : 'grid';
             if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'block';
             if (airconChoice) airconChoice.style.display = 'none';
             if (modalDescription) modalDescription.innerHTML = '';
@@ -1684,6 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } else {
             // Single Amenity Mode
+            if (modalMetaBlock) modalMetaBlock.style.display = 'grid';
             if (modalMultiAmenityContainer) modalMultiAmenityContainer.style.display = 'none';
 
             const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
@@ -1759,8 +1873,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const price = getAmenityContinuousPrice(card, choice, sDate, eDate, sSlot, eSlot);
             total += price;
 
-            const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
-            const choiceLabel = `${choice === 'with' ? 'With Aircon' : 'Standard'} · ${totalDays}D (${dayCount}D ${nightCount}N)`;
+            let choiceLabel = '';
+            if (sDate) {
+                const { dayCount, nightCount, totalDays } = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+                choiceLabel = `${choice === 'with' ? 'With Aircon' : 'Standard'} · ${totalDays}D (${dayCount}D ${nightCount}N)`;
+            } else {
+                const cap = `${card.dataset.minCapacity || 1}–${card.dataset.maxCapacity || 2} pax`;
+                choiceLabel = `${cap} · Standard Rate`;
+            }
 
             const line = document.createElement('li');
             line.className = 'rp-selection-sheet__item';
@@ -1769,10 +1889,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong>${card.dataset.name || 'Selected amenity'}</strong>
                     <span>${choiceLabel}</span>
                 </div>
-                <div class="rp-selection-sheet__item-price">₱${price.toFixed(2)}</div>
+                <div class="rp-selection-sheet__item-right">
+                    <span class="rp-selection-sheet__item-price">₱${price.toFixed(2)}</span>
+                    <button type="button" class="rp-selection-sheet__item-remove" data-remove-amenity-id="${amenityId}" title="Remove this amenity">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             `;
             selectionSummaryList.appendChild(line);
             parts.push(`₱${price.toFixed(2)}`);
+        });
+
+        selectionSummaryList.querySelectorAll('[data-remove-amenity-id]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const aId = btn.dataset.removeAmenityId;
+                const card = selectedCards.find(c => c.dataset.amenityId === aId);
+                if (card) {
+                    toggleCardSelection(card);
+                    if (selectedCards.length === 0) {
+                        closeSelectionSheet();
+                    } else {
+                        updateSelectionSummary();
+                    }
+                }
+            });
         });
 
         selectionMathText.textContent = parts.join(' + ');
@@ -2102,7 +2243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const eObj = new Date(bEnd + 'T00:00:00');
                 const sFormatted = sObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 const eFormatted = eObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                
+
                 if (bStart === bEnd) {
                     editScheduleRangeText.textContent = `${sFormatted} (${bStartSlot})`;
                 } else {
@@ -2274,6 +2415,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+    if (dateControlsSection) {
+        dateControlsSection.hidden = false;
+    }
+
     if (dateInput) {
 
         if (preselectedDate) {
@@ -2286,74 +2431,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             loadWeatherPreview(dateInput.value);
 
-            // If date is preselected, hide CTA and show controls
+        } else {
 
-            if (dateCtaSection) {
-
-                dateCtaSection.hidden = true;
-
-            }
-
-            if (dateControlsSection) {
-
-                dateControlsSection.hidden = false;
-
-            }
-
-            if (slotControlsSection) {
-
-                slotControlsSection.hidden = false;
-
-            }
+            updateMainDateTimePreview();
 
         }
 
-        
-
-        // Handle date selection to show controls
-
         const handleDateSelection = () => {
-
-            if (dateInput.value) {
-
-                if (dateCtaSection) {
-
-                    dateCtaSection.hidden = true;
-
-                }
-
-                if (dateControlsSection) {
-
-                    dateControlsSection.hidden = false;
-
-                }
-
-                if (slotControlsSection) {
-
-                    slotControlsSection.hidden = false;
-
-                }
-
+            if (dateControlsSection) {
+                dateControlsSection.hidden = false;
             }
-
         };
 
-        
-
         dateInput.addEventListener('change', () => {
-
             syncReservationDate();
-
             handleDateSelection();
-
         });
 
         dateInput.addEventListener('input', () => {
-
             syncReservationDate();
-
             handleDateSelection();
-
         });
 
     }
@@ -2387,10 +2484,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-dp-start-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
             const slot = btn.dataset.dpStartSlot;
-            if (dpRangeStart && isNighttimeForToday(dpRangeStart) && slot === 'Daytime') {
+            const curDate = dpRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
+            if (curDate && isNighttimeForToday(curDate) && slot === 'Daytime') {
                 return;
             }
             dpRangeStartSlot = slot;
+            const curEndDate = dpRangeEnd || curDate;
+            const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
+            if (isSingleDay && dpRangeStartSlot === 'Nighttime') {
+                dpRangeEndSlot = 'Nighttime';
+            }
             updateDpRangeDisplay();
             renderDatePickerDays();
         });
@@ -2398,6 +2501,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-dp-end-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
+            const curDate = dpRangeStart || (dateInput ? dateInput.value : '');
+            const curEndDate = dpRangeEnd || curDate;
+            const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
+            if (isSingleDay && dpRangeStartSlot === 'Nighttime' && btn.dataset.dpEndSlot === 'Daytime') {
+                return;
+            }
             dpRangeEndSlot = btn.dataset.dpEndSlot;
             updateDpRangeDisplay();
             renderDatePickerDays();
@@ -2407,7 +2516,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateDpRangeDisplay = () => {
         const curDate = dpRangeStart || (dateInput ? dateInput.value : '');
         const curEndDate = dpRangeEnd || curDate;
-        const isRange = Boolean(dpRangeStart && dpRangeEnd && dpRangeStart !== dpRangeEnd);
+        const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
+
+        // Single-day overnight check-in conflicts with daytime check-out: disable daytime check-out and default to overnight
+        const dpEndDaytimeBtn = document.querySelector('[data-dp-end-slot="Daytime"]');
+        if (isSingleDay && dpRangeStartSlot === 'Nighttime') {
+            if (dpEndDaytimeBtn) {
+                dpEndDaytimeBtn.disabled = true;
+                dpEndDaytimeBtn.classList.add('is-disabled-slot');
+                dpEndDaytimeBtn.setAttribute('title', 'Daytime check-out is not available when checking in overnight on the same day');
+            }
+            dpRangeEndSlot = 'Nighttime';
+        } else {
+            if (dpEndDaytimeBtn) {
+                dpEndDaytimeBtn.disabled = false;
+                dpEndDaytimeBtn.classList.remove('is-disabled-slot');
+                dpEndDaytimeBtn.removeAttribute('title');
+            }
+        }
+
+        const isRange = Boolean((dpRangeStart && dpRangeEnd && dpRangeStart !== dpRangeEnd) || (dpRangeStartSlot !== dpRangeEndSlot));
 
         document.querySelectorAll('[data-dp-start-slot]').forEach(b => {
             b.classList.toggle('is-active', b.dataset.dpStartSlot === dpRangeStartSlot);
@@ -2606,23 +2734,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const syncDateSections = () => {
-        const hasDate = Boolean(dateInput && dateInput.value);
         const dateCta = document.getElementById('dateCtaSection');
         const dateControls = document.getElementById('dateControlsSection');
-        const slotControls = document.getElementById('slotControlsSection');
 
         if (dateCta) {
-            dateCta.hidden = hasDate;
+            dateCta.hidden = true;
+            dateCta.style.display = 'none';
         }
         if (dateControls) {
-            dateControls.hidden = !hasDate;
+            dateControls.hidden = false;
         }
-        if (slotControls) {
-            slotControls.hidden = !hasDate;
-        }
-        if (hasDate) {
-            updateMainDateTimePreview();
-        }
+        updateMainDateTimePreview();
     };
 
     const closeDatePickerModal = () => {
@@ -2905,9 +3027,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cards.forEach(card => {
         card.addEventListener('click', (e) => {
-            if (selectedCards.length > 0 && !e.target.closest('[data-open-modal]') && !e.target.closest('[data-card-select]')) {
-                toggleCardSelection(card);
-            }
+            if (e.target.closest('[data-card-select]')) return;
+            if (e.target.closest('[data-open-modal]')) return;
+            if (card.classList.contains('is-booked')) return;
+            openAmenityInfoModal(card);
         });
     });
 
@@ -3060,6 +3183,22 @@ document.addEventListener('DOMContentLoaded', () => {
             infoModalDescription.textContent = desc && desc.trim() ? desc : 'Relax and unwind with this serene amenity at Hinaguan Nature Park. Perfect for family gatherings, friends, or restful getaways.';
         }
 
+        // Selection state on primary button
+        if (infoModalBookBtn) {
+            const isSelected = selectedCards.includes(card);
+            const btnSpan = infoModalBookBtn.querySelector('span') || infoModalBookBtn;
+            if (btnSpan) {
+                btnSpan.innerHTML = isSelected
+                    ? '<i class="bi bi-dash-circle me-1"></i> Remove from selection'
+                    : '<i class="bi bi-check2-circle me-1"></i> Select this amenity';
+            }
+            if (isSelected) {
+                infoModalBookBtn.classList.add('rp-info-modal__book-btn--remove');
+            } else {
+                infoModalBookBtn.classList.remove('rp-info-modal__book-btn--remove');
+            }
+        }
+
         amenityInfoModal.classList.add('is-open');
         amenityInfoModal.setAttribute('aria-hidden', 'false');
         updateOverlayScrollLock();
@@ -3072,40 +3211,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const card = button.closest('.rp-card');
-            if (!card) {
+            if (!card || card.classList.contains('is-booked')) {
                 return;
             }
 
-            // Multiple amenities selected: toggle selection directly, skip single info modal
-            if (selectedCards.length > 0) {
-                toggleCardSelection(card);
-                return;
-            }
-
-            if (card.classList.contains('is-booked')) {
-                return;
-            }
-
-            // Single amenity clicked: display amenity overview info modal first
+            // Always open amenity overview info modal so user can view details and select/deselect
             openAmenityInfoModal(card);
         });
     });
 
-    // "Book this amenity" button inside Amenity Info Modal
+    // "Select this amenity" button inside Amenity Info Modal
     if (infoModalBookBtn) {
         infoModalBookBtn.addEventListener('click', () => {
             const targetCard = infoModalActiveCard;
             if (!targetCard) return;
 
+            toggleCardSelection(targetCard);
             closeAmenityInfoModal();
-
-            // Proceed to booking flow: calendar if no date yet, else booking form
-            if (!dateInput || !dateInput.value) {
-                openAvailabilityModal(targetCard);
-                return;
-            }
-
-            openModal(targetCard);
         });
     }
 
@@ -3123,36 +3245,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (selectionCheckoutBtn) {
-        selectionCheckoutBtn.addEventListener('click', () => {
+        selectionCheckoutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (selectedCards.length > 0) {
-                if (!dateInput || !dateInput.value) {
-                    openDatePickerModal();
-                    return;
-                }
+                openSelectionSheet();
             }
-
-            openSelectionSheet();
         });
     }
 
-
+    if (selectionFloatingBar) {
+        selectionFloatingBar.addEventListener('click', (e) => {
+            if (e.target.closest('#selectionCheckoutBtn')) return;
+            if (selectedCards.length > 0) {
+                openSelectionSheet();
+            }
+        });
+    }
 
     if (selectionContinueBtn) {
-
         selectionContinueBtn.addEventListener('click', () => {
+            if (selectedCards.length === 0) return;
 
             const firstCard = selectedCards[0];
-
             closeSelectionSheet();
 
-            if (firstCard) {
-
-                openModal(firstCard);
-
+            // After reviewing amenities, if no date selected yet, open date picker
+            if (!dateInput || !dateInput.value) {
+                openDatePickerModal();
+                return;
             }
 
+            if (firstCard) {
+                openModal(firstCard);
+            }
         });
-
     }
 
 
@@ -3885,7 +4011,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && result.success) {
                 bookingNotice.textContent = '';
-                
+
                 currentReservationId = result.reservation_id;
                 currentPaymentIntentId = result.payment_intent_id;
                 currentClientKey = result.client_key;
@@ -4080,7 +4206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Include month and year from dropdowns
                 const calendarMonthSelect = document.getElementById('calendarMonth');
                 const calendarYearSelect = document.getElementById('calendarYear');
-                
+
                 if (calendarMonthSelect && calendarYearSelect && calendarMonthSelect.value !== '' && calendarYearSelect.value !== '') {
                     url.searchParams.set('month', calendarMonthSelect.value);
                     url.searchParams.set('year', calendarYearSelect.value);
@@ -4350,4 +4476,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 })();
 
-    
