@@ -4,9 +4,9 @@
     $links = [
         ['key' => 'dashboard', 'label' => 'Dashboard', 'url' => route('staff.dashboard'), 'icon' => 'grid'],
         ['key' => 'reservations', 'label' => 'Reservations', 'url' => route('staff.reservations'), 'icon' => 'calendar'],
+        ['key' => 'checkins', 'label' => 'Check-ins', 'url' => route('staff.checkins'), 'icon' => 'check'],
         ['key' => 'occupancy-monitor', 'label' => 'Occupancy', 'url' => route('staff.occupancy-monitor'), 'icon' => 'monitor'],
         ['key' => 'reports', 'label' => 'Reports', 'url' => route('staff.reports'), 'icon' => 'chart'],
-        ['key' => 'checkins', 'label' => 'Check-ins', 'url' => route('staff.checkins'), 'icon' => 'check'],
         ['key' => 'records', 'label' => 'Records', 'url' => route('staff.records'), 'icon' => 'archive'],
     ];
 

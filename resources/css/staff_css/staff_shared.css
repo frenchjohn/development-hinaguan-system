@@ -8846,23 +8846,31 @@ td.mono-cell {
     border-color: #4a8a52;
 }
 
-/* Occupancy Grid */
+/* Occupancy Grid - 4 in a row */
 .occupancy-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1279px) {
     .occupancy-grid {
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 860px) {
+    .occupancy-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1rem;
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
     .occupancy-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
 }
 

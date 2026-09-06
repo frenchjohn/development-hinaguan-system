@@ -87,6 +87,16 @@ window.AppPage['staff_occupancy_monitor'] = function () {
         if (searchInput) searchInput.value = '';
         if (timeSlotFilter) timeSlotFilter.value = 'all';
         if (availabilityFilter) availabilityFilter.value = 'all';
+        activeCategory = 'all';
+        categoryPills.forEach((p, idx) => {
+            if (idx === 0) {
+                p.classList.add('is-active', 'bg-hp-green', 'text-white', 'border-hp-green');
+                p.classList.remove('bg-glass', 'text-hp-text', 'border-glass-border');
+            } else {
+                p.classList.remove('is-active', 'bg-hp-green', 'text-white', 'border-hp-green');
+                p.classList.add('bg-glass', 'text-hp-text', 'border-glass-border');
+            }
+        });
         const todayStr = formatDate(new Date());
         if (startDateFilter && (startDateFilter.value !== todayStr || endDateFilter?.value !== todayStr)) {
             startDateFilter.value = todayStr;
@@ -97,6 +107,23 @@ window.AppPage['staff_occupancy_monitor'] = function () {
         }
     });
 
+    // Category Pill filtering
+    const categoryPills = document.querySelectorAll('[data-category-filter]');
+    let activeCategory = 'all';
+
+    categoryPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            categoryPills.forEach(p => {
+                p.classList.remove('is-active', 'bg-hp-green', 'text-white', 'border-hp-green');
+                p.classList.add('bg-glass', 'text-hp-text', 'border-glass-border');
+            });
+            pill.classList.add('is-active', 'bg-hp-green', 'text-white', 'border-hp-green');
+            pill.classList.remove('bg-glass', 'text-hp-text', 'border-glass-border');
+            activeCategory = pill.dataset.categoryFilter || 'all';
+            applyFilters();
+        });
+    });
+
     // Apply filters
     function applyFilters() {
         const searchTerm = (searchInput?.value || '').toLowerCase().trim();
@@ -105,6 +132,9 @@ window.AppPage['staff_occupancy_monitor'] = function () {
 
         occupancyCards.forEach(card => {
             const amenityName = (card.dataset.amenityName || '').toLowerCase();
+            const cardCategory = (card.closest('.occupancy-category-group')?.dataset.category || '').toLowerCase();
+            const matchesCategory = (activeCategory === 'all') || (cardCategory === activeCategory.toLowerCase());
+
             const availableSlotsArray = (card.dataset.availableSlots || '')
                 .split(',')
                 .map(s => s.trim().toLowerCase())
@@ -170,24 +200,33 @@ window.AppPage['staff_occupancy_monitor'] = function () {
             }
 
             // Show/hide card based on filters
-            if (matchesSearch && matchesTimeSlotAndAvailability) {
+            if (matchesSearch && matchesTimeSlotAndAvailability && matchesCategory) {
                 card.style.display = '';
             } else {
                 card.style.display = 'none';
             }
         });
 
-        // Check if any cards are visible
-        const visibleCards = Array.from(occupancyCards).filter(card => card.style.display !== 'none');
-        const grid = document.querySelector('.occupancy-grid');
+        // Update category group sections visibility
+        const categoryGroups = document.querySelectorAll('.occupancy-category-group');
+        let totalVisibleCards = 0;
+        categoryGroups.forEach(group => {
+            const groupCards = group.querySelectorAll('.occupancy-card');
+            const visibleInGroup = Array.from(groupCards).filter(c => c.style.display !== 'none');
+            totalVisibleCards += visibleInGroup.length;
+            group.style.display = visibleInGroup.length > 0 ? '' : 'none';
+        });
+
+        // Global empty state
+        const container = document.getElementById('occupancyGroupsContainer');
         let emptyState = document.querySelector('.occupancy-empty');
 
-        if (visibleCards.length === 0) {
-            if (!emptyState && grid) {
+        if (totalVisibleCards === 0) {
+            if (!emptyState && container) {
                 emptyState = document.createElement('div');
-                emptyState.className = 'occupancy-empty col-span-full py-12 text-center text-hp-text-muted';
+                emptyState.className = 'occupancy-empty py-12 text-center text-hp-text-muted';
                 emptyState.innerHTML = '<p class="text-sm font-semibold">No amenities match your filters</p>';
-                grid.appendChild(emptyState);
+                container.appendChild(emptyState);
             }
             if (emptyState) {
                 emptyState.style.display = 'block';

@@ -240,173 +240,243 @@
                     </form>
                 </div>
 
-                <div class="occupancy-grid grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-6 max-[480px]:grid-cols-1">
-                    @forelse ($amenities as $amenity)
-                        @php
-                            $amenityOccupancy = $occupancyData[$amenity->id] ?? ['occupied' => [], 'reserved' => []];
+                @php
+                    $getCategoryName = function($name) {
+                        $trimmed = trim((string) $name);
+                        $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+                        if (empty($base)) {
+                            $base = $trimmed;
+                        }
+                        if (preg_match('/s$/i', $base)) {
+                            return $base;
+                        }
+                        if (preg_match('/(sh|ch|x|z)$/i', $base)) {
+                            return $base . 'es';
+                        }
+                        if (preg_match('/[^aeiou]y$/i', $base)) {
+                            return substr($base, 0, -1) . 'ies';
+                        }
+                        return $base . 's';
+                    };
 
-                            // Determine occupied time slots
-                            $occupiedSlots = [];
-                            foreach ($amenityOccupancy['occupied'] as $occupied) {
-                                if (!empty($occupied['today_slots'])) {
-                                    foreach ($occupied['today_slots'] as $s) {
-                                        $occupiedSlots[] = strtolower($s);
-                                    }
-                                } else {
-                                    $timeSlot = strtolower($occupied['time_slot']);
-                                    if (str_contains($timeSlot, 'daytonight')) {
-                                        $occupiedSlots[] = 'daytime';
-                                        $occupiedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'nighttoday')) {
-                                        $occupiedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'daytime')) {
-                                        $occupiedSlots[] = 'daytime';
-                                    } elseif (str_contains($timeSlot, 'nighttime')) {
-                                        $occupiedSlots[] = 'nighttime';
-                                    }
-                                }
-                            }
+                    $categories = $amenities->groupBy(function($amenity) use ($getCategoryName) {
+                        return $getCategoryName($amenity->amenities_name);
+                    });
+                @endphp
 
-                            // Determine reserved time slots
-                            $reservedSlots = [];
-                            foreach ($amenityOccupancy['reserved'] as $reserved) {
-                                if (!empty($reserved['today_slots'])) {
-                                    foreach ($reserved['today_slots'] as $s) {
-                                        $reservedSlots[] = strtolower($s);
-                                    }
-                                } else {
-                                    $timeSlot = strtolower($reserved['time_slot']);
-                                    if (str_contains($timeSlot, 'daytonight')) {
-                                        $reservedSlots[] = 'daytime';
-                                        $reservedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'nighttoday')) {
-                                        $reservedSlots[] = 'nighttime';
-                                    } elseif (str_contains($timeSlot, 'daytime')) {
-                                        $reservedSlots[] = 'daytime';
-                                    } elseif (str_contains($timeSlot, 'nighttime')) {
-                                        $reservedSlots[] = 'nighttime';
-                                    }
-                                }
-                            }
+                @if($categories->count() > 1)
+                    <div class="occupancy-category-nav mb-6 flex flex-wrap items-center gap-2" id="occupancyCategoryNav">
+                        <button type="button" class="occupancy-cat-pill is-active inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-hp-green bg-hp-green px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all duration-200" data-category-filter="all">
+                            <span>All Amenities</span>
+                            <span class="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">{{ $amenities->count() }}</span>
+                        </button>
+                        @foreach($categories as $categoryName => $groupAmenities)
+                            <button type="button" class="occupancy-cat-pill inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:bg-glass-hover hover:text-hp-green" data-category-filter="{{ $categoryName }}">
+                                <span>{{ $categoryName }}</span>
+                                <span class="rounded-full bg-glass-hover px-1.5 py-0.5 text-[10px] text-hp-text-muted">{{ $groupAmenities->count() }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
 
-                            // Combine occupied and reserved slots
-                            $occupiedSlots = array_values(array_unique($occupiedSlots));
-                            $reservedSlots = array_values(array_unique($reservedSlots));
-                            $unavailableSlots = array_values(array_unique(array_merge($occupiedSlots, $reservedSlots)));
-
-                            // Determine available slots (all slots minus unavailable)
-                            $allSlots = ['daytime', 'nighttime'];
-                            $availableSlots = array_values(array_diff($allSlots, $unavailableSlots));
-
-                            // Card status badge
-                            $isOccupied = ! empty($amenityOccupancy['occupied']);
-                            $isReserved = ! empty($amenityOccupancy['reserved']);
-                            if ($isOccupied) {
-                                $cardStatus = 'occupied';
-                                $cardStatusLabel = 'Occupied';
-                            } elseif ($isReserved) {
-                                $cardStatus = 'reserved';
-                                $cardStatusLabel = 'Reserved';
-                            } else {
-                                $cardStatus = 'available';
-                                $cardStatusLabel = 'Available';
-                            }
-                            $hasDay = in_array('daytime', $availableSlots);
-                            $hasNight = in_array('nighttime', $availableSlots);
-                        @endphp
-                        <div class="occupancy-card group relative cursor-pointer overflow-hidden rounded-2xl bg-glass shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-glass"
-                             data-amenity-id="{{ $amenity->id }}"
-                             data-amenity-name="{{ strtolower($amenity->amenities_name) }}"
-                             data-display-name="{{ e($amenity->amenities_name) }}"
-                             data-daytime-price="₱{{ number_format($amenity->daytime_price, 2) }}"
-                             data-nighttime-price="₱{{ number_format($amenity->nighttime_price, 2) }}"
-                             data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ? '₱'.number_format($amenity->daytime_aircon_price, 2) : 'N/A' }}"
-                             data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ? '₱'.number_format($amenity->nighttime_aircon_price, 2) : 'N/A' }}"
-                             data-additional-per-head="{{ $amenity->additional_per_head ? '₱'.number_format($amenity->additional_per_head, 2) : 'N/A' }}"
-                             data-min-cap="{{ $amenity->minimum_capacity ?? 'N/A' }}"
-                             data-max-cap="{{ $amenity->maximum_capacity ?? 'N/A' }}"
-                             data-description="{{ e($amenity->description ?? 'No description available for this amenity.') }}"
-                             data-image-src="{{ $amenity->image ? asset('storage/' . $amenity->image) : '' }}"
-                             data-occupied-json="{{ json_encode($amenityOccupancy['occupied']) }}"
-                             data-reserved-json="{{ json_encode($amenityOccupancy['reserved']) }}"
-                             data-available-slots="{{ implode(',', $availableSlots) }}"
-                             data-unavailable-slots="{{ implode(',', $unavailableSlots) }}">
-                            <div class="relative aspect-[4/3] w-full overflow-hidden bg-hp-cream">
-                                @if ($amenity->image)
-                                    <img src="{{ asset('storage/' . $amenity->image) }}" alt="{{ $amenity->amenities_name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
-                                @else
-                                    <div class="flex h-full w-full items-center justify-center text-hp-text-muted">
-                                        <svg class="h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                <div id="occupancyGroupsContainer" class="flex flex-col gap-8">
+                    @forelse ($categories as $categoryName => $categoryAmenities)
+                        <section class="occupancy-category-group" data-category="{{ $categoryName }}">
+                            <div class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-glass-border pb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-hp-green/10 text-hp-green dark:bg-hp-green/20">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                                         </svg>
-                                    </div>
-                                @endif
-                                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(13,44,29,0.7)] to-transparent dark:from-black/70"></div>
-                                <span class="occupancy-card__badge absolute left-3 top-3 z-[5] inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.66rem] font-bold uppercase tracking-[0.05em] text-white shadow-glass backdrop-blur-sm occupancy-card__badge--{{ $cardStatus }}">
-                                    <i class="h-1 w-1 rounded-full bg-white/90"></i>{{ $cardStatusLabel }}
-                                </span>
-                                @if (!empty($amenityOccupancy['occupied']))
-                                    <div class="occupancy-card__status-overlay absolute bottom-0 left-0 right-0 z-10 border-t-2 border-[#dc2626] bg-[rgba(220,38,38,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#f87171] dark:bg-[rgba(220,38,38,0.85)]">
-                                        @foreach ($amenityOccupancy['occupied'] as $occupied)
-                                            <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
-                                                <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Occupied by:</span>
-                                                <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $occupied['reservation_id'] }}</span>
-                                                <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}</span>
-                                                <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['guest_count'] ?? 0 }} guest{{ ($occupied['guest_count'] ?? 0) == 1 ? '' : 's' }} inside</span>
-                                                @if (!empty($occupied['is_shared_group']))
-                                                    <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-                                                        <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                        Shared Group ({{ $occupied['total_amenities_count'] }} Amenities)
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                                @if (!empty($amenityOccupancy['reserved']))
-                                    <div class="occupancy-card__status-overlay absolute left-0 right-0 top-0 z-10 border-b-2 border-[#8a7a4d] bg-[rgba(200,164,93,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#fbbf24] dark:bg-[rgba(200,164,93,0.85)]">
-                                        @foreach ($amenityOccupancy['reserved'] as $reserved)
-                                            <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
-                                                <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Reserved today by:</span>
-                                                <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $reserved['reservation_id'] }}</span>
-                                                <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}</span>
-                                                @if (!empty($reserved['is_shared_group']))
-                                                    <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-                                                        <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                        Shared Group ({{ $reserved['total_amenities_count'] }} Amenities)
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="occupancy-card__content relative flex flex-col gap-3 bg-glass p-4">
-                                <div class="flex items-start justify-between gap-2.5">
-                                    <h4 class="occupancy-card__name m-0 font-display text-lg font-semibold leading-[1.3] text-hp-text dark:text-[#f3f4f6]">{{ $amenity->amenities_name }}</h4>
-                                    <span class="shrink-0 whitespace-nowrap text-[0.8rem] font-bold text-hp-green">₱{{ number_format($amenity->daytime_price, 2) }}<small class="text-[0.62rem] font-semibold text-hp-text-muted/70">/day</small></span>
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <span class="slot-chip slot-chip--daytime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasDay ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
-                                        <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasDay ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Daytime
                                     </span>
-                                    <span class="slot-chip slot-chip--nighttime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasNight ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
-                                        <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasNight ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Nighttime
+                                    <h3 class="m-0 font-display text-lg font-bold text-hp-text">{{ $categoryName }}</h3>
+                                    <span class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-semibold text-hp-green">
+                                        {{ $categoryAmenities->count() }} {{ \Illuminate\Support\Str::plural('unit', $categoryAmenities->count()) }}
                                     </span>
                                 </div>
-                                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2.5 text-[0.72rem] text-hp-text-muted">
-                                    <span class="inline-flex items-center gap-1.5 font-semibold">
-                                        <svg class="h-3.5 w-3.5 text-hp-text-muted/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                                        {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
-                                    </span>
-                                    <span class="font-semibold text-hp-text-muted/70">Night ₱{{ number_format($amenity->nighttime_price, 2) }}</span>
-                                </div>
-                                <div class="flex items-center justify-between gap-2 text-[0.72rem] font-bold text-hp-green opacity-60 transition-opacity duration-200 group-hover:opacity-100">
-                                    <span>View details</span>
-                                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/></svg>
+                                <div class="flex items-center gap-2 text-xs font-medium text-hp-text-muted">
+                                    @php
+                                        $catOccupied = $categoryAmenities->filter(fn($a) => !empty(($occupancyData[$a->id] ?? [])['occupied']))->count();
+                                        $catAvailable = $categoryAmenities->count() - $catOccupied;
+                                    @endphp
+                                    <span class="font-semibold text-hp-green">{{ $catAvailable }} available</span>
+                                    @if($catOccupied > 0)
+                                        <span>&middot;</span>
+                                        <span class="font-semibold text-[#dc2626]">{{ $catOccupied }} occupied</span>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
+
+                            <div class="occupancy-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                @foreach ($categoryAmenities as $amenity)
+                                    @php
+                                        $amenityOccupancy = $occupancyData[$amenity->id] ?? ['occupied' => [], 'reserved' => []];
+
+                                        // Determine occupied time slots
+                                        $occupiedSlots = [];
+                                        foreach ($amenityOccupancy['occupied'] as $occupied) {
+                                            if (!empty($occupied['today_slots'])) {
+                                                foreach ($occupied['today_slots'] as $s) {
+                                                    $occupiedSlots[] = strtolower($s);
+                                                }
+                                            } else {
+                                                $timeSlot = strtolower($occupied['time_slot']);
+                                                if (str_contains($timeSlot, 'daytonight')) {
+                                                    $occupiedSlots[] = 'daytime';
+                                                    $occupiedSlots[] = 'nighttime';
+                                                } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                                    $occupiedSlots[] = 'nighttime';
+                                                } elseif (str_contains($timeSlot, 'daytime')) {
+                                                    $occupiedSlots[] = 'daytime';
+                                                } elseif (str_contains($timeSlot, 'nighttime')) {
+                                                    $occupiedSlots[] = 'nighttime';
+                                                }
+                                            }
+                                        }
+
+                                        // Determine reserved time slots
+                                        $reservedSlots = [];
+                                        foreach ($amenityOccupancy['reserved'] as $reserved) {
+                                            if (!empty($reserved['today_slots'])) {
+                                                foreach ($reserved['today_slots'] as $s) {
+                                                    $reservedSlots[] = strtolower($s);
+                                                }
+                                            } else {
+                                                $timeSlot = strtolower($reserved['time_slot']);
+                                                if (str_contains($timeSlot, 'daytonight')) {
+                                                    $reservedSlots[] = 'daytime';
+                                                    $reservedSlots[] = 'nighttime';
+                                                } elseif (str_contains($timeSlot, 'nighttoday')) {
+                                                    $reservedSlots[] = 'nighttime';
+                                                } elseif (str_contains($timeSlot, 'daytime')) {
+                                                    $reservedSlots[] = 'daytime';
+                                                } elseif (str_contains($timeSlot, 'nighttime')) {
+                                                    $reservedSlots[] = 'nighttime';
+                                                }
+                                            }
+                                        }
+
+                                        // Combine occupied and reserved slots
+                                        $occupiedSlots = array_values(array_unique($occupiedSlots));
+                                        $reservedSlots = array_values(array_unique($reservedSlots));
+                                        $unavailableSlots = array_values(array_unique(array_merge($occupiedSlots, $reservedSlots)));
+
+                                        // Determine available slots (all slots minus unavailable)
+                                        $allSlots = ['daytime', 'nighttime'];
+                                        $availableSlots = array_values(array_diff($allSlots, $unavailableSlots));
+
+                                        // Card status badge
+                                        $isOccupied = ! empty($amenityOccupancy['occupied']);
+                                        $isReserved = ! empty($amenityOccupancy['reserved']);
+                                        if ($isOccupied) {
+                                            $cardStatus = 'occupied';
+                                            $cardStatusLabel = 'Occupied';
+                                        } elseif ($isReserved) {
+                                            $cardStatus = 'reserved';
+                                            $cardStatusLabel = 'Reserved';
+                                        } else {
+                                            $cardStatus = 'available';
+                                            $cardStatusLabel = 'Available';
+                                        }
+                                        $hasDay = in_array('daytime', $availableSlots);
+                                        $hasNight = in_array('nighttime', $availableSlots);
+                                    @endphp
+                                    <div class="occupancy-card group relative cursor-pointer overflow-hidden rounded-2xl bg-glass shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-glass"
+                                         data-amenity-id="{{ $amenity->id }}"
+                                         data-amenity-name="{{ strtolower($amenity->amenities_name) }}"
+                                         data-display-name="{{ e($amenity->amenities_name) }}"
+                                         data-daytime-price="₱{{ number_format($amenity->daytime_price, 2) }}"
+                                         data-nighttime-price="₱{{ number_format($amenity->nighttime_price, 2) }}"
+                                         data-daytime-aircon-price="{{ $amenity->daytime_aircon_price ? '₱'.number_format($amenity->daytime_aircon_price, 2) : 'N/A' }}"
+                                         data-nighttime-aircon-price="{{ $amenity->nighttime_aircon_price ? '₱'.number_format($amenity->nighttime_aircon_price, 2) : 'N/A' }}"
+                                         data-additional-per-head="{{ $amenity->additional_per_head ? '₱'.number_format($amenity->additional_per_head, 2) : 'N/A' }}"
+                                         data-min-cap="{{ $amenity->minimum_capacity ?? 'N/A' }}"
+                                         data-max-cap="{{ $amenity->maximum_capacity ?? 'N/A' }}"
+                                         data-description="{{ e($amenity->description ?? 'No description available for this amenity.') }}"
+                                         data-image-src="{{ $amenity->image ? asset('storage/' . $amenity->image) : '' }}"
+                                         data-occupied-json="{{ json_encode($amenityOccupancy['occupied']) }}"
+                                         data-reserved-json="{{ json_encode($amenityOccupancy['reserved']) }}"
+                                         data-available-slots="{{ implode(',', $availableSlots) }}"
+                                         data-unavailable-slots="{{ implode(',', $unavailableSlots) }}">
+                                        <div class="relative aspect-[4/3] w-full overflow-hidden bg-hp-cream">
+                                            @if ($amenity->image)
+                                                <img src="{{ asset('storage/' . $amenity->image) }}" alt="{{ $amenity->amenities_name }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                            @else
+                                                <div class="flex h-full w-full items-center justify-center text-hp-text-muted">
+                                                    <svg class="h-12 w-12" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                                    </svg>
+                                                </div>
+                                            @endif
+                                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(13,44,29,0.7)] to-transparent dark:from-black/70"></div>
+                                            <span class="occupancy-card__badge absolute left-3 top-3 z-[5] inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.66rem] font-bold uppercase tracking-[0.05em] text-white shadow-glass backdrop-blur-sm occupancy-card__badge--{{ $cardStatus }}">
+                                                <i class="h-1 w-1 rounded-full bg-white/90"></i>{{ $cardStatusLabel }}
+                                            </span>
+                                            @if (!empty($amenityOccupancy['occupied']))
+                                                <div class="occupancy-card__status-overlay absolute bottom-0 left-0 right-0 z-10 border-t-2 border-[#dc2626] bg-[rgba(220,38,38,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#f87171] dark:bg-[rgba(220,38,38,0.85)]">
+                                                    @foreach ($amenityOccupancy['occupied'] as $occupied)
+                                                        <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
+                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Occupied by:</span>
+                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $occupied['reservation_id'] }}</span>
+                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}</span>
+                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['guest_count'] ?? 0 }} guest{{ ($occupied['guest_count'] ?? 0) == 1 ? '' : 's' }} inside</span>
+                                                            @if (!empty($occupied['is_shared_group']))
+                                                                <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
+                                                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+                                                                    Shared Group ({{ $occupied['total_amenities_count'] }} Amenities)
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                            @if (!empty($amenityOccupancy['reserved']))
+                                                <div class="occupancy-card__status-overlay absolute left-0 right-0 top-0 z-10 border-b-2 border-[#8a7a4d] bg-[rgba(200,164,93,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#fbbf24] dark:bg-[rgba(200,164,93,0.85)]">
+                                                    @foreach ($amenityOccupancy['reserved'] as $reserved)
+                                                        <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
+                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Reserved today by:</span>
+                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $reserved['reservation_id'] }}</span>
+                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}</span>
+                                                            @if (!empty($reserved['is_shared_group']))
+                                                                <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
+                                                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+                                                                    Shared Group ({{ $reserved['total_amenities_count'] }} Amenities)
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <div class="occupancy-card__content relative flex flex-col gap-3 bg-glass p-4">
+                                            <div class="flex items-start justify-between gap-2.5">
+                                                <h4 class="occupancy-card__name m-0 font-display text-lg font-semibold leading-[1.3] text-hp-text dark:text-[#f3f4f6]">{{ $amenity->amenities_name }}</h4>
+                                                <span class="shrink-0 whitespace-nowrap text-[0.8rem] font-bold text-hp-green">₱{{ number_format($amenity->daytime_price, 2) }}<small class="text-[0.62rem] font-semibold text-hp-text-muted/70">/day</small></span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <span class="slot-chip slot-chip--daytime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasDay ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
+                                                    <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasDay ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Daytime
+                                                </span>
+                                                <span class="slot-chip slot-chip--nighttime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasNight ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
+                                                    <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasNight ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Nighttime
+                                                </span>
+                                            </div>
+                                            <div class="flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2.5 text-[0.72rem] text-hp-text-muted">
+                                                <span class="inline-flex items-center gap-1.5 font-semibold">
+                                                    <svg class="h-3.5 w-3.5 text-hp-text-muted/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                                                    {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
+                                                </span>
+                                                <span class="font-semibold text-hp-text-muted/70">Night ₱{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between gap-2 text-[0.72rem] font-bold text-hp-green opacity-60 transition-opacity duration-200 group-hover:opacity-100">
+                                                <span>View details</span>
+                                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"/></svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </section>
                     @empty
                         <div class="occupancy-empty col-span-full flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-glass-border-strong bg-glass px-4 py-16 text-center text-hp-text-muted shadow-glass">
                             <svg class="h-16 w-16 opacity-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
