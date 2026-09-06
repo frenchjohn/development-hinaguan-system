@@ -469,16 +469,16 @@ html {
 .rp-terms-section {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.6rem;
 }
 
 .rp-terms-section h3 {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: #111827;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #000000;
     margin: 0;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .rp-terms-section ul {
@@ -486,15 +486,17 @@ html {
     padding-left: 1.25rem;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.5rem;
 }
 
 .rp-terms-section li {
-    color: #4b5563;
+    color: #111827;
+    line-height: 1.6;
 }
 
 .rp-terms-section li strong {
-    color: #1f2937;
+    color: #000000;
+    font-weight: 700;
 }
 
 .rp-terms-modal__footer {
@@ -574,6 +576,33 @@ html {
         width: 100%;
         padding: 0.75rem 1rem;
     }
+}
+
+/* ─────────────────────────── Confirmation Modal (Same as Terms & Conditions) ─────────────────────────── */
+
+.rp-confirmation-modal__panel {
+    max-width: 780px !important;
+    width: 100%;
+}
+
+.rp-confirmation-status-text {
+    font-size: 0.85rem;
+    color: #14532d;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.rp-confirmation-status-text i {
+    font-size: 1rem;
+    color: #16a34a;
+}
+
+.rp-confirmation-modal__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /* ─────────────────────────── Main layout ─────────────────────────── */
@@ -3277,7 +3306,7 @@ html {
     margin: auto 0;
     z-index: 1;
     border: 1px solid rgba(15, 61, 39, 0.12);
-    color: #1f2937;
+    color: #0f172a;
     box-sizing: border-box;
     animation: rp-modal-pop 0.28s ease;
 }
@@ -3335,18 +3364,19 @@ html {
 
 .rp-modal__eyebrow {
     margin: 0 0 0.35rem;
-    font-size: 0.6875rem;
+    font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #967126;
-    font-weight: 700;
+    color: #78350f;
+    font-weight: 800;
 }
 
 .rp-modal__header h2 {
     margin: 0;
     font-family: var(--rp-font-display);
     font-size: 1.5rem;
-    color: #0b2418;
+    color: #000000;
+    font-weight: 800;
     line-height: 1.2;
 }
 
@@ -3476,8 +3506,8 @@ html {
 
 .rp-stay-card__title {
     font-size: 0.8125rem;
-    font-weight: 700;
-    color: #0b2418;
+    font-weight: 800;
+    color: #000000;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     display: inline-flex;
@@ -3490,10 +3520,10 @@ html {
     padding: 0.2rem 0.65rem;
     border-radius: 999px;
     font-size: 0.75rem;
-    font-weight: 700;
-    background: #f0fdf4;
-    color: #166534;
-    border: 1px solid #bbf7d0;
+    font-weight: 800;
+    background: #dcfce7;
+    color: #14532d;
+    border: 1px solid #86efac;
 }
 
 .rp-stay-card__grid {
@@ -3508,7 +3538,7 @@ html {
     flex-direction: column;
     gap: 0.2rem;
     background: #f8faf9;
-    border: 1px solid rgba(15, 61, 39, 0.08);
+    border: 1px solid rgba(15, 61, 39, 0.14);
     border-radius: 0.55rem;
     padding: 0.6rem 0.75rem;
 }
@@ -3531,32 +3561,33 @@ html {
 }
 
 .rp-stay-col--in .rp-stay-col__tag {
-    color: #15803d;
+    color: #14532d;
 }
 
 .rp-stay-col--out .rp-stay-col__tag {
-    color: #b45309;
+    color: #78350f;
 }
 
 .rp-stay-col__date {
     font-size: 0.9375rem;
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 800;
+    color: #000000;
     line-height: 1.25;
 }
 
 .rp-stay-col__time {
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #0f172a;
 }
 
 .rp-stay-card__arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #94a3b8;
+    color: #1e293b;
     font-size: 1.15rem;
+    font-weight: 700;
 }
 
 .rp-stay-card__footer {
@@ -3566,10 +3597,10 @@ html {
     gap: 1rem;
     margin-top: 0.65rem;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(15, 61, 39, 0.08);
+    border-top: 1px solid rgba(15, 61, 39, 0.12);
     font-size: 0.8125rem;
-    color: #334155;
-    font-weight: 500;
+    color: #000000;
+    font-weight: 600;
 }
 
 .rp-stay-card__footer-item {
@@ -3587,11 +3618,11 @@ html {
 
 .rp-modal__pricebox span {
     display: block;
-    font-size: 0.6875rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #967126;
-    font-weight: 700;
+    color: #78350f;
+    font-weight: 800;
 }
 
 .rp-modal__pricebox strong {
@@ -3599,13 +3630,15 @@ html {
     margin-top: 0.4rem;
     font-family: var(--rp-font-display);
     font-size: 1.75rem;
-    color: #0b2418;
+    color: #000000;
+    font-weight: 800;
 }
 
 .rp-modal__pricebox p {
     margin: 0.3rem 0 0;
-    color: #4b5563;
+    color: #0f172a;
     font-size: 0.875rem;
+    font-weight: 600;
 }
 
 .rp-modal__sale-info {
@@ -3704,34 +3737,38 @@ html {
 .rp-booking-form h3 {
     margin: 0;
     font-family: var(--rp-font-display);
-    color: #0b2418;
-    font-size: 1.25rem;
+    color: #000000;
+    font-size: 1.35rem;
+    font-weight: 800;
 }
 
 .rp-booking-form label {
     display: grid;
     gap: 0.35rem;
-    color: #374151;
+    color: #000000;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 700;
 }
 
 .rp-booking-form input {
     width: 100%;
     min-height: 2.75rem;
     border-radius: 0.6rem;
-    border: 1px solid #d1d5db;
+    border: 1.5px solid #94a3b8;
     background-color: #ffffff;
     padding: 0.75rem 0.9rem;
     font-family: var(--rp-font-body);
-    color: #111827;
+    color: #000000;
+    font-weight: 600;
     color-scheme: light;
     box-sizing: border-box;
     max-width: 100%;
 }
 
 .rp-booking-form input::placeholder {
-    color: #9ca3af;
+    color: #475569;
+    font-weight: 500;
+    opacity: 1;
 }
 
 .rp-booking-form input:focus {
@@ -3746,7 +3783,7 @@ html {
     width: 100%;
     min-height: 2.75rem;
     border-radius: 0.6rem;
-    border: 1px solid #d1d5db;
+    border: 1.5px solid #94a3b8;
     background-color: #ffffff;
     overflow: hidden;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -3763,11 +3800,11 @@ html {
     align-items: center;
     justify-content: center;
     padding: 0 0.85rem;
-    background: #f1f5f9;
-    color: #14532d;
-    font-weight: 700;
+    background: #e2e8f0;
+    color: #000000;
+    font-weight: 800;
     font-size: 0.92rem;
-    border-right: 1px solid #d1d5db;
+    border-right: 1.5px solid #94a3b8;
     letter-spacing: 0.04em;
     user-select: none;
 }
@@ -3781,12 +3818,14 @@ html {
     outline: none !important;
     background: transparent;
     padding: 0.75rem 0.9rem;
+    color: #000000;
+    font-weight: 600;
 }
 
 .rp-label-hint {
     font-size: 0.75rem;
-    font-weight: 400;
-    color: #6b7280;
+    font-weight: 600;
+    color: #1f2937;
     margin-left: 0.25rem;
 }
 
@@ -4041,17 +4080,36 @@ html {
 
 .rp-calendar__day.is-available {
     cursor: pointer;
-    background: #f0fdf4;
-    color: #166534;
-    border-color: #bbf7d0;
+    background: #ecfdf5;
+    color: #064e3b;
+    border: 1.5px solid #6ee7b7;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08);
+}
+
+.rp-calendar__day.is-available .rp-calendar__day-num {
+    color: #0b2418;
+    font-weight: 800;
+}
+
+.rp-calendar__day.is-available .rp-calendar__day-month {
+    color: #047857;
+    font-weight: 600;
 }
 
 .rp-calendar__day.is-available:hover {
-    background: #dcfce7;
-    border-color: #16a34a;
-    color: #14532d;
+    background: #a7f3d0;
+    border-color: #059669;
+    color: #022c22;
     transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(22, 101, 52, 0.15);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.rp-calendar__day.is-available:hover .rp-calendar__day-num {
+    color: #022c22;
+}
+
+.rp-calendar__day.is-available:hover .rp-calendar__day-month {
+    color: #064e3b;
 }
 
 .rp-calendar__day.is-disabled {
@@ -5052,12 +5110,13 @@ body:has(.rp-modal.is-open) .rp-footer {
 /* ─────────────────────────── PayMongo Payment Gateway Modal ─────────────────────────── */
 
 .rp-modal__panel--payment {
-    max-width: 38rem;
+    width: 100%;
+    max-width: 62rem;
     padding: 1.75rem;
     background: #ffffff;
     border: 1px solid rgba(200, 164, 93, 0.4);
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-    color: #1f2937;
+    color: #0f172a;
 }
 
 .rp-pay-summary {
@@ -5076,22 +5135,23 @@ body:has(.rp-modal.is-open) .rp-footer {
 }
 
 .rp-pay-summary__item span {
-    font-size: 0.65rem;
-    color: #6b7280;
+    font-size: 0.6875rem;
+    color: #1f2937;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 700;
 }
 
 .rp-pay-summary__item strong {
-    font-size: 1.15rem;
-    color: #0b2418;
+    font-size: 1.25rem;
+    color: #000000;
     font-family: var(--rp-font-display);
+    font-weight: 800;
 }
 
 .rp-pay-summary__item--highlight strong {
-    color: #967126;
-    font-size: 1.3rem;
+    color: #78350f;
+    font-size: 1.35rem;
 }
 
 .rp-pay-tabs {
@@ -5108,26 +5168,26 @@ body:has(.rp-modal.is-open) .rp-footer {
     gap: 0.4rem;
     padding: 0.75rem 0.5rem;
     background: #ffffff;
-    border: 1px solid #d1d5db;
+    border: 1.5px solid #cbd5e1;
     border-radius: 0.6rem;
-    color: #4b5563;
+    color: #000000;
     cursor: pointer;
     font-family: var(--rp-font-body);
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     transition: all 0.25s ease;
 }
 
 .rp-pay-tab:hover {
     border-color: var(--rp-gold);
     background: #fef9ee;
-    color: #0b2418;
+    color: #000000;
 }
 
 .rp-pay-tab.is-active {
     background: linear-gradient(135deg, rgba(200, 164, 93, 0.15), rgba(11, 36, 24, 0.06));
     border-color: #967126;
-    color: #0b2418;
+    color: #000000;
     box-shadow: 0 4px 14px rgba(200, 164, 93, 0.2);
 }
 
@@ -5166,8 +5226,14 @@ body:has(.rp-modal.is-open) .rp-footer {
     border: 1px solid rgba(200, 164, 93, 0.25);
     font-size: 0.85rem;
     line-height: 1.5;
-    color: #374151;
+    color: #0f172a;
+    font-weight: 600;
     margin-bottom: 1rem;
+}
+
+.rp-pay-info strong {
+    color: #000000;
+    font-weight: 800;
 }
 
 .rp-card-form {
@@ -5405,20 +5471,27 @@ body:has(.rp-modal.is-open) .rp-footer {
 
 .rp-card-form__field label {
     font-size: 0.8125rem;
-    color: #374151;
-    font-weight: 600;
+    color: #000000;
+    font-weight: 700;
 }
 
 .rp-card-form__field input {
     width: 100%;
     min-height: 2.6rem;
     border-radius: 0.5rem;
-    border: 1px solid #d1d5db;
+    border: 1.5px solid #94a3b8;
     background: #ffffff;
     padding: 0.65rem 0.85rem;
-    color: #111827;
+    color: #000000;
+    font-weight: 600;
     font-family: var(--rp-font-body);
     font-size: 0.875rem;
+}
+
+.rp-card-form__field input::placeholder {
+    color: #475569;
+    font-weight: 500;
+    opacity: 1;
 }
 
 .rp-card-form__field input:focus {
@@ -5435,6 +5508,9 @@ body:has(.rp-modal.is-open) .rp-footer {
 
 .rp-iframe-box {
     margin-top: 1rem;
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
     border-radius: 0.75rem;
     overflow: hidden;
     border: 1px solid rgba(200, 164, 93, 0.4);
@@ -5477,7 +5553,7 @@ body:has(.rp-modal.is-open) .rp-footer {
 
 .rp-iframe-box iframe {
     width: 100%;
-    height: 480px;
+    height: 450px;
     border: none;
     background: #fff;
 }
@@ -5880,6 +5956,13 @@ body:has(.rp-modal.is-open) .rp-footer {
     border-radius: 0.6rem !important;
 }
 
+.rp-calendar__day.is-range-start .rp-calendar__day-num,
+.rp-calendar__day.is-range-start .rp-calendar__day-month,
+.rp-calendar__day.is-range-end .rp-calendar__day-num,
+.rp-calendar__day.is-range-end .rp-calendar__day-month {
+    color: #ffffff !important;
+}
+
 .rp-calendar__day.is-in-range {
     background: #fef9ee !important;
     color: #0b2418 !important;
@@ -5911,14 +5994,15 @@ body:has(.rp-modal.is-open) .rp-footer {
     font-size: 0.8125rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #0b2418;
+    color: #000000;
     margin: 0;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .rp-modal__section-hint {
     font-size: 0.72rem;
-    color: #6b7280;
+    color: #1f2937;
+    font-weight: 600;
 }
 
 .rp-selected-amenities-list {
@@ -5962,19 +6046,19 @@ body:has(.rp-modal.is-open) .rp-footer {
 
 .rp-selected-amenity-title {
     font-size: 0.9375rem;
-    font-weight: 700;
-    color: #0b2418;
+    font-weight: 800;
+    color: #000000;
     margin: 0;
 }
 
 .rp-item-badge {
     font-size: 0.6875rem;
-    font-weight: 600;
+    font-weight: 700;
     padding: 0.2rem 0.5rem;
     border-radius: 999px;
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #e5e7eb;
+    background: #e2e8f0;
+    color: #000000;
+    border: 1px solid #cbd5e1;
 }
 
 .rp-item-badge--ac {
@@ -5988,7 +6072,8 @@ body:has(.rp-modal.is-open) .rp-footer {
     align-items: center;
     gap: 0.4rem;
     font-size: 0.78rem;
-    color: #4b5563;
+    color: #0f172a;
+    font-weight: 600;
 }
 
 .rp-selected-amenity-meta svg {
@@ -6041,20 +6126,21 @@ body:has(.rp-modal.is-open) .rp-footer {
 }
 
 .rp-sched-text {
-    color: #1e293b;
+    color: #000000;
     font-size: 0.8rem;
+    font-weight: 600;
     line-height: 1.25;
 }
 
 .rp-sched-text strong {
-    color: #0f172a;
-    font-weight: 700;
+    color: #000000;
+    font-weight: 800;
 }
 
 .rp-sched-session {
-    color: #475569;
+    color: #0f172a;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .rp-sched-meta {
@@ -6080,9 +6166,9 @@ body:has(.rp-modal.is-open) .rp-footer {
 }
 
 .rp-selected-amenity-price {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #0b2418;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #000000;
     font-family: var(--rp-font-display);
 }
 
@@ -6708,15 +6794,67 @@ body:has(.rp-modal.is-open) .rp-footer {
 }
 
 .rp-dp-left-col .rp-calendar__day.is-available {
-    background: #f0fdf4;
-    color: #166534;
-    border-color: #bbf7d0;
+    background: #ecfdf5;
+    color: #064e3b;
+    border: 1.5px solid #6ee7b7;
+}
+
+.rp-dp-left-col .rp-calendar__day.is-available .rp-calendar__day-num {
+    color: #0b2418;
+    font-weight: 800;
+}
+
+.rp-dp-left-col .rp-calendar__day.is-available .rp-calendar__day-month {
+    color: #047857;
+    font-weight: 600;
 }
 
 .rp-dp-left-col .rp-calendar__day.is-available:hover {
-    background: #dcfce7;
-    border-color: #16a34a;
-    color: #14532d;
+    background: #a7f3d0;
+    border-color: #059669;
+    color: #022c22;
+}
+
+.rp-dp-left-col .rp-calendar__day.is-available:hover .rp-calendar__day-num {
+    color: #022c22;
+}
+
+.rp-dp-left-col .rp-calendar__day.is-available:hover .rp-calendar__day-month {
+    color: #064e3b;
+}
+
+.rp-dp-whole-day-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    background: linear-gradient(135deg, #0b2418, #14532d);
+    color: #fef08a;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-radius: 9999px;
+    border: 1px solid #c8a45d;
+    box-shadow: 0 2px 6px rgba(11, 36, 24, 0.15);
+    width: fit-content;
+    margin-top: 0.25rem;
+    animation: rp-pill-pop 0.2s ease-out;
+}
+
+.rp-dp-whole-day-pill i {
+    font-size: 0.78rem;
+    color: #4ade80;
+}
+
+@keyframes rp-pill-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .rp-dp-left-col .rp-calendar__day-num {

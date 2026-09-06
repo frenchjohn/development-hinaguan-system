@@ -1423,11 +1423,14 @@
                                     <small class="rp-session-time" id="dpCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
+                            <div class="rp-dp-whole-day-pill" id="dpWholeDayPill" style="display: none;">
+                                <i class="bi bi-clock-history"></i> Whole Day · 24hrs
+                            </div>
                             <div class="rp-dp-time-card__preview" id="dpCheckInPreviewText">Select date on calendar</div>
                         </div>
 
                         {{-- Check-out Time Card --}}
-                        <div class="rp-dp-time-card">
+                        <div class="rp-dp-time-card" id="dpCheckOutCard">
                             <div class="rp-dp-time-card__head">
                                 <span class="rp-dp-time-card__label">Check-out</span>
                                 <span class="rp-dp-time-card__date" id="dpCheckOutDate">Select date</span>
@@ -1543,11 +1546,14 @@
                                     <small class="rp-session-time" id="avCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
+                            <div class="rp-dp-whole-day-pill" id="avWholeDayPill" style="display: none;">
+                                <i class="bi bi-clock-history"></i> Whole Day · 24hrs
+                            </div>
                             <div class="rp-dp-time-card__preview" id="avCheckInPreviewText">Pick a date on calendar</div>
                         </div>
 
                         {{-- Check-out Time Card --}}
-                        <div class="rp-dp-time-card">
+                        <div class="rp-dp-time-card" id="avCheckOutCard">
                             <div class="rp-dp-time-card__head">
                                 <span class="rp-dp-time-card__label">Check-out</span>
                                 <span class="rp-dp-time-card__date" id="avCheckOutDate">Pick a date</span>
@@ -1727,71 +1733,63 @@
 
 
 
-        {{-- ── Success modal ── --}}
+        {{-- ── Reservation Confirmation Modal (Clean Plain Text - Same as Terms & Policies) ── --}}
 
-        <div class="rp-modal rp-modal--success" id="reservationSuccessModal" aria-hidden="true">
+        <div class="rp-modal rp-terms-modal rp-confirmation-modal" id="reservationSuccessModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
 
             <div class="rp-modal__backdrop"></div>
 
-            <div class="rp-modal__panel rp-modal__panel--success">
+            <div class="rp-terms-modal__panel rp-confirmation-modal__panel">
 
-                <div class="rp-modal__success-icon">
+                <div class="rp-terms-modal__header">
+                    <div>
+                        <h2 id="successModalTitle" class="rp-terms-modal__title">Reservation Confirmed &amp; Deposit Paid!</h2>
+                        <p class="rp-terms-modal__subtitle">Your reservation has been confirmed and locked. Please review your booking confirmation and check-in details below.</p>
+                    </div>
+                </div>
 
-                    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <div class="rp-terms-modal__content" id="successModalScrollBody">
 
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    <section class="rp-terms-section">
+                        <h3>1. Booking Confirmation &amp; Entry QR Pass</h3>
+                        <ul>
+                            <li><strong>Entry QR Code Emailed:</strong> We have emailed your official entry QR code, scheduled arrival date and time, availed amenities, and complete billing summary to your registered email address.</li>
+                            <li><strong>Check Your Inbox:</strong> Everything you need for your visit has been sent. Please check your inbox (as well as your spam or junk folder) for your confirmation email.</li>
+                            <li><strong>Required for Entry:</strong> Please bring your Entry QR Code (saved on your phone or printed). It is required upon arrival at the entrance counter for identity verification and express check-in.</li>
+                        </ul>
+                    </section>
 
-                    </svg>
+                    <section class="rp-terms-section">
+                        <h3>2. Arrival &amp; Check-In Guidelines</h3>
+                        <ul>
+                            <li><strong>Park Hours:</strong> Daytime visits run from {{ $daytimeStartFormatted ?? '8:00 AM' }} to {{ $daytimeEndFormatted ?? '5:00 PM' }}. Overnight stays begin at {{ $nighttimeStartFormatted ?? '6:00 PM' }} and conclude at {{ $nighttimeEndFormatted ?? '8:00 AM' }} the following morning.</li>
+                            <li><strong>Remaining Balance:</strong> Your 50% deposit has been credited. Any remaining 50% balance can be settled at the park counter upon arrival.</li>
+                            <li><strong>Valid ID:</strong> Please present at least one valid government or school ID matching the booker's name upon check-in.</li>
+                        </ul>
+                    </section>
+
+                    <section class="rp-terms-section">
+                        <h3>3. Park Rules &amp; Reminders</h3>
+                        <ul>
+                            <li><strong>Proper Pool Attire:</strong> Swimwear (rash guards, swim trunks, bathing suits) is required when using the pools. Cotton shirts and denim pants are strictly prohibited in the water.</li>
+                            <li><strong>Food &amp; Drinks:</strong> Guests may bring outside food and non-alcoholic drinks with zero corkage fee. Free outdoor grilling stations are available (please bring your own charcoal and utensils).</li>
+                            <li><strong>Quiet Hours:</strong> Quiet hours are observed from 10:00 PM to 6:00 AM for the comfort of all overnight guests and nature.</li>
+                            <li><strong>Clean As You Go (CLAYGO):</strong> Please help us keep the park clean and pristine by segregating and disposing of trash into labeled waste bins.</li>
+                        </ul>
+                    </section>
 
                 </div>
 
-                <div class="rp-modal__success-content">
+                <div class="rp-terms-modal__footer">
+                    <span class="rp-confirmation-status-text">
+                        <i class="bi bi-check-circle-fill"></i> Confirmation email dispatched
+                    </span>
 
-                    <h2>Reservation Confirmed &amp; Deposit Paid!</h2>
-
-                    <div class="rp-modal__success-scroll-wrap" id="successModalScrollBody">
-
-                        <div class="rp-modal__success-details">
-
-                            <div class="rp-modal__success-notice">
-
-                                <strong><i class="bi bi-envelope-check-fill me-1"></i> All Booking Details &amp; QR Pass Sent to Your Email!</strong>
-                                We have emailed your <strong>official entry QR code</strong>, <strong>scheduled arrival time &amp; date</strong>, <strong>availed amenities</strong>, and <strong>complete billing breakdown</strong> to your email address. Everything you need for your visit has been sent — please check your inbox (or spam folder)!
-
-                            </div>
-
-                            <div class="rp-modal__success-notice" style="background: #fefce8; border: 1px solid #fde047; color: #374151; text-align: left;">
-
-                                <strong style="color: #854d0e; margin-bottom: 0.35rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> IMPORTANT CHECK-IN NOTICE:</strong>
-                                Please <strong>bring your Entry QR Code</strong> (on your phone or printed). It is <strong>required upon arrival</strong> to automatically verify your identity and confirm that you are the rightful owner of this reservation for express check-in.
-
-                            </div>
-
-                            <p class="rp-modal__success-sub">Your deposit has been successfully processed. Any remaining balance can be settled at the park counter upon check-in.</p>
-
-                        </div>
-
-                    </div>
-
-                    <div class="rp-modal__scroll-hint" id="successModalScrollHint" role="button" tabindex="0" title="Scroll down to unlock">
-
-                        <span id="successModalScrollHintText">Scroll down to review all notices</span>
-                        <svg class="rp-scroll-arrow-down" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-
-                        </svg>
-
-                    </div>
-
-                    <div class="rp-modal__success-actions">
-
-                        <button type="button" id="successConfirmBtn" class="rp-booking-form__button rp-booking-form__button--primary" disabled>
-                            <span id="successConfirmBtnText">Scroll down to unlock (Got it!)</span>
+                    <div class="rp-confirmation-modal__actions">
+                        <button type="button" id="successConfirmBtn" class="rp-terms-modal__proceed-btn">
+                            <span id="successConfirmBtnText">Got It!</span>
                         </button>
-
                     </div>
-
                 </div>
 
             </div>
