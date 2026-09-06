@@ -34,6 +34,7 @@ window.AppPage['admin_reports'] = function () {
     const matrixCategoryCheckboxes = document.querySelectorAll('.matrix-category-cb');
     const matrixSelectAllBtn = document.getElementById('matrixSelectAllAmenitiesBtn');
     const matrixClearAllBtn = document.getElementById('matrixClearAllAmenitiesBtn');
+    const exportMatrixExcelBtn = document.getElementById('exportMatrixExcelBtn');
     const exportMatrixCsvBtn = document.getElementById('exportMatrixCsvBtn');
     const printMatrixPdfBtn = document.getElementById('printMatrixPdfBtn');
     const matrixSheetMonthTabs = document.getElementById('matrixSheetMonthTabs');
@@ -859,6 +860,175 @@ window.AppPage['admin_reports'] = function () {
         });
     }
 
+    // ==========================================
+    // MATRIX EXCEL (.XLSX) & CSV EXPORT ENGINE
+    // ==========================================
+    function exportMatrixToExcel() {
+        const dateList = getDatesInRange(currentMatrixStartDate, currentMatrixEndDate);
+        if (dateList.length === 0) {
+            alert('No data to export.');
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+            alert('Excel generator is not ready. Downloading CSV fallback instead.');
+            if (exportMatrixCsvBtn) exportMatrixCsvBtn.click();
+            return;
+        }
+
+        const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
+        const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
+        const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
+        const startYear = dStart.getFullYear();
+        const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
+        const endYear = dEnd.getFullYear();
+        const monthLabelText = (startMonthName === endMonthName && startYear === endYear)
+            ? `${startMonthName.toUpperCase()} ${startYear}`
+            : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} - ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
+
+        const wb = XLSX.utils.book_new();
+
+        // 1. Build Room / Amenity Matrix Sheet (Matching Image 3 template)
+        const visibleAmenities = allAmenities.filter(a => selectedAmenityIds.has(String(a.id)));
+        const { rows, columnTotals, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied } = computeMatrixData(dateList, selectedAmenityIds);
+
+        const roomSheetData = [];
+
+        // Row 1: Super Header Row (0-indexed row 0)
+        // Cell A1 displays the month (e.g. SEPTEMBER 2026)
+        const superHeader = [monthLabelText, 'DAY', 'ROOM IDENTIFICATION'];
+        for (let i = 1; i < visibleAmenities.length; i++) {
+            superHeader.push('');
+        }
+        superHeader.push('NUMBER OF');
+        superHeader.push('NUMBER OF');
+        superHeader.push('NUMBER OF ROOMS');
+        roomSheetData.push(superHeader);
+
+        // Row 2: Sub Header Row (0-indexed row 1)
+        // Cell A2 displays DATE
+        const subHeader = ['DATE', ''];
+        visibleAmenities.forEach(a => {
+            subHeader.push(a.name.toUpperCase());
+        });
+        subHeader.push('GUEST CHECK IN');
+        subHeader.push('GUESTS STAYED OVERNIGHT');
+        subHeader.push('OCCUPIED');
+        roomSheetData.push(subHeader);
+
+        // Daily Data Rows (0-indexed rows 2 onwards)
+        rows.forEach(r => {
+            const rowArr = [
+                r.dayNum,
+                r.dayName
+            ];
+            visibleAmenities.forEach(a => {
+                const count = r.amenityGuestsMap[String(a.id)];
+                rowArr.push(count > 0 ? count : '');
+            });
+            rowArr.push(r.dayGuestsCheckIn || 0);
+            rowArr.push(r.dayGuestsOvernight || 0);
+            rowArr.push(r.dayRoomsOccupied || 0);
+            roomSheetData.push(rowArr);
+        });
+
+        // Total Row
+        const totalRowArr = ['TOTAL', ''];
+        visibleAmenities.forEach(a => {
+            const colTot = columnTotals[String(a.id)];
+            totalRowArr.push(colTot > 0 ? colTot : 0);
+        });
+        totalRowArr.push(grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied);
+        roomSheetData.push(totalRowArr);
+
+        const wsRooms = XLSX.utils.aoa_to_sheet(roomSheetData);
+
+        // Column Widths for Room Matrix Sheet (Eliminates header truncation)
+        wsRooms['!cols'] = [
+            { wch: Math.max(monthLabelText.length + 3, 16) }, // Month & DATE
+            { wch: 15 }, // DAY
+            ...visibleAmenities.map(a => ({
+                wch: Math.max(String(a.name).length + 4, 12)
+            })),
+            { wch: 18 }, // NUMBER OF / GUEST CHECK IN
+            { wch: 26 }, // NUMBER OF / GUESTS STAYED OVERNIGHT
+            { wch: 18 }, // NUMBER OF ROOMS / OCCUPIED
+        ];
+
+        // Cell Merges for Room Matrix Sheet
+        const numAmenities = visibleAmenities.length;
+        const superRowIdx = 0;
+        const subRowIdx = 1;
+        const totalRowIdx = 2 + rows.length;
+
+        const roomMerges = [
+            { s: { r: superRowIdx, c: 1 }, e: { r: subRowIdx, c: 1 } }, // DAY
+            { s: { r: totalRowIdx, c: 0 }, e: { r: totalRowIdx, c: 1 } } // TOTAL label
+        ];
+        if (numAmenities > 1) {
+            roomMerges.push({
+                s: { r: superRowIdx, c: 2 },
+                e: { r: superRowIdx, c: 1 + numAmenities }
+            });
+        }
+        wsRooms['!merges'] = roomMerges;
+
+        // 2. Build Guests Demographics Sheet
+        const { rows: guestRows, grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests } = computeGuestsDemographicsData(dateList);
+        const guestsSheetData = [];
+        guestsSheetData.push([monthLabelText, 'DAY', 'MALE', 'FEMALE', 'FOREIGNER', 'TOTAL']);
+        guestsSheetData.push(['DATE', '', '', '', '', '']);
+
+        guestRows.forEach(r => {
+            guestsSheetData.push([
+                r.dayNum,
+                r.dayName,
+                r.dayMale,
+                r.dayFemale,
+                r.dayForeigner,
+                r.dayTotal
+            ]);
+        });
+        guestsSheetData.push(['TOTAL', '', grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests]);
+
+        const wsGuests = XLSX.utils.aoa_to_sheet(guestsSheetData);
+        wsGuests['!cols'] = [
+            { wch: Math.max(monthLabelText.length + 3, 16) },  // Month & DATE
+            { wch: 15 }, // DAY
+            { wch: 14 }, // MALE
+            { wch: 14 }, // FEMALE
+            { wch: 16 }, // FOREIGNER
+            { wch: 16 }  // TOTAL
+        ];
+        wsGuests['!merges'] = [
+            { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, // DAY
+            { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } }, // MALE
+            { s: { r: 0, c: 3 }, e: { r: 1, c: 3 } }, // FEMALE
+            { s: { r: 0, c: 4 }, e: { r: 1, c: 4 } }, // FOREIGNER
+            { s: { r: 0, c: 5 }, e: { r: 1, c: 5 } }, // TOTAL
+            { s: { r: 2 + guestRows.length, c: 0 }, e: { r: 2 + guestRows.length, c: 1 } } // TOTAL label
+        ];
+
+        // Format sheet titles (matching Image 3 tabs like "MONTHLY REPORT-JUNE" and "GUESTS-JUNE")
+        const roomsSheetTitle = `MONTHLY REPORT-${startMonthName.toUpperCase()}`.substring(0, 31);
+        const guestsSheetTitle = `GUESTS-${startMonthName.toUpperCase()}`.substring(0, 31);
+
+        if (currentMatrixView === 'guests') {
+            XLSX.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
+            XLSX.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
+        } else {
+            XLSX.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
+            XLSX.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
+        }
+
+        const fileName = `Hinaguan_Park_Amenity_Monitoring_Matrix_${currentMatrixStartDate}_${currentMatrixEndDate}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
+
+    if (exportMatrixExcelBtn) {
+        exportMatrixExcelBtn.addEventListener('click', exportMatrixToExcel);
+    }
+
     // Matrix CSV Export
     if (exportMatrixCsvBtn) {
         exportMatrixCsvBtn.addEventListener('click', () => {
@@ -868,23 +1038,9 @@ window.AppPage['admin_reports'] = function () {
                 return;
             }
 
-            const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
-            const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
-            const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
-            const startYear = dStart.getFullYear();
-            const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
-            const endYear = dEnd.getFullYear();
-            const monthLabelText = (startMonthName === endMonthName && startYear === endYear)
-                ? `${startMonthName.toUpperCase()} ${startYear}`
-                : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} - ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
-
             if (currentMatrixView === 'guests') {
                 const { rows, grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests } = computeGuestsDemographicsData(dateList);
                 let csv = '\uFEFF';
-                csv += 'ESTABLISHMENT NAME:,HINAGUAN NATURE PARK\n';
-                csv += `NUMBER OF GUESTS - ${monthLabelText}\n`;
-                csv += `REPORTING PERIOD:,${currentMatrixStartDate} to ${currentMatrixEndDate}\n\n`;
-
                 csv += 'DATE,DAY,MALE,FEMALE,FOREIGNER,TOTAL\n';
                 rows.forEach(r => {
                     csv += [r.dayNum, `"${r.dayName}"`, r.dayMale, r.dayFemale, r.dayForeigner, r.dayTotal].join(',') + '\n';
@@ -907,16 +1063,16 @@ window.AppPage['admin_reports'] = function () {
             const { rows, columnTotals, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied } = computeMatrixData(dateList, selectedAmenityIds);
 
             let csv = '\uFEFF';
-            csv += 'ESTABLISHMENT NAME:,HINAGUAN NATURE PARK\n';
-            csv += `TOTAL NUMBER OF ROOMS:,${visibleAmenities.length} ROOMS\n`;
-            csv += `FOR THE MONTH OF:,${monthLabelText}\n`;
-            csv += `REPORTING PERIOD:,${currentMatrixStartDate} to ${currentMatrixEndDate}\n\n`;
-
-            const headerCols = ['DATE', 'DAY', ...visibleAmenities.map(a => `"${a.name.replace(/"/g, '""')}"`), 'NUMBER OF GUEST CHECK IN', 'NUMBER OF GUESTS STAYED OVERNIGHT', 'NUMBER OF ROOMS OCCUPIED'];
-            csv += headerCols.join(',') + '\n';
+            const superHeaderCols = ['DATE', 'DAY', '"ROOM IDENTIFICATION"', ...Array(Math.max(visibleAmenities.length - 1, 0)).fill('""'), '"NUMBER OF"', '"NUMBER OF"', '"NUMBER OF ROOMS"'];
+            const subHeaderCols = ['""', '""', ...visibleAmenities.map(a => `"${a.name.replace(/"/g, '""')}"`), '"GUEST CHECK IN"', '"GUESTS STAYED OVERNIGHT"', '"OCCUPIED"'];
+            csv += superHeaderCols.join(',') + '\n';
+            csv += subHeaderCols.join(',') + '\n';
 
             rows.forEach(r => {
-                const amenityValues = visibleAmenities.map(a => r.amenityGuestsMap[String(a.id)] || 0);
+                const amenityValues = visibleAmenities.map(a => {
+                    const val = r.amenityGuestsMap[String(a.id)];
+                    return val > 0 ? val : 0;
+                });
                 const line = [r.dayNum, `"${r.dayName}"`, ...amenityValues, r.dayGuestsCheckIn, r.dayGuestsOvernight, r.dayRoomsOccupied];
                 csv += line.join(',') + '\n';
             });
@@ -936,11 +1092,238 @@ window.AppPage['admin_reports'] = function () {
         });
     }
 
-    // Matrix Print / PDF Export
+    // Matrix Clean Print / PDF Export (Table & Data Only)
+    function printMatrixReport() {
+        const dateList = getDatesInRange(currentMatrixStartDate, currentMatrixEndDate);
+        if (dateList.length === 0) {
+            alert('No data to export or print.');
+            return;
+        }
+
+        const dStart = new Date(currentMatrixStartDate + 'T00:00:00');
+        const dEnd = new Date(currentMatrixEndDate + 'T00:00:00');
+        const startMonthName = dStart.toLocaleDateString('en-US', { month: 'long' });
+        const startYear = dStart.getFullYear();
+        const endMonthName = dEnd.toLocaleDateString('en-US', { month: 'long' });
+        const endYear = dEnd.getFullYear();
+        const monthLabelText = (startMonthName === endMonthName && startYear === endYear)
+            ? `${startMonthName.toUpperCase()} ${startYear}`
+            : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} - ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
+
+        let tableHtml = '';
+        let titleLabel = '';
+
+        if (currentMatrixView === 'guests') {
+            titleLabel = 'Daily Guests Demographics Matrix';
+            const { rows: guestRows, grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests } = computeGuestsDemographicsData(dateList);
+
+            tableHtml = `
+                <table class="print-matrix-table">
+                    <thead>
+                        <tr style="background-color: #1c5c3c; color: #ffffff;">
+                            <th style="width: 70px; font-weight: bold;">${monthLabelText}</th>
+                            <th rowspan="2" style="width: 110px; font-weight: bold;">DAY</th>
+                            <th rowspan="2" style="font-weight: bold;">MALE</th>
+                            <th rowspan="2" style="font-weight: bold;">FEMALE</th>
+                            <th rowspan="2" style="font-weight: bold;">FOREIGNER</th>
+                            <th rowspan="2" style="font-weight: bold; background-color: #15462e;">TOTAL GUESTS</th>
+                        </tr>
+                        <tr style="background-color: #246b47; color: #ffffff;">
+                            <th style="font-weight: bold;">DATE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${guestRows.map((r, idx) => `
+                            <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+                                <td style="font-weight: bold;">${r.dayNum}</td>
+                                <td>${r.dayName}</td>
+                                <td>${r.dayMale > 0 ? r.dayMale : '-'}</td>
+                                <td>${r.dayFemale > 0 ? r.dayFemale : '-'}</td>
+                                <td>${r.dayForeigner > 0 ? r.dayForeigner : '-'}</td>
+                                <td style="font-weight: bold; background-color: #f0fdf4;">${r.dayTotal > 0 ? r.dayTotal : 0}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #eaf3ed; font-weight: bold; border-top: 2px solid #1c5c3c;">
+                            <td colspan="2" style="text-align: center; font-weight: bold;">TOTAL</td>
+                            <td>${grandTotalMale}</td>
+                            <td>${grandTotalFemale}</td>
+                            <td>${grandTotalForeigner}</td>
+                            <td style="font-weight: bold; background-color: #dcfce7;">${grandTotalAllGuests}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+        } else {
+            titleLabel = 'Daily Amenity & Room Occupancy Matrix';
+            const visibleAmenities = allAmenities.filter(a => selectedAmenityIds.has(String(a.id)));
+            const { rows, columnTotals, grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied } = computeMatrixData(dateList, selectedAmenityIds);
+
+            tableHtml = `
+                <table class="print-matrix-table">
+                    <thead>
+                        <tr style="background-color: #1c5c3c; color: #ffffff;">
+                            <th style="width: 55px; font-weight: bold; font-size: 7pt;">${monthLabelText}</th>
+                            <th rowspan="2" style="width: 80px; font-weight: bold;">DAY</th>
+                            <th colspan="${visibleAmenities.length}" style="font-weight: bold; letter-spacing: 0.5px;">ROOM / AMENITY IDENTIFICATION</th>
+                            <th style="width: 75px; font-weight: bold;">NUMBER OF</th>
+                            <th style="width: 85px; font-weight: bold;">NUMBER OF</th>
+                            <th style="width: 75px; font-weight: bold;">NUMBER OF ROOMS</th>
+                        </tr>
+                        <tr style="background-color: #246b47; color: #ffffff;">
+                            <th style="font-weight: bold;">DATE</th>
+                            ${visibleAmenities.map(a => `<th style="font-size: 6.5pt; font-weight: bold; padding: 3px 1px;">${a.name.toUpperCase()}</th>`).join('')}
+                            <th style="font-size: 6.5pt; font-weight: bold;">GUEST CHECK IN</th>
+                            <th style="font-size: 6.5pt; font-weight: bold;">GUESTS STAYED OVERNIGHT</th>
+                            <th style="font-size: 6.5pt; font-weight: bold;">OCCUPIED</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map((r, idx) => `
+                            <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+                                <td style="font-weight: bold;">${r.dayNum}</td>
+                                <td style="font-size: 7pt;">${r.dayName}</td>
+                                ${visibleAmenities.map(a => {
+                                    const val = r.amenityGuestsMap[String(a.id)];
+                                    return `<td style="${val > 0 ? 'font-weight: bold; background-color: #e8f5e9;' : 'color: #999;'}">${val > 0 ? val : '-'}</td>`;
+                                }).join('')}
+                                <td style="font-weight: 600;">${r.dayGuestsCheckIn > 0 ? r.dayGuestsCheckIn : '-'}</td>
+                                <td style="font-weight: 600;">${r.dayGuestsOvernight > 0 ? r.dayGuestsOvernight : '-'}</td>
+                                <td style="font-weight: 600;">${r.dayRoomsOccupied > 0 ? r.dayRoomsOccupied : '0'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #eaf3ed; font-weight: bold; border-top: 2px solid #1c5c3c;">
+                            <td colspan="2" style="text-align: center; font-weight: bold;">TOTAL</td>
+                            ${visibleAmenities.map(a => {
+                                const tot = columnTotals[String(a.id)];
+                                return `<td style="font-weight: bold;">${tot > 0 ? tot : 0}</td>`;
+                            }).join('')}
+                            <td style="font-weight: bold;">${grandTotalCheckIn}</td>
+                            <td style="font-weight: bold;">${grandTotalOvernight}</td>
+                            <td style="font-weight: bold;">${grandTotalRoomsOccupied}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+        }
+
+        const printDoc = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Hinaguan Nature Park — ${titleLabel}</title>
+    <style>
+        @page {
+            size: landscape;
+            margin: 6mm 8mm;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #000000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 7.5pt;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid #1c5c3c;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+        }
+        .report-title-box h1 {
+            margin: 0;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #1c5c3c;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .report-title-box p {
+            margin: 2px 0 0 0;
+            font-size: 8.5pt;
+            color: #444;
+        }
+        .report-meta-box {
+            text-align: right;
+            font-size: 7.5pt;
+            color: #333;
+            line-height: 1.35;
+        }
+        table.print-matrix-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        table.print-matrix-table th,
+        table.print-matrix-table td {
+            border: 1px solid #777;
+            padding: 2.5px 1.5px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 7pt;
+        }
+        table.print-matrix-table thead th {
+            border: 1px solid #1c5c3c;
+        }
+        table.print-matrix-table tfoot td {
+            border-top: 2px solid #1c5c3c;
+            border-bottom: 2px solid #1c5c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title-box">
+            <h1>Hinaguan Nature Park</h1>
+            <p>${titleLabel}</p>
+        </div>
+        <div class="report-meta-box">
+            <div><strong>Month:</strong> ${monthLabelText}</div>
+            <div><strong>Reporting Period:</strong> ${currentMatrixStartDate} to ${currentMatrixEndDate}</div>
+        </div>
+    </div>
+    ${tableHtml}
+</body>
+</html>`;
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(printDoc);
+        doc.close();
+
+        iframe.contentWindow.focus();
+        setTimeout(() => {
+            iframe.contentWindow.print();
+            setTimeout(() => {
+                if (document.body.contains(iframe)) {
+                    document.body.removeChild(iframe);
+                }
+            }, 1000);
+        }, 300);
+    }
+
     if (printMatrixPdfBtn) {
-        printMatrixPdfBtn.addEventListener('click', () => {
-            window.print();
-        });
+        printMatrixPdfBtn.addEventListener('click', printMatrixReport);
     }
 
     // Initial render of Matrix Table and Tabs

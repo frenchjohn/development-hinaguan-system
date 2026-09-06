@@ -125,7 +125,7 @@ class AdminAmenityGuestMatrixReportTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Daily Amenity & Room Occupancy Matrix', false);
-        $response->assertSee('Download CSV');
+        $response->assertSee('Download Excel (.xlsx)');
         $response->assertSee('Download / Print PDF');
         $response->assertSee('A-House 1');
         $response->assertSee('Cottage 1');

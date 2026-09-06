@@ -16,6 +16,12 @@
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('vendor/xlsx/xlsx.full.min.js') }}"></script>
+    <script>
+        if (typeof XLSX === 'undefined') {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
+        }
+    </script>
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -281,11 +287,11 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                                <button type="button" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text shadow-sm transition-all hover:bg-glass-hover active:scale-95" id="exportMatrixCsvBtn">
-                                    <svg class="h-4 w-4 text-emerald-600 dark:text-emerald-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                <button type="button" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 text-xs font-semibold shadow-sm transition-all active:scale-95" id="exportMatrixExcelBtn" title="Download formatted Excel workbook matching official template with full column widths">
+                                    <svg class="h-4 w-4 text-emerald-200" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1.5 12.5-1.5 2.5 1.5 2.5h-1.6l-.9-1.7-.9 1.7H9l1.5-2.5L9 14.5h1.6l.9 1.7.9-1.7h1.6zM13 9V3.5L18.5 9H13z"/>
                                     </svg>
-                                    <span>Download CSV</span>
+                                    <span>Download Excel (.xlsx)</span>
                                 </button>
                                 <button type="button" class="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-hp-green-mid px-4 py-2.5 text-xs font-semibold text-white shadow-md shadow-hp-green-mid/20 transition-all hover:bg-[#15462e] active:scale-95" id="printMatrixPdfBtn">
                                     <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
