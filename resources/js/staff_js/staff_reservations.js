@@ -139,11 +139,18 @@ window.AppPage['staff_reservations'] = function () {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
             const sFormatted = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-            if (endDateStr && endDateStr !== dateStr) {
+            const sDateOnly = String(dateStr).split('T')[0].split(' ')[0];
+            const eDateOnly = endDateStr ? String(endDateStr).split('T')[0].split(' ')[0] : '';
+            const daysCount = parseInt(totalDays, 10) || 1;
+
+            if (eDateOnly && eDateOnly !== sDateOnly && daysCount > 1) {
                 const endDate = new Date(endDateStr);
-                const eFormatted = endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                const daysCount = totalDays || (Math.round((endDate - date) / (1000 * 60 * 60 * 24)) + 1);
-                return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>` : ''}</div>`;
+                const eFormatted = !isNaN(endDate.getTime())
+                    ? endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                    : endDateStr;
+                if (eFormatted && eFormatted !== sFormatted) {
+                    return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)} – ${escapeHtml(eFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(${daysCount} Days Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>` : ''}</div>`;
+                }
             }
             return `<div><span style="font-weight:600;" class="${isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : ''}">${escapeHtml(sFormatted)}</span><div style="font-size:0.75rem;opacity:0.75;">(1 Day Stay)</div>${isPastArrival ? `<div style="font-size:0.68rem;font-weight:600;color:#dc2626;margin-top:2px;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>` : ''}</div>`;
         };
@@ -2196,10 +2203,15 @@ window.AppPage['staff_reservations'] = function () {
             const sFormatted = formatDate(sDate);
             const sSlotDisplay = (startSlot || 'Daytime') === 'Nighttime' ? 'Overnight' : (startSlot || 'Daytime');
             const eSlotDisplay = (endSlot || startSlot || 'Daytime') === 'Nighttime' ? 'Overnight' : (endSlot || startSlot || 'Daytime');
-            if (eDate && eDate !== sDate) {
+            const sDateOnly = String(sDate).split('T')[0].split(' ')[0];
+            const eDateOnly = eDate ? String(eDate).split('T')[0].split(' ')[0] : '';
+            const daysCount = parseInt(totalDays, 10) || 1;
+
+            if (eDateOnly && eDateOnly !== sDateOnly && daysCount > 1) {
                 const eFormatted = formatDate(eDate);
-                const daysCount = totalDays || 'Multi-day';
-                return `${sFormatted} (${sSlotDisplay}) – ${eFormatted} (${eSlotDisplay}) (${daysCount} Days Stay)`;
+                if (eFormatted && eFormatted !== sFormatted) {
+                    return `${sFormatted} (${sSlotDisplay}) – ${eFormatted} (${eSlotDisplay}) (${daysCount} Days Stay)`;
+                }
             }
             return `${sFormatted} (${sSlotDisplay})`;
         };
@@ -3260,14 +3272,18 @@ window.AppPage['staff_reservations'] = function () {
 
         const pricing = calculateReservationPricing(sDate, eDate, sSlot, eSlot);
 
+        const sDateOnly = sDate ? String(sDate).split('T')[0].split(' ')[0] : '';
+        const eDateOnly = eDate ? String(eDate).split('T')[0].split(' ')[0] : '';
+        const isSingleDay = !eDateOnly || sDateOnly === eDateOnly || (pricing && pricing.totalDays <= 1);
+
         if (editCalTriggerValue) {
-            editCalTriggerValue.textContent = (sDate === eDate)
+            editCalTriggerValue.textContent = isSingleDay
                 ? formatDateLong(sDate)
                 : `${formatDateLong(sDate)} – ${formatDateLong(eDate)}`;
         }
 
         if (editCalTriggerSessions) {
-            editCalTriggerSessions.textContent = (sDate === eDate)
+            editCalTriggerSessions.textContent = isSingleDay
                 ? (sSlot === eSlot ? `${sSlot} Session` : `${sSlot} to ${eSlot}`)
                 : `${sSlot} check-in → ${eSlot} check-out (${pricing.dayCount}D ${pricing.nightCount}N)`;
         }
@@ -3553,7 +3569,10 @@ window.AppPage['staff_reservations'] = function () {
         syncEditCalNextState();
 
         if (editCalModalCurrent) {
-            editCalModalCurrent.textContent = currentStart ? `Current: ${formatDateLong(currentStart)}${currentEnd !== currentStart ? ' – ' + formatDateLong(currentEnd) : ''}` : '';
+            const cStartOnly = currentStart ? String(currentStart).split('T')[0].split(' ')[0] : '';
+            const cEndOnly = currentEnd ? String(currentEnd).split('T')[0].split(' ')[0] : '';
+            const isDiff = cEndOnly && cEndOnly !== cStartOnly;
+            editCalModalCurrent.textContent = currentStart ? `Current: ${formatDateLong(currentStart)}${isDiff ? ' – ' + formatDateLong(currentEnd) : ''}` : '';
             editCalModalCurrent.hidden = !currentStart;
         }
 

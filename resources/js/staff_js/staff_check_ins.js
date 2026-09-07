@@ -64,9 +64,6 @@ window.AppPage = window.AppPage || {};
 window.AppPage['staff_check_ins'] = function () {
 
 
-    const tabGuestBtn = document.getElementById('tabGuestBtn');
-    const tabReservationBtn = document.getElementById('tabReservationBtn');
-    const guestTableSection = document.getElementById('guestTableSection');
     const reservationTableSection = document.getElementById('reservationTableSection');
     const reservationTableBody = document.getElementById('checkInsReservationTableBody');
     const reservationModal = document.getElementById('reservationModal');
@@ -108,23 +105,24 @@ window.AppPage['staff_check_ins'] = function () {
     // the meantime (closing it clears currentReservationId).
     let pendingCheckOutReservationId = null;
 
-    // Initialize: show dashboard table by default
+    // Initialize: show reservation table by default
     const dashboardSection = document.getElementById('dashboardSection');
-
-    if (dashboardSection && guestTableSection && reservationTableSection) {
-        // HTML already has the correct initial display states:
-        // guest = visible, dashboard = hidden, reservation = hidden
-        // Just ensure the active tab class is set correctly
-    }
 
     // Tab switching
     const switchTab = (target) => {
         if (dashboardSection) dashboardSection.style.display = target === 'dashboard' ? '' : 'none';
-        if (guestTableSection) guestTableSection.style.display = target === 'guest' ? '' : 'none';
         if (reservationTableSection) reservationTableSection.style.display = target === 'reservation' ? '' : 'none';
 
-        document.querySelectorAll('.checkins-tab').forEach(btn => btn.classList.remove('is-active'));
-        document.querySelectorAll(`.checkins-tab[data-tab-target="${target}"]`).forEach(btn => btn.classList.add('is-active'));
+        document.querySelectorAll('.checkins-tab').forEach(btn => {
+            btn.classList.remove('is-active', 'bg-hp-green', 'text-white', 'shadow-sm');
+            btn.classList.add('bg-transparent', 'text-hp-text-muted');
+            btn.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll(`.checkins-tab[data-tab-target="${target}"]`).forEach(btn => {
+            btn.classList.add('is-active', 'bg-hp-green', 'text-white', 'shadow-sm');
+            btn.classList.remove('bg-transparent', 'text-hp-text-muted');
+            btn.setAttribute('aria-selected', 'true');
+        });
     };
 
     document.querySelectorAll('.checkins-tab[data-tab-target]').forEach(btn => {
@@ -442,7 +440,9 @@ window.AppPage['staff_check_ins'] = function () {
         const expectedCheckout = formatExpectedCheckout(reservation);
         const startSlot = reservation.start_slot || 'Daytime';
         const endSlot = reservation.end_slot || startSlot;
-        const isMultiDay = reservation.end_date && reservation.end_date !== reservation.reservation_date;
+        const sDateOnly = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0].split(' ')[0] : '';
+        const eDateOnly = reservation.end_date ? String(reservation.end_date).split('T')[0].split(' ')[0] : '';
+        const isMultiDay = Boolean(eDateOnly && sDateOnly && eDateOnly !== sDateOnly && (parseInt(reservation.total_days, 10) || 0) > 1);
 
         const statusKey = String(reservation.status || '').toLowerCase().replace(/\s+/g, '_');
         const isCheckedIn = statusKey === 'checked_in' || statusKey === 'active' || statusKey.includes('checked');
@@ -1324,7 +1324,9 @@ window.AppPage['staff_check_ins'] = function () {
         const resIdEl = document.getElementById('extendStayResId');
         if (resIdEl) resIdEl.textContent = res.id;
 
-        const isMultiDay = res.end_date && res.end_date !== res.reservation_date;
+        const sDateOnly = res.reservation_date ? String(res.reservation_date).split('T')[0].split(' ')[0] : '';
+        const eDateOnly = res.end_date ? String(res.end_date).split('T')[0].split(' ')[0] : '';
+        const isMultiDay = Boolean(eDateOnly && sDateOnly && eDateOnly !== sDateOnly && (parseInt(res.total_days, 10) || 0) > 1);
         const startSlot = res.start_slot || 'Daytime';
         const endSlot = res.end_slot || startSlot;
         const summaryEl = document.getElementById('extendStayCurrentSummary');
@@ -2798,7 +2800,6 @@ window.AppPage['staff_check_ins'] = function () {
     const guestModal = document.getElementById('guestModal');
     const guestModalBody = document.getElementById('guestModalBody');
     const guestModalCloseButtons = document.querySelectorAll('[data-close-modal="true"]');
-    const guestRows = document.querySelectorAll('#guestTableBody .guest-row');
     const guestCheckOutBtn = document.getElementById('guestCheckOutBtn');
     let currentCustomerId = null;
 
@@ -2848,7 +2849,9 @@ window.AppPage['staff_check_ins'] = function () {
             const expectedCheckout = formatExpectedCheckout(reservation);
             const startSlot = reservation.start_slot || 'Daytime';
             const endSlot = reservation.end_slot || startSlot;
-            const isMultiDay = reservation.end_date && reservation.end_date !== reservation.reservation_date;
+            const sDateOnly = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0].split(' ')[0] : '';
+            const eDateOnly = reservation.end_date ? String(reservation.end_date).split('T')[0].split(' ')[0] : '';
+            const isMultiDay = Boolean(eDateOnly && sDateOnly && eDateOnly !== sDateOnly && (parseInt(reservation.total_days, 10) || 0) > 1);
 
             html += `
                 <div style="margin-bottom: 1.5rem;">
@@ -3886,30 +3889,6 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
-    guestRows.forEach(row => {
-        row.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-expand-row')) return;
-            if (row.dataset.bulkGroup === 'true') {
-                openBulkManageModal(
-                    row.dataset.reservationId,
-                    row.dataset.bulkActive,
-                    row.dataset.bulkTotal,
-                    row.dataset.bulkDemo,
-                    row.dataset.bulkGender,
-                    row.dataset.bulkAgeGroup,
-                    row.dataset.bulkNationality,
-                    row.dataset.bulkActivePool,
-                    row.dataset.bulkTotalPool,
-                    row.dataset.bulkActiveNoPool,
-                    row.dataset.bulkTotalNoPool
-                );
-                return;
-            }
-            const customerId = row.dataset.customerId;
-            openGuestModal(customerId);
-        });
-    });
-
     // Expandable Row Logic
     document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
         expandBtn.addEventListener('click', (e) => {
@@ -3932,6 +3911,9 @@ window.AppPage['staff_check_ins'] = function () {
 
             // Reservation Table Expand
             if (tr.classList.contains('reservation-row')) {
+                // Mark the row as expanded so CSS can apply the connected tint + border
+                tr.classList.toggle('row-is-expanded', isExpanded);
+
                 const resId = tr.getAttribute('data-reservation-id');
                 let nestedRow = tr.nextElementSibling;
 
@@ -3941,7 +3923,8 @@ window.AppPage['staff_check_ins'] = function () {
                         const reservation = reservationData[resId];
                         if (!reservation) return;
 
-                        let guestsHtml = `<div style="padding: 1rem; background: rgba(0,0,0,0.02); border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; margin: 0.5rem 1rem;">`;
+                        let guestsHtml = '';
+                        let renderedAny = false;
                         let bulkGuests = [];
                         let normalGuests = [];
 
@@ -3957,33 +3940,46 @@ window.AppPage['staff_check_ins'] = function () {
 
                         normalGuests.forEach(g => {
                             if (g.checked_out_at) return;
+                            renderedAny = true;
+
                             const pill = g.is_primary_guest
-                                ? `<span style="font-size: 0.65rem; background: var(--hp-gold); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">MAIN</span>`
-                                : `<span style="font-size: 0.65rem; background: var(--hp-green); color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">COMPANION</span>`;
+                                ? `<span class="inline-flex items-center rounded-full bg-hp-gold px-2 py-0.5 text-[0.6rem] font-bold text-white shadow-sm">MAIN</span>`
+                                : `<span class="inline-flex items-center rounded-full bg-hp-green px-2 py-0.5 text-[0.6rem] font-bold text-white shadow-sm">COMPANION</span>`;
 
                             const gHasPool = Boolean(g.has_pool_access);
                             const gHasAmenity = Boolean(reservation.reservation_amenities && reservation.reservation_amenities.length > 0);
                             const gGlowClass = gHasPool && gHasAmenity ? 'guest-avatar-glow--both' : (gHasPool ? 'guest-avatar-glow--pool' : (gHasAmenity ? 'guest-avatar-glow--amenity' : ''));
+
                             let poolBadge = '';
                             if (gHasPool && gHasAmenity) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
+                                poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-sky-800 dark:text-sky-300"><i class="bi bi-water"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
                             } else if (gHasPool) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool</span>`;
+                                poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-sky-800 dark:text-sky-300"><i class="bi bi-water"></i>Pool</span>`;
                             } else if (gHasAmenity) {
-                                poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-house-door-fill me-1"></i>Amenity</span>`;
+                                poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-house-door-fill"></i>Amenity</span>`;
                             }
 
-                            // Clicking a guest (main or single companion) opens
-                            // the same detail modal as the guest table.
-                            guestsHtml += `<div data-guest-id="${g.customer_id || ''}" title="View details" style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; padding: 6px 8px; cursor: pointer; border-radius: 8px; transition: background 0.15s ease;" class="hover:bg-black/5 dark:hover:bg-white/5">
-                                <span class="nested-guest-avatar ${gGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: ${g.is_primary_guest ? 'linear-gradient(135deg, #178a52, #0e5c37)' : 'linear-gradient(135deg, #2f6f45, #178a52)'}; color: #fff; font-size: 0.6rem; font-weight: bold;">
-                                    ${g.is_primary_guest ? '<i class="bi bi-star-fill"></i>' : '•'}
-                                </span>
-                                <span>${g.customer.first_name} ${g.customer.middle_name || ''} ${g.customer.last_name}</span>
-                                ${pill}
-                                ${poolBadge}
-                                <span style="color: var(--hp-text-muted); font-size: 0.75rem; margin-left: auto;">${g.customer.gender || 'Unknown'} • ${g.customer.age || 'N/A'} yrs</span>
-                             </div>`;
+                            const avatarGradient = g.is_primary_guest
+                                ? 'from-[#178a52] to-[#0e5c37]'
+                                : 'from-[#2f6f45] to-[#178a52]';
+                            const avatarIcon = g.is_primary_guest
+                                ? '<i class="bi bi-star-fill"></i>'
+                                : '<i class="bi bi-person-fill"></i>';
+                            const fullName = [g.customer.first_name, g.customer.middle_name || '', g.customer.last_name].filter(Boolean).join(' ');
+
+                            guestsHtml += `
+                                <div data-guest-id="${g.customer_id || ''}" title="View guest details"
+                                    class="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-colors duration-150 hover:bg-white/80 cursor-pointer dark:text-[#f3f4f6] dark:hover:bg-white/[0.06]">
+                                    <span class="nested-guest-avatar ${gGlowClass} flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${avatarGradient} text-[0.55rem] font-bold text-white shadow-sm">
+                                        ${avatarIcon}
+                                    </span>
+                                    <span class="truncate font-semibold">${escapeHtml(fullName)}</span>
+                                    <div class="flex shrink-0 items-center gap-1.5">
+                                        ${pill}
+                                        ${poolBadge}
+                                    </div>
+                                    <span class="ml-auto shrink-0 text-[0.7rem] text-hp-text-muted">${g.customer.gender || 'Unknown'} · ${g.customer.age || 'N/A'} yrs</span>
+                                </div>`;
                         });
 
                         if (bulkGuests.length > 0) {
@@ -4011,9 +4007,9 @@ window.AppPage['staff_check_ins'] = function () {
                                 const totalNoPool = group.members.filter(g => !g.has_pool_access).length;
                                 const activeNoPool = group.members.filter(g => !g.has_pool_access && !g.checked_out_at).length;
 
-                                // Fully checked-out groups disappear from the
-                                // dropdown — never show an empty group.
+                                // Fully checked-out groups disappear — never show an empty group.
                                 if (activeBulk === 0) return;
+                                renderedAny = true;
 
                                 const groupHasPool = totalPool > 0;
                                 const groupHasAmenity = Boolean(reservation.reservation_amenities && reservation.reservation_amenities.length > 0);
@@ -4021,15 +4017,16 @@ window.AppPage['staff_check_ins'] = function () {
 
                                 let poolBadge = '';
                                 if (groupHasPool && groupHasAmenity) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
+                                    poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-sky-800 dark:text-sky-300"><i class="bi bi-water"></i>Pool + <i class="bi bi-house-door-fill"></i></span>`;
                                 } else if (groupHasPool) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); color: #0369a1; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-water me-1"></i>Pool (${activePool}/${totalPool})</span>`;
+                                    poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-sky-500/30 bg-sky-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-sky-800 dark:text-sky-300"><i class="bi bi-water"></i>Pool (${activePool}/${totalPool})</span>`;
                                 } else if (groupHasAmenity) {
-                                    poolBadge = `<span style="font-size: 0.62rem; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #b45309; padding: 1px 6px; border-radius: 8px; font-weight: 700; margin-left: 6px;"><i class="bi bi-house-door-fill me-1"></i>Amenity</span>`;
+                                    poolBadge = `<span class="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/15 px-2 py-0.5 text-[0.6rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-house-door-fill"></i>Amenity</span>`;
                                 }
 
                                 const demo = `${group.gender} · ${group.ageGroup} · ${group.nationality}`;
-                                guestsHtml += `<div class="bulk-group-row-trigger hover:bg-black/5 dark:hover:bg-white/5"
+                                guestsHtml += `
+                                <div class="bulk-group-row-trigger group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[0.8rem] font-semibold text-hp-green transition-colors duration-150 hover:bg-white/80 cursor-pointer dark:hover:bg-white/[0.06]"
                                     data-res-id="${resId}"
                                     data-bulk-active="${activeBulk}"
                                     data-bulk-total="${totalBulk}"
@@ -4041,23 +4038,39 @@ window.AppPage['staff_check_ins'] = function () {
                                     data-bulk-gender="${group.gender}"
                                     data-bulk-age-group="${group.ageGroup}"
                                     data-bulk-nationality="${group.nationality}"
-                                    style="display: flex; align-items: center; font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 6px 8px; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 4px; border-radius: 8px; transition: background 0.15s ease; color: var(--hp-green);"
                                 >
-                                    <span class="nested-guest-avatar ${groupGlowClass}" style="width: 1.5rem; height: 1.5rem; border-radius: 50%; margin-right: 0.65rem; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0e7490, #155e75); color: #fff; font-size: 0.6rem; font-weight: bold;">
+                                    <span class="nested-guest-avatar ${groupGlowClass} flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0e7490] to-[#155e75] text-[0.55rem] font-bold text-white shadow-sm">
                                         <i class="bi bi-people-fill"></i>
                                     </span>
                                     <span>Bulk Companions (#${resId})</span>
-                                    <span style="font-size: 0.65rem; background: #0e7490; color: #fff; padding: 2px 6px; border-radius: 12px; margin-left: 8px;">${activeBulk}/${totalBulk} Checked In</span>
-                                    ${poolBadge}
-                                    <span style="color: var(--hp-text-muted); font-size: 0.75rem; margin-left: auto;">${demo}</span>
-                                 </div>`;
+                                    <div class="flex shrink-0 items-center gap-1.5">
+                                        <span class="inline-flex items-center rounded-full bg-[#0e7490] px-2 py-0.5 text-[0.6rem] font-bold text-white shadow-sm">${activeBulk}/${totalBulk} Checked In</span>
+                                        ${poolBadge}
+                                    </div>
+                                    <span class="ml-auto shrink-0 text-[0.7rem] font-normal text-hp-text-muted">${demo}</span>
+                                </div>`;
                             });
                         }
-                        guestsHtml += `</div>`;
+
+                        const emptyState = renderedAny ? '' : `
+                            <div class="flex items-center gap-2 px-3 py-2 text-[0.78rem] text-hp-text-muted">
+                                <i class="bi bi-person-x"></i>
+                                <span>No active guests.</span>
+                            </div>`;
+
+                        const activeCount = reservation.reservation_guests.filter(g => !g.checked_out_at).length;
+                        // Panel is plain — CSS on the <td> provides the tint + left border connection to the row above
+                        const panel = `
+                            <div class="reservation-nested-panel py-2.5 pl-14 pr-5">
+                                <span class="mb-1.5 block text-[0.62rem] font-bold uppercase tracking-widest text-hp-green/70 dark:text-hp-green/50">
+                                    ${activeCount} Guest${activeCount !== 1 ? 's' : ''}
+                                </span>
+                                ${guestsHtml || emptyState}
+                            </div>`;
 
                         nestedRow = document.createElement('tr');
                         nestedRow.className = 'reservation-nested-row';
-                        nestedRow.innerHTML = `<td colspan="5" style="padding: 0;">${guestsHtml}</td>`;
+                        nestedRow.innerHTML = `<td colspan="7" class="p-0">${panel}</td>`;
                         tr.insertAdjacentElement('afterend', nestedRow);
                     }
                     nestedRow.style.display = '';
@@ -5357,8 +5370,8 @@ window.AppPage['staff_check_ins'] = function () {
             modalCompanionStagedCount.textContent = `${totalCount}`;
         }
         if (modalCompanionFooterSummary) {
-            modalCompanionFooterSummary.textContent = totalCount === 0 
-                ? '0 companions added so far' 
+            modalCompanionFooterSummary.textContent = totalCount === 0
+                ? '0 companions added so far'
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} staged (Ready to apply)`;
         }
         if (modalCompanionClearAllBtn) {
@@ -5872,8 +5885,8 @@ window.AppPage['staff_check_ins'] = function () {
 
         const totalCount = getTotalCompanionCount();
         if (walkInCompanionCountBadge) {
-            walkInCompanionCountBadge.textContent = totalCount === 0 
-                ? '0 companions added' 
+            walkInCompanionCountBadge.textContent = totalCount === 0
+                ? '0 companions added'
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} added`;
         }
         const sidebarCompBadge = document.getElementById('walkInSidebarCompanionsBadge');
@@ -6876,7 +6889,7 @@ window.AppPage['staff_check_ins'] = function () {
         if (lower.startsWith('cottage') || lower.includes('cottage')) return 'Cottages';
         if (lower.includes('function') || lower.includes('hall')) return 'Function Halls';
         if (lower.includes('room') || lower.includes('suite')) return 'Rooms';
-        
+
         const words = trimmed.split(/[\s\-_0-9]/).filter(Boolean);
         if (words.length > 0 && words[0].length > 1) {
             const base = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
@@ -7006,7 +7019,7 @@ window.AppPage['staff_check_ins'] = function () {
                 card.className = `walkin-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${isAvailable
                     ? (isAlreadySelected ? 'border-hp-green/60 bg-hp-green/10 shadow-xs' : 'border-glass-border bg-glass hover:border-hp-green/60 hover:bg-white/60 dark:hover:bg-white/5')
                     : 'border-red-300/40 bg-red-50/25 opacity-70 dark:border-red-500/20 dark:bg-red-500/5'
-                }`;
+                    }`;
                 card.dataset.amenityId = amenity.id;
 
                 card.innerHTML = `
@@ -7014,9 +7027,9 @@ window.AppPage['staff_check_ins'] = function () {
                         <div class="flex items-center gap-2 flex-wrap">
                             <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${amenity.amenities_name}</strong>
                             ${isAvailable
-                                ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
-                                : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Occupied</span>'
-                            }
+                        ? '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>'
+                        : '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Occupied</span>'
+                    }
                             ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
                             ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
                         </div>
@@ -7557,78 +7570,6 @@ window.AppPage['staff_check_ins'] = function () {
         updateGrandTotal();
         closeAmenityScheduleModal();
     });
-
-    // Guest filter toggle
-    const guestFilterToggle = document.getElementById('guestFilterToggle');
-    const guestFilterPanel = document.getElementById('guestFilterPanel');
-    const guestReservationSelect = document.getElementById('guestReservationSelect');
-
-    guestFilterToggle?.addEventListener('click', () => {
-        const isExpanded = guestFilterToggle.getAttribute('aria-expanded') === 'true';
-        guestFilterToggle.setAttribute('aria-expanded', !isExpanded);
-        guestFilterPanel.hidden = isExpanded;
-    });
-
-    // Unified Guest Table Filter Function
-    const guestSearchInput = document.getElementById('guestSearchInput');
-    const guestRoleSelect = document.getElementById('guestRoleSelect');
-
-    const applyGuestFilters = () => {
-        const searchTerm = (guestSearchInput?.value || '').toLowerCase();
-        const selectedRole = guestRoleSelect?.value || 'all';
-        const selectedReservationId = guestReservationSelect?.value || '';
-
-        const guestRows = document.querySelectorAll('#guestTableBody .guest-row');
-
-        guestRows.forEach(row => {
-            let show = true;
-
-            // Search filter
-            if (searchTerm) {
-                const searchableText = row.getAttribute('data-search') || '';
-                if (!searchableText.includes(searchTerm)) show = false;
-            }
-
-            // Role filter
-            if (selectedRole !== 'all') {
-                const isPrimary = row.getAttribute('data-is-primary') === 'true';
-                if (selectedRole === 'primary' && !isPrimary) show = false;
-                if (selectedRole === 'companion' && isPrimary) show = false;
-            }
-
-            // Reservation filter
-            if (selectedReservationId) {
-                if (row.getAttribute('data-reservation-id') !== selectedReservationId) show = false;
-            }
-
-            // Collapsed companions stay hidden until their primary is expanded
-            if (show && row.classList.contains('guest-row--companion')) {
-                const resId = row.getAttribute('data-reservation-id');
-                const primaryRow = resId
-                    ? document.querySelector(`.guest-row--primary[data-reservation-id="${resId}"]`)
-                    : null;
-                if (!primaryRow || !primaryRow.classList.contains('is-expanded')) show = false;
-            }
-
-            row.style.display = show ? '' : 'none';
-        });
-
-        // Update results count and empty state
-        const visibleRows = Array.from(guestRows).filter(row => row.style.display !== 'none');
-        const resultsCount = document.getElementById('guestResultsCount');
-        if (resultsCount) {
-            resultsCount.textContent = `Showing ${visibleRows.length} active guests`;
-        }
-
-        const emptyRow = document.getElementById('guestEmptyRow');
-        if (emptyRow) {
-            emptyRow.style.display = visibleRows.length === 0 ? '' : 'none';
-        }
-    };
-
-    guestSearchInput?.addEventListener('input', applyGuestFilters);
-    guestRoleSelect?.addEventListener('change', applyGuestFilters);
-    guestReservationSelect?.addEventListener('change', applyGuestFilters);
 
     // ── Reservation table filters (Reservation Data View tab) ──────────────
     const resvFilterToggle = document.getElementById('resvFilterToggle');

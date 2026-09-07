@@ -381,7 +381,10 @@
                                         ->take(1)
                                         ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
                                         ->implode('') ?: '?';
-                                    $totalDays = $reservation->total_days ?? (\Carbon\Carbon::parse($reservation->reservation_date)->diffInDays(\Carbon\Carbon::parse($reservation->end_date ?? $reservation->reservation_date)) + 1);
+                                    $resStartDate = $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('Y-m-d') : null;
+                                    $resEndDate = $reservation->end_date ? \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d') : null;
+                                    $totalDays = (int) ($reservation->total_days ?? ($resStartDate && $resEndDate ? (\Carbon\Carbon::parse($resStartDate)->diffInDays(\Carbon\Carbon::parse($resEndDate)) + 1) : 1));
+                                    $isMultiDay = $resEndDate && $resStartDate && ($resEndDate !== $resStartDate) && ($totalDays > 1);
                                 @endphp
                                 <tr
                                     class="guest-row reservation-row {{ $isToday ? 'today-reservation' : '' }} {{ $isPastArrival ? 'past-reservation' : '' }} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]"
@@ -422,10 +425,10 @@
                                         </div>
                                     </td>
                                     <td class="py-3.5 px-4 text-left">
-                                        @if ($reservation->end_date && $reservation->end_date !== $reservation->reservation_date)
+                                        @if ($isMultiDay)
                                             <div>
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
-                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} {{ $totalDays > 1 ? 'Days Stay' : 'Day Stay' }})</div>
+                                                <div class="text-[0.7rem] text-[#718076] dark:text-[#9baaa1]">({{ $totalDays }} Days Stay)</div>
                                                 @if ($isPastArrival)
                                                     <div class="text-[0.68rem] font-semibold text-[#dc2626] dark:text-[#f87171] mt-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue Arrival</div>
                                                 @endif
@@ -441,7 +444,7 @@
                                         @endif
                                     </td>
                                     <td class="py-3.5 px-2 text-center">
-                                        @if ($totalDays > 1)
+                                        @if ($isMultiDay)
                                             <span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">
                                                 <i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>
                                                 Continuous Stay ({{ $totalDays }}D)

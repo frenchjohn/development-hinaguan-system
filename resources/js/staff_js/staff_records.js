@@ -112,45 +112,7 @@ window.AppPage['staff_records'] = function () {
     };
 
     // =====================
-    // TAB SWITCHING LOGIC
-    // =====================
-    const tabButtons = Array.from(document.querySelectorAll('.records-tab-btn'));
-    const tabSections = Array.from(document.querySelectorAll('[data-tab-content]'));
-    let currentActiveTab = 'guests';
-
-    const setActiveTab = (tabName) => {
-        currentActiveTab = tabName;
-        tabButtons.forEach((button) => {
-            const isActive = button.dataset.tab === tabName;
-            button.classList.toggle('records-tab-btn--active', isActive);
-            if (isActive) {
-                button.className = 'records-tab-btn records-tab-btn--active inline-flex items-center gap-2 cursor-pointer rounded-xl border border-transparent bg-[#178a52] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-[#126e41] focus:outline-none';
-            } else {
-                button.className = 'records-tab-btn inline-flex items-center gap-2 cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-5 py-2.5 text-xs font-bold text-[#0d2c1d] dark:text-[#f5f5f0] shadow-sm transition-all hover:bg-[#f4f7f5] dark:hover:bg-[#141715] focus:outline-none';
-            }
-            button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            button.setAttribute('tabindex', isActive ? '0' : '-1');
-        });
-
-        tabSections.forEach((section) => {
-            section.hidden = section.dataset.tabContent !== tabName;
-        });
-
-        if (tabName === 'guests') {
-            updateCountersFromGuests(guestFilteredRows);
-        } else {
-            updateCountersFromReservations(reservationFilteredRows);
-        }
-    };
-
-    tabButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-            setActiveTab(button.dataset.tab);
-        });
-    });
-
-    // =====================
-    // GUEST TABLE LOGIC
+    // GUEST MODAL (shared for companion row details)
     // =====================
     const guestModal = document.getElementById('guestModal');
     const modalBody = document.getElementById('guestModalBody');
@@ -158,23 +120,7 @@ window.AppPage['staff_records'] = function () {
     const guestData = window.staffGuestData || {};
     const bulkGroupData = window.staffBulkGroupData || {};
 
-    const searchInput = document.getElementById('guestSearchInput');
-    const guestStatusFilter = document.getElementById('guestStatusFilter');
-    const sortSelect = document.getElementById('guestSortSelect');
-    const checkOutFrom = document.getElementById('guestCheckOutFrom');
-    const checkOutTo = document.getElementById('guestCheckOutTo');
-    const showCompanionsCheckbox = document.getElementById('showCompanionsCheckbox');
-    const clearButton = document.getElementById('guestFiltersClear');
-    const guestResultsCount = document.getElementById('guestResultsCount');
-    const guestFilterToggle = document.getElementById('guestFilterToggle');
-    const guestFilterPanel = document.getElementById('guestFilterPanel');
-    const guestTableBody = document.getElementById('guestTableBody');
-    const guestTableRows = Array.from(guestTableBody?.querySelectorAll('.guest-row') ?? []);
-    const guestPageNumbers = document.getElementById('guestPageNumbers');
-    const guestPageInput = document.getElementById('guestPageInput');
-    const guestPerPage = document.getElementById('guestPerPage');
-    const guestPrevPage = document.getElementById('guestPrevPage');
-    const guestNextPage = document.getElementById('guestNextPage');
+
 
     const openGuestModal = (customerId) => {
         const customerData = guestData?.[customerId] ?? null;
@@ -409,212 +355,7 @@ window.AppPage['staff_records'] = function () {
         });
     };
 
-    // ---- Guest pagination state ----
-    const guestTableBodyEl = document.getElementById('guestTableBody');
-    let guestPage = 1;
-    let guestFilteredRows = [];
-
-    const renderGuestPagination = () => {
-        const perPage = Number(guestPerPage?.value || 10);
-        const total = guestFilteredRows.length;
-        const totalPages = Math.max(1, Math.ceil(total / perPage));
-        guestPage = Math.min(Math.max(1, guestPage), totalPages);
-
-        guestTableRows.forEach((row) => row.classList.add('hidden'));
-        const start = (guestPage - 1) * perPage;
-        const slice = guestFilteredRows.slice(start, start + perPage);
-        slice.forEach((row) => row.classList.remove('hidden'));
-
-        // Empty-state row when filters match nothing
-        let emptyRow = document.getElementById('guestTableEmptyRow');
-        if (total === 0) {
-            if (!emptyRow && guestTableBodyEl) {
-                emptyRow = document.createElement('tr');
-                emptyRow.id = 'guestTableEmptyRow';
-                emptyRow.innerHTML = '<td colspan="9" class="px-4 py-8 text-center text-xs text-[#889b8a]">No guest records match your filters.</td>';
-                guestTableBodyEl.appendChild(emptyRow);
-            }
-            if (emptyRow) emptyRow.style.display = '';
-        } else if (emptyRow) {
-            emptyRow.style.display = 'none';
-        }
-
-        if (guestResultsCount) {
-            guestResultsCount.textContent = total === 0
-                ? 'Showing 0 of 0 records'
-                : `Showing ${start + 1} to ${start + slice.length} of ${total} records`;
-        }
-        renderPageNumberButtons(guestPageNumbers, guestPage, totalPages, (page) => {
-            guestPage = page;
-            renderGuestPagination();
-        });
-        if (guestPrevPage) guestPrevPage.disabled = guestPage <= 1;
-        if (guestNextPage) guestNextPage.disabled = guestPage >= totalPages;
-        if (guestPageInput) {
-            guestPageInput.value = guestPage;
-            guestPageInput.max = totalPages;
-        }
-    };
-
-    const applyGuestFilters = () => {
-        const query = searchInput?.value.trim().toLowerCase() ?? '';
-        const statusFilterValue = (guestStatusFilter?.value ?? 'all').toLowerCase();
-        const sortValue = sortSelect?.value ?? 'checkout-desc';
-        const checkOutFromValue = checkOutFrom?.value ?? '';
-        const checkOutToValue = checkOutTo?.value ?? '';
-        const showCompanions = showCompanionsCheckbox?.checked ?? false;
-
-        const filteredRows = guestTableRows.filter((row) => {
-            // Default: Auto-hide companions unless showCompanions checkbox is checked
-            if (!showCompanions) {
-                const isPrimary = row.getAttribute('data-is-primary') === 'true';
-                if (!isPrimary) return false;
-            }
-
-            const searchText = (row.getAttribute('data-search') || '').toLowerCase();
-            const matchesSearch = !query || searchText.includes(query);
-
-            const rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
-            let matchesStatus = true;
-            if (statusFilterValue !== 'all') {
-                if (statusFilterValue === 'no show') {
-                    matchesStatus = rowStatus.includes('no show') || rowStatus.includes('noshow');
-                } else if (statusFilterValue === 'cancelled') {
-                    matchesStatus = rowStatus.includes('cancel');
-                } else if (statusFilterValue === 'checked out') {
-                    matchesStatus = rowStatus.includes('checked out') || rowStatus.includes('checkedout');
-                } else {
-                    matchesStatus = rowStatus === statusFilterValue;
-                }
-            }
-
-            const checkedOutDate = row.getAttribute('data-checked-out') || '';
-            const checkedOutDateOnly = checkedOutDate.split(' ')[0];
-            const matchesCheckOutFrom = !checkOutFromValue || !checkedOutDateOnly || checkedOutDateOnly >= checkOutFromValue;
-            const matchesCheckOutTo = !checkOutToValue || !checkedOutDateOnly || checkedOutDateOnly <= checkOutToValue;
-            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo;
-        });
-
-        filteredRows.sort((left, right) => {
-            const leftName = (left.getAttribute('data-search') || '').toLowerCase();
-            const rightName = (right.getAttribute('data-search') || '').toLowerCase();
-            const leftCustomerId = Number(left.getAttribute('data-customer-id') || 0);
-            const rightCustomerId = Number(right.getAttribute('data-customer-id') || 0);
-            const leftResId = Number(left.getAttribute('data-reservation-id') || 0);
-            const rightResId = Number(right.getAttribute('data-reservation-id') || 0);
-            const leftAge = Number(left.getAttribute('data-age-value') || 999999);
-            const rightAge = Number(right.getAttribute('data-age-value') || 999999);
-            const leftGender = (left.getAttribute('data-gender') || '').toLowerCase();
-            const rightGender = (right.getAttribute('data-gender') || '').toLowerCase();
-            const leftNationality = (left.getAttribute('data-nationality') || '').toLowerCase();
-            const rightNationality = (right.getAttribute('data-nationality') || '').toLowerCase();
-            const leftStatus = (left.getAttribute('data-status') || '').toLowerCase();
-            const rightStatus = (right.getAttribute('data-status') || '').toLowerCase();
-            const leftCheckOut = left.getAttribute('data-checked-out') || '';
-            const rightCheckOut = right.getAttribute('data-checked-out') || '';
-
-            switch (sortValue) {
-                case 'name-desc':
-                    return rightName.localeCompare(leftName);
-                case 'customer-id-asc':
-                    return leftCustomerId - rightCustomerId;
-                case 'customer-id-desc':
-                    return rightCustomerId - leftCustomerId;
-                case 'reservation-asc':
-                    return leftResId - rightResId;
-                case 'reservation-desc':
-                    return rightResId - leftResId;
-                case 'age-asc':
-                    return leftAge - rightAge;
-                case 'age-desc':
-                    return rightAge - leftAge;
-                case 'gender-asc':
-                    return leftGender.localeCompare(rightGender);
-                case 'gender-desc':
-                    return rightGender.localeCompare(leftGender);
-                case 'nationality-asc':
-                    return leftNationality.localeCompare(rightNationality);
-                case 'nationality-desc':
-                    return rightNationality.localeCompare(leftNationality);
-                case 'status-asc':
-                    return leftStatus.localeCompare(rightStatus);
-                case 'status-desc':
-                    return rightStatus.localeCompare(leftStatus);
-                case 'checkout-asc':
-                    return leftCheckOut.localeCompare(rightCheckOut);
-                case 'checkout-desc':
-                    return rightCheckOut.localeCompare(leftCheckOut);
-                case 'name-asc':
-                default:
-                    return leftName.localeCompare(rightName);
-            }
-        });
-
-        guestFilteredRows = filteredRows;
-        guestPage = 1;
-        renderGuestPagination();
-        updateGuestSortIndicators();
-
-        if (currentActiveTab === 'guests') {
-            updateCountersFromGuests(filteredRows);
-        }
-    };
-
-    // Sort arrows on the table headers
-    const updateGuestSortIndicators = () => {
-        const sortValue = sortSelect?.value ?? 'checkout-desc';
-        const map = {
-            name: ['name-asc', 'name-desc'],
-            'customer-id': ['customer-id-asc', 'customer-id-desc'],
-            reservation: ['reservation-asc', 'reservation-desc'],
-            age: ['age-asc', 'age-desc'],
-            gender: ['gender-asc', 'gender-desc'],
-            nationality: ['nationality-asc', 'nationality-desc'],
-            status: ['status-asc', 'status-desc'],
-            'checked-out': ['checkout-asc', 'checkout-desc']
-        };
-        document.querySelectorAll('#guestTableWrap thead th.sortable').forEach((th) => {
-            th.classList.remove('is-sorted-asc', 'is-sorted-desc');
-            const pair = map[th.dataset.sort];
-            if (pair && pair.includes(sortValue)) {
-                th.classList.add(sortValue.endsWith('-asc') ? 'is-sorted-asc' : 'is-sorted-desc');
-            }
-        });
-    };
-
-    const guestHeaderSortMap = {
-        name: 'name',
-        'customer-id': 'customer-id',
-        reservation: 'reservation',
-        age: 'age',
-        gender: 'gender',
-        nationality: 'nationality',
-        status: 'status',
-        'checked-out': 'checkout'
-    };
-    document.querySelectorAll('#guestTableWrap thead th.sortable').forEach((th) => {
-        th.addEventListener('click', () => {
-            if (!sortSelect) return;
-            const key = guestHeaderSortMap[th.dataset.sort];
-            if (!key) return;
-            const current = sortSelect.value;
-            const dir = current === `${key}-asc` ? 'desc' : 'asc';
-            sortSelect.value = `${key}-${dir}`;
-            applyGuestFilters();
-        });
-    });
-
-    guestTableRows.forEach((row) => {
-        row.addEventListener('click', () => {
-            if (row.dataset.bulkGroup === 'true') {
-                openBulkGroupModal(row.dataset.bulkKey);
-                return;
-            }
-            const customerId = row.getAttribute('data-customer-id');
-            openGuestModal(customerId);
-        });
-    });
-
+    // Guest table rows removed — close buttons still needed for modals
     closeButtons.forEach((button) => {
         button.addEventListener('click', () => {
             guestModal.classList.remove('is-open');
@@ -629,60 +370,23 @@ window.AppPage['staff_records'] = function () {
         }
     });
 
-    [searchInput, guestStatusFilter, sortSelect, checkOutFrom, checkOutTo, showCompanionsCheckbox].forEach((element) => {
-        element?.addEventListener('input', applyGuestFilters);
-        element?.addEventListener('change', applyGuestFilters);
-    });
-
-    clearButton?.addEventListener('click', () => {
-        if (searchInput) searchInput.value = '';
-        if (guestStatusFilter) guestStatusFilter.value = 'all';
-        if (sortSelect) sortSelect.value = 'checkout-desc';
-        if (checkOutFrom) checkOutFrom.value = '';
-        if (checkOutTo) checkOutTo.value = '';
-        if (showCompanionsCheckbox) showCompanionsCheckbox.checked = false;
-        applyGuestFilters();
-    });
-
-    guestFilterToggle?.addEventListener('click', () => {
-        if (!guestFilterPanel) return;
-        const isExpanded = guestFilterToggle.getAttribute('aria-expanded') === 'true';
-        guestFilterPanel.hidden = isExpanded;
-        guestFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
-        const icon = guestFilterToggle.querySelector('.guest-filter-toggle__icon');
-        if (icon) icon.textContent = isExpanded ? '▾' : '▴';
-    });
-
-    // Guest pagination controls
-    const guestGoPageBtn = document.getElementById('guestGoPage');
-    const guestPerPageSel = document.getElementById('guestPerPage');
-    const guestPrevPageBtn = document.getElementById('guestPrevPage');
-    const guestNextPageBtn = document.getElementById('guestNextPage');
-
-    guestPrevPageBtn?.addEventListener('click', () => {
-        if (guestPage > 1) { guestPage--; renderGuestPagination(); }
-    });
-    guestNextPageBtn?.addEventListener('click', () => {
-        if (guestPage < Math.ceil(guestFilteredRows.length / Number(guestPerPageSel?.value || 10))) { guestPage++; renderGuestPagination(); }
-    });
-    guestGoPageBtn?.addEventListener('click', () => {
-        const page = parseInt(guestPageInput?.value, 10);
-        if (!isNaN(page) && page >= 1) { guestPage = page; renderGuestPagination(); }
-    });
-    guestPageInput?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); guestGoPageBtn?.click(); }
-    });
-    guestPerPageSel?.addEventListener('change', () => {
-        guestPage = 1;
-        renderGuestPagination();
-    });
-
     // ========================
     // RESERVATION TABLE LOGIC
     // ========================
     const reservationModal = document.getElementById('reservationModal');
     const reservationModalBody = document.getElementById('reservationModalBody');
     const reservationCloseButtons = document.querySelectorAll('[data-close-reservation-modal="true"]');
+
+    // Move modals to be direct children of <body>. The dashboard layout has
+    // ancestor elements (.dash-content / .dash-main) that establish their own
+    // CSS stacking context, which caps these fixed-position modals below the
+    // sticky header no matter how high their own z-index is set. Re-parenting
+    // them to <body> escapes that trap entirely (a standard "portal" pattern).
+    [guestModal, reservationModal].forEach((modal) => {
+        if (modal && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
     const reservationData = window.staffReservationData || {};
 
     const reservationSearchInput = document.getElementById('reservationSearchInput');
@@ -880,6 +584,14 @@ window.AppPage['staff_records'] = function () {
             }
         });
 
+        // Show/hide section group headers based on which types are visible on this page
+        const hasWalkIn = slice.some(r => r.getAttribute('data-reservation-type') === 'walk_in');
+        const hasOnline = slice.some(r => r.getAttribute('data-reservation-type') === 'online');
+        const walkInHeader = document.getElementById('sectionHeaderWalkIn');
+        const onlineHeader = document.getElementById('sectionHeaderOnline');
+        if (walkInHeader) walkInHeader.style.display = hasWalkIn || total === 0 ? '' : 'none';
+        if (onlineHeader) onlineHeader.style.display = hasOnline || total === 0 ? '' : 'none';
+
         // Empty-state row when filters match nothing
         let emptyRow = document.getElementById('reservationTableEmptyRow');
         if (total === 0) {
@@ -911,6 +623,41 @@ window.AppPage['staff_records'] = function () {
         }
     };
 
+    // Which reservation type tab is active ('walk_in' or 'online')
+    let currentTypeTab = 'walk_in';
+
+    // Hide static section-header rows — not needed with tab switching
+    document.querySelectorAll('.reservation-section-header').forEach(r => r.style.display = 'none');
+
+    // Only show the empty-placeholder row that matches the active tab
+    const syncEmptyPlaceholders = () => {
+        document.querySelectorAll('.walk-in-empty-placeholder').forEach(r => {
+            r.style.display = currentTypeTab === 'walk_in' ? '' : 'none';
+        });
+        document.querySelectorAll('.online-empty-placeholder').forEach(r => {
+            r.style.display = currentTypeTab === 'online' ? '' : 'none';
+        });
+    };
+    syncEmptyPlaceholders();
+
+    // Tab button click handlers
+    document.querySelectorAll('.resv-type-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentTypeTab = btn.getAttribute('data-resv-type');
+            document.querySelectorAll('.resv-type-tab').forEach(b => {
+                const active = b.getAttribute('data-resv-type') === currentTypeTab;
+                if (active) {
+                    b.className = 'resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all';
+                } else {
+                    b.className = 'resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]';
+                }
+            });
+            syncEmptyPlaceholders();
+            reservationPage = 1;
+            applyReservationFilters();
+        });
+    });
+
     const applyReservationFilters = () => {
         const query = reservationSearchInput?.value.trim().toLowerCase() ?? '';
         const statusFilterValue = (reservationStatusFilter?.value ?? 'all').toLowerCase();
@@ -940,7 +687,9 @@ window.AppPage['staff_records'] = function () {
             const checkOutDateOnly = checkOutDate.split(' ')[0];
             const matchesCheckOutFrom = !checkOutFromValue || !checkOutDateOnly || checkOutDateOnly >= checkOutFromValue;
             const matchesCheckOutTo = !checkOutToValue || !checkOutDateOnly || checkOutDateOnly <= checkOutToValue;
-            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo;
+            const rowType = row.getAttribute('data-reservation-type') ?? '';
+            const matchesType = rowType === currentTypeTab;
+            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo && matchesType;
         });
 
         filteredRows.sort((left, right) => {
@@ -976,9 +725,7 @@ window.AppPage['staff_records'] = function () {
         reservationPage = 1;
         renderReservationPagination();
 
-        if (currentActiveTab === 'reservations') {
-            updateCountersFromReservations(filteredRows);
-        }
+        updateCountersFromReservations(filteredRows);
     };
 
     reservationTableRows.forEach((row) => {
@@ -1106,10 +853,9 @@ window.AppPage['staff_records'] = function () {
         });
     });
 
-    // Initialize Default State
-    applyGuestFilters();
+    // Initialize
     applyReservationFilters();
-    setActiveTab('guests');
+    updateCountersFromReservations(reservationTableRows);
 };
 
 document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_records']());

@@ -93,6 +93,31 @@
 			backdrop-filter: none !important;
 			-webkit-backdrop-filter: none !important;
 		}
+
+		/* ── Expanded reservation row + nested guest panel ── */
+		.reservation-row.row-is-expanded > td {
+			background-color: rgba(23, 138, 82, 0.05);
+		}
+		.reservation-row.row-is-expanded > td:first-child {
+			border-left: 3px solid rgba(23, 138, 82, 0.55);
+		}
+		/* Nested panel row: continues the left border and tint seamlessly */
+		.reservation-row.row-is-expanded + .reservation-nested-row > td {
+			background-color: rgba(23, 138, 82, 0.03);
+			border-left: 3px solid rgba(23, 138, 82, 0.35);
+			border-top: 1px solid rgba(23, 138, 82, 0.12);
+		}
+		[data-theme="dark"] .reservation-row.row-is-expanded > td {
+			background-color: rgba(23, 138, 82, 0.09);
+		}
+		[data-theme="dark"] .reservation-row.row-is-expanded > td:first-child {
+			border-left-color: rgba(23, 138, 82, 0.6);
+		}
+		[data-theme="dark"] .reservation-row.row-is-expanded + .reservation-nested-row > td {
+			background-color: rgba(23, 138, 82, 0.06);
+			border-left-color: rgba(23, 138, 82, 0.4);
+			border-top-color: rgba(23, 138, 82, 0.18);
+		}
 	</style>
 </head>
 <body class="antialiased staff-portal">
@@ -349,20 +374,16 @@
 					@endphp
 
 					<!-- MASTER TABS -->
-					<div class="checkins-tabs-container mb-5">
-						<div class="checkins-tabs" role="tablist">
-							<button type="button" class="checkins-tab is-active" data-tab-target="guest" role="tab" aria-selected="true">
-								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-								<span>Guests</span>
-							</button>
-							<button type="button" class="checkins-tab" data-tab-target="reservation" role="tab" aria-selected="false">
+					<div class="mb-5 flex items-center justify-start">
+						<div class="inline-flex items-center gap-1.5 rounded-2xl border border-glass-border bg-glass p-1.5 shadow-glass backdrop-blur-md dark:border-white/10 dark:bg-[#181b19]/80" role="tablist">
+							<button type="button" class="checkins-tab is-active inline-flex cursor-pointer items-center gap-2 rounded-xl bg-hp-green px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150" data-tab-target="reservation" role="tab" aria-selected="true">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
 								<span>Reservations</span>
 								@if($hasAnyReservationAmenityDue || ($resSummaryCheckoutDue ?? 0) > 0)
 									<span class="master-resv-due-dot inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Reservations have checkouts due"></span>
 								@endif
 							</button>
-							<button type="button" class="checkins-tab" data-tab-target="dashboard" role="tab" aria-selected="false">
+							<button type="button" class="checkins-tab inline-flex cursor-pointer items-center gap-2 rounded-xl bg-transparent px-4 py-2 text-sm font-semibold text-hp-text-muted transition-all duration-150 hover:bg-glass-hover hover:text-hp-text dark:text-[#9ca3af] dark:hover:text-[#f3f4f6]" data-tab-target="dashboard" role="tab" aria-selected="false">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
 								<span>Analytics Dashboard</span>
 							</button>
@@ -745,548 +766,21 @@
 					</div>
 					</div>
 
-					{{-- GUEST TABLE --}}
-					<div id="guestTableSection" class="tab-content-section checkins-layout-grid">
-						@php
-							$metrics = [
-								'kids' => 0, 'teens' => 0, 'adults' => 0, 'seniors' => 0,
-								'main' => 0, 'companions' => 0,
-								'filipino' => 0, 'foreigner' => 0,
-							];
-
-							foreach ($activeCustomers ?? [] as $customer) {
-								$age = $customer->age;
-								if (is_numeric($age)) {
-									if ($age <= 12) $metrics['kids']++;
-									elseif ($age <= 17) $metrics['teens']++;
-									elseif ($age <= 59) $metrics['adults']++;
-									else $metrics['seniors']++;
-								}
-
-								$hasPrimary = $customer->reservationGuests->where('is_primary_guest', true)->filter(function($g) {
-									return $g->reservation && !$g->checked_out_at && strtolower(str_replace(' ', '_', $g->reservation->status ?? '')) !== 'checked_out';
-								})->isNotEmpty();
-
-								if ($hasPrimary) {
-									$metrics['main']++;
-								} else {
-									$metrics['companions']++;
-								}
-
-								if ($customer->is_foreigner) {
-									$metrics['foreigner']++;
-								} else {
-									$metrics['filipino']++;
-								}
-							}
-							$totalGuests = max(1, count($activeCustomers ?? []));
-						@endphp
-						<div class="checkins-main-column min-w-0">
-
-							<section class="checkins-card overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
-							<div class="checkins-card-header flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5">
-								<div class="table-header-left flex items-center">
-									<h2 class="checkins-title m-0 font-display text-xl font-bold text-hp-text">Guest Data View</h2>
-								</div>
-								<div class="checkins-actions flex items-center gap-2">
-									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
-										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-										</svg>
-										Walk-in Checkin
-									</button>
-									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="scanQrBtn" aria-label="Scan QR Code">
-										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-										</svg>
-									</button>
-								</div>
-							</div>
-						<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
-							<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#1e2220] dark:hover:border-[#4a8a52] dark:hover:text-[#f3f4f6]" id="guestFilterToggle" aria-expanded="false" aria-controls="guestFilterPanel">
-							<span>Filters</span>
-							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
-						</button>
-						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-3 dark:bg-glass" id="guestFilterPanel" hidden>
-							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-3">
-								<span>Search</span>
-								<input type="search" id="guestSearchInput" placeholder="Search by name, ID, gender" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
-								<span>Sort by</span>
-								<select id="guestSortSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-									<option value="name-asc">Name (A-Z)</option>
-									<option value="name-desc">Name (Z-A)</option>
-									<option value="age-asc">Age (Low-High)</option>
-									<option value="age-desc">Age (High-Low)</option>
-									<option value="reservation-asc">Reservation Type</option>
-								</select>
-							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
-								<span>Show Guests</span>
-								<select id="guestRoleSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-									<option value="all">All Guests</option>
-									<option value="primary">Main Guests Only</option>
-									<option value="companion">Companions Only</option>
-								</select>
-							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
-								<span>Check-in from</span>
-								<input type="date" id="guestCheckInFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
-								<span>Check-in to</span>
-								<input type="date" id="guestCheckInTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
-								<span>Reservation ID</span>
-								<select id="guestReservationSelect" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
-									<option value="">All Reservations</option>
-									@php
-										$filteredReservations = collect($reservations ?? collect())->filter(function ($reservation) {
-											$status = strtolower(str_replace(' ', '_', (string) ($reservation->status ?? '')));
-											return $status !== 'checked_out' && $status !== 'checkedout' && $status !== 'checked-out' && $reservation->check_in;
-										});
-									@endphp
-									@forelse ($filteredReservations as $reservation)
-										@php
-											$primaryGuest = $reservation->reservationGuests->first(function ($guest) {
-												return $guest->is_primary_guest && $guest->customer;
-											});
-											$primaryGuestName = $primaryGuest?->customer ?
-												trim(($primaryGuest->customer->first_name ?? '') . ' ' . ($primaryGuest->customer->last_name ?? '')) :
-												$reservation->booker_name ?? 'Unknown';
-										@endphp
-										<option value="{{ $reservation->id }}">#{{ $reservation->id }} - {{ $primaryGuestName }}</option>
-									@empty
-										{{-- No active reservations --}}
-									@endforelse
-								</select>
-							</label>
-							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#1e2220] dark:text-[#f3f4f6]" id="guestFiltersClear">Clear</button>
-						</div>
-					</div>
-
-					<div class="guest-toolbar__meta flex items-center justify-between border-b border-glass-border/30 bg-black/[0.01] px-6 py-2.5 text-xs font-semibold text-hp-text-muted dark:bg-white/[0.01]">
-						<span id="guestResultsCount">Showing {{ $activeCustomers->count() }} active guests</span>
-					</div>
-
-					<div class="guest-table-wrap w-full overflow-x-auto" id="guestTableWrap">
-						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent">
-							<thead>
-								<tr>
-									<th>Guest</th>
-									<th>Age / Gender</th>
-									<th>Nationality</th>
-									<th>Status / Time Left</th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody id="guestTableBody">
-								@php
-									// Order rows so each primary guest is immediately followed by
-									// their companions (grouped by active reservation) instead of
-									// being scattered alphabetically across the table.
-									$customersById = collect($customers ?? collect())->keyBy('id');
-									$guestOrderKeys = [];
-									foreach ($customers ?? collect() as $orderCustomer) {
-										$orderEntry = $orderCustomer->reservationGuests
-											->filter(fn ($g) => $g->reservation && ! $g->checked_out_at && $g->reservation->check_in && $g->reservation->status === 'Checked In')
-											->first(fn ($g) => $g->reservation && $g->reservation->reservation_type === 'walk_in')
-											?? $orderCustomer->reservationGuests
-												->filter(fn ($g) => $g->reservation && ! $g->checked_out_at && $g->reservation->check_in && $g->reservation->status === 'Checked In')
-												->first();
-										$orderRes = $orderEntry?->reservation;
-										$resKey = $orderRes
-											? ($orderRes->check_in?->timestamp ?? $orderRes->reservation_date?->timestamp ?? 0)
-											: PHP_INT_MAX;
-										$guestOrderKeys[$orderCustomer->id] = [
-											$resKey,
-											($orderEntry?->is_primary_guest ?? false) ? 0 : 1,
-											strtolower(trim(($orderCustomer->last_name ?? '') . ' ' . ($orderCustomer->first_name ?? ''))),
-										];
-									}
-									$orderedCustomerIds = collect($customers ?? collect())
-										->sortBy(function ($c) use ($guestOrderKeys) {
-											$k = $guestOrderKeys[$c->id] ?? [PHP_INT_MAX, 1, ''];
-											// Fixed-width string key: reservation check-in, then primary
-											// (0) before companions (1), then name. (Multi-closure sortBy
-											// silently no-ops here, so use one string key.)
-											return sprintf('%020d|%d|%s', $k[0], $k[1], $k[2]);
-										})
-										->pluck('id')
-										->all();
-								@endphp
-								@foreach ($orderedCustomerIds as $orderedCustomerId)
-									@php
-										$customer = $customersById[$orderedCustomerId] ?? null;
-									@endphp
-									@if (! $customer)
-										@continue
-									@endif
-									@php
-										$hasActiveReservation = $customer->reservationGuests->filter(function ($guest) {
-											$reservation = $guest->reservation ?? null;
-											if (! $reservation) return false;
-											if ($guest->checked_out_at) return false;
-											if (! $reservation->check_in) return false;
-											return $reservation->status === 'Checked In';
-										})->isNotEmpty();
-									@endphp
-
-									@if (! $hasActiveReservation)
-										@continue
-									@endif
-
-									@php
-										$reservationEntry = $customer->reservationGuests->filter(function ($guest) {
-											return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
-										})->first(function ($guest) {
-											return $guest->reservation && $guest->reservation->reservation_type === 'walk_in';
-										}) ?? $customer->reservationGuests->filter(function ($guest) {
-											return $guest->reservation && !$guest->checked_out_at && $guest->reservation->check_in && $guest->reservation->status === 'Checked In';
-										})->first();
-										$reservationType = $reservationEntry?->reservation?->reservation_type;
-										$reservationTypeLabel = $reservationType === 'walk_in' ? 'walk-in' : ($reservationType ?? 'N/A');
-										$typePillClass = $reservationType === 'walk_in' ? 'status-pill--walk-in' : ($reservationType ? 'status-pill--online' : 'status-pill--checked-out');
-
-										$isPrimary = $reservationEntry?->is_primary_guest ?? false;
-										$isStray = false;
-
-										if (!$isPrimary && $reservationEntry?->reservation) {
-											$primaryGuest = $reservationEntry->reservation->reservationGuests->firstWhere('is_primary_guest', true);
-											if (!$primaryGuest || $primaryGuest->checked_out_at !== null) {
-												$isPrimary = true;
-												$isStray = true;
-											}
-										}
-
-										$firstName = strtolower(trim($customer->first_name ?? ''));
-										$isBulk = str_starts_with($firstName, 'bulk') || str_contains($firstName, 'companion');
-
-										$checkoutAtStr = $reservationData[$reservationEntry?->reservation?->id]['checkout_at'] ?? null;
-										$checkoutDue = false;
-										$checkoutNear = false;
-										if ($checkoutAtStr) {
-											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
-											if ($coCarbon->isPast()) {
-												$checkoutDue = true;
-											} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
-												$checkoutNear = true;
-											}
-										}
-										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
-
-										// Hierarchy variables
-										$companionCount = 0;
-										if ($isPrimary && $reservationEntry?->reservation && !$isStray) {
-											$companionCount = $reservationEntry->reservation->reservationGuests->where('is_primary_guest', false)->filter(function($g) { return !$g->checked_out_at; })->count();
-										}										// Group Bulk Companions — ONE row per group. Two bulk groups are
-										// only merged when they share the reservation id, gender, age
-										// group AND nationality (a "Kids" group is never merged into a
-										// "Seniors" group).
-										$totalBulk = 0;
-										$activeBulk = 0;
-										$totalPool = 0;
-										$activePool = 0;
-										$totalNoPool = 0;
-										$activeNoPool = 0;
-										$bulkGender = '';
-										$bulkAgeGroup = '';
-										$bulkNationality = '';
-										if ($isBulk) {
-											static $processedBulkGroupKeys = [];
-											$resId = $reservationEntry?->reservation?->id;
-											$bulkReservation = $reservationEntry?->reservation;
-											if (! $resId || ! $bulkReservation) {
-												continue;
-											}
-
-											// Age group from the stored representative midpoint age
-											// (0-12→6, 13-17→15, 18-59→30, 60+→65).
-											$bulkAgeNum = (int) ($customer->age ?? 99);
-											$bulkAgeGroup = $bulkAgeNum <= 12 ? '0-12' : ($bulkAgeNum <= 17 ? '13-17' : ($bulkAgeNum <= 59 ? '18-59' : '60+'));
-											$bulkGender = $customer->gender ?? 'Unknown';
-											$bulkNationality = (bool) ($customer->is_foreigner ?? false) ? 'Foreigner' : 'Filipino';
-											$bulkGroupKey = $resId . '|' . $bulkGender . '|' . $bulkAgeGroup . '|' . $bulkNationality;
-
-											if (in_array($bulkGroupKey, $processedBulkGroupKeys)) {
-												continue;
-											}
-											$processedBulkGroupKeys[] = $bulkGroupKey;
-
-											$groupBulk = $bulkReservation->reservationGuests->filter(function ($rg) use ($bulkGender, $bulkAgeGroup, $bulkNationality) {
-												$c = $rg->customer;
-												if (! $c) return false;
-												$fn = strtolower(trim($c->first_name ?? ''));
-												if (! (str_starts_with($fn, 'bulk') || str_contains($fn, 'companion'))) return false;
-												$ageNum = (int) ($c->age ?? 99);
-												$ageGroup = $ageNum <= 12 ? '0-12' : ($ageNum <= 17 ? '13-17' : ($ageNum <= 59 ? '18-59' : '60+'));
-												$gender = $c->gender ?? 'Unknown';
-												$nationality = (bool) ($c->is_foreigner ?? false) ? 'Foreigner' : 'Filipino';
-												return $gender === $bulkGender && $ageGroup === $bulkAgeGroup && $nationality === $bulkNationality;
-											});
-
-											$totalBulk = $groupBulk->count();
-											$activeBulk = $groupBulk->whereNull('checked_out_at')->count();
-											$totalPool = $groupBulk->where('has_pool_access', true)->count();
-											$activePool = $groupBulk->where('has_pool_access', true)->whereNull('checked_out_at')->count();
-											$totalNoPool = $groupBulk->where('has_pool_access', false)->count();
-											$activeNoPool = $groupBulk->where('has_pool_access', false)->whereNull('checked_out_at')->count();
-											if ($activeBulk === 0) continue;
-
-											$customer->first_name = "Bulk Companions (#$resId)";
-											$customer->last_name = "";
-											$customer->middle_name = "$activeBulk/$totalBulk Checked In";
-											$customer->age = $bulkAgeGroup;
-											$customer->gender = $bulkGender;
-											$customer->is_foreigner = $bulkNationality === 'Foreigner' ? true : false;
-										}
-
-										$currentRes = $reservationEntry?->reservation;
-										$hasAmenity = (bool) ($currentRes && $currentRes->reservationAmenities->isNotEmpty());
-										$hasPool = false;
-										if ($isBulk) {
-											$hasPool = $totalPool > 0;
-										} else {
-											$hasPool = (bool) ($reservationEntry?->has_pool_access ?? false);
-										}
-
-										$glowClass = '';
-										$glowTitle = '';
-										if ($hasPool && $hasAmenity) {
-											$glowClass = 'guest-avatar-glow--both';
-											$glowTitle = 'Pool Pass + Amenity Booked';
-										} elseif ($hasPool) {
-											$glowClass = 'guest-avatar-glow--pool';
-											$glowTitle = 'Pool Pass Active';
-										} elseif ($hasAmenity) {
-											$glowClass = 'guest-avatar-glow--amenity';
-											$glowTitle = 'Amenity Booked';
-										}
-									@endphp
-									<tr
-										class="guest-row {{ $highlightClass }} {{ $isPrimary ? 'guest-row--primary' : 'guest-row--companion' }} {{ $isBulk ? 'guest-row--bulk-group' : '' }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#1e2220] dark:focus-visible:bg-[#1e2220]"
-										@if (! $isPrimary) style="display: none;" @endif
-										data-customer-id="{{ $customer->id }}"
-										data-reservation-id="{{ $reservationEntry?->reservation?->id ?? '' }}"
-										data-is-primary="{{ $isPrimary ? 'true' : 'false' }}"
-										data-bulk-group="{{ $isBulk ? 'true' : 'false' }}"
-										data-bulk-total="{{ $totalBulk }}"
-										data-bulk-active="{{ $activeBulk }}"
-										data-bulk-total-pool="{{ $totalPool }}"
-										data-bulk-active-pool="{{ $activePool }}"
-										data-bulk-total-no-pool="{{ $totalNoPool }}"
-										data-bulk-active-no-pool="{{ $activeNoPool }}"
-										data-has-pool="{{ $hasPool ? 'true' : 'false' }}"
-										data-has-amenity="{{ $hasAmenity ? 'true' : 'false' }}"
-										data-bulk-demo="{{ $isBulk ? ($bulkGender . ' · ' . $bulkAgeGroup . ' · ' . $bulkNationality) : '' }}"
-										data-bulk-gender="{{ $isBulk ? $bulkGender : '' }}"
-										data-bulk-age-group="{{ $isBulk ? $bulkAgeGroup : '' }}"
-										data-bulk-nationality="{{ $isBulk ? $bulkNationality : '' }}"
-										data-age="{{ $customer->age ?? 'N/A' }}"
-										data-gender="{{ strtolower((string) ($customer->gender ?? 'N/A')) }}"
-											data-check-in="{{ $reservationEntry?->reservation?->check_in ?? '' }}"
-											data-check-out="{{ $reservationEntry?->reservation?->check_out ?? '' }}"
-											data-checked-out-at="{{ $reservationEntry?->checked_out_at ?? '' }}"
-											data-status="{{ $reservationEntry?->reservation?->status ?? 'N/A' }}"
-											data-age-value="{{ is_numeric($customer->age) ? (int) $customer->age : 999999 }}"
-											data-is-foreign="{{ (bool) ($customer->is_foreigner ?? false) ? 'true' : 'false' }}"
-											data-search="{{ strtolower(trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '') . ' ' . $customer->id . ' ' . ($customer->gender ?? '') . ' ' . ($customer->is_foreigner === null ? '-' : ($customer->is_foreigner ? 'Foreigner' : 'Filipino')) . ' ' . $reservationTypeLabel)) }}"
-											data-is-foreigner="{{ $customer->is_foreigner === null ? '-' : ($customer->is_foreigner ? 'Foreigner' : 'Filipino') }}"
-											data-reservation-type="{{ $reservationTypeLabel }}"
-											tabindex="0"
-											role="button"
-											aria-label="View details for {{ trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}"
-									>
-										<td>
-											<div class="cell-person flex min-w-0 items-center gap-2.5">
-												<span class="cell-person__avatar {{ $glowClass }} flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#178a52] to-[#0e5c37] text-[0.6rem] font-bold text-white shadow-sm {{ $isBulk ? 'cell-person__avatar--bulk' : ($isPrimary ? 'cell-person__avatar--main' : 'cell-person__avatar--companion') }}" title="{{ $glowTitle ? ($glowTitle . ' • ') : '' }}{{ $isBulk ? 'Bulk Companion' : ($isPrimary ? 'Main Guest' : 'Single Companion') }}">
-													@if($isBulk)
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
-													@elseif($isPrimary)
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /><path d="M5.082 14.254a8.287 8.287 0 00-1.308 5.135 9.687 9.687 0 01-1.764-.44l-.115-.04a.563.563 0 01-.373-.487l-.01-.121a3.75 3.75 0 016.576-3.036 7.525 7.525 0 00-3.006-1.011zM18.918 14.254a8.287 8.287 0 011.308 5.135 9.687 9.687 0 001.764-.44l.115-.04a.563.563 0 00.373-.487l.01-.121a3.75 3.75 0 00-6.576-3.036 7.525 7.525 0 013.006-1.011z" /></svg>
-													@else
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
-													@endif
-												</span>
-												@if($isPrimary && $companionCount > 0)
-													<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#1e2220] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservationEntry?->reservation?->id }}" aria-label="Toggle Companions">
-														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-													</button>
-												@endif
-												<div class="cell-person__body min-w-0">
-													<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
-														<span>{{ $isBulk ? $customer->first_name : trim(($customer->first_name ?? '') . ' ' . ($customer->middle_name ?? '') . ' ' . ($customer->last_name ?? '')) }}</span>
-														@if($hasPool && $hasAmenity)
-															<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked"><i class="bi bi-water"></i> Pool + <i class="bi bi-house-door-fill"></i></span>
-														@elseif($hasPool)
-															<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
-														@elseif($hasAmenity)
-															<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked"><i class="bi bi-house-door-fill"></i> Amenity</span>
-														@endif
-														@if($isStray)
-															<span class="rounded bg-[#f59e0b] px-1 py-0.5 align-middle text-[0.6rem] font-semibold text-white">Stray</span>
-														@endif
-														@if ($isPrimary && $companionCount > 0 && ! $isStray)
-															<span class="guest-companion-count inline-flex items-center gap-0.5 rounded-full bg-hp-green/10 px-1.5 py-0.2 text-[0.62rem] font-bold text-hp-green dark:bg-hp-green/25 dark:text-[#6ab88c]">
-																+{{ $companionCount }}
-															</span>
-														@endif
-													</div>
-													<div class="guest-meta mt-0.5 flex items-center gap-2 text-[0.72rem] leading-tight text-hp-text-muted">
-														@if($isBulk)
-															<span>{{ $customer->middle_name }}</span>
-															@if($totalPool > 0)
-																<span class="text-sky-700 dark:text-sky-400 font-medium">({{ $activePool }}/{{ $totalPool }} with pool)</span>
-															@endif
-														@else
-															<span>ID: {{ $customer->id }}</span>
-														@endif
-													</div>
-												</div>
-											</div>
-										</td>
-										<td>
-											@php
-												$displayAge = $customer->age ?? 'N/A';
-												if ($isBulk && is_numeric($displayAge)) {
-													if ($displayAge <= 12) $displayAge = 'Kids';
-													elseif ($displayAge <= 17) $displayAge = 'Teens';
-													elseif ($displayAge <= 59) $displayAge = 'Adults';
-													else $displayAge = 'Seniors';
-												}
-											@endphp
-											<div class="text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $displayAge }}</div>
-											<div class="text-[0.72rem] leading-tight text-hp-text-muted capitalize">{{ $customer->gender ?? 'N/A' }}</div>
-										</td>
-										<td>
-											<span class="status-pill inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-glass-border px-2 py-0.5 text-[0.65rem] font-bold tracking-[0.02em] shadow-sm {{ $customer->is_foreigner ? 'status-pill--confirmed bg-[#e7f3ec] text-[#0e5c37] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'status-pill--checked-out bg-[rgba(120,130,122,0.13)] text-hp-text-muted' }}">{{ $customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span>
-										</td>
-										<td>
-											<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $checkoutAtStr }}" data-status="{{ $reservationEntry?->reservation?->status ?? '' }}"></span>
-										</td>
-										<td class="text-right text-[#9ca3af]">
-											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
-										</td>
-									</tr>
-								@endforeach
-									<tr id="guestEmptyRow" style="display: {{ ($activeCustomers ?? collect())->isEmpty() ? '' : 'none' }};">
-										<td colspan="5" class="border-0">
-											<div class="empty-state-wrapper flex flex-col items-center justify-center gap-1 py-12 text-center">
-												<div class="empty-state-icon mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ec] text-[#1c5c3c]">
-													<svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-													</svg>
-												</div>
-												<h4 class="m-0 text-base font-bold text-hp-text">No active guests</h4>
-												<p class="m-0 text-sm text-hp-text-muted">There are no guests currently checked in to the park.</p>
-											</div>
-										</td>
-									</tr>
-							</tbody>
-						</table>
-					</div>
-						</section>
-					</div>
-
-					<div class="checkins-sidebar">
-						<!-- Sidebar Summary Cards (Individual Pastel Cards Container) -->
-						<div class="sidebar-summary-cards mb-6 flex flex-col gap-3 rounded-2xl border border-glass-border bg-glass p-3 shadow-glass">
-							<!-- Item 1: Active Guests -->
-							<div class="top-stat-card flex items-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 transition-all hover:shadow-sm dark:border-emerald-500/25 dark:bg-emerald-950/30">
-								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-								</div>
-								<div class="mx-3.5 h-6 w-[1px] bg-emerald-500/20"></div>
-								<strong class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 min-w-[28px]">{{ $activeCustomers->count() }}</strong>
-								<span class="ml-3.5 text-sm font-semibold text-hp-text">Active Guests</span>
-							</div>
-
-							<!-- Item 2: Checked In Today -->
-							<div class="top-stat-card flex items-center rounded-xl border border-sky-500/20 bg-sky-500/10 p-3 transition-all hover:shadow-sm dark:border-sky-500/25 dark:bg-sky-950/30">
-								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-500/20 text-sky-600 dark:text-sky-400">
-									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-								</div>
-								<div class="mx-3.5 h-6 w-[1px] bg-sky-500/20"></div>
-								<strong class="text-2xl font-extrabold text-sky-600 dark:text-sky-400 min-w-[28px]">{{ $todaysCheckins }}</strong>
-								<span class="ml-3.5 text-sm font-semibold text-hp-text">Checked In Today</span>
-							</div>
-
-							<!-- Item 3: Expected Check-outs -->
-							<div class="top-stat-card flex items-center rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 transition-all hover:shadow-sm dark:border-amber-500/25 dark:bg-amber-950/30">
-								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
-									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-								</div>
-								<div class="mx-3.5 h-6 w-[1px] bg-amber-500/20"></div>
-								<strong class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 min-w-[28px]">{{ $expectedCheckouts }}</strong>
-								<span class="ml-3.5 text-sm font-semibold text-hp-text">Expected Check-outs</span>
-							</div>
-
-							<!-- Item 4: Walk-ins Today -->
-							<div class="top-stat-card flex items-center rounded-xl border border-purple-500/20 bg-purple-500/10 p-3 transition-all hover:shadow-sm dark:border-purple-500/25 dark:bg-purple-950/30">
-								<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-600 dark:text-purple-400">
-									<svg class="h-5 w-5 stroke-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-								</div>
-								<div class="mx-3.5 h-6 w-[1px] bg-purple-500/20"></div>
-								<strong class="text-2xl font-extrabold text-purple-600 dark:text-purple-400 min-w-[28px]">{{ $walkInsToday }}</strong>
-								<span class="ml-3.5 text-sm font-semibold text-hp-text">Walk-Ins Today</span>
-							</div>
-						</div>
-
-						<!-- Demographics Card -->
-						<div class="checkins-card sidebar-data-card rounded-2xl border border-glass-border bg-glass p-5 shadow-glass mb-6">
-							<h4 class="sidebar-data-title m-0 mb-4 font-display text-base font-bold text-hp-text">Guest Demographics</h4>
-							<div class="sidebar-data-list flex flex-col gap-3">
-								<div class="sidebar-data-item">
-									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
-										<span class="data-label font-semibold text-hp-text-muted">Kids (0-12)</span>
-										<span class="data-value font-bold text-hp-text">{{ $metrics['kids'] }}</span>
-									</div>
-									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['kids'] / $totalGuests) * 100 }}%"></div></div>
-								</div>
-								<div class="sidebar-data-item">
-									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
-										<span class="data-label font-semibold text-hp-text-muted">Teens (13-17)</span>
-										<span class="data-value font-bold text-hp-text">{{ $metrics['teens'] }}</span>
-									</div>
-									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['teens'] / $totalGuests) * 100 }}%"></div></div>
-								</div>
-								<div class="sidebar-data-item">
-									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
-										<span class="data-label font-semibold text-hp-text-muted">Adults (18-59)</span>
-										<span class="data-value font-bold text-hp-text">{{ $metrics['adults'] }}</span>
-									</div>
-									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['adults'] / $totalGuests) * 100 }}%"></div></div>
-								</div>
-								<div class="sidebar-data-item">
-									<div class="data-item-top mb-1 flex items-center justify-between text-xs">
-										<span class="data-label font-semibold text-hp-text-muted">Seniors (60+)</span>
-										<span class="data-value font-bold text-hp-text">{{ $metrics['seniors'] }}</span>
-									</div>
-									<div class="data-progress-bg h-1.5 overflow-hidden rounded-full bg-glass-hover dark:bg-white/10"><div class="data-progress-fill h-full rounded-full bg-hp-green-mid" style="width: {{ ($metrics['seniors'] / $totalGuests) * 100 }}%"></div></div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div> <!-- Closing #guestTableSection -->
-
 					{{-- RESERVATION TABLE --}}
-					<div id="reservationTableSection" class="tab-content-section" style="display: none;">
-						<section class="checkins-card overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
-							<div class="checkins-card-header flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5">
-								<div class="table-header-left flex items-center">
-									<h2 class="checkins-title m-0 font-display text-xl font-bold text-hp-text">Reservation Data View</h2>
+					<div id="reservationTableSection" class="tab-content-section">
+						<section class="overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass dark:border-white/15 dark:bg-[#181b19]/80">
+							<div class="flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5 dark:border-white/10">
+								<div class="flex items-center">
+									<h2 class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Data View</h2>
 								</div>
-								<div class="checkins-actions flex items-center gap-2">
-									<button type="button" class="ci-btn-primary inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
+								<div class="flex items-center gap-2">
+									<button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
 										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
 										</svg>
 										Walk-in Checkin
 									</button>
-									<button type="button" class="ci-btn-icon inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" aria-label="Scan QR Code">
+									<button type="button" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong dark:border-white/15 dark:bg-white/5 dark:text-[#f3f4f6]" aria-label="Scan QR Code">
 										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
 											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1295,54 +789,54 @@
 								</div>
 							</div>
 
-					<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:bg-white/[0.01]">
-						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-glass-border dark:hover:bg-[#1e2220] dark:hover:border-[#4a8a52] dark:hover:text-[#f3f4f6]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
+					<div class="guest-filter-shell flex flex-col gap-3 border-b border-glass-border/40 bg-black/[0.01] px-6 py-4 dark:border-white/10 dark:bg-white/[0.01]">
+						<button type="button" class="guest-filter-toggle inline-flex w-fit cursor-pointer items-center justify-between gap-2.5 rounded-full border border-glass-border bg-glass px-4 py-2 font-semibold text-hp-text transition-all duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-white/15 dark:bg-white/5 dark:text-[#f3f4f6] dark:hover:bg-[#1e2220] dark:hover:border-[#4a8a52]" id="resvFilterToggle" aria-expanded="false" aria-controls="resvFilterPanel">
 							<span>Reservation Filters</span>
 							<span class="guest-filter-toggle__icon text-[0.95rem]">▾</span>
 						</button>
-						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-4 dark:bg-glass" id="resvFilterPanel" hidden>
-							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-4">
+						<div class="guest-toolbar guest-toolbar--collapsed grid items-end gap-3 rounded-[14px] border border-glass-border bg-hp-cream p-4 transition-colors duration-300 md:grid-cols-2 xl:grid-cols-4 dark:border-white/15 dark:bg-[#181b19]" id="resvFilterPanel" hidden>
+							<label class="guest-toolbar__field guest-toolbar__field--search grid gap-1.5 text-[0.82rem] font-semibold text-hp-text xl:col-span-4 dark:text-[#f3f4f6]">
 								<span>Search</span>
-								<input type="search" id="resvSearchInput" placeholder="Search by reservation ID, main guest, booker, amenity..." class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
+								<input type="search" id="resvSearchInput" placeholder="Search by reservation ID, main guest, booker, amenity..." class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
 							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text dark:text-[#f3f4f6]">
 								<span>Reservation Type</span>
-								<select id="resvTypeFilter" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
+								<select id="resvTypeFilter" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
 									<option value="all">All Types</option>
 									<option value="walk_in">Walk-in</option>
 									<option value="online">Online</option>
 								</select>
 							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text dark:text-[#f3f4f6]">
 								<span>Check-in from</span>
-								<input type="date" id="resvDateFrom" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
+								<input type="date" id="resvDateFrom" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
 							</label>
-							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text">
+							<label class="guest-toolbar__field grid gap-1.5 text-[0.82rem] font-semibold text-hp-text dark:text-[#f3f4f6]">
 								<span>Check-in to</span>
-								<input type="date" id="resvDateTo" class="w-full rounded-[11px] border border-glass-border bg-glass px-3.5 py-2.5 text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-glass-border dark:bg-[#0d2812] dark:text-[#f3f4f6]">
+								<input type="date" id="resvDateTo" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/15 dark:bg-[#141715] dark:text-[#f3f4f6]">
 							</label>
-							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-[11px] border-none bg-[rgba(13,44,29,0.1)] px-4 py-2.5 font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:bg-[#1e2220] dark:text-[#f3f4f6]" id="resvFiltersClear">Clear</button>
+							<button type="button" class="guest-toolbar__clear cursor-pointer rounded-xl border border-glass-border bg-black/5 px-4 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-200 hover:bg-hp-gold hover:text-hp-green-dark dark:border-white/15 dark:bg-white/10 dark:text-[#f3f4f6]" id="resvFiltersClear">Clear</button>
 						</div>
 					</div>
 
-					<div class="guest-toolbar__meta flex items-center justify-between border-b border-glass-border/30 bg-black/[0.01] px-6 py-2.5 text-xs font-semibold text-hp-text-muted dark:bg-white/[0.01]">
+					<div class="guest-toolbar__meta flex items-center justify-between border-b border-glass-border/30 bg-black/[0.01] px-6 py-2.5 text-xs font-semibold text-hp-text-muted dark:border-white/10 dark:bg-white/[0.01]">
 						<span id="resvResultsCount">Showing {{ $activeReservations->count() }} reservation{{ $activeReservations->count() === 1 ? '' : 's' }}</span>
 					</div>
 
 					<div class="guest-table-wrap w-full overflow-x-auto" id="reservationTableWrap">
-						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent">
-							<thead>
+						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent text-left">
+							<thead class="border-b border-glass-border/70 bg-black/[0.02] text-[0.72rem] font-bold uppercase tracking-wider text-hp-text-muted dark:border-white/10 dark:bg-white/[0.03] dark:text-[#9baaa1]">
 								<tr>
-									<th>Reservation</th>
-									<th>Main Guest</th>
-									<th>Check-in & Time</th>
-									<th>Amenities</th>
-									<th>Guests</th>
-									<th>Status / Time Left</th>
-									<th></th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Reservation</th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Main Guest</th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Check-in & Time</th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Amenities</th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Guests</th>
+									<th class="px-5 py-3.5 text-left font-bold select-none">Status / Time Left</th>
+									<th class="px-5 py-3.5 text-center font-bold select-none"></th>
 								</tr>
 							</thead>
-							<tbody id="checkInsReservationTableBody">
+							<tbody id="checkInsReservationTableBody" class="divide-y divide-glass-border/30 dark:divide-white/5">
 								@forelse ($activeReservations ?? collect() as $reservation)
 									@php
 										$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
