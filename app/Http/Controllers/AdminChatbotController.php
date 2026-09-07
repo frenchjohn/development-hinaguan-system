@@ -155,9 +155,13 @@ class AdminChatbotController extends Controller
             ])->post("https://openrouter.ai/api/v1/chat/completions", [
                 'model' => $model,
                 'messages' => $messagesPayload,
-                'max_tokens' => 600,
+                'max_tokens' => 1000,
                 'temperature' => 0.2,
                 'include_reasoning' => false,
+                'reasoning' => [
+                    'effort' => 'none',
+                    'exclude' => true,
+                ],
             ]);
 
             if ($response->successful()) {
@@ -674,7 +678,25 @@ class AdminChatbotController extends Controller
                 $aircon = ($benefit && $benefit->is_aircon) ? 'YES (Air-conditioned)' : 'NO (Open-air / Non-aircon)';
                 $addHead = number_format((float) $am->additional_per_head, 2);
 
-                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$am->minimum_capacity}-{$am->maximum_capacity} pax):\n"
+                $name = $am->amenities_name;
+                $minCap = !empty($am->minimum_capacity) ? (int) $am->minimum_capacity : 1;
+                if (!empty($am->maximum_capacity)) {
+                    $maxCap = (int) $am->maximum_capacity;
+                } elseif (stripos($name, 'function hall') !== false || stripos($name, 'hall') !== false) {
+                    $minCap = 15;
+                    $maxCap = 50;
+                } elseif (stripos($name, 'cottage') !== false) {
+                    $maxCap = 10;
+                } elseif (stripos($name, 'payag') !== false) {
+                    $maxCap = 8;
+                } elseif (stripos($name, 'a-house') !== false) {
+                    $maxCap = 2;
+                } else {
+                    $maxCap = $minCap;
+                }
+                $capLabel = ($minCap === $maxCap) ? "{$minCap} persons" : "{$minCap} to {$maxCap} persons";
+
+                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$capLabel}):\n"
                     . "  * Rates: Daytime: ₱" . number_format((float) $am->daytime_price, 2) . " | Nighttime: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead}\n"
                     . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
             }

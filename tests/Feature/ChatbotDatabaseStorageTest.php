@@ -58,6 +58,18 @@ class ChatbotDatabaseStorageTest extends TestCase
                 ], 200);
             }
 
+            if (str_contains($userMsg, 'truncated reasoning suggestion')) {
+                return Http::response([
+                    'choices' => [
+                        [
+                            'message' => [
+                                'content' => "1. Analyze User Input:\n- User is asking for an amenity suggestion for 5 people.\n\n2. Check Constraints & Rules:\n- OUTPUT ONLY THE DIRECT CONVERSATIONAL RESPONSE.\n\n3. Determine Amenity for 5 People:\n- Look at the database for amenities.\n- A"
+                            ]
+                        ]
+                    ]
+                ], 200);
+            }
+
             return Http::response([
                 'choices' => [
                     [
@@ -420,4 +432,23 @@ class ChatbotDatabaseStorageTest extends TestCase
         $this->assertStringNotContainsString('Draft:', $reply);
         $this->assertEquals('Right now, Reservation #8 under weweewdsf is pending and scheduled for October 8, 2026, during the day.', $reply);
     }
+
+    public function test_guest_chatbot_handles_pure_scratchpad_leak_and_outputs_direct_answer()
+    {
+        $response = $this->postJson('/guest-chatbot', [
+            'message' => 'can you recommend an amenity for 5 people with truncated reasoning suggestion?',
+            'model' => 'openrouter/free',
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertNotEmpty($reply);
+        $this->assertStringNotContainsString('1. Analyze', $reply);
+        $this->assertStringNotContainsString('2. Check Constraints', $reply);
+        $this->assertStringNotContainsString('3. Determine Amenity', $reply);
+        $this->assertStringNotContainsString('- A', $reply);
+        $this->assertFalse(str_starts_with($reply, 'Analysis'));
+    }
 }
+

@@ -1317,6 +1317,177 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
     return $reservation;
 };
 
+Route::post('/reservation/check-existing', function (Request $request) {
+    $data = $request->validate([
+        'booker_name' => ['nullable', 'string', 'max:255'],
+        'phone' => ['nullable', 'string', 'max:50'],
+        'email' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $rawName = trim($data['booker_name'] ?? '');
+    $rawPhone = trim($data['phone'] ?? '');
+    $rawEmail = strtolower(trim($data['email'] ?? ''));
+
+    // Extract last 10 digits of mobile number for matching
+    $cleanPhoneDigits = preg_replace('/\D/', '', $rawPhone);
+    $last10Phone = strlen($cleanPhoneDigits) >= 10 ? substr($cleanPhoneDigits, -10) : $cleanPhoneDigits;
+
+    if ($rawName === '' && empty($last10Phone) && $rawEmail === '') {
+        return response()->json([
+            'has_existing' => false,
+            'has_exact_match' => false,
+            'matches' => [],
+        ]);
+    }
+
+    $today = now()->toDateString();
+
+    // Query reservations with Pending or Confirmed status that are active or upcoming
+    $query = \App\Models\Reservation::query()
+        ->whereIn(\Illuminate\Support\Facades\DB::raw('LOWER(status)'), ['pending', 'confirmed'])
+        ->where(function ($q) use ($today) {
+            $q->whereDate('check_out', '>=', $today)
+              ->orWhereDate('end_date', '>=', $today)
+              ->orWhereDate('check_in', '>=', $today)
+              ->orWhereDate('reservation_date', '>=', $today);
+        });
+
+    $query->where(function ($q) use ($rawName, $last10Phone, $rawEmail) {
+        $hasCondition = false;
+        if ($rawName !== '') {
+            $q->whereRaw('LOWER(TRIM(booker_name)) = ?', [strtolower($rawName)]);
+            $hasCondition = true;
+        }
+        if (!empty($last10Phone) && strlen($last10Phone) >= 7) {
+            if ($hasCondition) {
+                $q->orWhere('phone', 'LIKE', '%' . $last10Phone . '%');
+            } else {
+                $q->where('phone', 'LIKE', '%' . $last10Phone . '%');
+                $hasCondition = true;
+            }
+        }
+        if ($rawEmail !== '') {
+            if ($hasCondition) {
+                $q->orWhereRaw('LOWER(TRIM(email)) = ?', [$rawEmail]);
+            } else {
+                $q->whereRaw('LOWER(TRIM(email)) = ?', [$rawEmail]);
+                $hasCondition = true;
+            }
+        }
+    });
+
+    $existingReservations = $query->with('reservationAmenities.amenity')->orderBy('id', 'desc')->take(5)->get();
+
+    if ($existingReservations->isEmpty()) {
+        return response()->json([
+            'has_existing' => false,
+            'has_exact_match' => false,
+            'matches' => [],
+        ]);
+    }
+
+    $matches = [];
+    $hasExactMatch = false;
+
+    $maskName = function ($fullName) {
+        $fullName = trim($fullName ?? '');
+        if ($fullName === '') return 'Guest';
+        $parts = preg_split('/\s+/', $fullName);
+        if (count($parts) === 1) {
+            return ucfirst(strtolower($parts[0]));
+        }
+        $firstName = ucfirst(strtolower($parts[0]));
+        $lastName = end($parts);
+        $lastInitial = strtoupper(substr($lastName, 0, 1)) . '.';
+        return $firstName . ' ' . $lastInitial;
+    };
+
+    $maskPhone = function ($phone) {
+        $phone = trim($phone ?? '');
+        if ($phone === '') return 'N/A';
+        $hasPlus = str_starts_with($phone, '+');
+        $digits = preg_replace('/\D/', '', $phone);
+        if (strlen($digits) <= 4) {
+            return ($hasPlus ? '+' : '') . str_repeat('x', strlen($digits));
+        }
+        $maskCount = 3;
+        $visible = substr($digits, 0, -$maskCount);
+        return ($hasPlus ? '+' : '') . $visible . str_repeat('x', $maskCount);
+    };
+
+    $maskEmail = function ($email) {
+        $email = strtolower(trim($email ?? ''));
+        if ($email === '' || !str_contains($email, '@')) return 'N/A';
+        [$user, $domain] = explode('@', $email, 2);
+        $len = strlen($user);
+        if ($len <= 2) {
+            $maskedUser = substr($user, 0, 1) . '***';
+        } elseif ($len <= 4) {
+            $maskedUser = substr($user, 0, 2) . '***';
+        } elseif ($len <= 8) {
+            $maskedUser = substr($user, 0, 4) . '***';
+        } else {
+            $visibleLen = max(4, min(9, $len - 2));
+            $maskedUser = substr($user, 0, $visibleLen) . '***';
+        }
+        return $maskedUser . '@' . $domain;
+    };
+
+    foreach ($existingReservations as $res) {
+        $matchedFields = [];
+
+        $resName = strtolower(trim($res->booker_name ?? ''));
+        if ($rawName !== '' && $resName === strtolower($rawName)) {
+            $matchedFields[] = 'name';
+        }
+
+        $resPhoneDigits = preg_replace('/\D/', '', $res->phone ?? '');
+        $resLast10 = strlen($resPhoneDigits) >= 10 ? substr($resPhoneDigits, -10) : $resPhoneDigits;
+        if (!empty($last10Phone) && !empty($resLast10) && $resLast10 === $last10Phone) {
+            $matchedFields[] = 'phone';
+        }
+
+        $resEmail = strtolower(trim($res->email ?? ''));
+        if ($rawEmail !== '' && $resEmail === $rawEmail) {
+            $matchedFields[] = 'email';
+        }
+
+        $isExact = count($matchedFields) === 3;
+        if ($isExact) {
+            $hasExactMatch = true;
+        }
+
+        $amenityNames = $res->reservationAmenities
+            ->map(fn ($ra) => $ra->amenity->name ?? null)
+            ->filter()
+            ->values()
+            ->all();
+
+        $checkInFormatted = $res->check_in ? \Carbon\Carbon::parse($res->check_in)->format('M d, Y') : ($res->reservation_date ? \Carbon\Carbon::parse($res->reservation_date)->format('M d, Y') : 'N/A');
+        $checkOutFormatted = $res->check_out ? \Carbon\Carbon::parse($res->check_out)->format('M d, Y') : ($res->end_date ? \Carbon\Carbon::parse($res->end_date)->format('M d, Y') : $checkInFormatted);
+
+        $matches[] = [
+            'id' => $res->id,
+            'booker_name' => $maskName($res->booker_name),
+            'phone' => $maskPhone($res->phone),
+            'email' => $maskEmail($res->email),
+            'check_in' => $checkInFormatted,
+            'check_out' => $checkOutFormatted,
+            'slot' => $res->start_slot ?? ($res->slot ?? 'Daytime'),
+            'status' => ucfirst(strtolower($res->status)),
+            'amenities' => $amenityNames,
+            'matched_fields' => $matchedFields,
+            'is_exact' => $isExact,
+        ];
+    }
+
+    return response()->json([
+        'has_existing' => true,
+        'has_exact_match' => $hasExactMatch,
+        'matches' => $matches,
+    ]);
+})->name('reservation.check-existing')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::post('/reservation/create-intent', function (Request $request, \App\Services\PayMongoService $payMongo) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
     $data = $request->validate([
         'booker_name' => ['required', 'string', 'max:255', 'regex:/^[\pL\s]+$/u'],

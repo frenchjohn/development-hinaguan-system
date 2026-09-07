@@ -202,11 +202,11 @@
                 <span>Back to Homepage</span>
             </a>
 
-            <button type="button" class="rp-terms-trigger-btn" id="openTermsPolicyBtn" data-open-terms-modal title="View Park Rules and Reservation Policies">
+            <button type="button" class="rp-terms-trigger-btn" id="openTermsPolicyBtn" data-open-terms-modal title="View Park Terms &amp; Conditions">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>Terms &amp; Policies</span>
+                <span>Terms &amp; Conditions</span>
             </button>
         </div>
 
@@ -1017,13 +1017,19 @@
 
                             <input type="hidden" name="total_days" id="bookingTotalDays">
 
-                            <label for="bookingBookerName">
+                            <div class="rp-name-row">
+                                <label for="bookingFirstName">
+                                    <span>First name <span class="rp-label-hint">(letters only)</span></span>
+                                    <input type="text" id="bookingFirstName" placeholder="e.g. Juan" autocomplete="given-name" pattern="^[a-zA-Z\s]+$" title="First name must contain letters only (no numbers or symbols)" required>
+                                </label>
 
-                                <span>Booker name <span class="rp-label-hint">(letters only)</span></span>
+                                <label for="bookingLastName">
+                                    <span>Last name <span class="rp-label-hint">(letters only)</span></span>
+                                    <input type="text" id="bookingLastName" placeholder="e.g. Dela Cruz" autocomplete="family-name" pattern="^[a-zA-Z\s]+$" title="Last name must contain letters only (no numbers or symbols)" required>
+                                </label>
+                            </div>
 
-                                <input type="text" name="booker_name" id="bookingBookerName" placeholder="Enter booker name (letters only)" autocomplete="name" pattern="^[a-zA-Z\s]+$" title="Booker name must contain letters only (no numbers or symbols)" required>
-
-                            </label>
+                            <input type="hidden" name="booker_name" id="bookingBookerName">
 
                             <label for="bookingPhoneInput">
 
@@ -1043,7 +1049,7 @@
 
                                 <span>Email <span class="rp-label-hint">(valid email address)</span></span>
 
-                                <input type="email" name="email" id="bookingEmailInput" placeholder="Enter email address (e.g. name@domain.com)" autocomplete="email" pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address" required>
+                                <input type="email" name="email" id="bookingEmailInput" placeholder="Enter email address (e.g. name@domain.com)" autocomplete="email" title="Please enter a valid email address" required>
 
                             </label>
 
@@ -1798,6 +1804,99 @@
 
 
 
+        {{-- ── Existing Upcoming Reservation Notice / Warning Modal (2-Section Layout) ── --}}
+        <div class="rp-modal" id="existingReservationNoticeModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="existingNoticeTitle">
+            <div class="rp-modal__backdrop" id="existingNoticeBackdrop"></div>
+            <div class="rp-modal__panel rp-modal__panel--existing-notice">
+                <div class="rp-modal__header rp-existing-notice__header" id="existingNoticeHeader">
+                    <div class="rp-existing-notice__badge" id="existingNoticeBadge">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span id="existingNoticeBadgeText">Upcoming Reservation Notice</span>
+                    </div>
+                    <button type="button" class="rp-modal__close" id="existingNoticeCloseBtn" aria-label="Close modal">&times;</button>
+                </div>
+
+                <div class="rp-existing-notice__body-grid">
+                    {{-- ── Section 1: Notice & Guidance ── --}}
+                    <div class="rp-existing-notice__section rp-existing-notice__section--info">
+                        <div class="rp-existing-notice__section-head">
+                            <h2 id="existingNoticeTitle" class="rp-existing-notice__title">Existing Reservation on Record</h2>
+                            <p id="existingNoticeSubtitle" class="rp-existing-notice__subtitle">
+                                We found an active or upcoming reservation matching your contact details in our system.
+                            </p>
+                        </div>
+
+                        <div class="rp-existing-notice__alert-box" id="existingNoticeAlertBox">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span id="existingNoticeAlertText">
+                                If you already have a booking, you don't need to book again unless you are making an additional reservation. Would you still like to proceed with this new booking?
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- ── Section 2: Matched Reservations Cards ── --}}
+                    <div class="rp-existing-notice__section rp-existing-notice__section--matches">
+                        <div class="rp-existing-notice__matches-header">
+                            <span class="rp-existing-notice__matches-title">Active Booking(s) on File</span>
+                            <span class="rp-existing-notice__count-badge" id="existingNoticeCountBadge">1 Found</span>
+                        </div>
+
+                        <div class="rp-existing-notice__cards" id="existingNoticeMatchesList">
+                            {{-- Injected dynamically by JS --}}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── Pinned Action Footer (Always Visible at Bottom without Scrolling) ── --}}
+                <div class="rp-existing-notice__footer">
+                    <div class="rp-existing-notice__privacy-hint">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:-1px; margin-right:3px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Personal details partially masked for privacy.</span>
+                    </div>
+
+                    <div class="rp-existing-notice__actions">
+                        <button type="button" id="existingNoticeCancelBtn" class="rp-existing-notice__btn rp-existing-notice__btn--cancel">
+                            Review Details / Edit
+                        </button>
+                        <button type="button" id="existingNoticeProceedBtn" class="rp-existing-notice__btn rp-existing-notice__btn--proceed">
+                            <span>Still Proceed to Payment</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Seamless Reservation Processing Loading Overlay ── --}}
+        <div class="rp-processing-overlay" id="reservationProcessingOverlay" aria-hidden="true" role="status" aria-live="polite">
+            <div class="rp-processing-overlay__backdrop"></div>
+            <div class="rp-processing-overlay__card">
+                <div class="rp-processing-overlay__visual">
+                    <div class="rp-processing-overlay__spinner-ring"></div>
+                    <div class="rp-processing-overlay__icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                </div>
+                <h3 class="rp-processing-overlay__title" id="processingOverlayTitle">Securing Your Reservation</h3>
+                <p class="rp-processing-overlay__text" id="processingOverlayText">Preparing your checkout with PayMongo…</p>
+                <div class="rp-processing-overlay__dots">
+                    <span class="rp-processing-dot"></span>
+                    <span class="rp-processing-dot"></span>
+                    <span class="rp-processing-dot"></span>
+                </div>
+            </div>
+        </div>
+
         {{-- ── Error modal ── --}}
 
         <div class="rp-modal rp-modal--error" id="reservationErrorModal" aria-hidden="true">
@@ -1878,38 +1977,87 @@
 
         </div>
 
-        {{-- ── Terms & Policy Modal (Clean, Plain White) ── --}}
+        {{-- ── Terms & Conditions Modal (Organized into 10 Categories) ── --}}
         <div class="rp-modal rp-terms-modal" id="termsPolicyModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="termsPolicyTitle">
             <div class="rp-modal__backdrop" id="termsPolicyBackdrop"></div>
             <div class="rp-terms-modal__panel">
                 <div class="rp-terms-modal__header">
                     <div>
-                        <h2 id="termsPolicyTitle" class="rp-terms-modal__title">Terms &amp; Policies</h2>
-                        <p class="rp-terms-modal__subtitle">Please review our reservation terms and park policies before proceeding.</p>
+                        <h2 id="termsPolicyTitle" class="rp-terms-modal__title">Terms &amp; Conditions</h2>
+                        <p class="rp-terms-modal__subtitle">Please review our reservation terms, policies, and park rules before proceeding.</p>
                     </div>
+                    <button type="button" class="rp-terms-modal__close" id="closeTermsPolicyModalBtn" aria-label="Close Terms &amp; Conditions Modal" style="display: none;">
+                        &times;
+                    </button>
                 </div>
 
                 <div class="rp-terms-modal__content">
+                    {{-- 1. Booking and Reservation Policy --}}
                     <section class="rp-terms-section">
-                        <h3>1. Reservation &amp; Downpayment Terms</h3>
+                        <h3>1. Booking and Reservation Policy</h3>
                         <ul>
-                            <li><strong>Instant Reservation:</strong> Your reservation is confirmed and locked immediately upon successful completion of the booking process.</li>
-                            <li><strong>50% Downpayment Required:</strong> A 50% initial downpayment is required to lock in and secure your reserved slot. The remaining 50% balance must be settled at the park counter upon arrival.</li>
-                            <li><strong>Strictly No Refund:</strong> All payments, reservation fees, and deposits are final and strictly non-refundable. Rescheduling is subject to park management availability and approval.</li>
-                            <li><strong>Active Contact Details:</strong> Guests must provide valid and active contact numbers and email addresses to receive check-in updates and reservation passes.</li>
+                            <li><strong>Instant Reservation Confirmation:</strong> Your booking is instantly locked upon completion of the reservation procedure and downpayment submission.</li>
+                            <li><strong>Advance Reservations:</strong> Advance online booking is strongly encouraged to guarantee slot availability for cottages, huts, overnight stays, and private amenities.</li>
+                            <li><strong>Accurate Guest Information:</strong> Guests must supply valid, verifiable contact numbers, full names, and active email addresses to receive check-in passes and reservation notices.</li>
+                            <li><strong>Amenity Capacity Limits:</strong> Each park amenity has an enforced maximum capacity. Any extra visitors beyond the listed limit must be declared and settled at the entrance counter upon arrival.</li>
                         </ul>
                     </section>
 
+                    {{-- 2. Payment Policy --}}
                     <section class="rp-terms-section">
-                        <h3>2. Arrival &amp; Entry QR Pass</h3>
+                        <h3>2. Payment Policy</h3>
                         <ul>
-                            <li><strong>QR Pass Verification:</strong> An official entry QR code will be generated and emailed to you upon booking confirmation. You must present this QR code (digital or printed) at the entrance counter for identity verification and express check-in.</li>
-                            <li><strong>Park Hours:</strong> Daytime visits run from {{ $daytimeStartFormatted ?? '8:00 AM' }} to {{ $daytimeEndFormatted ?? '5:00 PM' }}. Overnight stays begin at {{ $nighttimeStartFormatted ?? '6:00 PM' }} and conclude at {{ $nighttimeEndFormatted ?? '8:00 AM' }} the following morning.</li>
+                            <li><strong>50% Downpayment Required:</strong> A non-refundable 50% initial downpayment is mandatory to lock and guarantee your reservation slot.</li>
+                            <li><strong>Remaining 50% Balance:</strong> The remaining 50% balance must be settled upon arrival at the park entrance counter before access to reserved amenities is permitted.</li>
+                            <li><strong>Payment Channels:</strong> Online downpayments may be settled via GCash or supported bank transfers. Front-desk payments accept cash and verified e-wallets.</li>
+                            <li><strong>Proof of Payment:</strong> Guests paying online must enter the correct reference number and provide a legible payment screenshot for validation.</li>
                         </ul>
                     </section>
 
+                    {{-- 3. Cancellation Policy --}}
                     <section class="rp-terms-section">
-                        <h3>3. Park Rules &amp; Guidelines</h3>
+                        <h3>3. Cancellation Policy</h3>
+                        <ul>
+                            <li><strong>Strictly No Refund:</strong> All deposits, downpayments, and reservation fees are strictly final and non-refundable under normal booking conditions.</li>
+                            <li><strong>Rescheduling Requests:</strong> Rescheduling is allowed if requested at least forty-eight (48) hours prior to the reserved visit date, subject to slot availability and park management approval.</li>
+                            <li><strong>No-Show Policy:</strong> Guests who fail to arrive on their scheduled visit date without prior notice automatically forfeit their slot and deposit.</li>
+                            <li><strong>Force Majeure:</strong> In events of severe storms, typhoons, or natural calamities declared by local authorities, bookings may be rescheduled without extra penalty.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 4. Check-in and Check-out Policy --}}
+                    <section class="rp-terms-section">
+                        <h3>4. Check-in and Check-out Policy</h3>
+                        <ul>
+                            <li><strong>Park Visiting Hours:</strong> Daytime visits run from {{ $daytimeStartFormatted ?? '8:00 AM' }} to {{ $daytimeEndFormatted ?? '5:00 PM' }}. Overnight stays begin at {{ $nighttimeStartFormatted ?? '6:00 PM' }} with check-out at {{ $nighttimeEndFormatted ?? '8:00 AM' }} the following morning.</li>
+                            <li><strong>QR Pass &amp; Valid ID:</strong> Guests must present their generated Booking QR Code (digital or printed) along with at least one valid government or student ID at the entrance counter for express check-in.</li>
+                            <li><strong>Holding Period:</strong> Reserved facilities will be held for up to two (2) hours from the scheduled arrival time. Please notify the park in advance for late arrivals.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 5. Guest Responsibilities --}}
+                    <section class="rp-terms-section">
+                        <h3>5. Guest Responsibilities</h3>
+                        <ul>
+                            <li><strong>Clean As You Go (CLAYGO):</strong> Guests are requested to practice CLAYGO. Segregate and dispose of all food leftovers, bottles, and trash into labeled waste bins before departure.</li>
+                            <li><strong>Supervision of Minors:</strong> Minors and children must be supervised by a responsible adult at all times, especially near swimming pools and riverbanks.</li>
+                            <li><strong>Respectful Conduct:</strong> Courtesy and respect towards fellow park visitors, nature, and park personnel are required. Harassment or violent misconduct is cause for immediate ejection.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 6. Property Damage and Accountability --}}
+                    <section class="rp-terms-section">
+                        <h3>6. Property Damage and Accountability</h3>
+                        <ul>
+                            <li><strong>Damage Liability:</strong> Guests are held financially accountable for any damage, loss, or breakage caused to park property, furniture, or rental gear due to negligence or misuse.</li>
+                            <li><strong>Personal Belongings:</strong> Hinaguan Nature Park management is not liable for lost, stolen, or unattended personal items. Please safeguard your belongings.</li>
+                            <li><strong>Item Turnover:</strong> All rented park utensils, cooking equipment, sports materials, or life jackets must be returned in good condition.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 7. Facility and Safety Rules --}}
+                    <section class="rp-terms-section">
+                        <h3>7. Facility and Safety Rules</h3>
                         <ul>
                             @if(isset($parkRules) && $parkRules->count() > 0)
                                 @foreach($parkRules as $rule)
@@ -1919,19 +2067,39 @@
                                 <li><strong>Proper Swimming Pool Attire:</strong> Proper swimwear (rash guards, swim trunks, bathing suits) is required when entering swimming pools. Cotton shirts, denim pants, and undergarments are strictly prohibited in the pool.</li>
                                 <li><strong>Outside Food &amp; Corkage:</strong> Guests may bring outside food and non-alcoholic beverages with zero corkage fee. Free outdoor grilling stations are available (please bring your own charcoal and utensils).</li>
                                 <li><strong>Quiet Hours:</strong> Quiet hours are observed from 10:00 PM to 6:00 AM for the peace and comfort of overnight guests and nature. High-volume sound systems must be lowered.</li>
-                                <li><strong>Clean As You Go (CLAYGO):</strong> Guests are requested to practice CLAYGO. Segregate and dispose of all trash into labeled waste bins before checkout.</li>
                                 <li><strong>Pet Policy:</strong> Pets are allowed but must remain leashed and supervised at all times. Owners must clean up after their pets immediately.</li>
                                 <li><strong>Designated Smoking Areas:</strong> Smoking and vaping are only permitted in designated outdoor smoking zones away from cottages and pools.</li>
                             @endif
                         </ul>
                     </section>
 
+                    {{-- 8. Weather and Riverfront Booking Policy --}}
                     <section class="rp-terms-section">
-                        <h3>4. Safety &amp; Regulations</h3>
+                        <h3>8. Weather and Riverfront Booking Policy</h3>
                         <ul>
-                            <li>Please supervise minors around swimming pools and riverbanks at all times.</li>
-                            <li>The park management is not liable for lost or unattended personal belongings.</li>
-                            <li>Park staff reserve the right to refuse entry or ask guests to leave for misconduct or violation of park policies.</li>
+                            <li><strong>Riverfront Safety:</strong> River water levels and currents vary according to rainfall. Park management reserves the right to temporarily close river access during rapid water surges for safety.</li>
+                            <li><strong>Rain or Shine Operations:</strong> Outdoor amenities operate rain or shine unless severe flood alerts or official typhoon warnings are issued.</li>
+                            <li><strong>Life Vests:</strong> Use of personal flotation devices or life vests is strongly encouraged for non-swimmers and children near the river.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 9. Privacy and Personal Information --}}
+                    <section class="rp-terms-section">
+                        <h3>9. Privacy and Personal Information</h3>
+                        <ul>
+                            <li><strong>Data Privacy Compliance:</strong> In accordance with Republic Act 10173 (Data Privacy Act of 2012), guest information is gathered exclusively for reservation processing, QR pass generation, and park safety communication.</li>
+                            <li><strong>Confidentiality:</strong> Your personal information will never be shared, sold, or disclosed to unauthorized third parties without explicit consent.</li>
+                            <li><strong>Data Security:</strong> Reasonable administrative and technical security measures are deployed to safeguard your personal details from unauthorized access.</li>
+                        </ul>
+                    </section>
+
+                    {{-- 10. System Usage Rules --}}
+                    <section class="rp-terms-section">
+                        <h3>10. System Usage Rules</h3>
+                        <ul>
+                            <li><strong>Legitimate Bookings Only:</strong> Creating bogus, spam, or speculative reservations without intention of payment will result in immediate IP banning and customer blacklisting.</li>
+                            <li><strong>Fair Use &amp; Security:</strong> Attempting to tamper with reservation forms, bypass security validations, or use automated bots is illegal and strictly prohibited.</li>
+                            <li><strong>Price &amp; Information Accuracy:</strong> While we endeavor to maintain up-to-date data, park management reserves the right to resolve any clerical errors in pricing or availability prior to booking confirmation.</li>
                         </ul>
                     </section>
                 </div>
@@ -1939,11 +2107,14 @@
                 <div class="rp-terms-modal__footer">
                     <label class="rp-terms-modal__checkbox-label" for="agreeTermsCheckbox">
                         <input type="checkbox" id="agreeTermsCheckbox" class="rp-terms-modal__checkbox">
-                        <span>I have read, understood, and agree to the <strong>Terms, Policies, and Park Rules</strong>.</span>
+                        <span>I have read, understood, and agree to the <strong>Terms &amp; Conditions</strong>.</span>
                     </label>
 
                     <button type="button" id="proceedTermsBtn" class="rp-terms-modal__proceed-btn" disabled>
-                        <span>Proceed</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="display: inline-block; vertical-align: middle; margin-right: 0.35rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>I Agree</span>
                     </button>
                 </div>
             </div>

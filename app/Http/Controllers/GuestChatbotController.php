@@ -57,14 +57,16 @@ class GuestChatbotController extends Controller
 
         $guestContext = $this->getGuestContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the warm, friendly, and helpful guest concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
-            . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
-            . "- OUTPUT ONLY THE DIRECT CONVERSATIONAL RESPONSE. Do NOT include reasoning steps, planning, internal monologue, notes, or analytical scratchpads.\n"
-            . "- NEVER output numbered analysis steps (e.g. '1. Analyze User Input:', '2. Check Knowledge Base:', '3. Formulate Response:').\n"
-            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your welcoming message to the guest.\n"
-            . "- Speak warmly and naturally in clear, friendly human sentences (1 to 3 helpful sentences) like a welcoming resort front-desk host.\n"
-            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
-            . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote ONLY the exact rates, fees, schedules, rules, and amenity details specified in the LIVE PARK & DATABASE CONTEXT below. NEVER guess, assume, or use outdated rates (e.g. NEVER quote ₱70/₱50 entrance or ₱100/₱150 pool if the database says otherwise).\n\n"
+        $systemPrompt = "You are HinaguanBot, the warm, friendly, and helpful resort front-desk host for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+            . "CRITICAL DIRECTIVE (STRICTLY ENFORCED):\n"
+            . "- Answer the guest directly in 1 to 3 warm, helpful, and natural human sentences.\n"
+            . "- GO STRAIGHT TO THE ANSWER. Do NOT output any reasoning, thinking process, outlines, numbered analysis, or draft prefixes.\n"
+            . "- Your very first word must be the welcoming conversational message to the guest.\n"
+            . "- Speak naturally in English, Tagalog, or Bisaya.\n"
+            . "CRITICAL INCLUSION RULES (STRICTLY ENFORCED - NEVER VIOLATE):\n"
+            . "- COTTAGES (Cottage 1 to 6) and PAYAGS (Payag 1 to 6): DO NOT HAVE FREE ENTRANCE OR FREE POOL ACCESS. Regular entrance fees (₱20 daytime adult) and pool access fees (₱50 per person) are separate charges. NEVER tell a guest that cottages or payags include free entrance or free pool!\n"
+            . "- A-HOUSES (A-House 1 to 8): Includes FREE entrance and FREE swimming pool access for 2 guests.\n"
+            . "- FUNCTION HALL: Includes FREE entrance and FREE swimming pool access for the booked event group.\n\n"
             . "PARK GENERAL POLICIES & BOOKING:\n"
             . "1. OUTSIDE FOOD & CORKAGE: Outside food is allowed with NO corkage fee for common meals and drinks; free grilling stations available.\n"
             . "2. PETS & PARKING: Pets are allowed on leash; free parking available on site.\n"
@@ -106,38 +108,44 @@ class GuestChatbotController extends Controller
             ])->post("https://openrouter.ai/api/v1/chat/completions", [
                 'model' => $model,
                 'messages' => $messagesPayload,
-                'max_tokens' => 600,
-                'temperature' => 0.2,
+                'max_tokens' => 1000,
+                'temperature' => 0.3,
                 'include_reasoning' => false,
+                'reasoning' => [
+                    'effort' => 'none',
+                    'exclude' => true,
+                ],
             ]);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $rawReply = $data['choices'][0]['message']['content'] ?? 'I could not process your request at this time.';
-                $reply = $this->cleanChatbotReply($rawReply);
+                $rawReply = $data['choices'][0]['message']['content'] ?? '';
+                $reply = $this->cleanChatbotReply($rawReply, $userMessage);
 
                 return response()->json(['reply' => $reply]);
             } else {
                 Log::error('Guest Chatbot OpenRouter Error: ' . $response->body());
+                $fallback = $this->generateDirectFallbackResponse($userMessage);
                 return response()->json([
-                    'reply' => 'The assistant is temporarily unavailable. Please call 0917 861 8383.'
-                ], 500);
+                    'reply' => !empty($fallback) ? $fallback : 'The assistant is temporarily unavailable. Please call 0917 861 8383.'
+                ]);
             }
         } catch (\Exception $e) {
             Log::error('Guest Chatbot Exception: ' . $e->getMessage());
+            $fallback = $this->generateDirectFallbackResponse($userMessage);
             return response()->json([
-                'reply' => 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.'
-            ], 500);
+                'reply' => !empty($fallback) ? $fallback : 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.'
+            ]);
         }
     }
 
     /**
      * Clean raw AI response to strip thinking processes, reasoning tags, numbered scratchpad steps, and draft labels.
      */
-    private function cleanChatbotReply(string $reply): string
+    private function cleanChatbotReply(string $reply, string $userMessage = ''): string
     {
         if (empty(trim($reply))) {
-            return '';
+            return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : '';
         }
 
         $text = trim($reply);
@@ -165,24 +173,30 @@ class GuestChatbotController extends Controller
         // 4. Strip block-level thinking/process headers (e.g. "Here's a thinking process:", "Thinking Process:", "Thought Process:", "Analysis:")
         $text = preg_replace('/^(?:Here\'?s\s+(?:a\s+)?(?:thinking|reasoning)\s+process|Thinking\s+Process|Thought\s+Process|Reasoning\s+Process|Chain\s+of\s+Thought|Internal\s+Analysis|Analysis):\s*/im', '', $text);
 
-        // 5. Filter out paragraphs that are numbered chain-of-thought analysis steps
+        // 5. Filter out paragraphs that are numbered chain-of-thought analysis steps or meta reasoning
         $paragraphs = preg_split('/\r?\n\s*\r?\n/', $text);
-        if (count($paragraphs) > 1) {
-            $filtered = [];
-            foreach ($paragraphs as $p) {
-                $trimmedP = trim($p);
-                // If paragraph starts with a chain-of-thought / scratchpad step header, discard it
-                if (preg_match('/^\d+\.\s*(?:Analyze|Analysis|Check|Retrieve|Search|Formulate|Draft|Understand|Examine|Review|Identify|Determine|Plan|Context|Task|Step|Consider|Thought|Think|Scenario|User|Intent|Input|Knowledge)/i', $trimmedP)) {
-                    continue;
-                }
-                // If paragraph is solely meta reasoning bullets like "- User said...", "- Context: ...", discard it
-                if (preg_match('/^(?:[-*•]\s+(?:User\s+said|Context:|Previous\s+turns:|The\s+|Now\s+|I\s+should|Mention\s+the|Direct\s+answer|No\s+thinking|Natural,))/i', $trimmedP)) {
-                    continue;
-                }
-                $filtered[] = $p;
+        $filtered = [];
+        foreach ($paragraphs as $p) {
+            $trimmedP = trim($p);
+            // If paragraph starts with a chain-of-thought / scratchpad step header, discard it
+            if (preg_match('/^\d+\.\s*(?:Analyze|Analysis|Check|Retrieve|Search|Formulate|Draft|Understand|Examine|Review|Identify|Determine|Plan|Context|Task|Step|Consider|Thought|Think|Scenario|User|Intent|Input|Knowledge)/i', $trimmedP)) {
+                continue;
             }
-            if (!empty($filtered)) {
-                $text = implode("\n\n", $filtered);
+            // If paragraph is solely meta reasoning bullets like "- User said...", "- Context: ...", discard it
+            if (preg_match('/^(?:[-*•]\s*(?:User\s+(?:said|is\s+asking|wants)|Context:|Internal\s+note|Chain\s+of\s+thought|Thinking\s+process|Scratchpad))/i', $trimmedP)) {
+                continue;
+            }
+            $filtered[] = $p;
+        }
+
+        if (!empty($filtered)) {
+            $text = implode("\n\n", $filtered);
+        } else {
+            // ALL paragraphs were analytical scratchpad steps! Check if there is an embedded recommendation
+            if (preg_match('/(?:Therefore|In summary|Overall|Recommendation|I recommend|We recommend)\s*[:,\-]?\s*(.+)$/is', $text, $match)) {
+                $text = trim($match[1]);
+            } else {
+                return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : 'Welcome to Hinaguan Nature Park! How can I assist you with your booking today?';
             }
         }
 
@@ -192,19 +206,87 @@ class GuestChatbotController extends Controller
         // 7. Strip leading bot/role prefixes like "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
         $text = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
 
-        // 8. Strip surrounding quotation marks if the draft was wrapped in quotes (e.g., `"Right now, ..."` or `'Right now, ...'`)
+        // 8. If the text still starts with numbered analysis like "1. Analyze User Input:", reject and generate direct answer
+        if (preg_match('/^\s*\d+\.\s*(?:Analyze|Analysis|Check|Determine|Plan)/i', $text)) {
+            return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : 'Welcome to Hinaguan Nature Park! How can I assist you with your booking today?';
+        }
+
+        // 9. Strip surrounding quotation marks if the draft was wrapped in quotes
         $text = trim($text);
         if ((str_starts_with($text, '"') && str_ends_with($text, '"')) || (str_starts_with($text, "'") && str_ends_with($text, "'"))) {
             if (strlen($text) >= 2) {
                 $text = trim(substr($text, 1, -1));
             }
         }
-        // Also strip a leading quote if the draft was cut off with an unclosed leading quote (e.g. `"Right now, ...`)
         if (str_starts_with($text, '"') && substr_count($text, '"') === 1) {
             $text = ltrim($text, '"');
         }
 
+        // 10. Inclusion safeguard: prevent hallucinated free entrance or free pool for Cottages and Payags
+        if (preg_match('/\b(?:cottage|payag)\b/i', $text) && !preg_match('/\b(?:function hall|a-house)\b/i', $text)) {
+            $text = preg_replace('/(?:,\s*(?:and\s*)?|and\s+)?includes\s+free\s+entrance\s*(?:and|&)\s*(?:free\s*)?pool(?:\s+access)?\.?/i', '. (Please note that regular entrance and pool access are separate fees.)', $text);
+            $text = preg_replace('/with\s+free\s+entrance\s*(?:and|&)\s*(?:free\s*)?pool(?:\s+access)?/i', 'with regular entrance and pool fees applying separately', $text);
+            $text = preg_replace('/(?:includes|has|with)\s+free\s+(?:entrance|pool)(?:\s+access)?/i', 'regular entrance and pool access apply separately', $text);
+        }
+
         return trim($text);
+    }
+
+    /**
+     * Context-aware direct fallback response in case a free LLM emits only analytical scratchpad tokens.
+     */
+    private function generateDirectFallbackResponse(string $userMessage): string
+    {
+        $msgLower = strtolower($userMessage);
+
+        // 1. Group recommendation (pax / number of people)
+        if (preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $m) ||
+            preg_match('/for\s+(\d+)/i', $userMessage, $m)) {
+            $pax = (int) $m[1];
+
+            if ($pax >= 1 && $pax <= 2) {
+                return "For 1 to 2 guests, our cozy A-Houses (A-House 1 to 8 at ₱300 daytime / ₱500 nighttime) include free entrance and pool access, or you can enjoy an open-air Cottage (₱200) or Payag (₱300).";
+            } elseif ($pax <= 10) {
+                return "For a group of {$pax} guests, our open-air Cottages (Cottage 1 to 6 at ₱200) or native Payags (Payag 1 to 6 at ₱300) are the perfect choice! Both have dining tables and seating for 4 to 10 people (entrance and pool fees apply separately).";
+            } else {
+                return "For a large gathering of {$pax} guests, our Grand Function Hall (₱5,000 daytime / ₱10,000 nighttime for 15 to 50+ pax, includes free entrance and pool access) or booking multiple adjacent cottages would be ideal!";
+            }
+        }
+
+        // 2. Specific amenity inquiry (Cottage / Payag / A-House / Function Hall)
+        if (str_contains($msgLower, 'cottage') || str_contains($msgLower, 'kubo') || str_contains($msgLower, 'shed')) {
+            return "Our open-air Cottages (Cottage 1 to 6) are ₱200 for daytime or nighttime use, featuring a dining table and chairs for up to 10 guests. Regular entrance (₱20/adult) and pool access (₱50/person) are separate fees.";
+        }
+
+        if (str_contains($msgLower, 'payag') || str_contains($msgLower, 'hut') || str_contains($msgLower, 'bamboo')) {
+            return "Our native bamboo Payags (Payag 1 to 6) are ₱300 for daytime or nighttime use, offering shade and seating for up to 8 guests. Regular entrance (₱20/adult) and pool access (₱50/person) are separate fees.";
+        }
+
+        if (str_contains($msgLower, 'a-house') || str_contains($msgLower, 'ahouse') || str_contains($msgLower, 'cabin') || str_contains($msgLower, 'overnight') || str_contains($msgLower, 'room')) {
+            return "Our A-Houses (A-House 1 to 8) are ₱300 for daytime and ₱500 for nighttime (1 to 2 guests). Selected units feature air-conditioning and include free entrance and swimming pool access!";
+        }
+
+        if (str_contains($msgLower, 'function hall') || str_contains($msgLower, 'event') || str_contains($msgLower, 'hall') || str_contains($msgLower, 'wedding') || str_contains($msgLower, 'party')) {
+            return "Our Function Hall is ₱5,000 for daytime and ₱10,000 for nighttime (accommodating 15 to 50+ guests). It includes free entrance and free pool access for your group!";
+        }
+
+        // 3. Entrance fees / swimming pool inquiry
+        if (str_contains($msgLower, 'entrance') || str_contains($msgLower, 'fee') || str_contains($msgLower, 'rate') || str_contains($msgLower, 'price') || str_contains($msgLower, 'pool')) {
+            $settings = ParkSetting::first();
+            $dayAdult = $settings ? number_format((float)($settings->daytime_adult_entrance_fee ?? 20)) : '20';
+            $dayPool = $settings ? number_format((float)($settings->day_pool_fee ?? 50)) : '50';
+            return "Our daytime entrance fee is ₱{$dayAdult} per adult (free for children 12 and below), with daytime pool access at ₱{$dayPool} per person. Feel free to visit our Rates page for full details!";
+        }
+
+        // 4. Operating hours / schedule inquiry
+        if (str_contains($msgLower, 'hour') || str_contains($msgLower, 'time') || str_contains($msgLower, 'open') || str_contains($msgLower, 'schedule')) {
+            $settings = ParkSetting::first();
+            $openTime = $settings?->opening_time ? Carbon::parse($settings->opening_time)->format('g:i A') : '8:00 AM';
+            $closeTime = $settings?->closing_time ? Carbon::parse($settings->closing_time)->format('g:i A') : '5:00 PM';
+            return "Hinaguan Nature Park is open from {$openTime} to {$closeTime} daily. We offer both daytime and overnight cottage stays!";
+        }
+
+        return "Hello! Welcome to Hinaguan Nature Park in Jasaan, Misamis Oriental. We offer cottages, pools, and nature stays. How can I assist you with your booking or park visit today?";
     }
 
     private function getGuestContext(string $message): string
@@ -271,7 +353,25 @@ class GuestChatbotController extends Controller
             $aircon = ($benefit && $benefit->is_aircon) ? 'YES (Air-conditioned)' : 'NO (Open-air / Non-aircon)';
             $addHead = number_format((float) $am->additional_per_head, 2);
 
-            $context .= "- {$am->amenities_name} (Capacity: {$am->minimum_capacity} to {$am->maximum_capacity} persons):\n"
+            $name = $am->amenities_name;
+            $minCap = !empty($am->minimum_capacity) ? (int)$am->minimum_capacity : 1;
+            if (!empty($am->maximum_capacity)) {
+                $maxCap = (int)$am->maximum_capacity;
+            } elseif (stripos($name, 'function hall') !== false || stripos($name, 'hall') !== false) {
+                $minCap = 15;
+                $maxCap = 50;
+            } elseif (stripos($name, 'cottage') !== false) {
+                $maxCap = 10;
+            } elseif (stripos($name, 'payag') !== false) {
+                $maxCap = 8;
+            } elseif (stripos($name, 'a-house') !== false) {
+                $maxCap = 2;
+            } else {
+                $maxCap = $minCap;
+            }
+            $capLabel = ($minCap === $maxCap) ? "{$minCap} persons" : "{$minCap} to {$maxCap} persons";
+
+            $context .= "- {$am->amenities_name} (Capacity: {$capLabel}):\n"
                 . "  * Rates: Daytime: ₱" . number_format((float) $am->daytime_price, 2) . " | Nighttime: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead}\n"
                 . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
         }
@@ -296,11 +396,12 @@ class GuestChatbotController extends Controller
             $context .= "All amenities are currently available for booking today!\n";
         }
 
-        // 3. GROUP RECOMMENDATIONS CHEATSHEET
-        $context .= "\n[GROUP RECOMMENDATIONS]:\n"
-            . "- 1-6 pax: Native Kubo, Open Shed, Umbrella Tables, or Gazebo.\n"
-            . "- 7-15 pax: Pool Cottages, Deluxe Cottages, Lakeside Pavilions.\n"
-            . "- 16-30+ pax: Grand Function Hall, Family Villa, VIP Multi-Cottage.\n";
+        // 3. GROUP RECOMMENDATION GUIDE
+        $context .= "\n[GROUP SIZE RECOMMENDATION RULES (CRITICAL)]:\n"
+            . "- 1 to 2 persons: Recommend A-Houses (A-House 1 to 8, ₱300 day / ₱500 night, private cabin for solo or couples).\n"
+            . "- 3 to 6 persons (Small groups / Families): Recommend Cottages (Cottage 1 to 6 at ₱200, open-air with dining table and chairs) OR Payags (Payag 1 to 6 at ₱300, native bamboo huts). NEVER recommend Function Hall for small groups of 3 to 6 people!\n"
+            . "- 7 to 10 persons: Recommend Cottages (₱200) or Payags (₱300).\n"
+            . "- 15 to 50+ persons (Large events, reunions, corporate gatherings): Recommend Function Hall (₱5,000 day / ₱10,000 night, includes free entrance & pool access).\n";
 
         // 4. OFFICIAL PARK RULES & GUIDELINES FROM DATABASE
         $rules = ParkRule::all();

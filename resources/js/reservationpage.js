@@ -161,8 +161,37 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeTermsPolicyModalBtn = document.getElementById('closeTermsPolicyModalBtn');
     const termsPolicyBackdrop = document.getElementById('termsPolicyBackdrop');
 
+    const TERMS_STORAGE_KEY = 'hnp_guest_terms_accepted';
+
+    const hasAcceptedTerms = () => {
+        try {
+            return localStorage.getItem(TERMS_STORAGE_KEY) === '1' || sessionStorage.getItem(TERMS_STORAGE_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const markTermsAccepted = () => {
+        try {
+            localStorage.setItem(TERMS_STORAGE_KEY, '1');
+            sessionStorage.setItem(TERMS_STORAGE_KEY, '1');
+        } catch (e) {}
+    };
+
+    const updateTermsModalUI = () => {
+        const accepted = hasAcceptedTerms();
+        if (closeTermsPolicyModalBtn) {
+            closeTermsPolicyModalBtn.style.display = accepted ? 'inline-flex' : 'none';
+        }
+        if (accepted) {
+            if (agreeTermsCheckbox) agreeTermsCheckbox.checked = true;
+            if (proceedTermsBtn) proceedTermsBtn.disabled = false;
+        }
+    };
+
     const openTermsModal = () => {
         if (!termsPolicyModal) return;
+        updateTermsModalUI();
         termsPolicyModal.classList.add('is-open');
         termsPolicyModal.setAttribute('aria-hidden', 'false');
         updateOverlayScrollLock();
@@ -176,8 +205,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (termsPolicyModal) {
-        // Open modal automatically at the start of guest reservation page
-        openTermsModal();
+        // Only open modal automatically if the guest has not yet agreed to the terms
+        if (!hasAcceptedTerms()) {
+            openTermsModal();
+        } else {
+            updateTermsModalUI();
+        }
 
         // Checkbox listener to toggle Proceed button disabled state
         agreeTermsCheckbox?.addEventListener('change', () => {
@@ -186,15 +219,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Proceed button click (only way to close the terms modal)
+        // Proceed button click (only way to close on initial mandatory view; saves acceptance)
         proceedTermsBtn?.addEventListener('click', () => {
             if (!agreeTermsCheckbox || !agreeTermsCheckbox.checked) {
                 return;
             }
+            markTermsAccepted();
             closeTermsModal();
         });
 
-        // Reopen trigger buttons
+        // Close button click (visible when terms were already accepted or when reopened manually)
+        closeTermsPolicyModalBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeTermsModal();
+        });
+
+        // Reopen trigger buttons (e.g. Terms & Policies button in header)
         document.querySelectorAll('[data-open-terms-modal]').forEach(trigger => {
             trigger.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -202,17 +242,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Strictly prevent clicking outside the modal panel from closing it
+        // Prevent clicking outside from closing if not yet accepted, but allow closing if already accepted
         if (termsPolicyBackdrop) {
             termsPolicyBackdrop.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
+                if (hasAcceptedTerms()) {
+                    closeTermsModal();
+                } else {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
             });
         }
         termsPolicyModal.addEventListener('click', (e) => {
-            if (e.target === termsPolicyModal || e.target === termsPolicyBackdrop) {
-                e.preventDefault();
-                e.stopPropagation();
+            if (e.target === termsPolicyModal) {
+                if (hasAcceptedTerms()) {
+                    closeTermsModal();
+                } else {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
             }
         });
     }
@@ -1514,31 +1562,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="rp-calendar__day-month">${date.toLocaleDateString('en', { month: 'short' })}</span>
             `;
 
-            dayButton.addEventListener('click', () => {
-                if (!isAvailable) return;
+            if (isAvailable) {
+                dayButton.addEventListener('mouseenter', () => {
+                    if (calendarRangeStart && !calendarRangeEnd && isoDate > calendarRangeStart) {
+                        const allDays = availabilityCalendar.querySelectorAll('.rp-calendar__day[data-date]');
+                        allDays.forEach((btn) => {
+                            const bDate = btn.getAttribute('data-date');
+                            if (bDate && bDate > calendarRangeStart && bDate <= isoDate && !btn.classList.contains('is-disabled')) {
+                                btn.classList.add('is-range-hover');
+                            } else {
+                                btn.classList.remove('is-range-hover');
+                            }
+                        });
+                    }
+                });
 
-                if (!calendarRangeStart || (calendarRangeStart && calendarRangeEnd)) {
-                    calendarRangeStart = isoDate;
-                    calendarRangeEnd = null;
-                } else if (calendarRangeStart && !calendarRangeEnd) {
-                    if (isoDate === calendarRangeStart) {
-                        calendarRangeEnd = calendarRangeStart;
-                    } else if (isoDate < calendarRangeStart) {
+                dayButton.addEventListener('click', () => {
+                    if (!calendarRangeStart || (calendarRangeStart && calendarRangeEnd)) {
                         calendarRangeStart = isoDate;
                         calendarRangeEnd = null;
-                    } else {
-                        calendarRangeEnd = isoDate;
+                    } else if (calendarRangeStart && !calendarRangeEnd) {
+                        if (isoDate === calendarRangeStart) {
+                            calendarRangeEnd = calendarRangeStart;
+                        } else if (isoDate < calendarRangeStart) {
+                            calendarRangeStart = isoDate;
+                            calendarRangeEnd = null;
+                        } else {
+                            calendarRangeEnd = isoDate;
+                        }
                     }
-                }
-                updateAvRangeDisplay();
-                renderAvailabilityCalendar();
-            });
+                    updateAvRangeDisplay();
+                    renderAvailabilityCalendar();
+                });
+            }
 
             return dayButton;
         });
 
         days.forEach((day) => fragment.appendChild(day));
         availabilityCalendar.replaceChildren(fragment);
+        availabilityCalendar.onmouseleave = () => {
+            availabilityCalendar.querySelectorAll('.is-range-hover').forEach((btn) => btn.classList.remove('is-range-hover'));
+        };
     };
 
 
@@ -3040,6 +3105,20 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             if (isAvailable) {
+                dayButton.addEventListener('mouseenter', () => {
+                    if (dpRangeStart && !dpRangeEnd && isoDate > dpRangeStart) {
+                        const allDays = datePickerDays.querySelectorAll('.rp-calendar__day[data-date]');
+                        allDays.forEach((btn) => {
+                            const bDate = btn.getAttribute('data-date');
+                            if (bDate && bDate > dpRangeStart && bDate <= isoDate && !btn.classList.contains('is-disabled')) {
+                                btn.classList.add('is-range-hover');
+                            } else {
+                                btn.classList.remove('is-range-hover');
+                            }
+                        });
+                    }
+                });
+
                 dayButton.addEventListener('click', () => {
                     if (!dpRangeStart || (dpRangeStart && dpRangeEnd)) {
                         dpRangeStart = isoDate;
@@ -3064,6 +3143,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         days.forEach(day => fragment.appendChild(day));
         datePickerDays.replaceChildren(fragment);
+        datePickerDays.onmouseleave = () => {
+            datePickerDays.querySelectorAll('.is-range-hover').forEach((btn) => btn.classList.remove('is-range-hover'));
+        };
     };
 
     // Event listeners for date picker modal
@@ -3657,28 +3739,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-    const setSubmittingState = (submitting) => {
-
+    const setSubmittingState = (submitting, buttonText) => {
         isSubmitting = submitting;
-
         bookingForm.querySelectorAll('input, button').forEach((element) => {
-
             element.disabled = submitting;
-
         });
 
-
-
         if (submitButton) {
-
             submitButton.disabled = submitting;
-
-            submitButton.textContent = submitting ? 'Reserving…' : 'Reserve prototype';
-
+            if (submitting) {
+                submitButton.innerHTML = `<span class="rp-btn-spinner"></span> ${buttonText || 'Processing…'}`;
+            } else {
+                submitButton.innerHTML = '<span>Proceed to Payment</span> &rarr;';
+            }
             submitButton.classList.toggle('is-loading', submitting);
-
         }
-
     };
 
 
@@ -4107,24 +4182,202 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // Restrict Booker Name: letters only, no numbers, no symbols
+    // ── First Name and Last Name Inputs (Combined into Booker Name) ──
+    const bookingFirstNameInput = document.getElementById('bookingFirstName');
+    const bookingLastNameInput = document.getElementById('bookingLastName');
     const bookingBookerNameInput = document.getElementById('bookingBookerName') || (bookingForm ? bookingForm.querySelector('input[name="booker_name"]') : null);
-    if (bookingBookerNameInput) {
-        bookingBookerNameInput.addEventListener('keydown', (e) => {
+
+    const updateCombinedBookerName = () => {
+        const first = (bookingFirstNameInput?.value || '').trim();
+        const last = (bookingLastNameInput?.value || '').trim();
+        if (bookingBookerNameInput) {
+            bookingBookerNameInput.value = `${first} ${last}`.trim();
+        }
+    };
+
+    [bookingFirstNameInput, bookingLastNameInput].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('keydown', (e) => {
             if (e.ctrlKey || e.altKey || e.metaKey) return;
             if (['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter', 'Home', 'End'].includes(e.key)) return;
             if (!/^[a-zA-Z\s]$/.test(e.key)) {
                 e.preventDefault();
             }
         });
-        bookingBookerNameInput.addEventListener('input', (e) => {
+        inp.addEventListener('input', (e) => {
             const cur = e.target.value;
             const cleaned = cur.replace(/[^a-zA-Z\s]/g, '').replace(/\s{2,}/g, ' ');
             if (cur !== cleaned) {
                 e.target.value = cleaned;
             }
+            updateCombinedBookerName();
         });
-    }
+    });
+
+    // ── Existing Reservation Notice Modal & Processing Overlay ──
+    const existingReservationNoticeModal = document.getElementById('existingReservationNoticeModal');
+    const existingNoticeHeader = document.getElementById('existingNoticeHeader');
+    const existingNoticeBadgeText = document.getElementById('existingNoticeBadgeText');
+    const existingNoticeTitle = document.getElementById('existingNoticeTitle');
+    const existingNoticeSubtitle = document.getElementById('existingNoticeSubtitle');
+    const existingNoticeMatchesList = document.getElementById('existingNoticeMatchesList');
+    const existingNoticeAlertBox = document.getElementById('existingNoticeAlertBox');
+    const existingNoticeAlertText = document.getElementById('existingNoticeAlertText');
+    const existingNoticeCloseBtn = document.getElementById('existingNoticeCloseBtn');
+    const existingNoticeCancelBtn = document.getElementById('existingNoticeCancelBtn');
+    const existingNoticeProceedBtn = document.getElementById('existingNoticeProceedBtn');
+    const existingNoticeBackdrop = document.getElementById('existingNoticeBackdrop');
+    const existingNoticeCountBadge = document.getElementById('existingNoticeCountBadge');
+
+    const reservationProcessingOverlay = document.getElementById('reservationProcessingOverlay');
+    const processingOverlayTitle = document.getElementById('processingOverlayTitle');
+    const processingOverlayText = document.getElementById('processingOverlayText');
+
+    const showProcessingOverlay = (title = 'Securing Your Reservation', text = 'Preparing your checkout with PayMongo…') => {
+        if (!reservationProcessingOverlay) return;
+        if (processingOverlayTitle) processingOverlayTitle.textContent = title;
+        if (processingOverlayText) processingOverlayText.textContent = text;
+        reservationProcessingOverlay.classList.add('is-open');
+        reservationProcessingOverlay.setAttribute('aria-hidden', 'false');
+        updateOverlayScrollLock();
+    };
+
+    const hideProcessingOverlay = () => {
+        if (!reservationProcessingOverlay) return;
+        reservationProcessingOverlay.classList.remove('is-open');
+        reservationProcessingOverlay.setAttribute('aria-hidden', 'true');
+        updateOverlayScrollLock();
+    };
+
+    let onExistingProceedCallback = null;
+    let bypassExistingCheck = false;
+
+    const closeExistingNoticeModal = () => {
+        if (!existingReservationNoticeModal) return;
+        existingReservationNoticeModal.classList.remove('is-open');
+        existingReservationNoticeModal.setAttribute('aria-hidden', 'true');
+        updateOverlayScrollLock();
+    };
+
+    const showExistingReservationNoticeModal = (data, onProceed) => {
+        if (!existingReservationNoticeModal) return;
+        onExistingProceedCallback = onProceed;
+
+        if (existingNoticeProceedBtn) {
+            existingNoticeProceedBtn.disabled = false;
+            existingNoticeProceedBtn.innerHTML = `<span>Still Proceed to Payment</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>`;
+        }
+
+        const isExact = !!data.has_exact_match;
+        if (existingNoticeHeader) {
+            existingNoticeHeader.classList.toggle('is-exact', isExact);
+        }
+        if (existingNoticeAlertBox) {
+            existingNoticeAlertBox.classList.toggle('is-exact', isExact);
+        }
+
+        if (existingNoticeBadgeText) {
+            existingNoticeBadgeText.textContent = isExact
+                ? 'High-Priority Warning: Exact Upcoming Booking Found'
+                : 'Upcoming Reservation Notice';
+        }
+
+        if (existingNoticeTitle) {
+            existingNoticeTitle.textContent = isExact
+                ? 'Active Booking Already on Record (Exact Match)'
+                : 'Upcoming Reservation Matching Your Information';
+        }
+
+        if (existingNoticeSubtitle) {
+            existingNoticeSubtitle.textContent = isExact
+                ? 'An active upcoming reservation with the exact same Booker Name, Phone Number, and Email is already registered in our system!'
+                : 'We detected an active or upcoming reservation matching your contact information in our records.';
+        }
+
+        if (existingNoticeAlertText) {
+            existingNoticeAlertText.textContent = isExact
+                ? 'Warning: You already have a confirmed or pending booking with these exact details. If you made this booking earlier, please check your email for your Entry QR Pass. Do you still wish to proceed with an additional booking?'
+                : 'Notice: If you only intended to verify your existing reservation, please check your confirmation email. Would you still like to proceed to payment for this new booking?';
+        }
+
+        const matches = data.matches || [];
+        if (existingNoticeCountBadge) {
+            existingNoticeCountBadge.textContent = `${matches.length} ${matches.length === 1 ? 'Found' : 'Found'}`;
+        }
+
+        if (existingNoticeMatchesList) {
+            existingNoticeMatchesList.innerHTML = '';
+            matches.forEach(match => {
+                const card = document.createElement('div');
+                card.className = `rp-existing-card ${match.is_exact ? 'is-exact-match' : ''}`;
+
+                const tagBadges = (match.matched_fields || []).map(f => {
+                    const label = f === 'name' ? 'Same Name' : (f === 'phone' ? 'Same Phone' : 'Same Email');
+                    return `<span class="rp-existing-tag">${label}</span>`;
+                }).join('');
+
+                const statusClass = (match.status || '').toLowerCase() === 'confirmed'
+                    ? 'rp-existing-card__status--confirmed'
+                    : 'rp-existing-card__status--pending';
+
+                card.innerHTML = `
+                    <div class="rp-existing-card__top">
+                        <span class="rp-existing-card__res-id">Booking #${match.id}</span>
+                        <span class="rp-existing-card__status ${statusClass}">${match.status}</span>
+                    </div>
+                    <div class="rp-existing-card__grid">
+                        <div class="rp-existing-card__item">
+                            <span class="rp-existing-card__item-label">Booker</span>
+                            <span class="rp-existing-card__item-val ${match.matched_fields?.includes('name') ? 'is-matched' : ''}">${match.booker_name || 'Guest'}</span>
+                        </div>
+                        <div class="rp-existing-card__item">
+                            <span class="rp-existing-card__item-label">Phone</span>
+                            <span class="rp-existing-card__item-val ${match.matched_fields?.includes('phone') ? 'is-matched' : ''}">${match.phone || 'N/A'}</span>
+                        </div>
+                        <div class="rp-existing-card__item">
+                            <span class="rp-existing-card__item-label">Email</span>
+                            <span class="rp-existing-card__item-val ${match.matched_fields?.includes('email') ? 'is-matched' : ''}">${match.email || 'N/A'}</span>
+                        </div>
+                        <div class="rp-existing-card__item">
+                            <span class="rp-existing-card__item-label">Dates</span>
+                            <span class="rp-existing-card__item-val">${match.check_in}${match.check_out && match.check_out !== match.check_in ? ' - ' + match.check_out : ''} (${match.slot})</span>
+                        </div>
+                    </div>
+                    ${match.amenities && match.amenities.length > 0 ? `
+                        <div class="rp-existing-card__item" style="margin-top: 0.15rem;">
+                            <span class="rp-existing-card__item-label">Amenity</span>
+                            <span class="rp-existing-card__item-val" style="font-weight: 600;">${match.amenities.join(', ')}</span>
+                        </div>
+                    ` : ''}
+                    <div class="rp-existing-card__matched-tags">
+                        ${match.is_exact ? '<span class="rp-existing-tag" style="background:#dc2626; color:#ffffff;">Exact Match (Name, Phone & Email)</span>' : tagBadges}
+                    </div>
+                `;
+                existingNoticeMatchesList.appendChild(card);
+            });
+        }
+
+        existingReservationNoticeModal.classList.add('is-open');
+        existingReservationNoticeModal.setAttribute('aria-hidden', 'false');
+        updateOverlayScrollLock();
+    };
+
+    existingNoticeCloseBtn?.addEventListener('click', closeExistingNoticeModal);
+    existingNoticeCancelBtn?.addEventListener('click', closeExistingNoticeModal);
+    existingNoticeBackdrop?.addEventListener('click', closeExistingNoticeModal);
+
+    existingNoticeProceedBtn?.addEventListener('click', () => {
+        existingNoticeProceedBtn.disabled = true;
+        existingNoticeProceedBtn.innerHTML = '<span class="rp-btn-spinner"></span> Connecting…';
+        showProcessingOverlay('Securing Your Reservation', 'Connecting to PayMongo payment gateway…');
+        closeExistingNoticeModal();
+        if (typeof onExistingProceedCallback === 'function') {
+            onExistingProceedCallback();
+        }
+    });
 
     // Restrict Phone: Philippine mobile number (only numbers, +63 prefix handled)
     const bookingPhoneInput = document.getElementById('bookingPhoneInput') || (bookingForm ? bookingForm.querySelector('input[name="phone"]') : null);
@@ -4177,16 +4430,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(bookingForm);
 
-        // Validate Booker Name: letters only, no numbers or symbols
-        const rawBookerName = (formData.get('booker_name') || '').trim();
+        // Validate First Name and Last Name
+        const firstName = (bookingFirstNameInput ? bookingFirstNameInput.value : '').trim();
+        const lastName = (bookingLastNameInput ? bookingLastNameInput.value : '').trim();
+
+        if (bookingFirstNameInput && !firstName) {
+            bookingNotice.textContent = 'Please enter the booker first name.';
+            bookingFirstNameInput.focus();
+            return;
+        }
+        if (bookingLastNameInput && !lastName) {
+            bookingNotice.textContent = 'Please enter the booker last name.';
+            bookingLastNameInput.focus();
+            return;
+        }
+
+        updateCombinedBookerName();
+        const rawBookerName = (bookingBookerNameInput?.value || formData.get('booker_name') || `${firstName} ${lastName}`).trim();
+
         if (!rawBookerName) {
             bookingNotice.textContent = 'Please enter the booker name.';
-            if (bookingBookerNameInput) bookingBookerNameInput.focus();
+            if (bookingFirstNameInput) bookingFirstNameInput.focus();
             return;
         }
         if (!/^[a-zA-Z\s]+$/.test(rawBookerName) || rawBookerName.replace(/\s/g, '').length < 2) {
             bookingNotice.textContent = 'Booker name must contain letters only (no numbers or symbols).';
-            if (bookingBookerNameInput) bookingBookerNameInput.focus();
+            if (bookingFirstNameInput) bookingFirstNameInput.focus();
             return;
         }
 
@@ -4207,12 +4476,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Validate Email: valid email format
         const rawEmail = (formData.get('email') || '').trim();
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
         if (!rawEmail || !emailRegex.test(rawEmail)) {
             bookingNotice.textContent = 'Please enter a valid email address (e.g. name@example.com).';
             if (bookingEmailInput) bookingEmailInput.focus();
             return;
         }
+
+        // ── Pre-check Database for Upcoming Pending or Confirmed Reservations ──
+        if (!bypassExistingCheck) {
+            setSubmittingState(true);
+            bookingNotice.textContent = 'Verifying reservation records…';
+            try {
+                const checkRes = await fetch('/reservation/check-existing', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        booker_name: rawBookerName,
+                        phone: fullPhoneNumber,
+                        email: rawEmail,
+                    }),
+                });
+
+                const checkData = await checkRes.json();
+                if (checkRes.ok && checkData.has_existing && checkData.matches && checkData.matches.length > 0) {
+                    setSubmittingState(false);
+                    bookingNotice.textContent = '';
+                    showExistingReservationNoticeModal(checkData, () => {
+                        bypassExistingCheck = true;
+                        if (bookingForm) {
+                            bookingForm.requestSubmit();
+                        }
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.warn('Could not verify existing bookings:', err);
+            }
+        }
+        bypassExistingCheck = false;
 
         const sDate = mainStartDate || dateInput.value;
         const eDate = mainEndDate || sDate;
@@ -4278,8 +4584,8 @@ document.addEventListener('DOMContentLoaded', () => {
             amenities: amenitiesArray,
         };
 
-        setSubmittingState(true);
-        bookingNotice.textContent = 'Preparing payment options…';
+        setSubmittingState(true, 'Connecting to PayMongo…');
+        showProcessingOverlay('Securing Your Reservation', 'Setting up your secure PayMongo payment options…');
 
         try {
             const response = await fetch('/reservation/create-intent', {
@@ -4311,6 +4617,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     modal.setAttribute('aria-hidden', 'true');
                 }
 
+                // Hide processing overlay right as payment modal opens
+                hideProcessingOverlay();
+
                 // Open PayMongo Payment Modal (Defaults to Step 2)
                 if (paymongoPaymentModal) {
                     goToStep2();
@@ -4319,6 +4628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateOverlayScrollLock();
                 }
             } else {
+                hideProcessingOverlay();
                 if (response.status === 409) {
                     const errorModal = document.getElementById('reservationErrorModal');
                     if (errorModal) {
@@ -4336,8 +4646,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (error) {
+            hideProcessingOverlay();
             bookingNotice.textContent = 'Reservation could not be initialized. Please try again.';
         } finally {
+            hideProcessingOverlay();
             setSubmittingState(false);
         }
     });
