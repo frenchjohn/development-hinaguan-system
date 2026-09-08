@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Staff Dashboard — Hinaguan Nature Park</title>
+    <title>Staff Dashboard ΓÇö Hinaguan Nature Park</title>
     <script>
         // Prevent flash of wrong theme by setting theme immediately
         (function() {
@@ -156,8 +156,8 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-9 w-9 text-[#c8a45d]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             @endif
                             <div class="flex flex-col items-center">
-                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}°C</span>
-                                <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? '—' }}</span>
+                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}┬░C</span>
+                                <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? 'ΓÇö' }}</span>
                             </div>
                         </div>
                         @endif
@@ -167,66 +167,205 @@
                     </div>
                 </section>
 
-                {{-- ===== VISITOR PREDICTION & SHIFT FORECASTING (TOP) ===== --}}
-                @if (isset($predictionReport))
-                    <x-visitor_prediction_card :predictionReport="$predictionReport" :isStaff="true" />
-                @endif
+                {{-- ===== LIVE ANALYTICS: 2-column first card + 4 cards (5 total) ===== --}}
+                <h3 class="mb-3 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Live Analytics</h3>
+                @php $laPoolNoPct = 100 - $laPoolAccessPct; @endphp
+                <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
-                {{-- ===== MAIN DASHBOARD GRID: Stats | Chart | Donut ===== --}}
-                <div class="mb-4 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2 xl:grid-cols-[240px_minmax(0,1fr)_260px]">
-                    {{-- LEFT: Stat Cards --}}
-                    <div class="sd-stats-col grid grid-cols-1 gap-3 sm:grid-cols-2 lg:col-span-2 xl:col-span-1 xl:grid-cols-1">
-                        <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
-                                <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
+                    {{-- Card 1: Active Overview (Guests & Reservations with Walk-in vs Online) --}}
+                    <div class="lg:col-span-2 flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Active Overview</span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green">
+                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </span>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg bg-[rgba(23,138,82,0.06)] px-2.5 py-2 dark:bg-[rgba(23,138,82,0.12)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Guests</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laTotalLive }}</div>
+                                <div class="text-[0.6rem] font-bold text-hp-green">On-site</div>
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Today's Check-ins</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $todayCheckIns }}</p>
-                                <p class="m-0 mt-0.5 text-[0.65rem] leading-[1.4] text-hp-text-muted">Reservations marked as checked in today</p>
+                            <div class="flex-1 rounded-lg bg-[rgba(23,138,82,0.06)] px-2.5 py-2 dark:bg-[rgba(23,138,82,0.12)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Reservations</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeCheckedInCount }}</div>
+                                <div class="text-[0.6rem] font-bold text-hp-green">Active</div>
                             </div>
-                        </article>
-                        <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
-                                <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg bg-[rgba(245,158,11,0.07)] px-2.5 py-2 dark:bg-[rgba(245,158,11,0.10)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-[#f59e0b]">Walk-in</div>
+                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeWalkInGuests }} / {{ $activeWalkInReservations }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#f59e0b]">Guests / Res</div>
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Pending Reservations</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $pendingReservationsCount }}</p>
+                            <div class="flex-1 rounded-lg bg-[rgba(59,130,246,0.07)] px-2.5 py-2 dark:bg-[rgba(59,130,246,0.10)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-[#3b82f6]">Online</div>
+                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeOnlineGuests }} / {{ $activeOnlineReservations }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#3b82f6]">Guests / Res</div>
                             </div>
-                        </article>
-                        <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
-                                <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Guests On-Site</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ $guestsOnSiteCount }}</p>
-                            </div>
-                        </article>
-                        <article class="flex flex-1 items-center gap-3.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:bg-glass-hover hover:shadow-[0_4px_16px_rgba(16,44,31,0.12)]">
-                            <div class="sd-stat-card__icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e6f3ec] p-2 text-[#1c5c3c] dark:bg-[rgba(28,92,60,0.25)] dark:text-[#9ca3af]">
-                                <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <p class="m-0 text-[0.72rem] font-semibold leading-[1.3] text-hp-text-muted">Today's Revenue</p>
-                                <p class="m-0 mt-0.5 font-display text-2xl font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">₱{{ number_format($todayRevenue) }}</p>
-                            </div>
-                        </article>
+                        </div>
+                        <div class="mt-auto flex items-center gap-1 text-[0.6rem] font-semibold text-hp-green">
+                            <span class="inline-block h-1 w-1 animate-pulse rounded-full bg-hp-green"></span>
+                            Live count
+                        </div>
                     </div>
 
-                    {{-- CENTER: Area Chart --}}
+                    {{-- Card 2: Demographics --}}
+                    <div class="flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Demographics</span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(42,106,143,0.12)] text-[#2a6a8f]">
+                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            </span>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg bg-[rgba(42,106,143,0.06)] px-2.5 py-2 dark:bg-[rgba(42,106,143,0.12)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Male</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laDemoMale }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#2a6a8f]">{{ $laPctMale }}%</div>
+                            </div>
+                            <div class="flex-1 rounded-lg bg-[rgba(236,72,153,0.06)] px-2.5 py-2 dark:bg-[rgba(236,72,153,0.10)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Female</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laDemoFemale }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#ec4899]">{{ $laPctFemale }}%</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg bg-[rgba(139,92,246,0.07)] px-2.5 py-2 dark:bg-[rgba(139,92,246,0.12)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-[#8b5cf6]">Filipino</div>
+                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laDemoFilipino }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#8b5cf6]">{{ $laPctFilipino }}%</div>
+                            </div>
+                            <div class="flex-1 rounded-lg bg-[rgba(245,158,11,0.07)] px-2.5 py-2 dark:bg-[rgba(245,158,11,0.10)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-[#f59e0b]">Foreign</div>
+                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laDemoForeign }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#f59e0b]">{{ $laPctForeign }}%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Card 3: Age Groups --}}
+                    <div class="flex flex-col gap-2 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Age Groups</span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(168,85,247,0.12)] text-[#7c3aed]">
+                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </span>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <div>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <span class="text-[0.65rem] font-semibold text-hp-text-muted">Kids (&lt;=12)</span>
+                                    <span class="text-[0.7rem] font-extrabold text-[#22c55e]">{{ $laAgeKids }} <span class="text-[0.6rem] font-semibold text-hp-text-muted">{{ $laPctKids }}%</span></span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10"><div class="h-full rounded-full bg-[#22c55e]" style="width:{{ $laPctKids }}%;"></div></div>
+                            </div>
+                            <div>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <span class="text-[0.65rem] font-semibold text-hp-text-muted">Teens (13-17)</span>
+                                    <span class="text-[0.7rem] font-extrabold text-[#3b82f6]">{{ $laAgeTeen }} <span class="text-[0.6rem] font-semibold text-hp-text-muted">{{ $laPctTeen }}%</span></span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10"><div class="h-full rounded-full bg-[#3b82f6]" style="width:{{ $laPctTeen }}%;"></div></div>
+                            </div>
+                            <div>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <span class="text-[0.65rem] font-semibold text-hp-text-muted">Adults (18-59)</span>
+                                    <span class="text-[0.7rem] font-extrabold text-[#a855f7]">{{ $laAgeAdult }} <span class="text-[0.6rem] font-semibold text-hp-text-muted">{{ $laPctAdult }}%</span></span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10"><div class="h-full rounded-full bg-[#a855f7]" style="width:{{ $laPctAdult }}%;"></div></div>
+                            </div>
+                            <div>
+                                <div class="mb-1 flex items-center justify-between">
+                                    <span class="text-[0.65rem] font-semibold text-hp-text-muted">Seniors (60+)</span>
+                                    <span class="text-[0.7rem] font-extrabold text-[#f59e0b]">{{ $laAgeSenior }} <span class="text-[0.6rem] font-semibold text-hp-text-muted">{{ $laPctSenior }}%</span></span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-black/5 dark:bg-white/10"><div class="h-full rounded-full bg-[#f59e0b]" style="width:{{ $laPctSenior }}%;"></div></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 text-[0.6rem] font-semibold text-hp-text-muted">
+                            <span class="inline-block h-1 w-1 animate-pulse rounded-full bg-hp-green"></span>
+                            {{ $laTotalLive }} on-site now
+                        </div>
+                    </div>
+
+                    {{-- Card 4: Pool Activity --}}
+                    <div class="flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Pool Activity</span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(2,132,199,0.12)] text-[#0284c7]">
+                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/></svg>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-[#0284c7]"></span>
+                            <span class="text-[0.7rem] font-bold text-[#0284c7]">{{ $laPoolWith }} Active Swimmer{{ $laPoolWith !== 1 ? 's' : '' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg bg-[rgba(2,132,199,0.07)] px-2.5 py-2 dark:bg-[rgba(2,132,199,0.12)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">With Pass</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#0284c7]">{{ $laPoolWith }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#0284c7]">{{ $laPoolAccessPct }}%</div>
+                            </div>
+                            <div class="flex-1 rounded-lg bg-black/[0.03] px-2.5 py-2 dark:bg-white/5">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">No Pass</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-hp-text-muted">{{ $laPoolWithout }}</div>
+                                <div class="text-[0.6rem] font-bold text-hp-text-muted">{{ $laPoolNoPct }}%</div>
+                            </div>
+                        </div>
+                        <div class="flex h-2 overflow-hidden rounded-full">
+                            <div class="rounded-l-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8]" style="width:{{ $laPoolAccessPct }}%;"></div>
+                            <div class="rounded-r-full bg-slate-200 dark:bg-slate-700" style="width:{{ $laPoolNoPct }}%;"></div>
+                        </div>
+                    </div>
+
+                    {{-- Card 5: Checkout Alerts --}}
+                    <div class="flex flex-col gap-2.5 rounded-2xl border p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] {{ $dashboardGuestsDue > 0 ? 'border-[rgba(225,29,72,0.35)] bg-[rgba(225,29,72,0.03)]' : 'border-glass-border bg-glass dark:border-white/10 dark:bg-[#181b19]/80' }}">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] {{ $dashboardGuestsDue > 0 ? 'text-[#e11d48]' : 'text-hp-text-muted' }}">Checkout Alerts</span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ $dashboardGuestsDue > 0 ? 'bg-[rgba(225,29,72,0.12)] text-[#e11d48]' : 'bg-[rgba(245,158,11,0.12)] text-[#b45309]' }}">
+                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            </span>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1 rounded-lg px-2.5 py-2 {{ $dashboardGuestsDue > 0 ? 'bg-[rgba(225,29,72,0.07)]' : 'bg-black/[0.03] dark:bg-white/5' }}">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Overdue</div>
+                                <div class="mt-0.5 flex items-center gap-1.5 font-display text-xl font-extrabold leading-none {{ $dashboardGuestsDue > 0 ? 'text-[#e11d48]' : 'text-[#1c5c3c] dark:text-[#f3f4f6]' }}">
+                                    {{ $dashboardGuestsDue }}
+                                    @if($dashboardGuestsDue > 0)<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#e11d48]"></span>@endif
+                                </div>
+                                <div class="text-[0.6rem] font-bold {{ $dashboardGuestsDue > 0 ? 'text-[#e11d48]' : 'text-hp-text-muted' }}">{{ $dashboardResDue }} res. due</div>
+                            </div>
+                            <div class="flex-1 rounded-lg bg-[rgba(245,158,11,0.07)] px-2.5 py-2 dark:bg-[rgba(245,158,11,0.10)]">
+                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Upcoming &lt;=1h</div>
+                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none {{ $dashboardNearCheckout > 0 ? 'text-[#f59e0b]' : 'text-hp-text-muted' }}">{{ $dashboardNearCheckout }}</div>
+                                <div class="text-[0.6rem] font-bold text-[#f59e0b]">Near checkout</div>
+                            </div>
+                        </div>
+                        @if($dashboardGuestsDue > 0 || $dashboardNearCheckout > 0)
+                            <div class="flex flex-wrap gap-1">
+                                @if($dashboardGuestsDue > 0)<span class="inline-flex items-center rounded-full bg-[rgba(225,29,72,0.12)] px-2 py-0.5 text-[0.6rem] font-bold text-[#e11d48]">! {{ $dashboardGuestsDue }} overdue</span>@endif
+                                @if($dashboardNearCheckout > 0)<span class="inline-flex items-center rounded-full bg-[rgba(245,158,11,0.12)] px-2 py-0.5 text-[0.6rem] font-bold text-[#b45309]">~ {{ $dashboardNearCheckout }} soon</span>@endif
+                            </div>
+                        @else
+                            <div class="text-[0.65rem] font-semibold text-hp-text-muted">All clear</div>
+                        @endif
+                    </div>
+
+                </div>{{-- /.analytics grid --}}
+
+                {{-- ===== VISITOR PREDICTION - always visible below analytics ===== --}}
+                @if (isset($predictionReport))
+                    <div class="mb-4">
+                        <x-visitor_prediction_card :predictionReport="$predictionReport" :isStaff="true" />
+                    </div>
+                @endif
+
+                {{-- ===== MAIN GRID: Chart | Donut ===== --}}
+                <div class="mb-4 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+                    {{-- LEFT: Area Chart --}}
                     <section class="sd-chart-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Bookings & Revenue – Last 7 Days</h3>
+                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Bookings &amp; Revenue &ndash; Last 7 Days</h3>
                             <div class="flex gap-4">
                                 <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-hp-text-muted">
                                     <i class="sd-legend-swatch sd-legend-swatch--bookings inline-block h-[0.7rem] w-[0.7rem] rounded-[0.2rem] bg-hp-green"></i>Bookings
@@ -237,10 +376,8 @@
                             </div>
                         </div>
                         <div class="sd-area-chart relative min-h-[240px] flex-1 p-4" id="sdAreaChart">
-                            {{-- Chart rendered by JS using the data below --}}
                             <canvas id="sdAreaChartCanvas" class="h-full w-full"></canvas>
                         </div>
-                        {{-- Pass data to JS --}}
                         <script>
                             window.__sdChartData = {
                                 labels: @json($weekDays),
@@ -250,7 +387,7 @@
                         </script>
                     </section>
 
-                    {{-- RIGHT: Donut Chart --}}
+                    {{-- RIGHT: Donut --}}
                     <section class="sd-donut-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="border-b border-glass-border px-5 py-4">
                             <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Status</h3>
@@ -278,8 +415,8 @@
                     </section>
                 </div>
 
-                {{-- ===== BOTTOM ROW: Amenities | Arrivals | Activity ===== --}}
-                <div class="sd-bottom-grid grid grid-cols-1 gap-4 lg:grid-cols-3">
+                {{-- ===== BOTTOM ROW: Amenities | Arrivals ===== --}}
+                <div class="sd-bottom-grid grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <section class="dash-panel dash-chart overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="dash-panel__head flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
                             <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Most Booked Amenities</h3>
@@ -313,39 +450,14 @@
                                     <span class="dash-arrival__dot h-[0.55rem] w-[0.55rem] shrink-0 rounded-full bg-hp-gold shadow-glass" aria-hidden="true"></span>
                                     <div class="dash-arrival__body min-w-0 flex-1">
                                         <p class="dash-arrival__name m-0 text-sm font-semibold text-hp-text">{{ $arrival->booker_name }}</p>
-                                        <p class="dash-arrival__meta m-0 mt-0.5 text-xs text-hp-text-muted">{{ $arrival->number_of_guests }} guest(s) ·
+                                        <p class="dash-arrival__meta m-0 mt-0.5 text-xs text-hp-text-muted">{{ $arrival->number_of_guests }} guest(s) &middot;
                                             {{ \Carbon\Carbon::parse($arrival->reservation_date)->format('g:i A') }}</p>
                                     </div>
-                                    <span class="dash-arrival__badge dash-arrival__badge--{{ strtolower(str_replace(' ', '-', $arrival->status)) }} shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-[0.05em] {{ $arrival->status === 'Pending' ? 'bg-[rgba(200,164,93,0.16)] text-[#8a6d2f]' : 'bg-[rgba(76,154,95,0.16)] text-[#2f6f45]' }}">{{ $arrival->status }}</span>
+                                    <span class="shrink-0 rounded-full px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-[0.05em] {{ $arrival->status === 'Pending' ? 'bg-[rgba(200,164,93,0.16)] text-[#8a6d2f]' : 'bg-[rgba(76,154,95,0.16)] text-[#2f6f45]' }}">{{ $arrival->status }}</span>
                                 </li>
                             @empty
                                 <li class="dash-arrival">
                                     <p class="dash-arrival__empty m-0 text-sm text-hp-text-muted">No arrivals expected today.</p>
-                                </li>
-                            @endforelse
-                        </ul>
-                    </section>
-
-                    <section class="dash-panel overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
-                        <div class="dash-panel__head border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Recent Activity</h3>
-                        </div>
-                        <ul class="dash-activity-list m-0 list-none p-4">
-                            @forelse ($activityItems as $activity)
-                                <li class="dash-activity flex gap-4 border-b border-glass-border py-4 last:border-none">
-                                    <span class="dash-activity__dot mt-1.5 h-[0.625rem] w-[0.625rem] shrink-0 rounded-full bg-hp-gold shadow-glass" aria-hidden="true"></span>
-                                    <div>
-                                        <p class="dash-activity__text m-0 text-sm leading-[1.6] text-hp-text">{{ $activity['text'] }}</p>
-                                        <p class="dash-activity__time m-0 mt-1.5 text-xs text-hp-text-muted">{{ $activity['time'] }}</p>
-                                    </div>
-                                </li>
-                            @empty
-                                <li class="dash-activity">
-                                    <span class="dash-activity__dot mt-1.5 h-[0.625rem] w-[0.625rem] shrink-0 rounded-full bg-hp-gold shadow-glass" aria-hidden="true"></span>
-                                    <div>
-                                        <p class="dash-activity__text m-0 text-sm leading-[1.6] text-hp-text">No recent reservation activity yet.</p>
-                                        <p class="dash-activity__time m-0 mt-1.5 text-xs text-hp-text-muted">Check back soon</p>
-                                    </div>
                                 </li>
                             @endforelse
                         </ul>

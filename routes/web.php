@@ -3606,6 +3606,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // (master stay schedule) — amenity checkouts never trigger the alert.
         $dashboardGuestsDue = 0;
         $dashboardResDue = 0;
+        $dashboardNearCheckout = 0;
 
         $activeReservationsDashboard = Reservation::query()
             ->with(['reservationGuests'])
@@ -3615,9 +3616,94 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         foreach ($activeReservationsDashboard as $res) {
             $coAt = $computeReservationCheckoutAt($res);
-            if ($coAt && \Carbon\Carbon::parse($coAt)->isPast()) {
-                $dashboardResDue++;
-                $dashboardGuestsDue += $res->reservationGuests->whereNull('checked_out_at')->count();
+            if ($coAt) {
+                $coCarbon = \Carbon\Carbon::parse($coAt);
+                if ($coCarbon->isPast()) {
+                    $dashboardResDue++;
+                    $dashboardGuestsDue += $res->reservationGuests->whereNull('checked_out_at')->count();
+                } elseif ($coCarbon->diffInMinutes(now()) <= 60) {
+                    $dashboardNearCheckout++;
+                }
+            }
+        }
+
+        $activeCheckedInCount = $activeReservationsDashboard->count();
+
+        // All-time totals (ever checked in, including already checked out)
+        $totalReservationsCheckedIn = \App\Models\Reservation::query()
+            ->whereIn('status', ['Checked In', 'Checked Out'])
+            ->whereNotNull('check_in')
+            ->count();
+        $totalGuestsCheckedIn = \App\Models\ReservationGuest::query()
+            ->whereHas('reservation', fn ($q) => $q->whereIn('status', ['Checked In', 'Checked Out'])->whereNotNull('check_in'))
+            ->count();
+
+        // Pulled from active (checked-in, not yet checked-out) reservation guests.
+        $liveGuestIds = ReservationGuest::query()
+            ->whereNull('checked_out_at')
+            ->whereHas('reservation', fn ($q) => $q->where('status', 'Checked In')->whereNotNull('check_in'))
+            ->with(['customer', 'reservation'])
+            ->get();
+
+        $laDemoMale     = 0; $laDemoFemale   = 0;
+        $laDemoForeign  = 0; $laDemoFilipino = 0;
+        $laAgeKids      = 0; $laAgeTeen      = 0; $laAgeAdult = 0; $laAgeSenior = 0;
+        $laPoolWith     = 0; $laPoolWithout   = 0;
+
+        foreach ($liveGuestIds as $rg) {
+            $c       = $rg->customer;
+            $gender  = strtolower($c->gender ?? '');
+            $foreign = (bool) ($c->is_foreigner ?? false);
+            $age     = is_numeric($c->age ?? null) ? (int) $c->age : null;
+
+            if ($gender === 'male')        $laDemoMale++;
+            elseif ($gender === 'female')  $laDemoFemale++;
+            if ($foreign)                  $laDemoForeign++;
+            else                           $laDemoFilipino++;
+
+            if ($age !== null) {
+                if ($age <= 12)      $laAgeKids++;
+                elseif ($age <= 17)  $laAgeTeen++;
+                elseif ($age <= 59)  $laAgeAdult++;
+                else                 $laAgeSenior++;
+            }
+
+            if ($rg->has_pool_access) $laPoolWith++;
+            else                      $laPoolWithout++;
+        }
+
+        $laTotalLive        = $liveGuestIds->count();
+        $laPctMale          = $laTotalLive > 0 ? round(($laDemoMale    / $laTotalLive) * 100) : 0;
+        $laPctFemale        = $laTotalLive > 0 ? round(($laDemoFemale  / $laTotalLive) * 100) : 0;
+        $laPctForeign       = $laTotalLive > 0 ? round(($laDemoForeign / $laTotalLive) * 100) : 0;
+        $laPctFilipino      = $laTotalLive > 0 ? round(($laDemoFilipino/ $laTotalLive) * 100) : 0;
+        $laPctKids          = $laTotalLive > 0 ? round(($laAgeKids     / $laTotalLive) * 100) : 0;
+        $laPctTeen          = $laTotalLive > 0 ? round(($laAgeTeen     / $laTotalLive) * 100) : 0;
+        $laPctAdult         = $laTotalLive > 0 ? round(($laAgeAdult    / $laTotalLive) * 100) : 0;
+        $laPctSenior        = $laTotalLive > 0 ? round(($laAgeSenior   / $laTotalLive) * 100) : 0;
+        $laPoolAccessPct    = $laTotalLive > 0 ? round(($laPoolWith     / $laTotalLive) * 100) : 0;
+
+        // Walk-in vs Online breakdown for active guests and reservations
+        $activeWalkInGuests = 0;
+        $activeOnlineGuests = 0;
+        $activeWalkInReservations = 0;
+        $activeOnlineReservations = 0;
+
+        foreach ($liveGuestIds as $rg) {
+            $reservationType = $rg->reservation->reservation_type ?? 'online';
+            if ($reservationType === 'walk-in') {
+                $activeWalkInGuests++;
+            } else {
+                $activeOnlineGuests++;
+            }
+        }
+
+        foreach ($activeReservationsDashboard as $res) {
+            $reservationType = $res->reservation_type ?? 'online';
+            if ($reservationType === 'walk-in') {
+                $activeWalkInReservations++;
+            } else {
+                $activeOnlineReservations++;
             }
         }
 
@@ -3638,7 +3724,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'todayArrivals',
             'dashboardGuestsDue',
             'dashboardResDue',
-            'predictionReport'
+            'dashboardNearCheckout',
+            'predictionReport',
+            'activeCheckedInCount',
+            'totalGuestsCheckedIn',
+            'totalReservationsCheckedIn',
+            // Live analytics
+            'laTotalLive',
+            'laDemoMale',    'laDemoFemale',   'laDemoForeign', 'laDemoFilipino',
+            'laPctMale',     'laPctFemale',    'laPctForeign',  'laPctFilipino',
+            'laAgeKids',     'laAgeTeen',      'laAgeAdult',    'laAgeSenior',
+            'laPctKids',     'laPctTeen',      'laPctAdult',    'laPctSenior',
+            'laPoolWith',    'laPoolWithout',  'laPoolAccessPct',
+            // Walk-in vs Online breakdown
+            'activeWalkInGuests', 'activeOnlineGuests',
+            'activeWalkInReservations', 'activeOnlineReservations'
         ));
     })->name('dashboard');
 
