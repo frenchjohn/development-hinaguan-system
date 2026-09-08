@@ -1410,7 +1410,7 @@
                     </div>
 
                     {{-- Right Column: Check-in & Check-out Session Picker & Final Confirmation --}}
-                    <div class="rp-dp-right-col">
+                    <div class="rp-dp-right-col is-locked" id="dpSchedulePanel" aria-disabled="true">
                         <h3 class="rp-dp-sidebar-title">Reservation Schedule</h3>
 
                         {{-- Check-in Time Card --}}
@@ -1429,9 +1429,9 @@
                                     <small class="rp-session-time" id="dpCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
-                            <div class="rp-dp-whole-day-pill" id="dpWholeDayPill" style="display: none;">
-                                <i class="bi bi-clock-history"></i> Whole Day · 24hrs
-                            </div>
+                            <button type="button" class="rp-dp-whole-day-pill" id="dpWholeDayPill" style="display: none;" aria-pressed="false">
+                                <i class="bi bi-clock-history"></i> 24 Hours · Whole Day
+                            </button>
                             <div class="rp-dp-time-card__preview" id="dpCheckInPreviewText">Select date on calendar</div>
                         </div>
 
@@ -1533,7 +1533,7 @@
                     </div>
 
                     {{-- Right Column: Check-in & Check-out Session Picker & Final Confirmation --}}
-                    <div class="rp-dp-right-col">
+                    <div class="rp-dp-right-col is-locked" id="avSchedulePanel" aria-disabled="true">
                         <h3 class="rp-dp-sidebar-title">Reservation Schedule</h3>
 
                         {{-- Check-in Time Card --}}
@@ -1552,9 +1552,9 @@
                                     <small class="rp-session-time" id="avCheckInOvernightTimeLabel">{{ $nighttimeStartFormatted }}</small>
                                 </button>
                             </div>
-                            <div class="rp-dp-whole-day-pill" id="avWholeDayPill" style="display: none;">
-                                <i class="bi bi-clock-history"></i> Whole Day · 24hrs
-                            </div>
+                            <button type="button" class="rp-dp-whole-day-pill" id="avWholeDayPill" style="display: none;" aria-pressed="false">
+                                <i class="bi bi-clock-history"></i> 24 Hours · Whole Day
+                            </button>
                             <div class="rp-dp-time-card__preview" id="avCheckInPreviewText">Pick a date on calendar</div>
                         </div>
 

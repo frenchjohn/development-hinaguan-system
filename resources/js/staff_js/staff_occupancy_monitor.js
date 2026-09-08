@@ -315,7 +315,8 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     const div = document.createElement('div');
                     div.className = 'status-badge status-badge--reserved';
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<strong>Reserved Today</strong> (Reservation #${item.reservation_id} - ${item.time_slot_label || item.time_slot})${sharedTag}`;
+                    const reservationDate = item.reservation_date || item.date || 'Today';
+                    div.innerHTML = `<strong>Reserved</strong> (${reservationDate}) (Reservation #${item.reservation_id} - ${item.time_slot_label || item.time_slot})${sharedTag}`;
                     modalStatusList.appendChild(div);
                 });
             }

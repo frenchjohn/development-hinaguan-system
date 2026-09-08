@@ -1095,6 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calendarRangeEnd = isRange ? (mainEndDate || null) : (calendarRangeStart || null);
         calendarRangeStartSlot = mainStartSlot || selectedSlot || 'Daytime';
         calendarRangeEndSlot = mainEndSlot || selectedSlot || 'Daytime';
+        avSingleDayWholeDayActive = !isRange && calendarRangeStartSlot === 'Daytime' && calendarRangeEndSlot === 'Nighttime';
 
         updateAvRangeDisplay();
 
@@ -1183,9 +1184,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const avConfirmDateBtn = document.getElementById('avConfirmDateBtn');
 
     // Availability range slot toggles
-    // Track which check-in sessions are selected for single-day multi-select (av modal)
-    let avSingleDayDaytimeActive = true;
-    let avSingleDayOvernightActive = false;
+    // Single-day sessions are exclusive; whole day maps to daytime check-in and overnight checkout.
+    let avSingleDayWholeDayActive = false;
 
     document.querySelectorAll('[data-av-start-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1198,26 +1198,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
 
             if (isSingleDay) {
-                // Single day: toggle independently (multi-select)
-                if (slot === 'Daytime') {
-                    avSingleDayDaytimeActive = !avSingleDayDaytimeActive;
-                    // Must have at least one selected
-                    if (!avSingleDayDaytimeActive && !avSingleDayOvernightActive) avSingleDayDaytimeActive = true;
-                } else {
-                    avSingleDayOvernightActive = !avSingleDayOvernightActive;
-                    if (!avSingleDayDaytimeActive && !avSingleDayOvernightActive) avSingleDayOvernightActive = true;
-                }
-                // Map multi-select state to start/end slots
-                if (avSingleDayDaytimeActive && avSingleDayOvernightActive) {
-                    calendarRangeStartSlot = 'Daytime';
-                    calendarRangeEndSlot = 'Nighttime';
-                } else if (avSingleDayDaytimeActive) {
-                    calendarRangeStartSlot = 'Daytime';
-                    calendarRangeEndSlot = 'Daytime';
-                } else {
-                    calendarRangeStartSlot = 'Nighttime';
-                    calendarRangeEndSlot = 'Nighttime';
-                }
+                avSingleDayWholeDayActive = false;
+                calendarRangeStartSlot = slot;
+                calendarRangeEndSlot = slot;
             } else {
                 // Multi-day: exclusive select (only one active)
                 calendarRangeStartSlot = slot;
@@ -1244,33 +1227,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const curDate = calendarRangeStart || (dateInput ? dateInput.value : '');
         const curEndDate = calendarRangeEnd || curDate;
         const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
+        const avSchedulePanel = document.getElementById('avSchedulePanel');
+        if (avSchedulePanel) {
+            avSchedulePanel.classList.toggle('is-locked', !curDate);
+            avSchedulePanel.setAttribute('aria-disabled', String(!curDate));
+        }
 
         // Show/hide check-out session picker based on single vs multi-day
         // The checkout card itself stays visible to display the date/time preview
         const avCheckOutCard = document.getElementById('avCheckOutCard');
+        const avCheckInSessionPick = document.querySelector('#avCheckInDate')?.closest('.rp-dp-time-card')?.querySelector('.rp-dp-session-pick');
+        if (avCheckInSessionPick) avCheckInSessionPick.style.display = curDate ? '' : 'none';
         if (avCheckOutCard) {
             const avCheckOutSessionPick = avCheckOutCard.querySelector('.rp-dp-session-pick');
             if (avCheckOutSessionPick) avCheckOutSessionPick.style.display = isSingleDay ? 'none' : '';
         }
 
         if (isSingleDay) {
-            // Single-day: sync multi-select state from start/end slots
-            if (calendarRangeStartSlot === 'Daytime' && calendarRangeEndSlot === 'Nighttime') {
-                avSingleDayDaytimeActive = true;
-                avSingleDayOvernightActive = true;
-            } else if (calendarRangeStartSlot === 'Nighttime') {
-                avSingleDayDaytimeActive = false;
-                avSingleDayOvernightActive = true;
-            } else {
-                avSingleDayDaytimeActive = true;
-                avSingleDayOvernightActive = false;
-            }
-
-            // Multi-select: set is-active independently for each check-in button
+            // Single-day sessions are mutually exclusive.
             const avDaytimeBtn = document.querySelector('[data-av-start-slot="Daytime"]');
             const avOvernightBtn = document.querySelector('[data-av-start-slot="Nighttime"]');
-            if (avDaytimeBtn) avDaytimeBtn.classList.toggle('is-active', avSingleDayDaytimeActive);
-            if (avOvernightBtn) avOvernightBtn.classList.toggle('is-active', avSingleDayOvernightActive);
+            if (avDaytimeBtn) avDaytimeBtn.classList.toggle('is-active', avSingleDayWholeDayActive || calendarRangeStartSlot === 'Daytime');
+            if (avOvernightBtn) avOvernightBtn.classList.toggle('is-active', avSingleDayWholeDayActive || calendarRangeStartSlot === 'Nighttime');
         } else {
             // Multi-day: exclusive select for check-in
             document.querySelectorAll('[data-av-start-slot]').forEach(b => {
@@ -1289,8 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayBtn.classList.add('is-disabled-slot');
             }
             if (isSingleDay) {
-                avSingleDayDaytimeActive = false;
-                avSingleDayOvernightActive = true;
+                avSingleDayWholeDayActive = false;
                 calendarRangeStartSlot = 'Nighttime';
                 calendarRangeEndSlot = 'Nighttime';
                 if (dayBtn) dayBtn.classList.remove('is-active');
@@ -1327,10 +1304,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (avStaySummaryBadge) avStaySummaryBadge.textContent = preview.summary;
 
         if (avWholeDayPill) {
-            const isWholeDay = isSingleDay && avSingleDayDaytimeActive && avSingleDayOvernightActive;
-            avWholeDayPill.style.display = isWholeDay ? 'inline-flex' : 'none';
+            avWholeDayPill.style.display = isSingleDay ? 'inline-flex' : 'none';
+            avWholeDayPill.classList.toggle('is-active', isSingleDay && avSingleDayWholeDayActive);
+            avWholeDayPill.setAttribute('aria-pressed', String(isSingleDay && avSingleDayWholeDayActive));
         }
     };
+
+    const avWholeDayPill = document.getElementById('avWholeDayPill');
+    if (avWholeDayPill) {
+        avWholeDayPill.addEventListener('click', () => {
+            const curDate = calendarRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
+            const curEndDate = calendarRangeEnd || curDate;
+            const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
+            if (!isSingleDay || isNighttimeForToday(curDate)) return;
+            avSingleDayWholeDayActive = !avSingleDayWholeDayActive;
+            calendarRangeStartSlot = avSingleDayWholeDayActive ? 'Daytime' : 'Daytime';
+            calendarRangeEndSlot = avSingleDayWholeDayActive ? 'Nighttime' : 'Daytime';
+            updateAvRangeDisplay();
+            renderAvailabilityCalendar();
+        });
+    }
 
     if (avConfirmDateBtn) {
         avConfirmDateBtn.addEventListener('click', () => {
@@ -1581,6 +1574,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!calendarRangeStart || (calendarRangeStart && calendarRangeEnd)) {
                         calendarRangeStart = isoDate;
                         calendarRangeEnd = null;
+                        avSingleDayWholeDayActive = false;
                     } else if (calendarRangeStart && !calendarRangeEnd) {
                         if (isoDate === calendarRangeStart) {
                             calendarRangeEnd = calendarRangeStart;
@@ -2666,9 +2660,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const dpConfirmDateBtn = document.getElementById('dpConfirmDateBtn');
 
     // Session buttons on Check-in and Check-out cards inside date picker modal
-    // Track which check-in sessions are selected for single-day multi-select (dp modal)
-    let dpSingleDayDaytimeActive = true;
-    let dpSingleDayOvernightActive = false;
+    // Single-day sessions are exclusive; whole day maps to daytime check-in and overnight checkout.
+    let dpSingleDayWholeDayActive = false;
 
     document.querySelectorAll('[data-dp-start-slot]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -2681,25 +2674,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
 
             if (isSingleDay) {
-                // Single day: toggle independently (multi-select)
-                if (slot === 'Daytime') {
-                    dpSingleDayDaytimeActive = !dpSingleDayDaytimeActive;
-                    if (!dpSingleDayDaytimeActive && !dpSingleDayOvernightActive) dpSingleDayDaytimeActive = true;
-                } else {
-                    dpSingleDayOvernightActive = !dpSingleDayOvernightActive;
-                    if (!dpSingleDayDaytimeActive && !dpSingleDayOvernightActive) dpSingleDayOvernightActive = true;
-                }
-                // Map multi-select state to start/end slots
-                if (dpSingleDayDaytimeActive && dpSingleDayOvernightActive) {
-                    dpRangeStartSlot = 'Daytime';
-                    dpRangeEndSlot = 'Nighttime';
-                } else if (dpSingleDayDaytimeActive) {
-                    dpRangeStartSlot = 'Daytime';
-                    dpRangeEndSlot = 'Daytime';
-                } else {
-                    dpRangeStartSlot = 'Nighttime';
-                    dpRangeEndSlot = 'Nighttime';
-                }
+                dpSingleDayWholeDayActive = false;
+                dpRangeStartSlot = slot;
+                dpRangeEndSlot = slot;
             } else {
                 // Multi-day: exclusive select (only one active)
                 dpRangeStartSlot = slot;
@@ -2726,33 +2703,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const curDate = dpRangeStart || (dateInput ? dateInput.value : '');
         const curEndDate = dpRangeEnd || curDate;
         const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
+        const dpSchedulePanel = document.getElementById('dpSchedulePanel');
+        if (dpSchedulePanel) {
+            dpSchedulePanel.classList.toggle('is-locked', !curDate);
+            dpSchedulePanel.setAttribute('aria-disabled', String(!curDate));
+        }
 
         // Show/hide check-out session picker based on single vs multi-day
         // The checkout card itself stays visible to display the date/time preview
         const dpCheckOutCard = document.getElementById('dpCheckOutCard');
+        const dpCheckInSessionPick = document.querySelector('#dpCheckInDate')?.closest('.rp-dp-time-card')?.querySelector('.rp-dp-session-pick');
+        if (dpCheckInSessionPick) dpCheckInSessionPick.style.display = curDate ? '' : 'none';
         if (dpCheckOutCard) {
             const dpCheckOutSessionPick = dpCheckOutCard.querySelector('.rp-dp-session-pick');
             if (dpCheckOutSessionPick) dpCheckOutSessionPick.style.display = isSingleDay ? 'none' : '';
         }
 
         if (isSingleDay) {
-            // Single-day: sync multi-select state from start/end slots
-            if (dpRangeStartSlot === 'Daytime' && dpRangeEndSlot === 'Nighttime') {
-                dpSingleDayDaytimeActive = true;
-                dpSingleDayOvernightActive = true;
-            } else if (dpRangeStartSlot === 'Nighttime') {
-                dpSingleDayDaytimeActive = false;
-                dpSingleDayOvernightActive = true;
-            } else {
-                dpSingleDayDaytimeActive = true;
-                dpSingleDayOvernightActive = false;
-            }
-
-            // Multi-select: set is-active independently for each check-in button
+            // Single-day sessions are mutually exclusive.
             const dpDaytimeBtn = document.querySelector('[data-dp-start-slot="Daytime"]');
             const dpOvernightBtn = document.querySelector('[data-dp-start-slot="Nighttime"]');
-            if (dpDaytimeBtn) dpDaytimeBtn.classList.toggle('is-active', dpSingleDayDaytimeActive);
-            if (dpOvernightBtn) dpOvernightBtn.classList.toggle('is-active', dpSingleDayOvernightActive);
+            if (dpDaytimeBtn) dpDaytimeBtn.classList.toggle('is-active', dpSingleDayWholeDayActive || dpRangeStartSlot === 'Daytime');
+            if (dpOvernightBtn) dpOvernightBtn.classList.toggle('is-active', dpSingleDayWholeDayActive || dpRangeStartSlot === 'Nighttime');
         } else {
             // Multi-day: exclusive select for check-in
             document.querySelectorAll('[data-dp-start-slot]').forEach(b => {
@@ -2771,8 +2743,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 dayBtn.classList.add('is-disabled-slot');
             }
             if (isSingleDay) {
-                dpSingleDayDaytimeActive = false;
-                dpSingleDayOvernightActive = true;
+                dpSingleDayWholeDayActive = false;
                 dpRangeStartSlot = 'Nighttime';
                 dpRangeEndSlot = 'Nighttime';
                 if (dayBtn) dayBtn.classList.remove('is-active');
@@ -2809,10 +2780,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dpStaySummaryBadge) dpStaySummaryBadge.textContent = preview.summary;
 
         if (dpWholeDayPill) {
-            const isWholeDay = isSingleDay && dpSingleDayDaytimeActive && dpSingleDayOvernightActive;
-            dpWholeDayPill.style.display = isWholeDay ? 'inline-flex' : 'none';
+            dpWholeDayPill.style.display = isSingleDay ? 'inline-flex' : 'none';
+            dpWholeDayPill.classList.toggle('is-active', isSingleDay && dpSingleDayWholeDayActive);
+            dpWholeDayPill.setAttribute('aria-pressed', String(isSingleDay && dpSingleDayWholeDayActive));
         }
     };
+
+    const dpWholeDayPill = document.getElementById('dpWholeDayPill');
+    if (dpWholeDayPill) {
+        dpWholeDayPill.addEventListener('click', () => {
+            const curDate = dpRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
+            const curEndDate = dpRangeEnd || curDate;
+            const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
+            if (!isSingleDay || isNighttimeForToday(curDate)) return;
+            dpSingleDayWholeDayActive = !dpSingleDayWholeDayActive;
+            dpRangeStartSlot = 'Daytime';
+            dpRangeEndSlot = dpSingleDayWholeDayActive ? 'Nighttime' : 'Daytime';
+            updateDpRangeDisplay();
+            renderDatePickerDays();
+        });
+    }
 
     if (dpConfirmDateBtn) {
         dpConfirmDateBtn.addEventListener('click', () => {
@@ -2941,6 +2928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dpRangeEnd = isRange ? (mainEndDate || null) : (dpRangeStart || null);
         dpRangeStartSlot = mainStartSlot || selectedSlot || 'Daytime';
         dpRangeEndSlot = mainEndSlot || selectedSlot || 'Daytime';
+        dpSingleDayWholeDayActive = !isRange && dpRangeStartSlot === 'Daytime' && dpRangeEndSlot === 'Nighttime';
 
         if (datePickerMonth && datePickerYear) {
             if (dpRangeStart) {
@@ -3123,6 +3111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!dpRangeStart || (dpRangeStart && dpRangeEnd)) {
                         dpRangeStart = isoDate;
                         dpRangeEnd = null;
+                        dpSingleDayWholeDayActive = false;
                     } else if (dpRangeStart && !dpRangeEnd) {
                         if (isoDate === dpRangeStart) {
                             dpRangeEnd = dpRangeStart;

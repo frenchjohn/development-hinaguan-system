@@ -412,39 +412,48 @@
                                             <span class="occupancy-card__badge absolute left-3 top-3 z-[5] inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.66rem] font-bold uppercase tracking-[0.05em] text-white shadow-glass backdrop-blur-sm occupancy-card__badge--{{ $cardStatus }}">
                                                 <i class="h-1 w-1 rounded-full bg-white/90"></i>{{ $cardStatusLabel }}
                                             </span>
+                                            @php
+                                                $allReservations = [];
+                                                if (!empty($amenityOccupancy['occupied'])) {
+                                                    foreach ($amenityOccupancy['occupied'] as $occupied) {
+                                                        $allReservations[] = ['id' => $occupied['reservation_id'], 'type' => 'occupied'];
+                                                    }
+                                                }
+                                                if (!empty($amenityOccupancy['reserved'])) {
+                                                    foreach ($amenityOccupancy['reserved'] as $reserved) {
+                                                        $allReservations[] = ['id' => $reserved['reservation_id'], 'type' => 'reserved'];
+                                                    }
+                                                }
+                                                $displayReservations = array_slice($allReservations, 0, 4);
+                                                $overflowCount = count($allReservations) - 4;
+                                            @endphp
+
+                                            {{-- Occupied circles at top right --}}
                                             @if (!empty($amenityOccupancy['occupied']))
-                                                <div class="occupancy-card__status-overlay absolute bottom-0 left-0 right-0 z-10 border-t-2 border-[#dc2626] bg-[rgba(220,38,38,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#f87171] dark:bg-[rgba(220,38,38,0.85)]">
-                                                    @foreach ($amenityOccupancy['occupied'] as $occupied)
-                                                        <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
-                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Occupied by:</span>
-                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $occupied['reservation_id'] }}</span>
-                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}</span>
-                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $occupied['guest_count'] ?? 0 }} guest{{ ($occupied['guest_count'] ?? 0) == 1 ? '' : 's' }} inside</span>
-                                                            @if (!empty($occupied['is_shared_group']))
-                                                                <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-                                                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                                    Shared Group ({{ $occupied['total_amenities_count'] }} Amenities)
-                                                                </span>
-                                                            @endif
+                                                @foreach ($amenityOccupancy['occupied'] as $index => $occupied)
+                                                    @if ($index < 2)
+                                                        <div class="absolute top-3 {{ $index === 0 ? 'right-3' : 'right-14' }} z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#dc2626] text-[0.75rem] font-bold text-white shadow-lg">
+                                                            #{{ $occupied['reservation_id'] }}
                                                         </div>
-                                                    @endforeach
-                                                </div>
+                                                    @endif
+                                                @endforeach
                                             @endif
+
+                                            {{-- Reserved circles at bottom --}}
                                             @if (!empty($amenityOccupancy['reserved']))
-                                                <div class="occupancy-card__status-overlay absolute left-0 right-0 top-0 z-10 border-b-2 border-[#8a7a4d] bg-[rgba(200,164,93,0.9)] px-3 py-2 text-[0.68rem] text-white backdrop-blur-sm dark:border-[#fbbf24] dark:bg-[rgba(200,164,93,0.85)]">
-                                                    @foreach ($amenityOccupancy['reserved'] as $reserved)
-                                                        <div class="occupancy-card__status-item mb-1 flex flex-wrap items-center gap-1.5 last:mb-0">
-                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">Reserved today by:</span>
-                                                            <span class="font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">#{{ $reserved['reservation_id'] }}</span>
-                                                            <span class="rounded-full border border-glass-border bg-white/25 px-2 py-0.5 text-[0.7rem] font-bold capitalize text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}</span>
-                                                            @if (!empty($reserved['is_shared_group']))
-                                                                <span class="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-500/90 px-2 py-0.5 text-[0.68rem] font-bold text-white shadow-sm [text-shadow:0_1px_2px_rgba(0,0,0,0.4)]">
-                                                                    <svg class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                                    Shared Group ({{ $reserved['total_amenities_count'] }} Amenities)
-                                                                </span>
-                                                            @endif
+                                                @foreach ($amenityOccupancy['reserved'] as $index => $reserved)
+                                                    @if ($index < 2)
+                                                        <div class="absolute bottom-3 {{ $index === 0 ? 'right-3' : 'right-14' }} z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#c8a45d] text-[0.75rem] font-bold text-white shadow-lg">
+                                                            #{{ $reserved['reservation_id'] }}
                                                         </div>
-                                                    @endforeach
+                                                    @endif
+                                                @endforeach
+                                            @endif
+
+                                            {{-- Overflow indicator if more than 4 total --}}
+                                            @if ($overflowCount > 0)
+                                                <div class="absolute bottom-3 right-14 z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#6b7280] text-[0.7rem] font-bold text-white shadow-lg">
+                                                    +{{ $overflowCount }}
                                                 </div>
                                             @endif
                                         </div>
