@@ -1,5 +1,6 @@
 import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
+import { openChargeCheckout } from './charge_checkout.js';
 
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_reservations'] = function () {
@@ -12,6 +13,7 @@ window.AppPage['staff_reservations'] = function () {
     const checkInForm = document.getElementById('checkInForm');
     const checkInCompanionModal = document.getElementById('checkInCompanionModal');
     const checkInCompanionForm = document.getElementById('checkInCompanionForm');
+    const checkInBulkCompanionForm = document.getElementById('checkInBulkCompanionForm');
     const checkInCloseButtons = document.querySelectorAll('[data-close-check-in-modal="true"]');
     const scanQrBtn = document.getElementById('scanQrBtn');
     const scanQrModal = document.getElementById('scanQrModal');
@@ -4104,45 +4106,40 @@ window.AppPage['staff_reservations'] = function () {
     });
 
     const checkOutReservation = async (reservationId) => {
-        showConfirmModal(
-            'Check Out Reservation',
-            'Are you sure you want to check out this reservation? All guests will be marked as checked out.',
-            async () => {
-                try {
-                    const response = await fetch(`/staff/reservations/${reservationId}/check-out`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                    });
+        try {
+            // Open charge modal DIRECTLY (skip confirmation modal)
+            await openChargeCheckout(reservationId, async () => {
+                // After charges are handled, NOW do the actual checkout
+                const response = await fetch(`/staff/reservations/${reservationId}/check-out`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.message || 'Unable to check out this reservation.');
 
-                    const payload = await response.json().catch(() => ({}));
-                    if (!response.ok) {
-                        throw new Error(payload.message || 'Unable to check out this reservation.');
-                    }
-
-                    if (window.reservationsData && window.reservationsData[reservationId]) {
-                        window.reservationsData[reservationId].status = 'Completed';
-                    }
-                    const resRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
-                    if (resRow) {
-                        const statusPill = resRow.querySelector('.status-pill, .badge-status');
-                        if (statusPill) {
-                            statusPill.textContent = 'Completed';
-                            statusPill.className = 'status-pill status-pill--completed';
-                        }
-                    }
-                    closeModal();
-                    window.dispatchEvent(new CustomEvent('app:data-mutated'));
-                    showToast(`Reservation #${reservationId} checked out successfully.`);
-                } catch (error) {
-                    window.alert(error.message || 'Unable to check out this reservation.');
+                if (window.reservationsData && window.reservationsData[reservationId]) {
+                    window.reservationsData[reservationId].status = 'Completed';
                 }
-            }
-        );
+                const resRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
+                if (resRow) {
+                    const statusPill = resRow.querySelector('.status-pill, .badge-status');
+                    if (statusPill) {
+                        statusPill.textContent = 'Completed';
+                        statusPill.className = 'status-pill status-pill--completed';
+                    }
+                }
+                closeModal();
+                window.dispatchEvent(new CustomEvent('app:data-mutated'));
+                showToast(`Reservation #${reservationId} checked out successfully.`);
+            });
+        } catch (error) {
+            window.alert(error.message || 'Unable to check out this reservation.');
+        }
     };
 
     const allGuestsCheckedOut = (reservation) => {

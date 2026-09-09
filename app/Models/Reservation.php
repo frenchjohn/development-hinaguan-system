@@ -59,4 +59,9 @@ class Reservation extends Model
     {
         return $this->hasOne(ReservationEntranceFee::class, 'reservation_id');
     }
+
+    public function reservationCharges()
+    {
+        return $this->hasMany(ReservationCharge::class, 'reservation_id');
+    }
 }

@@ -1,5 +1,6 @@
 import { Html5Qrcode } from 'html5-qrcode';
 import { showToast, queueToast, showPendingToast, convertFlashToToast } from './toast.js';
+import { openChargeCheckout } from './charge_checkout.js';
 
 let activeStaffCheckInsHandlers = null;
 
@@ -996,25 +997,28 @@ window.AppPage['staff_check_ins'] = function () {
     confirmCheckOutBtn?.addEventListener('click', async () => {
         if (!pendingCheckOutReservationId) return;
 
-        const submitButton = confirmCheckOutBtn;
-        submitButton.disabled = true;
-        submitButton.textContent = 'Checking out...';
-
         try {
-            const response = await fetch(`/staff/reservations/${pendingCheckOutReservationId}/check-out`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: JSON.stringify({}),
-            });
+            const resId = pendingCheckOutReservationId;
+            closeCheckOutConfirmModal();
 
-            const data = await response.json();
+            // Open charge modal DIRECTLY (skip confirmation modal)
+            await openChargeCheckout(resId, async () => {
+                // After charges are handled, NOW do the actual checkout
+                const response = await fetch(`/staff/reservations/${resId}/check-out`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({}),
+                });
 
-            if (response.ok && data.success) {
-                const resId = pendingCheckOutReservationId;
-                closeCheckOutConfirmModal();
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Unable to checkout');
+                }
+
                 closeReservationModal();
 
                 if (window.staffReservationData && window.staffReservationData[resId]) {
@@ -1046,15 +1050,10 @@ window.AppPage['staff_check_ins'] = function () {
 
                 refreshCheckoutCountdowns();
                 showToast(`Reservation #${resId} checked out successfully.`);
-            } else {
-                throw new Error(data.message || 'Failed to check out reservation');
-            }
+            });
         } catch (error) {
             console.error('Check out error:', error);
             alert('Error checking out reservation: ' + error.message);
-        } finally {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Yes, Check Out';
         }
     });
 
@@ -3124,15 +3123,37 @@ window.AppPage['staff_check_ins'] = function () {
 
             const done = payload.checked_out ?? qty;
             const remaining = payload.remaining ?? 0;
-            const message = remaining > 0
-                ? `${done} companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
-                : `${done} companion${done === 1 ? '' : 's'} checked out successfully.`;
 
             // Close bulk manage modal if open
             if (bulkManageModal) {
                 bulkManageModal.classList.remove('is-open');
                 bulkManageModal.setAttribute('aria-hidden', 'true');
             }
+
+            // If all guests are now checked out, open charge modal for final review
+            if (remaining === 0) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = poolAccessType === 'with_pool' ? 'Check Out Pool' : 'Check Out Standard';
+                }
+                // Open charge modal DIRECTLY (skip checkout first)
+                await openChargeCheckout(currentBulkResId, async () => {
+                    // After charges, NOW do the final checkout
+                    const finalResponse = await fetch(`/staff/reservations/${currentBulkResId}/check-out`, {
+                        method: 'POST',
+                        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const finalPayload = await finalResponse.json().catch(() => ({}));
+                    if (!finalResponse.ok) throw new Error(finalPayload.message || 'Unable to complete checkout.');
+                    showToast(`Reservation #${currentBulkResId} checked out successfully.`);
+                    window.dispatchEvent(new CustomEvent('app:data-mutated'));
+                });
+                return;
+            }
+
+            const message = remaining > 0
+                ? `${done} companion${done === 1 ? '' : 's'} checked out. ${remaining} still inside.`
+                : `${done} companion${done === 1 ? '' : 's'} checked out successfully.`;
 
             // Update local reservation data
             if (currentBulkResId && window.staffReservationData && window.staffReservationData[currentBulkResId]) {

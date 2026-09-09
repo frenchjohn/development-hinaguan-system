@@ -6387,6 +6387,88 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.amenities.add');
 
+    Route::get('/reservations/{reservation}/charges', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $reservation->load(['reservationCharges.amenity', 'reservationAmenities.amenity']);
+        $charges = $reservation->reservationCharges->map(fn ($charge) => [
+            'id' => $charge->id,
+            'description' => $charge->description,
+            'charge_type' => $charge->charge_type,
+            'amount' => (float) $charge->amount,
+            'status' => $charge->status,
+            'amenity_name' => $charge->amenity?->amenities_name,
+        ])->values();
+
+        $amenities = $reservation->reservationAmenities
+            ->filter(fn ($item) => $item->amenity)
+            ->unique('amenity_id')
+            ->map(fn ($item) => ['id' => $item->amenity_id, 'name' => $item->amenity->amenities_name])
+            ->values();
+
+        return response()->json([
+            'charges' => $charges,
+            'amenities' => $amenities,
+            'unpaid_total' => (float) $reservation->reservationCharges->where('status', 'unpaid')->sum('amount'),
+        ]);
+    })->name('reservations.charges.index');
+
+    Route::post('/reservations/{reservation}/charges', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'amenity_id' => ['nullable', 'string', 'exists:amenities,id'],
+            'description' => ['required', 'string', 'max:2000'],
+            'charge_type' => ['required', 'in:damage,cleaning,lost,others'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
+        ]);
+
+        if (! empty($validated['amenity_id'])) {
+            $belongsToReservation = $reservation->reservationAmenities()->where('amenity_id', $validated['amenity_id'])->exists();
+            if (! $belongsToReservation) {
+                return response()->json(['message' => 'The selected amenity was not used in this reservation.'], 422);
+            }
+        }
+
+        $charge = $reservation->reservationCharges()->create($validated + ['status' => 'unpaid']);
+        $charge->load('amenity');
+
+        return response()->json([
+            'success' => true,
+            'charge' => [
+                'id' => $charge->id,
+                'description' => $charge->description,
+                'charge_type' => $charge->charge_type,
+                'amount' => (float) $charge->amount,
+                'status' => $charge->status,
+                'amenity_name' => $charge->amenity?->amenities_name,
+            ],
+        ]);
+    })->name('reservations.charges.store');
+
+    Route::post('/reservations/{reservation}/charges/pay', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $unpaid = $reservation->reservationCharges()->where('status', 'unpaid')->get();
+        if ($unpaid->isEmpty()) {
+            return response()->json(['success' => true, 'paid_total' => 0]);
+        }
+
+        $paidTotal = (float) $unpaid->sum('amount');
+        $reservation->reservationCharges()->where('status', 'unpaid')->update(['status' => 'paid']);
+
+        return response()->json(['success' => true, 'paid_total' => $paidTotal]);
+    })->name('reservations.charges.pay');
+
     Route::post('/reservations/{reservation}/check-out', function (Request $request, Reservation $reservation) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
