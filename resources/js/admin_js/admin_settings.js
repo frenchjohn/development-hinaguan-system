@@ -42,6 +42,85 @@ window.AppPage['admin_settings'] = function () {
         });
     });
 
+    // Park Activities management controls.
+    const addActivityBtn = document.getElementById('addActivityBtn');
+    const addActivityModal = document.getElementById('addActivityModal');
+    const cancelActivityBtn = document.getElementById('cancelActivityBtn');
+    const closeAddActivityXBtn = document.getElementById('closeAddActivityXBtn');
+    const activityImageInput = document.getElementById('activityImageInput');
+    const activityImagePreview = document.getElementById('activityImagePreview');
+    const activityImagePlaceholder = document.getElementById('activityImagePlaceholder');
+
+    // Move the dialog to body so dashboard stacking contexts cannot cover it.
+    if (addActivityModal && addActivityModal.parentElement !== document.body) {
+        document.body.appendChild(addActivityModal);
+    }
+
+    const closeActivityModal = () => {
+        addActivityModal?.classList.add('hidden');
+        addActivityModal?.classList.remove('flex');
+        if (activityImageInput) activityImageInput.value = '';
+        activityImagePreview?.classList.add('hidden');
+        if (activityImagePreview) activityImagePreview.removeAttribute('src');
+        activityImagePlaceholder?.classList.remove('hidden');
+    };
+
+    addActivityBtn?.addEventListener('click', () => {
+        addActivityModal?.classList.remove('hidden');
+        addActivityModal?.classList.add('flex');
+    });
+
+    cancelActivityBtn?.addEventListener('click', closeActivityModal);
+    closeAddActivityXBtn?.addEventListener('click', closeActivityModal);
+
+    addActivityModal?.addEventListener('click', (event) => {
+        if (event.target === addActivityModal) closeActivityModal();
+    });
+
+    activityImageInput?.addEventListener('change', () => {
+        const file = activityImageInput.files?.[0];
+        if (!file || !activityImagePreview) {
+            activityImagePreview?.classList.add('hidden');
+            activityImagePlaceholder?.classList.remove('hidden');
+            return;
+        }
+
+        const previewUrl = URL.createObjectURL(file);
+        activityImagePreview.src = previewUrl;
+        activityImagePreview.classList.remove('hidden');
+        activityImagePlaceholder?.classList.add('hidden');
+        activityImagePreview.onload = () => URL.revokeObjectURL(previewUrl);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && addActivityModal?.classList.contains('flex')) closeActivityModal();
+    });
+
+    if (new URLSearchParams(window.location.search).get('section') === 'park-activities') {
+        settingsMenu?.classList.add('admin-settings__menu--hidden');
+        contentSections.forEach((section) => section.classList.add('admin-settings__content--hidden'));
+        document.getElementById('park-activities')?.classList.remove('admin-settings__content--hidden');
+    }
+
+    document.querySelectorAll('[data-edit-activity]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const id = button.dataset.editActivity;
+            const form = document.querySelector(`[data-activity-form="${id}"]`);
+            form?.classList.remove('hidden');
+            button.classList.add('hidden');
+        });
+    });
+
+    document.querySelectorAll('[data-cancel-activity]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const id = button.dataset.cancelActivity;
+            const form = document.querySelector(`[data-activity-form="${id}"]`);
+            const editButton = document.querySelector(`[data-edit-activity="${id}"]`);
+            form?.classList.add('hidden');
+            editButton?.classList.remove('hidden');
+        });
+    });
+
     // Park Settings Edit functionality
     const editParkSettingsBtn = document.getElementById('editParkSettingsBtn');
     const cancelParkSettingsBtn = document.getElementById('cancelParkSettingsBtn');

@@ -247,6 +247,80 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEventsNav();
     }
 
+    // Activities carousel: four cards per view, with detail modal for each record.
+    const activitiesTrack = document.getElementById('hpActivitiesTrack');
+    const activitiesPrevBtn = document.getElementById('hpActivitiesPrev');
+    const activitiesNextBtn = document.getElementById('hpActivitiesNext');
+    const activitiesCount = document.getElementById('hpActivitiesCount');
+    const activityCards = activitiesTrack?.querySelectorAll('[data-activity-card]') ?? [];
+
+    if (activitiesTrack && activityCards.length) {
+        let activityPage = 0;
+        const getActivityPageSize = () => window.innerWidth < 700 ? 1 : window.innerWidth < 1024 ? 2 : 4;
+        const getActivityPageCount = () => Math.ceil(activityCards.length / getActivityPageSize());
+
+        const updateActivities = () => {
+            const pageSize = getActivityPageSize();
+            const pageCount = getActivityPageCount();
+            activityPage = Math.min(activityPage, Math.max(0, pageCount - 1));
+            activitiesTrack.style.transform = `translateX(-${activityPage * 100}%)`;
+            if (activitiesCount) activitiesCount.textContent = `${activityPage + 1} / ${pageCount}`;
+            if (activitiesPrevBtn) activitiesPrevBtn.disabled = activityPage === 0;
+            if (activitiesNextBtn) activitiesNextBtn.disabled = activityPage >= pageCount - 1;
+            activityCards.forEach((card, index) => {
+                card.setAttribute('tabindex', index >= activityPage * pageSize && index < (activityPage + 1) * pageSize ? '0' : '-1');
+            });
+        };
+
+        activitiesPrevBtn?.addEventListener('click', () => {
+            activityPage -= 1;
+            updateActivities();
+        });
+        activitiesNextBtn?.addEventListener('click', () => {
+            activityPage += 1;
+            updateActivities();
+        });
+        window.addEventListener('resize', updateActivities, { passive: true });
+        updateActivities();
+    }
+
+    const activityModal = document.getElementById('hpActivityModal');
+    const activityModalImage = document.getElementById('hpActivityModalImage');
+    const activityModalTitle = document.getElementById('hpActivityModalTitle');
+    const activityModalDescription = document.getElementById('hpActivityModalDescription');
+    let activityModalTrigger = null;
+
+    const closeActivityModal = () => {
+        if (!activityModal) return;
+        activityModal.classList.remove('is-open');
+        activityModal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('hp-modal-open');
+        activityModalTrigger?.focus();
+    };
+
+    activityCards.forEach((card) => {
+        card.addEventListener('click', () => {
+            activityModalTrigger = card;
+            if (activityModalTitle) activityModalTitle.textContent = card.dataset.activityTitle ?? '';
+            if (activityModalDescription) activityModalDescription.textContent = card.dataset.activityDescription ?? '';
+            if (activityModalImage) {
+                activityModalImage.src = card.dataset.activityImage ?? '';
+                activityModalImage.alt = card.dataset.activityTitle ?? '';
+                activityModalImage.hidden = !card.dataset.activityImage;
+            }
+            activityModal?.classList.add('is-open');
+            activityModal?.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('hp-modal-open');
+        });
+    });
+
+    activityModal?.querySelectorAll('[data-activity-modal-close]').forEach((element) => {
+        element.addEventListener('click', closeActivityModal);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && activityModal?.classList.contains('is-open')) closeActivityModal();
+    });
+
     // ── Park Closed Notice Modal Controller ──
     const parkClosedModal = document.getElementById('parkClosedModal');
     const closedStatusBtn = document.getElementById('hpStatusClosedBtn');

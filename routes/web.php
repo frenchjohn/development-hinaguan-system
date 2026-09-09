@@ -2715,10 +2715,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $parkSettings = \App\Models\ParkSetting::first();
         $parkRules = \App\Models\ParkRule::orderBy('id', 'asc')->get();
         $parkEvents = \App\Models\ParkEvent::orderBy('date', 'asc')->get();
+        $parkActivities = \App\Models\ParkActivity::orderBy('id', 'asc')->get();
         return view('admin.admin_settings', [
             'parkSettings' => $parkSettings,
             'parkRules' => $parkRules,
             'parkEvents' => $parkEvents,
+            'parkActivities' => $parkActivities,
         ]);
     })->name('settings');
 
@@ -2807,6 +2809,54 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         return redirect()->route('admin.settings')->with('success', 'Park settings updated successfully.');
     })->name('settings.park.update');
+
+    // Park Activities Management Routes
+    Route::post('/settings/activities', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'activity' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:5000'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,avif', 'max:5120'],
+        ]);
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')->store('activity_images', 'public');
+        }
+
+        $activity = \App\Models\ParkActivity::create($validated);
+
+        return redirect()->route('admin.settings', ['section' => 'park-activities'])->with('success', "Activity '{$activity->activity}' created successfully.");
+    })->name('settings.activities.store');
+
+    Route::put('/settings/activities/{parkActivity}', function (Request $request, \App\Models\ParkActivity $parkActivity) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $validated = $request->validate([
+            'activity' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:5000'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,avif', 'max:5120'],
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($parkActivity->image && ! str_starts_with($parkActivity->image, 'images/')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($parkActivity->image);
+            }
+            $validated['image'] = $request->file('image')->store('activity_images', 'public');
+        } else {
+            unset($validated['image']);
+        }
+
+        $parkActivity->update($validated);
+
+        return redirect()->route('admin.settings', ['section' => 'park-activities'])->with('success', "Activity '{$parkActivity->activity}' updated successfully.");
+    })->name('settings.activities.update');
 
     // Park Rules CRUD Routes
     Route::post('/settings/rules', function (Request $request) {

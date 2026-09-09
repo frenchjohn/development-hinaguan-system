@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Feedback;
 use App\Models\ParkEvent;
+use App\Models\ParkActivity;
 use App\Models\ParkSetting;
 use App\Models\ReservationGuest;
 use App\Services\WeatherService;
@@ -42,6 +43,10 @@ class HomeController extends Controller
             ->orderBy('date', 'asc')
             ->get();
 
+        $activities = ParkActivity::query()
+            ->orderBy('id')
+            ->get();
+
         return view('homepage', [
             'weather' => $weather->getTodayWeather(),
             'activeGuestCount' => $activeGuestCount,
@@ -49,6 +54,7 @@ class HomeController extends Controller
             'featuredFeedbacks' => $featuredFeedbacks,
             'nearEvent' => $nearEvent,
             'allEvents' => $allEvents,
+            'activities' => $activities,
         ]);
     }
 }

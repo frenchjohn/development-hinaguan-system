@@ -517,44 +517,45 @@
                 </p>
             </div>
 
-            <div class="hp-activities-grid">
-                <article class="hp-activity-card" data-animate="fade-up" data-delay="0">
-                    <div class="hp-activity-card__image">
-                        <img src="{{ asset('images/River_Trecking.jpg') }}" alt="River trekking at Hinaguan Nature Park" loading="lazy">
+            @if ($activities->isNotEmpty())
+                <div class="hp-activities-carousel" data-animate="fade-up">
+                    <div class="hp-activities-track" id="hpActivitiesTrack">
+                        @foreach ($activities as $activity)
+                            @php
+                                $activityImage = $activity->image
+                                    ? (str_starts_with($activity->image, 'images/') ? asset($activity->image) : asset('storage/' . $activity->image))
+                                    : '';
+                            @endphp
+                            <button type="button" class="hp-activity-card" data-activity-card
+                                data-activity-title="{{ $activity->activity }}"
+                                data-activity-description="{{ $activity->description }}"
+                                data-activity-image="{{ $activityImage }}"
+                                aria-label="View details about {{ $activity->activity }}">
+                                <span class="hp-activity-card__image">
+                                    @if ($activity->image)
+                                        <img src="{{ $activityImage }}" alt="{{ $activity->activity }} at Hinaguan Nature Park" loading="lazy">
+                                    @else
+                                        <span class="hp-activity-card__image-placeholder" aria-hidden="true"><i class="bi bi-image"></i></span>
+                                    @endif
+                                </span>
+                                <span class="hp-activity-card__body">
+                                    <span class="hp-activity-card__kicker">Experience</span>
+                                    <span class="hp-activity-card__title">{{ $activity->activity }}</span>
+                                    <span class="hp-activity-card__description">{{ \Illuminate\Support\Str::limit($activity->description, 82) }}</span>
+                                    <span class="hp-activity-card__more">View details <i class="bi bi-arrow-up-right" aria-hidden="true"></i></span>
+                                </span>
+                            </button>
+                        @endforeach
                     </div>
-                    <div class="hp-activity-card__body">
-                        <h3>River Trekking</h3>
-                        <p>Follow scenic trails along the riverbank and discover hidden spots, rock formations, and lush vegetation.</p>
+                    <div class="hp-activities-carousel__controls" aria-label="Activity carousel controls">
+                        <button type="button" class="hp-carousel-btn" id="hpActivitiesPrev" aria-label="Previous activities"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
+                        <span class="hp-activities-carousel__count" id="hpActivitiesCount">1 / {{ max(1, ceil($activities->count() / 4)) }}</span>
+                        <button type="button" class="hp-carousel-btn" id="hpActivitiesNext" aria-label="Next activities"><i class="bi bi-arrow-right" aria-hidden="true"></i></button>
                     </div>
-                </article>
-                <article class="hp-activity-card" data-animate="fade-up" data-delay="100">
-                    <div class="hp-activity-card__image">
-                        <img src="{{ asset('images/swimming_and_wading.jpg') }}" alt="Swimming and wading at Hinaguan Nature Park" loading="lazy">
-                    </div>
-                    <div class="hp-activity-card__body">
-                        <h3>Swimming &amp; Wading</h3>
-                        <p>Cool off in the natural pool or wade in the shallow river areas — perfect for kids and adults alike.</p>
-                    </div>
-                </article>
-                <article class="hp-activity-card" data-animate="fade-up" data-delay="200">
-                    <div class="hp-activity-card__image">
-                        <img src="{{ asset('images/picnic_and_bonding.jpg') }}" alt="Picnic and bonding at Hinaguan Nature Park" loading="lazy">
-                    </div>
-                    <div class="hp-activity-card__body">
-                        <h3>Picnic &amp; Bonding</h3>
-                        <p>Spread out at open picnic areas, enjoy meals with loved ones, and soak in the peaceful riverside atmosphere.</p>
-                    </div>
-                </article>
-                <article class="hp-activity-card" data-animate="fade-up" data-delay="300">
-                    <div class="hp-activity-card__image">
-                        <img src="{{ asset('images/photography.jpg') }}" alt="Photography at Hinaguan Nature Park" loading="lazy">
-                    </div>
-                    <div class="hp-activity-card__body">
-                        <h3>Photography</h3>
-                        <p>Capture stunning shots along the riverside, scenic landscapes, and rustic cottages — a content creator's paradise.</p>
-                    </div>
-                </article>
-            </div>
+                </div>
+            @else
+                <p class="hp-activities-empty">Activities will be announced soon.</p>
+            @endif
         </div>
     </section>
 
@@ -927,6 +928,21 @@
         <a href="tel:+639178618383" class="hp-fab hp-fab--phone" aria-label="Call us">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
         </a>
+    </div>
+
+    <div class="hp-activity-modal" id="hpActivityModal" aria-hidden="true" role="dialog" aria-labelledby="hpActivityModalTitle">
+        <div class="hp-activity-modal__backdrop" data-activity-modal-close></div>
+        <div class="hp-activity-modal__dialog" role="document">
+            <button type="button" class="hp-activity-modal__close" data-activity-modal-close aria-label="Close activity details">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+            <img class="hp-activity-modal__image" id="hpActivityModalImage" alt="">
+            <div class="hp-activity-modal__content">
+                <span class="hp-section__label">Park experience</span>
+                <h2 id="hpActivityModalTitle"></h2>
+                <p id="hpActivityModalDescription"></p>
+            </div>
+        </div>
     </div>
 
     @if (($parkSettings->park_status ?? 'open') === 'closed')

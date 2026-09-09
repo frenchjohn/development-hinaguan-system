@@ -1052,7 +1052,7 @@
                     </div>
                     <div>
                         <h3 id="checkInCompanionModalTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
-                        <p class="m-0 text-xs text-hp-text-muted">Create single or bulk companions and review the list before applying to check-in</p>
+                        <p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to check-in</p>
                     </div>
                 </div>
             </div>
@@ -1062,16 +1062,16 @@
                 <div class="lg:col-span-6 flex flex-col gap-3">
                     <!-- Tab Switching: Single vs Bulk -->
                     <div class="flex rounded-xl bg-black/5 dark:bg-white/5 p-1 border border-glass-border/40">
-                        <button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg py-2 text-xs font-bold transition-all bg-hp-green text-white shadow-xs text-center" data-checkin-companion-tab="single">
+                        <button type="button" class="guest-form__tab hidden" data-checkin-companion-tab="single" aria-hidden="true" tabindex="-1">
                             <i class="bi bi-person me-1"></i> Single Companion
                         </button>
-                        <button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg py-2 text-xs font-semibold text-hp-text transition-all bg-transparent text-center hover:text-hp-green" data-checkin-companion-tab="bulk">
+                        <button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg py-2 text-xs font-bold text-white transition-all bg-hp-green shadow-xs text-center" data-checkin-companion-tab="bulk">
                             <i class="bi bi-people me-1"></i> Bulk Companions
                         </button>
                     </div>
 
                     <!-- SINGLE COMPANION FORM -->
-                    <form id="checkInCompanionForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-3" data-checkin-companion-content="single" action="#">
+                    <form id="checkInCompanionForm" class="guest-form--tab-content hidden" data-checkin-companion-content="single" action="#" aria-hidden="true">
                         <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-4 grid gap-3">
                             <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                 <div class="guest-form__field-group grid gap-1">
@@ -1143,7 +1143,7 @@
                     </form>
 
                     <!-- BULK COMPANIONS FORM -->
-                    <form id="checkInBulkCompanionForm" class="guest-form--tab-content hidden grid gap-3" data-checkin-companion-content="bulk" action="#">
+                    <form id="checkInBulkCompanionForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-3" data-checkin-companion-content="bulk" action="#">
                         <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-4 grid gap-3">
                             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div class="guest-form__field-group grid gap-1">
