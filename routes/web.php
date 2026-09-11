@@ -837,6 +837,56 @@ Route::post('/feedback', function (Request $request) {
         ? Feedback::ANONYMOUS_NAME
         : trim($validated['full_name'] ?? '');
 
+    $moderationService = app(\App\Services\FeedbackAiService::class);
+    $flaggedContent = array_merge(
+        array_values($moderationService->detectInappropriateContent($fullName)),
+        array_values($moderationService->detectInappropriateContent($validated['description']))
+    );
+
+    if ($flaggedContent !== []) {
+        $flaggedContent = collect($flaggedContent)->unique('term')->values()->all();
+        $terms = implode(', ', array_map(fn (array $match): string => "'{$match['term']}'", $flaggedContent));
+        $sentences = implode(' ', array_unique(array_filter(array_map(
+            fn (array $match): string => $match['sentence'],
+            $flaggedContent
+        ))));
+        $message = "Your feedback cannot be sent because it contains inappropriate language: {$terms}.";
+        if ($sentences !== '') {
+            $message .= " Please revise this sentence: \"{$sentences}\"";
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'moderation' => [
+                    'blocked' => true,
+                    'terms' => array_column($flaggedContent, 'term'),
+                    'matches' => $flaggedContent,
+                ],
+            ], 422);
+        }
+
+        return back()->withErrors(['description' => $message])->withInput();
+    }
+
+    $imageModeration = $moderationService->moderateImages($request->file('images', []));
+    if ($imageModeration['blocked']) {
+        $message = 'Your feedback cannot be sent because one or more attached images contain inappropriate content. Please remove the flagged image and try again.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'moderation' => [
+                    'blocked' => true,
+                    'type' => 'image',
+                    'matches' => $imageModeration['matches'],
+                ],
+            ], 422);
+        }
+
+        return back()->withErrors(['images' => $message])->withInput();
+    }
+
     $feedback = Feedback::create([
         'full_name' => $fullName,
         'is_anonymous' => $isAnonymous,
@@ -6424,7 +6474,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $validated = $request->validate([
             'amenity_id' => ['nullable', 'string', 'exists:amenities,id'],
-            'description' => ['required', 'string', 'max:2000'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'charge_type' => ['required', 'in:damage,cleaning,lost,others'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
         ]);

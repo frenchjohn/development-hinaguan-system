@@ -288,6 +288,18 @@
         </div>
     </div>
 
+    {{-- Feedback Moderation Warning Modal --}}
+    <div class="fb-modal fb-modal--warning" id="feedbackWarningModal" aria-hidden="true" role="alertdialog" aria-labelledby="feedbackWarningTitle" aria-describedby="feedbackWarningMessage">
+        <div class="fb-modal__backdrop" data-close-feedback-warning></div>
+        <div class="fb-modal__panel fb-warning-panel" role="document">
+            <button type="button" class="fb-modal__close" data-close-feedback-warning aria-label="Close warning">&times;</button>
+            <div class="fb-warning-icon" aria-hidden="true">!</div>
+            <h2 id="feedbackWarningTitle" class="fb-panel__title">Feedback not sent</h2>
+            <p id="feedbackWarningMessage" class="fb-panel__subtitle">Please revise your feedback and try again.</p>
+            <button type="button" class="fb-submit fb-warning-panel__button" data-close-feedback-warning>Review Feedback</button>
+        </div>
+    </div>
+
     {{-- Photo Lightbox Modal --}}
     <div class="fb-lightbox" id="feedbackLightbox" aria-hidden="true" role="dialog" aria-label="Photo preview">
         <div class="fb-lightbox__backdrop" data-close-lightbox></div>

@@ -1214,9 +1214,7 @@ body.admin-portal .guest-panel #reservationTableWrap .guest-table {
 
 /* Check-ins page: internal scrollable table container with sticky header & clean edges */
 body.staff-portal #guestTableSection .guest-table-wrap,
-body.admin-portal #guestTableSection .guest-table-wrap,
-body.staff-portal #reservationTableSection .guest-table-wrap,
-body.admin-portal #reservationTableSection .guest-table-wrap {
+body.admin-portal #guestTableSection .guest-table-wrap {
     background: transparent !important;
     border: none !important;
     border-radius: 0 !important;
@@ -1302,9 +1300,7 @@ body.admin-portal .guest-table tbody tr:hover {
 }
 
 body.staff-portal #guestTableSection .guest-table,
-body.admin-portal #guestTableSection .guest-table,
-body.staff-portal #reservationTableSection .guest-table,
-body.admin-portal #reservationTableSection .guest-table {
+body.admin-portal #guestTableSection .guest-table {
     min-width: 100% !important;
     width: 100% !important;
     border-collapse: separate !important;
@@ -1313,18 +1309,14 @@ body.admin-portal #reservationTableSection .guest-table {
 }
 
 body.staff-portal #guestTableSection .guest-table thead,
-body.admin-portal #guestTableSection .guest-table thead,
-body.staff-portal #reservationTableSection .guest-table thead,
-body.admin-portal #reservationTableSection .guest-table thead {
+body.admin-portal #guestTableSection .guest-table thead {
     position: sticky !important;
     top: 0 !important;
     z-index: 20 !important;
 }
 
 body.staff-portal #guestTableSection .guest-table thead th,
-body.admin-portal #guestTableSection .guest-table thead th,
-body.staff-portal #reservationTableSection .guest-table thead th,
-body.admin-portal #reservationTableSection .guest-table thead th {
+body.admin-portal #guestTableSection .guest-table thead th {
     position: sticky !important;
     top: 0 !important;
     z-index: 20 !important;
@@ -1341,18 +1333,14 @@ body.admin-portal #reservationTableSection .guest-table thead th {
 }
 
 [data-theme="dark"] body.staff-portal #guestTableSection .guest-table thead th,
-[data-theme="dark"] body.admin-portal #guestTableSection .guest-table thead th,
-[data-theme="dark"] body.staff-portal #reservationTableSection .guest-table thead th,
-[data-theme="dark"] body.admin-portal #reservationTableSection .guest-table thead th {
+[data-theme="dark"] body.admin-portal #guestTableSection .guest-table thead th {
     background: #1e2220 !important;
     border-bottom-color: var(--glass-border) !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 body.staff-portal #guestTableSection .guest-table tbody td,
-body.admin-portal #guestTableSection .guest-table tbody td,
-body.staff-portal #reservationTableSection .guest-table tbody td,
-body.admin-portal #reservationTableSection .guest-table tbody td {
+body.admin-portal #guestTableSection .guest-table tbody td {
     padding: 0.5rem 1rem !important;
     border-bottom: 1px solid var(--glass-border) !important;
     vertical-align: middle !important;
@@ -1361,23 +1349,17 @@ body.admin-portal #reservationTableSection .guest-table tbody td {
 }
 
 body.staff-portal #guestTableSection .guest-table tbody tr:last-child td,
-body.admin-portal #guestTableSection .guest-table tbody tr:last-child td,
-body.staff-portal #reservationTableSection .guest-table tbody tr:last-child td,
-body.admin-portal #reservationTableSection .guest-table tbody tr:last-child td {
+body.admin-portal #guestTableSection .guest-table tbody tr:last-child td {
     border-bottom: none !important;
 }
 
 body.staff-portal #guestTableSection .guest-table tbody tr:hover td,
-body.admin-portal #guestTableSection .guest-table tbody tr:hover td,
-body.staff-portal #reservationTableSection .guest-table tbody tr:hover td,
-body.admin-portal #reservationTableSection .guest-table tbody tr:hover td {
+body.admin-portal #guestTableSection .guest-table tbody tr:hover td {
     background: rgba(16, 185, 129, 0.04) !important;
 }
 
 [data-theme="dark"] body.staff-portal #guestTableSection .guest-table tbody tr:hover td,
-[data-theme="dark"] body.admin-portal #guestTableSection .guest-table tbody tr:hover td,
-[data-theme="dark"] body.staff-portal #reservationTableSection .guest-table tbody tr:hover td,
-[data-theme="dark"] body.admin-portal #reservationTableSection .guest-table tbody tr:hover td {
+[data-theme="dark"] body.admin-portal #guestTableSection .guest-table tbody tr:hover td {
     background: rgba(16, 185, 129, 0.08) !important;
 }
 
@@ -4150,36 +4132,59 @@ body.admin-portal .guest-row--companion td:first-child {
 
 
 /* Checkout Row Highlights */
-.row-checkout-due td {
+.row-checkout-due td,
+tr.row-checkout-due td {
     background-color: rgba(239, 68, 68, 0.08) !important;
 }
 
-.row-checkout-due:hover td {
-    background-color: rgba(239, 68, 68, 0.12) !important;
+.row-checkout-due:hover td,
+tr.row-checkout-due:hover td {
+    background-color: rgba(239, 68, 68, 0.16) !important;
 }
 
-[data-theme="dark"] .row-checkout-due td {
-    background-color: rgba(239, 68, 68, 0.15) !important;
+[data-theme="dark"] .row-checkout-due td,
+[data-theme="dark"] tr.row-checkout-due td {
+    background-color: rgba(239, 68, 68, 0.14) !important;
 }
 
-[data-theme="dark"] .row-checkout-due:hover td {
-    background-color: rgba(239, 68, 68, 0.2) !important;
+[data-theme="dark"] .row-checkout-due:hover td,
+[data-theme="dark"] tr.row-checkout-due:hover td {
+    background-color: rgba(239, 68, 68, 0.22) !important;
 }
 
-.row-checkout-near td {
-    background-color: rgba(245, 158, 11, 0.1) !important;
+/* Near Checkout (2 hours or less) - Soft Amber/Orange with rich warm hover */
+.row-checkout-near td,
+tr.row-checkout-near td {
+    background-color: rgba(245, 158, 11, 0.09) !important;
 }
 
-.row-checkout-near:hover td {
-    background-color: rgba(245, 158, 11, 0.15) !important;
+.row-checkout-near:hover td,
+tr.row-checkout-near:hover td {
+    background-color: rgba(245, 158, 11, 0.20) !important;
 }
 
-[data-theme="dark"] .row-checkout-near td {
-    background-color: rgba(245, 158, 11, 0.15) !important;
+[data-theme="dark"] .row-checkout-near td,
+[data-theme="dark"] tr.row-checkout-near td {
+    background-color: rgba(245, 158, 11, 0.14) !important;
 }
 
-[data-theme="dark"] .row-checkout-near:hover td {
-    background-color: rgba(245, 158, 11, 0.2) !important;
+[data-theme="dark"] .row-checkout-near:hover td,
+[data-theme="dark"] tr.row-checkout-near:hover td {
+    background-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Check-ins reservation table: Normal rows MUST be white with crisp subtle hover */
+#staffCheckInsResvTable tbody tr:not(.row-checkout-near):not(.row-checkout-due) td {
+    background-color: #ffffff !important;
+}
+#staffCheckInsResvTable tbody tr:not(.row-checkout-near):not(.row-checkout-due):hover td {
+    background-color: #f2f7f4 !important;
+}
+[data-theme="dark"] #staffCheckInsResvTable tbody tr:not(.row-checkout-near):not(.row-checkout-due) td {
+    background-color: #181b19 !important;
+}
+[data-theme="dark"] #staffCheckInsResvTable tbody tr:not(.row-checkout-near):not(.row-checkout-due):hover td {
+    background-color: #202522 !important;
 }
 
 /* Guest Summary Cards */
@@ -5369,6 +5374,28 @@ body.admin-portal .guest-row--companion td:first-child {
 .guest-modal__content--companion-unified {
     width: min(1360px, 95vw) !important;
     max-width: 1360px !important;
+}
+
+#reservationAddCompanionModal .reservation-add-companion-header {
+    justify-content: flex-start;
+}
+
+#reservationAddCompanionModal .reservation-add-companion-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+}
+
+#reservationAddCompanionModal .reservation-add-companion-column,
+#reservationAddCompanionModal .reservation-add-companion-preview {
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    #reservationAddCompanionModal .reservation-add-companion-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Form Actions */
@@ -6888,7 +6915,7 @@ body.admin-portal .guest-row--companion td:first-child {
 
 .ci-guest-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
 }
 
@@ -15139,20 +15166,30 @@ input[type="number"].no-spinners,
     scrollbar-color: rgba(23, 138, 82, 0.4) transparent;
 }
 
-.walkin-modal-content-area::-webkit-scrollbar {
+.walkin-modal-content-area,
+#modalCompanionPreviewList {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(23, 138, 82, 0.4) transparent;
+}
+
+.walkin-modal-content-area::-webkit-scrollbar,
+#modalCompanionPreviewList::-webkit-scrollbar {
     width: 6px;
 }
 
-.walkin-modal-content-area::-webkit-scrollbar-track {
+.walkin-modal-content-area::-webkit-scrollbar-track,
+#modalCompanionPreviewList::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.walkin-modal-content-area::-webkit-scrollbar-thumb {
+.walkin-modal-content-area::-webkit-scrollbar-thumb,
+#modalCompanionPreviewList::-webkit-scrollbar-thumb {
     background: rgba(23, 138, 82, 0.35);
     border-radius: 9999px;
 }
 
-.walkin-modal-content-area::-webkit-scrollbar-thumb:hover {
+.walkin-modal-content-area::-webkit-scrollbar-thumb:hover,
+#modalCompanionPreviewList::-webkit-scrollbar-thumb:hover {
     background: rgba(23, 138, 82, 0.6);
 }
 
@@ -15289,11 +15326,13 @@ input[type="number"].no-spinners,
     transition: all 0.25s ease;
 }
 
-.walkin-status-indicator--error {
-    background-color: #ef4444 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-    animation: walkin-pulse 1.8s infinite;
+.walkin-status-indicator--error,
+.walkin-status-indicator--empty {
+    background-color: rgba(140, 150, 145, 0.15) !important;
+    color: #6b7280 !important;
+    border: 1px solid rgba(140, 150, 145, 0.3) !important;
+    box-shadow: none !important;
+    animation: none !important;
 }
 
 .walkin-status-indicator--valid {
@@ -15301,17 +15340,6 @@ input[type="number"].no-spinners,
     color: #ffffff !important;
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
     animation: none;
-}
-
-@keyframes walkin-pulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-    }
-    50% {
-        transform: scale(1.1);
-        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
-    }
 }
 
 .walkin-tab-pane {

@@ -45,4 +45,9 @@ return [
         'turnstile_secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', '0x4AAAAAAEfCCzHV3kNQl3IPpR1GADxq188'),
     ],
 
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+        'vision_model' => env('OPENROUTER_VISION_MODEL', 'openrouter/free'),
+    ],
+
 ];

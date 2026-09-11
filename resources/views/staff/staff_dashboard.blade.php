@@ -138,14 +138,14 @@
                 @endphp
 
                 {{-- ===== GREETING BANNER ===== --}}
-                <section class="mb-4 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
+                <section class="mb-4 flex flex-wrap items-center justify-between gap-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass max-[768px]:flex-col max-[768px]:items-stretch max-[768px]:gap-3">
                     <div class="min-w-[200px] flex-1">
                         <h2 class="m-0 mb-1 font-display text-[clamp(1.1rem,2vw,1.5rem)] font-bold leading-[1.25] text-hp-green-dark dark:text-[#f3f4f6]">{{ $greeting }}, {{ session('auth_user.name') ?? 'Staff User' }}!</h2>
                         <p class="m-0 text-sm font-medium text-hp-text-muted">Welcome to the Hinaguan Nature Park Portal</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-6">
-                        <div class="flex flex-col items-end gap-0.5 max-[992px]:items-start">
-                            <span class="text-[0.8rem] font-medium text-hp-text-muted">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
+                    <div class="flex flex-wrap items-center justify-end gap-6 max-[768px]:w-full max-[768px]:justify-between max-[768px]:gap-3">
+                        <div class="flex min-w-0 flex-col items-end gap-0.5 max-[992px]:items-start">
+                            <span class="whitespace-nowrap text-[0.8rem] font-medium text-hp-text-muted">{{ \Carbon\Carbon::now()->format('l, F j, Y') }}</span>
                             <span class="font-display text-2xl font-bold leading-none text-hp-green-dark dark:text-[#f3f4f6]" id="sdLiveClock">{{ \Carbon\Carbon::now()->format('g:i A') }}</span>
                         </div>
                         @if ($weatherNow)
@@ -156,8 +156,8 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-9 w-9 text-[#c8a45d]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             @endif
                             <div class="flex flex-col items-center">
-                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}┬░C</span>
-                                <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? 'ΓÇö' }}</span>
+                                <span class="font-display text-[1.3rem] font-bold leading-[1.1] text-hp-green-dark dark:text-[#f3f4f6]">{{ round($weatherNow['temp_c'] ?? 0) }}&#176;C</span>
+                                <span class="text-[0.7rem] font-semibold text-hp-text-muted">{{ $weatherNow['condition'] ?? '—' }}</span>
                             </div>
                         </div>
                         @endif

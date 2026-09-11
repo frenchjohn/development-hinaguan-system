@@ -7365,24 +7365,7 @@ body:has(.rp-modal.is-open) .rp-footer {
     flex-direction: column;
     gap: 0.2rem;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-    cursor: pointer;
-    transition: all 0.25s ease;
     position: relative;
-}
-
-.rp-info-modal__rate-slot:hover {
-    background: linear-gradient(135deg, #0d2c1d 0%, #1a3d2a 100%);
-    border-color: #c8a45d;
-    transform: scale(1.05);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-}
-
-.rp-info-modal__rate-slot:hover .rp-info-modal__rate-label {
-    color: #c8a45d;
-}
-
-.rp-info-modal__rate-slot:hover .rp-info-modal__rate-value {
-    color: #ffffff;
 }
 
 .rp-info-modal__rate-label {

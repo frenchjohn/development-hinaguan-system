@@ -748,6 +748,34 @@ body.fb-page {
     transform: translateY(0) scale(1);
 }
 
+.fb-warning-panel {
+    max-width: 28rem;
+    text-align: center;
+}
+
+.fb-warning-icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    margin: 0 auto 1rem;
+    border: 2px solid #c56b45;
+    border-radius: 50%;
+    color: #a74e2f;
+    font-family: var(--fb-font-display);
+    font-size: 1.7rem;
+    font-weight: 700;
+}
+
+.fb-warning-panel .fb-panel__subtitle {
+    margin-bottom: 1.25rem;
+}
+
+.fb-warning-panel__button {
+    width: 100%;
+    margin-top: 0;
+}
+
 .fb-modal__close {
     position: absolute;
     top: 0.9rem;

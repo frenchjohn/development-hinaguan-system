@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use App\Models\AdminAccount;
 use App\Models\Feedback;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class FeedbackSystemTest extends TestCase
@@ -44,6 +47,69 @@ class FeedbackSystemTest extends TestCase
             'is_anonymous' => false,
             'stars' => 4,
         ]);
+    }
+
+    public function test_guest_feedback_with_inappropriate_language_is_rejected(): void
+    {
+        $response = $this->postJson('/feedback', [
+            'full_name' => 'Maria Santos',
+            'is_anonymous' => false,
+            'description' => 'The staff was gago and rude.',
+            'stars' => 1,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('moderation.blocked', true)
+            ->assertJsonPath('moderation.terms.0', 'gago');
+
+        $this->assertDatabaseCount('feedbacks', 0);
+    }
+
+    public function test_guest_feedback_detects_bisaya_variant_and_returns_the_complete_sentence(): void
+    {
+        $response = $this->postJson('/feedback', [
+            'full_name' => 'Maria Santos',
+            'is_anonymous' => false,
+            'description' => 'The river view was beautiful. Pinisti kaayo ang staff today!',
+            'stars' => 3,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('moderation.terms.0', 'pinisti')
+            ->assertJsonPath('moderation.matches.0.sentence', 'Pinisti kaayo ang staff today!');
+
+        $this->assertDatabaseCount('feedbacks', 0);
+    }
+
+    public function test_guest_feedback_with_inappropriate_image_is_rejected_before_storage(): void
+    {
+        Storage::fake('public');
+        config(['services.openrouter.key' => 'test-key']);
+
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => '{"blocked":true,"matches":[{"image":"explicit.jpg","reason":"sexual content"}]}',
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        $response = $this->post('/feedback', [
+            'full_name' => 'Image Guest',
+            'is_anonymous' => '0',
+            'description' => 'A lovely visit to the river.',
+            'stars' => 5,
+            'images' => [UploadedFile::fake()->create('explicit.jpg', 100, 'image/jpeg')],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('moderation.type', 'image')
+            ->assertJsonPath('moderation.matches.0.reason', 'sexual content');
+
+        $this->assertDatabaseCount('feedbacks', 0);
+        Storage::disk('public')->assertMissing('feedback_images/explicit.jpg');
     }
 
     public function test_feedback_page_shows_only_visible_reviews(): void

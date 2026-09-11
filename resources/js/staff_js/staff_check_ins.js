@@ -134,8 +134,8 @@ window.AppPage['staff_check_ins'] = function () {
     });
 
     // ── Checkout countdowns ──────────────────────────────────────────────
-    const CHECKOUT_NEAR_MS = 60 * 60 * 1000;       // 1 hour before checkout
-    const CHECKOUT_WARN_MS = 10 * 60 * 1000;       // 10 minutes before checkout
+    const CHECKOUT_NEAR_MS = 2 * 60 * 60 * 1000;   // 2 hours before checkout (near checkout)
+    const CHECKOUT_WARN_MS = 15 * 60 * 1000;       // 15 minutes before checkout
 
     const formatTimeLeft = (ms) => {
         const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -209,35 +209,40 @@ window.AppPage['staff_check_ins'] = function () {
         // Table Pills: Merged Time Left and Status column
         document.querySelectorAll('.table-time-left').forEach((el) => {
             const state = getCheckoutState(el.dataset.checkoutAt);
-            const statusStr = el.dataset.status || '';
+            const statusStr = (el.dataset.status || '').toLowerCase();
             const tr = el.closest('tr');
 
             const isCheckedOut = statusStr === 'checked_out' || statusStr === 'checkedout' || statusStr === 'checked-out';
 
             if (isCheckedOut) {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(107, 114, 128, 0.1); color: #6b7280;">Checked Out</span>`;
-                if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                el.className = 'table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 bg-gray-500/10 text-gray-600 dark:text-gray-400';
+                el.textContent = 'Checked Out';
+                if (tr) {
+                    tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                }
                 return;
             }
 
             if (!state.visible) {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(22, 163, 74, 0.1); color: #16a34a;">Checked In</span>`;
-                if (tr) tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                el.className = 'table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+                el.textContent = 'Checked In';
+                if (tr) {
+                    tr.classList.remove('row-checkout-due', 'row-checkout-near');
+                }
                 return;
             }
 
-            const clockIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 0.9rem; height: 0.9rem;"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+            const clockIcon = `<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
 
             if (state.tone === 'due') {
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: rgba(239, 68, 68, 0.1); color: #ef4444;">Time to checkout</span>`;
+                el.className = 'table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 bg-red-500/15 text-red-600 border border-red-500/30 dark:text-red-400';
+                el.textContent = 'Time to checkout';
+            } else if (state.tone === 'warn' || state.tone === 'near') {
+                el.className = 'table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 bg-amber-500/15 text-amber-700 border border-amber-500/30 dark:text-amber-300';
+                el.innerHTML = `${clockIcon} <span>${formatTimeLeft(state.left)} left</span>`;
             } else {
-                let colorClass = '#16a34a'; // green
-                let bgClass = 'rgba(22, 163, 74, 0.1)';
-                if (state.tone === 'warn' || state.tone === 'near') {
-                    colorClass = '#ea580c'; // orange
-                    bgClass = 'rgba(234, 88, 12, 0.1)';
-                }
-                el.innerHTML = `<span style="display:inline-flex; align-items:center; gap:0.2rem; padding:0.25rem 0.6rem; border-radius:999px; font-size:0.7rem; font-weight:700; background: ${bgClass}; color: ${colorClass};">${clockIcon} ${formatTimeLeft(state.left)} left</span>`;
+                el.className = 'table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400';
+                el.innerHTML = `${clockIcon} <span>${formatTimeLeft(state.left)} left</span>`;
             }
 
             if (tr) {
@@ -621,18 +626,11 @@ window.AppPage['staff_check_ins'] = function () {
                 <div id="resvPaneGuests" class="resv-tab-pane space-y-3 hidden">
                     <div class="flex items-center justify-between gap-2 border-b border-glass-border/40 pb-2 flex-wrap">
                         <span class="text-xs font-bold text-hp-text uppercase tracking-wider">Registered Guests & Companions</span>
-                        <div class="flex items-center gap-2">
-                            ${(String(reservation.status || '').toLowerCase().includes('checked') || String(reservation.status || '').toLowerCase().includes('active')) ? `
-                                <button type="button" class="resv-companion-checkout-btn inline-flex items-center gap-1 rounded-xl bg-hp-green/10 border border-hp-green/40 px-3 py-1.5 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer shadow-2xs" data-reservation-id="${reservation.id}">
-                                    Group Checkout
-                                </button>
-                            ` : ''}
-                        </div>
                     </div>
 
                     <div class="ci-guest-grid">
                         ${primaryGuest && primaryGuest.customer ? `
-                            <div class="ci-guest-card">
+                            <button type="button" class="ci-guest-card w-full cursor-pointer text-left transition-colors hover:border-hp-green/50" data-guest-id="${primaryGuest.customer_id || ''}">
                                 <div class="ci-guest-icon ${primaryGuest.has_pool_access ? 'guest-avatar-glow--pool' : ''}">
                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                                 </div>
@@ -645,7 +643,7 @@ window.AppPage['staff_check_ins'] = function () {
                                     <div class="ci-guest-name font-bold text-hp-text">${primaryGuest.customer.first_name} ${primaryGuest.customer.middle_name || ''} ${primaryGuest.customer.last_name}</div>
                                     <div class="ci-guest-meta">${primaryGuest.customer.age || 'N/A'} yrs &bull; ${primaryGuest.customer.gender || 'N/A'} &bull; ${primaryGuest.customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div>
                                 </div>
-                            </div>
+                            </button>
                         ` : '<div class="ci-guest-card"><div class="ci-guest-info"><div class="ci-guest-name">No main guest assigned</div></div></div>'}
 
                         ${(() => {
@@ -682,31 +680,25 @@ window.AppPage['staff_check_ins'] = function () {
                     return `<div class="rounded-xl border border-glass-border bg-glass p-4 text-xs text-hp-text-muted italic text-center">No companion guests registered.</div>`;
                 }
 
-                let summaryLines = '';
-                if (individualCompanions.length > 0) {
-                    const singlePoolCount = individualCompanions.filter(c => Boolean(c.has_pool_access)).length;
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Single / Named companions: <strong>${individualCompanions.length}</strong> (${singlePoolCount} with pool)</div>`;
-                }
-                if (bulkCompanions.length > 0) {
-                    const bulkPoolCount = bulkCompanions.filter(c => Boolean(c.has_pool_access)).length;
-                    const groupSummary = Object.values(bulkGroups)
-                        .map(g => `${g.gender} · ${ageGroupLabel(g.age)} ×${g.count} (${g.poolCount} pool)`)
-                        .join(' · ');
-                    summaryLines += `<div class="ci-guest-meta" style="color: #333;">Bulk companion groups: <strong>${bulkCompanions.length}</strong> (${bulkPoolCount} with pool)${groupSummary ? ` <span style="color: #888; font-size: 0.78rem;">— ${groupSummary}</span>` : ''}</div>`;
-                }
+                const companionCards = individualCompanions.map((guest) => {
+                    const customer = guest.customer;
+                    const fullName = [customer.first_name, customer.middle_name || '', customer.last_name].filter(Boolean).join(' ');
+                    const poolLabel = guest.has_pool_access ? 'Pool Pass' : 'Standard';
+                    return `<button type="button" class="ci-guest-card w-full cursor-pointer text-left transition-colors hover:border-hp-green/50" data-guest-id="${guest.customer_id || ''}">
+                        <div class="ci-guest-icon ${guest.has_pool_access ? 'guest-avatar-glow--pool' : ''}"><i class="bi bi-person-fill"></i></div>
+                        <div class="ci-guest-info"><div class="ci-guest-role">COMPANION <span class="ms-1 rounded-md border border-slate-400/30 bg-slate-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold">${poolLabel}</span></div><div class="ci-guest-name">${escapeHtml(fullName)}</div><div class="ci-guest-meta">${customer.age || 'N/A'} yrs &bull; ${customer.gender || 'N/A'} &bull; ${customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div></div>
+                    </button>`;
+                }).join('');
+
+                const bulkCards = Object.values(bulkGroups).map((group) => {
+                    const poolCount = group.poolCount;
+                    return `<div class="ci-guest-card" style="align-items: flex-start;"><div class="ci-guest-icon"><i class="bi bi-people-fill"></i></div><div class="ci-guest-info"><div class="ci-guest-role">COMPANIONS <span class="ms-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-cyan-700">${group.count} guests</span></div><div class="ci-guest-name">${escapeHtml(group.gender)} · ${escapeHtml(ageGroupLabel(group.age))} · ${escapeHtml(group.status)}</div><div class="ci-guest-meta">${poolCount} with pool access &bull; ${group.count - poolCount} standard</div></div></div>`;
+                }).join('');
 
                 return `
-                                <div class="ci-guest-card" style="align-items: flex-start;">
-                                    <div class="ci-guest-icon" style="margin-top: 0.2rem;">
-                                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                                    </div>
-                                    <div class="ci-guest-info" style="width: 100%;">
-                                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                            <div class="ci-guest-role" style="margin-bottom: 0;">COMPANIONS (${totalCompanions})</div>
-                                            ${activeCompanions.length > 0 ? `<button type="button" class="resv-companion-checkout-btn inline-flex items-center gap-1 rounded-lg bg-hp-green/10 border border-hp-green/40 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all cursor-pointer shadow-2xs" data-reservation-id="${reservation.id}">Group Checkout</button>` : ''}
-                                        </div>
-                                        ${summaryLines}
-                                    </div>
+                                <div class="contents">
+                                    <div class="mb-1 text-xs font-bold uppercase tracking-wider text-hp-text-muted">Companions</div>
+                                    ${companionCards}${bulkCards}
                                 </div>
                             `;
             })()}
@@ -950,6 +942,37 @@ window.AppPage['staff_check_ins'] = function () {
             checkOutConfirmModal.setAttribute('aria-hidden', 'true');
         }
     };
+
+    const requestCheckoutConfirmation = (message, title = 'Confirm Check Out', previewItems = []) => new Promise((resolve) => {
+        if (!checkOutConfirmModal || !confirmCheckOutBtn) {
+            resolve(false);
+            return;
+        }
+
+        const titleEl = checkOutConfirmModal.querySelector('#checkOutConfirmTitle');
+        const messageEl = checkOutConfirmModal.querySelector('p');
+        const previewEl = checkOutConfirmModal.querySelector('#checkOutConfirmGuestPreview');
+        if (titleEl) titleEl.textContent = title;
+        if (messageEl) messageEl.textContent = message;
+        if (previewEl) {
+            previewEl.innerHTML = previewItems.length
+                ? `<div class="mb-1 text-xs font-bold uppercase tracking-wider text-hp-text-muted">Selected guests</div>${previewItems.map((item) => `<div class="flex items-center gap-2 rounded-lg border border-glass-border/60 bg-white/50 px-2.5 py-2 text-sm text-hp-text dark:bg-white/5"><i class="bi ${item.icon || 'bi-person-fill'} text-hp-green"></i><span class="min-w-0 flex-1 truncate">${item.name}</span><span class="shrink-0 text-xs font-semibold text-hp-text-muted">${item.detail || ''}</span></div>`).join('')}`
+                : '';
+        }
+
+        const finish = (confirmed) => {
+            confirmCheckOutBtn.removeEventListener('click', handleConfirm);
+            checkOutConfirmCloseButtons.forEach((button) => button.removeEventListener('click', handleCancel));
+            closeCheckOutConfirmModal();
+            resolve(confirmed);
+        };
+        const handleConfirm = () => finish(true);
+        const handleCancel = () => finish(false);
+
+        confirmCheckOutBtn.addEventListener('click', handleConfirm, { once: true });
+        checkOutConfirmCloseButtons.forEach((button) => button.addEventListener('click', handleCancel, { once: true }));
+        openCheckOutConfirmModal();
+    });
 
     // Reservation row click handlers (both delegated and direct)
     if (reservationTableBody) {
@@ -3805,7 +3828,33 @@ window.AppPage['staff_check_ins'] = function () {
             return;
         }
 
-        if (!confirm(`Are you sure you want to check out ${totalSelected} selected guest${totalSelected === 1 ? '' : 's'}?`)) {
+        const selectedReservation = (window.staffReservationData && window.staffReservationData[currentCompanionCheckoutResId]) || reservationData[currentCompanionCheckoutResId];
+        const activeGuestCount = selectedReservation?.reservation_guests?.filter((guest) => !guest.checked_out_at).length || 0;
+        const isFinalGuestCheckout = activeGuestCount > 0 && totalSelected >= activeGuestCount;
+
+        const previewItems = selectedSingleCheckboxes.map((checkbox) => ({
+            name: escapeHtml(checkbox.dataset.guestName || 'Selected guest'),
+            detail: checkbox.dataset.isPrimary === 'true' ? 'Main Guest' : 'Guest',
+            icon: checkbox.dataset.isPrimary === 'true' ? 'bi-person-fill' : 'bi-person',
+        }));
+        companionCheckoutModalBody.querySelectorAll('.companion-bulk-stepper-input').forEach((input) => {
+            const qty = parseInt(input.value, 10) || 0;
+            if (qty > 0) {
+                const poolLabel = input.dataset.poolType === 'with_pool' ? 'Pool' : 'Standard';
+                previewItems.push({
+                    name: `${qty} Bulk Companion${qty === 1 ? '' : 's'}`,
+                    detail: `${input.dataset.gender || 'Any'} · ${input.dataset.ageGroup || 'Any age'} · ${poolLabel}`,
+                    icon: 'bi-people-fill',
+                });
+            }
+        });
+
+        const confirmed = await requestCheckoutConfirmation(
+            `Are you sure you want to check out ${totalSelected} selected guest${totalSelected === 1 ? '' : 's'}? This action cannot be undone.`,
+            'Confirm Group Check Out',
+            previewItems
+        );
+        if (!confirmed) {
             return;
         }
 
@@ -3895,6 +3944,26 @@ window.AppPage['staff_check_ins'] = function () {
                 const gRow = document.querySelector(`tr.guest-row[data-guest-id="${id}"]`);
                 if (gRow) gRow.remove();
             });
+
+            if (isFinalGuestCheckout && currentCompanionCheckoutResId) {
+                await openChargeCheckout(currentCompanionCheckoutResId, async () => {
+                    const finalResponse = await fetch(`/staff/reservations/${currentCompanionCheckoutResId}/check-out`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    const finalPayload = await finalResponse.json().catch(() => ({}));
+                    if (!finalResponse.ok || !finalPayload.success) {
+                        throw new Error(finalPayload.message || 'Unable to complete checkout.');
+                    }
+                    showToast(`Reservation #${currentCompanionCheckoutResId} checked out successfully.`);
+                    window.dispatchEvent(new CustomEvent('app:data-mutated'));
+                });
+                return;
+            }
 
             // Re-open reservation details modal with updated guests
             if (currentCompanionCheckoutResId) {
@@ -4063,7 +4132,7 @@ window.AppPage['staff_check_ins'] = function () {
                                     <span class="nested-guest-avatar ${groupGlowClass} flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0e7490] to-[#155e75] text-[0.55rem] font-bold text-white shadow-sm">
                                         <i class="bi bi-people-fill"></i>
                                     </span>
-                                    <span>Bulk Companions (#${resId})</span>
+                                    <span>Companions (#${resId})</span>
                                     <div class="flex shrink-0 items-center gap-1.5">
                                         <span class="inline-flex items-center rounded-full bg-[#0e7490] px-2 py-0.5 text-[0.6rem] font-bold text-white shadow-sm">${activeBulk}/${totalBulk} Checked In</span>
                                         ${poolBadge}
@@ -4414,6 +4483,11 @@ window.AppPage['staff_check_ins'] = function () {
     const switchWalkInTab = (targetTabId) => {
         if (!targetTabId) return;
 
+        // Backward compatibility aliases
+        if (targetTabId === 'mainGuestTab' || targetTabId === 'companionsTab') {
+            targetTabId = 'guestsTab';
+        }
+
         const tabBtns = document.querySelectorAll('.walkin-tab-btn');
         const tabPanes = document.querySelectorAll('.walkin-tab-pane');
 
@@ -4431,10 +4505,9 @@ window.AppPage['staff_check_ins'] = function () {
         });
 
         const tabStepMap = {
-            'mainGuestTab': '1 of 4',
-            'amenitiesTab': '2 of 4',
-            'companionsTab': '3 of 4',
-            'feesTab': '4 of 4'
+            'amenitiesTab': '1 of 3',
+            'guestsTab': '2 of 3',
+            'feesTab': '3 of 3'
         };
         const stepIndicator = document.getElementById('walkInActiveTabIndicator');
         if (stepIndicator && tabStepMap[targetTabId]) {
@@ -4445,32 +4518,292 @@ window.AppPage['staff_check_ins'] = function () {
     const checkMainGuestValidation = () => {
         const firstName = document.getElementById('primary_first_name')?.value?.trim() || '';
         const lastName = document.getElementById('primary_last_name')?.value?.trim() || '';
+        const ageVal = document.getElementById('primary_age')?.value?.trim() || '';
+        const genderVal = document.getElementById('primary_gender')?.value || '';
+        const nationalityVal = document.getElementById('primaryGuestIsForeigner')?.value ?? '';
+        const phoneVal = document.getElementById('primary_phone')?.value?.trim() || '';
+        const emailVal = document.getElementById('primary_email')?.value?.trim() || '';
         const statusBadge = document.getElementById('walkInMainGuestStatus');
 
-        if (!statusBadge) return;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const parsedAge = parseInt(ageVal, 10);
+        const isAgeValid = ageVal !== '' && !isNaN(parsedAge) && parsedAge >= 0;
+        const isEmailValid = emailRegex.test(emailVal);
 
-        const isComplete = firstName.length > 0 && lastName.length > 0;
+        const isComplete = Boolean(
+            firstName.length > 0 &&
+            lastName.length > 0 &&
+            isAgeValid &&
+            genderVal.length > 0 &&
+            nationalityVal !== '' &&
+            phoneVal.length > 0 &&
+            isEmailValid
+        );
 
-        if (isComplete) {
-            statusBadge.classList.remove('walkin-status-indicator--error');
-            statusBadge.classList.add('walkin-status-indicator--valid');
-            statusBadge.innerHTML = '<i class="bi bi-check-lg text-xs"></i>';
-            statusBadge.title = 'Main guest details filled';
-        } else {
-            statusBadge.classList.remove('walkin-status-indicator--valid');
-            statusBadge.classList.add('walkin-status-indicator--error');
-            statusBadge.textContent = '!';
-            statusBadge.title = 'Required main guest details missing';
+        if (statusBadge) {
+            if (isComplete) {
+                statusBadge.className = 'walkin-status-indicator inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-black shadow-xs shrink-0';
+                statusBadge.innerHTML = '<i class="bi bi-check-lg text-xs"></i>';
+                statusBadge.title = 'Main guest details filled';
+            } else {
+                statusBadge.className = 'walkin-status-indicator inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-300 dark:border-white/20 bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 text-xs font-semibold shrink-0';
+                statusBadge.innerHTML = '<i class="bi bi-person text-[0.7rem]"></i>';
+                statusBadge.title = 'Main guest required';
+            }
+        }
+        return isComplete;
+    };
+
+    const syncMainGuestCardUI = () => {
+        const firstName = document.getElementById('primary_first_name')?.value?.trim() || '';
+        const middleName = document.getElementById('primary_middle_name')?.value?.trim() || '';
+        const lastName = document.getElementById('primary_last_name')?.value?.trim() || '';
+        const ageVal = document.getElementById('primary_age')?.value?.trim() || '';
+        const genderVal = document.getElementById('primary_gender')?.value || '';
+        const isForeigner = document.getElementById('primaryGuestIsForeigner')?.value === '1';
+        const phoneVal = document.getElementById('primary_phone')?.value?.trim() || '';
+        const emailVal = document.getElementById('primary_email')?.value?.trim() || '';
+        const isFreeEntrance = Boolean(document.getElementById('primary_is_free_entrance')?.checked);
+        const hasPoolAccess = Boolean(document.getElementById('primary_has_pool_access')?.checked);
+
+        const mainGuestCard = document.getElementById('mainGuestCard');
+        const emptyState = document.getElementById('mainGuestEmptyState');
+        const filledState = document.getElementById('mainGuestFilledState');
+        const cardName = document.getElementById('mainGuestCardName');
+        const cardRateBadge = document.getElementById('mainGuestCardRateBadge');
+        const cardNationality = document.getElementById('mainGuestCardNationality');
+        const entranceBadgeWrap = document.getElementById('mainGuestCardEntranceBadgeWrap');
+        const poolBadgeWrap = document.getElementById('mainGuestCardPoolBadgeWrap');
+        const cardDetails = document.getElementById('mainGuestCardDetails');
+        const cardContact = document.getElementById('mainGuestCardContact');
+
+        const isComplete = checkMainGuestValidation();
+
+        if (mainGuestCard && emptyState && filledState) {
+            if (isComplete) {
+                emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
+                filledState.classList.remove('hidden');
+                filledState.classList.add('flex');
+                mainGuestCard.className = 'group relative cursor-pointer rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/[0.05] p-3.5 transition-all duration-200 hover:border-emerald-500 hover:bg-emerald-500/[0.08] dark:border-emerald-500/30 dark:bg-emerald-500/[0.05] shadow-xs';
+
+                if (cardName) {
+                    cardName.textContent = `${firstName} ${middleName ? middleName + ' ' : ''}${lastName}`.trim();
+                }
+
+                if (cardRateBadge) {
+                    const parsedAge = parseInt(ageVal, 10);
+                    if (!isNaN(parsedAge) && parsedAge <= 12) {
+                        cardRateBadge.textContent = 'Child Rate (0-12 yrs)';
+                        cardRateBadge.className = 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-amber-700 bg-amber-500/10 dark:text-amber-300';
+                    } else {
+                        cardRateBadge.textContent = 'Adult Rate (13+ yrs)';
+                        cardRateBadge.className = 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300';
+                    }
+                }
+
+                if (cardNationality) {
+                    cardNationality.textContent = isForeigner ? 'Foreigner' : 'Filipino';
+                }
+
+                // Entrance badge / toggle directly on the guest list
+                if (entranceBadgeWrap) {
+                    const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
+                    if (currentEntranceOpt === 'all_free') {
+                        entranceBadgeWrap.innerHTML = '<span class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.72rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+                    } else if (currentEntranceOpt === 'specific') {
+                        entranceBadgeWrap.innerHTML = isFreeEntrance
+                            ? `<button type="button" class="inline-flex items-center gap-1 rounded-lg bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.72rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors shadow-2xs" id="mainGuestToggleFreeBtn" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance <i class="bi bi-check-lg"></i></button>`
+                            : `<button type="button" class="inline-flex items-center gap-1 rounded-lg bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.72rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors shadow-2xs" id="mainGuestToggleFreeBtn" title="Click to grant free entrance">+ Free Entrance</button>`;
+                    } else {
+                        entranceBadgeWrap.innerHTML = '';
+                    }
+                }
+
+                // Pool badge / toggle directly on the guest list
+                if (poolBadgeWrap) {
+                    const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+                    if (currentPoolOpt === 'all_paid') {
+                        poolBadgeWrap.innerHTML = '<span class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+                    } else if (currentPoolOpt === 'all_free') {
+                        poolBadgeWrap.innerHTML = '<span class="inline-flex items-center gap-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[0.72rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+                    } else if (currentPoolOpt === 'specific') {
+                        poolBadgeWrap.innerHTML = hasPoolAccess
+                            ? `<button type="button" class="inline-flex items-center gap-1 rounded-lg bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors shadow-2xs" id="mainGuestTogglePoolBtn" title="Click to remove pool access"><i class="bi bi-water"></i> Pool Pass <i class="bi bi-check-lg"></i></button>`
+                            : `<button type="button" class="inline-flex items-center gap-1 rounded-lg bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.72rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors shadow-2xs" id="mainGuestTogglePoolBtn" title="Click to grant pool access">+ Pool Access</button>`;
+                    } else {
+                        poolBadgeWrap.innerHTML = '';
+                    }
+                }
+
+                if (cardDetails) {
+                    const parts = [];
+                    if (ageVal) parts.push(`Age: ${ageVal}`);
+                    if (genderVal) parts.push(genderVal);
+                    cardDetails.textContent = parts.join(' • ');
+                }
+
+                if (cardContact) {
+                    const parts = [];
+                    if (phoneVal) parts.push(phoneVal);
+                    if (emailVal) parts.push(emailVal);
+                    cardContact.textContent = parts.join(' • ');
+                }
+            } else {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                filledState.classList.add('hidden');
+                filledState.classList.remove('flex');
+                mainGuestCard.className = 'group relative cursor-pointer rounded-2xl border border-dashed border-gray-300/80 dark:border-white/15 bg-white/40 dark:bg-white/[0.02] p-3.5 transition-all duration-200 hover:border-hp-green/50 hover:bg-hp-green/[0.02] shadow-xs';
+            }
+        }
+
+        // Mirror to primaryGuestHiddenInputs container inside addGuestForm
+        const hiddenInputsContainer = document.getElementById('primaryGuestHiddenInputs');
+        if (hiddenInputsContainer) {
+            hiddenInputsContainer.innerHTML = `
+                <input type="hidden" name="primary_guest[first_name]" value="${escapeHtml(firstName)}">
+                <input type="hidden" name="primary_guest[middle_name]" value="${escapeHtml(middleName)}">
+                <input type="hidden" name="primary_guest[last_name]" value="${escapeHtml(lastName)}">
+                <input type="hidden" name="primary_guest[age]" value="${escapeHtml(ageVal)}">
+                <input type="hidden" name="primary_guest[gender]" value="${escapeHtml(genderVal)}">
+                <input type="hidden" name="primary_guest[is_foreigner]" value="${isForeigner ? '1' : '0'}">
+                <input type="hidden" name="primary_guest[phone]" value="${escapeHtml(phoneVal)}">
+                <input type="hidden" name="primary_guest[email]" value="${escapeHtml(emailVal)}">
+            `;
         }
     };
+
+    // Main Guest Fill-Up Modal Controls
+    const walkInMainGuestModal = document.getElementById('walkInMainGuestModal');
+    const openMainGuestModal = () => {
+        if (!walkInMainGuestModal) return;
+        walkInMainGuestModal.classList.add('is-open');
+        walkInMainGuestModal.classList.remove('hidden');
+        walkInMainGuestModal.setAttribute('aria-hidden', 'false');
+        const err = document.getElementById('mainGuestModalError');
+        if (err) err.classList.add('hidden');
+        setTimeout(() => {
+            document.getElementById('primary_first_name')?.focus();
+        }, 80);
+    };
+
+    const closeMainGuestModal = () => {
+        if (!walkInMainGuestModal) return;
+        walkInMainGuestModal.classList.remove('is-open');
+        walkInMainGuestModal.setAttribute('aria-hidden', 'true');
+        syncMainGuestCardUI();
+    };
+
+    document.getElementById('mainGuestCard')?.addEventListener('click', openMainGuestModal);
+    document.getElementById('editMainGuestBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMainGuestModal();
+    });
+    document.querySelectorAll('[data-close-main-guest-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeMainGuestModal);
+    });
+
+    // Delegated click handler on Main Guest Card for entrance and pool toggles on the guest list
+    document.getElementById('mainGuestCardTogglesWrap')?.addEventListener('click', (e) => {
+        const freeBtn = e.target.closest('#mainGuestToggleFreeBtn');
+        if (freeBtn) {
+            e.stopPropagation();
+            e.preventDefault();
+            const input = document.getElementById('primary_is_free_entrance');
+            if (input) {
+                input.checked = !input.checked;
+                syncEntranceOptionUI();
+                syncMainGuestCardUI();
+                updateGrandTotal();
+            }
+            return;
+        }
+
+        const poolBtn = e.target.closest('#mainGuestTogglePoolBtn');
+        if (poolBtn) {
+            e.stopPropagation();
+            e.preventDefault();
+            const input = document.getElementById('primary_has_pool_access');
+            if (input) {
+                input.checked = !input.checked;
+                syncPoolOptionUI();
+                syncMainGuestCardUI();
+                updateGrandTotal();
+            }
+            return;
+        }
+    });
+
+    document.getElementById('saveMainGuestBtn')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const fName = document.getElementById('primary_first_name')?.value?.trim() || '';
+        const lName = document.getElementById('primary_last_name')?.value?.trim() || '';
+        const ageVal = document.getElementById('primary_age')?.value?.trim() || '';
+        const gender = document.getElementById('primary_gender')?.value || '';
+        const nationality = document.getElementById('primaryGuestIsForeigner')?.value ?? '';
+        const phone = document.getElementById('primary_phone')?.value?.trim() || '';
+        const email = document.getElementById('primary_email')?.value?.trim() || '';
+        const err = document.getElementById('mainGuestModalError');
+
+        const showModalError = (msg, inputEl) => {
+            if (err) {
+                err.textContent = msg;
+                err.classList.remove('hidden');
+            }
+            if (inputEl) {
+                inputEl.focus();
+            }
+        };
+
+        if (!fName) {
+            showModalError('Please enter first name.', document.getElementById('primary_first_name'));
+            return;
+        }
+        if (!lName) {
+            showModalError('Please enter last name.', document.getElementById('primary_last_name'));
+            return;
+        }
+        const parsedAge = parseInt(ageVal, 10);
+        if (ageVal === '' || isNaN(parsedAge) || parsedAge < 0) {
+            showModalError('Please enter a valid age (0 or older).', document.getElementById('primary_age'));
+            return;
+        }
+        if (!gender) {
+            showModalError('Please select a gender.', document.getElementById('primary_gender'));
+            return;
+        }
+        if (nationality === '') {
+            showModalError('Please select nationality.', document.getElementById('primaryGuestIsForeigner'));
+            return;
+        }
+        if (!phone) {
+            showModalError('Please enter a contact phone number.', document.getElementById('primary_phone'));
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+            showModalError('Please enter an email address.', document.getElementById('primary_email'));
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            showModalError('Please enter a valid email address (e.g. guest@example.com).', document.getElementById('primary_email'));
+            return;
+        }
+
+        if (err) err.classList.add('hidden');
+        syncMainGuestCardUI();
+        updateGrandTotal();
+        closeMainGuestModal();
+    });
 
     const openAddGuestModal = () => {
         if (!addGuestModal) return;
         addGuestModal.classList.add('is-open');
         addGuestModal.classList.remove('hidden');
         addGuestModal.setAttribute('aria-hidden', 'false');
-        switchWalkInTab('mainGuestTab');
-        checkMainGuestValidation();
+        switchWalkInTab('amenitiesTab');
+        syncMainGuestCardUI();
         loadParkSettings();
         syncMasterScheduleDisplay();
         syncEntranceOptionUI();
@@ -4517,8 +4850,22 @@ window.AppPage['staff_check_ins'] = function () {
     });
 
     ['input', 'change', 'blur'].forEach(ev => {
-        document.getElementById('primary_first_name')?.addEventListener(ev, checkMainGuestValidation);
-        document.getElementById('primary_last_name')?.addEventListener(ev, checkMainGuestValidation);
+        ['primary_first_name', 'primary_middle_name', 'primary_last_name', 'primary_age', 'primary_gender', 'primaryGuestIsForeigner', 'primary_phone', 'primary_email'].forEach(id => {
+            document.getElementById(id)?.addEventListener(ev, () => {
+                checkMainGuestValidation();
+                syncMainGuestCardUI();
+            });
+        });
+        document.getElementById('primary_is_free_entrance')?.addEventListener(ev, () => {
+            syncEntranceOptionUI();
+            syncMainGuestCardUI();
+            updateGrandTotal();
+        });
+        document.getElementById('primary_has_pool_access')?.addEventListener(ev, () => {
+            syncPoolOptionUI();
+            syncMainGuestCardUI();
+            updateGrandTotal();
+        });
     });
 
     // Load park settings from server
@@ -4568,10 +4915,10 @@ window.AppPage['staff_check_ins'] = function () {
             primaryGuestFreeEntranceWrap.style.display = isSpecific ? 'block' : 'none';
         }
         if (singleCompanionFreeEntranceWrap) {
-            singleCompanionFreeEntranceWrap.style.display = isSpecific ? 'block' : 'none';
+            singleCompanionFreeEntranceWrap.style.display = isSpecific ? 'flex' : 'none';
         }
         if (bulkCompanionFreeEntranceWrap) {
-            bulkCompanionFreeEntranceWrap.style.display = isSpecific ? 'grid' : 'none';
+            bulkCompanionFreeEntranceWrap.style.display = isSpecific ? 'flex' : 'none';
         }
 
         if (walkInEntranceOptionHelp) {
@@ -4609,6 +4956,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         syncBulkFreeQuantityMax();
         renderCompanions();
+        syncMainGuestCardUI();
         updateGrandTotal();
     };
 
@@ -4636,11 +4984,11 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         if (singleCompanionPoolWrap) {
-            singleCompanionPoolWrap.style.display = isSpecific ? 'block' : 'none';
+            singleCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
         }
 
         if (bulkCompanionPoolWrap) {
-            bulkCompanionPoolWrap.style.display = isSpecific ? 'grid' : 'none';
+            bulkCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
         }
 
         if (walkInPoolOptionHelp) {
@@ -4676,6 +5024,7 @@ window.AppPage['staff_check_ins'] = function () {
         }
 
         renderCompanions();
+        syncMainGuestCardUI();
         updateGrandTotal();
     };
 
@@ -4992,6 +5341,7 @@ window.AppPage['staff_check_ins'] = function () {
                 primaryAgeBadge.className = 'rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300';
             }
         }
+        syncMainGuestCardUI();
         updateGrandTotal();
     };
     primaryAgeInput?.addEventListener('input', syncPrimaryAgeBadge);
@@ -5242,14 +5592,11 @@ window.AppPage['staff_check_ins'] = function () {
     addGuestForm?.addEventListener('submit', (e) => {
         if (!isPaymentConfirmed) {
             e.preventDefault();
-            const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim();
-            const primaryLastName = document.getElementById('primary_last_name')?.value?.trim();
-
-            if (!primaryFirstName || !primaryLastName) {
-                alert('Please fill in the Primary Guest First Name and Last Name.');
-                switchWalkInTab('mainGuestTab');
-                checkMainGuestValidation();
-                document.getElementById('primary_first_name')?.focus();
+            if (!checkMainGuestValidation()) {
+                showToast('Please fill out all required Main Guest details before checking in.', 'error');
+                switchWalkInTab('guestsTab');
+                syncMainGuestCardUI();
+                openMainGuestModal();
                 return;
             }
 
@@ -5376,6 +5723,66 @@ window.AppPage['staff_check_ins'] = function () {
         }
     });
 
+    // Bulk Free Entrance and Pool Access steppers in creator form
+    const walkInBulkFreeMinusBtn = document.getElementById('walkInBulkFreeMinusBtn');
+    const walkInBulkFreePlusBtn = document.getElementById('walkInBulkFreePlusBtn');
+    const walkInBulkPoolMinusBtn = document.getElementById('walkInBulkPoolMinusBtn');
+    const walkInBulkPoolPlusBtn = document.getElementById('walkInBulkPoolPlusBtn');
+
+    walkInBulkFreeMinusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionFreeQty) return;
+        const current = parseInt(bulkCompanionFreeQty.value, 10) || 0;
+        if (current > 0) {
+            bulkCompanionFreeQty.value = current - 1;
+            syncBulkFreeQuantityMax();
+        }
+    });
+
+    walkInBulkFreePlusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionFreeQty || !bulkCompanionQtyInput) return;
+        const max = Math.max(1, parseInt(bulkCompanionQtyInput.value, 10) || 1);
+        const current = parseInt(bulkCompanionFreeQty.value, 10) || 0;
+        if (current < max) {
+            bulkCompanionFreeQty.value = current + 1;
+            syncBulkFreeQuantityMax();
+        }
+    });
+
+    walkInBulkPoolMinusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionPoolQty) return;
+        const current = parseInt(bulkCompanionPoolQty.value, 10) || 0;
+        if (current > 0) {
+            bulkCompanionPoolQty.value = current - 1;
+            syncBulkPoolQuantityMax();
+        }
+    });
+
+    walkInBulkPoolPlusBtn?.addEventListener('click', () => {
+        if (!bulkCompanionPoolQty || !bulkCompanionQtyInput) return;
+        const max = Math.max(1, parseInt(bulkCompanionQtyInput.value, 10) || 1);
+        const current = parseInt(bulkCompanionPoolQty.value, 10) || 0;
+        if (current < max) {
+            bulkCompanionPoolQty.value = current + 1;
+            syncBulkPoolQuantityMax();
+        }
+    });
+
+    const getGenderBadgeHtml = (gender) => {
+        const isFemale = String(gender || '').trim().toLowerCase() === 'female';
+        if (isFemale) {
+            return `<span class="inline-flex items-center gap-1 rounded-md bg-pink-100/80 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border border-pink-300/80 dark:border-pink-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-female text-xs"></i> Female</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-blue-100/80 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-300/80 dark:border-blue-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-male text-xs"></i> Male</span>`;
+    };
+
+    const getAgeBadgeHtml = (ageText) => {
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(ageText)}</span>`;
+    };
+
+    const getNationalityBadgeHtml = (nationality) => {
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-amber-100/70 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-300/70 dark:border-amber-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(nationality)}</span>`;
+    };
+
     const renderModalCompanionPreview = () => {
         if (!modalCompanionPreviewList) return;
         modalCompanionPreviewList.innerHTML = '';
@@ -5438,56 +5845,66 @@ window.AppPage['staff_check_ins'] = function () {
 
             const nationality = companion.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = companion.age_type === 'child' ? 'Child' : 'Adult';
+            const genderBadge = getGenderBadgeHtml(companion.gender);
+            const ageText = companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel;
 
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> Pool Pass</span>';
             } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water"></i> Pool Pass ✓</button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass">+ Pool</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-500/20 text-sky-800 dark:text-sky-200 border border-sky-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water text-sky-600"></i> Pool Pass <i class="bi bi-check2"></i></button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass"><i class="bi bi-water"></i> + Pool</button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance</span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-modal-toggle-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance ✓</button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-free="${index}" title="Click to grant free entrance">+ Free</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-modal-toggle-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance <i class="bi bi-check2"></i></button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-modal-toggle-free="${index}" title="Click to grant free entrance"><i class="bi bi-ticket-perforated"></i> + Free</button>`;
             }
 
             let amenityBadgeHtml = '';
             if (selectedAmenities.length > 1 && companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass/80 p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass';
             item.innerHTML = `
                 <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-xs font-bold text-hp-green">
-                        <i class="bi bi-person-fill"></i>
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
+                        <i class="bi bi-person-fill text-sm"></i>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(companion.gender)}, ${companion.age ? escapeHtml(companion.age) + 'y (' + rateLabel + ')' : rateLabel}</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-extrabold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            ${genderBadge}
+                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">${ageText}</span>
+                            <span class="text-hp-text-muted/40">•</span>
+                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
                             ${amenityBadgeHtml}
-                            ${freeBadgeHtml}
-                            ${poolBadgeHtml}
                         </div>
                     </div>
                 </div>
-                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-single="${index}" title="Remove staged companion">
-                    <i class="bi bi-trash3 text-xs"></i>
-                </button>
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${freeBadgeHtml}
+                        ${poolBadgeHtml}
+                    </div>
+                    <div class="flex items-center border-l border-glass-border pl-2.5 ml-1">
+                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-single="${index}" title="Remove staged companion">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             `;
             modalCompanionPreviewList.appendChild(item);
         });
@@ -5508,75 +5925,77 @@ window.AppPage['staff_check_ins'] = function () {
 
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
+            const genderBadge = getGenderBadgeHtml(group.gender);
 
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All with Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> All Pool</span>`;
             } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All Free Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = group.pool_quantity || 0;
-                bulkPoolBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
-                        <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${groupIndex}">−</button>
-                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${groupIndex}">+</button>
-                    </div>
-                `;
+                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
+                group.pool_quantity = pQty;
+                bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-900 dark:text-sky-200 shadow-2xs" title="Pool passes for ${pQty} of ${group.quantity} guests">
+                    <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
+                    <span class="text-[0.65rem] uppercase font-bold text-sky-800/80 dark:text-sky-300">Pool:</span>
+                    <span>${pQty}/${group.quantity}</span>
+                </div>`;
             }
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> All ${group.quantity} Free</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> All Free</span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
-                bulkFreeBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-900 dark:text-amber-300">
-                        <span><i class="bi bi-ticket-perforated-fill me-0.5"></i>Free:</span>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-dec="${groupIndex}">−</button>
-                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${fQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-free-inc="${groupIndex}">+</button>
-                    </div>
-                `;
+                bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-900 dark:text-amber-200 shadow-2xs" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
+                    <i class="bi bi-ticket-perforated-fill text-amber-600"></i>
+                    <span class="text-[0.65rem] uppercase font-bold text-amber-800/80 dark:text-amber-300">Entrance:</span>
+                    <span>${fQty}/${group.quantity}</span>
+                </div>`;
             }
 
             let bulkAmenityBadgeHtml = '';
             if (selectedAmenities.length > 1 && group.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass/80 p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
+            item.setAttribute('data-modal-open-group-edit', groupIndex);
+            item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600/15 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        <i class="bi bi-people-fill"></i>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1 select-none pointer-events-none">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
+                        <i class="bi bi-people-fill text-sm"></i>
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Bulk: ${group.quantity} guests</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(group.gender)}, Age ${escapeHtml(group.age_group)} (${rateLabel})</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-extrabold text-hp-text dark:text-white shrink-0">${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
+                            ${genderBadge}
+                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
+                            <span class="text-hp-text-muted/40">•</span>
+                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
                             ${bulkAmenityBadgeHtml}
-                            ${bulkFreeBadgeHtml}
-                            ${bulkPoolBadgeHtml}
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-dec="${groupIndex}" title="Decrease quantity">−</button>
-                        <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${groupIndex}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-inc="${groupIndex}" title="Increase quantity">+</button>
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${bulkFreeBadgeHtml}
+                        ${bulkPoolBadgeHtml}
                     </div>
-                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-bulk="${groupIndex}" title="Remove staged bulk group">
-                        <i class="bi bi-trash3 text-xs"></i>
-                    </button>
+                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
+                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-modal-open-group-edit="${groupIndex}" title="Edit group">
+                            <i class="bi bi-pencil-fill text-xs"></i>
+                        </button>
+                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-bulk="${groupIndex}" title="Remove staged bulk group">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             modalCompanionPreviewList.appendChild(item);
@@ -5708,6 +6127,16 @@ window.AppPage['staff_check_ins'] = function () {
                         renderModalCompanionPreview();
                     }
                 );
+            }
+            return;
+        }
+
+        // Open Group Edit Modal from staged preview
+        const openModalGroupEditBtn = e.target.closest('[data-modal-open-group-edit]');
+        if (openModalGroupEditBtn && !e.target.closest('[data-modal-remove-bulk]')) {
+            const bIdx = parseInt(openModalGroupEditBtn.dataset.modalOpenGroupEdit || openModalGroupEditBtn.getAttribute('data-modal-open-group-edit'), 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                openWalkInGroupEditModal(bIdx);
             }
             return;
         }
@@ -5979,44 +6408,64 @@ window.AppPage['staff_check_ins'] = function () {
 
             let poolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> Pool Pass</span>';
             } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water"></i> Pool Pass <i class="bi bi-check-lg"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-500/20 text-sky-800 dark:text-sky-200 border border-sky-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water text-sky-600"></i> Pool Pass <i class="bi bi-check2"></i></button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access"><i class="bi bi-water"></i> + Pool</button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance</span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill"></i> Free Entrance <i class="bi bi-check-lg"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance">+ Free Entrance</button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance <i class="bi bi-check2"></i></button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance"><i class="bi bi-ticket-perforated"></i> + Free</button>`;
             }
 
             let amenityBadgeHtml = '';
             if (selectedAmenities.length > 1 && companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
+            const genderBadge = getGenderBadgeHtml(companion.gender);
+            const ageText = companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel;
+
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill flex items-center justify-between gap-3 p-2.5 rounded-xl border border-glass-border bg-glass transition-all hover:border-hp-green/30';
+            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)} - ${nationality} - ${companion.age ? escapeHtml(companion.age) + ' yrs (' + rateLabel + ')' : rateLabel} - ${escapeHtml(companion.gender)}</span>
-                    ${amenityBadgeHtml}
-                    ${freeBadgeHtml}
-                    ${poolBadgeHtml}
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
+                        <i class="bi bi-person-fill text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="guest-companion-pill__name text-xs font-extrabold text-hp-text dark:text-white truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            ${genderBadge}
+                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">${ageText}</span>
+                            <span class="text-hp-text-muted/40">•</span>
+                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
+                            ${amenityBadgeHtml}
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs" data-companion-index="${index}" title="Remove companion">
-                    <i class="bi bi-trash3"></i>
-                </button>
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${freeBadgeHtml}
+                        ${poolBadgeHtml}
+                    </div>
+                    <div class="flex items-center border-l border-glass-border pl-2.5 ml-1">
+                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-companion-index="${index}" title="Remove companion">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             `;
             companionList.appendChild(item);
         });
@@ -6065,63 +6514,76 @@ window.AppPage['staff_check_ins'] = function () {
 
             let bulkPoolBadgeHtml = '';
             if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> All Pool</span>`;
             } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} Free Pool</span>`;
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = group.pool_quantity || 0;
-                bulkPoolBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
-                        <span><i class="bi bi-water me-1"></i>Pool:</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${groupIndex}" title="Decrease pool access quantity">−</button>
-                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${groupIndex}" title="Increase pool access quantity">+</button>
-                    </div>
-                `;
+                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
+                group.pool_quantity = pQty;
+                bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-900 dark:text-sky-200 shadow-2xs" title="Pool access passes for ${pQty} of ${group.quantity} guests">
+                    <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
+                    <span class="text-[0.65rem] uppercase font-bold text-sky-800/80 dark:text-sky-300">Pool:</span>
+                    <span>${pQty}/${group.quantity}</span>
+                </div>`;
             }
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-ticket-perforated-fill"></i> All ${group.quantity} Free Entrance</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> All Free</span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
-                bulkFreeBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-amber-900 dark:text-amber-300">
-                        <span><i class="bi bi-ticket-perforated-fill me-1"></i>Free:</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-dec="${groupIndex}" title="Decrease free entrance quantity">−</button>
-                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${fQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-amber-600/20 text-amber-900 dark:text-white hover:bg-amber-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-free-inc="${groupIndex}" title="Increase free entrance quantity">+</button>
-                    </div>
-                `;
+                bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-900 dark:text-amber-200 shadow-2xs" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
+                    <i class="bi bi-ticket-perforated-fill text-amber-600"></i>
+                    <span class="text-[0.65rem] uppercase font-bold text-amber-800/80 dark:text-amber-300">Entrance:</span>
+                    <span>${fQty}/${group.quantity}</span>
+                </div>`;
             }
 
             let bulkAmenityBadgeHtml = '';
             if (selectedAmenities.length > 1 && group.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-hp-green/10 text-hp-green border border-hp-green/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
                 }
             }
 
+            const genderBadge = getGenderBadgeHtml(group.gender);
+
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-3 p-2.5 rounded-xl border border-glass-border bg-glass transition-all hover:border-hp-green/30';
+            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer shadow-xs';
+            item.setAttribute('data-open-group-edit', groupIndex);
+            item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-teal-600/15 border border-teal-600/30 px-1.5 py-0.5 text-xs font-bold text-teal-800 dark:text-teal-300 shrink-0">
-                        <span>Bulk:</span>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-teal-700/20 text-teal-900 dark:text-white hover:bg-teal-700/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-qty-dec="${groupIndex}" title="Decrease group quantity">−</button>
-                        <input type="number" min="1" max="500" value="${group.quantity}" data-bulk-qty-input="${groupIndex}" class="no-spinners w-12 text-center font-bold text-xs bg-white/90 dark:bg-[#1a1e1b] border border-teal-500/40 rounded px-1 py-0.5 text-hp-text focus:outline-none focus:border-hp-green shadow-inner [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" style="-webkit-appearance: none; -moz-appearance: textfield; appearance: textfield; margin: 0;" title="Type any quantity">
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-teal-700/20 text-teal-900 dark:text-white hover:bg-teal-700/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-qty-inc="${groupIndex}" title="Increase group quantity">+</button>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1 select-none pointer-events-none">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
+                        <i class="bi bi-people-fill text-sm"></i>
                     </div>
-                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text truncate">${escapeHtml(group.gender)} - ${nationality} - Age Group: ${group.age_group} (${rateLabel})</span>
-                    ${bulkAmenityBadgeHtml}
-                    ${bulkFreeBadgeHtml}
-                    ${bulkPoolBadgeHtml}
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-extrabold text-hp-text dark:text-white shrink-0">${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
+                            ${genderBadge}
+                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
+                            <span class="text-hp-text-muted/40">•</span>
+                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
+                            ${bulkAmenityBadgeHtml}
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs" data-bulk-index="${groupIndex}" title="Remove bulk group">
-                    <i class="bi bi-trash3"></i>
-                </button>
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${bulkFreeBadgeHtml}
+                        ${bulkPoolBadgeHtml}
+                    </div>
+                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
+                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-open-group-edit="${groupIndex}" title="Edit group">
+                            <i class="bi bi-pencil-fill text-xs"></i>
+                        </button>
+                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-bulk-index="${groupIndex}" title="Remove bulk group">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
             `;
             companionList.appendChild(item);
         });
@@ -6227,6 +6689,270 @@ window.AppPage['staff_check_ins'] = function () {
             pendingRemoveAction();
         }
         closeRemoveCompanionModal();
+    });
+
+    // Walk-In Companion Group Edit Modal Controls
+    const walkInCompanionGroupEditModal = document.getElementById('walkInCompanionGroupEditModal');
+    const walkInGroupEditForm = document.getElementById('walkInGroupEditForm');
+    const groupEditGroupIndex = document.getElementById('groupEditGroupIndex');
+    const groupEditDemographicsBadge = document.getElementById('groupEditDemographicsBadge');
+    const groupEditAmenityBadge = document.getElementById('groupEditAmenityBadge');
+    const groupEditQuantityInput = document.getElementById('groupEditQuantityInput');
+    const groupEditQtyMinusBtn = document.getElementById('groupEditQtyMinusBtn');
+    const groupEditQtyPlusBtn = document.getElementById('groupEditQtyPlusBtn');
+    const groupEditAccessRow = document.getElementById('groupEditAccessRow');
+    const groupEditFreeEntranceWrap = document.getElementById('groupEditFreeEntranceWrap');
+    const groupEditFreeInput = document.getElementById('groupEditFreeInput');
+    const groupEditFreeHint = document.getElementById('groupEditFreeHint');
+    const groupEditFreeMinusBtn = document.getElementById('groupEditFreeMinusBtn');
+    const groupEditFreePlusBtn = document.getElementById('groupEditFreePlusBtn');
+    const groupEditFreeZeroBtn = document.getElementById('groupEditFreeZeroBtn');
+    const groupEditFreeAllBtn = document.getElementById('groupEditFreeAllBtn');
+    const groupEditPoolWrap = document.getElementById('groupEditPoolWrap');
+    const groupEditPoolInput = document.getElementById('groupEditPoolInput');
+    const groupEditPoolHint = document.getElementById('groupEditPoolHint');
+    const groupEditPoolMinusBtn = document.getElementById('groupEditPoolMinusBtn');
+    const groupEditPoolPlusBtn = document.getElementById('groupEditPoolPlusBtn');
+    const groupEditPoolZeroBtn = document.getElementById('groupEditPoolZeroBtn');
+    const groupEditPoolAllBtn = document.getElementById('groupEditPoolAllBtn');
+
+    const openWalkInGroupEditModal = (groupIndex) => {
+        const group = bulkCompanionGroups[groupIndex];
+        if (!group || !walkInCompanionGroupEditModal) return;
+
+        if (groupEditGroupIndex) groupEditGroupIndex.value = groupIndex;
+        const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+        const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
+
+        if (groupEditDemographicsBadge) {
+            groupEditDemographicsBadge.innerHTML = `
+                ${getGenderBadgeHtml(group.gender)}
+                <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
+                <span class="text-hp-text-muted/40">•</span>
+                <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
+            `;
+            groupEditDemographicsBadge.className = 'flex flex-wrap items-center gap-2';
+        }
+
+        if (groupEditAmenityBadge) {
+            if (selectedAmenities.length > 1 && group.amenity_id) {
+                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
+                if (foundAm) {
+                    groupEditAmenityBadge.innerHTML = `<i class="bi bi-house-door-fill me-1"></i>${escapeHtml(foundAm.amenity_name)}`;
+                    groupEditAmenityBadge.classList.remove('hidden');
+                } else {
+                    groupEditAmenityBadge.classList.add('hidden');
+                }
+            } else {
+                groupEditAmenityBadge.classList.add('hidden');
+            }
+        }
+
+        const qty = parseInt(group.quantity, 10) || 1;
+        if (groupEditQuantityInput) {
+            groupEditQuantityInput.value = qty;
+        }
+
+        const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
+        const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+        const showFree = (currentEntranceOpt === 'specific');
+        const showPool = (currentPoolOpt === 'specific');
+
+        const curFree = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), qty);
+        if (groupEditFreeInput) {
+            groupEditFreeInput.value = curFree;
+            groupEditFreeInput.max = qty;
+        }
+        if (groupEditFreeHint) {
+            groupEditFreeHint.textContent = `${curFree} of ${qty} free`;
+        }
+
+        const curPool = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), qty);
+        if (groupEditPoolInput) {
+            groupEditPoolInput.value = curPool;
+            groupEditPoolInput.max = qty;
+        }
+        if (groupEditPoolHint) {
+            groupEditPoolHint.textContent = `${curPool} of ${qty} with pool`;
+        }
+
+        if (groupEditAccessRow) {
+            groupEditAccessRow.classList.toggle('hidden', !showFree && !showPool);
+        }
+        if (groupEditFreeEntranceWrap) {
+            groupEditFreeEntranceWrap.classList.toggle('hidden', !showFree);
+            groupEditFreeEntranceWrap.classList.toggle('sm:col-span-2', showFree && !showPool);
+            groupEditFreeEntranceWrap.style.display = '';
+        }
+        if (groupEditPoolWrap) {
+            groupEditPoolWrap.classList.toggle('hidden', !showPool);
+            groupEditPoolWrap.classList.toggle('sm:col-span-2', showPool && !showFree);
+            groupEditPoolWrap.style.display = '';
+        }
+
+        walkInCompanionGroupEditModal.classList.add('is-open');
+        walkInCompanionGroupEditModal.classList.remove('hidden');
+        walkInCompanionGroupEditModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeWalkInGroupEditModal = () => {
+        if (!walkInCompanionGroupEditModal) return;
+        walkInCompanionGroupEditModal.classList.remove('is-open');
+        walkInCompanionGroupEditModal.classList.add('hidden');
+        walkInCompanionGroupEditModal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.querySelectorAll('[data-close-group-edit-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeWalkInGroupEditModal);
+    });
+
+    const syncGroupEditHints = () => {
+        const qty = Math.max(1, parseInt(groupEditQuantityInput?.value, 10) || 1);
+        if (groupEditFreeInput) {
+            groupEditFreeInput.max = qty;
+            let freeVal = parseInt(groupEditFreeInput.value, 10) || 0;
+            if (freeVal > qty) {
+                freeVal = qty;
+                groupEditFreeInput.value = qty;
+            }
+            if (groupEditFreeHint) {
+                groupEditFreeHint.textContent = `${freeVal} of ${qty} free`;
+            }
+        }
+        if (groupEditPoolInput) {
+            groupEditPoolInput.max = qty;
+            let poolVal = parseInt(groupEditPoolInput.value, 10) || 0;
+            if (poolVal > qty) {
+                poolVal = qty;
+                groupEditPoolInput.value = qty;
+            }
+            if (groupEditPoolHint) {
+                groupEditPoolHint.textContent = `${poolVal} of ${qty} with pool`;
+            }
+        }
+    };
+
+    groupEditQtyMinusBtn?.addEventListener('click', () => {
+        if (!groupEditQuantityInput) return;
+        const cur = parseInt(groupEditQuantityInput.value, 10) || 1;
+        if (cur > 1) {
+            groupEditQuantityInput.value = cur - 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditQtyPlusBtn?.addEventListener('click', () => {
+        if (!groupEditQuantityInput) return;
+        const cur = parseInt(groupEditQuantityInput.value, 10) || 1;
+        if (cur < 500) {
+            groupEditQuantityInput.value = cur + 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditQuantityInput?.addEventListener('input', syncGroupEditHints);
+
+    groupEditFreeMinusBtn?.addEventListener('click', () => {
+        if (!groupEditFreeInput) return;
+        const cur = parseInt(groupEditFreeInput.value, 10) || 0;
+        if (cur > 0) {
+            groupEditFreeInput.value = cur - 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditFreePlusBtn?.addEventListener('click', () => {
+        if (!groupEditFreeInput || !groupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(groupEditQuantityInput.value, 10) || 1);
+        const cur = parseInt(groupEditFreeInput.value, 10) || 0;
+        if (cur < max) {
+            groupEditFreeInput.value = cur + 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditFreeInput?.addEventListener('input', syncGroupEditHints);
+
+    groupEditFreeZeroBtn?.addEventListener('click', () => {
+        if (!groupEditFreeInput) return;
+        groupEditFreeInput.value = 0;
+        syncGroupEditHints();
+    });
+
+    groupEditFreeAllBtn?.addEventListener('click', () => {
+        if (!groupEditFreeInput || !groupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(groupEditQuantityInput.value, 10) || 1);
+        groupEditFreeInput.value = max;
+        syncGroupEditHints();
+    });
+
+    groupEditPoolMinusBtn?.addEventListener('click', () => {
+        if (!groupEditPoolInput) return;
+        const cur = parseInt(groupEditPoolInput.value, 10) || 0;
+        if (cur > 0) {
+            groupEditPoolInput.value = cur - 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditPoolPlusBtn?.addEventListener('click', () => {
+        if (!groupEditPoolInput || !groupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(groupEditQuantityInput.value, 10) || 1);
+        const cur = parseInt(groupEditPoolInput.value, 10) || 0;
+        if (cur < max) {
+            groupEditPoolInput.value = cur + 1;
+            syncGroupEditHints();
+        }
+    });
+
+    groupEditPoolInput?.addEventListener('input', syncGroupEditHints);
+
+    groupEditPoolZeroBtn?.addEventListener('click', () => {
+        if (!groupEditPoolInput) return;
+        groupEditPoolInput.value = 0;
+        syncGroupEditHints();
+    });
+
+    groupEditPoolAllBtn?.addEventListener('click', () => {
+        if (!groupEditPoolInput || !groupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(groupEditQuantityInput.value, 10) || 1);
+        groupEditPoolInput.value = max;
+        syncGroupEditHints();
+    });
+
+    walkInGroupEditForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const gIdx = parseInt(groupEditGroupIndex?.value, 10);
+        if (isNaN(gIdx) || !bulkCompanionGroups[gIdx]) return;
+
+        const group = bulkCompanionGroups[gIdx];
+        const newQty = Math.max(1, parseInt(groupEditQuantityInput?.value, 10) || 1);
+        const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
+        const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
+
+        group.quantity = newQty;
+
+        let newFree = Math.min(Math.max(0, parseInt(groupEditFreeInput?.value, 10) || 0), newQty);
+        if (currentEntranceOpt === 'all_free') {
+            newFree = newQty;
+        } else if (currentEntranceOpt === 'all_paid') {
+            newFree = 0;
+        }
+        group.free_quantity = newFree;
+        group.has_free_entrance = (newFree === newQty);
+
+        let newPool = Math.min(Math.max(0, parseInt(groupEditPoolInput?.value, 10) || 0), newQty);
+        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+            newPool = newQty;
+        } else if (currentPoolOpt === 'no_pool') {
+            newPool = 0;
+        }
+        group.pool_quantity = newPool;
+
+        renderCompanions();
+        updateGrandTotal();
+        renderModalCompanionPreview();
+        closeWalkInGroupEditModal();
     });
 
     // Single companion form submission with duplicate validation & 1s anti-double-click lock
@@ -6348,7 +7074,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         if (isDuplicateBulk) {
             const nationalityLabel = isForeigner ? 'Foreigner' : 'Filipino';
-            showDuplicateCompanionModal(`A bulk group with the same demographics (${gender}, Age Group: ${ageGroup}, ${nationalityLabel}) already exists. You can adjust its quantity directly in the preview list on the right.`);
+            showDuplicateCompanionModal(`A group with the same demographics (${gender}, Age Group: ${ageGroup}, ${nationalityLabel}) already exists. You can adjust its quantity directly in the preview list on the right.`);
             return;
         }
 
@@ -6436,6 +7162,16 @@ window.AppPage['staff_check_ins'] = function () {
                         }
                     );
                 }
+            }
+            return;
+        }
+
+        // Click to open group edit modal
+        const openGroupEditBtn = e.target.closest('[data-open-group-edit]');
+        if (openGroupEditBtn && !e.target.closest('[data-bulk-index]')) {
+            const bIdx = parseInt(openGroupEditBtn.dataset.openGroupEdit || openGroupEditBtn.getAttribute('data-open-group-edit'), 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                openWalkInGroupEditModal(bIdx);
             }
             return;
         }
@@ -7959,8 +8695,101 @@ window.AppPage['staff_check_ins'] = function () {
     const resAddCloseButtons = document.querySelectorAll('[data-close-reservation-add-companion="true"]');
     const resAddSingleForm = document.getElementById('reservationAddSingleForm');
     const resAddBulkForm = document.getElementById('reservationAddBulkForm');
+    const resAddPreviewList = document.getElementById('reservationAddCompanionPreviewList');
+    const resAddPreviewCount = document.getElementById('reservationAddCompanionPreviewCount');
+    const resAddAllCompanionsBtn = document.getElementById('reservationAddAllCompanionsBtn');
     const resAddTabs = document.querySelectorAll('[data-res-add-tab]');
     const resAddContents = document.querySelectorAll('[data-res-add-content]');
+    const resAddBulkQtyMinus = document.getElementById('resAddBulkQtyMinus');
+    const resAddBulkQtyPlus = document.getElementById('resAddBulkQtyPlus');
+    let resAddStagedCompanions = [];
+
+    const resAddRenderPreview = () => {
+        if (!resAddPreviewList || !resAddPreviewCount) return;
+
+        const total = resAddStagedCompanions.length;
+        resAddPreviewCount.textContent = `${total} companion${total === 1 ? '' : 's'}`;
+        if (resAddAllCompanionsBtn) resAddAllCompanionsBtn.disabled = total === 0;
+
+        if (total === 0) {
+            resAddPreviewList.innerHTML = '<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Add companions from the form on the left to see them here.</p>';
+            return;
+        }
+
+        resAddPreviewList.innerHTML = resAddStagedCompanions.map((companion, index) => {
+            const label = companion.age_group ? `Age ${companion.age_group}` : `${companion.age || 'N/A'} yrs`;
+            const name = companion.first_name ? `${companion.first_name} ${companion.last_name || ''}`.trim() : `${companion.quantity || 1} guest${(companion.quantity || 1) === 1 ? '' : 's'}`;
+            return `<div class="flex items-center justify-between gap-2 rounded-xl border border-glass-border bg-glass p-3 shadow-xs">
+                <div class="flex min-w-0 items-center gap-2">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green"><i class="bi bi-people-fill"></i></div>
+                    <div class="min-w-0"><div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">${escapeHtml(name)}</div><div class="text-[0.68rem] text-hp-text-muted">${escapeHtml(companion.gender || '')}, ${escapeHtml(label)}, ${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</div></div>
+                </div>
+                <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white" data-res-add-remove-index="${index}" aria-label="Remove staged companion"><i class="bi bi-trash3 text-xs"></i></button>
+            </div>`;
+        }).join('');
+    };
+
+    const resAddClearPreview = () => {
+        resAddStagedCompanions = [];
+        resAddRenderPreview();
+    };
+
+    const resAddStageBulk = () => {
+        const formData = new FormData(resAddBulkForm);
+        const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
+        const group = {
+            quantity,
+            age_group: formData.get('age_group'),
+            gender: formData.get('gender'),
+            is_foreigner: formData.get('is_foreigner') === '1',
+            pool_access: formData.get('pool_access') === 'on',
+            is_free_entrance: resAddBulkForm.querySelector('[name="is_free_entrance"]')?.checked || false,
+            amenity_id: formData.get('amenity_id'),
+        };
+        for (let i = 0; i < quantity; i++) {
+            resAddStagedCompanions.push({ ...group, quantity: undefined, first_name: '', last_name: '', age: '', phone: '', email: '' });
+        }
+        resAddRenderPreview();
+        resAddBulkForm.reset();
+        resAddUpdateBulkFees();
+    };
+
+    const resAddStageSingle = () => {
+        const formData = new FormData(resAddSingleForm);
+        const firstName = (formData.get('first_name') || '').trim();
+        const lastName = (formData.get('last_name') || '').trim();
+        if (!firstName || !lastName) {
+            showToast('First name and last name are required.', 'error');
+            return;
+        }
+        resAddStagedCompanions.push({
+            first_name: firstName,
+            middle_name: formData.get('middle_name'),
+            last_name: lastName,
+            age: formData.get('age'),
+            gender: formData.get('gender'),
+            is_foreigner: formData.get('is_foreigner') === '1',
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            pool_access: formData.get('pool_access') === 'on',
+            is_free_entrance: resAddSingleForm.querySelector('[name="is_free_entrance"]')?.checked || false,
+            amenity_id: formData.get('amenity_id'),
+        });
+        resAddRenderPreview();
+        resAddSingleForm.reset();
+    };
+
+    const resAddRemoveStaged = (index) => {
+        resAddStagedCompanions.splice(index, 1);
+        resAddRenderPreview();
+    };
+
+    const resAddClearPreviewLegacy = () => {
+        if (resAddPreviewCount) resAddPreviewCount.textContent = '0 companions';
+        if (resAddPreviewList) {
+            resAddPreviewList.innerHTML = '<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Fill the form on the left to preview companions.</p>';
+        }
+    };
 
     // --- Live fee summary for the reservation add-companion modal ---
     // Mirror the backend: 12 and below = child; the pricing period comes from
@@ -8105,11 +8934,32 @@ window.AppPage['staff_check_ins'] = function () {
         resAddSingleForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateSingleFees);
         resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateSingleFees);
         resAddSingleForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateSingleFees);
-        resAddBulkForm?.querySelector('[name="age_group"]')?.addEventListener('change', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelectorAll('[name="gender"], [name="age_group"], [name="is_foreigner"]').forEach((input) => {
+            input.addEventListener('change', () => {
+                resAddUpdateBulkFees();
+                resAddRenderPreview();
+            });
+        });
         resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateBulkFees);
         resAddBulkForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateBulkFees);
+        resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddRenderPreview);
+
+        resAddBulkQtyMinus?.addEventListener('click', () => {
+            const input = resAddBulkForm?.querySelector('[name="quantity"]');
+            if (!input) return;
+            input.value = Math.max(1, (parseInt(input.value, 10) || 1) - 1);
+            resAddUpdateBulkFees();
+            resAddRenderPreview();
+        });
+        resAddBulkQtyPlus?.addEventListener('click', () => {
+            const input = resAddBulkForm?.querySelector('[name="quantity"]');
+            if (!input) return;
+            input.value = Math.min(500, (parseInt(input.value, 10) || 1) + 1);
+            resAddUpdateBulkFees();
+            resAddRenderPreview();
+        });
     };
 
     const openResAddCompanionModal = () => {
@@ -8155,6 +9005,7 @@ window.AppPage['staff_check_ins'] = function () {
             resAddUpdateSingleFees();
             resAddUpdateBulkFees();
         });
+        resAddClearPreview();
         resAddCompanionModal.classList.add('is-open');
         resAddCompanionModal.setAttribute('aria-hidden', 'false');
     };
@@ -8164,6 +9015,7 @@ window.AppPage['staff_check_ins'] = function () {
         resAddCompanionModal.setAttribute('aria-hidden', 'true');
         resAddSingleForm?.reset();
         resAddBulkForm?.reset();
+        resAddClearPreview();
     };
 
     reservationAddCompanionBtn?.addEventListener('click', openResAddCompanionModal);
@@ -8191,6 +9043,12 @@ window.AppPage['staff_check_ins'] = function () {
 
     resAddBindFeeWatchers();
 
+    resAddPreviewList?.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('[data-res-add-remove-index]');
+        if (!removeButton) return;
+        resAddRemoveStaged(parseInt(removeButton.dataset.resAddRemoveIndex, 10));
+    });
+
     const postCompanionsToReservation = async (companions, submitButton, originalText) => {
         if (!currentReservationId || !companions.length) return;
         submitButton.disabled = true;
@@ -8211,7 +9069,7 @@ window.AppPage['staff_check_ins'] = function () {
                 const firstError = payload.errors ? Object.values(payload.errors)[0]?.[0] : null;
                 throw new Error(payload.message || firstError || 'Unable to add companion.');
             }
-            closeAddCompanionModal();
+            closeResAddCompanionModal();
 
             // Append added companions into in-memory dataset
             if (window.staffReservationData && window.staffReservationData[currentReservationId]) {
@@ -8240,61 +9098,16 @@ window.AppPage['staff_check_ins'] = function () {
 
     resAddSingleForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const formData = new FormData(resAddSingleForm);
-        const firstName = (formData.get('first_name') || '').trim();
-        const lastName = (formData.get('last_name') || '').trim();
-        if (!firstName || !lastName) {
-            showToast('First name and last name are required.', 'error');
-            return;
-        }
-        const isFree = Boolean(resAddSingleForm.querySelector('[name="is_free_entrance"]')?.checked);
-        const submitButton = e.submitter || resAddSingleForm.querySelector('[type="submit"]');
-        const res = reservationData[currentReservationId];
-        const resAmenities = res?.reservation_amenities || [];
-        const amId = String(formData.get('amenity_id') || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
-
-        postCompanionsToReservation([{
-            first_name: firstName,
-            middle_name: formData.get('middle_name'),
-            last_name: lastName,
-            age: formData.get('age'),
-            gender: formData.get('gender'),
-            is_foreigner: formData.get('is_foreigner') === '1',
-            phone: formData.get('phone'),
-            email: formData.get('email'),
-            pool_access: formData.get('pool_access') === 'on',
-            is_free_entrance: isFree,
-            amenity_id: amId,
-        }], submitButton, 'Add Companion');
+        resAddStageSingle();
     });
 
     resAddBulkForm?.addEventListener('submit', (e) => {
         e.preventDefault();
-        const formData = new FormData(resAddBulkForm);
-        const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
-        const poolOn = formData.get('pool_access') === 'on';
-        const isFree = Boolean(resAddBulkForm.querySelector('[name="is_free_entrance"]')?.checked);
-        const res = reservationData[currentReservationId];
-        const resAmenities = res?.reservation_amenities || [];
-        const amId = String(formData.get('amenity_id') || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+        resAddStageBulk();
+    });
 
-        const companions = [];
-        for (let i = 0; i < quantity; i++) {
-            companions.push({
-                first_name: '',
-                last_name: '',
-                age_group: formData.get('age_group'),
-                gender: formData.get('gender'),
-                is_foreigner: formData.get('is_foreigner') === '1',
-                phone: '',
-                email: '',
-                pool_access: poolOn,
-                is_free_entrance: isFree,
-                amenity_id: amId,
-            });
-        }
-        const submitButton = e.submitter || resAddBulkForm.querySelector('[type="submit"]');
-        postCompanionsToReservation(companions, submitButton, 'Add Bulk Companions');
+    resAddAllCompanionsBtn?.addEventListener('click', () => {
+        postCompanionsToReservation(resAddStagedCompanions, resAddAllCompanionsBtn, 'Add All Companions');
     });
 
     // Primary guest nationality handling

@@ -26,7 +26,6 @@
 		'resources/components/css_js/header.js',
 		'resources/components/css_js/sidemenu.js',
 		'resources/js/staff_js/staff_check_ins.js',
-		'resources/js/staff_js/staff_reservations.js',
 		'resources/js/staff_chatbot.js',
 	])
 	<style>
@@ -448,7 +447,7 @@
 									<strong class="block text-xl text-hp-text-muted">{{ $activeSingleCompanions }}</strong>
 								</div>
 								<div class="premium-stat">
-									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">BULK COMP.</span>
+									<span class="text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">COMPANIONS</span>
 									<strong class="block text-xl text-hp-text-muted">{{ $activeBulkCompanions }}</strong>
 								</div>
 							</div>
@@ -715,7 +714,7 @@
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
 									<div class="premium-stat stat-due-sub bg-transparent p-0 shadow-none">
-										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">BULK COMP.</span>
+										<span class="text-xs font-bold uppercase tracking-[0.06em] text-hp-text-muted">COMPANIONS</span>
 										<strong class="block text-[1.8rem] font-extrabold text-[#e11d48] dark:text-[#fca5a5]">{{ $dueBulkCompanions }}</strong>
 										<div class="mb-6 text-xs text-hp-text-muted">Guests</div>
 									</div>
@@ -823,9 +822,9 @@
 						<span id="resvResultsCount">Showing {{ $activeReservations->count() }} reservation{{ $activeReservations->count() === 1 ? '' : 's' }}</span>
 					</div>
 
-					<div class="guest-table-wrap w-full overflow-x-auto" id="reservationTableWrap">
-						<table class="guest-table w-full border-collapse border-spacing-0 bg-transparent text-left">
-							<thead class="border-b border-glass-border/70 bg-black/[0.02] text-[0.72rem] font-bold uppercase tracking-wider text-hp-text-muted dark:border-white/10 dark:bg-white/[0.03] dark:text-[#9baaa1]">
+					<div class="w-full overflow-x-auto rounded-b-2xl border-t border-glass-border/30 bg-white dark:border-white/10 dark:bg-[#181b19]" id="staffCheckInsResvTableWrap">
+						<table class="w-full min-w-[920px] border-collapse bg-white text-left text-sm dark:bg-[#181b19]" id="staffCheckInsResvTable">
+							<thead class="sticky top-0 z-10 border-b border-glass-border/70 bg-[#f7faf8] text-[0.72rem] font-bold uppercase tracking-wider text-hp-text-muted backdrop-blur-sm dark:border-white/10 dark:bg-[#1e2220] dark:text-[#9baaa1]">
 								<tr>
 									<th class="px-5 py-3.5 text-left font-bold select-none">Reservation</th>
 									<th class="px-5 py-3.5 text-left font-bold select-none">Main Guest</th>
@@ -833,10 +832,10 @@
 									<th class="px-5 py-3.5 text-left font-bold select-none">Amenities</th>
 									<th class="px-5 py-3.5 text-left font-bold select-none">Guests</th>
 									<th class="px-5 py-3.5 text-left font-bold select-none">Status / Time Left</th>
-									<th class="px-5 py-3.5 text-center font-bold select-none"></th>
+									<th class="px-5 py-3.5 text-center font-bold select-none w-10"></th>
 								</tr>
 							</thead>
-							<tbody id="checkInsReservationTableBody" class="divide-y divide-glass-border/30 dark:divide-white/5">
+							<tbody id="checkInsReservationTableBody" class="divide-y divide-glass-border/30 bg-white dark:divide-white/5 dark:bg-[#181b19]">
 								@forelse ($activeReservations ?? collect() as $reservation)
 									@php
 										$primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true)?->customer;
@@ -859,8 +858,12 @@
 											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
 											if ($coCarbon->isPast()) {
 												$checkoutDue = true;
-											} elseif ($coCarbon->diffInMinutes(now()) <= 60) {
-												$checkoutNear = true;
+											} else {
+												// Near checkout: 2 hours or below left (<= 120 minutes)
+												$diffMinutes = (int) now()->diffInMinutes($coCarbon, false);
+												if ($diffMinutes >= 0 && $diffMinutes <= 120) {
+													$checkoutNear = true;
+												}
 											}
 										}
 										$highlightClass = $checkoutDue ? 'row-checkout-due' : ($checkoutNear ? 'row-checkout-near' : '');
@@ -884,9 +887,33 @@
 
 										$totalResGuests = $reservation->reservationGuests->count();
 										$remainingResGuests = $reservation->reservationGuests->whereNull('checked_out_at')->count();
+
+										// Pre-compute checkout pill state to avoid layout shifts on initial paint
+										$resStatus = strtolower((string)($reservation->status ?? ''));
+										$isCheckedOut = in_array($resStatus, ['checked_out', 'checkedout', 'checked-out']);
+										$initialTimeLeftStr = '';
+										if (!$isCheckedOut && $checkoutAtStr) {
+											$coCarbon = \Carbon\Carbon::parse($checkoutAtStr);
+											if ($coCarbon->isPast()) {
+												$initialTimeLeftStr = 'Time to checkout';
+											} else {
+												$diffMinutesTotal = max(0, (int) now()->diffInMinutes($coCarbon));
+												$diffHours = floor($diffMinutesTotal / 60);
+												$remMinutes = $diffMinutesTotal % 60;
+												$initialTimeLeftStr = ($diffHours > 0 ? "{$diffHours}h " : '') . "{$remMinutes}m left";
+											}
+										}
+
+										// Row background: Normal rows MUST be white. Only orange/amber when near checkout (<=2h)
+										$rowBgClass = 'bg-white hover:bg-[#f2f7f4] focus-visible:bg-[#f2f7f4] dark:bg-[#181b19] dark:hover:bg-[#202522] dark:focus-visible:bg-[#202522]';
+										if ($checkoutDue) {
+											$rowBgClass = 'bg-red-500/[0.08] hover:!bg-red-500/[0.16] focus-visible:!bg-red-500/[0.16] dark:bg-red-500/[0.14] dark:hover:!bg-red-500/[0.22] dark:focus-visible:!bg-red-500/[0.22]';
+										} elseif ($checkoutNear) {
+											$rowBgClass = 'bg-amber-500/[0.09] hover:!bg-amber-500/[0.20] focus-visible:!bg-amber-500/[0.20] dark:bg-amber-500/[0.14] dark:hover:!bg-amber-500/[0.24] dark:focus-visible:!bg-amber-500/[0.24]';
+										}
 									@endphp
 									<tr
-										class="reservation-row {{ $highlightClass }} cursor-pointer select-none transition-colors duration-200 hover:bg-hp-cream focus-visible:bg-hp-cream focus-visible:outline-none dark:hover:bg-[#1e2220] dark:focus-visible:bg-[#1e2220]"
+										class="reservation-row {{ $highlightClass }} {{ $rowBgClass }} cursor-pointer select-none transition-colors duration-150 focus-visible:outline-none"
 										data-reservation-id="{{ $reservation->id }}"
 										data-reservation-type="{{ $reservation->reservation_type }}"
 										data-check-in-date="{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('Y-m-d') : '' }}"
@@ -896,11 +923,8 @@
 										role="button"
 										aria-label="View reservation {{ $reservation->id }}"
 									>
-										<td>
+										<td class="px-5 py-3.5 align-middle">
 											<div class="flex items-center gap-2">
-												<button type="button" class="btn-expand-row flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border border-glass-border bg-glass text-hp-text-muted transition-all duration-200 hover:bg-hp-cream hover:text-hp-green dark:hover:bg-[#1e2220] [&.expanded]:rotate-180 [&.expanded]:text-hp-green" data-expand-reservation="{{ $reservation->id }}" aria-label="Toggle Reservation Details">
-													<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
-												</button>
 												<div>
 													<div class="guest-name flex items-center gap-1.5 text-[0.82rem] font-semibold leading-tight text-hp-text">
 														<span>#{{ $reservation->id }}</span>
@@ -908,16 +932,16 @@
 															<span class="amenity-due-dot inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
 														@endif
 													</div>
-													<div class="guest-meta mt-0.5 flex items-center gap-1 text-[0.72rem] leading-tight text-hp-text-muted">
+													<div class="guest-meta mt-1 flex items-center gap-1.5 text-[0.72rem] leading-tight text-hp-text-muted">
 														<span>{{ $reservation->reservation_type === 'walk_in' ? 'Walk-in' : 'Online' }}</span>
 														@if ($isMixedTime)
-															<span class="status-pill status-pill--pending inline-flex items-center gap-0.5 rounded-full border border-glass-border px-1.5 py-0.2 text-[0.62rem] font-bold bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">Mixed</span>
+															<span class="inline-flex items-center gap-0.5 rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Mixed</span>
 														@endif
 													</div>
 												</div>
 											</div>
 										</td>
-										<td>
+										<td class="px-5 py-3.5 align-middle">
 											@if ($primaryGuest)
 												@php
 													$resHasAmenity = (bool) $reservation->reservationAmenities->isNotEmpty();
@@ -943,17 +967,8 @@
 													<div class="cell-person__body min-w-0">
 														<div class="guest-name flex items-center gap-1.5 flex-wrap text-[0.82rem] font-semibold leading-tight text-hp-text">
 															<span class="truncate">{{ trim(($primaryGuest->first_name ?? '') . ' ' . ($primaryGuest->middle_name ?? '') . ' ' . ($primaryGuest->last_name ?? '')) }}</span>
-															@if($primaryHasPool && $resHasAmenity)
-																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access + Amenity Booked"><i class="bi bi-water"></i> Pool + <i class="bi bi-house-door-fill"></i></span>
-															@elseif($primaryHasPool)
+															@if($primaryHasPool)
 																<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-sky-800 dark:text-sky-300" title="Pool Access Active"><i class="bi bi-water"></i> Pool</span>
-															@elseif($resHasAmenity)
-																<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[0.62rem] font-bold text-amber-800 dark:text-amber-300" title="Amenity Booked">
-																	<i class="bi bi-house-door-fill"></i> Amenity
-																	@if($isSpecificAmenityDue)
-																		<span class="inline-block h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" title="Specific amenity time to checkout"></span>
-																	@endif
-																</span>
 															@endif
 														</div>
 													</div>
@@ -962,36 +977,47 @@
 												<div class="guest-name text-[0.82rem] font-semibold text-hp-text">—</div>
 											@endif
 										</td>
-										<td>
+										<td class="px-5 py-3.5 align-middle">
 											<div class="guest-name mono-cell whitespace-nowrap text-[0.8rem] font-semibold leading-tight text-hp-text">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y') : '—' }}</div>
-											<div class="guest-meta mono-cell mt-0.5 whitespace-nowrap text-[0.72rem] leading-tight text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
+											<div class="guest-meta mono-cell mt-1 whitespace-nowrap text-[0.72rem] leading-tight text-hp-text-muted">{{ $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('h:i A') : '—' }}</div>
 										</td>
-										<td>
+										<td class="px-5 py-3.5 align-middle max-w-[200px]">
 											@php
 												$amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->unique()->join(', ');
 											@endphp
 											<div class="flex items-center gap-1.5">
-												<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted">{{ $amenityNames ?: 'None' }}</span>
+												<span class="guest-meta truncate text-[0.78rem] text-hp-text-muted" title="{{ $amenityNames ?: 'None' }}">{{ $amenityNames ?: 'None' }}</span>
 												@if($isSpecificAmenityDue)
 													<span class="amenity-due-dot inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="A specific amenity in this reservation is due for checkout"></span>
 												@endif
 											</div>
 										</td>
-										<td>
+										<td class="px-5 py-3.5 align-middle whitespace-nowrap">
 											<div class="guest-name text-[0.82rem] font-semibold leading-tight text-hp-text">{{ $totalResGuests }} Total</div>
-											<div class="guest-meta mt-0.5 text-[0.72rem] leading-tight text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
+											<div class="guest-meta mt-1 text-[0.72rem] leading-tight text-hp-text-muted">{{ $remainingResGuests }} Remaining</div>
 										</td>
-										<td>
-											<div class="flex items-center gap-1.5 flex-wrap">
-												<span class="table-time-left inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.72rem] font-semibold text-hp-text-muted" data-checkout-at="{{ $reservationData[$reservation->id]['checkout_at'] ?? '' }}" data-status="{{ $reservation->status ?? '' }}"></span>
+										<td class="px-5 py-3.5 align-middle">
+											<div class="flex items-center gap-1.5 flex-wrap min-h-[26px]">
+												<span class="table-time-left inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-colors duration-150 {{ $isCheckedOut ? 'bg-gray-500/10 text-gray-600 dark:text-gray-400' : ($checkoutDue ? 'bg-red-500/15 text-red-600 dark:text-red-400' : ($checkoutNear ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : ($initialTimeLeftStr ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'))) }}" data-checkout-at="{{ $checkoutAtStr ?? '' }}" data-status="{{ $reservation->status ?? '' }}">
+													@if ($isCheckedOut)
+														Checked Out
+													@elseif ($checkoutDue)
+														Time to checkout
+													@elseif ($initialTimeLeftStr)
+														<svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+														<span>{{ $initialTimeLeftStr }}</span>
+													@else
+														Checked In
+													@endif
+												</span>
 												@if($isSpecificAmenityDue)
-													<span class="amenity-due-status-pill inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[0.65rem] font-bold text-red-600 dark:text-red-400 shadow-2xs" title="One or more specific amenities are time to checkout">
+													<span class="amenity-due-status-pill inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2 py-0.5 text-[0.65rem] font-bold text-red-600 dark:text-red-400" title="One or more specific amenities are time to checkout">
 														<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span> Amenity Due
 													</span>
 												@endif
 											</div>
 										</td>
-										<td class="text-right text-[#9ca3af]">
+										<td class="px-5 py-3.5 align-middle text-right text-hp-text-muted/60">
 											<svg class="inline-block h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
 										</td>
 									</tr>
@@ -1020,7 +1046,7 @@
 		</div>
 	</div>
 	<!-- Modals (Direct children of body) -->
-	<div class="guest-modal" id="guestModal" aria-hidden="true">
+	<div class="guest-modal" id="guestModal" aria-hidden="true" style="z-index: 1400;">
 		<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-modal="true"></div>
 		<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
 			<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-modal="true" aria-label="Close details">&times;</button>
@@ -1167,22 +1193,8 @@
 					<!-- Embedded Left Sidemenu (Fixed, no nested container box) -->
 					<aside class="walkin-modal-sidebar shrink-0 w-52 lg:w-56 h-full overflow-hidden flex flex-col justify-between pr-4 border-r border-[rgba(13,44,29,0.1)] dark:border-white/10 pb-1">
 						<div class="flex flex-col gap-1.5">
-							<!-- 1. Main Guest -->
-							<button type="button" class="walkin-tab-btn is-active" data-walkin-target="mainGuestTab">
-								<div class="flex items-center gap-2.5 min-w-0">
-									<div class="walkin-tab-icon">
-										<i class="bi bi-person-fill"></i>
-									</div>
-									<div class="min-w-0 text-left">
-										<div class="walkin-tab-title truncate">Main Guest</div>
-										<div class="walkin-tab-sub truncate">Primary info</div>
-									</div>
-								</div>
-								<span id="walkInMainGuestStatus" class="walkin-status-indicator inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-black shadow-xs shrink-0" title="Required info missing">!</span>
-							</button>
-
-							<!-- 2. Amenities -->
-							<button type="button" class="walkin-tab-btn" data-walkin-target="amenitiesTab">
+							<!-- 1. Amenities -->
+							<button type="button" class="walkin-tab-btn is-active" data-walkin-target="amenitiesTab">
 								<div class="flex items-center gap-2.5 min-w-0">
 									<div class="walkin-tab-icon">
 										<i class="bi bi-house-door-fill"></i>
@@ -1195,21 +1207,24 @@
 								<span id="walkInSidebarAmenitiesBadge" class="walkin-tab-badge inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold shrink-0">0</span>
 							</button>
 
-							<!-- 3. Companions -->
-							<button type="button" class="walkin-tab-btn" data-walkin-target="companionsTab">
+							<!-- 2. Guests (Merged Main Guest & Companions) -->
+							<button type="button" class="walkin-tab-btn" data-walkin-target="guestsTab">
 								<div class="flex items-center gap-2.5 min-w-0">
 									<div class="walkin-tab-icon">
 										<i class="bi bi-people-fill"></i>
 									</div>
 									<div class="min-w-0 text-left">
-										<div class="walkin-tab-title truncate">Companions</div>
-										<div class="walkin-tab-sub truncate">Additional guests</div>
+										<div class="walkin-tab-title truncate">Guests</div>
+										<div class="walkin-tab-sub truncate">Main guest & companions</div>
 									</div>
 								</div>
-								<span id="walkInSidebarCompanionsBadge" class="walkin-tab-badge inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold shrink-0">0</span>
+								<div class="flex items-center gap-1 shrink-0">
+									<span id="walkInMainGuestStatus" class="walkin-status-indicator inline-flex items-center justify-center w-5 h-5 rounded-full border border-gray-300 dark:border-white/20 bg-gray-100 dark:bg-white/10 text-gray-400 dark:text-gray-400 text-xs font-semibold shrink-0" title="Main guest required"><i class="bi bi-person text-[0.7rem]"></i></span>
+									<span id="walkInSidebarCompanionsBadge" class="walkin-tab-badge inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-xs font-bold shrink-0">0</span>
+								</div>
 							</button>
 
-							<!-- 4. Fees & Summary -->
+							<!-- 3. Fees & Summary -->
 							<button type="button" class="walkin-tab-btn" data-walkin-target="feesTab">
 								<div class="flex items-center gap-2.5 min-w-0">
 									<div class="walkin-tab-icon">
@@ -1239,103 +1254,8 @@
 
 					<!-- Scrollable Right Content Pane (Each section fits the exact same modal size) -->
 					<div class="walkin-modal-content-area flex-1 min-w-0 h-full overflow-y-auto pr-1 flex flex-col justify-between">
-						<!-- Pane 1: Main Guest -->
-						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="mainGuestTab">
-							<div id="primaryGuestSection" class="flex-1">
-								<div class="guest-form__section-header mb-3 flex items-center justify-between">
-									<div>
-										<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary Guest Information</h4>
-										<p class="m-0 text-xs text-hp-text-muted">Fill out the primary booker / walk-in contact information</p>
-									</div>
-									<div class="flex items-center gap-1.5 flex-wrap">
-										<span id="primaryGuestEntranceBadge" class="hidden rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>
-										<span id="primaryGuestPoolBadge" class="hidden rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[0.7rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Pool Pass</span>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_first_name">First name <span class="text-red-500">*</span></label>
-										<input type="text" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_middle_name">Middle name</label>
-										<input type="text" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Optional" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_last_name">Last name <span class="text-red-500">*</span></label>
-										<input type="text" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-									<div class="guest-form__field-group grid gap-1">
-										<div class="flex items-center justify-between">
-											<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_age">Age</label>
-											<span id="primaryAgeBadge" class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
-										</div>
-										<input type="number" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_gender">Gender</label>
-										<select name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="">Select gender</option>
-											<option value="Male">Male</option>
-											<option value="Female">Female</option>
-										</select>
-									</div>
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primaryGuestIsForeigner">Nationality</label>
-										<select name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="0" selected>Filipino</option>
-											<option value="1">Foreigner</option>
-										</select>
-									</div>
-								</div>
-
-								<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_phone">Phone Number</label>
-										<input type="text" name="primary_guest[phone]" id="primary_phone" placeholder="09xxxxxxxxx" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-									<div class="guest-form__field-group grid gap-1">
-										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_email">Email Address</label>
-										<input type="email" name="primary_guest[email]" id="primary_email" placeholder="example@email.com" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-									</div>
-								</div>
-
-								<!-- Primary Guest Free Entrance Fee Toggle -->
-								<div id="primaryGuestFreeEntranceWrap" class="guest-form__field-group mb-2.5 rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-										<div class="flex items-center gap-2">
-											<i class="bi bi-ticket-perforated-fill text-amber-600 text-base"></i>
-											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Free Entrance Fee (Primary Guest)</span>
-										</div>
-										<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-									</label>
-								</div>
-								<!-- Primary Guest Specific Pool Toggle -->
-								<div id="primaryGuestPoolWrap" class="guest-form__field-group rounded-xl border border-glass-border bg-glass p-2.5" style="display: none;">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center justify-between gap-2 text-sm text-hp-text">
-										<div class="flex items-center gap-2">
-											<i class="bi bi-water text-sky-600 text-base"></i>
-											<span class="font-semibold text-xs text-hp-text dark:text-[#f3f4f6]">Include Pool Access for Primary Guest</span>
-										</div>
-										<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="h-4 w-4 accent-hp-green rounded cursor-pointer" value="1">
-									</label>
-								</div>
-							</div>
-							<!-- Tab Footer -->
-							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-end">
-								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="amenitiesTab">
-									<span>Next: Amenities</span>
-									<i class="bi bi-arrow-right"></i>
-								</button>
-							</div>
-						</div>
-
-						<!-- Pane 2: Amenities -->
-						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="amenitiesTab" style="display: none;">
+						<!-- Pane 1: Amenities -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="amenitiesTab">
 							<div class="flex-1" id="amenitySection">
 								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
 									<div>
@@ -1360,70 +1280,147 @@
 								<div id="amenitiesHiddenInputs"></div>
 							</div>
 							<!-- Tab Footer -->
-							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-between">
-								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="mainGuestTab">
-									<i class="bi bi-arrow-left"></i>
-									<span>Main Guest</span>
-								</button>
-								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="companionsTab">
-									<span>Next: Companions</span>
+							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-end">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="guestsTab">
+									<span>Next: Guests</span>
 									<i class="bi bi-arrow-right"></i>
 								</button>
 							</div>
 						</div>
 
-						<!-- Pane 3: Companions -->
-						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="companionsTab" style="display: none;">
-							<div class="flex-1" id="companionSection">
-								<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
-									<div>
-										<div class="flex items-center gap-2">
-											<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
-											<span id="walkInCompanionCountBadge" class="rounded-full bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+						<!-- Pane 2: Guests (Merged Main Guest + Companions) -->
+						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="guestsTab" style="display: none;">
+							<div class="flex-1 overflow-y-auto pr-1">
+								<!-- Hidden inputs mirror for primary guest inside addGuestForm -->
+								<div id="primaryGuestHiddenInputs"></div>
+								<input type="checkbox" name="primary_guest[is_free_entrance]" id="primary_is_free_entrance" class="hidden" value="1" form="addGuestForm">
+								<input type="checkbox" name="primary_guest[has_pool_access]" id="primary_has_pool_access" class="hidden" value="1" form="addGuestForm">
+
+								<!-- SECTION A: Main Guest at first -->
+								<div class="mb-4">
+									<div class="guest-form__section-header mb-2 flex items-center justify-between">
+										<div>
+											<h4 class="guest-form__section-title m-0 text-sm font-bold uppercase tracking-wider text-hp-text-muted dark:text-gray-400">Main Guest (Primary Booker)</h4>
 										</div>
-										<p class="m-0 text-xs text-hp-text-muted">Register additional guests individually or quickly add groups in bulk</p>
 									</div>
-									<div class="flex items-center gap-2">
-										<button type="button" id="toggleCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" title="Toggle Search & Filters">
-											<i class="bi bi-funnel text-xs text-hp-green"></i>
-											<span>Filter & Search</span>
-										</button>
-										<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="addCompanionBtn">
-											<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-											</svg>
-											<span>+ Add Companions</span>
-										</button>
+
+									<!-- Clickable Main Guest Card (Minimal, not alarming) -->
+									<div id="mainGuestCard" class="group relative cursor-pointer rounded-2xl border border-dashed border-gray-300/80 dark:border-white/15 bg-white/40 dark:bg-white/[0.02] p-3.5 transition-all duration-200 hover:border-hp-green/50 hover:bg-hp-green/[0.02] shadow-xs" role="button" tabindex="0" title="Click to fill up main guest information">
+										<!-- Empty State (Minimal, not alarming) -->
+										<div id="mainGuestEmptyState" class="flex items-center justify-between gap-3">
+											<div class="flex items-center gap-3 min-w-0">
+												<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/10 text-hp-green font-medium">
+													<i class="bi bi-person-plus text-lg"></i>
+												</div>
+												<div class="min-w-0">
+													<div class="flex items-center gap-2 flex-wrap">
+														<span class="font-bold text-sm text-hp-text dark:text-[#f3f4f6]">Main Guest</span>
+														<span id="mainGuestCardRequiredBadge" class="inline-flex items-center rounded-md bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/15 px-2 py-0.5 text-[0.68rem] font-medium text-gray-600 dark:text-gray-300">
+															Required
+														</span>
+													</div>
+													<p class="m-0 text-xs text-hp-text-muted mt-0.5">Not added yet — Click to fill up main guest information</p>
+												</div>
+											</div>
+											<div class="shrink-0">
+												<span class="inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-hp-text transition-colors group-hover:border-hp-green group-hover:text-hp-green">
+													<i class="bi bi-plus-lg text-xs"></i>
+													<span>Add Main Guest</span>
+												</span>
+											</div>
+										</div>
+
+										<!-- Filled State (Initially Hidden) -->
+										<div id="mainGuestFilledState" class="hidden items-center justify-between gap-3">
+											<div class="flex items-center gap-3 min-w-0 flex-1">
+												<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-base shadow-sm">
+													<i class="bi bi-person-check-fill"></i>
+												</div>
+												<div class="min-w-0 flex-1">
+													<div class="flex items-center gap-2 flex-wrap">
+														<span id="mainGuestCardName" class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate"></span>
+														<span id="mainGuestCardRateBadge" class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
+														<span id="mainGuestCardNationality" class="rounded px-1.5 py-0.5 text-[0.68rem] font-medium text-hp-text-muted bg-glass dark:bg-white/5 border border-glass-border">Filipino</span>
+													</div>
+													<div class="flex items-center gap-3 text-xs text-hp-text-muted mt-0.5 flex-wrap">
+														<span id="mainGuestCardDetails"></span>
+														<span id="mainGuestCardContact" class="truncate"></span>
+													</div>
+												</div>
+											</div>
+											<div class="shrink-0 flex items-center gap-2">
+												<!-- Specific Entrance & Pool Toggles directly on the Guest List -->
+												<div id="mainGuestCardTogglesWrap" class="flex items-center gap-1.5">
+													<span id="mainGuestCardEntranceBadgeWrap"></span>
+													<span id="mainGuestCardPoolBadgeWrap"></span>
+												</div>
+												<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+													<i class="bi bi-check-circle-fill text-xs"></i> Complete
+												</span>
+												<button type="button" class="inline-flex items-center gap-1 rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-semibold text-hp-text hover:border-hp-green hover:text-hp-green transition-colors" id="editMainGuestBtn">
+													<i class="bi bi-pencil-square"></i>
+													<span>Edit</span>
+												</button>
+											</div>
+										</div>
 									</div>
 								</div>
-								<div id="companionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
-									<div class="relative flex-1 min-w-[170px]">
-										<i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
-										<input type="text" id="companionSearchInput" placeholder="Search single companion..." class="w-full rounded-xl border border-glass-border bg-glass py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+
+								<!-- Subtle Divider -->
+								<div class="border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 my-3"></div>
+
+								<!-- SECTION B: Companion List Below Main Guest -->
+								<div id="companionSection">
+									<div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
+										<div>
+											<div class="flex items-center gap-2">
+												<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
+												<span id="walkInCompanionCountBadge" class="rounded-full bg-hp-green/10 px-2 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+											</div>
+											<p class="m-0 text-xs text-hp-text-muted">Register additional guests individually or quickly add groups</p>
+										</div>
+										<div class="flex items-center gap-2">
+											<button type="button" id="toggleCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" title="Toggle Search & Filters">
+												<i class="bi bi-funnel text-xs text-hp-green"></i>
+												<span>Filter & Search</span>
+											</button>
+											<button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="addCompanionBtn">
+												<svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+													<path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+												</svg>
+												<span>+ Add Companions</span>
+											</button>
+										</div>
 									</div>
-									<div class="w-auto min-w-[110px]">
-										<select id="companionFilterGender" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="">All Genders</option>
-											<option value="Male">Male</option>
-											<option value="Female">Female</option>
-										</select>
+									<div id="companionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
+										<div class="relative flex-1 min-w-[170px]">
+											<i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
+											<input type="text" id="companionSearchInput" placeholder="Search single companion..." class="w-full rounded-xl border border-glass-border bg-glass py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										</div>
+										<div class="w-auto min-w-[110px]">
+											<select id="companionFilterGender" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">All Genders</option>
+												<option value="Male">Male</option>
+												<option value="Female">Female</option>
+											</select>
+										</div>
+										<div class="w-auto min-w-[125px]">
+											<select id="companionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="">All Age Groups</option>
+												<option value="0-12">Kids (0-12)</option>
+												<option value="13-17">Teens (13-17)</option>
+												<option value="18-59">Adults (18-59)</option>
+												<option value="60+">Seniors (60+)</option>
+											</select>
+										</div>
+										<button type="button" id="companionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
+											<i class="bi bi-x-circle"></i>
+											<span>Reset</span>
+										</button>
 									</div>
-									<div class="w-auto min-w-[125px]">
-										<select id="companionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-											<option value="">All Age Groups</option>
-											<option value="0-12">Kids (0-12)</option>
-											<option value="13-17">Teens (13-17)</option>
-											<option value="18-59">Adults (18-59)</option>
-											<option value="60+">Seniors (60+)</option>
-										</select>
-									</div>
-									<button type="button" id="companionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
-										<i class="bi bi-x-circle"></i>
-										<span>Reset</span>
-									</button>
+									<div id="companionList" class="guest-companion-list grid gap-2 max-h-[350px] overflow-y-auto overflow-x-hidden pr-1"></div>
+									<div id="companionHiddenFields"></div>
 								</div>
-								<div id="companionList" class="guest-companion-list grid gap-2 max-h-[350px] overflow-y-auto overflow-x-hidden pr-1"></div>
-								<div id="companionHiddenFields"></div>
 							</div>
 							<!-- Tab Footer -->
 							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-between">
@@ -1438,7 +1435,7 @@
 							</div>
 						</div>
 
-						<!-- Pane 4: Fees & Summary -->
+						<!-- Pane 3: Fees & Summary -->
 						<div class="walkin-tab-pane flex-1 flex flex-col justify-between" id="feesTab" style="display: none;">
 							<div class="flex-1">
 								<div class="guest-form__section-header mb-3 flex items-center justify-between">
@@ -1505,9 +1502,9 @@
 									<div class="text-2xl font-black text-hp-green" id="reservationTotal">₱0.00</div>
 								</div>
 								<div class="guest-form__actions flex flex-wrap gap-2">
-									<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="companionsTab">
+									<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-all" data-step-to="guestsTab">
 										<i class="bi bi-arrow-left"></i>
-										<span>Companions</span>
+										<span>Guests</span>
 									</button>
 								</div>
 							</div>
@@ -1517,6 +1514,94 @@
 			</form>
 		</div>
 	</div>
+
+				<!-- Walk-In Main Guest Fill Up Modal -->
+				<div class="guest-modal guest-modal--compact" id="walkInMainGuestModal" aria-hidden="true" style="z-index: 1060;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-main-guest-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[620px] max-h-[min(90vh,780px)] overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="walkInMainGuestModalTitle">
+						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-main-guest-modal="true" aria-label="Close form">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
+
+						<!-- MODAL HEADER -->
+						<div class="guest-modal__header mb-4 flex items-center justify-between border-b border-glass-border pb-3">
+							<div class="flex items-center gap-3">
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+									<i class="bi bi-person-fill text-xl"></i>
+								</div>
+								<div>
+									<h3 id="walkInMainGuestModalTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Main Guest Information</h3>
+									<p class="m-0 text-xs text-hp-text-muted">Fill out the primary booker / walk-in contact information</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- MODAL BODY -->
+						<div id="primaryGuestFormFields" class="grid gap-3">
+							<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_first_name">First name <span class="text-red-500">*</span></label>
+									<input type="text" form="addGuestForm" name="primary_guest[first_name]" id="primary_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_middle_name">Middle name <span class="text-hp-text-muted font-normal text-[0.7rem]">(Optional)</span></label>
+									<input type="text" form="addGuestForm" name="primary_guest[middle_name]" id="primary_middle_name" placeholder="Optional" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_last_name">Last name <span class="text-red-500">*</span></label>
+									<input type="text" form="addGuestForm" name="primary_guest[last_name]" id="primary_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+							</div>
+
+							<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+								<div class="guest-form__field-group grid gap-1">
+									<div class="flex items-center justify-between">
+										<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_age">Age <span class="text-red-500">*</span></label>
+										<span id="primaryAgeBadge" class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
+									</div>
+									<input type="number" form="addGuestForm" name="primary_guest[age]" id="primary_age" min="0" placeholder="Age in years" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_gender">Gender <span class="text-red-500">*</span></label>
+									<select form="addGuestForm" name="primary_guest[gender]" id="primary_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										<option value="" disabled selected>Select gender</option>
+										<option value="Male">Male</option>
+										<option value="Female">Female</option>
+									</select>
+								</div>
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primaryGuestIsForeigner">Nationality <span class="text-red-500">*</span></label>
+									<select form="addGuestForm" name="primary_guest[is_foreigner]" id="primaryGuestIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										<option value="0" selected>Filipino</option>
+										<option value="1">Foreigner</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_phone">Phone Number <span class="text-red-500">*</span></label>
+									<input type="text" form="addGuestForm" name="primary_guest[phone]" id="primary_phone" placeholder="09xxxxxxxxx" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+								<div class="guest-form__field-group grid gap-1">
+									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_email">Email Address <span class="text-red-500">*</span></label>
+									<input type="email" form="addGuestForm" name="primary_guest[email]" id="primary_email" placeholder="example@email.com" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+								</div>
+							</div>
+						</div>
+
+						<!-- Validation error message in modal -->
+						<div id="mainGuestModalError" class="hidden mt-3 rounded-xl border border-red-300 bg-red-50 p-2.5 text-xs font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
+							Please enter all required fields.
+						</div>
+
+						<!-- MODAL FOOTER -->
+						<div class="mt-4 flex items-center justify-end gap-2 border-t border-glass-border pt-3">
+							<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" data-close-main-guest-modal="true">Cancel</button>
+							<button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white hover:bg-hp-green-dark shadow-md transition-all active:scale-95" id="saveMainGuestBtn">Save Main Guest</button>
+						</div>
+					</div>
+				</div>
 
 				<!-- Walk-In Range Calendar Modal -->
 				<div class="guest-modal guest-modal--calendar" id="walkInCalendarModal" aria-hidden="true">
@@ -1771,126 +1856,120 @@
 				<!-- TWO COLUMN COMPANION MODAL (WALK-IN) -->
 				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
+					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(94vh,740px)] !overflow-visible flex flex-col rounded-3xl bg-hp-cream p-4 sm:p-5 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
 						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-companion-modal="true" aria-label="Close companion form">
 							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
 						</button>
 						
 						<!-- MODAL HEADER -->
-						<div class="guest-modal__header mb-4 flex items-center justify-between border-b border-glass-border pb-3">
-							<div class="flex items-center gap-3">
-								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
-									<i class="bi bi-people-fill text-xl"></i>
+						<div class="guest-modal__header mb-3 flex items-center justify-between border-b border-glass-border pb-2.5">
+							<div class="flex items-center gap-2.5">
+								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+									<i class="bi bi-people-fill text-lg"></i>
 								</div>
 								<div>
-									<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
+									<h3 id="companionModalTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
 									<p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to check-in</p>
 								</div>
 							</div>
 						</div>
 
 						<!-- TWO COLUMN LAYOUT: CREATOR (LEFT) & PREVIEW (RIGHT) -->
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
 							
 							<!-- LEFT SIDE: COMPANION CREATOR (6 cols) -->
-							<div class="lg:col-span-6 flex flex-col gap-3">
-								<div class="flex rounded-xl bg-black/5 dark:bg-white/5 p-1 border border-glass-border/40">
-									<button type="button" class="guest-form__tab hidden" data-companion-tab="single" aria-hidden="true" tabindex="-1">
-										<i class="bi bi-person me-1"></i> Single Companion
-									</button>
-									<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg py-2 text-xs font-bold text-white transition-all bg-hp-green shadow-xs text-center" data-companion-tab="bulk">
-										<i class="bi bi-people me-1"></i> Bulk Companions
-									</button>
-								</div>
+							<div class="lg:col-span-6 flex flex-col gap-2.5">
 
 								<!-- Single Companion Form -->
 								<form id="walkInCompanionForm" class="guest-form--tab-content hidden" data-companion-content="single" action="#" aria-hidden="true">
-									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-4 grid gap-3">
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-3 sm:p-3.5 grid gap-2.5">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_first_name">First Name <span class="text-red-500">*</span></label>
-												<input type="text" name="first_name" id="companion_first_name" required placeholder="First name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="text" name="first_name" id="companion_first_name" required placeholder="First name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											</div>
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_middle_name">Middle Name</label>
-												<input type="text" name="middle_name" id="companion_middle_name" placeholder="Middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="text" name="middle_name" id="companion_middle_name" placeholder="Middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											</div>
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_last_name">Last Name <span class="text-red-500">*</span></label>
-												<input type="text" name="last_name" id="companion_last_name" required placeholder="Last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="text" name="last_name" id="companion_last_name" required placeholder="Last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
 											<div class="guest-form__field-group grid gap-1">
 												<div class="flex items-center justify-between">
 													<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_age">Age <span class="text-red-500">*</span></label>
 													<span id="companionAgeComputedBadge" class="rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.2 text-[0.65rem] font-bold text-emerald-700 dark:text-emerald-300">Adult</span>
 												</div>
-												<input type="number" name="age" id="companion_age" min="0" max="130" required placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="number" name="age" id="companion_age" min="0" max="130" required placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 												<input type="hidden" name="age_type" id="companion_age_type" value="adult">
 											</div>
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_gender">Gender <span class="text-red-500">*</span></label>
-												<select name="gender" id="companion_gender" required class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<select name="gender" id="companion_gender" required class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 													<option value="Male" selected>Male</option>
 													<option value="Female">Female</option>
 												</select>
 											</div>
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companionIsForeigner">Nationality <span class="text-red-500">*</span></label>
-												<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<select name="is_foreigner" id="companionIsForeigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 													<option value="0" selected>Filipino</option>
 													<option value="1">Foreigner</option>
 												</select>
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_phone">Phone</label>
-												<input type="text" name="phone" id="companion_phone" placeholder="Optional phone" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="text" name="phone" id="companion_phone" placeholder="Optional phone" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											</div>
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text" for="companion_email">Email</label>
-												<input type="email" name="email" id="companion_email" placeholder="Optional email" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<input type="email" name="email" id="companion_email" placeholder="Optional email" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 											</div>
 										</div>
 
 										<div class="guest-form__field-group grid gap-1" id="walkInSingleCompanionAmenityWrap" style="display: none;">
 											<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInCompanionAmenity">Assign to Amenity</label>
-											<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+											<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
 										</div>
 
-										<div class="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5 dark:border-amber-500/20" id="singleCompanionFreeEntranceWrap" style="display: none;">
-											<div class="flex items-center gap-2">
-												<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm"></i>
-												<div>
-													<p class="m-0 text-xs font-bold text-amber-900 dark:text-amber-200">Free Entrance Fee</p>
-													<p class="m-0 text-[0.68rem] text-hp-text-muted">Waive entrance fee for this companion (Promo/PWD)</p>
+										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="singleCompanionAccessRow">
+											<div class="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 p-2 dark:border-amber-500/20" id="singleCompanionFreeEntranceWrap" style="display: none;">
+												<div class="flex items-center gap-2 min-w-0">
+													<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm shrink-0"></i>
+													<div class="min-w-0">
+														<p class="m-0 text-xs font-bold text-amber-900 dark:text-amber-200 truncate">Free Entrance</p>
+														<p class="m-0 text-[0.65rem] text-hp-text-muted truncate">Waive fee (Promo/PWD)</p>
+													</div>
 												</div>
+												<label class="relative inline-flex cursor-pointer items-center shrink-0">
+													<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
+												</label>
 											</div>
-											<label class="relative inline-flex cursor-pointer items-center">
-												<input type="checkbox" name="is_free_entrance" id="companion_is_free_entrance" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
-											</label>
-										</div>
 
-										<div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5" id="singleCompanionPoolWrap">
-											<div class="flex items-center gap-2">
-												<i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
-												<div>
-													<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Include Pool Pass</p>
-													<p class="m-0 text-[0.68rem] text-hp-text-muted">Grant pool access under specific pool policy</p>
+											<div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2 dark:border-sky-500/20" id="singleCompanionPoolWrap">
+												<div class="flex items-center gap-2 min-w-0">
+													<i class="bi bi-water text-sm text-sky-600 dark:text-sky-400 shrink-0"></i>
+													<div class="min-w-0">
+														<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Pass</p>
+														<p class="m-0 text-[0.65rem] text-hp-text-muted truncate">Grant pool access</p>
+													</div>
 												</div>
+												<label class="relative inline-flex cursor-pointer items-center shrink-0">
+													<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
+												</label>
 											</div>
-											<label class="relative inline-flex cursor-pointer items-center">
-												<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
-											</label>
 										</div>
 									</div>
 
 									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
-										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
+										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
 											<i class="bi bi-person-plus-fill"></i>
 											<span>Add Single Companion</span>
 										</button>
@@ -1898,19 +1977,19 @@
 								</form>
 
 								<!-- Bulk Companion Form -->
-								<form id="walkInBulkCompanionForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-3" data-companion-content="bulk" action="#">
-									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-4 grid gap-3">
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+								<form id="walkInBulkCompanionForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-2.5" data-companion-content="bulk" action="#">
+									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-3 sm:p-3.5 grid gap-2.5">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text">Gender</label>
 												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
 													<label class="flex-1 text-center cursor-pointer">
 														<input type="radio" name="gender" value="Male" checked class="peer sr-only">
-														<span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span>
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span>
 													</label>
 													<label class="flex-1 text-center cursor-pointer">
 														<input type="radio" name="gender" value="Female" class="peer sr-only">
-														<span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span>
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span>
 													</label>
 												</div>
 											</div>
@@ -1919,35 +1998,35 @@
 												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
 													<label class="flex-1 text-center cursor-pointer">
 														<input type="radio" name="is_foreigner" value="0" checked class="peer sr-only">
-														<span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span>
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span>
 													</label>
 													<label class="flex-1 text-center cursor-pointer">
 														<input type="radio" name="is_foreigner" value="1" class="peer sr-only">
-														<span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span>
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span>
 													</label>
 												</div>
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text">Age Group</label>
 												<div class="grid grid-cols-2 overflow-hidden rounded-xl border border-glass-border bg-glass text-center">
 													<label class="cursor-pointer border-b border-r border-glass-border">
 														<input type="radio" name="age_group" value="0-12" class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span>
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span>
 													</label>
 													<label class="cursor-pointer border-b border-glass-border">
 														<input type="radio" name="age_group" value="13-17" class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span>
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span>
 													</label>
 													<label class="cursor-pointer border-r border-glass-border">
 														<input type="radio" name="age_group" value="18-59" checked class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span>
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span>
 													</label>
 													<label class="cursor-pointer">
 														<input type="radio" name="age_group" value="60+" class="peer sr-only">
-														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span>
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span>
 													</label>
 												</div>
 											</div>
@@ -1955,51 +2034,63 @@
 											<div class="guest-form__field-group grid gap-1">
 												<label class="guest-form__label text-xs font-semibold text-hp-text">Group Quantity</label>
 												<div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass p-1">
-													<button type="button" id="walkInBulkQtyMinusBtn" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">−</button>
-													<input type="number" name="quantity" id="bulk_companion_quantity" value="1" min="1" max="500" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-lg font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-													<button type="button" id="walkInBulkQtyPlusBtn" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">+</button>
+													<button type="button" id="walkInBulkQtyMinusBtn" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">−</button>
+													<input type="number" name="quantity" id="bulk_companion_quantity" value="1" min="1" max="500" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="walkInBulkQtyPlusBtn" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">+</button>
 												</div>
 											</div>
 										</div>
 
 										<div class="guest-form__field-group grid gap-1" id="walkInBulkCompanionAmenityWrap" style="display: none;">
 											<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInBulkCompanionAmenity">Assign to Amenity</label>
-											<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+											<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
 										</div>
 
-										<div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5 dark:border-amber-500/20" id="bulkCompanionFreeEntranceWrap" style="display: none;">
-											<div class="flex items-center justify-between">
-												<label class="guest-form__label text-xs font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_free_quantity">
-													<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance Quantity
-												</label>
-												<span class="text-[0.68rem] font-bold text-amber-800 dark:text-amber-300" id="bulkFreeQtyHint">0 of 1</span>
+										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="bulkCompanionAccessRow">
+											<!-- Free Entrance Compact Stepper Card -->
+											<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="bulkCompanionFreeEntranceWrap" style="display: none;">
+												<div class="flex items-center justify-between gap-1">
+													<label class="text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="bulk_companion_free_quantity">
+														<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance
+													</label>
+													<span class="text-[0.65rem] font-bold text-amber-800 dark:text-amber-300 shrink-0" id="bulkFreeQtyHint">0 of 1</span>
+												</div>
+												<div class="flex items-center gap-1 rounded-lg border border-amber-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
+													<button type="button" id="walkInBulkFreeMinusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease free entrance">−</button>
+													<input type="number" name="free_entrance_quantity" id="bulk_companion_free_quantity" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-amber-950 dark:text-amber-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="walkInBulkFreePlusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase free entrance">+</button>
+												</div>
 											</div>
-											<input type="number" name="free_entrance_quantity" id="bulk_companion_free_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										</div>
 
-										<div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="bulkCompanionPoolWrap">
-											<div class="flex items-center justify-between">
-												<label class="guest-form__label text-xs font-semibold text-hp-text flex items-center gap-1.5" for="bulk_companion_pool_quantity">
-													<i class="bi bi-water text-sky-600"></i> Pool Access Quantity
-												</label>
-												<span class="text-[0.68rem] text-hp-text-muted" id="bulkPoolQtyHint">0 of 1</span>
+											<!-- Pool Access Compact Stepper Card -->
+											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="bulkCompanionPoolWrap" style="display: none;">
+												<div class="flex items-center justify-between gap-1">
+													<label class="text-[0.7rem] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="bulk_companion_pool_quantity">
+														<i class="bi bi-water text-sky-600"></i> Pool Access
+													</label>
+													<span class="text-[0.65rem] font-bold text-sky-800 dark:text-sky-300 shrink-0" id="bulkPoolQtyHint">0 of 1</span>
+												</div>
+												<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
+													<button type="button" id="walkInBulkPoolMinusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool access">−</button>
+													<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="walkInBulkPoolPlusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase pool access">+</button>
+												</div>
 											</div>
-											<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 										</div>
 									</div>
 									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
-										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
+										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
 											<i class="bi bi-people-fill"></i>
-											<span>Add Bulk Companions</span>
+											<span>Add Companions</span>
 										</button>
 									</div>
 								</form>
 							</div>
 
 							<!-- RIGHT SIDE: COMPANION PREVIEW (6 cols) -->
-							<div class="lg:col-span-6 flex flex-col gap-3">
-								<div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-4 shadow-xs flex flex-col" id="modalCompanionPreviewSection">
-									<div class="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/40 pb-2.5">
+							<div class="lg:col-span-6 flex flex-col gap-2.5">
+								<div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-3 sm:p-3.5 shadow-xs flex flex-col" id="modalCompanionPreviewSection">
+									<div class="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/40 pb-2">
 										<div class="flex items-center gap-2">
 											<i class="bi bi-person-lines-fill text-hp-green text-base"></i>
 											<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Staged Companions</h4>
@@ -2017,7 +2108,7 @@
 									</div>
 
 									<!-- Modal Staged Search & Filter Toolbar (Default is hidden) -->
-									<div id="modalCompanionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-1.5 rounded-xl border border-glass-border/70 bg-glass/70 p-2 transition-all animate-fade-in">
+									<div id="modalCompanionFilterToolbar" class="mb-2 hidden flex-wrap items-center gap-1.5 rounded-xl border border-glass-border/70 bg-glass/70 p-2 transition-all animate-fade-in">
 										<!-- Search single companion by name -->
 										<div class="relative flex-1 min-w-[130px]">
 											<i class="bi bi-search absolute left-2.5 top-1/2 -translate-y-1/2 text-[0.65rem] text-hp-text-muted/70"></i>
@@ -2050,7 +2141,7 @@
 									</div>
 
 									<!-- Scrollable Staged List Container -->
-									<div id="modalCompanionPreviewList" class="grid gap-2 max-h-[440px] overflow-y-auto pr-1">
+									<div id="modalCompanionPreviewList" class="grid gap-2 max-h-[220px] sm:max-h-[250px] overflow-y-auto pr-1.5 [scrollbar-width:thin]">
 										<!-- Populated dynamically via JS -->
 									</div>
 								</div>
@@ -2058,18 +2149,118 @@
 						</div>
 
 						<!-- MODAL FOOTER ACTIONS -->
-						<div class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-4">
-							<div class="text-xs font-medium text-hp-text-muted">
+						<div class="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-3">
+							<div class="text-xs font-semibold text-hp-text-muted">
 								<span id="modalCompanionFooterSummary">0 companions added so far</span>
 							</div>
 							<div class="flex flex-wrap items-center gap-2.5">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
-								<button type="button" id="modalConfirmAllCompanionsBtn" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98]" data-close-companion-modal="true">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-modal="true">Cancel</button>
+								<button type="button" id="modalConfirmAllCompanionsBtn" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2 text-xs sm:text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98]" data-close-companion-modal="true">
 									<i class="bi bi-check2-circle text-base"></i>
-									<span>Add All Companions Created</span>
+									<span>Confirm</span>
 								</button>
 							</div>
 						</div>
+					</div>
+				</div>
+
+				<!-- Walk-In Edit Companion Group Modal -->
+				<div class="guest-modal hidden" id="walkInCompanionGroupEditModal" aria-hidden="true" style="z-index: 1060;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-group-edit-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[560px] !max-h-none !overflow-visible rounded-2xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="walkInGroupEditTitle">
+						<button type="button" class="group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs z-10" data-close-group-edit-modal="true" aria-label="Close modal">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
+
+						<!-- Modal Header -->
+						<div class="mb-3 flex items-center gap-3 border-b border-glass-border/60 pb-3">
+							<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+								<i class="bi bi-people-fill text-lg"></i>
+							</div>
+							<div>
+								<h3 id="walkInGroupEditTitle" class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Edit Companion Group</h3>
+								<p class="m-0 text-xs text-hp-text-muted">Adjust group size and access privileges</p>
+							</div>
+						</div>
+
+						<!-- Demographics Badge -->
+						<div class="mb-3 flex flex-wrap items-center gap-2">
+							<span id="groupEditDemographicsBadge" class="inline-flex items-center gap-1.5 rounded-lg bg-hp-green/15 text-hp-green px-3 py-1 text-xs font-bold">
+								<!-- e.g. Male • Filipino • Adults (18-59) -->
+							</span>
+							<span id="groupEditAmenityBadge" class="hidden inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2.5 py-1 text-xs font-bold">
+								<!-- Amenity name if selected -->
+							</span>
+						</div>
+
+						<form id="walkInGroupEditForm" class="grid gap-3" action="#">
+							<input type="hidden" id="groupEditGroupIndex" value="-1">
+
+							<!-- Row 1: Group Quantity (Inline Row) -->
+							<div class="flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/60 dark:bg-white/5 px-3.5 py-2.5">
+								<div>
+									<label class="text-sm font-bold text-hp-text dark:text-[#f3f4f6] flex items-center gap-2 cursor-pointer m-0" for="groupEditQuantityInput">
+										<i class="bi bi-people text-hp-green text-base"></i> Group Quantity
+									</label>
+									<p class="m-0 text-xs text-hp-text-muted">Total number of guests in this group</p>
+								</div>
+								<div class="flex items-center gap-1 rounded-lg border border-glass-border bg-white/90 dark:bg-black/30 p-1 shadow-2xs">
+									<button type="button" id="groupEditQtyMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Decrease quantity">−</button>
+									<input type="number" id="groupEditQuantityInput" min="1" max="500" value="1" class="no-spinners m-0 w-14 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom quantity">
+									<button type="button" id="groupEditQtyPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Increase quantity">+</button>
+								</div>
+							</div>
+
+							<!-- Row 2: Free Entrance & Pool Access (SIDE-BY-SIDE 2-COL GRID) -->
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="groupEditAccessRow">
+								<!-- Field 2: Free Entrance Access -->
+								<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-3 flex flex-col justify-between gap-2 transition-all" id="groupEditFreeEntranceWrap">
+									<div class="flex items-center justify-between gap-1.5">
+										<label class="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="groupEditFreeInput">
+											<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm"></i> Free Entrance
+										</label>
+										<span class="text-xs font-bold text-amber-800 dark:text-amber-300 shrink-0" id="groupEditFreeHint">0 of 1</span>
+									</div>
+									<div class="flex items-center gap-1 rounded-lg border border-amber-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
+										<button type="button" id="groupEditFreeMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease free">−</button>
+										<input type="number" id="groupEditFreeInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-amber-950 dark:text-amber-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom free entrance count">
+										<button type="button" id="groupEditFreePlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase free">+</button>
+									</div>
+									<div class="flex items-center justify-end gap-1.5 pt-0.5">
+										<button type="button" id="groupEditFreeZeroBtn" class="cursor-pointer rounded-lg border border-amber-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all">None (0)</button>
+										<button type="button" id="groupEditFreeAllBtn" class="cursor-pointer rounded-lg border border-amber-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all">All Free</button>
+									</div>
+								</div>
+
+								<!-- Field 3: Pool Access Passes -->
+								<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all" id="groupEditPoolWrap">
+									<div class="flex items-center justify-between gap-1.5">
+										<label class="text-xs font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="groupEditPoolInput">
+											<i class="bi bi-water text-sky-600 text-sm"></i> Pool Passes
+										</label>
+										<span class="text-xs font-bold text-sky-800 dark:text-sky-300 shrink-0" id="groupEditPoolHint">0 of 1</span>
+									</div>
+									<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
+										<button type="button" id="groupEditPoolMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool">−</button>
+										<input type="number" id="groupEditPoolInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom pool pass count">
+										<button type="button" id="groupEditPoolPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all">+</button>
+									</div>
+									<div class="flex items-center justify-end gap-1.5 pt-0.5">
+										<button type="button" id="groupEditPoolZeroBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">None (0)</button>
+										<button type="button" id="groupEditPoolAllBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">All Pool</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Actions -->
+							<div class="mt-1 flex items-center justify-end gap-2.5 border-t border-glass-border/60 pt-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs sm:text-sm font-semibold text-hp-text transition-colors hover:bg-glass-hover" data-close-group-edit-modal="true">Cancel</button>
+								<button type="submit" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:bg-hp-green-dark active:scale-[0.98]">
+									<i class="bi bi-check-lg text-sm"></i>
+									<span>Apply Changes</span>
+								</button>
+							</div>
+						</form>
 					</div>
 				</div>
 
@@ -2304,7 +2495,7 @@
 									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
 									<div class="flex gap-2">
 										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInAddCompanionBtn">+ Add Single</button>
-										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInBulkCompanionBtn">+ Add Bulk</button>
+										<button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="checkInBulkCompanionBtn">+ Add Companions</button>
 									</div>
 								</div>
 								<div id="checkInCompanionList" class="guest-companion-list grid gap-2"></div>
@@ -2326,6 +2517,7 @@
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
 						<h3 id="checkOutConfirmTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Confirm Check Out</h3>
 						<p class="mb-6 text-[#666]">Are you sure you want to check out this reservation? This action cannot be undone.</p>
+						<div id="checkOutConfirmGuestPreview" class="mb-6 grid max-h-48 gap-2 overflow-y-auto rounded-xl border border-glass-border bg-glass/60 p-3"></div>
 						<div class="guest-form__actions flex flex-wrap justify-end gap-3">
 							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-out-confirm="true">Cancel</button>
 							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmCheckOutBtn">Yes, Check Out</button>
@@ -2355,19 +2547,21 @@
 				{{-- Add Companion to Active Reservation Modal --}}
 				<div class="guest-modal guest-modal--wide" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
-						<div class="guest-modal__header mb-4 flex items-center gap-3">
-							<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Add Companion</h3>
-							<span id="reservationAddCompanionFor" class="guest-modal__role-badge inline-flex items-center rounded-full bg-hp-green/10 px-3 py-1.5 text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-green"></span>
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all duration-200 z-10" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
+						<div class="reservation-add-companion-header guest-modal__header mb-5 flex items-center gap-3 border-b border-glass-border pb-4">
+							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green"><i class="bi bi-people-fill text-xl"></i></div>
+							<div>
+								<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
+								<p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to the active reservation</p>
+								<span id="reservationAddCompanionFor" class="mt-1 inline-flex text-[0.7rem] font-semibold text-hp-green"></span>
+							</div>
 						</div>
-						<div class="guest-form__tabs mb-4 flex gap-2 rounded-xl border border-glass-border bg-glass p-1.5">
-							<button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg border-0 bg-hp-green px-4 py-2.5 text-sm font-bold text-white transition-all duration-200" data-res-add-tab="single">Single Companion</button>
-							<button type="button" class="guest-form__tab flex-1 cursor-pointer rounded-lg border-0 bg-transparent px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" data-res-add-tab="bulk">Bulk Companions</button>
-						</div>
+						<div class="reservation-add-companion-layout">
+							<div class="reservation-add-companion-column">
 
 						<!-- Single Companion Form -->
-						<form id="reservationAddSingleForm" class="guest-form guest-form--tab-content guest-form--tab-content--active grid gap-4" data-res-add-content="single">
+						<form id="reservationAddSingleForm" class="hidden" data-res-add-content="single" aria-hidden="true">
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_first_name">First name</label>
@@ -2459,35 +2653,38 @@
 						</form>
 
 						<!-- Bulk Companion Form -->
-						<form id="reservationAddBulkForm" class="guest-form guest-form--tab-content gap-4" data-res-add-content="bulk" style="display: none;">
+						<form id="reservationAddBulkForm" class="guest-form guest-form--tab-content grid gap-4" data-res-add-content="bulk">
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_gender">Gender</label>
-									<select name="gender" id="resadd_bulk_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="">Select gender</option>
-										<option value="Male">Male</option>
-										<option value="Female">Female</option>
-									</select>
+									<label class="guest-form__label text-sm font-semibold text-hp-text">Gender</label>
+									<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="gender" value="Male" checked class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span></label>
+										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="gender" value="Female" class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span></label>
+									</div>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_age_group">Age Group</label>
-									<select name="age_group" id="resadd_bulk_age_group" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0-12">Kids (0-12)</option>
-										<option value="13-17">Teens (13-17)</option>
-										<option value="18-59">Adults (18-59)</option>
-										<option value="60+">Seniors (60+)</option>
-									</select>
+									<label class="guest-form__label text-sm font-semibold text-hp-text">Nationality</label>
+									<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="is_foreigner" value="0" checked class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span></label>
+										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="is_foreigner" value="1" class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span></label>
+									</div>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="resadd_bulk_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0" selected>Filipino</option>
-										<option value="1">Foreigner</option>
-									</select>
+									<label class="guest-form__label text-sm font-semibold text-hp-text">Age Group</label>
+									<div class="grid grid-cols-2 overflow-hidden rounded-xl border border-glass-border bg-glass text-center">
+										<label class="cursor-pointer border-b border-r border-glass-border"><input type="radio" name="age_group" value="0-12" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span></label>
+										<label class="cursor-pointer border-b border-glass-border"><input type="radio" name="age_group" value="13-17" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span></label>
+										<label class="cursor-pointer border-r border-glass-border"><input type="radio" name="age_group" value="18-59" checked class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span></label>
+										<label class="cursor-pointer"><input type="radio" name="age_group" value="60+" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span></label>
+									</div>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Quantity</label>
-									<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Group Quantity</label>
+									<div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass p-1">
+										<button type="button" id="resAddBulkQtyMinus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 text-base font-extrabold text-hp-text">−</button>
+										<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-lg font-bold text-hp-green-dark focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+										<button type="button" id="resAddBulkQtyPlus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 text-base font-extrabold text-hp-text">+</button>
+									</div>
 								</div>
 								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="resaddBulkAmenityWrap" style="display: none;">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_amenity">Assign to Amenity</label>
@@ -2533,9 +2730,23 @@
 							</div>
 							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
 								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
-								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Bulk Companions</button>
+								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companions</button>
 							</div>
 						</form>
+							</div>
+							<div class="reservation-add-companion-preview flex min-h-[320px] flex-col rounded-2xl border border-glass-border bg-hp-cream/70 p-4 shadow-xs dark:bg-white/5" id="reservationAddCompanionPreview">
+								<div class="flex items-center justify-between border-b border-glass-border pb-3">
+									<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]"><i class="bi bi-person-lines-fill me-1"></i> Staged Companions</h4>
+									<span id="reservationAddCompanionPreviewCount" class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+								</div>
+								<div id="reservationAddCompanionPreviewList" class="flex flex-1 flex-col gap-2 py-3">
+									<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Fill the form on the left to preview companions.</p>
+								</div>
+								<button type="button" id="reservationAddAllCompanionsBtn" class="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-hp-green-dark disabled:cursor-not-allowed disabled:opacity-50" disabled>
+									<i class="bi bi-check2-circle"></i> Add All Companions
+								</button>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -2748,7 +2959,7 @@
 									<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
 								</svg>
 							</div>
-							<h3 id="bulkGroupManageTitle" class="guest-modal__title m-0 text-lg font-bold text-hp-text">Manage Bulk Companions</h3>
+							<h3 id="bulkGroupManageTitle" class="guest-modal__title m-0 text-lg font-bold text-hp-text">Manage Companions</h3>
 							<div class="mt-1 flex items-center justify-center gap-2 text-xs text-hp-text-muted">
 								<span>Reservation</span>
 								<span id="bulkManageResId" class="rounded-lg border border-glass-border bg-glass-hover px-2 py-0.5 font-semibold text-hp-text">#</span>

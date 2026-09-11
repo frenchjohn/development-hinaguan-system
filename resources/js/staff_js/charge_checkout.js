@@ -6,11 +6,27 @@ const showLoadingScreen = (message = 'Processing checkout...') => {
     if (!loading) {
         loading = document.createElement('div');
         loading.id = loadingId;
-        loading.className = 'fixed inset-0 z-[4000] flex items-center justify-center bg-black/70';
+        loading.className = 'fixed inset-0 z-[4000] flex items-center justify-center backdrop-blur-sm';
+        loading.style.backgroundColor = 'rgba(0,0,0,0.5)';
         loading.innerHTML = `
-            <div class="flex flex-col items-center gap-4">
-                <div class="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-emerald-500"></div>
-                <p class="text-lg font-semibold text-white">${message}</p>
+            <style>@keyframes checkout-progress { 0% { transform: translateX(-120%); } 50% { transform: translateX(100%); } 100% { transform: translateX(360%); } }</style>
+            <div class="relative w-full max-w-sm rounded-2xl bg-white px-7 py-6 shadow-2xl dark:bg-[#1d241f]">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" aria-hidden="true">
+                        <i class="bi bi-receipt-cutoff text-xl"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-lg font-bold text-gray-900 dark:text-white">${message}</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Please wait while we process your checkout</p>
+                    </div>
+                </div>
+                <div class="mt-6 h-2 overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-950/70" aria-hidden="true">
+                    <div class="h-full w-1/3 animate-[checkout-progress_1.4s_ease-in-out_infinite] rounded-full bg-emerald-600 dark:bg-emerald-400"></div>
+                </div>
+                <div class="mt-3 flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    <span>Saving checkout details</span>
+                    <span class="inline-flex gap-0.5" aria-hidden="true"><span class="animate-pulse">.</span><span class="animate-pulse [animation-delay:150ms]">.</span><span class="animate-pulse [animation-delay:300ms]">.</span></span>
+                </div>
             </div>`;
         document.body.appendChild(loading);
     }
@@ -86,8 +102,8 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
                                 </select>
                             </label>
                             <label class="grid gap-1 text-xs font-semibold text-gray-700 dark:text-gray-200">
-                                Description
-                                <textarea name="description" rows="2" required class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/10" placeholder="Describe the charge"></textarea>
+                                Description <span class="text-gray-400">(optional)</span>
+                                <textarea name="description" rows="2" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-white/10 dark:bg-white/10" placeholder="Describe the charge (optional)"></textarea>
                             </label>
                             <label class="grid gap-1 text-xs font-semibold text-gray-700 dark:text-gray-200">
                                 Amount

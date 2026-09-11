@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     const modal = document.getElementById('reviewModal');
+    const warningModal = document.getElementById('feedbackWarningModal');
+    const warningMessage = document.getElementById('feedbackWarningMessage');
     const form = document.getElementById('feedbackForm');
     const fullNameInput = document.getElementById('feedbackFullName');
     const anonymousCheckbox = document.getElementById('feedbackAnonymous');
@@ -70,6 +72,26 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
     };
+
+    const showFeedbackWarning = (message) => {
+        if (!warningModal || !warningMessage) return;
+
+        warningMessage.textContent = message;
+        warningModal.classList.add('is-open');
+        warningModal.setAttribute('aria-hidden', 'false');
+        window.setTimeout(() => warningModal.querySelector('[data-close-feedback-warning]')?.focus(), 50);
+    };
+
+    const closeFeedbackWarning = () => {
+        if (!warningModal) return;
+        warningModal.classList.remove('is-open');
+        warningModal.setAttribute('aria-hidden', 'true');
+        document.getElementById('feedbackDescription')?.focus();
+    };
+
+    document.querySelectorAll('[data-close-feedback-warning]').forEach((el) => {
+        el.addEventListener('click', closeFeedbackWarning);
+    });
 
     document.querySelectorAll('[data-open-review-modal]').forEach((btn) => {
         btn.addEventListener('click', openModal);
@@ -207,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Escape') {
             if (lightbox?.classList.contains('is-open')) {
                 closeLightbox();
+            } else if (warningModal?.classList.contains('is-open')) {
+                closeFeedbackWarning();
             } else if (detailModal?.classList.contains('is-open')) {
                 closeReviewDetail();
             } else if (modal?.classList.contains('is-open')) {
@@ -658,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const stars = parseInt(starsHidden?.value || '0', 10);
 
         if (!isAnonymous && !fullName) {
-            alert('Please enter your full name or choose anonymous feedback.');
+            showFeedbackWarning('Please enter your full name or choose anonymous feedback.');
             fullNameInput?.focus();
             return;
         }
@@ -672,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!description) {
-            alert('Please write your feedback before submitting.');
+            showFeedbackWarning('Please write your feedback before submitting.');
             document.getElementById('feedbackDescription')?.focus();
             return;
         }
@@ -713,7 +737,7 @@ document.addEventListener('DOMContentLoaded', () => {
             prependReviewCard(data.feedback);
             closeModal();
         } catch (error) {
-            alert(error.message || 'Unable to submit feedback. Please try again.');
+            showFeedbackWarning(error.message || 'Unable to submit feedback. Please try again.');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Send Feedback';

@@ -34,6 +34,8 @@ class FeedbackAiService
         'yawaa' => 'Bisaya curse word expression',
         'atay' => 'Bisaya curse word/vulgar exclamation',
         'piste' => 'Bisaya curse word (pest/annoyance)',
+        'pisti' => 'Bisaya curse word variant',
+        'pinisti' => 'Bisaya curse word variant used as an intensified expression',
         'peste' => 'Curse word meaning pest/nuisance',
         'bilat' => 'Vulgar Bisaya anatomical term',
         'otin' => 'Vulgar Bisaya anatomical term',
@@ -151,6 +153,89 @@ class FeedbackAiService
         'love' => ['topic' => 'Affection', 'reason' => 'Expressed strong love for the park setting'],
         'loved' => ['topic' => 'Affection', 'reason' => 'Great fondness for the park experience'],
     ];
+
+    public function detectInappropriateContent(?string $text): array
+    {
+        $originalText = trim((string) $text);
+        $normalizedText = mb_strtolower($originalText);
+        $matches = [];
+
+        foreach (self::PROFANITY_KEYWORDS as $word => $description) {
+            if (preg_match('/(?<!\pL)' . preg_quote($word, '/') . '(?!\pL)/iu', $normalizedText)) {
+                $matches[$word] = [
+                    'term' => $word,
+                    'sentence' => $this->extractSentenceWithWord($originalText, $word),
+                    'description' => $description,
+                ];
+            }
+        }
+
+        return $matches;
+    }
+
+    public function moderateImages(array $images): array
+    {
+        $apiKey = config('services.openrouter.key');
+        if ($apiKey === '' || $apiKey === null || $images === []) {
+            return ['available' => false, 'blocked' => false, 'matches' => []];
+        }
+
+        try {
+            $content = [[
+                'type' => 'text',
+                'text' => 'Review each attached image for sexual, nude, pornographic, or otherwise lewd content. Return only valid JSON in this exact format: {"blocked":true,"matches":[{"image":"filename.jpg","reason":"brief reason"}]}. Set blocked to false and matches to [] when every image is safe. Do not block ordinary swimwear, family recreation, nature, food, or normal park photos.',
+            ]];
+
+            foreach ($images as $image) {
+                $content[] = [
+                    'type' => 'image_url',
+                    'image_url' => [
+                        'url' => 'data:' . $image->getMimeType() . ';base64,' . base64_encode($image->get()),
+                    ],
+                ];
+            }
+
+            $response = Http::timeout(25)->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => request()->getHttpHost(),
+                'X-Title' => 'Hinaguan Nature Park Feedback Moderation',
+            ])->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model' => config('services.openrouter.vision_model', 'openrouter/free'),
+                'messages' => [[
+                    'role' => 'user',
+                    'content' => $content,
+                ]],
+                'temperature' => 0,
+                'max_tokens' => 300,
+            ]);
+
+            if (! $response->successful()) {
+                Log::warning('Feedback image moderation request failed.', ['status' => $response->status()]);
+                return ['available' => false, 'blocked' => false, 'matches' => []];
+            }
+
+            $rawContent = $response->json('choices.0.message.content');
+            $rawContent = is_string($rawContent) ? $rawContent : json_encode($rawContent);
+            if (! preg_match('/\{.*\}/s', (string) $rawContent, $jsonMatch)) {
+                return ['available' => false, 'blocked' => false, 'matches' => []];
+            }
+
+            $result = json_decode($jsonMatch[0], true);
+            if (! is_array($result)) {
+                return ['available' => false, 'blocked' => false, 'matches' => []];
+            }
+
+            return [
+                'available' => true,
+                'blocked' => (bool) ($result['blocked'] ?? false),
+                'matches' => array_values(array_filter((array) ($result['matches'] ?? []))),
+            ];
+        } catch (\Throwable $exception) {
+            Log::warning('Feedback image moderation unavailable.', ['message' => $exception->getMessage()]);
+            return ['available' => false, 'blocked' => false, 'matches' => []];
+        }
+    }
 
     /**
      * Analyze sentiment for a single feedback item with granular positive & negative phrase extraction.
@@ -367,7 +452,7 @@ class FeedbackAiService
      */
     protected function extractSentenceWithWord(string $text, string $word): string
     {
-        $sentences = preg_split('/(?<=[.?!,\n])\s+/', $text);
+        $sentences = preg_split('/(?<=[.?!\n])\s+/', $text);
         foreach ($sentences as $s) {
             if (stripos($s, $word) !== false) {
                 return trim($s);

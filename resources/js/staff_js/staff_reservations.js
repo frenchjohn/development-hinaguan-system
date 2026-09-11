@@ -327,6 +327,22 @@ window.AppPage['staff_reservations'] = function () {
         return singleCount + bulkCount;
     };
 
+    const getGenderBadgeHtml = (gender) => {
+        const isFemale = String(gender || '').trim().toLowerCase() === 'female';
+        if (isFemale) {
+            return `<span class="inline-flex items-center gap-1 rounded-md bg-pink-100/80 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border border-pink-300/80 dark:border-pink-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-female text-xs"></i> Female</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-blue-100/80 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-300/80 dark:border-blue-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-male text-xs"></i> Male</span>`;
+    };
+
+    const getAgeBadgeHtml = (ageText) => {
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(ageText)}</span>`;
+    };
+
+    const getNationalityBadgeHtml = (nationality) => {
+        return `<span class="inline-flex items-center gap-1 rounded-md bg-amber-100/70 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-300/70 dark:border-amber-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(nationality)}</span>`;
+    };
+
     // Modal Staged companion search and filter controls
     const checkInModalCompanionPreviewList = document.getElementById('checkInModalCompanionPreviewList');
     const checkInModalCompanionPreviewCountBadge = document.getElementById('checkInModalCompanionPreviewCountBadge');
@@ -395,8 +411,8 @@ window.AppPage['staff_reservations'] = function () {
             checkInModalCompanionPreviewCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'}`;
         }
         if (checkInModalCompanionFooterSummary) {
-            checkInModalCompanionFooterSummary.textContent = totalCount === 0 
-                ? '0 companions added so far' 
+            checkInModalCompanionFooterSummary.textContent = totalCount === 0
+                ? '0 companions added so far'
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} staged (Ready to apply)`;
         }
         if (checkInModalCompanionClearAllBtn) {
@@ -472,8 +488,9 @@ window.AppPage['staff_reservations'] = function () {
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(companion.gender || 'Male')}, ${escapeHtml(companion.age || '—')} yrs (${rateLabel})</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${getGenderBadgeHtml(companion.gender)}
+                            ${getAgeBadgeHtml(companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel)}
+                            ${getNationalityBadgeHtml(nationality)}
                             ${amenityBadge}
                             ${poolBadge}
                         </div>
@@ -521,7 +538,7 @@ window.AppPage['staff_reservations'] = function () {
             if (resAmenities.length > 1) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
                 const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
+                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
             }
 
             const item = document.createElement('div');
@@ -533,9 +550,10 @@ window.AppPage['staff_reservations'] = function () {
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Bulk: ${group.quantity} guests</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(group.gender)}, Age ${escapeHtml(group.age_group)} (${rateLabel})</span>
-                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">${group.quantity} guests</span>
+                            ${getGenderBadgeHtml(group.gender)}
+                            ${getAgeBadgeHtml(`Age ${group.age_group} (${rateLabel})`)}
+                            ${getNationalityBadgeHtml(nationality)}
                             ${amenityBadge}
                             ${poolBadge}
                         </div>
@@ -770,6 +788,10 @@ window.AppPage['staff_reservations'] = function () {
         if (checkInCompanionCountBadge) {
             checkInCompanionCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'} added`;
         }
+        const sidebarCompBadge = document.getElementById('checkInSidebarCompanionsBadge');
+        if (sidebarCompBadge) {
+            sidebarCompBadge.textContent = totalCount;
+        }
 
         const searchTerm = (checkInCompanionSearchInput?.value || '').trim().toLowerCase();
         const filterGender = (checkInCompanionFilterGender?.value || '').trim();
@@ -831,12 +853,22 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
+            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)} - ${escapeHtml(nationality)} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${escapeHtml(companion.gender)}</span>
-                    ${amenityBadgeHtml}
-                    ${poolBadgeHtml}
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
+                        <i class="bi bi-person-fill text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="guest-companion-pill__name text-xs font-extrabold text-hp-text dark:text-white truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            ${getGenderBadgeHtml(companion.gender)}
+                            ${getAgeBadgeHtml(companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel)}
+                            ${getNationalityBadgeHtml(nationality)}
+                            ${amenityBadgeHtml}
+                            ${poolBadgeHtml}
+                        </div>
+                    </div>
                 </div>
                 <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-companion-index="${index}" title="Remove companion">
                     <i class="bi bi-trash3 text-xs"></i>
@@ -884,12 +916,24 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
+            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
-                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${escapeHtml(group.gender)} - ${escapeHtml(nationality)} - Age Group: ${escapeHtml(group.age_group)} (${rateLabel})</span>
-                    ${bulkAmenityBadgeHtml}
-                    ${bulkPoolBadgeHtml}
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
+                        <i class="bi bi-people-fill text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="inline-flex items-center rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/25 px-2 py-0.5 text-xs font-extrabold shadow-2xs">
+                                ${group.quantity} Guests
+                            </span>
+                            ${getGenderBadgeHtml(group.gender)}
+                            ${getAgeBadgeHtml(`Age ${group.age_group} (${rateLabel})`)}
+                            ${getNationalityBadgeHtml(nationality)}
+                            ${bulkAmenityBadgeHtml}
+                            ${bulkPoolBadgeHtml}
+                        </div>
+                    </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
@@ -958,7 +1002,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const opt = checkInPoolOption?.value || 'no_pool';
-        let html = '<div style="margin-bottom: 1rem;"><h4>Companion Groups:</h4>';
+        let html = '<div class="mb-3"><h4 class="font-bold text-sm text-hp-text dark:text-gray-200 mb-2">Companion Groups:</h4>';
         let totalCompanions = 0;
 
         bulkCompanionGroups.forEach(group => {
@@ -970,15 +1014,15 @@ window.AppPage['staff_reservations'] = function () {
                 poolGroupNote = ` | <strong>Pool:</strong> ${group.pool_quantity || 0} of ${group.quantity}`;
             }
             html += `
-                <div style="padding: 0.5rem; background-color: #e5e5e5; border: 1px solid #d4d4d4; border-radius: 0.25rem; margin-bottom: 0.5rem; color: #000;">
-                    <p><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}${poolGroupNote}</p>
+                <div class="p-2.5 bg-black/5 dark:bg-white/5 border border-glass-border rounded-xl mb-2 text-xs text-hp-text dark:text-gray-200">
+                    <p class="m-0"><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}${poolGroupNote}</p>
                 </div>
             `;
             totalCompanions += group.quantity;
         });
 
-        html += `<p><strong>Total Companions:</strong> ${totalCompanions}</p></div>`;
-        html += '<p style="color: #666; font-size: 0.875rem;">Please review the companion groups above before checking in.</p>';
+        html += `<p class="font-bold text-xs text-hp-text dark:text-gray-200 mt-2"><strong>Total Companions:</strong> ${totalCompanions}</p></div>`;
+        html += '<p class="text-xs text-hp-text-muted mt-1">Please review the companion groups above before checking in.</p>';
 
         companionSummaryBody.innerHTML = html;
         if (companionSummaryModal) {
@@ -1023,49 +1067,49 @@ window.AppPage['staff_reservations'] = function () {
         if (extraHeadTotal > 0) {
             const breakdownLines = extraHeadBreakdown.map(b => `${escapeHtml(b.amenity_name)}: ${b.excess} extra × ₱${b.add_rate.toFixed(2)} = ₱${b.fee.toFixed(2)}`).join('<br>');
             extraHeadHtml = `
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #b45309; background: #fffbeb;">
-                    <span style="font-size: 0.85rem; font-weight: 600;">Extra Head Fee (${extraHeadBreakdown.reduce((s, b) => s + b.excess, 0)} extra)</span>
-                    <strong style="font-size: 0.85rem;">₱${extraHeadTotal.toFixed(2)}</strong>
+                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-amber-700 dark:text-amber-300 bg-amber-500/10">
+                    <span class="text-xs font-semibold">Extra Head Fee (${extraHeadBreakdown.reduce((s, b) => s + b.excess, 0)} extra)</span>
+                    <strong class="text-xs font-bold">₱${extraHeadTotal.toFixed(2)}</strong>
                 </div>
-                <div style="padding: 0.4rem 0.9rem; font-size: 0.75rem; color: #92400e; background: #fffbeb; border-top: 1px dashed #fde68a;">
+                <div class="px-3.5 py-2 text-[0.72rem] text-amber-800 dark:text-amber-200 bg-amber-500/10 border-t border-dashed border-amber-500/30">
                     ${breakdownLines}
                 </div>
             `;
         }
 
-        let html = `<p>Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
+        let html = `<p class="text-sm text-hp-text dark:text-gray-200 mb-3">Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
 
         html += `
-            <div style="margin-top: 1rem; border: 1px solid #f3f4f6; border-radius: 0.6rem; overflow: hidden;">
-                <div style="padding: 0.65rem 0.9rem; background: #f8fafc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Payment Summary</div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; color: #334155;">
-                    <span style="font-size: 0.85rem;">Entrance fee</span>
-                    <strong style="font-size: 0.85rem;">${entranceOpt === 'all_free' ? 'Free Promo (₱0.00)' : '₱' + entranceTotal.toFixed(2)}</strong>
+            <div class="mt-3 border border-glass-border rounded-xl overflow-hidden bg-glass">
+                <div class="px-3.5 py-2 bg-black/5 dark:bg-white/5 text-[0.7rem] font-bold uppercase tracking-wider text-hp-text-muted">Payment Summary</div>
+                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 text-xs text-hp-text dark:text-gray-200">
+                    <span>Entrance fee</span>
+                    <strong class="font-bold">${entranceOpt === 'all_free' ? 'Free Promo (₱0.00)' : '₱' + entranceTotal.toFixed(2)}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #9ca3af; font-size: 0.8rem;">
+                <div class="flex justify-between items-center gap-4 px-3.5 py-2 border-t border-glass-border text-[0.75rem] text-hp-text-muted">
                     <span>${adultCount} adult${adultCount === 1 ? '' : 's'}${entranceOpt === 'all_free' ? ' (Free Promo)' : ' × ₱' + adultRate.toFixed(2)} + ${childCount} child${childCount === 1 ? '' : 'ren'}${entranceOpt === 'all_free' ? ' (Free Promo)' : ' × ₱' + childRate.toFixed(2)}</span>
                     <span>₱${entranceTotal.toFixed(2)}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
-                    <span style="font-size: 0.85rem;">Pool access</span>
-                    <strong style="font-size: 0.85rem;">${poolText}</strong>
+                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-xs text-hp-text dark:text-gray-200">
+                    <span>Pool access</span>
+                    <strong class="font-bold">${poolText}</strong>
                 </div>
                 ${extraHeadHtml}
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
-                    <span style="font-size: 0.85rem;">Remaining reservation balance</span>
-                    <strong style="font-size: 0.85rem;">₱${balance.toFixed(2)}</strong>
+                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-xs text-hp-text dark:text-gray-200">
+                    <span>Remaining reservation balance</span>
+                    <strong class="font-bold">₱${balance.toFixed(2)}</strong>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border-top: 1px solid #f3f4f6;">
-                    <strong style="font-size: 0.95rem;">Total to pay</strong>
-                    <strong style="font-size: 0.95rem; color: #16a34a;">₱${grandTotal.toFixed(2)}</strong>
+                <div class="flex justify-between items-center gap-4 px-3.5 py-3 bg-emerald-500/15 border-t border-glass-border">
+                    <strong class="text-sm font-bold text-hp-text dark:text-gray-100">Total to pay</strong>
+                    <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${grandTotal.toFixed(2)}</strong>
                 </div>
             </div>
-            <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation will be marked as <strong>Checked In</strong> and paid.</p>
+            <p class="mt-3 text-xs text-hp-text-muted">This reservation will be marked as <strong>Checked In</strong> and paid.</p>
         `;
 
         if (!isToday && reservationDate) {
             html += `
-                <div style="margin-top: 1rem; padding: 0.75rem; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 0.25rem; color: #856404;">
+                <div class="mt-3 p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-300 text-xs">
                     <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Warning:</strong> This reservation is not scheduled for today.<br>
                     <strong>Reservation Date:</strong> ${reservationDate}<br>
                     <strong>Today:</strong> ${today}
@@ -1192,14 +1236,14 @@ window.AppPage['staff_reservations'] = function () {
         const hasPrimary = guestMode === 'with_primary';
 
         if (hasPrimary) {
-            const primaryAge = parseInt(checkInForm?.querySelector('input[name="check_in_primary_guest[age]"]')?.value, 10);
+            const primaryAge = parseInt(checkInPrimaryGuest.age, 10);
             if (!isNaN(primaryAge) && primaryAge <= 12) childCount += 1;
             else adultCount += 1;
 
             if (poolOpt === 'all_paid' || poolOpt === 'all_free') {
                 poolCount += 1;
             } else if (poolOpt === 'specific') {
-                if (checkInPrimaryGuestHasPool?.checked) {
+                if (checkInPrimaryGuest.has_pool_access) {
                     poolCount += 1;
                 }
             }
@@ -1234,7 +1278,7 @@ window.AppPage['staff_reservations'] = function () {
             const amenityCounts = {};
 
             if (hasPrimary) {
-                const pAmenityId = String(checkInForm?.querySelector('[name="check_in_primary_guest[amenity_id]"]')?.value || defaultAmenityId);
+                const pAmenityId = String(defaultAmenityId);
                 amenityCounts[pAmenityId] = (amenityCounts[pAmenityId] || 0) + 1;
             }
 
@@ -1286,7 +1330,10 @@ window.AppPage['staff_reservations'] = function () {
 
     const updateCheckInFeeSummary = () => {
         const { period, adultCount, childCount, adultRate, childRate, entranceOpt, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
+        const totalAmount = Number(currentReservationData?.total_amount || 0);
         const balance = Number(currentReservationData?.remaining_balance || 0);
+        const paidDeposit = Number(currentReservationData?.amount_paid !== undefined && currentReservationData?.amount_paid !== null ? currentReservationData.amount_paid : Math.max(0, totalAmount - balance));
+        const grandTotal = total + balance;
 
         const badge = document.getElementById('checkInEffectivePeriodBadge');
         if (badge) badge.textContent = getCheckInPeriodLabel(period);
@@ -1332,58 +1379,325 @@ window.AppPage['staff_reservations'] = function () {
         if (extraHeadTotalEl) {
             extraHeadTotalEl.textContent = `₱${extraHeadTotal.toFixed(2)}`;
         }
+        const bookingTotalEl = document.getElementById('checkInBookingTotalText');
+        if (bookingTotalEl) bookingTotalEl.textContent = `₱${totalAmount.toFixed(2)}`;
+        const bookingPaidEl = document.getElementById('checkInBookingPaidText');
+        if (bookingPaidEl) bookingPaidEl.textContent = `₱${paidDeposit.toFixed(2)}`;
         const balanceEl = document.getElementById('checkInReservationBalance');
         if (balanceEl) balanceEl.textContent = `₱${balance.toFixed(2)}`;
         const grandEl = document.getElementById('checkInGrandTotal');
-        if (grandEl) grandEl.textContent = `₱${(total + balance).toFixed(2)}`;
+        if (grandEl) grandEl.textContent = `₱${grandTotal.toFixed(2)}`;
+        const sidebarGrandEl = document.getElementById('checkInSidebarGrandTotalText');
+        if (sidebarGrandEl) sidebarGrandEl.textContent = `₱${grandTotal.toFixed(2)}`;
+        const sidebarFeesBadge = document.getElementById('checkInSidebarFeesBadge');
+        if (sidebarFeesBadge) sidebarFeesBadge.textContent = `₱${grandTotal.toFixed(2)}`;
+
+        const entranceCompactEl = document.getElementById('checkInEntranceCompactText');
+        if (entranceCompactEl) {
+            entranceCompactEl.textContent = entranceOpt === 'all_free' ? 'Entrance: Free Promo' : 'Entrance: Standard Rate';
+        }
+        const poolCompactEl = document.getElementById('checkInPoolCompactText');
+        if (poolCompactEl) {
+            if (poolOpt === 'no_pool') poolCompactEl.textContent = 'Pool: None';
+            else if (poolOpt === 'all_free') poolCompactEl.textContent = 'Pool: Free Promo';
+            else if (poolOpt === 'all_paid') poolCompactEl.textContent = 'Pool: All Paid';
+            else poolCompactEl.textContent = `Pool: Specific (${poolCount})`;
+        }
     };
 
-    const fillFormWithGuestData = (guestData, namePrefix) => {
-        if (!guestData || !checkInForm) return;
+    let checkInPrimaryGuest = {
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        age: '',
+        gender: '',
+        is_foreigner: false,
+        phone: '',
+        email: '',
+        has_pool_access: false,
+    };
 
-        const firstNameInput = checkInForm.querySelector(`input[name="${namePrefix}[first_name]"]`);
-        const middleNameInput = checkInForm.querySelector(`input[name="${namePrefix}[middle_name]"]`);
-        const lastNameInput = checkInForm.querySelector(`input[name="${namePrefix}[last_name]"]`);
-        const ageInput = checkInForm.querySelector(`input[name="${namePrefix}[age]"]`);
-        const genderSelect = checkInForm.querySelector(`select[name="${namePrefix}[gender]"]`);
-        const isForeignerSelect = checkInForm.querySelector(`select[name="${namePrefix}[is_foreigner]"]`);
-        const phoneInput = checkInForm.querySelector(`input[name="${namePrefix}[phone]"]`);
-        const emailInput = checkInForm.querySelector(`input[name="${namePrefix}[email]"]`);
+    const syncCheckInPrimaryGuestUI = () => {
+        // Sync to hidden form inputs
+        const hFirst = document.getElementById('checkInHiddenPrimaryFirstName');
+        const hMiddle = document.getElementById('checkInHiddenPrimaryMiddleName');
+        const hLast = document.getElementById('checkInHiddenPrimaryLastName');
+        const hAge = document.getElementById('checkInHiddenPrimaryAge');
+        const hGender = document.getElementById('checkInHiddenPrimaryGender');
+        const hNat = document.getElementById('checkInHiddenPrimaryIsForeigner');
+        const hPhone = document.getElementById('checkInHiddenPrimaryPhone');
+        const hEmail = document.getElementById('checkInHiddenPrimaryEmail');
+        const hPool = document.getElementById('checkInHiddenPrimaryHasPool');
 
-        if (firstNameInput) firstNameInput.value = guestData.first_name || '';
-        if (middleNameInput) middleNameInput.value = guestData.middle_name || '';
-        if (lastNameInput) lastNameInput.value = guestData.last_name || '';
-        if (ageInput) ageInput.value = guestData.age || '';
-        if (genderSelect) genderSelect.value = guestData.gender || 'Male';
+        if (hFirst) hFirst.value = checkInPrimaryGuest.first_name || '';
+        if (hMiddle) hMiddle.value = checkInPrimaryGuest.middle_name || '';
+        if (hLast) hLast.value = checkInPrimaryGuest.last_name || '';
+        if (hAge) hAge.value = checkInPrimaryGuest.age || '';
+        if (hGender) hGender.value = checkInPrimaryGuest.gender || '';
+        if (hNat) hNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
+        if (hPhone) hPhone.value = checkInPrimaryGuest.phone || '';
+        if (hEmail) hEmail.value = checkInPrimaryGuest.email || '';
+        if (hPool) hPool.value = checkInPrimaryGuest.has_pool_access ? '1' : '0';
 
-        if (isForeignerSelect) {
-            isForeignerSelect.value = guestData.is_foreigner ? '1' : '0';
+        // Check if main guest information is complete (age and gender required)
+        const isComplete = Boolean(
+            checkInPrimaryGuest.first_name &&
+            checkInPrimaryGuest.last_name &&
+            checkInPrimaryGuest.age &&
+            checkInPrimaryGuest.gender
+        );
+
+        const emptyState = document.getElementById('checkInMainGuestEmptyState');
+        const filledState = document.getElementById('checkInMainGuestFilledState');
+        const emptyName = document.getElementById('checkInMainGuestEmptyName');
+        const emptySub = document.getElementById('checkInMainGuestEmptySub');
+
+        // Sync to Main Guest Card
+        const cardName = document.getElementById('checkInMainGuestCardName');
+        const cardRate = document.getElementById('checkInMainGuestCardRateBadge');
+        const cardNat = document.getElementById('checkInMainGuestCardNationality');
+        const cardDetails = document.getElementById('checkInMainGuestCardDetails');
+        const cardContact = document.getElementById('checkInMainGuestCardContact');
+        const cardPoolWrap = document.getElementById('checkInMainGuestCardPoolWrap');
+
+        const parsedAge = parseInt(checkInPrimaryGuest.age, 10);
+        const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child Rate' : 'Adult Rate';
+        const fullName = `${checkInPrimaryGuest.first_name || ''} ${checkInPrimaryGuest.last_name || ''}`.trim() || 'Primary Booker';
+
+        if (emptyName) emptyName.textContent = fullName;
+        if (emptySub) {
+            const missing = [];
+            if (!checkInPrimaryGuest.age) missing.push('age');
+            if (!checkInPrimaryGuest.gender) missing.push('gender');
+            emptySub.textContent = missing.length > 0
+                ? `Missing ${missing.join(' & ')} — Click to fill up details`
+                : 'Click to edit details';
         }
 
-        if (phoneInput) phoneInput.value = guestData.phone || '';
-        if (emailInput) emailInput.value = guestData.email || '';
-    };
-
-    const toggleCheckInPrimaryGuestSection = () => {
-        if (!checkInForm) return;
-        const guestMode = checkInForm.querySelector('input[name="check_in_guest_mode"]:checked')?.value;
-        const primarySection = document.getElementById('checkInPrimaryGuestSection');
-        if (primarySection) {
-            primarySection.style.display = guestMode === 'with_primary' ? 'block' : 'none';
+        if (isComplete) {
+            if (emptyState) emptyState.classList.add('hidden');
+            if (filledState) {
+                filledState.classList.remove('hidden');
+                filledState.classList.add('flex');
+            }
+        } else {
+            if (filledState) {
+                filledState.classList.add('hidden');
+                filledState.classList.remove('flex');
+            }
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            }
         }
-        updateCheckInFeeSummary();
+
+        if (cardName) cardName.textContent = fullName;
+        if (cardRate) {
+            cardRate.textContent = rateLabel;
+            cardRate.className = rateLabel === 'Child Rate'
+                ? 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-amber-700 bg-amber-500/10 dark:text-amber-300'
+                : 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300';
+        }
+        if (cardNat) cardNat.textContent = checkInPrimaryGuest.is_foreigner ? 'Foreigner' : 'Filipino';
+        if (cardDetails) {
+            const agePart = checkInPrimaryGuest.age ? `${checkInPrimaryGuest.age} yrs` : '';
+            cardDetails.textContent = [agePart, checkInPrimaryGuest.gender].filter(Boolean).join(' • ') || 'Details not set';
+        }
+        if (cardContact) {
+            cardContact.textContent = [checkInPrimaryGuest.phone, checkInPrimaryGuest.email].filter(Boolean).join(' • ') || 'No contact provided';
+        }
+
+        if (cardPoolWrap) {
+            const poolOpt = checkInPoolOption?.value || 'no_pool';
+            if (poolOpt === 'all_free') {
+                cardPoolWrap.innerHTML = '<span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>';
+            } else if (poolOpt === 'all_paid') {
+                cardPoolWrap.innerHTML = '<span class="inline-flex items-center gap-1 rounded-md bg-sky-500/15 text-sky-800 dark:text-sky-300 px-2 py-0.5 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> Pool Pass</span>';
+            } else if (poolOpt === 'specific') {
+                cardPoolWrap.innerHTML = checkInPrimaryGuest.has_pool_access
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded-md bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" id="toggleMainGuestPoolBtn" title="Click to remove pool access"><i class="bi bi-water text-sky-600"></i> Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded-md bg-glass border border-glass-border text-hp-text-muted px-2 py-0.5 text-xs font-medium cursor-pointer hover:bg-glass-hover transition-colors" id="toggleMainGuestPoolBtn" title="Click to grant pool access">+ Pool Access</button>`;
+
+                document.getElementById('toggleMainGuestPoolBtn')?.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    checkInPrimaryGuest.has_pool_access = !checkInPrimaryGuest.has_pool_access;
+                    syncCheckInPrimaryGuestUI();
+                    updateCheckInFeeSummary();
+                });
+            } else {
+                cardPoolWrap.innerHTML = '';
+            }
+        }
     };
 
-    checkInForm?.addEventListener('change', (e) => {
-        if (e.target.name === 'check_in_guest_mode') {
-            toggleCheckInPrimaryGuestSection();
+    // Main Guest Edit Modal Controls
+    const checkInMainGuestModal = document.getElementById('checkInMainGuestModal');
+    const openCheckInMainGuestModal = () => {
+        const mFirst = document.getElementById('checkInMainFirstName');
+        const mMiddle = document.getElementById('checkInMainMiddleName');
+        const mLast = document.getElementById('checkInMainLastName');
+        const mAge = document.getElementById('checkInMainAge');
+        const mGender = document.getElementById('checkInMainGender');
+        const mNat = document.getElementById('checkInMainIsForeigner');
+        const mPhone = document.getElementById('checkInMainPhone');
+        const mEmail = document.getElementById('checkInMainEmail');
+        const mPool = document.getElementById('checkInPrimaryGuestHasPool');
+        const poolRow = document.getElementById('checkInMainPoolAccessRow');
+        const ageBadge = document.getElementById('checkInMainAgeBadge');
+
+        if (mFirst) mFirst.value = checkInPrimaryGuest.first_name || '';
+        if (mMiddle) mMiddle.value = checkInPrimaryGuest.middle_name || '';
+        if (mLast) mLast.value = checkInPrimaryGuest.last_name || '';
+        if (mAge) mAge.value = checkInPrimaryGuest.age || '';
+        if (mGender) mGender.value = checkInPrimaryGuest.gender || '';
+        if (mNat) mNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
+        if (mPhone) mPhone.value = checkInPrimaryGuest.phone || '';
+        if (mEmail) mEmail.value = checkInPrimaryGuest.email || '';
+
+        if (ageBadge) {
+            if (checkInPrimaryGuest.age) {
+                const val = parseInt(checkInPrimaryGuest.age, 10);
+                ageBadge.textContent = (!isNaN(val) && val <= 12) ? 'Child Rate' : 'Adult Rate';
+                ageBadge.className = (!isNaN(val) && val <= 12)
+                    ? 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-amber-700 bg-amber-500/10 dark:text-amber-300'
+                    : 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300';
+                ageBadge.classList.remove('hidden');
+            } else {
+                ageBadge.classList.add('hidden');
+            }
+        }
+
+        const poolOpt = checkInPoolOption?.value || 'no_pool';
+        if (poolRow) poolRow.style.display = poolOpt === 'specific' ? 'flex' : 'none';
+        if (mPool) mPool.checked = !!checkInPrimaryGuest.has_pool_access;
+
+        document.getElementById('checkInMainGuestModalError')?.classList.add('hidden');
+
+        if (checkInMainGuestModal) {
+            checkInMainGuestModal.classList.add('is-open');
+            checkInMainGuestModal.classList.remove('hidden');
+            checkInMainGuestModal.setAttribute('aria-hidden', 'false');
+        }
+    };
+
+    const closeCheckInMainGuestModal = () => {
+        if (checkInMainGuestModal) {
+            checkInMainGuestModal.classList.remove('is-open');
+            checkInMainGuestModal.classList.add('hidden');
+            checkInMainGuestModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    document.querySelectorAll('[data-close-check-in-main-guest-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeCheckInMainGuestModal);
+    });
+
+    document.getElementById('checkInEditMainGuestBtn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openCheckInMainGuestModal();
+    });
+
+    document.getElementById('checkInMainGuestCard')?.addEventListener('click', () => {
+        openCheckInMainGuestModal();
+    });
+
+    document.getElementById('checkInMainAge')?.addEventListener('input', (e) => {
+        const badge = document.getElementById('checkInMainAgeBadge');
+        if (!badge) return;
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 0) {
+            badge.textContent = val <= 12 ? 'Child Rate' : 'Adult Rate';
+            badge.className = val <= 12
+                ? 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-amber-700 bg-amber-500/10 dark:text-amber-300'
+                : 'rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300';
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
         }
     });
 
-    checkInForm?.addEventListener('input', (e) => {
-        if (e.target.name === 'check_in_primary_guest[age]') {
-            updateCheckInFeeSummary();
+    document.getElementById('checkInSaveMainGuestBtn')?.addEventListener('click', () => {
+        const mFirst = document.getElementById('checkInMainFirstName')?.value.trim();
+        const mMiddle = document.getElementById('checkInMainMiddleName')?.value.trim();
+        const mLast = document.getElementById('checkInMainLastName')?.value.trim();
+        const mAge = document.getElementById('checkInMainAge')?.value.trim();
+        const mGender = document.getElementById('checkInMainGender')?.value;
+        const mNat = document.getElementById('checkInMainIsForeigner')?.value === '1';
+        const mPhone = document.getElementById('checkInMainPhone')?.value.trim();
+        const mEmail = document.getElementById('checkInMainEmail')?.value.trim();
+        const mPool = document.getElementById('checkInPrimaryGuestHasPool')?.checked;
+
+        if (!mFirst || !mLast || !mAge || !mGender) {
+            document.getElementById('checkInMainGuestModalError')?.classList.remove('hidden');
+            return;
         }
+
+        checkInPrimaryGuest.first_name = mFirst;
+        checkInPrimaryGuest.middle_name = mMiddle;
+        checkInPrimaryGuest.last_name = mLast;
+        checkInPrimaryGuest.age = mAge;
+        checkInPrimaryGuest.gender = mGender;
+        checkInPrimaryGuest.is_foreigner = mNat;
+        checkInPrimaryGuest.phone = mPhone;
+        checkInPrimaryGuest.email = mEmail;
+        if (checkInPoolOption?.value === 'specific') {
+            checkInPrimaryGuest.has_pool_access = !!mPool;
+        }
+
+        syncCheckInPrimaryGuestUI();
+        updateCheckInFeeSummary();
+        closeCheckInMainGuestModal();
+    });
+
+    // Check-in Tab switching logic
+    const checkInTabButtons = document.querySelectorAll('.walkin-tab-btn[data-checkin-target]');
+    const checkInTabPanes = {
+        checkInAmenitiesTab: document.getElementById('checkInAmenitiesTab'),
+        checkInGuestsTab: document.getElementById('checkInGuestsTab'),
+        checkInFeesTab: document.getElementById('checkInFeesTab'),
+    };
+
+    const switchCheckInTab = (targetId) => {
+        checkInTabButtons.forEach(btn => {
+            const isCurrent = btn.dataset.checkinTarget === targetId;
+            btn.classList.toggle('is-active', isCurrent);
+        });
+
+        Object.entries(checkInTabPanes).forEach(([id, pane]) => {
+            if (!pane) return;
+            if (id === targetId) {
+                pane.style.display = 'flex';
+                pane.classList.remove('hidden');
+            } else {
+                pane.style.display = 'none';
+                pane.classList.add('hidden');
+            }
+        });
+    };
+
+    checkInTabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.checkinTarget;
+            if (target) switchCheckInTab(target);
+        });
+    });
+
+    document.querySelectorAll('[data-checkin-step-to]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.checkinStepTo;
+            if (target === 'checkInFeesTab') {
+                if (!checkInPrimaryGuest.first_name || !checkInPrimaryGuest.last_name || !checkInPrimaryGuest.age || !checkInPrimaryGuest.gender) {
+                    openCheckInMainGuestModal();
+                    const err = document.getElementById('checkInMainGuestModalError');
+                    if (err) {
+                        err.textContent = 'Please complete the main guest information (age and gender required) before proceeding to review.';
+                        err.classList.remove('hidden');
+                    }
+                    return;
+                }
+            }
+            if (target) switchCheckInTab(target);
+        });
     });
 
     checkInPoolOption?.addEventListener('change', () => {
@@ -1825,13 +2139,118 @@ window.AppPage['staff_reservations'] = function () {
             }
         }
 
+        // 1. Setup Stay Schedule compact pills & popover details
+        const sDate = reservation?.check_in || reservation?.start_date || reservation?.reservation_date || '';
+        const eDate = reservation?.check_out || reservation?.end_date || sDate;
+        const slot = reservation?.start_slot || reservation?.time_period || 'Daytime';
+        const days = reservation?.total_days || 1;
+
+        const formatDisplayDate = (dStr) => {
+            if (!dStr) return '';
+            const d = new Date(dStr.includes('T') ? dStr : dStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dStr;
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        };
+        const sDisplay = formatDisplayDate(sDate);
+        const eDisplay = formatDisplayDate(eDate);
+
+        const compactTextEl = document.getElementById('checkInStayCompactText');
+        if (compactTextEl) {
+            compactTextEl.textContent = sDisplay === eDisplay ? `${sDisplay} • ${days} Day${days > 1 ? 's' : ''}` : `${sDisplay} – ${eDisplay} • ${days} Days`;
+        }
+        const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
+        if (sessionBadgeEl) {
+            sessionBadgeEl.textContent = slot;
+        }
+        const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
+        if (schedSummaryEl) {
+            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slot} Session)`;
+        }
+        const schedDatesEl = document.getElementById('checkInScheduleDatesText');
+        if (schedDatesEl) {
+            schedDatesEl.textContent = `Check-in: ${sDisplay} • Check-out: ${eDisplay}`;
+        }
+
+        // 2. Setup Pre-booked Amenity cards inside #checkInAmenitiesContainer
+        const resAmenities = reservation?.reservation_amenities || [];
+        const amenitiesContainer = document.getElementById('checkInAmenitiesContainer');
+        const amenitiesCountBadge = document.getElementById('checkInAmenitiesCountBadge');
+        const sidebarAmenitiesBadge = document.getElementById('checkInSidebarAmenitiesBadge');
+
+        if (amenitiesCountBadge) {
+            amenitiesCountBadge.textContent = `${resAmenities.length} Booked`;
+        }
+        if (sidebarAmenitiesBadge) {
+            sidebarAmenitiesBadge.textContent = String(resAmenities.length);
+        }
+
+        if (amenitiesContainer) {
+            if (resAmenities.length === 0) {
+                amenitiesContainer.innerHTML = `
+                    <div class="py-12 text-center text-xs text-hp-text-muted/70 italic">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-50"></i>
+                        No amenities reserved for this booking.
+                    </div>
+                `;
+            } else {
+                let amCardsHtml = '';
+                resAmenities.forEach((ra) => {
+                    const am = ra.amenity || {};
+                    const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id)) || {};
+                    const amName = am.amenities_name || fullAm.amenities_name || 'Amenity';
+                    const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? am.maximum_capacity : (fullAm.maximum_capacity || 'No limit');
+                    const addHead = parseFloat(am.additional_per_head || fullAm.additional_per_head || 0);
+                    const addHeadText = addHead > 0 ? `+₱${addHead.toFixed(2)}/head` : '';
+
+                    const bookingPrice = parseFloat(ra.price_at_booking ?? ra.price);
+                    let price = !isNaN(bookingPrice) && bookingPrice > 0 ? bookingPrice : 0;
+                    if (price === 0) {
+                        const isNight = String(ra.start_slot || ra.pricing_type || slot || '').toLowerCase().includes('night');
+                        const slotPrice = isNight
+                            ? (parseFloat(am.nighttime_price ?? fullAm.nighttime_price ?? 0))
+                            : (parseFloat(am.daytime_price ?? fullAm.daytime_price ?? 0));
+                        price = !isNaN(slotPrice) ? slotPrice : 0;
+                    }
+
+                    const hasFreeEntrance = Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm.benefits?.free_entrance || fullAm.free_entrance);
+                    const hasFreePool = Boolean(am.free_pool || am.benefits?.free_pool || fullAm.benefits?.free_pool || fullAm.free_pool);
+
+                    amCardsHtml += `
+                        <div class="group flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-glass-border bg-glass hover:border-hp-green/40 hover:bg-glass-hover transition-all">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <div class="w-10 h-10 rounded-xl bg-hp-green/10 text-hp-green flex items-center justify-center font-bold text-base shrink-0 border border-glass-border">
+                                    <i class="bi bi-house-door-fill"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(amName)}</span>
+                                        ${hasFreeEntrance ? '<span class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Free Entrance Included</span>' : ''}
+                                        ${hasFreePool ? '<span class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-sky-700 bg-sky-500/10 dark:text-sky-300">Free Pool Included</span>' : ''}
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-hp-text-muted mt-1 flex-wrap">
+                                        <span><i class="bi bi-people-fill text-[0.7rem] text-hp-green mr-1"></i>Capacity: ${maxCap}</span>
+                                        ${addHeadText ? `<span><i class="bi bi-plus-circle text-[0.7rem] text-amber-500 mr-1"></i>${addHeadText}</span>` : ''}
+                                        <span><i class="bi bi-clock-history text-[0.7rem] text-hp-text-muted mr-1"></i>${escapeHtml(slot)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-[0.7rem] uppercase tracking-wider text-hp-text-muted font-bold">Rate</div>
+                                <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${price.toFixed(2)}</strong>
+                            </div>
+                        </div>
+                    `;
+                });
+                amenitiesContainer.innerHTML = amCardsHtml;
+            }
+        }
+
         // Setup Amenity select dropdowns for companion modals
         const companionAmenityWrap = document.getElementById('checkInCompanionAmenityWrap');
         const companionAmenitySelect = document.getElementById('checkInCompanionAmenity');
         const bulkAmenityWrap = document.getElementById('checkInBulkCompanionAmenityWrap');
         const bulkAmenitySelect = document.getElementById('checkInBulkCompanionAmenity');
 
-        const resAmenities = reservation?.reservation_amenities || [];
         if (resAmenities.length > 1) {
             let optionsHtml = '';
             resAmenities.forEach(ra => {
@@ -1844,11 +2263,11 @@ window.AppPage['staff_reservations'] = function () {
             });
             if (companionAmenitySelect) companionAmenitySelect.innerHTML = optionsHtml;
             if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = optionsHtml;
-            if (companionAmenityWrap) companionAmenityWrap.style.display = 'grid';
-            if (bulkAmenityWrap) bulkAmenityWrap.style.display = 'flex';
+            if (companionAmenityWrap) companionAmenityWrap.classList.remove('hidden');
+            if (bulkAmenityWrap) bulkAmenityWrap.classList.remove('hidden');
         } else {
-            if (companionAmenityWrap) companionAmenityWrap.style.display = 'none';
-            if (bulkAmenityWrap) bulkAmenityWrap.style.display = 'none';
+            if (companionAmenityWrap) companionAmenityWrap.classList.add('hidden');
+            if (bulkAmenityWrap) bulkAmenityWrap.classList.add('hidden');
             if (resAmenities.length === 1) {
                 const singleAmId = String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '');
                 const singleAmName = resAmenities[0].amenity?.amenities_name || 'Amenity';
@@ -1859,7 +2278,7 @@ window.AppPage['staff_reservations'] = function () {
 
         checkInForm.reset();
 
-        // Check if any booked amenity includes free entrance or free pool benefits
+        // 3. Check if any booked amenity includes free entrance or free pool benefits
         const hasFreeEntrance = resAmenities.some(ra => {
             const am = ra.amenity || {};
             const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
@@ -1884,23 +2303,59 @@ window.AppPage['staff_reservations'] = function () {
         }
         syncCheckInPoolOptionUI();
 
-        // Always use the booker info as the main guest (booker is the primary)
-        if (reservation) {
-            const bookerData = {
-                first_name: reservation.booker_name?.split(' ')[0] || '',
-                last_name: reservation.booker_name?.split(' ').slice(1).join(' ') || '',
-                email: reservation.email || '',
-                phone: reservation.phone || '',
-            };
-            fillFormWithGuestData(bookerData, 'check_in_primary_guest');
+        // 4. Populate primary guest from booker info or existing primary guest
+        let custFirst = '';
+        let custMiddle = '';
+        let custLast = '';
+        let custAge = '';
+        let custGender = '';
+        let custNat = false;
+        let custPhone = reservation?.phone || '';
+        let custEmail = reservation?.email || '';
+        let custPool = false;
+
+        if (primaryGuestToUpdate && primaryGuestToUpdate.customer) {
+            const c = primaryGuestToUpdate.customer;
+            custFirst = c.first_name || '';
+            custMiddle = c.middle_name || '';
+            custLast = c.last_name || '';
+            custAge = (c.age !== null && c.age !== undefined && c.age !== '') ? String(c.age) : '';
+            custGender = c.gender || '';
+            custNat = c.is_foreigner === 1 || c.is_foreigner === true;
+            custPhone = c.phone || custPhone;
+            custEmail = c.email || custEmail;
+            custPool = !!primaryGuestToUpdate.has_pool_access;
+        } else if (reservation?.booker_name) {
+            const names = reservation.booker_name.trim().split(' ');
+            custFirst = names[0] || '';
+            custLast = names.slice(1).join(' ') || '';
         }
 
-        checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]').checked = true;
-        toggleCheckInPrimaryGuestSection();
+        checkInPrimaryGuest = {
+            first_name: custFirst,
+            middle_name: custMiddle,
+            last_name: custLast,
+            age: custAge,
+            gender: custGender,
+            is_foreigner: custNat,
+            phone: custPhone,
+            email: custEmail,
+            has_pool_access: custPool,
+        };
+
+        syncCheckInPrimaryGuestUI();
+
+        const guestModeWithPrimary = checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]');
+        if (guestModeWithPrimary) guestModeWithPrimary.checked = true;
+
         renderCheckInCompanions();
+        renderCheckInModalCompanionPreview();
+        switchCheckInTab('checkInAmenitiesTab');
         updateCheckInFeeSummary();
+
         if (checkInModal) {
             checkInModal.classList.add('is-open');
+            checkInModal.classList.remove('hidden');
             checkInModal.setAttribute('aria-hidden', 'false');
         }
     };
@@ -1911,6 +2366,7 @@ window.AppPage['staff_reservations'] = function () {
         bulkCompanionGroups = [];
         if (checkInModal) {
             checkInModal.classList.remove('is-open');
+            checkInModal.classList.add('hidden');
             checkInModal.setAttribute('aria-hidden', 'true');
         }
     };
@@ -2555,9 +3011,9 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
 
                         ${rawGuests.filter(g => !g.is_primary_guest).map(g => {
-                            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
-                            const gEmail = g.customer?.email || 'No email';
-                            return `
+            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
+            const gEmail = g.customer?.email || 'No email';
+            return `
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs mt-2">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center text-xs font-bold shrink-0">
@@ -2574,7 +3030,7 @@ window.AppPage['staff_reservations'] = function () {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+        }).join('')}
                     </div>
 
                     ${rawAmenities.length > 0 ? `
@@ -2596,9 +3052,9 @@ window.AppPage['staff_reservations'] = function () {
                     <!-- Actions Footer (Check In / Check Out) -->
                     <div class="flex items-center justify-end gap-2.5 pt-1">
                         ${reservation.status === 'Checked In'
-                            ? `<button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-xs" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">Check Out</button>`
-                            : `<button type="button" class="cursor-pointer rounded-xl border-0 bg-[#1b4332] px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-[#2d6a4f] shadow-xs" data-open-check-in-modal="${reservation.id}">Check In</button>`
-                        }
+                    ? `<button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-xs" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">Check Out</button>`
+                    : `<button type="button" class="cursor-pointer rounded-xl border-0 bg-[#1b4332] px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-[#2d6a4f] shadow-xs" data-open-check-in-modal="${reservation.id}">Check In</button>`
+                }
                     </div>
                 ` : ''}
             </div>
@@ -4171,6 +4627,17 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
+        if (!checkInPrimaryGuest.first_name || !checkInPrimaryGuest.last_name || !checkInPrimaryGuest.age || !checkInPrimaryGuest.gender) {
+            switchCheckInTab('checkInGuestsTab');
+            openCheckInMainGuestModal();
+            const err = document.getElementById('checkInMainGuestModalError');
+            if (err) {
+                err.textContent = 'Please fill up the main guest details (age and gender required) before checking in.';
+                err.classList.remove('hidden');
+            }
+            return;
+        }
+
         // Show companion summary modal instead of directly submitting
         openCompanionSummaryModal();
     });
@@ -4180,28 +4647,28 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        const submitButton = checkInForm.querySelector('button[type="submit"]');
+        const submitButton = document.getElementById('checkInSubmitBtn') || checkInForm.querySelector('button[type="submit"]');
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = 'Checking in...';
+            submitButton.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Checking in...</span>';
         }
 
         const formData = new FormData(checkInForm);
-        const guestMode = formData.get('check_in_guest_mode');
+        const guestMode = formData.get('check_in_guest_mode') || 'with_primary';
         const poolOpt = checkInPoolOption?.value || 'no_pool';
         const primaryHasPool = (poolOpt === 'all_paid' || poolOpt === 'all_free')
             ? true
-            : (poolOpt === 'specific' ? !!checkInPrimaryGuestHasPool?.checked : false);
+            : (poolOpt === 'specific' ? !!checkInPrimaryGuest.has_pool_access : false);
 
         const primaryGuest = guestMode === 'with_primary' ? {
-            first_name: formData.get('check_in_primary_guest[first_name]'),
-            middle_name: formData.get('check_in_primary_guest[middle_name]'),
-            last_name: formData.get('check_in_primary_guest[last_name]'),
-            age: formData.get('check_in_primary_guest[age]'),
-            gender: formData.get('check_in_primary_guest[gender]'),
-            is_foreigner: formData.get('check_in_primary_guest[is_foreigner]') === '1',
-            phone: formData.get('check_in_primary_guest[phone]'),
-            email: formData.get('check_in_primary_guest[email]'),
+            first_name: checkInPrimaryGuest.first_name || formData.get('check_in_primary_guest[first_name]') || '',
+            middle_name: checkInPrimaryGuest.middle_name || formData.get('check_in_primary_guest[middle_name]') || '',
+            last_name: checkInPrimaryGuest.last_name || formData.get('check_in_primary_guest[last_name]') || '',
+            age: checkInPrimaryGuest.age || formData.get('check_in_primary_guest[age]') || '',
+            gender: checkInPrimaryGuest.gender || formData.get('check_in_primary_guest[gender]') || 'Male',
+            is_foreigner: checkInPrimaryGuest.is_foreigner !== undefined ? Boolean(checkInPrimaryGuest.is_foreigner) : (formData.get('check_in_primary_guest[is_foreigner]') === '1'),
+            phone: checkInPrimaryGuest.phone || formData.get('check_in_primary_guest[phone]') || '',
+            email: checkInPrimaryGuest.email || formData.get('check_in_primary_guest[email]') || '',
             has_pool_access: primaryHasPool,
         } : null;
 
@@ -4255,7 +4722,7 @@ window.AppPage['staff_reservations'] = function () {
             window.alert(error.message || 'Unable to check in this reservation.');
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.textContent = 'Check In';
+                submitButton.innerHTML = '<i class="bi bi-check2-circle text-sm"></i><span>Check In Reservation</span>';
             }
         }
     };
