@@ -95,61 +95,6 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
-
-        /* Fixed Reservation Table Styles */
-        #reservationTableWrap {
-            max-height: none !important;
-            overflow-y: visible !important;
-            overflow-x: auto !important;
-            border: 1px solid #dfe5e0 !important;
-            border-radius: 1rem !important;
-            background-color: #ffffff !important;
-            box-shadow: 0 4px 20px rgba(20, 50, 30, 0.04) !important;
-        }
-        [data-theme="dark"] #reservationTableWrap {
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            background-color: #181b19 !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-        }
-        #reservationTableWrap .guest-table {
-            table-layout: fixed !important;
-            width: 100% !important;
-            min-width: 880px !important;
-            border-collapse: separate !important;
-            border-spacing: 0 !important;
-        }
-        #reservationTableWrap .guest-table thead th {
-            position: static !important;
-            background-color: #f7faf8 !important;
-            border-bottom: 1px solid #e8eee9 !important;
-        }
-        [data-theme="dark"] #reservationTableWrap .guest-table thead th {
-            background-color: #1e2220 !important;
-            border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-        }
-        #reservationTableWrap .guest-table td {
-            vertical-align: middle !important;
-            border-top: 1px solid #f0f4ef !important;
-        }
-        [data-theme="dark"] #reservationTableWrap .guest-table td {
-            border-top-color: rgba(255, 255, 255, 0.05) !important;
-        }
-        #reservationTableWrap .guest-table th:nth-child(1),
-        #reservationTableWrap .guest-table td:nth-child(1) { text-align: center !important; }
-        #reservationTableWrap .guest-table th:nth-child(2),
-        #reservationTableWrap .guest-table td:nth-child(2) { text-align: left !important; }
-        #reservationTableWrap .guest-table th:nth-child(3),
-        #reservationTableWrap .guest-table td:nth-child(3) { text-align: left !important; }
-        #reservationTableWrap .guest-table th:nth-child(4),
-        #reservationTableWrap .guest-table td:nth-child(4) { text-align: center !important; }
-        #reservationTableWrap .guest-table th:nth-child(5),
-        #reservationTableWrap .guest-table td:nth-child(5) { text-align: center !important; }
-        #reservationTableWrap .guest-table th:nth-child(6),
-        #reservationTableWrap .guest-table td:nth-child(6) { text-align: center !important; }
-        #reservationTableWrap .guest-table th:nth-child(7),
-        #reservationTableWrap .guest-table td:nth-child(7) { text-align: right !important; }
-        #reservationTableWrap .guest-table th:nth-child(8),
-        #reservationTableWrap .guest-table td:nth-child(8) { text-align: center !important; }
     </style>
 </head>
 <body class="antialiased staff-portal">
@@ -339,28 +284,24 @@
                     <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
                 </div>
 
-                <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-sm dark:border-white/15 dark:bg-[#181b19]" id="reservationTableWrap">
-                    <table class="guest-table w-full min-w-[880px] table-fixed border-collapse border-spacing-0 text-left">
+                <div class="overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-[0_4px_20px_rgba(20,50,30,0.04)] dark:border-white/10 dark:bg-[#181b19] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]" id="reservationTableWrap">
+                    <table class="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-left">
                         <colgroup>
-                            <col style="width: 6%; min-width: 55px;">
-                            <col style="width: 27%; min-width: 220px;">
-                            <col style="width: 21%; min-width: 170px;">
-                            <col style="width: 14%; min-width: 125px;">
-                            <col style="width: 7%; min-width: 65px;">
-                            <col style="width: 11%; min-width: 100px;">
-                            <col style="width: 9%; min-width: 85px;">
-                            <col style="width: 5%; min-width: 50px;">
+                            <col style="width: 8%; min-width: 70px;">
+                            <col style="width: 28%; min-width: 220px;">
+                            <col style="width: 22%; min-width: 175px;">
+                            <col style="width: 15%; min-width: 125px;">
+                            <col style="width: 13%; min-width: 110px;">
+                            <col style="width: 14%; min-width: 115px;">
                         </colgroup>
                         <thead class="bg-[#f7faf8] dark:bg-[#1e2220]">
                             <tr class="border-b border-[#e8eee9] dark:border-white/10">
-                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center whitespace-nowrap">ID</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">BOOKER</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">RESERVATION DATE</th>
-                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">SESSION</th>
-                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">GUESTS</th>
-                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">STATUS</th>
-                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-right">AMOUNT</th>
-                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">ACTIONS</th>
+                                <th class="py-3.5 pl-5 pr-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] whitespace-nowrap">ID</th>
+                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">BOOKER</th>
+                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">RESERVATION DATE</th>
+                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">SESSION</th>
+                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">STATUS</th>
+                                <th class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">AMOUNT</th>
                             </tr>
                         </thead>
                         <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#181b19]">
@@ -402,10 +343,10 @@
                                     role="button"
                                     aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
                                 >
-                                    <td class="py-3.5 px-2 text-center whitespace-nowrap">
+                                    <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->id }}</span>
                                     </td>
-                                    <td class="py-3.5 px-4 text-left">
+                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
                                         <div class="resv-booker flex items-center gap-3">
                                             <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
                                             <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
@@ -424,7 +365,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-3.5 px-4 text-left">
+                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
                                         @if ($isMultiDay)
                                             <div>
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
@@ -443,7 +384,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-2 text-center">
+                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
                                         @if ($isMultiDay)
                                             <span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">
                                                 <i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>
@@ -486,8 +427,7 @@
                                             @endif
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ $reservation->number_of_guests }}</td>
-                                    <td class="py-3.5 px-2 text-center">
+                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
                                         @php
                                             $status = ucfirst(strtolower($reservation->status));
                                             $statusClass = match($status) {
@@ -502,16 +442,11 @@
                                         @endphp
                                         <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize {{ $statusClass }}">{{ $reservation->status }}</span>
                                     </td>
-                                    <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
-                                    <td class="py-3.5 px-2 text-center">
-                                        <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
-                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                        </button>
-                                    </td>
+                                    <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
+                                    <td colspan="6" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -620,7 +555,7 @@
                     </div>
                     <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Number of Guests</span>
+                            <span class="text-sm font-semibold text-hp-text">Expected Guests</span>
                             <input type="number" name="number_of_guests" id="editGuests" min="1" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                         </label>
                         <label class="guest-form__field grid gap-1.5">

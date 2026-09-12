@@ -11,51 +11,168 @@ use Illuminate\Support\Facades\Log;
 class FeedbackAiService
 {
     /**
-     * Profanity, insults, and derogatory terms in Tagalog, Bisaya, and English.
+     * Profanity, insults, derogatory terms, shortcuts, and wrong spellings in Tagalog, Bisaya, and English.
      */
     protected const PROFANITY_KEYWORDS = [
-        'ulol' => 'Derogatory Filipino insult meaning fool/idiot',
-        'olol' => 'Derogatory Filipino insult meaning fool/idiot',
+        // Tagalog / Filipino phrases and curses
+        'putangina' => 'Severely offensive Tagalog curse word',
+        'putang ina' => 'Severely offensive Tagalog curse phrase',
+        'ptangina' => 'Severely offensive Tagalog curse shortcut',
+        'ptang ina' => 'Severely offensive Tagalog curse phrase shortcut',
+        'tanginamo' => 'Direct offensive insult to recipient',
+        'tang ina mo' => 'Direct offensive insult phrase',
+        'tnginamo' => 'Direct offensive insult shortcut',
+        'tng ina mo' => 'Direct offensive insult phrase shortcut',
+        'tanginang' => 'Offensive Tagalog curse expression',
+        'tnginang' => 'Offensive Tagalog curse expression shortcut',
+        'tangina' => 'Offensive Tagalog curse word',
+        'tang ina' => 'Offensive Tagalog curse phrase',
+        'tngina' => 'Offensive Tagalog curse shortcut (tangina)',
+        'tng ina' => 'Offensive Tagalog curse phrase shortcut',
+        'tangena' => 'Offensive Tagalog curse word variant',
+        'tngena' => 'Offensive Tagalog curse shortcut variant',
+        'ptngna' => 'Offensive Tagalog curse abbreviation',
+        'putang' => 'Offensive profanity',
+        'potang' => 'Offensive profanity variant',
+        'puta' => 'Offensive profanity',
+        'pota' => 'Offensive curse word',
+        'pta' => 'Offensive curse shortcut',
         'gago' => 'Offensive Tagalog profanity',
+        'ggo' => 'Offensive Tagalog profanity shortcut (gago)',
         'gaga' => 'Offensive Tagalog profanity',
+        'gga' => 'Offensive Tagalog profanity shortcut (gaga)',
+        'gagsti' => 'Offensive Tagalog slang',
         'tanga' => 'Derogatory Tagalog insult meaning stupid',
+        'tnga' => 'Derogatory Tagalog insult shortcut (tanga)',
         'bobo' => 'Derogatory insult meaning dumb/foolish',
+        'bbo' => 'Derogatory insult shortcut (bobo)',
         'inutil' => 'Insult meaning useless/incompetent',
         'kupal' => 'Vulgar Filipino profanity',
+        'kpal' => 'Vulgar Filipino profanity shortcut',
+        'kpl' => 'Vulgar Filipino profanity shortcut',
         'tarantado' => 'Offensive Tagalog curse word',
+        'tarntado' => 'Offensive Tagalog curse word misspelling',
+        'trntdo' => 'Offensive Tagalog curse shortcut',
+        'trantado' => 'Offensive Tagalog curse variant',
         'pakshet' => 'Filipino profanity slang',
-        'puta' => 'Offensive profanity',
-        'tangina' => 'Offensive Tagalog curse word',
-        'putangina' => 'Severely offensive Tagalog curse word',
-        'tanginamo' => 'Direct offensive insult to recipient',
-        'pota' => 'Offensive curse word',
+        'paksht' => 'Filipino profanity slang shortcut',
+        'pkshet' => 'Filipino profanity slang shortcut',
+        'pksht' => 'Filipino profanity slang shortcut',
+        'pakshit' => 'Filipino profanity slang variant',
+        'pkshit' => 'Filipino profanity slang shortcut',
+        'pakyu' => 'Offensive phonetic insult (fuck you)',
+        'pak yu' => 'Offensive phonetic insult phrase',
+        'pakyow' => 'Offensive phonetic insult variant',
+        'fakyu' => 'Offensive phonetic insult variant',
+        'fak yu' => 'Offensive phonetic insult phrase',
+        'fckyu' => 'Offensive phonetic insult shortcut',
+        'fck yu' => 'Offensive phonetic insult shortcut phrase',
+        'fukyu' => 'Offensive phonetic insult variant',
+        'fuk yu' => 'Offensive phonetic insult variant phrase',
+        'fck u' => 'Offensive curse shortcut phrase',
+        'fak u' => 'Offensive curse variant phrase',
+        'fuk u' => 'Offensive curse variant phrase',
         'hudas' => 'Offensive traitor/religious slur',
-        'yawa' => 'Bisaya curse word (devil/demon)',
-        'yawaa' => 'Bisaya curse word expression',
-        'atay' => 'Bisaya curse word/vulgar exclamation',
-        'piste' => 'Bisaya curse word (pest/annoyance)',
-        'pisti' => 'Bisaya curse word variant',
-        'pinisti' => 'Bisaya curse word variant used as an intensified expression',
-        'peste' => 'Curse word meaning pest/nuisance',
-        'bilat' => 'Vulgar Bisaya anatomical term',
-        'otin' => 'Vulgar Bisaya anatomical term',
         'puki' => 'Vulgar anatomical term',
         'puke' => 'Vulgar anatomical term',
-        'buang' => 'Bisaya insult meaning crazy/insane',
-        'boang' => 'Bisaya insult meaning crazy/insane',
-        'amaw' => 'Bisaya insult meaning foolish/idiot',
         'leche' => 'Offensive Spanish/Filipino curse',
         'letse' => 'Offensive curse expression',
+        'lche' => 'Offensive curse shortcut',
+        'ltse' => 'Offensive curse shortcut',
         'bwisit' => 'Offensive curse meaning annoyance/jinx',
         'bwesit' => 'Offensive curse meaning annoyance/jinx',
-        'shit' => 'English profanity',
+        'bwsit' => 'Offensive curse shortcut',
+        'bwst' => 'Offensive curse shortcut',
+        'bwiset' => 'Offensive curse variant',
+        'bwset' => 'Offensive curse shortcut variant',
+        'ulol' => 'Derogatory Filipino insult meaning fool/idiot',
+        'olol' => 'Derogatory Filipino insult meaning fool/idiot',
+        'ulul' => 'Derogatory Filipino insult variant',
+
+        // Bisaya curses, shortcuts, and vulgarities
+        'piste' => 'Bisaya curse word (pest/annoyance)',
+        'pisti' => 'Bisaya curse word variant',
+        'psti' => 'Bisaya curse word shortcut (pisti)',
+        'pste' => 'Bisaya curse word shortcut (peste)',
+        'psteng' => 'Bisaya curse expression (pesteng)',
+        'pesteng' => 'Bisaya curse expression',
+        'pisteng' => 'Bisaya curse expression',
+        'pistet' => 'Bisaya curse expression',
+        'pistiha' => 'Bisaya curse expression',
+        'pesteha' => 'Bisaya curse expression',
+        'pestea' => 'Bisaya curse expression',
+        'pinisti' => 'Bisaya curse word variant used as an intensified expression',
+        'peste' => 'Curse word meaning pest/nuisance',
+        'yawa' => 'Bisaya curse word (devil/demon)',
+        'yawaa' => 'Bisaya curse word expression',
+        'ywa' => 'Bisaya curse word shortcut (yawa)',
+        'ywaa' => 'Bisaya curse word shortcut (yawaa)',
+        'giatay' => 'Bisaya curse word (giatay)',
+        'gyatay' => 'Bisaya curse word shortcut (giatay)',
+        'iatay' => 'Bisaya curse word variant',
+        'atay' => 'Bisaya curse word/vulgar exclamation',
+        'aty' => 'Bisaya curse word shortcut (atay)',
+        'atya' => 'Bisaya curse word shortcut (atya)',
+        'buang' => 'Bisaya insult meaning crazy/insane',
+        'boang' => 'Bisaya insult meaning crazy/insane',
+        'bwang' => 'Bisaya insult shortcut (buang)',
+        'bwng' => 'Bisaya insult shortcut (buang)',
+        'bwoang' => 'Bisaya insult variant',
+        'bilat' => 'Vulgar Bisaya anatomical term',
+        'blat' => 'Vulgar Bisaya anatomical shortcut (bilat)',
+        'bilatibay' => 'Vulgar Bisaya curse word',
+        'blatibay' => 'Vulgar Bisaya curse shortcut',
+        'bilatsina' => 'Vulgar Bisaya curse word',
+        'otin' => 'Vulgar Bisaya anatomical term',
+        'otn' => 'Vulgar Bisaya anatomical shortcut (otin)',
+        'amaw' => 'Bisaya insult meaning foolish/idiot',
+
+        // English profanity, misspellings, and shortcuts
+        'motherfucker' => 'Severe English profanity',
+        'mother fucker' => 'Severe English profanity phrase',
+        'mfer' => 'Severe English profanity shortcut (motherfucker)',
         'fuck' => 'Severe English profanity',
+        'fck' => 'Severe English profanity shortcut (fuck)',
+        'fack' => 'Severe English profanity phonetic misspelling',
+        'fuk' => 'Severe English profanity variant',
+        'fak' => 'Severe English profanity phonetic variant',
         'fucking' => 'Severe English profanity',
+        'fckin' => 'Severe English profanity shortcut',
+        'fckng' => 'Severe English profanity shortcut',
+        'fcking' => 'Severe English profanity shortcut',
+        'fukin' => 'Severe English profanity variant',
+        'fuking' => 'Severe English profanity variant',
+        'fucker' => 'Severe English profanity',
+        'fckr' => 'Severe English profanity shortcut',
+        'shit' => 'English profanity',
+        'sht' => 'English profanity shortcut (shit)',
+        'shyt' => 'English profanity variant',
+        'shite' => 'English profanity variant',
+        'bullshit' => 'English profanity',
+        'bull shit' => 'English profanity phrase',
+        'bllsht' => 'English profanity shortcut',
+        'bullsht' => 'English profanity shortcut',
         'bitch' => 'Offensive English derogatory term',
+        'btch' => 'Offensive English derogatory shortcut (bitch)',
+        'bitches' => 'Offensive English derogatory term',
+        'btches' => 'Offensive English derogatory shortcut',
+        'betch' => 'Offensive English derogatory variant',
         'asshole' => 'Offensive English derogatory insult',
+        'ashole' => 'Offensive English derogatory misspelling',
+        'ahole' => 'Offensive English derogatory shortcut',
+        'a-hole' => 'Offensive English derogatory shortcut',
+        'azzhole' => 'Offensive English derogatory variant',
         'bastard' => 'Offensive English insult',
+        'bastrd' => 'Offensive English insult shortcut',
+        'bstrd' => 'Offensive English insult shortcut',
         'dick' => 'Vulgar anatomical term',
+        'dck' => 'Vulgar anatomical shortcut',
+        'dik' => 'Vulgar anatomical variant',
+        'cunt' => 'Severe English vulgar term',
+        'slut' => 'Offensive English derogatory term',
+        'whore' => 'Offensive English derogatory term',
         'nigger' => 'Severely offensive racial slur',
+        'nigga' => 'Offensive racial slur variant',
         'scam' => 'Accusation of fraudulent practice',
     ];
 
@@ -154,19 +271,92 @@ class FeedbackAiService
         'loved' => ['topic' => 'Affection', 'reason' => 'Great fondness for the park experience'],
     ];
 
+    /**
+     * Generate normalized variants to catch leetspeak, repeated letters, and obfuscations.
+     *
+     * @return array<int, string>
+     */
+    public function normalizeVariants(string $text): array
+    {
+        $variants = [];
+
+        // 1. Lowercase and collapse consecutive whitespace
+        $clean = mb_strtolower(trim($text));
+        $clean = preg_replace('/\s+/u', ' ', $clean);
+        if ($clean === '') {
+            return [];
+        }
+        $variants[] = $clean;
+
+        // 2. Leetspeak mapping
+        $leetMap = [
+            '@' => 'a',
+            '$' => 's',
+            '0' => 'o',
+            '1' => 'i',
+            '!' => 'i',
+            '3' => 'e',
+            '5' => 's',
+            '7' => 't',
+        ];
+        $deLeet = strtr($clean, $leetMap);
+        if ($deLeet !== $clean) {
+            $variants[] = $deLeet;
+        }
+
+        // 3. Collapse character repetitions (3+ identical characters collapsed to 1, and 2+ collapsed)
+        foreach ([$clean, $deLeet] as $v) {
+            $collapsed3 = preg_replace('/(.)\1{2,}/u', '$1', $v);
+            if ($collapsed3 !== $v) {
+                $variants[] = $collapsed3;
+            }
+            $collapsed2 = preg_replace('/(.)\1+/u', '$1', $v);
+            if ($collapsed2 !== $v && $collapsed2 !== $collapsed3) {
+                $variants[] = $collapsed2;
+            }
+        }
+
+        // 4. Remove masking punctuation and intra-word separators (e.g. f*ck -> fck, p.s.t.i -> psti)
+        foreach ([$clean, $deLeet] as $v) {
+            $stripped = preg_replace('/(?<=\pL)[*._\-~]+(?=\pL)/u', '', $v);
+            if ($stripped !== $v) {
+                $variants[] = $stripped;
+            }
+
+            // Collapse spaced letters (e.g. "p s t i" -> "psti")
+            $spacedLetters = $v;
+            while (preg_match('/(\b\pL)\s+(\pL\b)/u', $spacedLetters)) {
+                $spacedLetters = preg_replace('/(\b\pL)\s+(\pL\b)/u', '$1$2', $spacedLetters);
+            }
+            if ($spacedLetters !== $v) {
+                $variants[] = $spacedLetters;
+            }
+        }
+
+        return array_values(array_unique($variants));
+    }
+
     public function detectInappropriateContent(?string $text): array
     {
         $originalText = trim((string) $text);
-        $normalizedText = mb_strtolower($originalText);
+        if ($originalText === '') {
+            return [];
+        }
+
+        $variants = $this->normalizeVariants($originalText);
         $matches = [];
 
         foreach (self::PROFANITY_KEYWORDS as $word => $description) {
-            if (preg_match('/(?<!\pL)' . preg_quote($word, '/') . '(?!\pL)/iu', $normalizedText)) {
-                $matches[$word] = [
-                    'term' => $word,
-                    'sentence' => $this->extractSentenceWithWord($originalText, $word),
-                    'description' => $description,
-                ];
+            $pattern = '/(?<!\pL)' . preg_quote($word, '/') . '(?!\pL)/iu';
+            foreach ($variants as $variant) {
+                if (preg_match($pattern, $variant)) {
+                    $matches[$word] = [
+                        'term' => $word,
+                        'sentence' => $this->extractSentenceWithWord($originalText, $word),
+                        'description' => $description,
+                    ];
+                    break;
+                }
             }
         }
 
@@ -253,17 +443,20 @@ class FeedbackAiService
         $profanitiesFound = [];
 
         // 1. Detect Profanities
-        foreach (self::PROFANITY_KEYWORDS as $word => $desc) {
-            if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $combined) || str_contains($combined, $word)) {
-                $profanitiesFound[] = [
-                    'type' => 'flagged',
-                    'snippet' => $word,
-                    'topic' => 'Inappropriate Content',
-                    'reason' => $desc,
-                    'how' => "Contains profane or abusive term '{$word}' ({$desc}).",
-                    'emoji' => '🔴',
-                ];
-            }
+        $detectedProfanities = array_merge(
+            $this->detectInappropriateContent($name),
+            $this->detectInappropriateContent($text)
+        );
+
+        foreach ($detectedProfanities as $word => $meta) {
+            $profanitiesFound[] = [
+                'type' => 'flagged',
+                'snippet' => $meta['term'],
+                'topic' => 'Inappropriate Content',
+                'reason' => $meta['description'],
+                'how' => "Contains profane or abusive term '{$meta['term']}' ({$meta['description']}).",
+                'emoji' => '🔴',
+            ];
         }
 
         if (!empty($profanitiesFound)) {
@@ -458,6 +651,18 @@ class FeedbackAiService
                 return trim($s);
             }
         }
+
+        // Fallback: check normalized variants of each sentence
+        $pattern = '/(?<!\pL)' . preg_quote($word, '/') . '(?!\pL)/iu';
+        foreach ($sentences as $s) {
+            $variants = $this->normalizeVariants($s);
+            foreach ($variants as $variant) {
+                if (preg_match($pattern, $variant)) {
+                    return trim($s);
+                }
+            }
+        }
+
         return trim($text);
     }
 
@@ -466,12 +671,7 @@ class FeedbackAiService
      */
     protected function containsProfanity(string $text): bool
     {
-        foreach (array_keys(self::PROFANITY_KEYWORDS) as $profanity) {
-            if (preg_match('/\b' . preg_quote($profanity, '/') . '\b/i', $text) || str_contains($text, $profanity)) {
-                return true;
-            }
-        }
-        return false;
+        return $this->detectInappropriateContent($text) !== [];
     }
 
     /**

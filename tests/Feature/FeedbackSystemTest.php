@@ -81,6 +81,79 @@ class FeedbackSystemTest extends TestCase
         $this->assertDatabaseCount('feedbacks', 0);
     }
 
+    public function test_guest_feedback_blocks_bad_word_shortcuts_in_bisaya_tagalog_and_english(): void
+    {
+        $shortcuts = [
+            ['text' => 'Bati kaayo diri psti gyud mo.', 'expected_term' => 'psti'],
+            ['text' => 'Ang pste ninyo tanan.', 'expected_term' => 'pste'],
+            ['text' => 'What the fck is this service.', 'expected_term' => 'fck'],
+            ['text' => 'Fack this place.', 'expected_term' => 'fack'],
+            ['text' => 'Pakyu sa tanan staff.', 'expected_term' => 'pakyu'],
+            ['text' => 'Ywa kaayo ang experience.', 'expected_term' => 'ywa'],
+            ['text' => 'Ka aty gyud sa mga cottage.', 'expected_term' => 'aty'],
+            ['text' => 'Tngina niyo ang pangit.', 'expected_term' => 'tngina'],
+        ];
+
+        foreach ($shortcuts as $case) {
+            $response = $this->postJson('/feedback', [
+                'full_name' => 'Guest Tester',
+                'is_anonymous' => false,
+                'description' => $case['text'],
+                'stars' => 1,
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonPath('moderation.blocked', true);
+
+            $terms = $response->json('moderation.terms');
+            $this->assertContains($case['expected_term'], $terms, "Failed asserting that '{$case['expected_term']}' was blocked for input: '{$case['text']}'");
+        }
+
+        $this->assertDatabaseCount('feedbacks', 0);
+    }
+
+    public function test_guest_feedback_blocks_obfuscated_and_repeated_bad_words(): void
+    {
+        // 1. Repeated letters (pssssti)
+        $response1 = $this->postJson('/feedback', [
+            'full_name' => 'Obfuscated Guest',
+            'is_anonymous' => false,
+            'description' => 'Nice river. But pssssti mo tanan! Terrible.',
+            'stars' => 1,
+        ]);
+
+        $response1->assertStatus(422)
+            ->assertJsonPath('moderation.blocked', true)
+            ->assertJsonPath('moderation.terms.0', 'psti')
+            ->assertJsonPath('moderation.matches.0.sentence', 'But pssssti mo tanan!');
+
+        // 2. Asterisk masking (f*ck)
+        $response2 = $this->postJson('/feedback', [
+            'full_name' => 'Masked Guest',
+            'is_anonymous' => false,
+            'description' => 'The f*ck is wrong with this pool.',
+            'stars' => 1,
+        ]);
+
+        $response2->assertStatus(422)
+            ->assertJsonPath('moderation.blocked', true)
+            ->assertJsonPath('moderation.terms.0', 'fck');
+
+        // 3. Leetspeak (p!st!)
+        $response3 = $this->postJson('/feedback', [
+            'full_name' => 'Leet Guest',
+            'is_anonymous' => false,
+            'description' => 'Ayaw mo adto kay p!st! kaayo.',
+            'stars' => 1,
+        ]);
+
+        $response3->assertStatus(422)
+            ->assertJsonPath('moderation.blocked', true)
+            ->assertJsonPath('moderation.terms.0', 'pisti');
+
+        $this->assertDatabaseCount('feedbacks', 0);
+    }
+
     public function test_guest_feedback_with_inappropriate_image_is_rejected_before_storage(): void
     {
         Storage::fake('public');

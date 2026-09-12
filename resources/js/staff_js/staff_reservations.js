@@ -177,10 +177,10 @@ window.AppPage['staff_reservations'] = function () {
         const statusClass = statusColors[statusLower] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300';
 
         return `
-                <td class="py-3.5 px-2 text-center whitespace-nowrap">
+                <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
                     <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
                 </td>
-                <td class="py-3.5 px-4 text-left">
+                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
                     <div class="resv-booker flex items-center gap-3">
                         <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">${escapeHtml(getInitials(reservation.booker_name))}</span>
                         <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
@@ -192,18 +192,12 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
                     </div>
                 </td>
-                <td class="py-3.5 px-4 text-left">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
-                <td class="py-3.5 px-2 text-center">${renderTimeSlots(reservation)}</td>
-                <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">${escapeHtml(reservation.number_of_guests)}</td>
-                <td class="py-3.5 px-2 text-center">
+                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
+                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">${renderTimeSlots(reservation)}</td>
+                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
                     <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize ${statusClass}">${escapeHtml(reservation.status)}</span>
                 </td>
-                <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
-                <td class="py-3.5 px-2 text-center">
-                    <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                </td>
+                <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
             `;
     };
 
@@ -3115,10 +3109,10 @@ window.AppPage['staff_reservations'] = function () {
                             </div>
                         </div>
                         <div>
-                            <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Guests</div>
+                            <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Expected Guests</div>
                             <div class="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
                                 <svg class="w-4 h-4 text-[#1b4332] dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <span>${escapeHtml(reservation.number_of_guests || 1)} Guest${(reservation.number_of_guests > 1) ? 's' : ''}</span>
+                                <span>${escapeHtml(reservation.number_of_guests || 1)} Expected Guest${(reservation.number_of_guests > 1) ? 's' : ''}</span>
                             </div>
                         </div>
                     </div>

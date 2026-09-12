@@ -4160,6 +4160,7 @@ window.AppPage['staff_check_ins'] = function () {
 
                         nestedRow = document.createElement('tr');
                         nestedRow.className = 'reservation-nested-row';
+                        nestedRow.setAttribute('data-parent-reservation-id', resId);
                         nestedRow.innerHTML = `<td colspan="7" class="p-0">${panel}</td>`;
                         tr.insertAdjacentElement('afterend', nestedRow);
                     }
@@ -8359,42 +8360,130 @@ window.AppPage['staff_check_ins'] = function () {
         closeAmenityScheduleModal();
     });
 
-    // ── Reservation table filters (Reservation Data View tab) ──────────────
+    // ── Reservation table filters & sorting (Reservation Data View tab) ──────────────
     const resvFilterToggle = document.getElementById('resvFilterToggle');
+    const resvFilterChevron = document.getElementById('resvFilterChevron');
     const resvFilterPanel = document.getElementById('resvFilterPanel');
+    const resvFilterCloseBtn = document.getElementById('resvFilterCloseBtn');
+    const resvPanelResetBtn = document.getElementById('resvPanelResetBtn');
+    const resvQuickSortPill = document.getElementById('resvQuickSortPill');
+    const resvCurrentSortLabel = document.getElementById('resvCurrentSortLabel');
     const resvSearchInput = document.getElementById('resvSearchInput');
     const resvTypeFilter = document.getElementById('resvTypeFilter');
+    const resvStatusFilter = document.getElementById('resvStatusFilter');
+    const resvSortSelect = document.getElementById('resvSortSelect');
     const resvDateFrom = document.getElementById('resvDateFrom');
     const resvDateTo = document.getElementById('resvDateTo');
     const resvFiltersClear = document.getElementById('resvFiltersClear');
     const resvResultsCount = document.getElementById('resvResultsCount');
+    const resvActiveFilterCount = document.getElementById('resvActiveFilterCount');
+    const resvQuickFilters = document.querySelectorAll('.resv-quick-filter');
+
+    const openFilterPanel = () => {
+        if (resvFilterPanel) {
+            resvFilterPanel.hidden = false;
+            resvFilterPanel.classList.remove('guest-toolbar--collapsed');
+        }
+        if (resvFilterToggle) {
+            resvFilterToggle.setAttribute('aria-expanded', 'true');
+        }
+        if (resvFilterChevron) {
+            resvFilterChevron.classList.add('rotate-180');
+        }
+    };
+
+    const closeFilterPanel = () => {
+        if (resvFilterPanel) {
+            resvFilterPanel.hidden = true;
+            resvFilterPanel.classList.add('guest-toolbar--collapsed');
+        }
+        if (resvFilterToggle) {
+            resvFilterToggle.setAttribute('aria-expanded', 'false');
+        }
+        if (resvFilterChevron) {
+            resvFilterChevron.classList.remove('rotate-180');
+        }
+    };
 
     resvFilterToggle?.addEventListener('click', () => {
         const isExpanded = resvFilterToggle.getAttribute('aria-expanded') === 'true';
-        resvFilterToggle.setAttribute('aria-expanded', String(!isExpanded));
-        resvFilterPanel.hidden = isExpanded;
-        resvFilterPanel?.classList.toggle('guest-toolbar--collapsed', isExpanded);
+        if (isExpanded) {
+            closeFilterPanel();
+        } else {
+            openFilterPanel();
+        }
+    });
+
+    resvFilterCloseBtn?.addEventListener('click', () => {
+        closeFilterPanel();
+    });
+
+    resvQuickSortPill?.addEventListener('click', () => {
+        openFilterPanel();
+        resvSortSelect?.focus();
+    });
+
+    resvPanelResetBtn?.addEventListener('click', () => {
+        resvFiltersClear?.click();
     });
 
     const applyResvFilters = () => {
-        const searchTerm = (resvSearchInput?.value || '').toLowerCase();
+        const searchTerm = (resvSearchInput?.value || '').trim().toLowerCase();
         const typeValue = resvTypeFilter?.value || 'all';
+        const statusValue = resvStatusFilter?.value || 'all';
         const fromValue = resvDateFrom?.value || '';
         const toValue = resvDateTo?.value || '';
+        const sortValue = resvSortSelect?.value || 'nearest_checkout';
 
-        const resvRows = document.querySelectorAll('#checkInsReservationTableBody .reservation-row');
+        // Update Sort label on top bar
+        if (resvCurrentSortLabel && resvSortSelect) {
+            const selectedOpt = resvSortSelect.options[resvSortSelect.selectedIndex];
+            if (selectedOpt) {
+                const cleanLabel = selectedOpt.text.replace(/\s*\(Default\)$/i, '').trim();
+                resvCurrentSortLabel.textContent = cleanLabel;
+            }
+        }
+
+        const tbody = document.getElementById('checkInsReservationTableBody');
+        if (!tbody) return;
+
+        const resvRows = Array.from(tbody.querySelectorAll('.reservation-row'));
         let visibleCount = 0;
+        let activeFilterCount = 0;
 
+        if (typeValue !== 'all') activeFilterCount++;
+        if (statusValue !== 'all') activeFilterCount++;
+        if (fromValue) activeFilterCount++;
+        if (toValue) activeFilterCount++;
+        if (sortValue !== 'nearest_checkout') activeFilterCount++;
+
+        if (resvActiveFilterCount) {
+            if (activeFilterCount > 0) {
+                resvActiveFilterCount.textContent = String(activeFilterCount);
+                resvActiveFilterCount.classList.remove('hidden');
+                resvActiveFilterCount.classList.add('inline-flex');
+            } else {
+                resvActiveFilterCount.classList.add('hidden');
+                resvActiveFilterCount.classList.remove('inline-flex');
+            }
+        }
+
+        // 1. Filtering
         resvRows.forEach((row) => {
             let show = true;
 
             if (searchTerm) {
-                const searchable = row.getAttribute('data-reservation-search') || '';
+                const searchable = (row.getAttribute('data-reservation-search') || '').toLowerCase();
                 if (!searchable.includes(searchTerm)) show = false;
             }
 
             if (show && typeValue !== 'all') {
                 if ((row.getAttribute('data-reservation-type') || '') !== typeValue) show = false;
+            }
+
+            if (show && statusValue !== 'all') {
+                const rowStatus = row.getAttribute('data-checkout-status') || 'normal';
+                if (rowStatus !== statusValue) show = false;
             }
 
             if (show && fromValue) {
@@ -8408,24 +8497,133 @@ window.AppPage['staff_check_ins'] = function () {
             }
 
             row.style.display = show ? '' : 'none';
+
+            // Also synchronize nested row visibility
+            const resId = row.getAttribute('data-reservation-id');
+            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`)
+                || (row.nextElementSibling && row.nextElementSibling.classList.contains('reservation-nested-row') ? row.nextElementSibling : null);
+            if (nestedRow) {
+                if (!show) {
+                    nestedRow.style.display = 'none';
+                } else if (row.classList.contains('row-is-expanded')) {
+                    nestedRow.style.display = '';
+                }
+            }
+
             if (show) visibleCount++;
         });
 
+        // 2. Sorting
+        resvRows.sort((a, b) => {
+            const idA = parseInt(a.getAttribute('data-reservation-id') || '0', 10);
+            const idB = parseInt(b.getAttribute('data-reservation-id') || '0', 10);
+            const coA = parseFloat(a.getAttribute('data-checkout-timestamp') || '9999999999');
+            const coB = parseFloat(b.getAttribute('data-checkout-timestamp') || '9999999999');
+            const ciA = parseFloat(a.getAttribute('data-checkin-timestamp') || '0');
+            const ciB = parseFloat(b.getAttribute('data-checkin-timestamp') || '0');
+            const nameA = (a.getAttribute('data-primary-name') || '').trim();
+            const nameB = (b.getAttribute('data-primary-name') || '').trim();
+            const guestsA = parseInt(a.getAttribute('data-guest-count') || '0', 10);
+            const guestsB = parseInt(b.getAttribute('data-guest-count') || '0', 10);
+
+            switch (sortValue) {
+                case 'nearest_checkout':
+                    if (coA !== coB) return coA - coB;
+                    return idB - idA;
+                case 'latest_checkout':
+                    if (coA === 9999999999 && coB !== 9999999999) return 1;
+                    if (coB === 9999999999 && coA !== 9999999999) return -1;
+                    if (coA !== coB) return coB - coA;
+                    return idB - idA;
+                case 'checkin_newest':
+                    if (ciA !== ciB) return ciB - ciA;
+                    return idB - idA;
+                case 'checkin_oldest':
+                    if (ciA !== ciB) return ciA - ciB;
+                    return idA - idB;
+                case 'id_desc':
+                    return idB - idA;
+                case 'id_asc':
+                    return idA - idB;
+                case 'guest_name':
+                    return nameA.localeCompare(nameB);
+                case 'guest_count':
+                    if (guestsA !== guestsB) return guestsB - guestsA;
+                    return idB - idA;
+                default:
+                    return coA - coB;
+            }
+        });
+
+        // Re-append sorted rows keeping their respective nested row attached right below
+        resvRows.forEach((row) => {
+            tbody.appendChild(row);
+            const resId = row.getAttribute('data-reservation-id');
+            const nestedRow = tbody.querySelector(`.reservation-nested-row[data-parent-reservation-id="${resId}"]`)
+                || (row.nextElementSibling && row.nextElementSibling.classList.contains('reservation-nested-row') ? row.nextElementSibling : null);
+            if (nestedRow) {
+                tbody.appendChild(nestedRow);
+            }
+        });
+
+        // 3. Update Result Counter
         if (resvResultsCount) {
             resvResultsCount.textContent = `Showing ${visibleCount} of ${resvRows.length} reservation${resvRows.length === 1 ? '' : 's'}`;
         }
+
+        // 4. Update Clear/Reset Button visibility
+        if (resvFiltersClear) {
+            const isFiltered = Boolean(searchTerm || typeValue !== 'all' || statusValue !== 'all' || fromValue || toValue || sortValue !== 'nearest_checkout');
+            resvFiltersClear.classList.toggle('hidden', !isFiltered);
+        }
     };
 
-    [resvSearchInput, resvTypeFilter, resvDateFrom, resvDateTo].forEach((control) => {
+    [resvSearchInput, resvTypeFilter, resvStatusFilter, resvSortSelect, resvDateFrom, resvDateTo].forEach((control) => {
         control?.addEventListener('input', applyResvFilters);
         control?.addEventListener('change', applyResvFilters);
+    });
+
+    resvQuickFilters.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            const filterVal = chip.getAttribute('data-status-filter') || 'all';
+            resvQuickFilters.forEach((c) => {
+                c.classList.toggle('active', c === chip);
+                c.classList.toggle('bg-white', c === chip);
+                c.classList.toggle('dark:bg-[#1e2220]', c === chip);
+                c.classList.toggle('shadow-xs', c === chip);
+                c.classList.toggle('font-bold', c === chip);
+                c.classList.toggle('text-hp-text', c === chip);
+                c.classList.toggle('font-semibold', c !== chip);
+                c.classList.toggle('text-hp-text-muted', c !== chip);
+            });
+            if (resvStatusFilter) {
+                resvStatusFilter.value = filterVal;
+            }
+            applyResvFilters();
+        });
     });
 
     resvFiltersClear?.addEventListener('click', () => {
         if (resvSearchInput) resvSearchInput.value = '';
         if (resvTypeFilter) resvTypeFilter.value = 'all';
+        if (resvStatusFilter) resvStatusFilter.value = 'all';
+        if (resvSortSelect) resvSortSelect.value = 'nearest_checkout';
         if (resvDateFrom) resvDateFrom.value = '';
         if (resvDateTo) resvDateTo.value = '';
+        if (resvCurrentSortLabel) resvCurrentSortLabel.textContent = 'Nearest to Checkout';
+
+        resvQuickFilters.forEach((c) => {
+            const isAll = c.getAttribute('data-status-filter') === 'all';
+            c.classList.toggle('active', isAll);
+            c.classList.toggle('bg-white', isAll);
+            c.classList.toggle('dark:bg-[#1e2220]', isAll);
+            c.classList.toggle('shadow-xs', isAll);
+            c.classList.toggle('font-bold', isAll);
+            c.classList.toggle('text-hp-text', isAll);
+            c.classList.toggle('font-semibold', !isAll);
+            c.classList.toggle('text-hp-text-muted', !isAll);
+        });
+
         applyResvFilters();
     });
 

@@ -4493,6 +4493,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
+        // Default sort for check-ins: nearest to checkout first.
+        // Overdue / past checkouts and soonest upcoming checkouts come first.
+        $activeReservations = $activeReservations->sortBy(function ($reservation) use ($reservationData) {
+            $checkoutAtStr = $reservationData[$reservation->id]['checkout_at'] ?? null;
+            if (!$checkoutAtStr) {
+                return 9999999999;
+            }
+            return \Carbon\Carbon::parse($checkoutAtStr)->timestamp;
+        })->values();
+
         return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'occupiedTodayAmenityIds', 'currentPeriod', 'currentSlotName'));
     })->name('checkins');
 
