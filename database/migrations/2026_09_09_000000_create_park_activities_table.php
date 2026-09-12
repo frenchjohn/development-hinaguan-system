@@ -47,6 +47,20 @@ return new class extends Migration
                     'created_at' => now(),
                     'updated_at' => now(),
                 ],
+                [
+                    'activity' => 'Pickleball',
+                    'description' => 'Enjoy fast-paced, friendly matches on our outdoor pickleball court surrounded by refreshing nature and greenery.',
+                    'image' => 'images/pickleball.jpg',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'activity' => 'Billiard',
+                    'description' => 'Challenge friends and family to classic games of pool and billiard in a breezy, open-air recreational lounge.',
+                    'image' => 'images/billiard.jpg',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
             ]);
         }
     }

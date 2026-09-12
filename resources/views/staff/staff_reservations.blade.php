@@ -1351,7 +1351,9 @@
                             </div>
                             <div class="guest-form__field-group hidden gap-1" id="checkInCompanionAmenityWrap">
                                 <label class="guest-form__label text-xs font-semibold text-hp-text">Assign to Amenity</label>
-                                <select name="amenity_id" id="checkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+                                <select name="amenity_id" id="checkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                    <option value="" selected>No amenity</option>
+                                </select>
                             </div>
                             <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5" id="checkInCompanionPoolWrap">
                                 <div class="flex items-center gap-2">
@@ -1441,7 +1443,9 @@
 
                             <div class="guest-form__field-group hidden gap-1" id="checkInBulkCompanionAmenityWrap">
                                 <label class="guest-form__label text-xs font-semibold text-hp-text">Assign to Amenity</label>
-                                <select name="amenity_id" id="checkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+                                <select name="amenity_id" id="checkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                    <option value="" selected>No amenity</option>
+                                </select>
                             </div>
 
                             <div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="checkInBulkCompanionPoolWrap">

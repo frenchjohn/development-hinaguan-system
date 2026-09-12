@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Staff Dashboard ΓÇö Hinaguan Nature Park</title>
+    <title>Staff Dashboard — Hinaguan Nature Park</title>
     <script>
         // Prevent flash of wrong theme by setting theme immediately
         (function() {

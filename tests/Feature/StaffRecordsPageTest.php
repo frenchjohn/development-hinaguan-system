@@ -119,10 +119,11 @@ class StaffRecordsPageTest extends TestCase
         $response = $this->get('/staff/records');
         $response->assertOk();
 
-        // Under Guest Records: Early Leaver IS present
-        $response->assertSee('Early Leaver');
-        // Under Guest Records: Still Inside is NOT present
-        $response->assertDontSee('Still Inside');
+        // Under Guest Records: Early Leaver IS present in checkedOutGuests collection
+        $checkedOutGuests = $response->viewData('checkedOutGuests');
+        $this->assertTrue($checkedOutGuests->pluck('customer_id')->contains($companion1->id));
+        // Still Inside is NOT present in checkedOutGuests
+        $this->assertFalse($checkedOutGuests->pluck('customer_id')->contains($companion2->id));
 
         // Under Completed Reservations: Fully Completed IS present
         $response->assertSee('Fully Completed');
@@ -213,4 +214,198 @@ class StaffRecordsPageTest extends TestCase
         $this->assertStringContainsString('cell-person__avatar--bulk', $content);
         $this->assertMatchesRegularExpression('/companion-row.*?Bulk Companions.*?2x/s', $content);
     }
+
+    public function test_records_table_displays_clean_id_without_tag_icon_and_omits_pool_badge_and_supplies_modal_charges_data()
+    {
+        $this->makeStaffSession();
+
+        $completedReservation = Reservation::create([
+            'booker_name' => 'John Clean',
+            'email' => 'clean@example.com',
+            'phone' => '09129876543',
+            'reservation_date' => now()->subDays(2)->toDateString(),
+            'check_in' => now()->subDays(2)->setTime(8, 0)->toDateTimeString(),
+            'check_out' => now()->subDays(2)->setTime(17, 0)->toDateTimeString(),
+            'status' => 'Checked Out',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 2,
+            'total_amount' => 1200,
+            'amount_paid' => 1200,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $leadCustomer = Customer::create([
+            'first_name' => 'John',
+            'last_name' => 'Clean',
+            'email' => 'clean@example.com',
+            'gender' => 'Male',
+            'age' => 28,
+        ]);
+
+        ReservationGuest::create([
+            'reservation_id' => $completedReservation->id,
+            'customer_id' => $leadCustomer->id,
+            'is_primary_guest' => true,
+            'has_pool_access' => true,
+            'checked_out_at' => now()->subDays(2)->setTime(17, 0)->toDateTimeString(),
+        ]);
+
+        // Add an entrance fee with pool
+        \App\Models\ReservationEntranceFee::create([
+            'reservation_id' => $completedReservation->id,
+            'pricing_type' => 'Daytime',
+            'base_entrance_fee' => 300,
+            'adult_count' => 2,
+            'child_count' => 0,
+            'total_entrance_fee' => 300,
+            'pool_fee' => 200,
+            'pool_option' => 'with_pool',
+            'pool_access_count' => 2,
+        ]);
+
+        // Add a post-checkout / additional charge
+        \App\Models\ReservationCharge::create([
+            'reservation_id' => $completedReservation->id,
+            'description' => 'Late checkout fee - 1 hour',
+            'charge_type' => 'others',
+            'amount' => 150,
+            'status' => 'paid',
+        ]);
+
+        $response = $this->get('/staff/records');
+        $response->assertOk();
+
+        $content = $response->getContent();
+
+        // Verify ID is displayed as #<id> cleanly
+        $this->assertStringContainsString("#{$completedReservation->id}", $content);
+
+        // Verify the tag icon svg path M5.5 3A2.5 is not in the table display
+        $this->assertStringNotContainsString('M5.5 3A2.5', $content);
+
+        // Verify the reservation data sent to JS has charges, entrance fee, and timestamps
+        $resData = $response->viewData('reservationData');
+        $this->assertArrayHasKey($completedReservation->id, $resData);
+
+        $resEntry = $resData[$completedReservation->id];
+        $this->assertCount(1, $resEntry['reservation_charges']);
+        $this->assertEquals('Late checkout fee - 1 hour', $resEntry['reservation_charges'][0]['description']);
+        $this->assertEquals(150, $resEntry['reservation_charges'][0]['amount']);
+        $this->assertNotNull($resEntry['check_in']);
+        $this->assertNotNull($resEntry['check_out']);
+        $this->assertTrue($resEntry['reservation_guests'][0]['has_pool_access']);
+        $this->assertNotNull($resEntry['entrance_fee']);
+        $this->assertEquals(200, $resEntry['entrance_fee']['pool_fee']);
+    }
+
+    public function test_companion_group_checkout_display_same_and_different_dates()
+    {
+        $this->makeStaffSession();
+
+        // 1. Reservation where companions share the SAME checkout date
+        $resSame = Reservation::create([
+            'booker_name' => 'Same Checkout Family',
+            'email' => 'same@example.com',
+            'phone' => '09111111111',
+            'reservation_date' => '2025-10-14',
+            'check_in' => '2025-10-14 08:00:00',
+            'check_out' => '2025-10-14 17:00:00',
+            'status' => 'Checked Out',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 3,
+            'total_amount' => 1000,
+            'amount_paid' => 1000,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $leadSame = Customer::create(['first_name' => 'Same', 'last_name' => 'Family', 'gender' => 'Male']);
+        $compSame1 = Customer::create(['first_name' => 'Companion 1', 'last_name' => '', 'age' => 25, 'gender' => 'Female']);
+        $compSame2 = Customer::create(['first_name' => 'Companion 2', 'last_name' => '', 'age' => 25, 'gender' => 'Female']);
+
+        ReservationGuest::create([
+            'reservation_id' => $resSame->id,
+            'customer_id' => $leadSame->id,
+            'is_primary_guest' => true,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+        ReservationGuest::create([
+            'reservation_id' => $resSame->id,
+            'customer_id' => $compSame1->id,
+            'is_primary_guest' => false,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+        ReservationGuest::create([
+            'reservation_id' => $resSame->id,
+            'customer_id' => $compSame2->id,
+            'is_primary_guest' => false,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+
+        // 2. Reservation where companions have DIFFERENT checkout dates
+        $resDiff = Reservation::create([
+            'booker_name' => 'Different Checkout Group',
+            'email' => 'diff@example.com',
+            'phone' => '09222222222',
+            'reservation_date' => '2025-10-14',
+            'check_in' => '2025-10-14 08:00:00',
+            'check_out' => '2025-10-14 17:00:00',
+            'status' => 'Checked Out',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 4,
+            'total_amount' => 1500,
+            'amount_paid' => 1500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        $leadDiff = Customer::create(['first_name' => 'Diff', 'last_name' => 'Group', 'gender' => 'Male']);
+        $compDiff1 = Customer::create(['first_name' => 'Companion A', 'last_name' => '', 'age' => 22, 'gender' => 'Male']);
+        $compDiff2 = Customer::create(['first_name' => 'Companion B', 'last_name' => '', 'age' => 22, 'gender' => 'Male']);
+        $compDiff3 = Customer::create(['first_name' => 'Companion C', 'last_name' => '', 'age' => 22, 'gender' => 'Male']);
+
+        ReservationGuest::create([
+            'reservation_id' => $resDiff->id,
+            'customer_id' => $leadDiff->id,
+            'is_primary_guest' => true,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+        // 1 checked out early at 02:00 PM
+        ReservationGuest::create([
+            'reservation_id' => $resDiff->id,
+            'customer_id' => $compDiff1->id,
+            'is_primary_guest' => false,
+            'checked_out_at' => '2025-10-14 14:00:00',
+        ]);
+        // 2 checked out at 05:00 PM
+        ReservationGuest::create([
+            'reservation_id' => $resDiff->id,
+            'customer_id' => $compDiff2->id,
+            'is_primary_guest' => false,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+        ReservationGuest::create([
+            'reservation_id' => $resDiff->id,
+            'customer_id' => $compDiff3->id,
+            'is_primary_guest' => false,
+            'checked_out_at' => '2025-10-14 17:00:00',
+        ]);
+
+        $response = $this->get('/staff/records');
+        $response->assertOk();
+
+        $content = $response->getContent();
+        $resData = $response->viewData('reservationData');
+
+        // Verify Same Checkout: Displays single date without "2x ("
+        $this->assertEquals('Oct 14, 2025 · 05:00 PM', $resData[$resSame->id]['companions_checkout_summary']);
+        $this->assertStringContainsString('Oct 14, 2025 · 05:00 PM', $content);
+
+        // Verify Different Checkout: Displays "1x (Oct 14, 2025 · 02:00 PM), 2x (Oct 14, 2025 · 05:00 PM)"
+        $expectedDiffSummary = '1x (Oct 14, 2025 · 02:00 PM), 2x (Oct 14, 2025 · 05:00 PM)';
+        $this->assertEquals($expectedDiffSummary, $resData[$resDiff->id]['companions_checkout_summary']);
+        $this->assertStringContainsString($expectedDiffSummary, $content);
+    }
 }
+

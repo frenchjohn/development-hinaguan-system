@@ -6,6 +6,7 @@ use App\Models\AdminAccount;
 use App\Models\Amenity;
 use App\Models\AmenityBenefit;
 use App\Models\Customer;
+use App\Models\ParkActivity;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
 use App\Models\ReservationGuest;
@@ -83,10 +84,16 @@ class DatabaseSeeder extends Seeder
                 $imageFile = 'amenities_images/ahouse1.jpg';
             }
 
+            $isAircon = in_array($i, $ahouseAircon, true);
+            $daytimePrice = $isAircon ? 700 : 300;
+            $nighttimePrice = $isAircon ? 1000 : 500;
+
             $ahouse = Amenity::where('amenities_name', "A-House {$i}")->first();
             $ahouseData = [
-                'daytime_price' => 300,
-                'nighttime_price' => 500,
+                'daytime_price' => $daytimePrice,
+                'nighttime_price' => $nighttimePrice,
+                'original_daytime_price' => $daytimePrice,
+                'original_nighttime_price' => $nighttimePrice,
                 'additional_per_head' => 100,
                 'minimum_capacity' => 1,
                 'maximum_capacity' => 2,
@@ -229,5 +236,49 @@ class DatabaseSeeder extends Seeder
                 'free_pool' => true,
             ]
         );
+
+        // Park Activities
+        $activities = [
+            [
+                'activity' => 'River Trekking',
+                'description' => 'Follow scenic trails along the riverbank and discover hidden spots, rock formations, and lush vegetation.',
+                'image' => 'images/River_Trecking.jpg',
+            ],
+            [
+                'activity' => 'Swimming & Wading',
+                'description' => 'Cool off in the natural pool or wade in the shallow river areas, perfect for kids and adults alike.',
+                'image' => 'images/swimming_and_wading.jpg',
+            ],
+            [
+                'activity' => 'Picnic & Bonding',
+                'description' => 'Spread out at open picnic areas, enjoy meals with loved ones, and soak in the peaceful riverside atmosphere.',
+                'image' => 'images/picnic_and_bonding.jpg',
+            ],
+            [
+                'activity' => 'Photography',
+                'description' => "Capture stunning shots along the riverside, scenic landscapes, and rustic cottages - a content creator's paradise.",
+                'image' => 'images/photography.jpg',
+            ],
+            [
+                'activity' => 'Pickleball',
+                'description' => 'Enjoy fast-paced, friendly matches on our outdoor pickleball court surrounded by refreshing nature and greenery.',
+                'image' => 'images/pickleball.jpg',
+            ],
+            [
+                'activity' => 'Billiard',
+                'description' => 'Challenge friends and family to classic games of pool and billiard in a breezy, open-air recreational lounge.',
+                'image' => 'images/billiard.jpg',
+            ],
+        ];
+
+        foreach ($activities as $act) {
+            ParkActivity::updateOrCreate(
+                ['activity' => $act['activity']],
+                [
+                    'description' => $act['description'],
+                    'image' => $act['image'],
+                ]
+            );
+        }
     }
 }

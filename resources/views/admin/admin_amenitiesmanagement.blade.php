@@ -323,12 +323,6 @@
                 <input type="hidden" name="amenity_id" id="amenityId">
                 <input type="hidden" name="existing_image" id="existingImage">
 
-                <div class="modal-form__row modal-form__row--full">
-                    <div id="imagePreview" class="image-preview" style="display:none;">
-                        <img id="imagePreviewImg" src="" alt="Amenity preview">
-                    </div>
-                </div>
-
                 <div class="modal-form__row">
                     <label for="amenities_name">Name <span>*</span></label>
                     <input id="amenities_name" name="amenities_name" type="text" required>
@@ -385,7 +379,30 @@
                 </div>
 
                 <div class="modal-form__row modal-form__row--full">
-                    <label>Amenity Image</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="m-0 font-semibold text-sm text-hp-text dark:text-[#f3f4f6]">Amenity Image</label>
+                        <span class="text-xs text-hp-text-muted">PNG, JPG, WEBP up to 4MB</span>
+                    </div>
+
+                    {{-- Dynamic Image Preview (shows when adding new amenity or changing image) --}}
+                    <div id="imagePreview" class="image-preview mb-3" style="display:none;">
+                        <div class="relative overflow-hidden rounded-2xl border border-glass-border bg-black/5 dark:bg-white/5 shadow-md">
+                            <img id="imagePreviewImg" src="" alt="Amenity preview" class="w-full max-h-[220px] object-cover rounded-2xl block">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none rounded-2xl"></div>
+
+                            {{-- Preview Badge --}}
+                            <div class="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm shadow-xs">
+                                <i class="bi bi-image text-emerald-400"></i>
+                                <span id="imagePreviewBadge">Image Preview</span>
+                            </div>
+
+                            {{-- Remove / Revert Selected Image Button --}}
+                            <button type="button" id="removeImageBtn" class="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-xl bg-black/60 text-white hover:bg-red-600 hover:scale-105 transition-all cursor-pointer shadow-md" title="Remove selected image">
+                                <i class="bi bi-x-lg text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="dropzone" id="imageDropZone">
                         <span class="dropzone__text">Drag & drop an image here, or click to browse</span>
                         <span class="dropzone__filename" id="imageFileName">No file chosen</span>

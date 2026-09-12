@@ -4720,7 +4720,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $bulkGroupData = $bulkGroups->mapWithKeys(fn ($group) => [$group['key'] => $group]);
 
         // Get all completed/history reservations with status Checked Out, No Show, or Cancelled
-        $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee'])
+        $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges.amenity'])
             ->where(function ($query) {
                 $query->whereIn('status', ['Checked Out', 'No Show', 'Cancelled'])
                     ->orWhereNotNull('check_out')
@@ -4828,49 +4828,169 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]];
         });
 
-        $reservationData = $checkedOutReservations->mapWithKeys(function ($reservation) {
+        $formatGroupCheckout = function (array $members, ?string $fallbackCheckout = null): string {
+            if (empty($members)) {
+                return $fallbackCheckout ? \Carbon\Carbon::parse($fallbackCheckout)->format('M d, Y · h:i A') : 'Completed at checkout';
+            }
+            $counts = [];
+            foreach ($members as $m) {
+                $raw = $m['checked_out_at'] ?? $fallbackCheckout;
+                $formatted = $raw ? \Carbon\Carbon::parse($raw)->format('M d, Y · h:i A') : 'Completed at checkout';
+                $counts[$formatted] = ($counts[$formatted] ?? 0) + 1;
+            }
+            if (count($counts) <= 1) {
+                return !empty($counts) ? (string) array_key_first($counts) : ($fallbackCheckout ? \Carbon\Carbon::parse($fallbackCheckout)->format('M d, Y · h:i A') : 'Completed at checkout');
+            }
+            $parts = [];
+            foreach ($counts as $dateStr => $count) {
+                $parts[] = "{$count}x ({$dateStr})";
+            }
+            return implode(', ', $parts);
+        };
+
+        $reservationData = $checkedOutReservations->mapWithKeys(function ($reservation) use ($formatGroupCheckout) {
             $poolFee = (float) ($reservation->entranceFee?->pool_fee ?? 0);
             $poolOption = $reservation->entranceFee?->pool_option ?? 'no_pool';
             $poolAccessCount = (int) ($reservation->entranceFee?->pool_access_count ?? $reservation->reservationGuests->filter(fn($g) => (bool)$g->has_pool_access)->count());
+
+            $companionGuests = $reservation->reservationGuests->filter(fn ($g) => ! $g->is_primary_guest);
+            $bulkGroupsForRes = [];
+            foreach ($companionGuests as $guest) {
+                $customer = $guest->customer;
+                $cName = strtolower(trim((string) ($customer->first_name ?? '')));
+                $isBulk = str_starts_with($cName, 'bulk') || str_contains($cName, 'companion') || empty($customer?->first_name);
+                if ($isBulk && $customer) {
+                    $ageGroup = 'Unknown';
+                    if (is_numeric($customer->age)) {
+                        $age = (int) $customer->age;
+                        $ageGroup = $age <= 12 ? '0-12' : ($age <= 17 ? '13-17' : ($age <= 59 ? '18-59' : '60+'));
+                    }
+                    $gender = $customer->gender ?? 'N/A';
+                    $genderLower = strtolower($gender);
+                    $nationality = $customer->is_foreigner ? 'Foreigner' : 'Filipino';
+                    $key = "{$reservation->id}|{$ageGroup}|{$genderLower}|{$nationality}";
+                    if (! isset($bulkGroupsForRes[$key])) {
+                        $bulkGroupsForRes[$key] = [
+                            'type' => 'bulk',
+                            'key' => $key,
+                            'name' => 'Bulk Companions',
+                            'age_group' => $ageGroup,
+                            'gender' => $gender,
+                            'nationality' => $nationality,
+                            'is_foreigner' => (bool) $customer->is_foreigner,
+                            'has_pool_access' => false,
+                            'pool_access_count' => 0,
+                            'count' => 0,
+                            'members' => [],
+                        ];
+                    }
+                    $bulkGroupsForRes[$key]['count']++;
+                    if ($guest->has_pool_access) {
+                        $bulkGroupsForRes[$key]['has_pool_access'] = true;
+                        $bulkGroupsForRes[$key]['pool_access_count']++;
+                    }
+                    $bulkGroupsForRes[$key]['members'][] = [
+                        'customer_id' => $customer->id,
+                        'has_pool_access' => (bool) $guest->has_pool_access,
+                        'check_in' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->toDateTimeString() : null,
+                        'checked_out_at' => $guest->checked_out_at ? \Carbon\Carbon::parse($guest->checked_out_at)->toDateTimeString() : null,
+                    ];
+                }
+            }
+            foreach ($bulkGroupsForRes as &$bg) {
+                $bg['formatted_checkout'] = $formatGroupCheckout($bg['members'], $reservation->check_out);
+            }
+            unset($bg);
+
+            $allCompMembers = $companionGuests->map(fn ($g) => [
+                'customer_id' => $g->customer_id,
+                'checked_out_at' => $g->checked_out_at ? \Carbon\Carbon::parse($g->checked_out_at)->toDateTimeString() : null,
+            ])->all();
+            $companionsCheckoutSummary = count($allCompMembers) > 0 ? $formatGroupCheckout($allCompMembers, $reservation->check_out) : null;
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
                 'email' => $reservation->email,
                 'phone' => $reservation->phone,
-                'reservation_date' => $reservation->reservation_date,
-                'end_date' => $reservation->end_date,
+                'reservation_date' => $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->toDateTimeString() : null,
+                'end_date' => $reservation->end_date ? \Carbon\Carbon::parse($reservation->end_date)->toDateTimeString() : null,
                 'start_slot' => $reservation->start_slot ?? 'Daytime',
                 'end_slot' => $reservation->end_slot ?? 'Daytime',
-                'check_in' => $reservation->check_in,
-                'check_out' => $reservation->check_out,
-                'number_of_guests' => $reservation->number_of_guests,
+                'total_days' => (int) ($reservation->total_days ?? 1),
+                'check_in' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->toDateTimeString() : null,
+                'check_out' => $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->toDateTimeString() : null,
+                'number_of_guests' => (int) ($reservation->number_of_guests ?? 1),
                 'status' => $reservation->status,
                 'reservation_type' => $reservation->reservation_type,
-                'total_amount' => $reservation->total_amount,
-                'amount_paid' => $reservation->amount_paid,
+                'total_amount' => (float) ($reservation->total_amount ?? 0),
+                'amount_paid' => (float) ($reservation->amount_paid ?? 0),
+                'remaining_balance' => (float) ($reservation->remaining_balance ?? 0),
+                'payment_status' => $reservation->payment_status ?? 'Paid',
+                'payment_method' => $reservation->payment_method ?? 'Cash',
+                'notes' => $reservation->notes,
                 'pool_fee' => $poolFee,
                 'pool_option' => $poolOption,
                 'pool_access_count' => $poolAccessCount,
-                'created_at' => $reservation->created_at,
-                'reservation_guests' => $reservation->reservationGuests->map(function ($guest) {
+                'created_at' => $reservation->created_at ? $reservation->created_at->format('M d, Y h:i A') : null,
+                'bulk_groups' => array_values($bulkGroupsForRes),
+                'companions_checkout_summary' => $companionsCheckoutSummary,
+                'entrance_fee' => $reservation->entranceFee ? [
+                    'pricing_type' => $reservation->entranceFee->pricing_type,
+                    'base_entrance_fee' => (float) ($reservation->entranceFee->base_entrance_fee ?? 0),
+                    'adult_count' => (int) ($reservation->entranceFee->adult_count ?? 0),
+                    'child_count' => (int) ($reservation->entranceFee->child_count ?? 0),
+                    'senior_pwd_count' => (int) ($reservation->entranceFee->senior_pwd_count ?? 0),
+                    'additional_guest_fee' => (float) ($reservation->entranceFee->additional_guest_fee ?? 0),
+                    'total_entrance_fee' => (float) ($reservation->entranceFee->total_entrance_fee ?? 0),
+                    'pool_fee' => (float) ($reservation->entranceFee->pool_fee ?? 0),
+                    'pool_option' => $reservation->entranceFee->pool_option,
+                    'pool_access_count' => (int) ($reservation->entranceFee->pool_access_count ?? 0),
+                ] : null,
+                'reservation_guests' => $reservation->reservationGuests->map(function ($guest) use ($reservation) {
                     return [
+                        'id' => $guest->id,
                         'customer_id' => $guest->customer_id,
                         'is_primary_guest' => (bool) $guest->is_primary_guest,
                         'has_pool_access' => (bool) ($guest->has_pool_access ?? false),
-                        'name' => $guest->customer ? trim(($guest->customer->first_name ?? '') . ' ' . ($guest->customer->last_name ?? '')) : 'Companion',
+                        'name' => $guest->customer ? trim(($guest->customer->first_name ?? '') . ' ' . ($guest->customer->middle_name ? $guest->customer->middle_name . ' ' : '') . ($guest->customer->last_name ?? '')) : 'Companion',
+                        'first_name' => $guest->customer->first_name ?? '',
+                        'last_name' => $guest->customer->last_name ?? '',
+                        'email' => $guest->customer->email ?? '',
+                        'phone' => $guest->customer->phone ?? '',
                         'gender' => $guest->customer->gender ?? 'N/A',
                         'age' => $guest->customer->age ?? 'N/A',
-                        'checked_out_at' => $guest->checked_out_at,
+                        'is_foreigner' => (bool) ($guest->customer->is_foreigner ?? false),
+                        'checked_out_at' => $guest->checked_out_at ? \Carbon\Carbon::parse($guest->checked_out_at)->toDateTimeString() : null,
+                        'check_in' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->toDateTimeString() : null,
                     ];
                 })->all(),
                 'reservation_amenities' => $reservation->reservationAmenities->map(function ($amenity) {
+                    $price = (float) ($amenity->price_at_booking ?? $amenity->price ?? 0);
+                    $qty = (int) ($amenity->quantity ?? 1);
                     return [
+                        'amenity_id' => $amenity->amenity_id,
                         'amenity' => ['amenities_name' => $amenity->amenity?->amenities_name],
-                        'amenity_name' => $amenity->amenity?->amenities_name,
-                        'pricing_type' => $amenity->pricing_type,
-                        'price_at_booking' => $amenity->price_at_booking,
-                        'price' => $amenity->price_at_booking,
-                        'quantity' => $amenity->quantity,
+                        'amenity_name' => $amenity->amenity?->amenities_name ?? 'Amenity',
+                        'pricing_type' => $amenity->pricing_type ?? 'Per Slot',
+                        'price_at_booking' => $price,
+                        'price' => $price,
+                        'quantity' => $qty,
+                        'time_slot' => $amenity->time_slot ?? null,
+                        'start_time' => $amenity->start_time ?? null,
+                        'end_time' => $amenity->end_time ?? null,
+                        'subtotal' => (float) ($price * $qty),
+                    ];
+                })->toArray(),
+                'reservation_charges' => $reservation->reservationCharges->map(function ($charge) {
+                    return [
+                        'id' => $charge->id,
+                        'charge_type' => $charge->charge_type ?? 'Extra Charge',
+                        'description' => $charge->description ?? 'Additional Fee',
+                        'amount' => (float) ($charge->amount ?? 0),
+                        'status' => $charge->status ?? 'Paid',
+                        'amenity_name' => $charge->amenity?->amenities_name ?? null,
+                        'created_at' => $charge->created_at ? $charge->created_at->format('M d, Y h:i A') : null,
                     ];
                 })->toArray(),
             ]];

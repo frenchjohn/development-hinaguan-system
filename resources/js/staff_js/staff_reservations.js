@@ -412,7 +412,7 @@ window.AppPage['staff_reservations'] = function () {
 
         const resAmenities = currentReservationData?.reservation_amenities || [];
         if (checkInGroupEditAmenityBadge) {
-            if (resAmenities.length > 1 && group.amenity_id) {
+            if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
                     const amName = foundAm?.amenity?.amenities_name || 'Amenity';
@@ -662,9 +662,6 @@ window.AppPage['staff_reservations'] = function () {
                     amenityName = foundAm?.amenity?.amenities_name || '';
                 }
             }
-            if (!amenityName && resAmenities.length > 0) {
-                amenityName = resAmenities[0]?.amenity?.amenities_name || '';
-            }
             const amenityHtml = amenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
                 <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
@@ -745,9 +742,6 @@ window.AppPage['staff_reservations'] = function () {
                 if (foundAm) {
                     bulkAmenityName = foundAm?.amenity?.amenities_name || '';
                 }
-            }
-            if (!bulkAmenityName && resAmenities.length > 0) {
-                bulkAmenityName = resAmenities[0]?.amenity?.amenities_name || '';
             }
             const bulkAmenityHtml = bulkAmenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
@@ -913,14 +907,13 @@ window.AppPage['staff_reservations'] = function () {
     const getAllCheckInCompanions = () => {
         const opt = checkInPoolOption?.value || 'no_pool';
         const allCompanions = [];
-        const defaultAmId = String(currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
 
         checkInCompanions.forEach((c) => {
             const hasPool = (opt === 'all_paid' || opt === 'all_free') ? true : (opt === 'specific' ? !!c.has_pool_access : false);
             allCompanions.push({
                 ...c,
                 has_pool_access: hasPool,
-                amenity_id: c.amenity_id || defaultAmId,
+                amenity_id: c.amenity_id || '',
             });
         });
 
@@ -938,7 +931,7 @@ window.AppPage['staff_reservations'] = function () {
                     phone: '',
                     email: '',
                     has_pool_access: i < poolLimit,
-                    amenity_id: group.amenity_id || defaultAmId,
+                    amenity_id: group.amenity_id || '',
                 });
             }
         });
@@ -1026,9 +1019,6 @@ window.AppPage['staff_reservations'] = function () {
                     amenityName = foundAm?.amenity?.amenities_name || '';
                 }
             }
-            if (!amenityName && resAmenities.length > 0) {
-                amenityName = resAmenities[0]?.amenity?.amenities_name || '';
-            }
             const amenityHtml = amenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
                 <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
@@ -1109,9 +1099,6 @@ window.AppPage['staff_reservations'] = function () {
                 if (foundAm) {
                     bulkAmenityName = foundAm?.amenity?.amenities_name || '';
                 }
-            }
-            if (!bulkAmenityName && resAmenities.length > 0) {
-                bulkAmenityName = resAmenities[0]?.amenity?.amenities_name || '';
             }
             const bulkAmenityHtml = bulkAmenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
@@ -1490,8 +1477,10 @@ window.AppPage['staff_reservations'] = function () {
             }
 
             companions.forEach(c => {
-                const cAmenityId = String(c.amenity_id || defaultAmenityId);
-                amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
+                if (c.amenity_id) {
+                    const cAmenityId = String(c.amenity_id);
+                    amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
+                }
             });
 
             resAmenities.forEach(ra => {
@@ -2052,7 +2041,7 @@ window.AppPage['staff_reservations'] = function () {
         const genderVal = (formData.get('gender') || '').trim();
         const isForeigner = formData.get('is_foreigner') === '1';
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const cAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
+        const cAmenityId = String(formData.get('amenity_id') || '');
 
         // Check duplicate against primary guest
         const primaryFirst = (checkInForm?.querySelector('input[name="check_in_primary_guest[first_name]"]')?.value || '').trim();
@@ -2136,7 +2125,7 @@ window.AppPage['staff_reservations'] = function () {
         const ageGroup = formData.get('age_group') || '18-59';
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const bAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
+        const bAmenityId = String(formData.get('amenity_id') || '');
 
         const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
         let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
@@ -2406,8 +2395,8 @@ window.AppPage['staff_reservations'] = function () {
         const bulkAmenityWrap = document.getElementById('checkInBulkCompanionAmenityWrap');
         const bulkAmenitySelect = document.getElementById('checkInBulkCompanionAmenity');
 
-        if (resAmenities.length > 1) {
-            let optionsHtml = '';
+        if (resAmenities.length >= 1) {
+            let optionsHtml = '<option value="" selected>No amenity</option>';
             resAmenities.forEach(ra => {
                 const am = ra.amenity || {};
                 const amId = String(am.id || ra.amenity_id || '');
@@ -2421,14 +2410,10 @@ window.AppPage['staff_reservations'] = function () {
             if (companionAmenityWrap) companionAmenityWrap.classList.remove('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.remove('hidden');
         } else {
+            if (companionAmenitySelect) companionAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
+            if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
             if (companionAmenityWrap) companionAmenityWrap.classList.add('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.add('hidden');
-            if (resAmenities.length === 1) {
-                const singleAmId = String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '');
-                const singleAmName = resAmenities[0].amenity?.amenities_name || 'Amenity';
-                if (companionAmenitySelect) companionAmenitySelect.innerHTML = `<option value="${singleAmId}" selected>${escapeHtml(singleAmName)}</option>`;
-                if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = `<option value="${singleAmId}" selected>${escapeHtml(singleAmName)}</option>`;
-            }
         }
 
         checkInForm.reset();

@@ -281,6 +281,23 @@
                                         @php
                                             $walkInReservations = $checkedOutReservations->filter(fn($r) => ($r->reservation_type ?? '') === 'walk_in');
                                             $onlineReservations = $checkedOutReservations->filter(fn($r) => ($r->reservation_type ?? '') !== 'walk_in');
+
+                                            $formatGroupCheckoutBlade = function (array $members, $fallbackCheckOut = null): string {
+                                                $counts = [];
+                                                foreach ($members as $m) {
+                                                    $rawCo = $m['checked_out_at'] ?? $fallbackCheckOut;
+                                                    $dateStr = $rawCo ? \Carbon\Carbon::parse($rawCo)->format('M d, Y · h:i A') : 'Completed at checkout';
+                                                    $counts[$dateStr] = ($counts[$dateStr] ?? 0) + 1;
+                                                }
+                                                if (count($counts) <= 1) {
+                                                    return array_key_first($counts) ?? ($fallbackCheckOut ? \Carbon\Carbon::parse($fallbackCheckOut)->format('M d, Y · h:i A') : 'Completed at checkout');
+                                                }
+                                                $parts = [];
+                                                foreach ($counts as $date => $cnt) {
+                                                    $parts[] = "{$cnt}x ({$date})";
+                                                }
+                                                return implode(', ', $parts);
+                                            };
                                         @endphp
 
                                         @forelse ($walkInReservations as $reservation)
@@ -325,25 +342,9 @@
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">
-                                                                <svg class="w-3.5 h-3.5 text-[#178a52] dark:text-[#8fd0ab]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                                    <path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5ZM6 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
-                                                                </svg>
-                                                                #{{ $reservation->id }}
-                                                            </span>
-                                                            @php
-                                                                $resPoolFee = (float) ($reservation->entranceFee?->pool_fee ?? 0);
-                                                                $resPoolCount = (int) ($reservation->entranceFee?->pool_access_count ?? $reservation->reservationGuests->filter(fn($g) => (bool)$g->has_pool_access)->count());
-                                                                $resHasPool = $resPoolFee > 0 || $resPoolCount > 0 || ($reservation->entranceFee?->pool_option && $reservation->entranceFee->pool_option !== 'no_pool');
-                                                            @endphp
-                                                            <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->id }}</span>
+                                                            <div class="mt-0.5">
                                                                 <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
-                                                                @if ($resHasPool)
-                                                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Pool Included in Booking">
-                                                                        <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                                                        Pool {{ $resPoolCount > 0 ? "({$resPoolCount})" : '' }}
-                                                                    </span>
-                                                                @endif
                                                             </div>
                                                         </div>
                                                     </div>
@@ -406,6 +407,26 @@
                                                     if ($age <= 17) return '13-17';
                                                     if ($age <= 59) return '18-59';
                                                     return '60+';
+                                                };
+
+                                                $formatGroupCheckoutBlade = function (array $members, ?string $fallbackCheckout = null): string {
+                                                    if (empty($members)) {
+                                                        return $fallbackCheckout ? \Carbon\Carbon::parse($fallbackCheckout)->format('M d, Y · h:i A') : 'Completed at checkout';
+                                                    }
+                                                    $counts = [];
+                                                    foreach ($members as $m) {
+                                                        $raw = $m['checked_out_at'] ?? $fallbackCheckout;
+                                                        $formatted = $raw ? \Carbon\Carbon::parse($raw)->format('M d, Y · h:i A') : 'Completed at checkout';
+                                                        $counts[$formatted] = ($counts[$formatted] ?? 0) + 1;
+                                                    }
+                                                    if (count($counts) <= 1) {
+                                                        return !empty($counts) ? (string) array_key_first($counts) : ($fallbackCheckout ? \Carbon\Carbon::parse($fallbackCheckout)->format('M d, Y · h:i A') : 'Completed at checkout');
+                                                    }
+                                                    $parts = [];
+                                                    foreach ($counts as $dateStr => $count) {
+                                                        $parts[] = "{$count}x ({$dateStr})";
+                                                    }
+                                                    return implode(', ', $parts);
                                                 };
 
                                                 $companionGuests = $reservation->reservationGuests->filter(fn ($g) => ! $g->is_primary_guest && $g->customer);
@@ -501,7 +522,24 @@
                                                         </td>
                                                         <td class="py-2.5 px-4 text-xs font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $compRow['age_group'] }}</td>
                                                         <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $compRow['is_foreigner'] ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-gray-300' }}">{{ $compRow['nationality'] }}</span></td>
-                                                        <td colspan="4"></td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $groupCheckIn = $compRow['members'][0]['check_in'] ?? ($reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->toDateTimeString() : null);
+                                                            @endphp
+                                                            @if($groupCheckIn)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($groupCheckIn)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($groupCheckIn)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $groupCheckoutFormatted = $formatGroupCheckoutBlade($compRow['members'], $reservation->check_out);
+                                                            @endphp
+                                                            <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-snug">{{ $groupCheckoutFormatted }}</div>
+                                                        </td>
+                                                        <td colspan="2"></td>
                                                     </tr>
                                                 @else
                                                     @php
@@ -538,7 +576,29 @@
                                                         </td>
                                                         <td class="py-2.5 px-4 text-xs font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $guest->customer->age ?? 'N/A' }}</td>
                                                         <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $guest->customer->is_foreigner ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-gray-300' }}">{{ $guest->customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span></td>
-                                                        <td colspan="4"></td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $compCheckIn = $guest->reservation?->check_in ?? $reservation->check_in;
+                                                            @endphp
+                                                            @if($compCheckIn)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($compCheckIn)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($compCheckIn)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $compCheckOut = $guest->checked_out_at ?? $reservation->check_out;
+                                                            @endphp
+                                                            @if($compCheckOut)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($compCheckOut)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($compCheckOut)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">Completed at checkout</span>
+                                                            @endif
+                                                        </td>
+                                                        <td colspan="2"></td>
                                                     </tr>
                                                 @endif
                                             @endforeach
@@ -588,25 +648,9 @@
                                                             </button>
                                                         @endif
                                                         <div class="min-w-0">
-                                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">
-                                                                <svg class="w-3.5 h-3.5 text-[#178a52] dark:text-[#8fd0ab]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                                    <path fill-rule="evenodd" d="M5.5 3A2.5 2.5 0 0 0 3 5.5v2.879a2.5 2.5 0 0 0 .732 1.767l6.5 6.5a2.5 2.5 0 0 0 3.536 0l2.878-2.878a2.5 2.5 0 0 0 0-3.536l-6.5-6.5A2.5 2.5 0 0 0 8.38 3H5.5ZM6 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
-                                                                </svg>
-                                                                #{{ $reservation->id }}
-                                                            </span>
-                                                            @php
-                                                                $resPoolFee = (float) ($reservation->entranceFee?->pool_fee ?? 0);
-                                                                $resPoolCount = (int) ($reservation->entranceFee?->pool_access_count ?? $reservation->reservationGuests->filter(fn($g) => (bool)$g->has_pool_access)->count());
-                                                                $resHasPool = $resPoolFee > 0 || $resPoolCount > 0 || ($reservation->entranceFee?->pool_option && $reservation->entranceFee->pool_option !== 'no_pool');
-                                                            @endphp
-                                                            <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 shadow-2xs font-mono">#{{ $reservation->id }}</span>
+                                                            <div class="mt-0.5">
                                                                 <span class="text-[0.7rem] text-[#718774] dark:text-[#889b8a] font-medium capitalize">{{ $reservation->reservation_type ?? 'online' }} Booking</span>
-                                                                @if ($resHasPool)
-                                                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-1.5 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40 shadow-2xs" title="Pool Included in Booking">
-                                                                        <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                                                        Pool {{ $resPoolCount > 0 ? "({$resPoolCount})" : '' }}
-                                                                    </span>
-                                                                @endif
                                                             </div>
                                                         </div>
                                                     </div>
@@ -764,7 +808,24 @@
                                                         </td>
                                                         <td class="py-2.5 px-4 text-xs font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $compRow['age_group'] }}</td>
                                                         <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $compRow['is_foreigner'] ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-gray-300' }}">{{ $compRow['nationality'] }}</span></td>
-                                                        <td colspan="4"></td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $groupCheckIn = $compRow['members'][0]['check_in'] ?? ($reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->toDateTimeString() : null);
+                                                            @endphp
+                                                            @if($groupCheckIn)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($groupCheckIn)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($groupCheckIn)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $groupCheckoutFormatted = $formatGroupCheckoutBlade($compRow['members'], $reservation->check_out);
+                                                            @endphp
+                                                            <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-snug">{{ $groupCheckoutFormatted }}</div>
+                                                        </td>
+                                                        <td colspan="2"></td>
                                                     </tr>
                                                 @else
                                                     @php
@@ -801,7 +862,29 @@
                                                         </td>
                                                         <td class="py-2.5 px-4 text-xs font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">{{ $guest->customer->age ?? 'N/A' }}</td>
                                                         <td class="py-2.5 px-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold {{ $guest->customer->is_foreigner ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-gray-300' }}">{{ $guest->customer->is_foreigner ? 'Foreigner' : 'Filipino' }}</span></td>
-                                                        <td colspan="4"></td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $compCheckIn = $guest->reservation?->check_in ?? $reservation->check_in;
+                                                            @endphp
+                                                            @if($compCheckIn)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($compCheckIn)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($compCheckIn)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">N/A</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-2.5 px-4 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                                            @php
+                                                                $compCheckOut = $guest->checked_out_at ?? $reservation->check_out;
+                                                            @endphp
+                                                            @if($compCheckOut)
+                                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">{{ \Carbon\Carbon::parse($compCheckOut)->format('M d, Y') }}</div>
+                                                                <div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">{{ \Carbon\Carbon::parse($compCheckOut)->format('h:i A') }}</div>
+                                                            @else
+                                                                <span class="text-[#889b8a]">Completed at checkout</span>
+                                                            @endif
+                                                        </td>
+                                                        <td colspan="2"></td>
                                                     </tr>
                                                 @endif
                                             @endforeach
@@ -858,12 +941,16 @@
 
                 <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
                     <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" data-close-reservation-modal="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-                        <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-[#5a6b5c] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:text-white" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
-                        <div class="guest-modal__header mb-4 flex items-center gap-3">
-                            <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reservation Archive Details</h3>
+                    <div class="guest-modal__content relative z-[1] w-full max-w-[800px] max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-0 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+                        <div class="p-4 sm:px-6 border-b border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
+                            <div class="flex items-center gap-2.5 flex-wrap min-w-0">
+                                <span id="reservationModalIdBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 font-mono shadow-2xs">#12</span>
+                                <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-base sm:text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">Reservation Details</h3>
+                                <span id="reservationModalStatusBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border"></span>
+                            </div>
+                            <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
                         </div>
-                        <div id="reservationModalBody" class="guest-modal__body grid gap-4 text-xs"></div>
+                        <div id="reservationModalBody" class="guest-modal__body p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
                     </div>
                 </div>
 

@@ -2065,7 +2065,9 @@
 
 										<div class="guest-form__field-group grid gap-1" id="walkInSingleCompanionAmenityWrap" style="display: none;">
 											<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInCompanionAmenity">Assign to Amenity</label>
-											<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+											<select name="amenity_id" id="walkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="" selected>No amenity</option>
+											</select>
 										</div>
 
 										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="singleCompanionAccessRow">
@@ -2172,7 +2174,9 @@
 
 										<div class="guest-form__field-group grid gap-1" id="walkInBulkCompanionAmenityWrap" style="display: none;">
 											<label class="guest-form__label text-xs font-semibold text-hp-text" for="walkInBulkCompanionAmenity">Assign to Amenity</label>
-											<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+											<select name="amenity_id" id="walkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="" selected>No amenity</option>
+											</select>
 										</div>
 
 										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="bulkCompanionAccessRow">
@@ -2733,7 +2737,9 @@
 								</div>
 								<div class="guest-form__field-group grid gap-1.5 sm:col-span-3" id="resaddSingleAmenityWrap" style="display: none;">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_amenity">Assign to Amenity</label>
-									<select name="amenity_id" id="resadd_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+									<select name="amenity_id" id="resadd_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										<option value="" selected>No amenity</option>
+									</select>
 								</div>
 							</div>
 							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -2817,7 +2823,9 @@
 								</div>
 								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="resaddBulkAmenityWrap" style="display: none;">
 									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_amenity">Assign to Amenity</label>
-									<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
+									<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+										<option value="" selected>No amenity</option>
+									</select>
 								</div>
 								<div class="guest-form__field-group grid gap-1.5">
 									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">

@@ -39,6 +39,63 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
     const editButton = document.getElementById('amenityEditButton');
     const imagePreview = document.getElementById('imagePreview');
     const imagePreviewImg = document.getElementById('imagePreviewImg');
+    const imagePreviewBadge = document.getElementById('imagePreviewBadge');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    let currentPreviewBlobUrl = null;
+
+    const setPreview = (url, badgeText = 'Image Preview', isBlob = false) => {
+        if (currentPreviewBlobUrl && currentPreviewBlobUrl !== url) {
+            URL.revokeObjectURL(currentPreviewBlobUrl);
+            currentPreviewBlobUrl = null;
+        }
+        if (isBlob) {
+            currentPreviewBlobUrl = url;
+        }
+
+        if (url) {
+            imagePreviewImg.src = url;
+            if (imagePreviewBadge) imagePreviewBadge.textContent = badgeText;
+            imagePreview.style.display = 'block';
+            if (removeImageBtn) {
+                removeImageBtn.style.display = imageInput.disabled ? 'none' : 'flex';
+            }
+        } else {
+            imagePreviewImg.src = '';
+            imagePreview.style.display = 'none';
+            if (removeImageBtn) {
+                removeImageBtn.style.display = 'none';
+            }
+        }
+    };
+
+    const handleFileSelection = (file) => {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file (PNG, JPG, JPEG, WEBP, etc.).');
+            imageInput.value = '';
+            return;
+        }
+        const blobUrl = URL.createObjectURL(file);
+        const sizeStr = file.size > 1024 * 1024
+            ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+            : `${(file.size / 1024).toFixed(1)} KB`;
+        imageFileName.textContent = `${file.name} (${sizeStr})`;
+        setPreview(blobUrl, 'New Image Preview', true);
+    };
+
+    const clearSelectedFile = () => {
+        imageInput.value = '';
+        const existingUrl = imagePreviewImg.dataset.existingUrl;
+        const existingPath = document.getElementById('existingImage').value;
+
+        if (existingUrl) {
+            setPreview(existingUrl, 'Current Amenity Image', false);
+            imageFileName.textContent = existingPath ? existingPath.split('/').pop() : 'Existing image';
+        } else {
+            setPreview(null);
+            imageFileName.textContent = 'No file chosen';
+        }
+    };
 
     const setFormReadOnly = (readOnly) => {
         Object.values(fields).forEach(field => {
@@ -46,8 +103,12 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         });
         if (readOnly) {
             dropZone.classList.add('dropzone--disabled');
+            if (removeImageBtn) removeImageBtn.style.display = 'none';
         } else {
             dropZone.classList.remove('dropzone--disabled');
+            if (removeImageBtn && imagePreview.style.display !== 'none') {
+                removeImageBtn.style.display = 'flex';
+            }
         }
     };
 
@@ -118,6 +179,8 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         if (fields.free_pool) fields.free_pool.checked = false;
         amenityIdInput.value = '';
         document.getElementById('existingImage').value = '';
+        imagePreviewImg.dataset.existingUrl = '';
+        setPreview(null);
         modalTitle.textContent = 'Add New Amenity';
         submitButton.textContent = 'Create Amenity';
         submitButton.style.display = 'inline-flex';
@@ -130,7 +193,6 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         if (methodInput) methodInput.remove();
         imageFileName.textContent = 'No file chosen';
         dropZone.classList.remove('is-active');
-        imagePreview.style.display = 'none';
     };
 
     const populateFormForEdit = (row) => {
@@ -179,13 +241,13 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         fields.sale_percentage.value = data.sale_percentage;
         
         document.getElementById('existingImage').value = data.imagePath || '';
+        imagePreviewImg.dataset.existingUrl = data.imageUrl || '';
         imageFileName.textContent = data.imageUrl ? data.imageUrl.split('/').pop() : 'No file chosen';
 
         if (data.imageUrl) {
-            imagePreviewImg.src = data.imageUrl;
-            imagePreview.style.display = 'block';
+            setPreview(data.imageUrl, 'Current Amenity Image', false);
         } else {
-            imagePreview.style.display = 'none';
+            setPreview(null);
         }
 
         modalTitle.textContent = 'Amenity details';
@@ -199,11 +261,12 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
 
     openButtons.forEach(button => {
         button.addEventListener('click', () => {
+            closeModal();
             editButton.style.display = 'none';
             submitButton.style.display = 'inline-flex';
             deleteButton.style.display = 'none';
             setFormReadOnly(false);
-            imagePreview.style.display = 'none';
+            setPreview(null);
             openModal();
         });
     });
@@ -262,10 +325,6 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
     // Initial filter/sort display
     filterAndSortRows();
 
-    const updateFilePreview = (file) => {
-        imageFileName.textContent = file ? file.name : 'No file chosen';
-    };
-
     dropZone.addEventListener('click', () => {
         if (!imageInput.disabled) {
             imageInput.click();
@@ -276,6 +335,15 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         setFormReadOnly(false);
         submitButton.style.display = 'inline-flex';
         editButton.style.display = 'none';
+        if (removeImageBtn && imagePreview.style.display !== 'none') {
+            removeImageBtn.style.display = 'flex';
+        }
+    });
+
+    removeImageBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearSelectedFile();
     });
 
     ['dragenter', 'dragover'].forEach(eventName => {
@@ -301,15 +369,13 @@ window.AppPage['admin_amenitiesmanagement'] = function () {
         const files = event.dataTransfer.files;
         if (files.length) {
             imageInput.files = files;
-            updateFilePreview(files[0]);
-            imagePreview.style.display = 'none';
+            handleFileSelection(files[0]);
         }
     });
 
     imageInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
-        updateFilePreview(file);
-        imagePreview.style.display = 'none';
+        handleFileSelection(file);
     });
 
     // Handle numeric-only price inputs

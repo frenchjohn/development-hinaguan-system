@@ -5238,15 +5238,19 @@ window.AppPage['staff_check_ins'] = function () {
 
             // Single companions
             companions.forEach(c => {
-                const cAmId = String(c.amenity_id || defaultAmenityId);
-                amenityCounts[cAmId] = (amenityCounts[cAmId] || 0) + 1;
+                if (c.amenity_id) {
+                    const cAmId = String(c.amenity_id);
+                    amenityCounts[cAmId] = (amenityCounts[cAmId] || 0) + 1;
+                }
             });
 
             // Bulk companion groups
             bulkCompanionGroups.forEach(g => {
-                const bAmId = String(g.amenity_id || defaultAmenityId);
-                const qty = parseInt(g.quantity, 10) || 1;
-                amenityCounts[bAmId] = (amenityCounts[bAmId] || 0) + qty;
+                if (g.amenity_id) {
+                    const bAmId = String(g.amenity_id);
+                    const qty = parseInt(g.quantity, 10) || 1;
+                    amenityCounts[bAmId] = (amenityCounts[bAmId] || 0) + qty;
+                }
             });
 
             selectedAmenities.forEach(am => {
@@ -5974,9 +5978,6 @@ window.AppPage['staff_check_ins'] = function () {
                     bulkAmenityName = foundAm.amenity_name || '';
                 }
             }
-            if (!bulkAmenityName && selectedAmenities.length > 0) {
-                bulkAmenityName = selectedAmenities[0].amenity_name || '';
-            }
             const bulkAmenityHtml = bulkAmenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
                 <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
@@ -6057,8 +6058,8 @@ window.AppPage['staff_check_ins'] = function () {
         const bulkAmWrap = document.getElementById('walkInBulkCompanionAmenityWrap');
         const bulkAmSelect = document.getElementById('walkInBulkCompanionAmenity');
 
-        if (selectedAmenities.length > 1) {
-            let optionsHtml = '';
+        if (selectedAmenities.length >= 1) {
+            let optionsHtml = '<option value="" selected>No amenity</option>';
             selectedAmenities.forEach(am => {
                 const max = (am.max_cap !== null && am.max_cap !== undefined && am.max_cap !== '') ? `Max: ${am.max_cap}` : 'No limit';
                 const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
@@ -6069,13 +6070,10 @@ window.AppPage['staff_check_ins'] = function () {
             if (singleAmWrap) singleAmWrap.style.display = 'grid';
             if (bulkAmWrap) bulkAmWrap.style.display = 'grid';
         } else {
+            if (singleAmSelect) singleAmSelect.innerHTML = '<option value="" selected>No amenity</option>';
+            if (bulkAmSelect) bulkAmSelect.innerHTML = '<option value="" selected>No amenity</option>';
             if (singleAmWrap) singleAmWrap.style.display = 'none';
             if (bulkAmWrap) bulkAmWrap.style.display = 'none';
-            if (selectedAmenities.length === 1) {
-                const singleId = selectedAmenities[0].amenity_id;
-                if (singleAmSelect) singleAmSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(selectedAmenities[0].amenity_name)}</option>`;
-                if (bulkAmSelect) bulkAmSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(selectedAmenities[0].amenity_name)}</option>`;
-            }
         }
 
         companionModal.classList.add('is-open');
@@ -6380,7 +6378,7 @@ window.AppPage['staff_check_ins'] = function () {
 
             const hasPoolFlag = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') ? '1' : (companion.has_pool_access ? '1' : '0');
             const isFreeEntranceFlag = (currentEntranceOpt === 'all_free') ? '1' : (currentEntranceOpt === 'specific' && companion.has_free_entrance ? '1' : '0');
-            const companionAmenityVal = companion.amenity_id || (selectedAmenities[0]?.amenity_id || '');
+            const companionAmenityVal = companion.amenity_id || '';
 
             // ALWAYS inject hidden fields for all added companions
             companionHiddenFields.insertAdjacentHTML('beforeend', `
@@ -6450,9 +6448,6 @@ window.AppPage['staff_check_ins'] = function () {
                     amenityName = foundAm.amenity_name || '';
                 }
             }
-            if (!amenityName && selectedAmenities.length > 0) {
-                amenityName = selectedAmenities[0].amenity_name || '';
-            }
             const amenityHtml = amenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
                 <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
@@ -6495,7 +6490,7 @@ window.AppPage['staff_check_ins'] = function () {
         bulkCompanionGroups.forEach((group, groupIndex) => {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
-            const groupAmenityVal = group.amenity_id || (selectedAmenities[0]?.amenity_id || '');
+            const groupAmenityVal = group.amenity_id || '';
 
             // ALWAYS inject hidden fields for all bulk group companions
             for (let i = 0; i < group.quantity; i++) {
@@ -6573,9 +6568,6 @@ window.AppPage['staff_check_ins'] = function () {
                 if (foundAm) {
                     bulkAmenityName = foundAm.amenity_name || '';
                 }
-            }
-            if (!bulkAmenityName && selectedAmenities.length > 0) {
-                bulkAmenityName = selectedAmenities[0].amenity_name || '';
             }
             const bulkAmenityHtml = bulkAmenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
@@ -7002,7 +6994,7 @@ window.AppPage['staff_check_ins'] = function () {
         const isForeignerVal = formData.get('is_foreigner') === '1';
         const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
-        const chosenAmenityId = String(formData.get('amenity_id') || selectedAmenities[0]?.amenity_id || '');
+        const chosenAmenityId = String(formData.get('amenity_id') || '');
 
         // Check if matching companion already exists in single companions
         const isDuplicateCompanion = companions.some(c => {
@@ -7092,14 +7084,14 @@ window.AppPage['staff_check_ins'] = function () {
         const ageType = (ageGroup === '0-12') ? 'child' : 'adult';
         const currentEntranceOpt = walkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = walkInPoolOption?.value || 'no_pool';
-        const chosenAmenityId = String(formData.get('amenity_id') || selectedAmenities[0]?.amenity_id || '');
+        const chosenAmenityId = String(formData.get('amenity_id') || '');
 
         // Check if matching bulk companion group already exists
         const isDuplicateBulk = bulkCompanionGroups.some(g => {
             const matchGender = (g.gender || '').trim().toLowerCase() === gender.toLowerCase();
             const matchAgeGroup = (g.age_group || '').trim().toLowerCase() === ageGroup.toLowerCase();
             const matchNationality = Boolean(g.is_foreigner) === isForeigner;
-            const matchAmenity = selectedAmenities.length > 1 ? (String(g.amenity_id || '') === chosenAmenityId) : true;
+            const matchAmenity = String(g.amenity_id || '') === chosenAmenityId;
 
             return matchGender && matchAgeGroup && matchNationality && matchAmenity;
         });
@@ -9075,7 +9067,7 @@ window.AppPage['staff_check_ins'] = function () {
         // Calculate Extra Head Fee if assigned amenity has capacity limit
         const res = reservationData[currentReservationId];
         const resAmenities = res?.reservation_amenities || [];
-        const amId = String(resAddSingleForm?.querySelector('[name="amenity_id"]')?.value || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
+        const amId = String(resAddSingleForm?.querySelector('[name="amenity_id"]')?.value || '');
         const foundAmenity = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id || ra.id) === amId);
         let extraHeadFee = 0;
         if (foundAmenity) {
@@ -9204,8 +9196,8 @@ window.AppPage['staff_check_ins'] = function () {
         const bulkWrap = document.getElementById('resaddBulkAmenityWrap');
         const bulkSelect = document.getElementById('resadd_bulk_amenity');
 
-        if (resAmenities.length > 1) {
-            let optionsHtml = '';
+        if (resAmenities.length >= 1) {
+            let optionsHtml = '<option value="" selected>No amenity</option>';
             resAmenities.forEach(ra => {
                 const am = ra.amenity || ra;
                 const amId = String(am.id || ra.amenity_id || '');
@@ -9219,15 +9211,10 @@ window.AppPage['staff_check_ins'] = function () {
             if (singleWrap) singleWrap.style.display = 'grid';
             if (bulkWrap) bulkWrap.style.display = 'block';
         } else {
+            if (singleSelect) singleSelect.innerHTML = '<option value="" selected>No amenity</option>';
+            if (bulkSelect) bulkSelect.innerHTML = '<option value="" selected>No amenity</option>';
             if (singleWrap) singleWrap.style.display = 'none';
             if (bulkWrap) bulkWrap.style.display = 'none';
-            if (resAmenities.length === 1) {
-                const am = resAmenities[0].amenity || resAmenities[0];
-                const singleId = String(am.id || resAmenities[0].amenity_id || '');
-                const singleName = am.amenities_name || resAmenities[0].amenity_name || 'Amenity';
-                if (singleSelect) singleSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(singleName)}</option>`;
-                if (bulkSelect) bulkSelect.innerHTML = `<option value="${singleId}" selected>${escapeHtml(singleName)}</option>`;
-            }
         }
 
         loadParkSettings().then(() => {
