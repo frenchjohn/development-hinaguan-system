@@ -5770,9 +5770,9 @@ window.AppPage['staff_check_ins'] = function () {
     const getGenderBadgeHtml = (gender) => {
         const isFemale = String(gender || '').trim().toLowerCase() === 'female';
         if (isFemale) {
-            return `<span class="inline-flex items-center gap-1 rounded-md bg-pink-100/80 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border border-pink-300/80 dark:border-pink-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-female text-xs"></i> Female</span>`;
+            return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/25 shrink-0 shadow-2xs" title="Gender: Female"><i class="bi bi-gender-female text-xs font-bold"></i></span>`;
         }
-        return `<span class="inline-flex items-center gap-1 rounded-md bg-blue-100/80 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-300/80 dark:border-blue-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-male text-xs"></i> Male</span>`;
+        return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25 shrink-0 shadow-2xs" title="Gender: Male"><i class="bi bi-gender-male text-xs font-bold"></i></span>`;
     };
 
     const getAgeBadgeHtml = (ageText) => {
@@ -5849,58 +5849,63 @@ window.AppPage['staff_check_ins'] = function () {
             const ageText = companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel;
 
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> Pool Pass</span>';
-            } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>';
+            if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
+            } else if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-500/20 text-sky-800 dark:text-sky-200 border border-sky-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water text-sky-600"></i> Pool Pass <i class="bi bi-check2"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-modal-toggle-pool="${index}" title="Click to grant pool pass"><i class="bi bi-water"></i> + Pool</button>`;
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-modal-toggle-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance <i class="bi bi-check2"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-modal-toggle-free="${index}" title="Click to grant free entrance"><i class="bi bi-ticket-perforated"></i> + Free</button>`;
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/35 bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-free="${index}" title="Free Entrance (Click to remove)"><i class="bi bi-ticket-perforated-fill text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-free="${index}" title="Standard Entrance (Click to make free)"><i class="bi bi-ticket-perforated-fill text-xs"></i></button>`;
             }
 
-            let amenityBadgeHtml = '';
-            if (selectedAmenities.length > 1 && companion.amenity_id) {
+            let amenityName = '';
+            if (companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityName = foundAm.amenity_name || '';
                 }
             }
+            if (!amenityName && selectedAmenities.length > 0) {
+                amenityName = selectedAmenities[0].amenity_name || '';
+            }
+            const amenityHtml = amenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
+            ` : '';
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass/80 p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass';
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
-                        <i class="bi bi-person-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
+                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-extrabold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            ${genderBadge}
-                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">${ageText}</span>
-                            <span class="text-hp-text-muted/40">•</span>
-                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
-                            ${amenityBadgeHtml}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${amenityHtml}
                 </div>
-                <div class="flex items-center gap-2.5 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                     <div class="flex items-center gap-1.5">
                         ${freeBadgeHtml}
                         ${poolBadgeHtml}
                     </div>
-                    <div class="flex items-center border-l border-glass-border pl-2.5 ml-1">
-                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-single="${index}" title="Remove staged companion">
+                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-single="${index}" title="Remove staged companion">
                             <i class="bi bi-trash3 text-xs"></i>
                         </button>
                     </div>
@@ -5928,71 +5933,82 @@ window.AppPage['staff_check_ins'] = function () {
             const genderBadge = getGenderBadgeHtml(group.gender);
 
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> All Pool</span>`;
-            } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>`;
+            if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            } else if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'specific') {
                 const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
                 group.pool_quantity = pQty;
-                bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-900 dark:text-sky-200 shadow-2xs" title="Pool passes for ${pQty} of ${group.quantity} guests">
-                    <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
-                    <span class="text-[0.65rem] uppercase font-bold text-sky-800/80 dark:text-sky-300">Pool:</span>
-                    <span>${pQty}/${group.quantity}</span>
-                </div>`;
+                if (pQty === group.quantity && pQty > 0) {
+                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+                } else if (pQty > 0) {
+                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool passes for ${pQty} of ${group.quantity} guests">
+                        <i class="bi bi-water text-xs"></i>
+                        <span>${pQty}/${group.quantity}</span>
+                    </div>`;
+                }
             }
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> All Free</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
-                bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-900 dark:text-amber-200 shadow-2xs" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
-                    <i class="bi bi-ticket-perforated-fill text-amber-600"></i>
-                    <span class="text-[0.65rem] uppercase font-bold text-amber-800/80 dark:text-amber-300">Entrance:</span>
-                    <span>${fQty}/${group.quantity}</span>
-                </div>`;
-            }
-
-            let bulkAmenityBadgeHtml = '';
-            if (selectedAmenities.length > 1 && group.amenity_id) {
-                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
-                if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                if (fQty === group.quantity && fQty > 0) {
+                    bulkFreeBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance for all ${group.quantity} guests"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`;
+                } else if (fQty > 0) {
+                    bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2 text-xs font-bold text-amber-700 dark:text-amber-300 shadow-2xs shrink-0" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
+                        <i class="bi bi-ticket-perforated-fill text-xs"></i>
+                        <span>${fQty}/${group.quantity}</span>
+                    </div>`;
                 }
             }
 
+            let bulkAmenityName = '';
+            if (group.amenity_id) {
+                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
+                if (foundAm) {
+                    bulkAmenityName = foundAm.amenity_name || '';
+                }
+            }
+            if (!bulkAmenityName && selectedAmenities.length > 0) {
+                bulkAmenityName = selectedAmenities[0].amenity_name || '';
+            }
+            const bulkAmenityHtml = bulkAmenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
+            ` : '';
+
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass/80 p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
             item.setAttribute('data-modal-open-group-edit', groupIndex);
             item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1 select-none pointer-events-none">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
-                        <i class="bi bi-people-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-extrabold text-hp-text dark:text-white shrink-0">${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
-                            ${genderBadge}
-                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
-                            <span class="text-hp-text-muted/40">•</span>
-                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
-                            ${bulkAmenityBadgeHtml}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${bulkAmenityHtml}
                 </div>
-                <div class="flex items-center gap-2.5 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                     <div class="flex items-center gap-1.5">
                         ${bulkFreeBadgeHtml}
                         ${bulkPoolBadgeHtml}
                     </div>
                     <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
-                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-modal-open-group-edit="${groupIndex}" title="Edit group">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-modal-open-group-edit="${groupIndex}" title="Edit group">
                             <i class="bi bi-pencil-fill text-xs"></i>
                         </button>
-                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-bulk="${groupIndex}" title="Remove staged bulk group">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-bulk="${groupIndex}" title="Remove staged bulk group">
                             <i class="bi bi-trash3 text-xs"></i>
                         </button>
                     </div>
@@ -6407,61 +6423,65 @@ window.AppPage['staff_check_ins'] = function () {
             visibleCount++;
 
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> Pool Pass</span>';
-            } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>';
+            if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
+            } else if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-sky-500/20 text-sky-800 dark:text-sky-200 border border-sky-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water text-sky-600"></i> Pool Pass <i class="bi bi-check2"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access"><i class="bi bi-water"></i> + Pool</button>`;
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
             let freeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                freeBadgeHtml = '<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance</span>';
+                freeBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>';
             } else if (currentEntranceOpt === 'specific') {
                 freeBadgeHtml = companion.has_free_entrance
-                    ? `<button type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 px-2.5 py-1 text-xs font-bold cursor-pointer hover:bg-amber-500/30 transition-colors" data-toggle-companion-free="${index}" title="Click to remove free entrance"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free Entrance <i class="bi bi-check2"></i></button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded-xl bg-glass border border-glass-border text-hp-text-muted px-2.5 py-1 text-xs font-medium cursor-pointer hover:bg-glass-hover hover:text-hp-text transition-colors" data-toggle-companion-free="${index}" title="Click to grant free entrance"><i class="bi bi-ticket-perforated"></i> + Free</button>`;
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/35 bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-free="${index}" title="Free Entrance (Click to remove)"><i class="bi bi-ticket-perforated-fill text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-free="${index}" title="Standard Entrance (Click to make free)"><i class="bi bi-ticket-perforated-fill text-xs"></i></button>`;
             }
 
-            let amenityBadgeHtml = '';
-            if (selectedAmenities.length > 1 && companion.amenity_id) {
+            let amenityName = '';
+            if (companion.amenity_id) {
                 const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
-                    amenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                    amenityName = foundAm.amenity_name || '';
                 }
             }
+            if (!amenityName && selectedAmenities.length > 0) {
+                amenityName = selectedAmenities[0].amenity_name || '';
+            }
+            const amenityHtml = amenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
+            ` : '';
 
             const genderBadge = getGenderBadgeHtml(companion.gender);
-            const ageText = companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel;
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
+            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
-                        <i class="bi bi-person-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
+                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="guest-companion-pill__name text-xs font-extrabold text-hp-text dark:text-white truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            ${genderBadge}
-                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">${ageText}</span>
-                            <span class="text-hp-text-muted/40">•</span>
-                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
-                            ${amenityBadgeHtml}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${amenityHtml}
                 </div>
-                <div class="flex items-center gap-2.5 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                     <div class="flex items-center gap-1.5">
                         ${freeBadgeHtml}
                         ${poolBadgeHtml}
                     </div>
-                    <div class="flex items-center border-l border-glass-border pl-2.5 ml-1">
-                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-companion-index="${index}" title="Remove companion">
+                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-companion-index="${index}" title="Remove companion">
                             <i class="bi bi-trash3 text-xs"></i>
                         </button>
                     </div>
@@ -6513,73 +6533,84 @@ window.AppPage['staff_check_ins'] = function () {
             visibleCount++;
 
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl bg-sky-500/15 border border-sky-500/25 text-sky-800 dark:text-sky-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-sky-600"></i> All Pool</span>`;
-            } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-water text-emerald-600"></i> Free Pool</span>`;
+            if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            } else if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'specific') {
                 const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
                 group.pool_quantity = pQty;
-                bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2.5 py-1 text-xs font-bold text-sky-900 dark:text-sky-200 shadow-2xs" title="Pool access passes for ${pQty} of ${group.quantity} guests">
-                    <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
-                    <span class="text-[0.65rem] uppercase font-bold text-sky-800/80 dark:text-sky-300">Pool:</span>
-                    <span>${pQty}/${group.quantity}</span>
-                </div>`;
+                if (pQty === group.quantity && pQty > 0) {
+                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+                } else if (pQty > 0) {
+                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool access passes for ${pQty} of ${group.quantity} guests">
+                        <i class="bi bi-water text-xs"></i>
+                        <span>${pQty}/${group.quantity}</span>
+                    </div>`;
+                }
             }
 
             let bulkFreeBadgeHtml = '';
             if (currentEntranceOpt === 'all_free') {
-                bulkFreeBadgeHtml = `<span class="inline-flex items-center gap-1 rounded-xl border border-amber-500/25 bg-amber-500/15 text-amber-800 dark:text-amber-200 px-2.5 py-1 text-xs font-bold"><i class="bi bi-ticket-perforated-fill text-amber-600"></i> All Free</span>`;
+                bulkFreeBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`;
             } else if (currentEntranceOpt === 'specific') {
                 const fQty = Math.min(Math.max(0, parseInt(group.free_quantity, 10) || 0), group.quantity);
                 group.free_quantity = fQty;
-                bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-900 dark:text-amber-200 shadow-2xs" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
-                    <i class="bi bi-ticket-perforated-fill text-amber-600"></i>
-                    <span class="text-[0.65rem] uppercase font-bold text-amber-800/80 dark:text-amber-300">Entrance:</span>
-                    <span>${fQty}/${group.quantity}</span>
-                </div>`;
-            }
-
-            let bulkAmenityBadgeHtml = '';
-            if (selectedAmenities.length > 1 && group.amenity_id) {
-                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
-                if (foundAm) {
-                    bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400"><i class="bi bi-house-door-fill text-[0.7rem]"></i> ${escapeHtml(foundAm.amenity_name)}</span>`;
+                if (fQty === group.quantity && fQty > 0) {
+                    bulkFreeBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free entrance passes for all ${group.quantity} guests"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`;
+                } else if (fQty > 0) {
+                    bulkFreeBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2 text-xs font-bold text-amber-700 dark:text-amber-300 shadow-2xs shrink-0" title="Free entrance passes for ${fQty} of ${group.quantity} guests">
+                        <i class="bi bi-ticket-perforated-fill text-xs"></i>
+                        <span>${fQty}/${group.quantity}</span>
+                    </div>`;
                 }
             }
+
+            let bulkAmenityName = '';
+            if (group.amenity_id) {
+                const foundAm = selectedAmenities.find(a => String(a.amenity_id) === String(group.amenity_id));
+                if (foundAm) {
+                    bulkAmenityName = foundAm.amenity_name || '';
+                }
+            }
+            if (!bulkAmenityName && selectedAmenities.length > 0) {
+                bulkAmenityName = selectedAmenities[0].amenity_name || '';
+            }
+            const bulkAmenityHtml = bulkAmenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
+            ` : '';
 
             const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer shadow-xs';
+            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer shadow-xs';
             item.setAttribute('data-open-group-edit', groupIndex);
             item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1 select-none pointer-events-none">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
-                        <i class="bi bi-people-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-extrabold text-hp-text dark:text-white shrink-0">${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
-                            ${genderBadge}
-                            <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
-                            <span class="text-hp-text-muted/40">•</span>
-                            <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
-                            ${bulkAmenityBadgeHtml}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${bulkAmenityHtml}
                 </div>
-                <div class="flex items-center gap-2.5 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                     <div class="flex items-center gap-1.5">
                         ${bulkFreeBadgeHtml}
                         ${bulkPoolBadgeHtml}
                     </div>
-                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
-                        <button type="button" class="flex h-8 w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-open-group-edit="${groupIndex}" title="Edit group">
+                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-open-group-edit="${groupIndex}" title="Edit group">
                             <i class="bi bi-pencil-fill text-xs"></i>
                         </button>
-                        <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-bulk-index="${groupIndex}" title="Remove bulk group">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-bulk-index="${groupIndex}" title="Remove bulk group">
                             <i class="bi bi-trash3 text-xs"></i>
                         </button>
                     </div>

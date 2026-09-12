@@ -330,9 +330,9 @@ window.AppPage['staff_reservations'] = function () {
     const getGenderBadgeHtml = (gender) => {
         const isFemale = String(gender || '').trim().toLowerCase() === 'female';
         if (isFemale) {
-            return `<span class="inline-flex items-center gap-1 rounded-md bg-pink-100/80 text-pink-700 dark:bg-pink-950/50 dark:text-pink-300 border border-pink-300/80 dark:border-pink-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-female text-xs"></i> Female</span>`;
+            return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/25 shrink-0 shadow-2xs" title="Gender: Female"><i class="bi bi-gender-female text-xs font-bold"></i></span>`;
         }
-        return `<span class="inline-flex items-center gap-1 rounded-md bg-blue-100/80 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-300/80 dark:border-blue-800/60 px-2 py-0.5 text-xs font-bold shadow-2xs shrink-0"><i class="bi bi-gender-male text-xs"></i> Male</span>`;
+        return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25 shrink-0 shadow-2xs" title="Gender: Male"><i class="bi bi-gender-male text-xs font-bold"></i></span>`;
     };
 
     const getAgeBadgeHtml = (ageText) => {
@@ -380,6 +380,191 @@ window.AppPage['staff_reservations'] = function () {
         renderCheckInModalCompanionPreview();
     });
 
+    // Check-In Companion Group Edit Modal Controls
+    const checkInCompanionGroupEditModal = document.getElementById('checkInCompanionGroupEditModal');
+    const checkInGroupEditForm = document.getElementById('checkInGroupEditForm');
+    const checkInGroupEditGroupIndex = document.getElementById('checkInGroupEditGroupIndex');
+    const checkInGroupEditDemographicsBadge = document.getElementById('checkInGroupEditDemographicsBadge');
+    const checkInGroupEditAmenityBadge = document.getElementById('checkInGroupEditAmenityBadge');
+    const checkInGroupEditQuantityInput = document.getElementById('checkInGroupEditQuantityInput');
+    const checkInGroupEditQtyMinusBtn = document.getElementById('checkInGroupEditQtyMinusBtn');
+    const checkInGroupEditQtyPlusBtn = document.getElementById('checkInGroupEditQtyPlusBtn');
+    const checkInGroupEditAccessRow = document.getElementById('checkInGroupEditAccessRow');
+    const checkInGroupEditPoolWrap = document.getElementById('checkInGroupEditPoolWrap');
+    const checkInGroupEditPoolInput = document.getElementById('checkInGroupEditPoolInput');
+    const checkInGroupEditPoolHint = document.getElementById('checkInGroupEditPoolHint');
+    const checkInGroupEditPoolMinusBtn = document.getElementById('checkInGroupEditPoolMinusBtn');
+    const checkInGroupEditPoolPlusBtn = document.getElementById('checkInGroupEditPoolPlusBtn');
+    const checkInGroupEditPoolZeroBtn = document.getElementById('checkInGroupEditPoolZeroBtn');
+    const checkInGroupEditPoolAllBtn = document.getElementById('checkInGroupEditPoolAllBtn');
+
+    const openCheckInGroupEditModal = (groupIndex) => {
+        const group = bulkCompanionGroups[groupIndex];
+        if (!group || !checkInCompanionGroupEditModal) return;
+
+        if (checkInGroupEditGroupIndex) checkInGroupEditGroupIndex.value = groupIndex;
+        const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+        const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
+
+        if (checkInGroupEditDemographicsBadge) {
+            checkInGroupEditDemographicsBadge.innerHTML = `
+                ${getGenderBadgeHtml(group.gender)}
+                <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
+                <span class="text-hp-text-muted/40">•</span>
+                <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
+            `;
+            checkInGroupEditDemographicsBadge.className = 'flex flex-wrap items-center gap-2';
+        }
+
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+        if (checkInGroupEditAmenityBadge) {
+            if (resAmenities.length > 1 && group.amenity_id) {
+                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
+                if (foundAm) {
+                    const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                    checkInGroupEditAmenityBadge.innerHTML = `<i class="bi bi-house-door-fill me-1"></i>${escapeHtml(amName)}`;
+                    checkInGroupEditAmenityBadge.classList.remove('hidden');
+                } else {
+                    checkInGroupEditAmenityBadge.classList.add('hidden');
+                }
+            } else {
+                checkInGroupEditAmenityBadge.classList.add('hidden');
+            }
+        }
+
+        const qty = parseInt(group.quantity, 10) || 1;
+        if (checkInGroupEditQuantityInput) {
+            checkInGroupEditQuantityInput.value = qty;
+        }
+
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+        const showPool = (currentPoolOpt === 'specific');
+
+        const curPool = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), qty);
+        if (checkInGroupEditPoolInput) {
+            checkInGroupEditPoolInput.value = curPool;
+            checkInGroupEditPoolInput.max = qty;
+        }
+        if (checkInGroupEditPoolHint) {
+            checkInGroupEditPoolHint.textContent = `${curPool} of ${qty} with pool`;
+        }
+
+        if (checkInGroupEditAccessRow) {
+            checkInGroupEditAccessRow.classList.toggle('hidden', !showPool);
+        }
+        if (checkInGroupEditPoolWrap) {
+            checkInGroupEditPoolWrap.classList.toggle('hidden', !showPool);
+        }
+
+        checkInCompanionGroupEditModal.classList.add('is-open');
+        checkInCompanionGroupEditModal.classList.remove('hidden');
+        checkInCompanionGroupEditModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeCheckInGroupEditModal = () => {
+        if (!checkInCompanionGroupEditModal) return;
+        checkInCompanionGroupEditModal.classList.remove('is-open');
+        checkInCompanionGroupEditModal.classList.add('hidden');
+        checkInCompanionGroupEditModal.setAttribute('aria-hidden', 'true');
+    };
+
+    document.querySelectorAll('[data-close-checkin-group-edit-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeCheckInGroupEditModal);
+    });
+
+    const syncCheckInGroupEditHints = () => {
+        const qty = Math.max(1, parseInt(checkInGroupEditQuantityInput?.value, 10) || 1);
+        if (checkInGroupEditPoolInput) {
+            checkInGroupEditPoolInput.max = qty;
+            let poolVal = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
+            if (poolVal > qty) {
+                poolVal = qty;
+                checkInGroupEditPoolInput.value = qty;
+            }
+            if (checkInGroupEditPoolHint) {
+                checkInGroupEditPoolHint.textContent = `${poolVal} of ${qty} with pool`;
+            }
+        }
+    };
+
+    checkInGroupEditQtyMinusBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditQuantityInput) return;
+        const cur = parseInt(checkInGroupEditQuantityInput.value, 10) || 1;
+        if (cur > 1) {
+            checkInGroupEditQuantityInput.value = cur - 1;
+            syncCheckInGroupEditHints();
+        }
+    });
+
+    checkInGroupEditQtyPlusBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditQuantityInput) return;
+        const cur = parseInt(checkInGroupEditQuantityInput.value, 10) || 1;
+        if (cur < 500) {
+            checkInGroupEditQuantityInput.value = cur + 1;
+            syncCheckInGroupEditHints();
+        }
+    });
+
+    checkInGroupEditQuantityInput?.addEventListener('input', syncCheckInGroupEditHints);
+
+    checkInGroupEditPoolMinusBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditPoolInput) return;
+        const cur = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
+        if (cur > 0) {
+            checkInGroupEditPoolInput.value = cur - 1;
+            syncCheckInGroupEditHints();
+        }
+    });
+
+    checkInGroupEditPoolPlusBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditPoolInput || !checkInGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(checkInGroupEditQuantityInput.value, 10) || 1);
+        const cur = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
+        if (cur < max) {
+            checkInGroupEditPoolInput.value = cur + 1;
+            syncCheckInGroupEditHints();
+        }
+    });
+
+    checkInGroupEditPoolInput?.addEventListener('input', syncCheckInGroupEditHints);
+
+    checkInGroupEditPoolZeroBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditPoolInput) return;
+        checkInGroupEditPoolInput.value = 0;
+        syncCheckInGroupEditHints();
+    });
+
+    checkInGroupEditPoolAllBtn?.addEventListener('click', () => {
+        if (!checkInGroupEditPoolInput || !checkInGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(checkInGroupEditQuantityInput.value, 10) || 1);
+        checkInGroupEditPoolInput.value = max;
+        syncCheckInGroupEditHints();
+    });
+
+    checkInGroupEditForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const gIdx = parseInt(checkInGroupEditGroupIndex?.value, 10);
+        if (isNaN(gIdx) || !bulkCompanionGroups[gIdx]) return;
+
+        const group = bulkCompanionGroups[gIdx];
+        const newQty = Math.max(1, parseInt(checkInGroupEditQuantityInput?.value, 10) || 1);
+        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+
+        group.quantity = newQty;
+
+        let newPool = Math.min(Math.max(0, parseInt(checkInGroupEditPoolInput?.value, 10) || 0), newQty);
+        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+            newPool = newQty;
+        } else if (currentPoolOpt === 'no_pool') {
+            newPool = 0;
+        }
+        group.pool_quantity = newPool;
+
+        renderCheckInCompanions();
+        renderCheckInModalCompanionPreview();
+        closeCheckInGroupEditModal();
+    });
+
     const handleCheckInBulkQtyChange = (bIdx, rawVal) => {
         if (isNaN(bIdx) || !bulkCompanionGroups[bIdx]) return;
         const group = bulkCompanionGroups[bIdx];
@@ -404,6 +589,7 @@ window.AppPage['staff_reservations'] = function () {
         checkInModalCompanionPreviewList.innerHTML = '';
 
         const totalCount = getTotalCheckInCompanionCount();
+        const currentEntranceOpt = checkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
         const resAmenities = currentReservationData?.reservation_amenities || [];
 
@@ -411,8 +597,8 @@ window.AppPage['staff_reservations'] = function () {
             checkInModalCompanionPreviewCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'}`;
         }
         if (checkInModalCompanionFooterSummary) {
-            checkInModalCompanionFooterSummary.textContent = totalCount === 0
-                ? '0 companions added so far'
+            checkInModalCompanionFooterSummary.textContent = totalCount === 0 
+                ? '0 companions added so far' 
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} staged (Ready to apply)`;
         }
         if (checkInModalCompanionClearAllBtn) {
@@ -460,45 +646,65 @@ window.AppPage['staff_reservations'] = function () {
             const parsedAge = parseInt(companion.age, 10);
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
-            let poolBadge = '';
-            if (currentPoolOpt === 'all_paid') {
-                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
-            } else if (currentPoolOpt === 'all_free') {
-                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+            let poolBadgeHtml = '';
+            if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
+            } else if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'specific') {
-                poolBadge = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water"></i> Pool Pass ✓</button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-1.5 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to grant pool pass">+ Pool Pass</button>`;
+                poolBadgeHtml = companion.has_pool_access
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
-            let amenityBadge = '';
-            if (resAmenities.length > 1) {
+            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
+                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
+                : '';
+
+            let amenityName = '';
+            if (companion.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
-                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
+                if (foundAm) {
+                    amenityName = foundAm?.amenity?.amenities_name || '';
+                }
             }
+            if (!amenityName && resAmenities.length > 0) {
+                amenityName = resAmenities[0]?.amenity?.amenities_name || '';
+            }
+            const amenityHtml = amenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
+            ` : '';
+
+            const genderBadge = getGenderBadgeHtml(companion.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/30 hover:bg-glass';
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-xs font-bold text-hp-green">
-                        ${escapeHtml(getInitials(`${companion.first_name || ''} ${companion.last_name || ''}`))}
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
+                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            ${getGenderBadgeHtml(companion.gender)}
-                            ${getAgeBadgeHtml(companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel)}
-                            ${getNationalityBadgeHtml(nationality)}
-                            ${amenityBadge}
-                            ${poolBadge}
-                        </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${amenityHtml}
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${entranceBadgeHtml}
+                        ${poolBadgeHtml}
+                    </div>
+                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-single="${index}" title="Remove staged companion">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-single="${index}" title="Remove staged companion">
-                    <i class="bi bi-trash3 text-xs"></i>
-                </button>
             `;
             checkInModalCompanionPreviewList.appendChild(item);
         });
@@ -517,57 +723,76 @@ window.AppPage['staff_reservations'] = function () {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
-            let poolBadge = '';
-            if (currentPoolOpt === 'all_paid') {
-                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All with Pool</span>`;
-            } else if (currentPoolOpt === 'all_free') {
-                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All Free Pool</span>`;
+            let bulkPoolBadgeHtml = '';
+            if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            } else if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = group.pool_quantity || 0;
-                poolBadge = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
-                        <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${index}" title="Decrease pool pass">−</button>
-                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${index}" title="Increase pool pass">+</button>
-                    </div>
-                `;
+                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
+                group.pool_quantity = pQty;
+                if (pQty === group.quantity && pQty > 0) {
+                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+                } else if (pQty > 0) {
+                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool access passes for ${pQty} of ${group.quantity} guests">
+                        <i class="bi bi-water text-xs"></i>
+                        <span>${pQty}/${group.quantity}</span>
+                    </div>`;
+                }
             }
 
-            let amenityBadge = '';
-            if (resAmenities.length > 1) {
+            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
+                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
+                : '';
+
+            let bulkAmenityName = '';
+            if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
+                if (foundAm) {
+                    bulkAmenityName = foundAm?.amenity?.amenities_name || '';
+                }
             }
+            if (!bulkAmenityName && resAmenities.length > 0) {
+                bulkAmenityName = resAmenities[0]?.amenity?.amenities_name || '';
+            }
+            const bulkAmenityHtml = bulkAmenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
+            ` : '';
+
+            const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
+            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
+            item.setAttribute('data-modal-open-group-edit', index);
+            item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600/15 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        <i class="bi bi-people-fill"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">${group.quantity} guests</span>
-                            ${getGenderBadgeHtml(group.gender)}
-                            ${getAgeBadgeHtml(`Age ${group.age_group} (${rateLabel})`)}
-                            ${getNationalityBadgeHtml(nationality)}
-                            ${amenityBadge}
-                            ${poolBadge}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${bulkAmenityHtml}
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
-                        <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-inc="${index}" title="Increase quantity">+</button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${bulkEntranceBadgeHtml}
+                        ${bulkPoolBadgeHtml}
                     </div>
-                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-bulk="${index}" title="Remove staged bulk group">
-                        <i class="bi bi-trash3 text-xs"></i>
-                    </button>
+                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-modal-open-group-edit="${index}" title="Edit group">
+                            <i class="bi bi-pencil-fill text-xs"></i>
+                        </button>
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-bulk="${index}" title="Remove staged bulk group">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             checkInModalCompanionPreviewList.appendChild(item);
@@ -580,7 +805,7 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
-    // In-modal preview click listeners (Remove single, remove bulk, toggle pool, inc/dec pool/free, inc/dec bulk qty)
+    // In-modal preview click listeners (Remove single, remove bulk, toggle pool, open group edit)
     checkInModalCompanionPreviewList?.addEventListener('click', (e) => {
         const removeSingleBtn = e.target.closest('[data-modal-remove-single]');
         if (removeSingleBtn) {
@@ -618,23 +843,12 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        // Increase/Decrease Bulk Group Quantity inside modal preview
-        const bulkQtyIncBtn = e.target.closest('[data-modal-bulk-qty-inc]');
-        if (bulkQtyIncBtn) {
-            const bIdx = parseInt(bulkQtyIncBtn.dataset.modalBulkQtyInc, 10);
+        // Open Group Edit Modal from staged preview
+        const openModalGroupEditBtn = e.target.closest('[data-modal-open-group-edit]');
+        if (openModalGroupEditBtn && !e.target.closest('[data-modal-remove-bulk]')) {
+            const bIdx = parseInt(openModalGroupEditBtn.dataset.modalOpenGroupEdit || openModalGroupEditBtn.getAttribute('data-modal-open-group-edit'), 10);
             if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
-            }
-            return;
-        }
-
-        const bulkQtyDecBtn = e.target.closest('[data-modal-bulk-qty-dec]');
-        if (bulkQtyDecBtn) {
-            const bIdx = parseInt(bulkQtyDecBtn.dataset.modalBulkQtyDec, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
+                openCheckInGroupEditModal(bIdx);
             }
             return;
         }
@@ -649,45 +863,6 @@ window.AppPage['staff_reservations'] = function () {
                 renderCheckInModalCompanionPreview();
             }
             return;
-        }
-
-        // Increase/Decrease Bulk Pool Passes inside modal preview
-        const bulkPoolIncBtn = e.target.closest('[data-modal-bulk-pool-inc]');
-        if (bulkPoolIncBtn) {
-            const bIdx = parseInt(bulkPoolIncBtn.dataset.modalBulkPoolInc, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                const cur = group.pool_quantity || 0;
-                if (cur < group.quantity) {
-                    group.pool_quantity = cur + 1;
-                    renderCheckInCompanions();
-                    renderCheckInModalCompanionPreview();
-                }
-            }
-            return;
-        }
-
-        const bulkPoolDecBtn = e.target.closest('[data-modal-bulk-pool-dec]');
-        if (bulkPoolDecBtn) {
-            const bIdx = parseInt(bulkPoolDecBtn.dataset.modalBulkPoolDec, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                const cur = group.pool_quantity || 0;
-                if (cur > 0) {
-                    group.pool_quantity = cur - 1;
-                    renderCheckInCompanions();
-                    renderCheckInModalCompanionPreview();
-                }
-            }
-            return;
-        }
-    });
-
-    checkInModalCompanionPreviewList?.addEventListener('change', (e) => {
-        const input = e.target.closest('[data-modal-bulk-qty-input]');
-        if (input) {
-            const bIdx = parseInt(input.dataset.modalBulkQtyInput, 10);
-            handleCheckInBulkQtyChange(bIdx, input.value);
         }
     });
 
@@ -783,6 +958,7 @@ window.AppPage['staff_reservations'] = function () {
 
         const totalCount = getTotalCheckInCompanionCount();
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+        const currentEntranceOpt = checkInEntranceOption?.value || 'all_paid';
         const resAmenities = currentReservationData?.reservation_amenities || [];
 
         if (checkInCompanionCountBadge) {
@@ -835,44 +1011,64 @@ window.AppPage['staff_reservations'] = function () {
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
-            } else if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
+            if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
+            } else if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water"></i> Pool Pass ✓</button>`
-                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
+                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
+                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
-            let amenityBadgeHtml = '';
-            if (resAmenities.length > 1) {
+            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
+                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
+                : '';
+
+            let amenityName = '';
+            if (companion.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
-                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
+                if (foundAm) {
+                    amenityName = foundAm?.amenity?.amenities_name || '';
+                }
             }
+            if (!amenityName && resAmenities.length > 0) {
+                amenityName = resAmenities[0]?.amenity?.amenities_name || '';
+            }
+            const amenityHtml = amenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
+            ` : '';
+
+            const genderBadge = getGenderBadgeHtml(companion.gender);
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
+            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green text-xs shadow-2xs font-bold">
-                        <i class="bi bi-person-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
+                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="guest-companion-pill__name text-xs font-extrabold text-hp-text dark:text-white truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
-                            ${getGenderBadgeHtml(companion.gender)}
-                            ${getAgeBadgeHtml(companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel)}
-                            ${getNationalityBadgeHtml(nationality)}
-                            ${amenityBadgeHtml}
-                            ${poolBadgeHtml}
-                        </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${amenityHtml}
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${entranceBadgeHtml}
+                        ${poolBadgeHtml}
+                    </div>
+                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-companion-index="${index}" title="Remove companion">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-companion-index="${index}" title="Remove companion">
-                    <i class="bi bi-trash3 text-xs"></i>
-                </button>
             `;
             checkInCompanionList.appendChild(item);
         });
@@ -892,58 +1088,75 @@ window.AppPage['staff_reservations'] = function () {
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
-            } else if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} Free Pool</span>`;
+            if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            } else if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = group.pool_quantity || 0;
-                bulkPoolBadgeHtml = `
-                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
-                        <span class="inline-flex items-center gap-1"><i class="bi bi-water text-sky-600 dark:text-sky-400"></i> Pool:</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${index}" title="Decrease pool access quantity">−</button>
-                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
-                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${index}" title="Increase pool access quantity">+</button>
-                    </div>
-                `;
+                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
+                group.pool_quantity = pQty;
+                if (pQty === group.quantity && pQty > 0) {
+                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+                } else if (pQty > 0) {
+                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool access passes for ${pQty} of ${group.quantity} guests">
+                        <i class="bi bi-water text-xs"></i>
+                        <span>${pQty}/${group.quantity}</span>
+                    </div>`;
+                }
             }
 
-            let bulkAmenityBadgeHtml = '';
-            if (resAmenities.length > 1) {
+            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
+                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
+                : '';
+
+            let bulkAmenityName = '';
+            if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
+                if (foundAm) {
+                    bulkAmenityName = foundAm?.amenity?.amenities_name || '';
+                }
             }
+            if (!bulkAmenityName && resAmenities.length > 0) {
+                bulkAmenityName = resAmenities[0]?.amenity?.amenities_name || '';
+            }
+            const bulkAmenityHtml = bulkAmenityName ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
+            ` : '';
+
+            const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-3 rounded-2xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
+            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer shadow-xs';
+            item.setAttribute('data-open-group-edit', index);
+            item.setAttribute('title', 'Click to edit quantity and pool passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-600/15 text-emerald-700 dark:text-emerald-300 text-xs shadow-2xs font-bold">
-                        <i class="bi bi-people-fill text-sm"></i>
+                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
+                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="inline-flex items-center rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/25 px-2 py-0.5 text-xs font-extrabold shadow-2xs">
-                                ${group.quantity} Guests
-                            </span>
-                            ${getGenderBadgeHtml(group.gender)}
-                            ${getAgeBadgeHtml(`Age ${group.age_group} (${rateLabel})`)}
-                            ${getNationalityBadgeHtml(nationality)}
-                            ${bulkAmenityBadgeHtml}
-                            ${bulkPoolBadgeHtml}
-                        </div>
-                    </div>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    ${genderBadge}
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                    ${bulkAmenityHtml}
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
-                        <input type="number" min="1" max="500" value="${group.quantity}" data-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
-                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-inc="${index}" title="Increase quantity">+</button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        ${bulkEntranceBadgeHtml}
+                        ${bulkPoolBadgeHtml}
                     </div>
-                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-bulk-index="${index}" title="Remove bulk group">
-                        <i class="bi bi-trash3 text-xs"></i>
-                    </button>
+                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2 ml-0.5">
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-open-group-edit="${index}" title="Edit group">
+                            <i class="bi bi-pencil-fill text-xs"></i>
+                        </button>
+                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-bulk-index="${index}" title="Remove bulk group">
+                            <i class="bi bi-trash3 text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             `;
             checkInCompanionList.appendChild(item);
@@ -1517,7 +1730,7 @@ window.AppPage['staff_reservations'] = function () {
                 cardPoolWrap.innerHTML = checkInPrimaryGuest.has_pool_access
                     ? `<button type="button" class="inline-flex items-center gap-1 rounded-md bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-xs font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" id="toggleMainGuestPoolBtn" title="Click to remove pool access"><i class="bi bi-water text-sky-600"></i> Pool Pass ✓</button>`
                     : `<button type="button" class="inline-flex items-center gap-1 rounded-md bg-glass border border-glass-border text-hp-text-muted px-2 py-0.5 text-xs font-medium cursor-pointer hover:bg-glass-hover transition-colors" id="toggleMainGuestPoolBtn" title="Click to grant pool access">+ Pool Access</button>`;
-
+                
                 document.getElementById('toggleMainGuestPoolBtn')?.addEventListener('click', (e) => {
                     e.stopPropagation();
                     checkInPrimaryGuest.has_pool_access = !checkInPrimaryGuest.has_pool_access;
@@ -2019,24 +2232,12 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        // Stepper: Increase Bulk Group Quantity
-        const bulkQtyIncBtn = e.target.closest('[data-bulk-qty-inc]');
-        if (bulkQtyIncBtn) {
-            const bIdx = parseInt(bulkQtyIncBtn.dataset.bulkQtyInc, 10);
+        // Click to open group edit modal
+        const openGroupEditBtn = e.target.closest('[data-open-group-edit]');
+        if (openGroupEditBtn && !e.target.closest('[data-bulk-index]')) {
+            const bIdx = parseInt(openGroupEditBtn.dataset.openGroupEdit || openGroupEditBtn.getAttribute('data-open-group-edit'), 10);
             if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
-            }
-            return;
-        }
-
-        // Stepper: Decrease Bulk Group Quantity
-        const bulkQtyDecBtn = e.target.closest('[data-bulk-qty-dec]');
-        if (bulkQtyDecBtn) {
-            const bIdx = parseInt(bulkQtyDecBtn.dataset.bulkQtyDec, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
+                openCheckInGroupEditModal(bIdx);
             }
             return;
         }
@@ -2051,46 +2252,6 @@ window.AppPage['staff_reservations'] = function () {
                 renderCheckInModalCompanionPreview();
             }
             return;
-        }
-
-        // Increment bulk group pool count
-        const bulkIncBtn = e.target.closest('[data-bulk-pool-inc]');
-        if (bulkIncBtn) {
-            const bIdx = parseInt(bulkIncBtn.dataset.bulkPoolInc, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                const cur = group.pool_quantity || 0;
-                if (cur < group.quantity) {
-                    group.pool_quantity = cur + 1;
-                    renderCheckInCompanions();
-                    renderCheckInModalCompanionPreview();
-                }
-            }
-            return;
-        }
-
-        // Decrement bulk group pool count
-        const bulkDecBtn = e.target.closest('[data-bulk-pool-dec]');
-        if (bulkDecBtn) {
-            const bIdx = parseInt(bulkDecBtn.dataset.bulkPoolDec, 10);
-            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                const group = bulkCompanionGroups[bIdx];
-                const cur = group.pool_quantity || 0;
-                if (cur > 0) {
-                    group.pool_quantity = cur - 1;
-                    renderCheckInCompanions();
-                    renderCheckInModalCompanionPreview();
-                }
-            }
-            return;
-        }
-    });
-
-    checkInCompanionList?.addEventListener('change', (e) => {
-        const input = e.target.closest('[data-bulk-qty-input]');
-        if (input) {
-            const bIdx = parseInt(input.dataset.bulkQtyInput, 10);
-            handleCheckInBulkQtyChange(bIdx, input.value);
         }
     });
 
@@ -3011,9 +3172,9 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
 
                         ${rawGuests.filter(g => !g.is_primary_guest).map(g => {
-            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
-            const gEmail = g.customer?.email || 'No email';
-            return `
+                            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
+                            const gEmail = g.customer?.email || 'No email';
+                            return `
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs mt-2">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center text-xs font-bold shrink-0">
@@ -3030,7 +3191,7 @@ window.AppPage['staff_reservations'] = function () {
                                     </div>
                                 </div>
                             `;
-        }).join('')}
+                        }).join('')}
                     </div>
 
                     ${rawAmenities.length > 0 ? `
@@ -3052,9 +3213,9 @@ window.AppPage['staff_reservations'] = function () {
                     <!-- Actions Footer (Check In / Check Out) -->
                     <div class="flex items-center justify-end gap-2.5 pt-1">
                         ${reservation.status === 'Checked In'
-                    ? `<button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-xs" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">Check Out</button>`
-                    : `<button type="button" class="cursor-pointer rounded-xl border-0 bg-[#1b4332] px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-[#2d6a4f] shadow-xs" data-open-check-in-modal="${reservation.id}">Check In</button>`
-                }
+                            ? `<button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-xs" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">Check Out</button>`
+                            : `<button type="button" class="cursor-pointer rounded-xl border-0 bg-[#1b4332] px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-[#2d6a4f] shadow-xs" data-open-check-in-modal="${reservation.id}">Check In</button>`
+                        }
                     </div>
                 ` : ''}
             </div>

@@ -1605,6 +1605,82 @@
         </div>
     </div>
 
+    <!-- Check-In Companion Group Edit Modal -->
+    <div class="guest-modal hidden fixed inset-0 items-center justify-center is-open:flex" id="checkInCompanionGroupEditModal" aria-hidden="true" style="z-index: 1060;">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-checkin-group-edit-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[560px] !max-h-none !overflow-visible rounded-2xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="checkInGroupEditTitle">
+            <button type="button" class="group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs z-10" data-close-checkin-group-edit-modal="true" aria-label="Close modal">
+                <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="mb-3 flex items-center gap-3 border-b border-glass-border/60 pb-3">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+                    <i class="bi bi-people-fill text-lg"></i>
+                </div>
+                <div>
+                    <h3 id="checkInGroupEditTitle" class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Edit Companion Group</h3>
+                    <p class="m-0 text-xs text-hp-text-muted">Adjust group size and access privileges</p>
+                </div>
+            </div>
+
+            <!-- Demographics Badge -->
+            <div class="mb-3 flex flex-wrap items-center gap-2">
+                <span id="checkInGroupEditDemographicsBadge" class="inline-flex items-center gap-1.5 rounded-lg bg-hp-green/15 text-hp-green px-3 py-1 text-xs font-bold"></span>
+                <span id="checkInGroupEditAmenityBadge" class="hidden inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2.5 py-1 text-xs font-bold"></span>
+            </div>
+
+            <form id="checkInGroupEditForm" class="grid gap-3" action="#">
+                <input type="hidden" id="checkInGroupEditGroupIndex" value="-1">
+
+                <!-- Row 1: Group Quantity (Inline Row) -->
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/60 dark:bg-white/5 px-3.5 py-2.5">
+                    <div>
+                        <label class="text-sm font-bold text-hp-text dark:text-[#f3f4f6] flex items-center gap-2 cursor-pointer m-0" for="checkInGroupEditQuantityInput">
+                            <i class="bi bi-people text-hp-green text-base"></i> Group Quantity
+                        </label>
+                        <p class="m-0 text-xs text-hp-text-muted">Total number of guests in this group</p>
+                    </div>
+                    <div class="flex items-center gap-1 rounded-lg border border-glass-border bg-white/90 dark:bg-black/30 p-1 shadow-2xs">
+                        <button type="button" id="checkInGroupEditQtyMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Decrease quantity">−</button>
+                        <input type="number" id="checkInGroupEditQuantityInput" min="1" max="500" value="1" class="no-spinners m-0 w-14 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom quantity">
+                        <button type="button" id="checkInGroupEditQtyPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Increase quantity">+</button>
+                    </div>
+                </div>
+
+                <!-- Row 2: Pool Access Passes -->
+                <div class="grid grid-cols-1 gap-3" id="checkInGroupEditAccessRow">
+                    <div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all" id="checkInGroupEditPoolWrap">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <label class="text-xs font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="checkInGroupEditPoolInput">
+                                <i class="bi bi-water text-sky-600 text-sm"></i> Pool Passes
+                            </label>
+                            <span class="text-xs font-bold text-sky-800 dark:text-sky-300 shrink-0" id="checkInGroupEditPoolHint">0 of 1</span>
+                        </div>
+                        <div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
+                            <button type="button" id="checkInGroupEditPoolMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool">−</button>
+                            <input type="number" id="checkInGroupEditPoolInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom pool pass count">
+                            <button type="button" id="checkInGroupEditPoolPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all">+</button>
+                        </div>
+                        <div class="flex items-center justify-end gap-1.5 pt-0.5">
+                            <button type="button" id="checkInGroupEditPoolZeroBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">None (0)</button>
+                            <button type="button" id="checkInGroupEditPoolAllBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">All Pool</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-1 flex items-center justify-end gap-2.5 border-t border-glass-border/60 pt-3">
+                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs sm:text-sm font-semibold text-hp-text transition-colors hover:bg-glass-hover" data-close-checkin-group-edit-modal="true">Cancel</button>
+                    <button type="submit" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:bg-hp-green-dark active:scale-[0.98]">
+                        <i class="bi bi-check-lg text-sm"></i>
+                        <span>Apply Changes</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Duplicate Companion Warning Modal -->
     <div class="guest-modal hidden z-[1065]" id="duplicateCompanionModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-duplicate-modal="true"></div>
