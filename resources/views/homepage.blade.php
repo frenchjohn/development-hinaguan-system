@@ -164,184 +164,6 @@
         <div class="hp-hero__bg" style="background-image: url('{{ asset('images/background.jpeg') }}')" aria-hidden="true"></div>
         <div class="hp-hero__overlay" aria-hidden="true"></div>
 
-        @if ($weather || !empty($parkSettings->brenda_available))
-            <div class="hp-hero__side-widgets" id="hpHeroSideWidgets" data-animate="fade-up">
-                {{-- Mobile Widgets Toggle Bar (Visible only on mobile <= 768px) --}}
-                <div class="hp-mobile-widgets-bar">
-                    <button type="button" class="hp-mobile-widgets-toggle" id="hpMobileWidgetsToggle" aria-expanded="false" aria-controls="hpMobileWidgetsCollapse">
-                        <span class="hp-mobile-widgets-toggle__left">
-                            <span class="hp-mobile-widgets-toggle__beacon">
-                                <span class="hp-mobile-widgets-toggle__ping"></span>
-                            </span>
-                            <span class="hp-mobile-widgets-toggle__title">
-                                @if ($weather && !empty($parkSettings->brenda_available))
-                                    Weather &amp; Brenda In Park
-                                @elseif ($weather)
-                                    Live Weather Updates
-                                @else
-                                    Celebrity Host Notice
-                                @endif
-                            </span>
-                        </span>
-                        <span class="hp-mobile-widgets-toggle__right">
-                            @if ($weather)
-                                <span class="hp-mobile-widgets-toggle__temp">{{ round($weather['temp_c']) }}°C</span>
-                            @endif
-                            <span class="hp-mobile-widgets-toggle__chevron" aria-hidden="true">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </span>
-                        </span>
-                    </button>
-                </div>
-
-                {{-- Side Widgets Body: Collapsible on Mobile, Standard Flex on Desktop --}}
-                <div class="hp-hero__side-widgets-body" id="hpMobileWidgetsCollapse">
-                    {{-- Mobile-only Close Header inside the expanded card --}}
-                    <div class="hp-mobile-widgets-close-bar">
-                        <span class="hp-mobile-widgets-close-title">
-                            <i class="bi bi-broadcast"></i> Live Updates
-                        </span>
-                        <button type="button" class="hp-mobile-widgets-close-btn" id="hpMobileWidgetsClose" aria-label="Close weather and notifications">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                            <span>Close</span>
-                        </button>
-                    </div>
-
-                    @if ($weather)
-                        <aside class="hp-weather" aria-label="Today's weather">
-                            <div class="hp-weather__shimmer" aria-hidden="true"></div>
-
-                            {{-- Header / Status Bar --}}
-                            <div class="hp-weather__header">
-                                <div class="hp-weather__status-pill">
-                                    <span class="hp-weather__beacon">
-                                        <span class="hp-weather__ping"></span>
-                                    </span>
-                                    <span>Live Weather</span>
-                                </div>
-                                <div class="hp-weather__location-tag">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>{{ $weather['location'] }}</span>
-                                </div>
-                            </div>
-
-                            {{-- Hero Section: Temp & Condition + Weather Visual Orb --}}
-                            <div class="hp-weather__hero">
-                                <div class="hp-weather__hero-main">
-                                    <div class="hp-weather__temp-wrap">
-                                        <span class="hp-weather__temp-num">{{ round($weather['temp_c']) }}</span>
-                                        <span class="hp-weather__temp-unit">°C</span>
-                                    </div>
-                                    <div class="hp-weather__condition-badge">
-                                        {{ $weather['condition'] }}
-                                    </div>
-                                </div>
-                                <div class="hp-weather__hero-orb">
-                                    @if ($weather['icon'])
-                                        <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="48" height="48">
-                                    @endif
-                                </div>
-                            </div>
-
-                            {{-- Metrics Strip: 3 Micro Stat Badges --}}
-                            <div class="hp-weather__metrics-strip">
-                                <div class="hp-weather__metric-chip" title="Feels like">
-                                    <i class="bi bi-thermometer-half"></i>
-                                    <span>Feels <strong>{{ round($weather['feelslike_c']) }}°</strong></span>
-                                </div>
-                                <div class="hp-weather__metric-chip" title="Humidity">
-                                    <i class="bi bi-droplet-half"></i>
-                                    <span><strong>{{ $weather['humidity'] }}%</strong></span>
-                                </div>
-                                @if (!empty($weather['wind_kph']))
-                                    <div class="hp-weather__metric-chip" title="Wind speed">
-                                        <i class="bi bi-wind"></i>
-                                        <span><strong>{{ round($weather['wind_kph']) }}</strong> km/h</span>
-                                    </div>
-                                @endif
-                            </div>
-
-                            {{-- Hourly Timeline Outlook --}}
-                            @if (!empty($weather['next_3_hours']))
-                                <div class="hp-weather__timeline">
-                                    <div class="hp-weather__timeline-header">
-                                        <span class="hp-weather__timeline-title">
-                                            <i class="bi bi-clock-history"></i> Next Hours
-                                        </span>
-                                        <span class="hp-weather__timeline-hint">Forecast</span>
-                                    </div>
-                                    <div class="hp-weather__timeline-grid">
-                                        @foreach ($weather['next_3_hours'] as $hour)
-                                            <div class="hp-weather__timeline-item">
-                                                <span class="hp-weather__timeline-time">{{ $hour['time_label'] }}</span>
-                                                <div class="hp-weather__timeline-icon-box">
-                                                    @if (!empty($hour['icon']))
-                                                        <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="hp-weather__timeline-icon" width="26" height="26">
-                                                    @endif
-                                                </div>
-                                                <span class="hp-weather__timeline-temp">{{ round($hour['temp_c']) }}°</span>
-                                                <span class="hp-weather__timeline-rain" title="Rain probability">
-                                                    <i class="bi bi-cloud-rain-fill"></i> {{ $hour['chance_of_rain'] ?? 0 }}%
-                                                </span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                        </aside>
-                    @endif
-
-                    @if (!empty($parkSettings->brenda_available))
-                        {{-- Celebrity Host Spotlight Widget (Directly Under Weather) --}}
-                        <div class="hp-brenda-widget group" tabindex="0" aria-label="Celebrity host Brenda Mage is in the park today">
-                            <div class="hp-brenda-widget__shimmer" aria-hidden="true"></div>
-                            
-                            <!-- Left Side: Edge-to-Edge Image -->
-                            <div class="hp-brenda-widget__image-side">
-                                <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="hp-brenda-widget__img" loading="lazy">
-                                <div class="hp-brenda-widget__image-gradient" aria-hidden="true"></div>
-                            </div>
-
-                            <!-- Right Side: Content Details -->
-                            <div class="hp-brenda-widget__content-side">
-                                <div class="hp-brenda-widget__header">
-                                    <span class="hp-brenda-widget__badge">
-                                        <span class="hp-brenda-widget__dot">
-                                            <span class="hp-brenda-widget__ping"></span>
-                                        </span>
-                                        <span>Celebrity In Park</span>
-                                    </span>
-                                    <span class="hp-brenda-widget__sparkle" title="Celebrity presence">
-                                        <i class="bi bi-stars"></i>
-                                    </span>
-                                </div>
-
-                                <div class="hp-brenda-widget__info">
-                                    <h3 class="hp-brenda-widget__name">Brenda is in the park!</h3>
-                                    <p class="hp-brenda-widget__subtitle">Celebrity owner Brenda Mage is on-site today</p>
-                                </div>
-
-                                <div class="hp-brenda-widget__footer">
-                                    <div class="hp-brenda-widget__loc">
-                                        <i class="bi bi-geo-alt-fill"></i>
-                                        <span>Hinaguan Park</span>
-                                    </div>
-                                    <span class="hp-brenda-widget__pill">
-                                        <i class="bi bi-camera-fill"></i>
-                                        <span>Meet &amp; Greet</span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        @endif
-
         <div class="hp-hero__content">
             <div class="hp-hero__text" data-animate="fade-up">
                 <span class="hp-hero__eyebrow">Riverside Sanctuary &middot; Jasaan, Misamis Oriental</span>
@@ -394,6 +216,184 @@
                     <a href="#about" class="hp-btn hp-btn--outline" data-nav-link>Explore the Park</a>
                 </div>
             </div>
+
+            @if ($weather || !empty($parkSettings->brenda_available))
+                <div class="hp-hero__side-widgets" id="hpHeroSideWidgets" data-animate="fade-up">
+                    {{-- Mobile Widgets Toggle Bar (Visible only on mobile <= 768px) --}}
+                    <div class="hp-mobile-widgets-bar">
+                        <button type="button" class="hp-mobile-widgets-toggle" id="hpMobileWidgetsToggle" aria-expanded="false" aria-controls="hpMobileWidgetsCollapse">
+                            <span class="hp-mobile-widgets-toggle__left">
+                                <span class="hp-mobile-widgets-toggle__beacon">
+                                    <span class="hp-mobile-widgets-toggle__ping"></span>
+                                </span>
+                                <span class="hp-mobile-widgets-toggle__title">
+                                    @if ($weather && !empty($parkSettings->brenda_available))
+                                        Weather &amp; Brenda In Park
+                                    @elseif ($weather)
+                                        Live Weather Updates
+                                    @else
+                                        Celebrity Host Notice
+                                    @endif
+                                </span>
+                            </span>
+                            <span class="hp-mobile-widgets-toggle__right">
+                                @if ($weather)
+                                    <span class="hp-mobile-widgets-toggle__temp">{{ round($weather['temp_c']) }}°C</span>
+                                @endif
+                                <span class="hp-mobile-widgets-toggle__chevron" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </span>
+                            </span>
+                        </button>
+                    </div>
+
+                    {{-- Side Widgets Body: Collapsible on Mobile, Standard Flex on Desktop --}}
+                    <div class="hp-hero__side-widgets-body" id="hpMobileWidgetsCollapse">
+                        {{-- Mobile-only Close Header inside the expanded card --}}
+                        <div class="hp-mobile-widgets-close-bar">
+                            <span class="hp-mobile-widgets-close-title">
+                                <i class="bi bi-broadcast"></i> Live Updates
+                            </span>
+                            <button type="button" class="hp-mobile-widgets-close-btn" id="hpMobileWidgetsClose" aria-label="Close weather and notifications">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                <span>Close</span>
+                            </button>
+                        </div>
+
+                        @if ($weather)
+                            <aside class="hp-weather" aria-label="Today's weather">
+                                <div class="hp-weather__shimmer" aria-hidden="true"></div>
+
+                                {{-- Header / Status Bar --}}
+                                <div class="hp-weather__header">
+                                    <div class="hp-weather__status-pill">
+                                        <span class="hp-weather__beacon">
+                                            <span class="hp-weather__ping"></span>
+                                        </span>
+                                        <span>Live Weather</span>
+                                    </div>
+                                    <div class="hp-weather__location-tag">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                        <span>{{ $weather['location'] }}</span>
+                                    </div>
+                                </div>
+
+                                {{-- Hero Section: Temp & Condition + Weather Visual Orb --}}
+                                <div class="hp-weather__hero">
+                                    <div class="hp-weather__hero-main">
+                                        <div class="hp-weather__temp-wrap">
+                                            <span class="hp-weather__temp-num">{{ round($weather['temp_c']) }}</span>
+                                            <span class="hp-weather__temp-unit">°C</span>
+                                        </div>
+                                        <div class="hp-weather__condition-badge">
+                                            {{ $weather['condition'] }}
+                                        </div>
+                                    </div>
+                                    <div class="hp-weather__hero-orb">
+                                        @if ($weather['icon'])
+                                            <img src="{{ $weather['icon'] }}" alt="{{ $weather['condition'] }}" class="hp-weather__icon" width="48" height="48">
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- Metrics Strip: 3 Micro Stat Badges --}}
+                                <div class="hp-weather__metrics-strip">
+                                    <div class="hp-weather__metric-chip" title="Feels like">
+                                        <i class="bi bi-thermometer-half"></i>
+                                        <span>Feels <strong>{{ round($weather['feelslike_c']) }}°</strong></span>
+                                    </div>
+                                    <div class="hp-weather__metric-chip" title="Humidity">
+                                        <i class="bi bi-droplet-half"></i>
+                                        <span><strong>{{ $weather['humidity'] }}%</strong></span>
+                                    </div>
+                                    @if (!empty($weather['wind_kph']))
+                                        <div class="hp-weather__metric-chip" title="Wind speed">
+                                            <i class="bi bi-wind"></i>
+                                            <span><strong>{{ round($weather['wind_kph']) }}</strong> km/h</span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- Hourly Timeline Outlook --}}
+                                @if (!empty($weather['next_3_hours']))
+                                    <div class="hp-weather__timeline">
+                                        <div class="hp-weather__timeline-header">
+                                            <span class="hp-weather__timeline-title">
+                                                <i class="bi bi-clock-history"></i> Next Hours
+                                            </span>
+                                            <span class="hp-weather__timeline-hint">Forecast</span>
+                                        </div>
+                                        <div class="hp-weather__timeline-grid">
+                                            @foreach ($weather['next_3_hours'] as $hour)
+                                                <div class="hp-weather__timeline-item">
+                                                    <span class="hp-weather__timeline-time">{{ $hour['time_label'] }}</span>
+                                                    <div class="hp-weather__timeline-icon-box">
+                                                        @if (!empty($hour['icon']))
+                                                            <img src="{{ $hour['icon'] }}" alt="{{ $hour['condition'] }}" class="hp-weather__timeline-icon" width="26" height="26">
+                                                        @endif
+                                                    </div>
+                                                    <span class="hp-weather__timeline-temp">{{ round($hour['temp_c']) }}°</span>
+                                                    <span class="hp-weather__timeline-rain" title="Rain probability">
+                                                        <i class="bi bi-cloud-rain-fill"></i> {{ $hour['chance_of_rain'] ?? 0 }}%
+                                                    </span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </aside>
+                        @endif
+
+                        @if (!empty($parkSettings->brenda_available))
+                            {{-- Celebrity Host Spotlight Widget (Directly Under Weather) --}}
+                            <div class="hp-brenda-widget group" tabindex="0" aria-label="Celebrity host Brenda Mage is in the park today">
+                                <div class="hp-brenda-widget__shimmer" aria-hidden="true"></div>
+                                
+                                <!-- Left Side: Edge-to-Edge Image -->
+                                <div class="hp-brenda-widget__image-side">
+                                    <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="hp-brenda-widget__img" loading="lazy">
+                                    <div class="hp-brenda-widget__image-gradient" aria-hidden="true"></div>
+                                </div>
+
+                                <!-- Right Side: Content Details -->
+                                <div class="hp-brenda-widget__content-side">
+                                    <div class="hp-brenda-widget__header">
+                                        <span class="hp-brenda-widget__badge">
+                                            <span class="hp-brenda-widget__dot">
+                                                <span class="hp-brenda-widget__ping"></span>
+                                            </span>
+                                            <span>Celebrity In Park</span>
+                                        </span>
+                                        <span class="hp-brenda-widget__sparkle" title="Celebrity presence">
+                                            <i class="bi bi-stars"></i>
+                                        </span>
+                                    </div>
+
+                                    <div class="hp-brenda-widget__info">
+                                        <h3 class="hp-brenda-widget__name">Brenda is in the park!</h3>
+                                        <p class="hp-brenda-widget__subtitle">Celebrity owner Brenda Mage is on-site today</p>
+                                    </div>
+
+                                    <div class="hp-brenda-widget__footer">
+                                        <div class="hp-brenda-widget__loc">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                            <span>Hinaguan Park</span>
+                                        </div>
+                                        <span class="hp-brenda-widget__pill">
+                                            <i class="bi bi-camera-fill"></i>
+                                            <span>Meet &amp; Greet</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
 
         <div class="hp-hero__scroll" aria-hidden="true">

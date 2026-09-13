@@ -17,9 +17,9 @@ class StaffReservationsPageTest extends TestCase
         session(['auth_user' => ['id' => 1, 'name' => 'Staff', 'email' => 'staff@example.com', 'role' => 'staff']]);
     }
 
-    private function createAmenity(string $id): void
+    private function createAmenity(string $id): Amenity
     {
-        Amenity::create([
+        return Amenity::create([
             'id' => $id,
             'amenities_name' => 'Picnic Area ' . $id,
             'daytime_price' => '500',
@@ -283,24 +283,342 @@ class StaffReservationsPageTest extends TestCase
         $response->assertSee('id="checkInScrollContent"', false);
         // Assert Stay Schedule & Admission Policies are present
         $response->assertSee('Stay Schedule', false);
+        $response->assertSee('id="checkInRescheduleBtn"', false);
         $response->assertSee('id="checkInEntranceOption"', false);
         $response->assertSee('id="checkInPoolOption"', false);
         // Assert Reserved Amenities section
         $response->assertSee('id="checkInAmenitiesContainer"', false);
+        $response->assertDontSee('id="toggleCheckInAmenityEditBtn"', false);
+        $response->assertDontSee('id="checkInAmenitiesEditContainer"', false);
+        $response->assertSee('id="openCheckInAddAmenityModalBtn"', false);
+        // Assert amenity picker modal and filters
+        $response->assertSee('id="checkInAmenityPickerModal"', false);
+        $response->assertSee('id="checkInCountAvailable"', false);
+        $response->assertSee('id="checkInCountOccupied"', false);
+        $response->assertSee('id="checkInCountReserved"', false);
+        $response->assertSee('id="checkInCountAll"', false);
+        $response->assertSee('id="checkInAmenityCategorySelect"', false);
+        $response->assertSee('id="checkInAmenityPickerContainer"', false);
         // Assert inline Main Guest form inputs
         $response->assertSee('id="checkInMainFirstName"', false);
         $response->assertSee('id="checkInMainLastName"', false);
         $response->assertSee('id="checkInMainAge"', false);
         $response->assertSee('id="checkInMainGender"', false);
         $response->assertSee('id="checkInMainIsForeigner"', false);
-        // Assert Companions section
-        $response->assertSee('id="checkInCompanionList"', false);
-        $response->assertSee('id="checkInAddCompanionBtn"', false);
         // Assert Fees and Totals
         $response->assertSee('id="checkInGrandTotal"', false);
         $response->assertSee('id="checkInSubmitBtn"', false);
         // Assert multi-tab sidebar navigation has been removed
         $response->assertDontSee('walkin-modal-sidebar');
+    }
+
+    public function test_amenity_availability_api_distinguishes_occupied_and_reserved_amenities(): void
+    {
+        $this->staffSession();
+        $amenity1 = $this->createAmenity('amenity-avail');
+        $amenity2 = $this->createAmenity('amenity-occ');
+        $amenity3 = $this->createAmenity('amenity-res');
+
+        // Reservation 1: Checked In (Occupied)
+        $resOccupied = $this->createReservation('2026-09-20');
+        $resOccupied->update(['status' => 'Checked In']);
+        \App\Models\ReservationAmenity::create([
+            'reservation_id' => $resOccupied->id,
+            'amenity_id' => $amenity2->id,
+            'start_date' => '2026-09-20',
+            'end_date' => '2026-09-20',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+        ]);
+
+        // Reservation 2: Confirmed (Reserved)
+        $resReserved = $this->createReservation('2026-09-20');
+        $resReserved->update(['status' => 'Confirmed']);
+        \App\Models\ReservationAmenity::create([
+            'reservation_id' => $resReserved->id,
+            'amenity_id' => $amenity3->id,
+            'start_date' => '2026-09-20',
+            'end_date' => '2026-09-20',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+        ]);
+
+        $response = $this->getJson('/api/amenities/availability?start_date=2026-09-20&end_date=2026-09-20&start_slot=Daytime&end_slot=Daytime');
+        $response->assertOk();
+        $data = $response->json();
+
+        $this->assertContains((string) $amenity2->id, array_map('strval', $data['occupied_ids']));
+        $this->assertContains((string) $amenity3->id, array_map('strval', $data['reserved_ids']));
+
+        // With exclude_reservation_id for resReserved, amenity3 should be available
+        $excludeResponse = $this->getJson('/api/amenities/availability?start_date=2026-09-20&end_date=2026-09-20&start_slot=Daytime&end_slot=Daytime&exclude_reservation_id=' . $resReserved->id);
+        $excludeResponse->assertOk();
+        $excludeData = $excludeResponse->json();
+        $this->assertNotContains((string) $amenity3->id, array_map('strval', $excludeData['reserved_ids']));
+    }
+
+    public function test_staff_can_add_and_remove_amenities_on_reservation_update(): void
+    {
+        $this->staffSession();
+        $amenity1 = $this->createAmenity('amenity-init');
+        $amenity2 = $this->createAmenity('amenity-add');
+
+        $reservation = $this->createReservation('2026-10-01');
+        $ra1 = \App\Models\ReservationAmenity::create([
+            'reservation_id' => $reservation->id,
+            'amenity_id' => $amenity1->id,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-01',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+        ]);
+
+        // Submit update adding amenity2 and removing amenity1
+        $response = $this->postJson("/staff/reservations/{$reservation->id}/update", [
+            'booker_name' => 'John Doe',
+            'email' => 'john@example.com',
+            'phone' => '09123456789',
+            'reservation_date' => '2026-10-01',
+            'end_date' => '2026-10-01',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'number_of_guests' => 2,
+            'status' => 'Confirmed',
+            'amenities' => [
+                [
+                    'id' => null, // newly added amenity
+                    'amenity_id' => $amenity2->id,
+                    'start_date' => '2026-10-01',
+                    'end_date' => '2026-10-01',
+                    'start_slot' => 'Daytime',
+                    'end_slot' => 'Daytime',
+                ],
+            ],
+        ]);
+
+        $response->assertOk();
+
+        // Verify amenity1 was removed and amenity2 was added
+        $this->assertDatabaseMissing('reservation_amenities', [
+            'id' => $ra1->id,
+        ]);
+        $this->assertDatabaseHas('reservation_amenities', [
+            'reservation_id' => $reservation->id,
+            'amenity_id' => $amenity2->id,
+        ]);
+    }
+
+    public function test_amenity_availed_by_active_checked_in_reservation_is_occupied_and_only_available_when_no_active_reservation(): void
+    {
+        $this->staffSession();
+        $amenity = $this->createAmenity('amenity-active-checkin');
+
+        // Create active checked-in reservation with this amenity
+        $activeRes = $this->createReservation('2026-09-15');
+        $activeRes->update([
+            'status' => 'Checked In',
+            'check_in' => '2026-09-13 14:00:00',
+            'check_out' => null,
+        ]);
+
+        \App\Models\ReservationAmenity::create([
+            'reservation_id' => $activeRes->id,
+            'amenity_id' => $amenity->id,
+            'start_date' => '2026-09-15',
+            'end_date' => '2026-09-15',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+        ]);
+
+        // Query availability for a different date (e.g. 2026-09-19)
+        $response = $this->getJson('/api/amenities/availability?start_date=2026-09-19&end_date=2026-09-19&start_slot=Daytime&end_slot=Daytime');
+        $response->assertOk();
+        $data = $response->json();
+
+        // The amenity must be occupied and NOT available because active reservation has availed it
+        $this->assertContains((string) $amenity->id, array_map('strval', $data['occupied_ids']));
+        $amenityData = collect($data['amenities'])->firstWhere('id', (string) $amenity->id);
+        $this->assertNotNull($amenityData);
+        $this->assertEquals('occupied', $amenityData['status']);
+        $this->assertTrue($amenityData['is_occupied']);
+        $this->assertFalse($amenityData['is_available']);
+
+        // Now checkout the active reservation
+        $activeRes->update([
+            'status' => 'Checked Out',
+            'check_out' => now(),
+        ]);
+
+        // Now for 2026-09-19, it should be available
+        $afterCheckout = $this->getJson('/api/amenities/availability?start_date=2026-09-19&end_date=2026-09-19&start_slot=Daytime&end_slot=Daytime');
+        $afterCheckout->assertOk();
+        $afterData = $afterCheckout->json();
+        $this->assertNotContains((string) $amenity->id, array_map('strval', $afterData['occupied_ids']));
+        $afterAmenityData = collect($afterData['amenities'])->firstWhere('id', (string) $amenity->id);
+        $this->assertEquals('available', $afterAmenityData['status']);
+        $this->assertFalse($afterAmenityData['is_occupied']);
+        $this->assertTrue($afterAmenityData['is_available']);
+    }
+
+    public function test_active_checked_in_reservation_blocks_calendar_availability_for_held_amenity(): void
+    {
+        $this->staffSession();
+        $amenity = $this->createAmenity('cottage-cal-1');
+
+        $today = now()->toDateString();
+        $month = now()->month;
+        $year = now()->year;
+
+        // Active checked in reservation currently occupying cottage-cal-1
+        $activeRes = $this->createReservation($today);
+        $activeRes->update([
+            'status' => 'Checked In',
+            'check_in' => now(),
+            'check_out' => null,
+        ]);
+        ReservationAmenity::create([
+            'reservation_id' => $activeRes->id,
+            'amenity_id' => $amenity->id,
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+            'start_date' => $today,
+            'end_date' => $today,
+        ]);
+
+        // Pending reservation that also holds cottage-cal-1 opens its reschedule calendar
+        $pendingRes = $this->createReservation(now()->addDays(5)->toDateString());
+        ReservationAmenity::create([
+            'reservation_id' => $pendingRes->id,
+            'amenity_id' => $amenity->id,
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+        ]);
+
+        $response = $this->getJson("/staff/reservations/{$pendingRes->id}/availability?month={$month}&year={$year}");
+        $response->assertOk();
+
+        $availability = collect($response->json('availability'))->keyBy('date');
+
+        // Today must be marked unavailable because the amenity is occupied by active checked-in reservation
+        $this->assertFalse($availability[$today]['daytime']);
+        $this->assertFalse($availability[$today]['available']);
+    }
+
+    public function test_reschedule_syncs_all_amenity_dates_to_new_stay_master_schedule(): void
+    {
+        $this->staffSession();
+        $amenity = $this->createAmenity('room-sync-1');
+
+        $res = $this->createReservation('2026-10-01');
+        $res->update([
+            'end_date' => '2026-10-01',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+        ]);
+        $ra = ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => $amenity->id,
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-01',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+        ]);
+
+        // Reschedule master reservation to 2026-10-05 -> 2026-10-07 Nighttime
+        $updateResponse = $this->postJson("/staff/reservations/{$res->id}/update", [
+            'booker_name' => 'Online Booker',
+            'email' => 'online@example.com',
+            'phone' => '09170000000',
+            'reservation_date' => '2026-10-05',
+            'end_date' => '2026-10-07',
+            'start_slot' => 'Nighttime',
+            'end_slot' => 'Nighttime',
+            'number_of_guests' => 2,
+            'status' => 'Pending',
+        ]);
+
+        $updateResponse->assertOk();
+
+        $ra->refresh();
+        $this->assertEquals('2026-10-05', $ra->start_date instanceof \Illuminate\Support\Carbon ? $ra->start_date->toDateString() : (string) $ra->start_date);
+        $this->assertEquals('2026-10-07', $ra->end_date instanceof \Illuminate\Support\Carbon ? $ra->end_date->toDateString() : (string) $ra->end_date);
+        $this->assertEquals('Nighttime', $ra->start_slot);
+        $this->assertEquals('Nighttime', $ra->end_slot);
+    }
+
+    public function test_reservation_detail_modal_reschedule_flow(): void
+    {
+        $this->staffSession();
+        $this->createAmenity('cottage-detail-1');
+        $res = $this->createReservation('2026-11-10');
+        $ra = ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => 'cottage-detail-1',
+            'pricing_type' => 'Daytime',
+            'quantity' => 1,
+            'price_at_booking' => 500,
+            'start_date' => '2026-11-10',
+            'end_date' => '2026-11-10',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+        ]);
+
+        $pageResponse = $this->get('/staff/reservations');
+        $pageResponse->assertOk();
+        $pageResponse->assertSee('id="reservationModal"', false);
+        $pageResponse->assertSee('id="editCalendarModal"', false);
+
+        // Reschedule via detail modal apply flow
+        $updateResponse = $this->postJson("/staff/reservations/{$res->id}/update", [
+            'booker_name' => 'Online Booker',
+            'email' => 'online@example.com',
+            'phone' => '09170000000',
+            'reservation_date' => '2026-11-15',
+            'end_date' => '2026-11-16',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'number_of_guests' => 2,
+            'status' => 'Pending',
+            'amenities' => [
+                [
+                    'id' => $ra->id,
+                    'amenity_id' => 'cottage-detail-1',
+                    'start_date' => '2026-11-15',
+                    'end_date' => '2026-11-16',
+                    'start_slot' => 'Daytime',
+                    'end_slot' => 'Daytime',
+                    'quantity' => 1,
+                ]
+            ],
+        ]);
+
+        $updateResponse->assertOk();
+        $updateResponse->assertJson(['success' => true]);
+
+        $res->refresh();
+        $this->assertEquals('2026-11-15', $res->reservation_date instanceof \Illuminate\Support\Carbon ? $res->reservation_date->toDateString() : substr((string)$res->reservation_date, 0, 10));
+        $this->assertEquals('2026-11-16', $res->end_date instanceof \Illuminate\Support\Carbon ? $res->end_date->toDateString() : substr((string)$res->end_date, 0, 10));
+
+        $ra->refresh();
+        $this->assertEquals('2026-11-15', $ra->start_date instanceof \Illuminate\Support\Carbon ? $ra->start_date->toDateString() : substr((string)$ra->start_date, 0, 10));
+        $this->assertEquals('2026-11-16', $ra->end_date instanceof \Illuminate\Support\Carbon ? $ra->end_date->toDateString() : substr((string)$ra->end_date, 0, 10));
     }
 }
 

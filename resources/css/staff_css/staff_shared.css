@@ -4300,6 +4300,56 @@ tr.row-checkout-near:hover td {
     pointer-events: none !important;
 }
 
+/* Stacked Modal z-index hierarchy */
+#editCalendarModal,
+#checkInAmenityPickerModal,
+#checkInCompanionModal {
+    z-index: 1060;
+}
+
+#checkInCompanionGroupEditModal {
+    z-index: 1065;
+}
+
+#companionSummaryModal {
+    z-index: 1070;
+}
+
+/* Base modal level: Reservation details & main modals */
+#reservationModal,
+#guestModal,
+#addGuestModal {
+    z-index: 1100;
+}
+
+/* Modals opened over #reservationModal (Edit stay, add amenity, extend amenity, companion modals) */
+#extendStayModal,
+#extendAmenityModal,
+#addAmenityMidStayModal,
+#reservationAddCompanionModal,
+#reservationCompanionCheckoutModal,
+#bulkCompanionModal,
+#bulkGroupManageModal {
+    z-index: 1250 !important;
+}
+
+/* Sub-modals opened from stay/amenity extension modals (Payment step) */
+#extensionPaymentModal {
+    z-index: 1350 !important;
+}
+
+/* Confirmation and success modals */
+.guest-modal--confirm,
+#confirmModal,
+#checkOutConfirmModal {
+    z-index: 1400 !important;
+}
+
+.guest-modal--success,
+#successModal {
+    z-index: 1500 !important;
+}
+
 .guest-modal__backdrop {
     position: absolute;
     inset: 0;
@@ -5898,9 +5948,11 @@ tr.row-checkout-near:hover td {
 }
 
 #scanQrBtn {
-    background: var(--surface-2);
-    color: var(--ink);
-    border: 1px solid var(--glass-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
 }
 
 /* ── Amenity status / per-amenity checkout (reservation modal) ──────────── */
@@ -11046,6 +11098,13 @@ td.mono-cell {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+}
+
+.guest-modal__header-actions .guest-modal__close {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 !important;
 }
 
 .guest-modal__edit-btn {

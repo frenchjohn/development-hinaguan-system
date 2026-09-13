@@ -773,17 +773,12 @@
 									<h2 class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Data View</h2>
 								</div>
 								<div class="flex items-center gap-2">
-									<button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px hover:bg-hp-green-dark hover:shadow-[0_6px_16px_rgba(23,138,82,0.22)]" data-open-add-guest-modal="true">
-										<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-										</svg>
-										Walk-in Checkin
+									<button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" aria-label="Scan QR Code" title="Scan QR Code / Camera">
+										<i class="bi bi-qr-code-scan text-base"></i>
 									</button>
-									<button type="button" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong dark:border-white/15 dark:bg-white/5 dark:text-[#f3f4f6]" aria-label="Scan QR Code">
-										<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-											<path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-										</svg>
+									<button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-hp-green px-4 text-xs sm:text-sm font-semibold text-white shadow-xs transition-all duration-150 hover:bg-hp-green-dark hover:shadow active:scale-[0.98]" data-open-add-guest-modal="true">
+										<i class="bi bi-person-plus-fill text-sm"></i>
+										<span>Walk-in Checkin</span>
 									</button>
 								</div>
 							</div>
@@ -1175,7 +1170,7 @@
 		</div>
 	</div>
 	<!-- Modals (Direct children of body) -->
-	<div class="guest-modal" id="guestModal" aria-hidden="true" style="z-index: 1400;">
+	<div class="guest-modal" id="guestModal" aria-hidden="true" style="z-index: 1100;">
 		<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-modal="true"></div>
 		<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
 			<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-modal="true" aria-label="Close details">&times;</button>
@@ -1410,7 +1405,7 @@
 							</div>
 							<!-- Tab Footer -->
 							<div class="pt-3 mt-auto border-t border-[rgba(13,44,29,0.08)] dark:border-white/10 flex items-center justify-end">
-								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="guestsTab">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-white px-5 py-2.5 text-xs font-bold text-neutral-800 shadow-xs hover:bg-gray-50 hover:border-hp-green/40 hover:text-hp-green dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 cursor-pointer transition-all active:scale-[0.98]" data-step-to="guestsTab">
 									<span>Next: Guests</span>
 									<i class="bi bi-arrow-right"></i>
 								</button>
@@ -1557,7 +1552,7 @@
 									<i class="bi bi-arrow-left"></i>
 									<span>Amenities</span>
 								</button>
-								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-hp-green-dark cursor-pointer transition-all" data-step-to="feesTab">
+								<button type="button" class="walkin-step-btn inline-flex items-center gap-1.5 rounded-xl border border-glass-border bg-white px-5 py-2.5 text-xs font-bold text-neutral-800 shadow-xs hover:bg-gray-50 hover:border-hp-green/40 hover:text-hp-green dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 cursor-pointer transition-all active:scale-[0.98]" data-step-to="feesTab">
 									<span>Next: Fees & Summary</span>
 									<i class="bi bi-arrow-right"></i>
 								</button>
@@ -1741,6 +1736,7 @@
 							<div class="min-w-0">
 								<h3 id="walkInCalendarModalTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg text-hp-text">Select Stay Duration</h3>
 								<p class="m-0 text-xs text-hp-text-muted">Check-in is locked to <strong>Today</strong>. Select your Check-Out Date and Session.</p>
+								<div id="walkInCalAttachedNotice" class="hidden mt-1.5 text-[0.7rem] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg"></div>
 							</div>
 							<div class="flex items-center gap-2 shrink-0">
 								<span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400" id="walkInCalCurrentBadge">1D Stay</span>
@@ -1817,6 +1813,7 @@
 								<div class="flex flex-wrap items-center gap-2">
 									<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-hp-green"></span> Selected Stay</span>
 									<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[rgba(13,44,29,0.2)] dark:bg-white/20"></span> Available</span>
+									<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Booked / Blocked</span>
 								</div>
 								<span id="walkInCalStepHelp" class="font-semibold text-hp-green dark:text-emerald-400">Click date to set Check-Out</span>
 							</div>
@@ -2644,7 +2641,7 @@
 				</div>
 
 				{{-- Check Out Confirmation Modal --}}
-				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1350;">
+				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1400;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-out-confirm="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
@@ -2999,7 +2996,7 @@
 				</div>
 
 				{{-- Bulk Companion Modal --}}
-				<div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="bulkCompanionModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-bulk-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkCompanionModalTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-companion-modal="true" aria-label="Close bulk companion form">&times;</button>
@@ -3085,7 +3082,7 @@
 				</div>
 
 				{{-- Bulk Group Manage Modal --}}
-				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="bulkGroupManageModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-bulk-manage-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[640px] max-h-[min(88vh,820px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="bulkGroupManageTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-bulk-manage-modal="true" aria-label="Close form">&times;</button>
@@ -3530,7 +3527,7 @@
 				</div>
 
 				{{-- Final Extension / Addition Payment Confirmation Modal --}}
-				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true" style="z-index: 1300;">
+				<div class="guest-modal guest-modal--compact" id="extensionPaymentModal" aria-hidden="true" style="z-index: 1350;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-extension-payment-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[520px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="extensionPaymentTitle">
 						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-extension-payment-modal="true" aria-label="Close payment modal">&times;</button>
@@ -3577,7 +3574,7 @@
 				</div>
 
 				{{-- Unified Companion Checkout Modal for Reservations --}}
-				<div class="guest-modal" id="reservationCompanionCheckoutModal" aria-hidden="true" style="z-index: 1200;">
+				<div class="guest-modal" id="reservationCompanionCheckoutModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-checkout-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(88vh,820px)] overflow-y-auto rounded-2xl bg-glass p-0 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="companionCheckoutModalTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 z-10 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-companion-checkout-modal="true" aria-label="Close modal">&times;</button>

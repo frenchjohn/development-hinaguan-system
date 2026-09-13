@@ -166,14 +166,14 @@ class StaffReservationAmenityEditTest extends TestCase
 
         $response->assertOk()->assertJson(['success' => true]);
 
-        // Verify amenity was automatically shifted by +10 days to Sept 20 - Sept 21
+        // Verify amenity was automatically matched to master stay schedule (Sept 20 - Sept 22 Daytime)
         $this->assertDatabaseHas('reservation_amenities', [
             'id' => $ra->id,
             'amenity_id' => 'cottage-1',
             'start_date' => '2026-09-20 00:00:00',
-            'end_date' => '2026-09-21 00:00:00',
-            'start_slot' => 'Nighttime',
-            'end_slot' => 'Nighttime',
+            'end_date' => '2026-09-22 00:00:00',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
         ]);
     }
 

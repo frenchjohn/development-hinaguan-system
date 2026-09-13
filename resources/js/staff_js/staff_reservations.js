@@ -2141,134 +2141,85 @@ window.AppPage['staff_reservations'] = function () {
         button.addEventListener('click', closeCheckInCompanionModal);
     });
 
-    const openCheckInModal = (reservationId) => {
-        pendingReservationId = reservationId;
-        checkInCompanions = [];
-        bulkCompanionGroups = [];
-        primaryGuestToUpdate = null;
-        existingReservationGuests = [];
+    // ── Check-In Modal Editing & Amenity Logic ───────────────
+    let checkInReservationWasEdited = false;
 
-        const checkInTitle = document.getElementById('checkInModalTitle');
-        if (checkInTitle) {
-            checkInTitle.textContent = `Check In Reservation #${reservationId}`;
+    const formatDateForInput = (dateStr) => {
+        if (!dateStr) return '';
+        const cleanStr = String(dateStr).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+            return cleanStr;
         }
+        const dt = new Date(cleanStr);
+        if (isNaN(dt.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        const d = String(dt.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
 
-        // Get reservation data
-        const reservation = reservationData[reservationId];
-        currentReservationData = reservation;
+    const formatDisplayDate = (dStr) => {
+        if (!dStr) return '';
+        const d = new Date(dStr.includes('T') ? dStr : dStr + 'T00:00:00');
+        if (isNaN(d.getTime())) return dStr;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
 
-        if (reservation && reservation.reservation_guests) {
-            existingReservationGuests = [...reservation.reservation_guests];
+    const calculateContinuousSlots = (startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDateStr) return { dayCount: 1, nightCount: 0, totalDays: 1 };
+        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
+        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
 
-            // Find primary guest if it exists (only for updates, not for initial check-in)
-            const primaryGuest = existingReservationGuests.find(g => g.is_primary_guest);
-            if (primaryGuest && primaryGuest.customer) {
-                primaryGuestToUpdate = primaryGuest;
-            }
-        }
-
-        // 1. Setup Stay Schedule compact pills & popover details
-        const sDate = reservation?.check_in || reservation?.start_date || reservation?.reservation_date || '';
-        const eDate = reservation?.check_out || reservation?.end_date || sDate;
-        const slot = reservation?.start_slot || reservation?.time_period || 'Daytime';
-        const days = reservation?.total_days || 1;
-
-        const formatDisplayDate = (dStr) => {
-            if (!dStr) return '';
-            const d = new Date(dStr.includes('T') ? dStr : dStr + 'T00:00:00');
-            if (isNaN(d.getTime())) return dStr;
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        };
-        const sDisplay = formatDisplayDate(sDate);
-        const eDisplay = formatDisplayDate(eDate);
-
-        const compactTextEl = document.getElementById('checkInStayCompactText');
-        if (compactTextEl) {
-            compactTextEl.textContent = sDisplay === eDisplay ? `${sDisplay} • ${days} Day${days > 1 ? 's' : ''}` : `${sDisplay} – ${eDisplay} • ${days} Days`;
-        }
-        const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
-        if (sessionBadgeEl) {
-            sessionBadgeEl.textContent = slot;
-        }
-        const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
-        if (schedSummaryEl) {
-            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slot} Session)`;
-        }
-        const schedDatesEl = document.getElementById('checkInScheduleDatesText');
-        if (schedDatesEl) {
-            schedDatesEl.textContent = `Check-in: ${sDisplay} • Check-out: ${eDisplay}`;
-        }
-
-        // 2. Setup Pre-booked Amenity cards inside #checkInAmenitiesContainer
-        const resAmenities = reservation?.reservation_amenities || [];
-        const amenitiesContainer = document.getElementById('checkInAmenitiesContainer');
-        const amenitiesCountBadge = document.getElementById('checkInAmenitiesCountBadge');
-        const sidebarAmenitiesBadge = document.getElementById('checkInSidebarAmenitiesBadge');
-
-        if (amenitiesCountBadge) {
-            amenitiesCountBadge.textContent = `${resAmenities.length} Booked`;
-        }
-        if (sidebarAmenitiesBadge) {
-            sidebarAmenitiesBadge.textContent = String(resAmenities.length);
-        }
-
-        if (amenitiesContainer) {
-            if (resAmenities.length === 0) {
-                amenitiesContainer.innerHTML = `
-                    <div class="py-12 text-center text-xs text-hp-text-muted/70 italic">
-                        <i class="bi bi-inbox text-3xl block mb-2 opacity-50"></i>
-                        No amenities reserved for this booking.
-                    </div>
-                `;
+        if (!endDateStr || startDateStr === endDateStr) {
+            if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
+                return { dayCount: 1, nightCount: 0, totalDays: 1 };
+            } else if (cleanStart === 'Nighttime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 0, nightCount: 1, totalDays: 1 };
+            } else if (cleanStart === 'Daytime' && cleanEnd === 'Nighttime') {
+                return { dayCount: 1, nightCount: 1, totalDays: 1 };
             } else {
-                let amCardsHtml = '';
-                resAmenities.forEach((ra) => {
-                    const am = ra.amenity || {};
-                    const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id)) || {};
-                    const amName = am.amenities_name || fullAm.amenities_name || 'Amenity';
-                    const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? am.maximum_capacity : (fullAm.maximum_capacity || 'No limit');
-                    const addHead = parseFloat(am.additional_per_head || fullAm.additional_per_head || 0);
-                    const addHeadText = addHead > 0 ? `+₱${addHead.toFixed(2)}/head` : '';
-
-                    const bookingPrice = parseFloat(ra.price_at_booking ?? ra.price);
-                    let price = !isNaN(bookingPrice) && bookingPrice > 0 ? bookingPrice : 0;
-                    if (price === 0) {
-                        const isNight = String(ra.start_slot || ra.pricing_type || slot || '').toLowerCase().includes('night');
-                        const slotPrice = isNight
-                            ? (parseFloat(am.nighttime_price ?? fullAm.nighttime_price ?? 0))
-                            : (parseFloat(am.daytime_price ?? fullAm.daytime_price ?? 0));
-                        price = !isNaN(slotPrice) ? slotPrice : 0;
-                    }
-
-                    const hasFreeEntrance = Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm.benefits?.free_entrance || fullAm.free_entrance);
-                    const hasFreePool = Boolean(am.free_pool || am.benefits?.free_pool || fullAm.benefits?.free_pool || fullAm.free_pool);
-
-                    amCardsHtml += `
-                        <div class="group flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-glass-border bg-glass hover:border-hp-green/40 hover:bg-glass-hover transition-all">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(amName)}</span>
-                                    ${hasFreeEntrance ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 dark:text-emerald-300 shadow-2xs" title="Free Entrance Included"><i class="bi bi-ticket-perforated-fill"></i></span>' : ''}
-                                    ${hasFreePool ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-sky-700 bg-sky-500/15 border border-sky-500/30 dark:text-sky-300 shadow-2xs" title="Free Pool Included"><i class="bi bi-water"></i></span>' : ''}
-                                </div>
-                                <div class="flex items-center gap-3 text-xs text-hp-text-muted mt-1 flex-wrap">
-                                    <span><i class="bi bi-people-fill text-[0.7rem] text-hp-green mr-1"></i>Capacity: ${maxCap}</span>
-                                    ${addHeadText ? `<span><i class="bi bi-plus-circle text-[0.7rem] text-amber-500 mr-1"></i>${addHeadText}</span>` : ''}
-                                    <span><i class="bi bi-clock-history text-[0.7rem] text-hp-text-muted mr-1"></i>${escapeHtml(slot)}</span>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <div class="text-[0.7rem] uppercase tracking-wider text-hp-text-muted font-bold">Rate</div>
-                                <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${price.toFixed(2)}</strong>
-                            </div>
-                        </div>
-                    `;
-                });
-                amenitiesContainer.innerHTML = amCardsHtml;
+                return { dayCount: 1, nightCount: 1, totalDays: 2 };
             }
         }
 
-        // Setup Amenity select dropdowns for companion modals
+        const [sy, sm, sd] = startDateStr.split('-').map(Number);
+        const [ey, em, ed] = endDateStr.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+
+        let daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysDiff < 0) daysDiff = 0;
+        const totalDays = daysDiff + 1;
+
+        let dayCount = 0;
+        let nightCount = 0;
+
+        for (let i = 0; i <= daysDiff; i++) {
+            if (i === 0) {
+                if (cleanStart === 'Daytime') {
+                    dayCount++;
+                    nightCount++;
+                } else {
+                    nightCount++;
+                }
+            } else if (i === daysDiff) {
+                if (cleanEnd === 'Daytime') {
+                    dayCount++;
+                } else {
+                    dayCount++;
+                    nightCount++;
+                }
+            } else {
+                dayCount++;
+                nightCount++;
+            }
+        }
+
+        return { dayCount, nightCount, totalDays };
+    };
+
+    const syncCheckInCompanionAmenityDropdowns = () => {
+        const resAmenities = currentReservationData?.reservation_amenities || [];
         const companionAmenityWrap = document.getElementById('checkInCompanionAmenityWrap');
         const companionAmenitySelect = document.getElementById('checkInCompanionAmenity');
         const bulkAmenityWrap = document.getElementById('checkInBulkCompanionAmenityWrap');
@@ -2294,6 +2245,647 @@ window.AppPage['staff_reservations'] = function () {
             if (companionAmenityWrap) companionAmenityWrap.classList.add('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.add('hidden');
         }
+    };
+
+    const renderCheckInAmenities = () => {
+        const reservation = currentReservationData;
+        const resAmenities = reservation?.reservation_amenities || [];
+        const amenitiesContainer = document.getElementById('checkInAmenitiesContainer');
+        const amenitiesCountBadge = document.getElementById('checkInAmenitiesCountBadge');
+        const sidebarAmenitiesBadge = document.getElementById('checkInSidebarAmenitiesBadge');
+        const allAmenities = window.staffAmenitiesData || window.ALL_AMENITIES || [];
+
+        const slot = reservation?.start_slot || reservation?.time_period || 'Daytime';
+        const sDate = reservation?.check_in || reservation?.start_date || reservation?.reservation_date || '';
+        const eDate = reservation?.check_out || reservation?.end_date || sDate;
+        const masterStart = formatDateForInput(sDate);
+        const masterEnd = formatDateForInput(eDate) || masterStart;
+
+        if (amenitiesCountBadge) {
+            amenitiesCountBadge.textContent = `${resAmenities.length} Booked`;
+        }
+        if (sidebarAmenitiesBadge) {
+            sidebarAmenitiesBadge.textContent = String(resAmenities.length);
+        }
+
+        // Render View Cards
+        if (amenitiesContainer) {
+            amenitiesContainer.classList.remove('hidden');
+            if (resAmenities.length === 0) {
+                amenitiesContainer.innerHTML = `
+                    <div class="py-12 text-center text-xs text-hp-text-muted/70 italic">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-50"></i>
+                        No amenities reserved for this booking.
+                    </div>
+                `;
+            } else {
+                let amCardsHtml = '';
+                resAmenities.forEach((ra, idx) => {
+                    const am = ra.amenity || {};
+                    const fullAm = allAmenities.find(a => String(a.id) === String(am.id || ra.amenity_id)) || {};
+                    const amName = am.amenities_name || fullAm.amenities_name || 'Amenity';
+                    const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? am.maximum_capacity : (fullAm.maximum_capacity || 'No limit');
+                    const addHead = parseFloat(am.additional_per_head || fullAm.additional_per_head || 0);
+                    const addHeadText = addHead > 0 ? `+₱${addHead.toFixed(2)}/head` : '';
+
+                    const bookingPrice = parseFloat(ra.price_at_booking ?? ra.price);
+                    let price = !isNaN(bookingPrice) && bookingPrice > 0 ? bookingPrice : 0;
+                    if (price === 0) {
+                        const slotPrice = (slot === 'Nighttime')
+                            ? (parseFloat(am.nighttime_price ?? fullAm.nighttime_price ?? 0))
+                            : (parseFloat(am.daytime_price ?? fullAm.daytime_price ?? 0));
+                        price = !isNaN(slotPrice) ? slotPrice : 0;
+                    }
+
+                    const raStart = formatDateForInput(ra.start_date) || masterStart;
+                    const raEnd = formatDateForInput(ra.end_date) || masterEnd;
+                    const raStartSlot = ra.start_slot || slot;
+                    const raEndSlot = ra.end_slot || raStartSlot;
+                    const staySnippet = (raStart === raEnd) ? `${formatDisplayDate(raStart)} (${raStartSlot})` : `${formatDisplayDate(raStart)} (${raStartSlot}) – ${formatDisplayDate(raEnd)} (${raEndSlot})`;
+
+                    const hasFreeEntrance = Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm.benefits?.free_entrance || fullAm.free_entrance);
+                    const hasFreePool = Boolean(am.free_pool || am.benefits?.free_pool || fullAm.benefits?.free_pool || fullAm.free_pool);
+
+                    amCardsHtml += `
+                        <div class="group flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-glass-border bg-glass hover:border-hp-green/40 hover:bg-glass-hover transition-all">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(amName)}</span>
+                                    ${hasFreeEntrance ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 dark:text-emerald-300 shadow-2xs" title="Free Entrance Included"><i class="bi bi-ticket-perforated-fill"></i></span>' : ''}
+                                    ${hasFreePool ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-sky-700 bg-sky-500/15 border border-sky-500/30 dark:text-sky-300 shadow-2xs" title="Free Pool Included"><i class="bi bi-water"></i></span>' : ''}
+                                </div>
+                                <div class="flex items-center gap-3 text-xs text-hp-text-muted mt-1 flex-wrap">
+                                    <span><i class="bi bi-people-fill text-[0.7rem] text-hp-green mr-1"></i>Capacity: ${maxCap}</span>
+                                    ${addHeadText ? `<span><i class="bi bi-plus-circle text-[0.7rem] text-amber-500 mr-1"></i>${addHeadText}</span>` : ''}
+                                    <span><i class="bi bi-clock-history text-[0.7rem] text-hp-text-muted mr-1"></i>${escapeHtml(staySnippet)}</span>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0 flex items-center gap-2.5">
+                                <div>
+                                    <div class="text-[0.7rem] uppercase tracking-wider text-hp-text-muted font-bold">Rate</div>
+                                    <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${price.toFixed(2)}</strong>
+                                </div>
+                                ${resAmenities.length > 1 ? `
+                                    <button type="button" class="checkin-remove-amenity-btn cursor-pointer text-gray-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-xl border border-transparent hover:border-red-200 dark:hover:border-red-800 transition-colors" data-index="${idx}" title="Remove this amenity">
+                                        <i class="bi bi-trash3 text-sm"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                amenitiesContainer.innerHTML = amCardsHtml;
+            }
+        }
+
+        syncCheckInCompanionAmenityDropdowns();
+    };
+
+    // Remove amenity helper function
+    const removeAmenityFromCheckIn = (index) => {
+        if (!currentReservationData?.reservation_amenities) return;
+        if (currentReservationData.reservation_amenities.length <= 1) {
+            showToast('A reservation must have at least one reserved amenity.', 'warning');
+            return;
+        }
+
+        const removed = currentReservationData.reservation_amenities.splice(index, 1)[0];
+        checkInReservationWasEdited = true;
+
+        // Recalculate reservation total amount and remaining balance
+        let newResTotal = 0;
+        currentReservationData.reservation_amenities.forEach(r => {
+            newResTotal += Number(r.price_at_booking || 0);
+        });
+        const entranceFeeTotal = Number(currentReservationData?.entranceFee?.total_amount || 0);
+        newResTotal += entranceFeeTotal;
+        const paid = Number(currentReservationData.amount_paid || 0);
+        currentReservationData.total_amount = newResTotal;
+        currentReservationData.remaining_balance = Math.max(0, newResTotal - paid);
+
+        updateCheckInFeeSummary();
+        syncCheckInCompanionAmenityDropdowns();
+        renderCheckInAmenities();
+
+        if (checkInAmenityPickerModal && !checkInAmenityPickerModal.classList.contains('hidden')) {
+            renderCheckInAmenityPicker();
+        }
+
+        const amName = removed?.amenity?.amenities_name || 'Amenity';
+        showToast(`Removed ${amName} from reservation.`, 'info');
+    };
+
+    // Event delegation for removal buttons
+    document.getElementById('checkInAmenitiesContainer')?.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.checkin-remove-amenity-btn');
+        if (!removeBtn) return;
+        const idx = parseInt(removeBtn.dataset.index, 10);
+        if (!isNaN(idx)) removeAmenityFromCheckIn(idx);
+    });
+
+    // ── CHOOSE AMENITIES PICKER MODAL (FOR CHECK-IN WITH OCCUPIED & RESERVED STATUS) ──
+    const checkInAmenityPickerModal = document.getElementById('checkInAmenityPickerModal');
+    const openCheckInAddAmenityModalBtn = document.getElementById('openCheckInAddAmenityModalBtn');
+    const checkInAmenityPickerContainer = document.getElementById('checkInAmenityPickerContainer');
+    const checkInAmenityCategorySelect = document.getElementById('checkInAmenityCategorySelect');
+    const checkInAmenityPickerStayBadge = document.getElementById('checkInAmenityPickerStayBadge');
+    const checkInAmenityPickerSummaryText = document.getElementById('checkInAmenityPickerSummaryText');
+
+    let checkInAmenityPickerStatusFilter = 'available';
+    let checkInAmenityPickerCategoryFilter = 'all';
+    let checkInCachedAmenityList = [];
+
+    const categorizeAmenityForCheckIn = (name = '') => {
+        const trimmed = (name || '').trim();
+        const lower = trimmed.toLowerCase();
+        if (lower.startsWith('a-house') || lower.startsWith('ahouse') || lower.includes('a-house')) return 'A-Houses';
+        if (lower.startsWith('payag') || lower.includes('payag')) return 'Payags';
+        if (lower.startsWith('cottage') || lower.includes('cottage')) return 'Cottages';
+        if (lower.includes('function') || lower.includes('hall')) return 'Function Halls';
+        if (lower.includes('room') || lower.includes('suite')) return 'Rooms';
+
+        const words = trimmed.split(/[\s\-_0-9]/).filter(Boolean);
+        if (words.length > 0 && words[0].length > 1) {
+            const base = words[0].charAt(0).toUpperCase() + words[0].slice(1).toLowerCase();
+            return base.endsWith('s') ? base : `${base}s`;
+        }
+        return 'Other Amenities';
+    };
+
+    const syncCheckInAmenityStatusFilterPills = () => {
+        const pills = document.querySelectorAll('#checkInAmenityStatusFilters [data-picker-status]');
+        pills.forEach(pill => {
+            const st = pill.dataset.pickerStatus;
+            if (st === checkInAmenityPickerStatusFilter) {
+                pill.className = 'checkin-amenity-filter-pill is-active cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all bg-hp-green text-white shadow-xs';
+            } else {
+                pill.className = 'checkin-amenity-filter-pill cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10';
+            }
+        });
+    };
+
+    const openCheckInAmenityPickerModal = () => {
+        if (!checkInAmenityPickerModal) return;
+        checkInAmenityPickerModal.classList.add('is-open');
+        checkInAmenityPickerModal.classList.remove('hidden');
+        checkInAmenityPickerModal.classList.add('flex');
+        checkInAmenityPickerModal.setAttribute('aria-hidden', 'false');
+
+        checkInAmenityPickerStatusFilter = 'available';
+        checkInAmenityPickerCategoryFilter = 'all';
+        if (checkInAmenityCategorySelect) checkInAmenityCategorySelect.value = 'all';
+        syncCheckInAmenityStatusFilterPills();
+        loadCheckInAmenityAvailability();
+    };
+
+    const closeCheckInAmenityPickerModal = () => {
+        if (!checkInAmenityPickerModal) return;
+        checkInAmenityPickerModal.classList.remove('is-open');
+        checkInAmenityPickerModal.classList.add('hidden');
+        checkInAmenityPickerModal.classList.remove('flex');
+        checkInAmenityPickerModal.setAttribute('aria-hidden', 'true');
+    };
+
+    const loadCheckInAmenityAvailability = async () => {
+        if (!checkInAmenityPickerContainer) return;
+
+        const sDate = currentReservationData?.check_in || currentReservationData?.start_date || currentReservationData?.reservation_date || document.getElementById('checkInReservationDate')?.value || '';
+        const eDate = currentReservationData?.check_out || currentReservationData?.end_date || document.getElementById('checkInEndDate')?.value || sDate;
+        const sSlot = currentReservationData?.start_slot || currentReservationData?.time_period || document.getElementById('checkInStartSlot')?.value || 'Daytime';
+        const eSlot = currentReservationData?.end_slot || document.getElementById('checkInEndSlot')?.value || sSlot;
+
+        const counts = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+        const sFmt = formatDisplayDate(sDate);
+        const eFmt = formatDisplayDate(eDate);
+        const spanLabel = counts.totalDays === 1 ? '1 Day' : `${counts.totalDays} Days`;
+
+        if (checkInAmenityPickerStayBadge) {
+            if (sDate === eDate) {
+                checkInAmenityPickerStayBadge.textContent = `${sFmt} (${sSlot}) • ${spanLabel}`;
+            } else {
+                checkInAmenityPickerStayBadge.textContent = `${sFmt} (${sSlot}) → ${eFmt} (${eSlot}) • ${spanLabel}`;
+            }
+        }
+
+        checkInAmenityPickerContainer.innerHTML = `
+            <div class="flex items-center justify-center py-10 text-sm text-hp-text-muted">
+                <svg class="mr-2 h-5 w-5 animate-spin text-hp-green" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Checking amenity availability...
+            </div>
+        `;
+
+        try {
+            const params = new URLSearchParams({
+                start_date: sDate,
+                end_date: eDate,
+                start_slot: sSlot,
+                end_slot: eSlot,
+                exclude_reservation_id: pendingReservationId || '',
+            });
+
+            const res = await fetch(`/api/amenities/availability?${params.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch availability');
+            const data = await res.json();
+            checkInCachedAmenityList = data.amenities || [];
+            if (Array.isArray(data.occupied_ids)) {
+                window.ACTIVE_OCCUPIED_AMENITY_IDS = data.occupied_ids.map(String);
+            }
+
+            // Update Counts on pills: Available, Occupied, Reserved, All
+            const availCount = checkInCachedAmenityList.filter(a => a.is_available).length;
+            const occCount = checkInCachedAmenityList.filter(a => a.is_occupied).length;
+            const resCount = checkInCachedAmenityList.filter(a => a.is_reserved).length;
+            const allCount = checkInCachedAmenityList.length;
+
+            const countAvailEl = document.getElementById('checkInCountAvailable');
+            const countOccEl = document.getElementById('checkInCountOccupied');
+            const countResEl = document.getElementById('checkInCountReserved');
+            const countAllEl = document.getElementById('checkInCountAll');
+            if (countAvailEl) countAvailEl.textContent = availCount;
+            if (countOccEl) countOccEl.textContent = occCount;
+            if (countResEl) countResEl.textContent = resCount;
+            if (countAllEl) countAllEl.textContent = allCount;
+
+            // Populate category select options
+            if (checkInAmenityCategorySelect) {
+                const uniqueCategories = Array.from(new Set(checkInCachedAmenityList.map(a => categorizeAmenityForCheckIn(a.amenities_name)))).sort();
+                const currentVal = checkInAmenityCategorySelect.value;
+                checkInAmenityCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+                uniqueCategories.forEach(cat => {
+                    const opt = document.createElement('option');
+                    opt.value = cat;
+                    opt.textContent = cat;
+                    checkInAmenityCategorySelect.appendChild(opt);
+                });
+                if (uniqueCategories.includes(currentVal)) {
+                    checkInAmenityCategorySelect.value = currentVal;
+                    checkInAmenityPickerCategoryFilter = currentVal;
+                } else {
+                    checkInAmenityCategorySelect.value = 'all';
+                    checkInAmenityPickerCategoryFilter = 'all';
+                }
+            }
+
+            syncCheckInAmenityStatusFilterPills();
+            renderCheckInAmenityPicker();
+        } catch (err) {
+            console.error('Failed to load available amenities:', err);
+            checkInAmenityPickerContainer.innerHTML = '<p class="px-4 py-8 text-center text-sm text-red-500 font-semibold">Failed to load amenity availability. Please close and retry.</p>';
+        }
+    };
+
+    const renderCheckInAmenityPicker = () => {
+        if (!checkInAmenityPickerContainer) return;
+
+        const sDate = currentReservationData?.check_in || currentReservationData?.start_date || currentReservationData?.reservation_date || document.getElementById('checkInReservationDate')?.value || '';
+        const eDate = currentReservationData?.check_out || currentReservationData?.end_date || document.getElementById('checkInEndDate')?.value || sDate;
+        const sSlot = currentReservationData?.start_slot || currentReservationData?.time_period || document.getElementById('checkInStartSlot')?.value || 'Daytime';
+        const eSlot = currentReservationData?.end_slot || document.getElementById('checkInEndSlot')?.value || sSlot;
+
+        const counts = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+        const spanLabel = counts.totalDays === 1 ? '1 Day' : `${counts.totalDays} Days`;
+
+        // Filter list based on active filters
+        let filtered = checkInCachedAmenityList;
+        if (checkInAmenityPickerStatusFilter === 'available') {
+            filtered = filtered.filter(a => a.is_available);
+        } else if (checkInAmenityPickerStatusFilter === 'occupied') {
+            filtered = filtered.filter(a => a.is_occupied);
+        } else if (checkInAmenityPickerStatusFilter === 'reserved') {
+            filtered = filtered.filter(a => a.is_reserved);
+        }
+
+        if (checkInAmenityPickerCategoryFilter !== 'all') {
+            filtered = filtered.filter(a => categorizeAmenityForCheckIn(a.amenities_name) === checkInAmenityPickerCategoryFilter);
+        }
+
+        // Update footer summary text
+        if (checkInAmenityPickerSummaryText) {
+            const statusLabel = checkInAmenityPickerStatusFilter === 'all' ? 'total' : checkInAmenityPickerStatusFilter;
+            const catLabel = checkInAmenityPickerCategoryFilter === 'all' ? 'all categories' : checkInAmenityPickerCategoryFilter;
+            checkInAmenityPickerSummaryText.textContent = `Showing ${filtered.length} ${statusLabel} in ${catLabel}`;
+        }
+
+        // Empty state
+        if (filtered.length === 0) {
+            checkInAmenityPickerContainer.innerHTML = `
+                <div class="py-12 text-center text-hp-text-muted">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-hp-green/10 text-xl text-hp-green">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <div class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">No amenities found</div>
+                    <p class="text-xs text-hp-text-muted mt-1 max-w-[340px] mx-auto">No amenities match "${checkInAmenityPickerStatusFilter}" in "${checkInAmenityPickerCategoryFilter === 'all' ? 'All Categories' : checkInAmenityPickerCategoryFilter}".</p>
+                    <button type="button" class="mt-3.5 cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-all" id="checkInResetAmenityFiltersBtn">
+                        Show All Available Amenities
+                    </button>
+                </div>
+            `;
+            document.getElementById('checkInResetAmenityFiltersBtn')?.addEventListener('click', () => {
+                checkInAmenityPickerStatusFilter = 'available';
+                checkInAmenityPickerCategoryFilter = 'all';
+                if (checkInAmenityCategorySelect) checkInAmenityCategorySelect.value = 'all';
+                syncCheckInAmenityStatusFilterPills();
+                renderCheckInAmenityPicker();
+            });
+            return;
+        }
+
+        // Group by category
+        const groups = {};
+        filtered.forEach(amenity => {
+            const cat = categorizeAmenityForCheckIn(amenity.amenities_name);
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(amenity);
+        });
+
+        // Preferred order of categories: A-Houses, Payags, Cottages, Rooms, Function Halls, Others
+        const preferredOrder = ['A-Houses', 'Payags', 'Cottages', 'Rooms', 'Function Halls'];
+        const sortedCategories = Object.keys(groups).sort((a, b) => {
+            const idxA = preferredOrder.indexOf(a);
+            const idxB = preferredOrder.indexOf(b);
+            if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+            if (idxA !== -1) return -1;
+            if (idxB !== -1) return 1;
+            return a.localeCompare(b);
+        });
+
+        checkInAmenityPickerContainer.innerHTML = '';
+        const currentResAmenities = currentReservationData?.reservation_amenities || [];
+
+        sortedCategories.forEach(cat => {
+            const items = groups[cat];
+            const groupWrap = document.createElement('div');
+            groupWrap.className = 'amenity-category-section space-y-2.5';
+
+            // Category Header
+            const availableCount = items.filter(a => a.is_available).length;
+            const header = document.createElement('div');
+            header.className = 'flex items-center justify-between pb-1.5 border-b border-glass-border/60 sticky top-0 bg-hp-cream/90 dark:bg-[rgba(26,30,28,0.98)] backdrop-blur-sm z-10';
+            header.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-hp-green dark:text-emerald-400">${escapeHtml(cat)}</span>
+                    <span class="rounded-full bg-hp-green/15 px-2 py-0.2 text-[0.68rem] font-bold text-hp-green dark:text-emerald-400">${items.length}</span>
+                </div>
+                <span class="text-[0.7rem] text-hp-text-muted">${availableCount} available</span>
+            `;
+            groupWrap.appendChild(header);
+
+            // Cards Grid
+            const cardsGrid = document.createElement('div');
+            cardsGrid.className = 'grid gap-2.5';
+
+            items.forEach(amenity => {
+                const isAvailable = Boolean(amenity.is_available);
+                const isOccupied = Boolean(amenity.is_occupied);
+                const isReserved = Boolean(amenity.is_reserved);
+                const isAlreadySelected = currentResAmenities.some(ra => String(ra.amenity_id || ra.amenity?.id) === String(amenity.id));
+
+                const hasFreeEntrance = Boolean(amenity.free_entrance || amenity.benefits?.free_entrance);
+                const hasFreePool = Boolean(amenity.free_pool || amenity.benefits?.free_pool);
+
+                const dayP = parseFloat(amenity.daytime_price) || 0;
+                const nightP = parseFloat(amenity.nighttime_price) || 0;
+                const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+                let statusBadgeHtml = '';
+                let borderBgClass = '';
+
+                if (isAvailable) {
+                    statusBadgeHtml = '<span class="rounded bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-600 dark:text-emerald-400">Available</span>';
+                    borderBgClass = isAlreadySelected
+                        ? 'border-hp-green/60 bg-hp-green/10 shadow-xs'
+                        : 'border-glass-border bg-glass hover:border-hp-green/60 hover:bg-white/60 dark:hover:bg-white/5';
+                } else if (isOccupied) {
+                    statusBadgeHtml = '<span class="rounded bg-red-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-red-600 dark:text-red-400">Occupied</span>';
+                    borderBgClass = 'border-red-300/40 bg-red-50/25 opacity-75 dark:border-red-500/20 dark:bg-red-500/5';
+                } else {
+                    statusBadgeHtml = '<span class="rounded bg-amber-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-amber-700 dark:text-amber-300">Reserved</span>';
+                    borderBgClass = 'border-amber-300/40 bg-amber-50/25 opacity-75 dark:border-amber-500/20 dark:bg-amber-500/5';
+                }
+
+                const card = document.createElement('div');
+                card.className = `checkin-picker-amenity-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3.5 transition-all duration-200 ${borderBgClass}`;
+
+                card.innerHTML = `
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <strong class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">${escapeHtml(amenity.amenities_name)}</strong>
+                            ${statusBadgeHtml}
+                            ${hasFreeEntrance ? '<span class="rounded bg-amber-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300"><i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance</span>' : ''}
+                            ${hasFreePool ? '<span class="rounded bg-sky-500/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water me-1"></i>Free Pool</span>' : ''}
+                        </div>
+                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
+                            <span>Capacity: ${amenity.minimum_capacity || 1}–${amenity.maximum_capacity || 10} guests</span>
+                            <span>•</span>
+                            <span>Day: ₱${dayP.toFixed(2)}</span>
+                            <span>•</span>
+                            <span>Night: ₱${nightP.toFixed(2)}</span>
+                        </div>
+                        ${isAvailable ? `
+                            <div class="mt-1 text-xs font-semibold text-hp-green dark:text-emerald-400">
+                                Stay Total: ₱${calculatedPrice.toFixed(2)} <span class="font-normal text-hp-text-muted">(${spanLabel} • ${counts.dayCount}D ${counts.nightCount}N)</span>
+                            </div>
+                        ` : `
+                            <div class="mt-1 text-xs ${isOccupied ? 'text-red-500/80' : 'text-amber-600/90'} font-medium">
+                                ${isOccupied ? 'Currently checked in / occupied for this window' : 'Booked for this stay window'}
+                            </div>
+                        `}
+                    </div>
+                    <div>
+                        ${isAlreadySelected ? `
+                            <button type="button" class="rounded-xl border border-hp-green bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-xs cursor-default flex items-center gap-1.5" disabled>
+                                <i class="bi bi-check-lg"></i>
+                                <span>Added</span>
+                            </button>
+                        ` : (isAvailable ? `
+                            <button type="button" class="checkin-add-amenity-action-btn cursor-pointer rounded-xl border border-hp-green bg-hp-green/10 px-4 py-2 text-xs font-bold text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white shadow-xs" data-amenity-id="${amenity.id}">
+                                + Add Amenity
+                            </button>
+                        ` : `
+                            <button type="button" class="rounded-xl border border-glass-border bg-glass px-3.5 py-1.5 text-xs font-semibold text-hp-text-muted cursor-not-allowed opacity-60" disabled>
+                                ${isOccupied ? 'Occupied' : 'Reserved'}
+                            </button>
+                        `)}
+                    </div>
+                `;
+
+                cardsGrid.appendChild(card);
+            });
+
+            groupWrap.appendChild(cardsGrid);
+            checkInAmenityPickerContainer.appendChild(groupWrap);
+        });
+    };
+
+    // Add amenity action listener
+    checkInAmenityPickerContainer?.addEventListener('click', (e) => {
+        const addBtn = e.target.closest('.checkin-add-amenity-action-btn');
+        if (!addBtn) return;
+        const amenityId = addBtn.dataset.amenityId;
+        const amenity = checkInCachedAmenityList.find(a => String(a.id) === String(amenityId));
+        if (!amenity) return;
+
+        const sDate = currentReservationData?.check_in || currentReservationData?.start_date || currentReservationData?.reservation_date || document.getElementById('checkInReservationDate')?.value || '';
+        const eDate = currentReservationData?.check_out || currentReservationData?.end_date || document.getElementById('checkInEndDate')?.value || sDate;
+        const sSlot = currentReservationData?.start_slot || currentReservationData?.time_period || document.getElementById('checkInStartSlot')?.value || 'Daytime';
+        const eSlot = currentReservationData?.end_slot || document.getElementById('checkInEndSlot')?.value || sSlot;
+
+        const counts = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+        const dayP = parseFloat(amenity.daytime_price) || 0;
+        const nightP = parseFloat(amenity.nighttime_price) || 0;
+        const calculatedPrice = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+
+        if (!currentReservationData.reservation_amenities) {
+            currentReservationData.reservation_amenities = [];
+        }
+
+        const newRa = {
+            id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+            reservation_id: currentReservationData.id,
+            amenity_id: amenity.id,
+            amenity: amenity,
+            start_date: sDate,
+            end_date: eDate,
+            start_slot: sSlot,
+            end_slot: eSlot,
+            quantity: 1,
+            price_at_booking: calculatedPrice,
+            price: calculatedPrice,
+        };
+
+        currentReservationData.reservation_amenities.push(newRa);
+        checkInReservationWasEdited = true;
+
+        // Recalculate reservation total amount and remaining balance
+        let newResTotal = 0;
+        currentReservationData.reservation_amenities.forEach(r => {
+            newResTotal += Number(r.price_at_booking || 0);
+        });
+        const entranceFeeTotal = Number(currentReservationData?.entranceFee?.total_amount || 0);
+        newResTotal += entranceFeeTotal;
+        const paid = Number(currentReservationData.amount_paid || 0);
+        currentReservationData.total_amount = newResTotal;
+        currentReservationData.remaining_balance = Math.max(0, newResTotal - paid);
+
+        updateCheckInFeeSummary();
+        syncCheckInCompanionAmenityDropdowns();
+        renderCheckInAmenities();
+        renderCheckInAmenityPicker();
+
+        showToast(`Added ${amenity.amenities_name} to reservation.`, 'success');
+    });
+
+    // Wire up picker open/close buttons & filters
+    openCheckInAddAmenityModalBtn?.addEventListener('click', () => {
+        openCheckInAmenityPickerModal();
+    });
+
+    document.querySelectorAll('[data-close-checkin-amenity-picker="true"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            closeCheckInAmenityPickerModal();
+        });
+    });
+
+    document.querySelectorAll('#checkInAmenityStatusFilters [data-picker-status]').forEach(pill => {
+        pill.addEventListener('click', () => {
+            checkInAmenityPickerStatusFilter = pill.dataset.pickerStatus || 'available';
+            syncCheckInAmenityStatusFilterPills();
+            renderCheckInAmenityPicker();
+        });
+    });
+
+    checkInAmenityCategorySelect?.addEventListener('change', (e) => {
+        checkInAmenityPickerCategoryFilter = e.target.value || 'all';
+        renderCheckInAmenityPicker();
+    });
+
+    const checkInRescheduleBtn = document.getElementById('checkInRescheduleBtn');
+    checkInRescheduleBtn?.addEventListener('click', async () => {
+        if (!pendingReservationId) return;
+        await ensureAmenitiesLoaded();
+        initEditCalendar(pendingReservationId);
+        editCalState.sourceModal = 'checkin';
+        openEditCalendarModal();
+    });
+
+    const openCheckInModal = (reservationId) => {
+        closeModal();
+        pendingReservationId = reservationId;
+        checkInCompanions = [];
+        bulkCompanionGroups = [];
+        primaryGuestToUpdate = null;
+        existingReservationGuests = [];
+        checkInReservationWasEdited = false;
+
+        const checkInTitle = document.getElementById('checkInModalTitle');
+        if (checkInTitle) {
+            checkInTitle.textContent = `Check In Reservation #${reservationId}`;
+        }
+
+        // Get reservation data
+        const reservation = reservationData[reservationId];
+        currentReservationData = reservation;
+        const resAmenities = reservation?.reservation_amenities || [];
+
+        if (reservation && reservation.reservation_guests) {
+            existingReservationGuests = [...reservation.reservation_guests];
+
+            // Find primary guest if it exists (only for updates, not for initial check-in)
+            const primaryGuest = existingReservationGuests.find(g => g.is_primary_guest);
+            if (primaryGuest && primaryGuest.customer) {
+                primaryGuestToUpdate = primaryGuest;
+            }
+        }
+
+        // 1. Setup Stay Schedule compact pills & popover details
+        const sDate = reservation?.check_in || reservation?.start_date || reservation?.reservation_date || '';
+        const eDate = reservation?.check_out || reservation?.end_date || sDate;
+        const slot = reservation?.start_slot || reservation?.time_period || 'Daytime';
+        const days = reservation?.total_days || 1;
+
+        const sDisplay = formatDisplayDate(sDate);
+        const eDisplay = formatDisplayDate(eDate);
+
+        const compactTextEl = document.getElementById('checkInStayCompactText');
+        if (compactTextEl) {
+            compactTextEl.textContent = sDisplay === eDisplay ? `${sDisplay} • ${days} Day${days > 1 ? 's' : ''}` : `${sDisplay} – ${eDisplay} • ${days} Days`;
+        }
+        const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
+        if (sessionBadgeEl) {
+            sessionBadgeEl.textContent = slot;
+        }
+        const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
+        if (schedSummaryEl) {
+            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slot} Session)`;
+        }
+        const schedDatesEl = document.getElementById('checkInScheduleDatesText');
+        if (schedDatesEl) {
+            schedDatesEl.textContent = `Check-in: ${sDisplay} • Check-out: ${eDisplay}`;
+        }
+
+        // Populate hidden schedule inputs
+        const hDate = document.getElementById('checkInReservationDate');
+        const hEndDate = document.getElementById('checkInEndDate');
+        const hStartSlot = document.getElementById('checkInStartSlot');
+        const hEndSlot = document.getElementById('checkInEndSlot');
+        if (hDate) hDate.value = formatDateForInput(sDate);
+        if (hEndDate) hEndDate.value = formatDateForInput(eDate);
+        if (hStartSlot) hStartSlot.value = slot;
+        if (hEndSlot) hEndSlot.value = reservation?.end_slot || slot;
+
+        const viewContainer = document.getElementById('checkInAmenitiesContainer');
+        viewContainer?.classList.remove('hidden');
+
+        // Render amenities
+        renderCheckInAmenities();
+
+        // Load active amenities list in background
+        ensureAmenitiesLoaded().then(() => {
+            renderCheckInAmenities();
+        });
 
         checkInForm.reset();
 
@@ -2383,6 +2975,7 @@ window.AppPage['staff_reservations'] = function () {
         pendingReservationId = null;
         checkInCompanions = [];
         bulkCompanionGroups = [];
+        checkInReservationWasEdited = false;
         if (checkInModal) {
             checkInModal.classList.remove('is-open');
             checkInModal.classList.add('hidden');
@@ -2608,6 +3201,12 @@ window.AppPage['staff_reservations'] = function () {
 
         scanQrBtn.addEventListener('click', () => {
             openScanModal();
+        });
+
+        document.querySelectorAll('[data-trigger-scan-qr]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                openScanModal();
+            });
         });
 
         stopQrBtn?.addEventListener('click', async () => {
@@ -2842,6 +3441,8 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const sSlot = reservation.start_slot || 'Daytime';
+        const eSlot = reservation.end_slot || reservation.start_slot || 'Daytime';
+        const canReschedule = isPendingOrConfirmed;
         const isNight = sSlot.toLowerCase().includes('night');
         const slotPill = isNight
             ? `<span class="inline-flex items-center gap-1 rounded-full bg-indigo-600 text-white px-2.5 py-0.5 text-[11px] font-semibold"><svg class="w-3 h-3 text-indigo-100" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg> Overnight</span>`
@@ -2951,10 +3552,18 @@ window.AppPage['staff_reservations'] = function () {
                             </div>
                         </div>
                         <div>
-                            <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Reservation Stay</div>
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <span class="text-xs font-medium text-gray-400 dark:text-gray-400">Reservation Stay</span>
+                                ${canReschedule ? `
+                                    <button type="button" id="detailRescheduleBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-[0.7rem] font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Reschedule stay dates or sessions">
+                                        <i class="bi bi-calendar-event"></i>
+                                        <span>Change</span>
+                                    </button>
+                                ` : ''}
+                            </div>
                             <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
                                 <svg class="w-4 h-4 text-[#1b4332] dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                <span>${escapeHtml(formatDate(reservation.reservation_date))} (${escapeHtml(sSlot === 'Nighttime' ? 'Overnight' : sSlot)})</span>
+                                <span>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, sSlot, eSlot))}</span>
                                 ${slotPill}
                             </div>
                         </div>
@@ -3066,23 +3675,72 @@ window.AppPage['staff_reservations'] = function () {
                     ` : ''}
 
                 </div>
-
-                ${(reservation.status === 'Checked In' || (reservation.status !== 'Checked Out' && reservation.status !== 'Cancelled')) ? `
-                    <!-- Actions Footer (Check In / Check Out) -->
-                    <div class="flex items-center justify-end gap-2.5 pt-1">
-                        ${reservation.status === 'Checked In'
-                            ? `<button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-xs" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">Check Out</button>`
-                            : `<button type="button" class="cursor-pointer rounded-xl border-0 bg-[#1b4332] px-6 py-2.5 text-xs font-bold text-white transition-all hover:bg-[#2d6a4f] shadow-xs" data-open-check-in-modal="${reservation.id}">Check In</button>`
-                        }
-                    </div>
-                ` : ''}
             </div>
         `;
+
+        // Populate sticky action footer with Confirm button
+        const resFooter = document.getElementById('reservationModalFooter');
+        if (resFooter) {
+            if (reservation.status === 'Checked In') {
+                resFooter.innerHTML = `
+                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
+                    <button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-md inline-flex items-center gap-2 active:scale-[0.98]" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">
+                        <i class="bi bi-box-arrow-right text-xs"></i>
+                        <span>Check Out</span>
+                    </button>
+                `;
+            } else if (reservation.status !== 'Checked Out' && reservation.status !== 'Cancelled') {
+                resFooter.innerHTML = `
+                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
+                    <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-md active:scale-[0.98] inline-flex items-center gap-2" id="reservationModalConfirmBtn" data-open-check-in-modal="${reservation.id}">
+                        <i class="bi bi-check2-circle text-sm"></i>
+                        <span>Confirm</span>
+                    </button>
+                `;
+            } else {
+                resFooter.innerHTML = `
+                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
+                `;
+            }
+            resFooter.querySelectorAll('[data-close-reservation-modal="true"]').forEach((btn) => {
+                btn.addEventListener('click', closeModal);
+            });
+
+            const confirmBtn = resFooter.querySelector('#reservationModalConfirmBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openCheckInModal(reservation.id);
+                });
+            }
+            const checkOutBtn = resFooter.querySelector('#reservationCheckOutBtn');
+            if (checkOutBtn) {
+                checkOutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    checkOutReservation(reservation.id);
+                });
+            }
+        }
 
         // Hook up close buttons inside modalBody if any
         modalBody.querySelectorAll('[data-close-reservation-modal="true"]').forEach((btn) => {
             btn.addEventListener('click', closeModal);
         });
+
+        // Hook up Reschedule button in Reservation Stay section
+        const detailRescheduleBtn = modalBody.querySelector('#detailRescheduleBtn');
+        if (detailRescheduleBtn) {
+            detailRescheduleBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                await ensureAmenitiesLoaded();
+                initEditCalendar(reservation.id);
+                editCalState.sourceModal = 'detail';
+                openEditCalendarModal();
+            });
+        }
 
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
@@ -3164,6 +3822,38 @@ window.AppPage['staff_reservations'] = function () {
 
         // Re-apply current filters
         applyFilters();
+    };
+
+    const updateReservationTableRow = (resId, fullRes) => {
+        const tableRow = document.querySelector(`tr[data-reservation-id="${resId}"]`);
+        if (!tableRow || !fullRes) return;
+        const bName = fullRes.booker_name || '';
+        const bEmail = fullRes.email || '';
+        const bPhone = fullRes.phone || '';
+        const sDate = fullRes.reservation_date || '';
+        const status = fullRes.status || '';
+        const guests = fullRes.number_of_guests || 1;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const resDateStr = sDate ? String(sDate).split('T')[0] : '';
+        const isToday = resDateStr === todayStr;
+        const statusLower = String(status || '').toLowerCase();
+        const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
+        const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
+
+        tableRow.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]`;
+        tableRow.setAttribute('data-booker-name', bName);
+        tableRow.setAttribute('data-email', bEmail);
+        tableRow.setAttribute('data-phone', bPhone);
+        tableRow.setAttribute('data-reservation-date', sDate);
+        tableRow.setAttribute('data-status', String(status).toLowerCase());
+        tableRow.setAttribute('data-guests', guests);
+        if (fullRes.total_amount !== undefined) {
+            tableRow.setAttribute('data-total-amount', fullRes.total_amount);
+        }
+        tableRow.setAttribute('data-is-past', isPastArrival ? '1' : '0');
+        tableRow.setAttribute('data-search', `${resId} #${resId} ${(bName || '').toLowerCase()} ${(bEmail || '').toLowerCase()} ${(bPhone || '').toLowerCase()} ${(status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
+
+        tableRow.innerHTML = buildRowCells(fullRes);
     };
 
     closeButtons.forEach((button) => {
@@ -3369,79 +4059,12 @@ window.AppPage['staff_reservations'] = function () {
         return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     };
 
-    const formatDateForInput = (dateStr) => {
-        if (!dateStr) return '';
-        const cleanStr = String(dateStr).trim();
-        if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
-            return cleanStr;
-        }
-        const dt = new Date(cleanStr);
-        if (isNaN(dt.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth() + 1).padStart(2, '0');
-        const d = String(dt.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    };
-
     const formatDateLong = (dateStr) => {
         if (!dateStr) return '';
         const [y, m, d] = dateStr.split('-').map(Number);
         const dt = new Date(y, m - 1, d);
         if (isNaN(dt.getTime())) return dateStr;
         return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    };
-
-    const calculateContinuousSlots = (startDateStr, endDateStr, startSlot = 'Daytime', endSlot = 'Daytime') => {
-        if (!startDateStr) return { dayCount: 1, nightCount: 0, totalDays: 1 };
-        const cleanStart = (startSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
-        const cleanEnd = (endSlot || 'Daytime').includes('Night') ? 'Nighttime' : 'Daytime';
-
-        if (!endDateStr || startDateStr === endDateStr) {
-            if (cleanStart === 'Daytime' && cleanEnd === 'Daytime') {
-                return { dayCount: 1, nightCount: 0, totalDays: 1 };
-            } else if (cleanStart === 'Nighttime' && cleanEnd === 'Nighttime') {
-                return { dayCount: 0, nightCount: 1, totalDays: 1 };
-            } else if (cleanStart === 'Daytime' && cleanEnd === 'Nighttime') {
-                return { dayCount: 1, nightCount: 1, totalDays: 1 };
-            } else {
-                return { dayCount: 1, nightCount: 1, totalDays: 2 };
-            }
-        }
-
-        const [sy, sm, sd] = startDateStr.split('-').map(Number);
-        const [ey, em, ed] = endDateStr.split('-').map(Number);
-        const start = new Date(sy, sm - 1, sd);
-        const end = new Date(ey, em - 1, ed);
-
-        let daysDiff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysDiff < 0) daysDiff = 0;
-        const totalDays = daysDiff + 1;
-
-        let dayCount = 0;
-        let nightCount = 0;
-
-        for (let i = 0; i <= daysDiff; i++) {
-            if (i === 0) {
-                if (cleanStart === 'Daytime') {
-                    dayCount++;
-                    nightCount++;
-                } else {
-                    nightCount++;
-                }
-            } else if (i === daysDiff) {
-                if (cleanEnd === 'Daytime') {
-                    dayCount++;
-                } else {
-                    dayCount++;
-                    nightCount++;
-                }
-            } else {
-                dayCount++;
-                nightCount++;
-            }
-        }
-
-        return { dayCount, nightCount, totalDays };
     };
 
     const renderEditAmenitiesList = (reservation) => {
@@ -3968,16 +4591,13 @@ window.AppPage['staff_reservations'] = function () {
     const isSlotAvailableOnDate = (iso, slotType = 'Daytime') => {
         if (!iso) return false;
         const today = todayISO();
-        const isCurrentStayDate = editCalState.currentStartDate && editCalState.currentEndDate
-            && (iso >= editCalState.currentStartDate && iso <= editCalState.currentEndDate);
-
         const entry = editCalState.availabilityMap?.[iso];
         if (!entry) {
-            if (iso < today && !isCurrentStayDate) return false;
-            return true;
+            if (iso < today) return false;
+            return false;
         }
 
-        if (entry.is_past && !isCurrentStayDate) {
+        if (entry.is_past || iso < today) {
             return false;
         }
 
@@ -4039,6 +4659,7 @@ window.AppPage['staff_reservations'] = function () {
             amenities: [],
             availability: [],
             availabilityMap: {},
+            sourceModal: 'unknown',
         };
 
         populateEditCalYear();
@@ -4073,6 +4694,13 @@ window.AppPage['staff_reservations'] = function () {
             const url = new URL(`/staff/reservations/${reservationId}/availability`, window.location.origin);
             url.searchParams.set('month', month);
             url.searchParams.set('year', year);
+
+            if (currentReservationData && currentReservationData.reservation_amenities && currentReservationData.reservation_amenities.length > 0) {
+                const aIds = currentReservationData.reservation_amenities.map(ra => ra.amenity_id || ra.amenity?.id).filter(Boolean);
+                if (aIds.length > 0) {
+                    url.searchParams.set('amenity_ids', aIds.join(','));
+                }
+            }
 
             const response = await fetch(url.toString(), { headers: { Accept: 'application/json' } });
             if (!response.ok) throw new Error('Availability request failed');
@@ -4125,12 +4753,12 @@ window.AppPage['staff_reservations'] = function () {
             if (!selectingEnd) {
                 // Step 1: Selecting Check-in date
                 isAvailable = isSlotAvailableOnDate(iso, startSlot);
-                isPast = entry ? entry.is_past : (iso < today && iso !== editCalState.currentStartDate);
+                isPast = entry ? Boolean(entry.is_past) : (iso < today);
             } else {
                 // Step 2: Selecting Check-out date
                 if (iso < startDate) {
                     isAvailable = isSlotAvailableOnDate(iso, startSlot);
-                    isPast = entry ? entry.is_past : (iso < today && iso !== editCalState.currentStartDate);
+                    isPast = entry ? Boolean(entry.is_past) : (iso < today);
                 } else {
                     isAvailable = isRangeValidAndAvailable(startDate, iso, startSlot, endSlot);
                     isPast = false;
@@ -4275,7 +4903,7 @@ window.AppPage['staff_reservations'] = function () {
     });
 
     // Apply schedule button
-    editCalApplyBtn?.addEventListener('click', () => {
+    editCalApplyBtn?.addEventListener('click', async () => {
         if (!editCalState.startDate) {
             window.alert('Please select an available check-in date.');
             return;
@@ -4291,7 +4919,87 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        const oldMasterStart = document.getElementById('editReservationDate')?.value || editCalState.currentStartDate;
+        const resId = editCalState.reservationId;
+
+        // If triggered from the first modal (Reservation Details)
+        if (editCalState.sourceModal === 'detail' && resId) {
+            const res = reservationData[resId];
+            if (!res) return;
+
+            const originalApplyText = editCalApplyBtn.textContent;
+            editCalApplyBtn.disabled = true;
+            editCalApplyBtn.textContent = 'Saving...';
+
+            try {
+                const updatedAmenities = (res.reservation_amenities || []).map(ra => ({
+                    id: ra.id,
+                    amenity_id: ra.amenity_id || ra.amenity?.id,
+                    start_date: sDate,
+                    end_date: eDate,
+                    start_slot: sSlot,
+                    end_slot: eSlot,
+                    quantity: ra.quantity || 1,
+                }));
+
+                const payloadData = {
+                    booker_name: res.booker_name,
+                    email: res.email,
+                    phone: res.phone,
+                    reservation_date: sDate,
+                    end_date: eDate,
+                    start_slot: sSlot,
+                    end_slot: eSlot,
+                    number_of_guests: res.number_of_guests || 1,
+                    status: res.status || 'Pending',
+                    amenities: updatedAmenities,
+                };
+
+                const response = await fetch(`/staff/reservations/${resId}/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify(payloadData),
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.message || 'Unable to reschedule reservation.');
+                }
+
+                const updated = payload.reservation || {};
+
+                if (reservationData[resId]) {
+                    reservationData[resId] = {
+                        ...reservationData[resId],
+                        ...updated,
+                    };
+                }
+                if (window.staffReservationData && window.staffReservationData[resId]) {
+                    window.staffReservationData[resId] = {
+                        ...window.staffReservationData[resId],
+                        ...updated,
+                    };
+                }
+
+                updateReservationTableRow(resId, reservationData[resId]);
+                closeEditCalendarModal();
+                openModal(resId);
+                showSuccessModal('Reservation schedule updated successfully!');
+                showToast('Reservation schedule updated successfully!', 'success');
+            } catch (err) {
+                window.alert(err.message || 'Unable to reschedule reservation.');
+            } finally {
+                editCalApplyBtn.disabled = false;
+                editCalApplyBtn.textContent = originalApplyText;
+            }
+            return;
+        }
+
+        const oldMasterStart = document.getElementById('editReservationDate')?.value || document.getElementById('checkInReservationDate')?.value || editCalState.currentStartDate;
         const newMasterStart = sDate;
         const newMasterEnd = eDate;
 
@@ -4302,40 +5010,98 @@ window.AppPage['staff_reservations'] = function () {
             shiftDays = Math.round((msNew - msOld) / (1000 * 60 * 60 * 24));
         }
 
-        document.getElementById('editReservationDate').value = sDate;
-        document.getElementById('editEndDate').value = eDate;
-        document.getElementById('editStartSlot').value = sSlot;
-        document.getElementById('editEndSlot').value = eSlot;
+        const editResDate = document.getElementById('editReservationDate');
+        if (editResDate) editResDate.value = sDate;
+        const editEndDate = document.getElementById('editEndDate');
+        if (editEndDate) editEndDate.value = eDate;
+        const editStartSlot = document.getElementById('editStartSlot');
+        if (editStartSlot) editStartSlot.value = sSlot;
+        const editEndSlot = document.getElementById('editEndSlot');
+        if (editEndSlot) editEndSlot.value = eSlot;
 
-        // Shift amenity dates automatically by the relative day offset
-        if (shiftDays !== 0) {
-            const amenityItems = document.querySelectorAll('.edit-amenity-item');
-            amenityItems.forEach((item) => {
-                const sInput = item.querySelector('.edit-amenity-start-date');
-                const eInput = item.querySelector('.edit-amenity-end-date');
+        const checkInResDate = document.getElementById('checkInReservationDate');
+        if (checkInResDate) checkInResDate.value = sDate;
+        const checkInEndDate = document.getElementById('checkInEndDate');
+        if (checkInEndDate) checkInEndDate.value = eDate;
+        const checkInStartSlot = document.getElementById('checkInStartSlot');
+        if (checkInStartSlot) checkInStartSlot.value = sSlot;
+        const checkInEndSlot = document.getElementById('checkInEndSlot');
+        if (checkInEndSlot) checkInEndSlot.value = eSlot;
 
-                if (sInput && sInput.value) {
-                    const [y, m, d] = sInput.value.split('-').map(Number);
-                    const dtS = new Date(y, m - 1, d + shiftDays);
-                    let shiftedS = `${dtS.getFullYear()}-${String(dtS.getMonth() + 1).padStart(2, '0')}-${String(dtS.getDate()).padStart(2, '0')}`;
-                    if (shiftedS < newMasterStart) shiftedS = newMasterStart;
-                    if (shiftedS > newMasterEnd) shiftedS = newMasterEnd;
-                    sInput.value = shiftedS;
-                    sInput.min = newMasterStart;
-                    sInput.max = newMasterEnd;
-                }
+        // Match amenity dates automatically to the new master schedule in legacy edit form if present
+        const amenityItems = document.querySelectorAll('.edit-amenity-item');
+        amenityItems.forEach((item) => {
+            const sInput = item.querySelector('.edit-amenity-start-date');
+            const eInput = item.querySelector('.edit-amenity-end-date');
 
-                if (eInput && eInput.value) {
-                    const [y, m, d] = eInput.value.split('-').map(Number);
-                    const dtE = new Date(y, m - 1, d + shiftDays);
-                    let shiftedE = `${dtE.getFullYear()}-${String(dtE.getMonth() + 1).padStart(2, '0')}-${String(dtE.getDate()).padStart(2, '0')}`;
-                    if (shiftedE < (sInput ? sInput.value : newMasterStart)) shiftedE = sInput ? sInput.value : newMasterStart;
-                    if (shiftedE > newMasterEnd) shiftedE = newMasterEnd;
-                    eInput.value = shiftedE;
-                    if (sInput) eInput.min = sInput.value;
-                    eInput.max = newMasterEnd;
-                }
+            if (sInput) {
+                sInput.value = newMasterStart;
+                sInput.min = newMasterStart;
+                sInput.max = newMasterEnd;
+            }
+
+            if (eInput) {
+                eInput.value = newMasterEnd;
+                eInput.min = newMasterStart;
+                eInput.max = newMasterEnd;
+            }
+        });
+
+        // Also update check-in modal data and amenities if check-in modal is active
+        if (pendingReservationId && currentReservationData) {
+            currentReservationData.reservation_date = sDate;
+            currentReservationData.end_date = eDate;
+            currentReservationData.start_slot = sSlot;
+            currentReservationData.end_slot = eSlot;
+            const continuous = calculateContinuousSlots(sDate, eDate, sSlot, eSlot);
+            currentReservationData.total_days = continuous.totalDays;
+
+            if (currentReservationData.reservation_amenities) {
+                currentReservationData.reservation_amenities.forEach(ra => {
+                    ra.start_date = sDate;
+                    ra.end_date = eDate;
+                    ra.start_slot = sSlot;
+                    ra.end_slot = eSlot;
+
+                    const amSlots = calculateContinuousSlots(ra.start_date, ra.end_date, ra.start_slot, ra.end_slot);
+                    const allAm = window.staffAmenitiesData || window.ALL_AMENITIES || [];
+                    const amModel = allAm.find(a => String(a.id) === String(ra.amenity_id || ra.amenity?.id));
+                    const dPrice = Number(amModel?.daytime_price || 0);
+                    const nPrice = Number(amModel?.nighttime_price || 0);
+                    const qty = Math.max(1, parseInt(ra.quantity, 10) || 1);
+                    ra.price_at_booking = ((amSlots.dayCount * dPrice) + (amSlots.nightCount * nPrice)) * qty;
+                });
+            }
+
+            let newTotal = 0;
+            (currentReservationData.reservation_amenities || []).forEach(ra => {
+                newTotal += Number(ra.price_at_booking || 0);
             });
+            const entranceFeeTotal = Number(currentReservationData?.entranceFee?.total_amount || 0);
+            newTotal += entranceFeeTotal;
+            currentReservationData.total_amount = newTotal;
+            const paid = Number(currentReservationData.amount_paid || 0);
+            currentReservationData.remaining_balance = Math.max(0, newTotal - paid);
+
+            const sDisplay = formatDisplayDate(sDate);
+            const eDisplay = formatDisplayDate(eDate);
+            const days = continuous.totalDays;
+            const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
+            if (schedSummaryEl) {
+                schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${sSlot} Session)`;
+            }
+            const schedDatesEl = document.getElementById('checkInScheduleDatesText');
+            if (schedDatesEl) {
+                schedDatesEl.textContent = `Check-in: ${sDisplay} • Check-out: ${eDisplay}`;
+            }
+            const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
+            if (sessionBadgeEl) {
+                sessionBadgeEl.textContent = sSlot;
+            }
+
+            renderCheckInAmenities();
+            updateCheckInFeeSummary();
+            checkInReservationWasEdited = true;
         }
 
         updateEditFormScheduleCard();
@@ -4345,19 +5111,22 @@ window.AppPage['staff_reservations'] = function () {
 
     const closeEditCalendarModal = () => {
         if (editCalendarModal) {
-            editCalendarModal.classList.remove('is-open');
+            editCalendarModal.classList.remove('is-open', 'flex');
+            editCalendarModal.classList.add('hidden');
             editCalendarModal.setAttribute('aria-hidden', 'true');
         }
     };
 
     const openEditCalendarModal = () => {
         if (!editCalendarModal) return;
-        editCalendarModal.classList.add('is-open');
+        editCalendarModal.classList.add('is-open', 'flex');
+        editCalendarModal.classList.remove('hidden');
         editCalendarModal.setAttribute('aria-hidden', 'false');
         loadEditCalendar();
     };
 
     editCalTrigger?.addEventListener('click', () => {
+        editCalState.sourceModal = 'editform';
         openEditCalendarModal();
     });
 
@@ -4399,7 +5168,9 @@ window.AppPage['staff_reservations'] = function () {
 
     editReservationBtn?.addEventListener('click', () => {
         if (currentModalReservationId) {
-            openEditForm(currentModalReservationId);
+            const resId = currentModalReservationId;
+            closeModal();
+            openCheckInModal(resId);
         }
     });
 
@@ -4469,37 +5240,8 @@ window.AppPage['staff_reservations'] = function () {
                     }
 
                     // Update table row with new data
-                    const tableRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
-                    if (tableRow) {
-                        const fullRes = reservationData[reservationId] || { id: reservationId, ...updated };
-                        const bName = fullRes.booker_name || formData.get('booker_name');
-                        const bEmail = fullRes.email || formData.get('email');
-                        const bPhone = fullRes.phone || formData.get('phone');
-                        const sDate = fullRes.reservation_date || formData.get('reservation_date');
-                        const status = fullRes.status || formData.get('status');
-                        const guests = fullRes.number_of_guests || formData.get('number_of_guests');
-                        const todayStr = new Date().toISOString().split('T')[0];
-                        const resDateStr = sDate ? String(sDate).split('T')[0] : '';
-                        const isToday = resDateStr === todayStr;
-                        const statusLower = String(status || '').toLowerCase();
-                        const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
-                        const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
-
-                        tableRow.className = `guest-row reservation-row ${isToday ? 'today-reservation' : ''} ${isPastArrival ? 'past-reservation' : ''} cursor-pointer select-none transition-colors duration-150 hover:bg-[#f7faf6] focus-visible:bg-[#f7faf6] focus-visible:outline-none dark:hover:bg-[#242a26] dark:focus-visible:bg-[#242a26]`;
-                        tableRow.setAttribute('data-booker-name', bName);
-                        tableRow.setAttribute('data-email', bEmail);
-                        tableRow.setAttribute('data-phone', bPhone);
-                        tableRow.setAttribute('data-reservation-date', sDate);
-                        tableRow.setAttribute('data-status', String(status).toLowerCase());
-                        tableRow.setAttribute('data-guests', guests);
-                        if (fullRes.total_amount !== undefined) {
-                            tableRow.setAttribute('data-total-amount', fullRes.total_amount);
-                        }
-                        tableRow.setAttribute('data-is-past', isPastArrival ? '1' : '0');
-                        tableRow.setAttribute('data-search', `${reservationId} #${reservationId} ${(bName || '').toLowerCase()} ${(bEmail || '').toLowerCase()} ${(bPhone || '').toLowerCase()} ${(status || '').toLowerCase()} ${isPastArrival ? 'past overdue' : ''} ${isToday ? 'today' : ''}`);
-
-                        tableRow.innerHTML = buildRowCells(fullRes);
-                    }
+                    const fullRes = reservationData[reservationId] || { id: reservationId, ...updated };
+                    updateReservationTableRow(reservationId, fullRes);
 
                     closeModal();
                     showSuccessModal('Reservation updated successfully!');
@@ -4624,9 +5366,10 @@ window.AppPage['staff_reservations'] = function () {
         return reservation.reservation_guests.every(guest => guest.checked_out_at);
     };
 
-    modalBody.addEventListener('click', (event) => {
+    const handleReservationActionClick = (event) => {
         const checkOutTrigger = event.target.closest('[data-reservation-checkout]');
         if (checkOutTrigger) {
+            event.preventDefault();
             checkOutReservation(checkOutTrigger.getAttribute('data-reservation-checkout'));
             return;
         }
@@ -4636,8 +5379,15 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        openCheckInModal(trigger.getAttribute('data-open-check-in-modal'));
-    });
+        event.preventDefault();
+        const resId = trigger.getAttribute('data-open-check-in-modal');
+        if (resId) {
+            openCheckInModal(resId);
+        }
+    };
+
+    modal?.addEventListener('click', handleReservationActionClick);
+    document.addEventListener('click', handleReservationActionClick);
 
     checkInForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -4701,6 +5451,79 @@ window.AppPage['staff_reservations'] = function () {
             email: checkInPrimaryGuest.email || formData.get('check_in_primary_guest[email]') || '',
             has_pool_access: primaryHasPool,
         } : null;
+
+        if (checkInReservationWasEdited) {
+            try {
+                const amenitiesPayload = (currentReservationData?.reservation_amenities || []).map(ra => ({
+                    id: ra.id && !String(ra.id).startsWith('temp_') ? ra.id : null,
+                    amenity_id: ra.amenity_id || ra.amenity?.id,
+                    start_date: formatDateForInput(ra.start_date || currentReservationData.reservation_date),
+                    end_date: formatDateForInput(ra.end_date || currentReservationData.end_date || ra.start_date || currentReservationData.reservation_date),
+                    start_slot: ra.start_slot || currentReservationData.start_slot || 'Daytime',
+                    end_slot: ra.end_slot || currentReservationData.end_slot || 'Daytime',
+                }));
+
+                const bName = (primaryGuest && [primaryGuest.first_name, primaryGuest.last_name].filter(Boolean).join(' ').trim()) || currentReservationData?.booker_name || 'Guest';
+                const bEmail = (primaryGuest && primaryGuest.email) || currentReservationData?.email || 'guest@example.com';
+                const bPhone = (primaryGuest && primaryGuest.phone) || currentReservationData?.phone || '09000000000';
+                const resDate = document.getElementById('checkInReservationDate')?.value || currentReservationData?.reservation_date;
+                const endDate = document.getElementById('checkInEndDate')?.value || currentReservationData?.end_date || resDate;
+                const startSlot = document.getElementById('checkInStartSlot')?.value || currentReservationData?.start_slot || 'Daytime';
+                const endSlot = document.getElementById('checkInEndSlot')?.value || currentReservationData?.end_slot || 'Daytime';
+                const totalGuests = Math.max(1, (primaryGuest ? 1 : 0) + (getAllCheckInCompanions()?.length || 0));
+
+                const updateRes = await fetch(`/staff/reservations/${pendingReservationId}/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        booker_name: bName,
+                        email: bEmail,
+                        phone: bPhone,
+                        reservation_date: resDate,
+                        end_date: endDate,
+                        start_slot: startSlot,
+                        end_slot: endSlot,
+                        number_of_guests: totalGuests,
+                        status: currentReservationData?.status || 'Confirmed',
+                        amenities: amenitiesPayload,
+                    }),
+                });
+                const updatePayload = await updateRes.json().catch(() => ({}));
+                if (!updateRes.ok) {
+                    throw new Error(updatePayload.message || 'Unable to update reservation details before checking in.');
+                }
+                if (updatePayload.reservation) {
+                    if (window.staffReservationData && window.staffReservationData[pendingReservationId]) {
+                        window.staffReservationData[pendingReservationId] = {
+                            ...window.staffReservationData[pendingReservationId],
+                            ...updatePayload.reservation,
+                        };
+                    }
+                    if (reservationData && reservationData[pendingReservationId]) {
+                        reservationData[pendingReservationId] = {
+                            ...reservationData[pendingReservationId],
+                            ...updatePayload.reservation,
+                        };
+                    }
+                    currentReservationData = {
+                        ...(currentReservationData || {}),
+                        ...updatePayload.reservation,
+                    };
+                }
+            } catch (err) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="bi bi-check2-circle text-sm"></i><span>Check In Reservation</span>';
+                }
+                window.alert(err.message || 'Failed to save updated reservation details before check-in.');
+                return;
+            }
+        }
 
         try {
             const response = await fetch(`/staff/reservations/${pendingReservationId}/check-in`, {

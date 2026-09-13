@@ -765,6 +765,101 @@ class StaffWalkInReservationTest extends TestCase
         $activeNoPoolAfter = $res->reservationGuests()->where('is_primary_guest', false)->where('has_pool_access', false)->whereNull('checked_out_at')->count();
         $this->assertEquals(0, $activeNoPoolAfter);
     }
+
+    public function test_walk_in_amenity_calendar_availability_blocks_occupied_or_reserved_dates_and_prevents_conflict(): void
+    {
+        $amenity = Amenity::create([
+            'id' => 'AMENITY-TEST-OCCUPIED',
+            'amenities_name' => 'Payag Deluxe',
+            'description' => 'Deluxe payag unit',
+            'daytime_price' => 500,
+            'nighttime_price' => 600,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => 5,
+            'status' => true,
+        ]);
+
+        $occupiedDate = now()->addDays(2)->toDateString();
+
+        // 1. Create a confirmed reservation occupying Payag Deluxe on $occupiedDate
+        $existingRes = Reservation::create([
+            'booker_name' => 'Existing Booker',
+            'phone' => '09123456788',
+            'email' => 'existing@example.com',
+            'reservation_date' => $occupiedDate,
+            'end_date' => $occupiedDate,
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Nighttime',
+            'total_days' => 1,
+            'number_of_guests' => 2,
+            'status' => 'Confirmed',
+            'total_amount' => 1100,
+            'amount_paid' => 1100,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+            'reservation_type' => 'online',
+        ]);
+
+        ReservationAmenity::create([
+            'reservation_id' => $existingRes->id,
+            'amenity_id' => $amenity->id,
+            'start_date' => $occupiedDate,
+            'end_date' => $occupiedDate,
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Nighttime',
+            'pricing_type' => 'DayToNight',
+            'price_at_booking' => 1100,
+            'status' => 'Active',
+        ]);
+
+        // 2. Query calendar availability for this amenity
+        $month = now()->addDays(2)->month - 1;
+        $year = now()->addDays(2)->year;
+        $calResponse = $this->getJson("/reservation/availability/calendar?amenity_ids={$amenity->id}&month={$month}&year={$year}");
+        $calResponse->assertOk();
+
+        $availabilityList = collect($calResponse->json('availability'))->keyBy('date');
+        $this->assertArrayHasKey($occupiedDate, $availabilityList);
+        $this->assertFalse($availabilityList[$occupiedDate]['daytime'], "Occupied date {$occupiedDate} daytime must be false");
+        $this->assertFalse($availabilityList[$occupiedDate]['nighttime'], "Occupied date {$occupiedDate} nighttime must be false");
+
+        // 3. Attempt to create a walk-in covering that occupied date for that amenity - must fail
+        $storeResponse = $this->withSession([
+            'auth_user' => ['id' => 1, 'role' => 'staff', 'name' => 'Staff Member'],
+        ])->post(route('staff.checkins.guests.store'), [
+            'guest_mode' => 'with_primary',
+            'reservation_type' => 'walk_in',
+            'start_date' => $occupiedDate,
+            'end_date' => $occupiedDate,
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'include_pool' => 'off',
+            'primary_guest' => [
+                'first_name' => 'Blocked',
+                'last_name' => 'WalkIn',
+                'age' => 25,
+                'gender' => 'Male',
+                'is_foreigner' => 0,
+                'phone' => '09999999999',
+                'email' => 'blocked@example.com',
+            ],
+            'selected_amenities' => [
+                [
+                    'amenity_id' => (string) $amenity->id,
+                    'start_date' => $occupiedDate,
+                    'end_date' => $occupiedDate,
+                    'start_slot' => 'Daytime',
+                    'end_slot' => 'Daytime',
+                    'is_aircon' => 0,
+                    'pricing_type' => 'Daytime',
+                ],
+            ],
+            'total_amount' => 500,
+        ]);
+
+        $storeResponse->assertSessionHasErrors('selected_amenities');
+    }
 }
 
 

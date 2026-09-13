@@ -30,6 +30,7 @@
     ])
     <script>
         window.staffAmenitiesData = @json($allAmenities ?? []);
+        window.ACTIVE_OCCUPIED_AMENITY_IDS = @json($activeOccupiedAmenityIds ?? []);
     </script>
     <style>
         body.staff-portal {
@@ -226,20 +227,12 @@
                         </div>
                     </div>
                     <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
+                        <button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR" aria-label="Scan reservation QR">
+                            <i class="bi bi-qr-code-scan text-base"></i>
+                        </button>
                         <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="refreshTableBtn">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                             Refresh
-                        </button>
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center justify-center rounded-xl border border-[#dfe5e0] bg-white p-2 text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="scanQrBtn" title="Scan reservation QR">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        </button>
-                        <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="exportCsvBtn">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-                            Export
-                        </button>
-                        <button type="button" class="resv-tool-btn resv-tool-btn--primary inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl bg-[#2d6a4f] hover:bg-[#1b4332] px-4 py-2 text-sm font-semibold text-white shadow-md transition-all duration-150 active:scale-95" id="addWalkInBtn">
-                            <span class="text-base font-bold leading-none">+</span>
-                            Add Walk-in
                         </button>
                     </div>
                 </div>
@@ -458,128 +451,38 @@
     </div>
 
     <!-- Modals (Direct children of body) -->
+    <!-- Modals (Direct children of body) -->
     <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/40 dark:bg-black/75 backdrop-blur-xs" data-close-reservation-modal="true"></div>
-        <div class="guest-modal__content relative z-[1] w-full max-w-[740px] max-h-[min(90vh,820px)] overflow-y-auto rounded-[28px] bg-white p-6 sm:p-8 shadow-2xl dark:bg-[#1a1e1b] border border-gray-100 dark:border-white/10" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-            <div class="guest-modal__header sticky -top-6 sm:-top-8 -mt-6 sm:-mt-8 -mx-6 sm:-mx-8 px-6 sm:px-8 pt-6 sm:pt-7 pb-4 mb-6 z-20 bg-white/95 dark:bg-[#1a1e1b]/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10">
-                <div class="flex items-center gap-2.5">
-                    <h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-2xl font-bold text-gray-900 dark:text-white">Reservation Details</h3>
-                    <span id="reservationModalIdBadge" class="inline-flex items-center rounded-md bg-[#e8f5e9] px-2.5 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-emerald-950/60 dark:text-emerald-300">#9</span>
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reservation-modal="true"></div>
+        <div class="relative z-[1] w-full max-w-[1020px] max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+            <div class="guest-modal__header shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/40 dark:bg-white/[0.02] !mb-0" style="margin-bottom: 0 !important;">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+                        <i class="bi bi-info-circle-fill text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 id="reservationModalTitle" class="guest-modal__title m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Details</h3>
+                            <span id="reservationModalIdBadge" class="inline-flex items-center rounded-md bg-[#e8f5e9] px-2.5 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-emerald-950/60 dark:text-emerald-300">#9</span>
+                        </div>
+                        <p class="m-0 text-xs text-hp-text-muted mt-0.5">Overview of customer booking, reserved amenities, and stay schedule.</p>
+                    </div>
                 </div>
                 <div class="guest-modal__header-actions flex items-center gap-2.5">
                     <span id="reservationModalStatus" class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-[#e8f5e9] text-[#1b4332] border border-[#c8e6c9]/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40"></span>
-                    <button type="button" class="guest-modal__edit-btn inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 shadow-xs hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-gray-200 transition-all" id="editReservationBtn" data-edit-reservation="true">
-                        <svg class="h-3.5 w-3.5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                        </svg>
-                        Edit
-                    </button>
                     <!-- Sleek Sticky 'X' Close Button -->
-                    <button type="button" class="guest-modal__close group cursor-pointer w-8 h-8 rounded-full border border-gray-200/90 bg-gray-50 hover:bg-red-50 hover:border-red-200 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-reservation-modal="true" aria-label="Close reservation details">
-                        <svg class="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <button type="button" class="group cursor-pointer w-8 h-8 shrink-0 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-reservation-modal="true" aria-label="Close reservation details" style="position: static !important;">
+                        <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
                     </button>
                 </div>
             </div>
-            <div id="reservationModalBody" class="guest-modal__body"></div>
-            <div id="reservationModalEditForm" class="guest-modal__edit-form border-t border-[rgba(13,44,29,0.1)] pt-6 dark:border-white/10" hidden>
-                <form id="editReservationForm" class="guest-form grid gap-4">
-                    <input type="hidden" name="reservation_id" id="editReservationId">
-                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Booker Name</span>
-                            <input type="text" name="booker_name" id="editBookerName" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                        </label>
-                        <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Email</span>
-                            <input type="email" name="email" id="editEmail" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                        </label>
-                    </div>
-                    <div class="guest-form__row grid gap-4">
-                        <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Phone</span>
-                            <input type="text" name="phone" id="editPhone" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                        </label>
-                    </div>
-                    <!-- Stay Schedule & Continuous Multi-Day Selector -->
-                    <div class="guest-form__field edit-schedule-card grid gap-2 rounded-xl border border-glass-border bg-glass p-3.5 dark:border-white/10 dark:bg-white/5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#9ca3af]">Stay Schedule</span>
-                            <span id="editStayDurationBadge" class="inline-flex items-center rounded-full bg-hp-green/10 px-2.5 py-0.5 text-[0.75rem] font-bold text-hp-green dark:bg-hp-green/20 dark:text-[#9ca3af]">1 Day Stay</span>
-                        </div>
-                        
-                        <!-- Hidden inputs for full continuous schedule submission -->
-                        <input type="hidden" name="reservation_date" id="editReservationDate">
-                        <input type="hidden" name="end_date" id="editEndDate">
-                        <input type="hidden" name="start_slot" id="editStartSlot" value="Daytime">
-                        <input type="hidden" name="end_slot" id="editEndSlot" value="Daytime">
-
-                        <button type="button" class="edit-calendar__trigger flex w-full cursor-pointer items-center justify-between gap-2.5 rounded-[0.7rem] border border-glass-border bg-glass px-3.5 py-3 text-left text-sm font-semibold text-hp-text transition-all duration-200 hover:border-hp-green hover:shadow-glass focus-visible:border-hp-green focus-visible:shadow-glass focus-visible:outline-none dark:border-white/12 dark:bg-white/5 dark:text-[#f3f4f6] dark:hover:border-[#9ca3af]" id="editCalTrigger" aria-haspopup="dialog">
-                            <div class="flex min-w-0 items-center gap-2.5 overflow-hidden">
-                                <svg class="edit-calendar__trigger-icon h-5 w-5 shrink-0 text-[#8a7a4d] dark:text-[#c8a45d]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                <div class="min-w-0">
-                                    <div class="edit-calendar__trigger-value truncate text-sm font-bold text-hp-text dark:text-[#f3f4f6]" id="editCalTriggerValue">&mdash;</div>
-                                    <div class="text-[0.75rem] text-hp-text-muted dark:text-[#f3f4f6]" id="editCalTriggerSessions">Daytime to Daytime</div>
-                                </div>
-                            </div>
-                            <span class="inline-flex shrink-0 items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-xs font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors dark:border-[#9ca3af]/40 dark:bg-[#9ca3af]/15 dark:text-[#9ca3af]">
-                                Change
-                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                            </span>
-                        </button>
-
-                        <!-- Dynamic Price Impact & Balance Preview -->
-                        <div id="editPriceImpactCard" class="edit-price-impact rounded-lg border border-glass-border bg-[rgba(26,58,31,0.05)] p-3 text-xs dark:bg-white/5 dark:border-white/10" hidden>
-                            <div class="flex items-center justify-between font-semibold">
-                                <span class="text-hp-text-muted">Total Cost:</span>
-                                <span id="editPreviewTotal" class="text-sm font-bold text-hp-text dark:text-[#f3f4f6]">₱0.00</span>
-                            </div>
-                            <div class="mt-1 flex items-center justify-between text-hp-text-muted">
-                                <span>Amount Paid:</span>
-                                <span id="editPreviewPaid" class="font-medium text-hp-text dark:text-[#f3f4f6]">₱0.00</span>
-                            </div>
-                            <div class="mt-1.5 flex items-center justify-between border-t border-glass-border pt-1.5 dark:border-white/10">
-                                <span class="font-bold text-hp-text">New Balance:</span>
-                                <span id="editPreviewBalance" class="font-extrabold text-sm text-[#e65100] dark:text-[#ffb74d]">₱0.00</span>
-                            </div>
-                            <div id="editPriceDiffBadge" class="mt-2 text-center text-[0.72rem] font-bold text-hp-text-muted"></div>
-                        </div>
-                    </div>
-
-                    <!-- Booked Amenities Editor (Swap & Date Adjustment) -->
-                    <div id="editAmenitiesSection" class="guest-form__field edit-amenities-card grid gap-3 rounded-xl border border-glass-border bg-glass p-3.5 dark:border-white/10 dark:bg-white/5">
-                        <div class="flex items-center justify-between border-b border-glass-border pb-2 dark:border-white/10">
-                            <span class="text-[0.78rem] font-bold uppercase tracking-[0.04em] text-hp-text-muted dark:text-[#9ca3af]">Booked Amenities</span>
-                            <span class="text-[0.75rem] text-hp-text-muted font-medium">Swap amenity or edit dates within stay schedule</span>
-                        </div>
-                        <div id="editAmenitiesList" class="grid gap-3"></div>
-                    </div>
-                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Expected Guests</span>
-                            <input type="number" name="number_of_guests" id="editGuests" min="1" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                        </label>
-                        <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Status</span>
-                            <select name="status" id="editStatus" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                                <option value="Pending">Pending</option>
-                                <option value="Confirmed">Confirmed</option>
-                                <option value="Checked In">Checked In</option>
-                                <option value="Checked Out">Checked Out</option>
-                                <option value="Cancelled">Cancelled</option>
-                                <option value="No Show">No Show</option>
-                            </select>
-                        </label>
-                    </div>
-                    <div class="guest-form__actions flex flex-wrap justify-end gap-3">
-                        <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" id="cancelEditBtn">Cancel</button>
-                        <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Save Changes</button>
-                    </div>
-                </form>
-            </div>
+            <div id="reservationModalBody" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 sm:px-8 py-5"></div>
+            <!-- Sticky Action Footer with Confirm button -->
+            <div id="reservationModalFooter" class="shrink-0 sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 sm:px-8 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/85 dark:bg-[#1a1e1c]/95 backdrop-blur-md"></div>
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="editCalendarModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1060] hidden items-center justify-center is-open:flex" style="z-index: 1060 !important;" id="editCalendarModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-edit-calendar="true"></div>
         <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
             <div class="guest-modal__header mb-2.5 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
@@ -706,7 +609,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1100] hidden items-center justify-center is-open:flex" id="confirmModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1100] hidden items-center justify-center is-open:flex" style="z-index: 1100 !important;" id="confirmModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75 backdrop-blur-sm" data-close-confirm-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--confirm relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
             <div class="guest-modal__confirm-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400">
@@ -723,7 +626,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--success fixed inset-0 z-[1200] hidden items-center justify-center is-open:flex" id="successModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--success fixed inset-0 z-[1200] hidden items-center justify-center is-open:flex" style="z-index: 1200 !important;" id="successModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-success-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--success relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
             <div class="guest-modal__success-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e] dark:bg-[rgba(34,197,94,0.2)]">
@@ -735,6 +638,75 @@
             <p id="successModalMessage" class="guest-modal__message mb-8 text-[0.95rem] leading-relaxed text-hp-text-muted">Operation completed successfully!</p>
             <div class="guest-modal__actions flex justify-center gap-3">
                 <button type="button" class="guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="successModalClose">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHOOSE AMENITIES MODAL (FOR CHECK-IN WITH OCCUPIED & RESERVED STATUS) -->
+    <div class="guest-modal guest-modal--compact fixed inset-0 z-[1060] hidden items-center justify-center is-open:flex" style="z-index: 1060 !important;" id="checkInAmenityPickerModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-checkin-amenity-picker="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[780px] max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl p-5 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkInAmenityPickerTitle">
+            <button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-checkin-amenity-picker="true" aria-label="Close amenity picker">
+                <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+            </button>
+            <div class="guest-modal__header mb-3 shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10 pr-10">
+                <div>
+                    <h3 id="checkInAmenityPickerTitle" class="guest-modal__title m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Choose Available Amenities</h3>
+                    <p class="m-0 text-xs text-hp-text-muted">Select amenities categorized by type with real-time occupancy status</p>
+                </div>
+                <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300" id="checkInAmenityPickerStayBadge">
+                    Stay Schedule
+                </div>
+            </div>
+
+            <!-- Filter Controls: Available, Occupied, Reserved, All + Category Dropdown -->
+            <div class="mb-3.5 shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-white/60 dark:bg-white/5 p-2 shadow-2xs">
+                <!-- Status Filter Pills -->
+                <div class="flex flex-wrap items-center gap-1.5" id="checkInAmenityStatusFilters" role="tablist">
+                    <button type="button" class="checkin-amenity-filter-pill is-active cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-bold transition-all bg-hp-green text-white shadow-xs" data-picker-status="available">
+                        <span>Available</span>
+                        <span class="ms-1 rounded-full bg-white/20 px-1.5 py-0.2 text-[0.65rem]" id="checkInCountAvailable">0</span>
+                    </button>
+                    <button type="button" class="checkin-amenity-filter-pill cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10" data-picker-status="occupied">
+                        <span>Occupied</span>
+                        <span class="ms-1 rounded-full bg-red-500/20 text-red-700 dark:text-red-300 px-1.5 py-0.2 text-[0.65rem]" id="checkInCountOccupied">0</span>
+                    </button>
+                    <button type="button" class="checkin-amenity-filter-pill cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10" data-picker-status="reserved">
+                        <span>Reserved</span>
+                        <span class="ms-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 text-[0.65rem]" id="checkInCountReserved">0</span>
+                    </button>
+                    <button type="button" class="checkin-amenity-filter-pill cursor-pointer rounded-lg px-2.5 sm:px-3 py-1 text-xs font-semibold text-hp-text transition-all bg-transparent hover:bg-black/5 dark:hover:bg-white/10" data-picker-status="all">
+                        <span>All</span>
+                        <span class="ms-1 rounded-full bg-black/10 px-1.5 py-0.2 text-[0.65rem] dark:bg-white/20" id="checkInCountAll">0</span>
+                    </button>
+                </div>
+
+                <!-- Category Filter Dropdown -->
+                <div class="flex items-center gap-2">
+                    <label for="checkInAmenityCategorySelect" class="text-xs font-bold text-hp-text-muted shrink-0">Category:</label>
+                    <select id="checkInAmenityCategorySelect" class="cursor-pointer rounded-lg border border-glass-border bg-white/90 px-2.5 py-1 text-xs font-semibold text-hp-text shadow-xs transition-colors focus:border-hp-green focus:outline-none dark:bg-[#2a2e2b] dark:text-[#f3f4f6]">
+                        <option value="all">All Categories</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Amenities List Container (Categorized & Scrollable) -->
+            <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 space-y-4" id="checkInAmenityPickerContainer">
+                <div class="flex items-center justify-center py-10 text-sm text-hp-text-muted">
+                    <svg class="mr-2 h-5 w-5 animate-spin text-hp-green" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    Checking amenity availability...
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-3.5 shrink-0 flex items-center justify-between border-t border-[rgba(13,44,29,0.1)] pt-3 dark:border-white/10">
+                <div class="text-xs text-hp-text-muted">
+                    <span id="checkInAmenityPickerSummaryText">Showing available amenities</span>
+                </div>
+                <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-colors duration-150 hover:bg-hp-green-dark shadow-xs" data-close-checkin-amenity-picker="true">Done</button>
             </div>
         </div>
     </div>
@@ -760,7 +732,7 @@
                         <p class="m-0 text-xs text-hp-text-muted mt-0.5">Review booking information, guest details, and complete check-in in one simple view.</p>
                     </div>
                 </div>
-                <button type="button" class="guest-modal__close group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-check-in-modal="true" aria-label="Close check-in form">
+                <button type="button" class="group cursor-pointer w-8 h-8 shrink-0 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-check-in-modal="true" aria-label="Close check-in form" style="position: static !important;">
                     <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
                 </button>
             </div>
@@ -798,24 +770,36 @@
 
                     <!-- SECTION 1: STAY SCHEDULE & ADMISSION POLICIES (SLIM, COMPACT & ORGANIZED) -->
                     <div class="rounded-xl border border-glass-border bg-glass/40 dark:bg-white/[0.02] px-3.5 py-2.5 shadow-2xs">
+                        <!-- Hidden inputs for reschedule tracking -->
+                        <input type="hidden" name="check_in_reservation_date" id="checkInReservationDate">
+                        <input type="hidden" name="check_in_end_date" id="checkInEndDate">
+                        <input type="hidden" name="check_in_start_slot" id="checkInStartSlot" value="Daytime">
+                        <input type="hidden" name="check_in_end_slot" id="checkInEndSlot" value="Daytime">
+
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-center">
                             <!-- Stay Schedule Info (5 cols) -->
-                            <div class="lg:col-span-5 flex items-center gap-2.5 min-w-0">
-                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-xs">
-                                    <i class="bi bi-calendar-check-fill"></i>
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="text-[0.65rem] font-bold uppercase tracking-wider text-hp-text-muted">Stay Schedule:</span>
-                                        <span id="checkInScheduleSummaryText" class="font-bold text-xs text-hp-text dark:text-[#f3f4f6] truncate">
-                                            Today — 1 Day
-                                        </span>
-                                        <span id="checkInStaySessionBadge" class="rounded-md bg-hp-green/10 border border-hp-green/20 px-1.5 py-0.2 text-[0.62rem] font-bold text-hp-green">
-                                            Scheduled
-                                        </span>
+                            <div class="lg:col-span-5 flex items-center justify-between gap-2 min-w-0">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-xs">
+                                        <i class="bi bi-calendar-check-fill"></i>
                                     </div>
-                                    <p class="m-0 text-[0.68rem] text-hp-text-muted truncate mt-0.5" id="checkInScheduleDatesText">Check-in schedule</p>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-[0.65rem] font-bold uppercase tracking-wider text-hp-text-muted">Stay Schedule:</span>
+                                            <span id="checkInScheduleSummaryText" class="font-bold text-xs text-hp-text dark:text-[#f3f4f6] truncate">
+                                                Today — 1 Day
+                                            </span>
+                                            <span id="checkInStaySessionBadge" class="rounded-md bg-hp-green/10 border border-hp-green/20 px-1.5 py-0.2 text-[0.62rem] font-bold text-hp-green">
+                                                Scheduled
+                                            </span>
+                                        </div>
+                                        <p class="m-0 text-[0.68rem] text-hp-text-muted truncate mt-0.5" id="checkInScheduleDatesText">Check-in schedule</p>
+                                    </div>
                                 </div>
+                                <button type="button" id="checkInRescheduleBtn" class="inline-flex items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-[0.7rem] font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Reschedule stay dates or sessions">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span>Change</span>
+                                </button>
                             </div>
 
                             <!-- Policies (7 cols: 2 side-by-side compact selects) -->
@@ -855,16 +839,25 @@
                     <!-- THIN SECTION DIVIDER -->
                     <div class="border-t border-gray-300/80 dark:border-white/15 my-2" role="separator"></div>
 
-                    <!-- SECTION 2: RESERVED AMENITIES -->
+                    <!-- SECTION 2: RESERVED AMENITIES (WITH SWAP & EDIT CAPABILITY) -->
                     <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/[0.02] p-4.5 space-y-3" id="checkInAmenitiesTab">
                         <div class="flex items-center justify-between gap-2 border-b border-glass-border pb-3">
                             <div class="flex items-center gap-2.5">
                                 <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-sm">
                                     <i class="bi bi-house-door-fill"></i>
                                 </div>
-                                <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Reserved Amenities</h4>
+                                <div>
+                                    <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Reserved Amenities</h4>
+                                    <p class="m-0 text-[0.68rem] text-hp-text-muted">Review reserved amenities or add additional units</p>
+                                </div>
                             </div>
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-hp-green bg-hp-green/10 border border-hp-green/20 rounded-full px-3 py-0.5" id="checkInAmenitiesCountBadge">0 Booked</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="openCheckInAddAmenityModalBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-hp-green/40 bg-hp-green/10 hover:bg-hp-green hover:text-white px-3 py-1.5 text-xs font-bold text-hp-green transition-all shadow-2xs" title="Add another room, cottage, or amenity">
+                                    <i class="bi bi-plus-circle text-xs"></i>
+                                    <span>+ Add Amenity</span>
+                                </button>
+                                <span class="inline-flex items-center gap-1 text-xs font-bold text-hp-green bg-hp-green/10 border border-hp-green/20 rounded-full px-3 py-0.5" id="checkInAmenitiesCountBadge">0 Booked</span>
+                            </div>
                         </div>
                         <div id="checkInAmenitiesContainer" class="selected-amenities-grid grid gap-2.5 max-h-[300px] overflow-y-auto pr-1"></div>
                     </div>
@@ -1151,7 +1144,7 @@
     </div>
 
     <!-- UNIFIED TWO-COLUMN COMPANION MODAL -->
-    <div class="guest-modal guest-modal--wide fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInCompanionModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--wide fixed inset-0 z-[1060] hidden items-center justify-center is-open:flex" style="z-index: 1060 !important;" id="checkInCompanionModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-check-in-companion-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border !w-[min(1360px,95vw)] !max-w-[1360px]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
             <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text hover:opacity-75 transition-opacity" data-close-check-in-companion-modal="true" aria-label="Close modal">&times;</button>

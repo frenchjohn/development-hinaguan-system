@@ -195,6 +195,6 @@ class AddedAmenityWalkInAvailabilityTest extends TestCase
         $resAvail->assertStatus(200);
         $amenities = collect($resAvail->json('amenities'))->keyBy('id');
         $this->assertFalse($amenities[$this->gazebo->id]['is_available']);
-        $this->assertContains($this->gazebo->id, $resAvail->json('occupied_ids'));
+        $this->assertContains($this->gazebo->id, $resAvail->json('all_taken_ids'));
     }
 }

@@ -20,6 +20,24 @@ document.addEventListener('DOMContentLoaded', () => {
     syncHeaderOffset();
     window.addEventListener('resize', syncHeaderOffset, { passive: true });
 
+    // ── Visual Zoom & Wide Screen Scale Sync ──
+    // Ensures elements maintain their physical size, proportions and screen placement on zoom-out (Ctrl -)
+    const syncResponsiveZoom = () => {
+        const width = window.innerWidth;
+        const baselineWidth = 1440;
+
+        if (width > 1520) {
+            // Screen width expanded due to browser zoom out or ultra-high resolution
+            const scale = Math.min(2.5, width / baselineWidth);
+            document.documentElement.style.fontSize = `${(16 * scale).toFixed(2)}px`;
+        } else {
+            document.documentElement.style.fontSize = '';
+        }
+    };
+
+    syncResponsiveZoom();
+    window.addEventListener('resize', syncResponsiveZoom, { passive: true });
+
     // Sticky header background on scroll
     const onScroll = () => {
         const scrolled = window.scrollY > 40;

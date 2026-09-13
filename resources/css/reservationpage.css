@@ -6863,6 +6863,9 @@ body:has(.rp-modal.is-open) .rp-footer {
 .rp-dp-whole-day-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    align-self: center;
+    text-align: center;
     gap: 0.35rem;
     padding: 0.25rem 0.65rem;
     background: #ffffff;
@@ -6874,7 +6877,7 @@ body:has(.rp-modal.is-open) .rp-footer {
     border: 1px solid #c8a45d;
     box-shadow: 0 2px 6px rgba(11, 36, 24, 0.15);
     width: fit-content;
-    margin-top: 0.25rem;
+    margin: 0.25rem auto 0 auto;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
     animation: rp-pill-pop 0.2s ease-out;

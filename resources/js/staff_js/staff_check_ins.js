@@ -7378,6 +7378,8 @@ window.AppPage['staff_check_ins'] = function () {
         selectedEndDate: todayStr,
         selectedStartSlot: currentServerSession,
         selectedEndSlot: currentServerSession,
+        availabilityMap: {},
+        isLoadingAvailability: false,
     };
 
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -7395,6 +7397,116 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
     initWalkInCalYears();
+
+    const isWalkInSlotAvailable = (dateStr, slot) => {
+        if (!dateStr || dateStr < todayStr) return false;
+        if (dateStr === todayStr && slot === 'Daytime' && currentServerSession === 'Nighttime') return false;
+        if (!selectedAmenities || selectedAmenities.length === 0) return true;
+
+        const entry = walkInCalState.availabilityMap?.[dateStr];
+        if (entry) {
+            const slotKey = slot === 'Daytime' ? 'daytime' : 'nighttime';
+            return Boolean(entry[slotKey]);
+        }
+        return true;
+    };
+
+    const checkWalkInRangeConflict = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
+        if (!startDate || !endDate || startDate > endDate) {
+            return { hasConflict: true, reason: 'Check-out date must be on or after check-in date.' };
+        }
+        if (!selectedAmenities || selectedAmenities.length === 0) {
+            return { hasConflict: false };
+        }
+
+        const timeline = buildContinuousTimeline(startDate, endDate, startSlot, endSlot);
+        if (!timeline.length) {
+            return { hasConflict: true, reason: 'Invalid stay range.' };
+        }
+
+        for (const [d, s] of timeline) {
+            if (!isWalkInSlotAvailable(d, s)) {
+                const isAtEnd = (d === endDate && s === endSlot);
+                return {
+                    hasConflict: true,
+                    conflictDate: d,
+                    conflictSlot: s,
+                    isDirectEndConflict: isAtEnd,
+                    isIntermediateConflict: !isAtEnd,
+                    reason: isAtEnd
+                        ? `Selected check-out date (${formatShortDate(d)} ${s}) is occupied or reserved for your selected amenities.`
+                        : `Cannot pass through occupied or reserved date (${formatShortDate(d)} ${s}). All dates throughout the stay must be available.`
+                };
+            }
+        }
+
+        return { hasConflict: false };
+    };
+
+    const ensureWalkInMonthAvailability = async (year, month, amenityIds) => {
+        try {
+            const url = new URL('/reservation/availability/calendar', window.location.origin);
+            url.searchParams.set('amenity_ids', amenityIds.join(','));
+            url.searchParams.set('month', month);
+            url.searchParams.set('year', year);
+
+            const response = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data.availability)) {
+                    data.availability.forEach(entry => {
+                        walkInCalState.availabilityMap[entry.date] = entry;
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching availability for month:', year, month, err);
+        }
+    };
+
+    const loadWalkInCalAvailability = async (year = walkInCalState.viewYear, month = walkInCalState.viewMonth) => {
+        if (!selectedAmenities || selectedAmenities.length === 0) {
+            walkInCalState.availabilityMap = {};
+            renderWalkInCalendarMonth();
+            return;
+        }
+
+        const amenityIds = [...new Set(selectedAmenities.map(a => a.amenity_id).filter(Boolean))];
+        if (amenityIds.length === 0) {
+            walkInCalState.availabilityMap = {};
+            renderWalkInCalendarMonth();
+            return;
+        }
+
+        walkInCalState.isLoadingAvailability = true;
+        if (walkInCalGrid) {
+            walkInCalGrid.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        if (!walkInCalState.availabilityMap) walkInCalState.availabilityMap = {};
+
+        try {
+            const promises = [ensureWalkInMonthAvailability(year, month, amenityIds)];
+            
+            if (walkInCalState.selectedStartDate) {
+                const [sY, sM] = walkInCalState.selectedStartDate.split('-').map(Number);
+                const sMonthIdx = sM - 1;
+                if (sY !== year || sMonthIdx !== month) {
+                    promises.push(ensureWalkInMonthAvailability(sY, sMonthIdx, amenityIds));
+                }
+            }
+
+            await Promise.all(promises);
+        } catch (err) {
+            console.error('Failed to load walk-in calendar availability:', err);
+        } finally {
+            walkInCalState.isLoadingAvailability = false;
+            if (walkInCalGrid) {
+                walkInCalGrid.classList.remove('opacity-50', 'pointer-events-none');
+            }
+            renderWalkInCalendarMonth();
+        }
+    };
 
     const openWalkInCalendarModal = () => {
         if (!walkInCalendarModal) return;
@@ -7418,6 +7530,7 @@ window.AppPage['staff_check_ins'] = function () {
 
         syncWalkInSessionPills();
         renderWalkInCalendarMonth();
+        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
     };
 
     const closeWalkInCalendarModal = () => {
@@ -7439,13 +7552,27 @@ window.AppPage['staff_check_ins'] = function () {
             btn.dataset.active = isActive ? 'true' : 'false';
             btn.classList.toggle('is-active', isActive);
 
+            let isDisabled = false;
+            let disableReason = '';
+
             if (isSameDayNighttime && val === 'Daytime') {
+                isDisabled = true;
+                disableReason = 'Daytime checkout not available for same-day nighttime check-in';
+            } else if (selectedAmenities && selectedAmenities.length > 0) {
+                const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, val);
+                if (conflict.hasConflict) {
+                    isDisabled = true;
+                    disableReason = conflict.reason;
+                }
+            }
+
+            if (isDisabled) {
                 btn.disabled = true;
-                btn.classList.add('is-disabled');
-                btn.title = 'Daytime checkout not available for same-day nighttime check-in';
+                btn.classList.add('is-disabled', 'opacity-50', 'cursor-not-allowed');
+                btn.title = disableReason;
             } else {
                 btn.disabled = false;
-                btn.classList.remove('is-disabled');
+                btn.classList.remove('is-disabled', 'opacity-50', 'cursor-not-allowed');
                 btn.removeAttribute('title');
             }
         });
@@ -7458,9 +7585,17 @@ window.AppPage['staff_check_ins'] = function () {
             if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime' && val === 'Daytime') {
                 return;
             }
+            if (selectedAmenities && selectedAmenities.length > 0) {
+                const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, val);
+                if (conflict.hasConflict) {
+                    window.alert(conflict.reason || 'This session is already booked for one or more selected amenities.');
+                    return;
+                }
+            }
             walkInCalState.selectedEndSlot = val;
             syncWalkInSessionPills();
             updateWalkInCalModalSummary();
+            renderWalkInCalendarMonth();
         });
     });
 
@@ -7480,6 +7615,17 @@ window.AppPage['staff_check_ins'] = function () {
         }
         if (walkInTopCheckoutFullText) {
             walkInTopCheckoutFullText.textContent = `${checkout.displayDate} · ${outDesc}`;
+        }
+
+        // Attached amenities notice
+        const attachedNotice = document.getElementById('walkInCalAttachedNotice');
+        if (attachedNotice) {
+            if (selectedAmenities && selectedAmenities.length > 0) {
+                attachedNotice.textContent = `Syncing stay with ${selectedAmenities.length} availed amenity (${selectedAmenities.map(a => a.amenity_name).join(', ')}). Occupied/reserved dates are blocked.`;
+                attachedNotice.classList.remove('hidden');
+            } else {
+                attachedNotice.classList.add('hidden');
+            }
         }
 
         // Update footer and badges
@@ -7550,17 +7696,44 @@ window.AppPage['staff_check_ins'] = function () {
 
             const isPast = dateStr < todayStr;
             const isToday = dateStr === todayStr;
-            const isEnd = dateStr === walkInCalState.selectedEndDate;
             const inRange = dateStr >= walkInCalState.selectedStartDate && dateStr <= walkInCalState.selectedEndDate;
 
             if (isPast) {
                 btn.classList.add('is-disabled', 'opacity-30', 'cursor-not-allowed');
                 btn.disabled = true;
             } else {
-                btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+                // Check if this date can be picked as Check-Out Date
+                let canPickDate = true;
+                let conflictReason = '';
+
+                if (selectedAmenities && selectedAmenities.length > 0) {
+                    const conflictDay = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, 'Daytime');
+                    const conflictNight = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, 'Nighttime');
+
+                    const dayPossible = !(dateStr === walkInCalState.selectedStartDate && walkInCalState.selectedStartSlot === 'Nighttime') && !conflictDay.hasConflict;
+                    const nightPossible = !conflictNight.hasConflict;
+
+                    if (!dayPossible && !nightPossible) {
+                        canPickDate = false;
+                        conflictReason = conflictNight.reason || conflictDay.reason || 'Booked / Occupied';
+                    }
+                }
+
+                if (!canPickDate) {
+                    btn.disabled = true;
+                    btn.classList.add('is-disabled', 'cursor-not-allowed', 'opacity-40', 'bg-rose-50/70', 'text-rose-400', 'border-rose-200', 'dark:bg-rose-950/30', 'dark:text-rose-400');
+                    btn.title = conflictReason;
+
+                    const bookedTag = document.createElement('span');
+                    bookedTag.className = 'text-[9px] font-bold text-rose-500 uppercase tracking-tighter leading-none mt-0.5 scale-90';
+                    bookedTag.textContent = 'Booked';
+                    btn.appendChild(bookedTag);
+                } else {
+                    btn.classList.add('is-available', 'hover:border-hp-green', 'hover:bg-hp-green/10');
+                }
             }
 
-            if (inRange && !isPast) {
+            if (inRange && !isPast && !btn.disabled) {
                 btn.classList.add('is-selected', 'bg-hp-green', 'text-white', 'font-bold');
                 btn.classList.remove('hover:bg-hp-green/10');
             }
@@ -7573,13 +7746,27 @@ window.AppPage['staff_check_ins'] = function () {
 
             btn.addEventListener('click', () => {
                 if (btn.disabled) return;
+
+                let targetSlot = walkInCalState.selectedEndSlot;
+                if (walkInCalState.selectedStartDate === dateStr && walkInCalState.selectedStartSlot === 'Nighttime') {
+                    targetSlot = 'Nighttime';
+                } else if (selectedAmenities && selectedAmenities.length > 0) {
+                    const testCur = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, targetSlot);
+                    if (testCur.hasConflict) {
+                        const altSlot = targetSlot === 'Nighttime' ? 'Daytime' : 'Nighttime';
+                        const testAlt = checkWalkInRangeConflict(walkInCalState.selectedStartDate, dateStr, walkInCalState.selectedStartSlot, altSlot);
+                        if (!testAlt.hasConflict) {
+                            targetSlot = altSlot;
+                        } else {
+                            window.alert(testCur.reason || 'This date cannot be picked because one or more availed amenities are occupied or reserved.');
+                            return;
+                        }
+                    }
+                }
+
                 // Single click sets Check-Out Date (since check-in is fixed to today)
                 walkInCalState.selectedEndDate = dateStr;
-
-                // If checkin is today nighttime and selected checkout is today, force nighttime checkout
-                if (walkInCalState.selectedStartDate === walkInCalState.selectedEndDate && walkInCalState.selectedStartSlot === 'Nighttime') {
-                    walkInCalState.selectedEndSlot = 'Nighttime';
-                }
+                walkInCalState.selectedEndSlot = targetSlot;
 
                 syncWalkInSessionPills();
                 updateWalkInCalModalSummary();
@@ -7599,6 +7786,7 @@ window.AppPage['staff_check_ins'] = function () {
             walkInCalState.viewYear--;
         }
         renderWalkInCalendarMonth();
+        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
     });
 
     walkInCalNext?.addEventListener('click', () => {
@@ -7608,14 +7796,24 @@ window.AppPage['staff_check_ins'] = function () {
             walkInCalState.viewYear++;
         }
         renderWalkInCalendarMonth();
+        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
     });
 
     walkInCalYear?.addEventListener('change', (e) => {
         walkInCalState.viewYear = parseInt(e.target.value);
         renderWalkInCalendarMonth();
+        loadWalkInCalAvailability(walkInCalState.viewYear, walkInCalState.viewMonth);
     });
 
     walkInCalApplyBtn?.addEventListener('click', () => {
+        if (selectedAmenities && selectedAmenities.length > 0) {
+            const conflict = checkWalkInRangeConflict(walkInCalState.selectedStartDate, walkInCalState.selectedEndDate, walkInCalState.selectedStartSlot, walkInCalState.selectedEndSlot);
+            if (conflict.hasConflict) {
+                window.alert(`Cannot apply schedule: ${conflict.reason}`);
+                return;
+            }
+        }
+
         walkInSchedule.startDate = walkInCalState.selectedStartDate;
         walkInSchedule.endDate = walkInCalState.selectedEndDate;
         walkInSchedule.startSlot = walkInCalState.selectedStartSlot;
@@ -7623,14 +7821,13 @@ window.AppPage['staff_check_ins'] = function () {
 
         syncMasterScheduleDisplay();
 
-        // Clamp any existing selected amenities to stay inside the new master range
+        // Automatically match ALL availed amenities to the master stay date and sessions
         selectedAmenities.forEach(am => {
-            if (am.start_date < walkInSchedule.startDate || am.start_date > walkInSchedule.endDate) {
-                am.start_date = walkInSchedule.startDate;
-            }
-            if (am.end_date < am.start_date || am.end_date > walkInSchedule.endDate) {
-                am.end_date = walkInSchedule.endDate;
-            }
+            am.start_date = walkInSchedule.startDate;
+            am.end_date = walkInSchedule.endDate;
+            am.start_slot = walkInSchedule.startSlot;
+            am.end_slot = walkInSchedule.endSlot;
+
             // Recalculate amenity price
             const counts = calculateWalkInSlots(am.start_date, am.end_date, am.start_slot, am.end_slot);
             am.total_days = counts.daysSpan;
@@ -7639,7 +7836,8 @@ window.AppPage['staff_check_ins'] = function () {
 
             const dayP = am.is_aircon && am.daytime_aircon_price ? am.daytime_aircon_price : am.daytime_price;
             const nightP = am.is_aircon && am.nighttime_aircon_price ? am.nighttime_aircon_price : am.nighttime_price;
-            am.price_at_booking = (counts.dayCount * dayP) + (counts.nightCount * nightP);
+            const qty = am.quantity || 1;
+            am.price_at_booking = ((counts.dayCount * dayP) + (counts.nightCount * nightP)) * qty;
         });
 
         renderSelectedAmenities();
