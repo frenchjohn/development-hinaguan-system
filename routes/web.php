@@ -2003,6 +2003,14 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
     ]);
 })->name('reservation.prototype')->withoutMiddleware([VerifyCsrfToken::class]);
 
+Route::get('/reservation/{id}/download-pass', function ($id) {
+    $reservation = Reservation::findOrFail($id);
+    $pdfService = app(\App\Services\ReservationPdfService::class);
+    $pdf = $pdfService->generatePdf($reservation);
+
+    return $pdf->download("Hinaguan-Reservation-Pass-{$reservation->id}.pdf");
+})->name('reservation.download-pass');
+
 Route::post('/paymongo/webhook', function (Request $request) use ($createReservationFromPayment) {
     $payload = $request->all();
     $event = $payload['data']['attributes']['type'] ?? null;
