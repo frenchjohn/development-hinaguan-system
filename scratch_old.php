@@ -95,6 +95,61 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
+
+        /* Fixed Reservation Table Styles */
+        #reservationTableWrap {
+            max-height: none !important;
+            overflow-y: visible !important;
+            overflow-x: auto !important;
+            border: 1px solid #dfe5e0 !important;
+            border-radius: 1rem !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 4px 20px rgba(20, 50, 30, 0.04) !important;
+        }
+        [data-theme="dark"] #reservationTableWrap {
+            border-color: rgba(255, 255, 255, 0.1) !important;
+            background-color: #181b19 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+        #reservationTableWrap .guest-table {
+            table-layout: fixed !important;
+            width: 100% !important;
+            min-width: 880px !important;
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }
+        #reservationTableWrap .guest-table thead th {
+            position: static !important;
+            background-color: #f7faf8 !important;
+            border-bottom: 1px solid #e8eee9 !important;
+        }
+        [data-theme="dark"] #reservationTableWrap .guest-table thead th {
+            background-color: #1e2220 !important;
+            border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        #reservationTableWrap .guest-table td {
+            vertical-align: middle !important;
+            border-top: 1px solid #f0f4ef !important;
+        }
+        [data-theme="dark"] #reservationTableWrap .guest-table td {
+            border-top-color: rgba(255, 255, 255, 0.05) !important;
+        }
+        #reservationTableWrap .guest-table th:nth-child(1),
+        #reservationTableWrap .guest-table td:nth-child(1) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(2),
+        #reservationTableWrap .guest-table td:nth-child(2) { text-align: left !important; }
+        #reservationTableWrap .guest-table th:nth-child(3),
+        #reservationTableWrap .guest-table td:nth-child(3) { text-align: left !important; }
+        #reservationTableWrap .guest-table th:nth-child(4),
+        #reservationTableWrap .guest-table td:nth-child(4) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(5),
+        #reservationTableWrap .guest-table td:nth-child(5) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(6),
+        #reservationTableWrap .guest-table td:nth-child(6) { text-align: center !important; }
+        #reservationTableWrap .guest-table th:nth-child(7),
+        #reservationTableWrap .guest-table td:nth-child(7) { text-align: right !important; }
+        #reservationTableWrap .guest-table th:nth-child(8),
+        #reservationTableWrap .guest-table td:nth-child(8) { text-align: center !important; }
     </style>
 </head>
 <body class="antialiased staff-portal">
@@ -284,24 +339,28 @@
                     <span id="reservationResultsCount">Showing {{ $reservations->count() }} of {{ $reservations->count() }} reservation{{ $reservations->count() === 1 ? '' : 's' }}</span>
                 </div>
 
-                <div class="overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-[0_4px_20px_rgba(20,50,30,0.04)] dark:border-white/10 dark:bg-[#181b19] dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]" id="reservationTableWrap">
-                    <table class="w-full min-w-[880px] table-fixed border-separate border-spacing-0 text-left">
+                <div class="guest-table-wrap overflow-x-auto rounded-2xl border border-[#dfe5e0] bg-white shadow-sm dark:border-white/15 dark:bg-[#181b19]" id="reservationTableWrap">
+                    <table class="guest-table w-full min-w-[880px] table-fixed border-collapse border-spacing-0 text-left">
                         <colgroup>
-                            <col style="width: 8%; min-width: 70px;">
-                            <col style="width: 28%; min-width: 220px;">
-                            <col style="width: 22%; min-width: 175px;">
-                            <col style="width: 15%; min-width: 125px;">
-                            <col style="width: 13%; min-width: 110px;">
-                            <col style="width: 14%; min-width: 115px;">
+                            <col style="width: 6%; min-width: 55px;">
+                            <col style="width: 27%; min-width: 220px;">
+                            <col style="width: 21%; min-width: 170px;">
+                            <col style="width: 14%; min-width: 125px;">
+                            <col style="width: 7%; min-width: 65px;">
+                            <col style="width: 11%; min-width: 100px;">
+                            <col style="width: 9%; min-width: 85px;">
+                            <col style="width: 5%; min-width: 50px;">
                         </colgroup>
                         <thead class="bg-[#f7faf8] dark:bg-[#1e2220]">
                             <tr class="border-b border-[#e8eee9] dark:border-white/10">
-                                <th class="py-3.5 pl-5 pr-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] whitespace-nowrap">ID</th>
-                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">BOOKER</th>
-                                <th class="py-3.5 px-4 text-left align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">RESERVATION DATE</th>
-                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">SESSION</th>
-                                <th class="py-3.5 px-3 text-center align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">STATUS</th>
-                                <th class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle text-[0.72rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af]">AMOUNT</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center whitespace-nowrap">ID</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">BOOKER</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-left">RESERVATION DATE</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">SESSION</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">GUESTS</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">STATUS</th>
+                                <th class="py-3.5 px-4 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-right">AMOUNT</th>
+                                <th class="py-3.5 px-2 text-[0.7rem] font-bold uppercase tracking-wider text-[#486553] dark:text-[#9ca3af] text-center">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody id="reservationTableBody" class="divide-y divide-[#f0f4ef] bg-white dark:divide-white/5 dark:bg-[#181b19]">
@@ -343,10 +402,10 @@
                                     role="button"
                                     aria-label="View reservation details for {{ e($reservation->booker_name) }} (#{{ $reservation->id }})"
                                 >
-                                    <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
+                                    <td class="py-3.5 px-2 text-center whitespace-nowrap">
                                         <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#{{ $reservation->id }}</span>
                                     </td>
-                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                                    <td class="py-3.5 px-4 text-left">
                                         <div class="resv-booker flex items-center gap-3">
                                             <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">{{ $initials }}</span>
                                             <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
@@ -365,7 +424,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                                    <td class="py-3.5 px-4 text-left">
                                         @if ($isMultiDay)
                                             <div>
                                                 <span class="font-bold text-xs sm:text-sm {{ $isPastArrival ? 'text-[#dc2626] dark:text-[#f87171]' : 'text-[#183d28] dark:text-[#e8f5e9]' }}">{{ \Carbon\Carbon::parse($reservation->reservation_date)->format('M j, Y') }} – {{ \Carbon\Carbon::parse($reservation->end_date)->format('M j, Y') }}</span>
@@ -384,7 +443,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                                    <td class="py-3.5 px-2 text-center">
                                         @if ($isMultiDay)
                                             <span class="inline-flex items-center gap-1 rounded-lg border border-teal-200 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/40 dark:text-teal-300 whitespace-nowrap">
                                                 <i class="bi bi-calendar-range text-[0.7rem] text-teal-600 dark:text-teal-400"></i>
@@ -427,7 +486,8 @@
                                             @endif
                                         @endif
                                     </td>
-                                    <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                                    <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">{{ $reservation->number_of_guests }}</td>
+                                    <td class="py-3.5 px-2 text-center">
                                         @php
                                             $status = ucfirst(strtolower($reservation->status));
                                             $statusClass = match($status) {
@@ -442,11 +502,16 @@
                                         @endphp
                                         <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize {{ $statusClass }}">{{ $reservation->status }}</span>
                                     </td>
-                                    <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                    <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱{{ number_format($reservation->total_amount, 2) }}</td>
+                                    <td class="py-3.5 px-2 text-center">
+                                        <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
+                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                                        </button>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
+                                    <td colspan="8" class="guest-empty px-4 py-8 text-center text-sm text-[#718076] dark:text-[#9baaa1]">No pending online reservations found.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -555,7 +620,7 @@
                     </div>
                     <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label class="guest-form__field grid gap-1.5">
-                            <span class="text-sm font-semibold text-hp-text">Expected Guests</span>
+                            <span class="text-sm font-semibold text-hp-text">Number of Guests</span>
                             <input type="number" name="number_of_guests" id="editGuests" min="1" required class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                         </label>
                         <label class="guest-form__field grid gap-1.5">
@@ -739,390 +804,214 @@
         </div>
     </div>
 
-    <!-- CHECK IN RESERVATION MODAL (CLEAN SINGLE-SECTION SCROLLABLE FLOW) -->
     <div class="guest-modal guest-modal--add fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInModal" aria-hidden="true">
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-check-in-modal="true"></div>
-        <div class="relative z-[1] w-full max-w-[1020px] max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
-            
-            <!-- Sticky Modal Header -->
-            <div class="guest-modal__header shrink-0 flex items-center justify-between gap-3 px-6 py-3 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/40 dark:bg-white/[0.02] !mb-0" style="margin-bottom: 0 !important;">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
-                        <i class="bi bi-box-arrow-in-right text-lg"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 id="checkInModalTitle" class="guest-modal__title m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Check In Reservation</h3>
-                            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                                Online Reservation Check-In
-                            </span>
-                        </div>
-                        <p class="m-0 text-xs text-hp-text-muted mt-0.5">Review booking information, guest details, and complete check-in in one simple view.</p>
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-in-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkInModalTitle">
+            <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-in-modal="true" aria-label="Close check-in form">&times;</button>
+            <h3 id="checkInModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Check In Reservation</h3>
+            <form id="checkInForm" class="guest-form mt-6 grid gap-4" action="#">
+                <div class="guest-form__group grid gap-2">
+                    <label class="guest-form__label text-sm font-semibold text-hp-text">Guest mode</label>
+                    <div class="guest-form__chips flex flex-wrap gap-2">
+                        <label class="guest-form__chip flex cursor-pointer items-center gap-2 rounded-full border border-glass-border bg-glass px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 has-[:checked]:border-hp-green has-[:checked]:bg-hp-green has-[:checked]:text-white">
+                            <input type="radio" name="check_in_guest_mode" value="with_primary" checked class="sr-only">
+                            <span>With primary guest</span>
+                        </label>
                     </div>
                 </div>
-                <button type="button" class="guest-modal__close group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-check-in-modal="true" aria-label="Close check-in form">
-                    <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
-                </button>
-            </div>
 
-            <!-- Main Form with Single Vertical Scroll Area -->
-            <form id="checkInForm" class="guest-form !flex !flex-col !gap-0 !m-0 flex-1 min-h-0 overflow-hidden" style="display: flex !important; flex-direction: column !important; gap: 0 !important; margin: 0 !important;" action="#">
-                <input type="hidden" name="check_in_guest_mode" value="with_primary">
-                
-                <!-- Primary Guest Hidden Form Mirror Inputs (Maintained for submission compatibility) -->
-                <div id="checkInPrimaryGuestHiddenInputs" class="hidden" style="display: none !important;">
-                    <input type="hidden" name="check_in_primary_guest[first_name]" id="checkInHiddenPrimaryFirstName">
-                    <input type="hidden" name="check_in_primary_guest[middle_name]" id="checkInHiddenPrimaryMiddleName">
-                    <input type="hidden" name="check_in_primary_guest[last_name]" id="checkInHiddenPrimaryLastName">
-                    <input type="hidden" name="check_in_primary_guest[age]" id="checkInHiddenPrimaryAge">
-                    <input type="hidden" name="check_in_primary_guest[gender]" id="checkInHiddenPrimaryGender">
-                    <input type="hidden" name="check_in_primary_guest[is_foreigner]" id="checkInHiddenPrimaryIsForeigner" value="0">
-                    <input type="hidden" name="check_in_primary_guest[phone]" id="checkInHiddenPrimaryPhone">
-                    <input type="hidden" name="check_in_primary_guest[email]" id="checkInHiddenPrimaryEmail">
-                    <input type="hidden" name="check_in_primary_guest[has_pool_access]" id="checkInHiddenPrimaryHasPool" value="0">
+                <div id="checkInPrimaryGuestSection" class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-1 flex items-center justify-between">
+                        <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Primary guest</h4>
+                    </div>
+                    <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">First name</span>
+                            <input type="text" name="check_in_primary_guest[first_name]" placeholder="First name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Middle name</span>
+                            <input type="text" name="check_in_primary_guest[middle_name]" placeholder="Middle name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Last name</span>
+                            <input type="text" name="check_in_primary_guest[last_name]" placeholder="Last name" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                    </div>
+                    <div class="guest-form__row guest-form__row--three grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Age</span>
+                            <input type="number" name="check_in_primary_guest[age]" min="0" placeholder="Age" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Gender</span>
+                            <select name="check_in_primary_guest[gender]" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                <option value="">Select gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Nationality</span>
+                            <select name="check_in_primary_guest[is_foreigner]" id="checkInPrimaryIsForeigner" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                <option value="0" selected>Filipino</option>
+                                <option value="1">Foreigner</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="guest-form__row guest-form__row--two grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Phone</span>
+                            <input type="text" name="check_in_primary_guest[phone]" placeholder="Phone number" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                        <label class="guest-form__field grid gap-1.5">
+                            <span class="text-sm font-semibold text-hp-text">Email</span>
+                            <input type="email" name="check_in_primary_guest[email]" placeholder="Email address" class="w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </label>
+                    </div>
+
+                    <div id="checkInPrimaryGuestPoolWrap" class="mt-2 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
+                        <div class="flex items-center gap-2">
+                            <i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
+                            <div>
+                                <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Primary Guest Pool Access</p>
+                                <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">Include pool pass for the main guest under specific pool policy</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex cursor-pointer items-center">
+                            <input type="checkbox" name="check_in_primary_guest[has_pool_access]" id="checkInPrimaryGuestHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
+                        </label>
+                    </div>
                 </div>
 
-                <!-- Hidden badges & elements kept for JS backwards compatibility -->
-                <div class="hidden" style="display: none !important;" aria-hidden="true">
-                    <span id="checkInSidebarAmenitiesBadge">0</span>
-                    <span id="checkInSidebarCompanionsBadge">0</span>
-                    <span id="checkInSidebarFeesBadge">₱0.00</span>
-                    <span id="checkInMainGuestStatus"></span>
-                    <span id="checkInStayCompactText"></span>
-                    <span id="checkInEntranceCompactText"></span>
-                    <span id="checkInPoolCompactText"></span>
-                </div>
-
-                <!-- Scrollable Body Content -->
-                <div class="flex-1 min-h-0 overflow-y-auto px-6 pt-3 pb-5 space-y-3.5 custom-scrollbar" id="checkInScrollContent">
-
-                    <!-- SECTION 1: STAY SCHEDULE & ADMISSION POLICIES (SLIM, COMPACT & ORGANIZED) -->
-                    <div class="rounded-xl border border-glass-border bg-glass/40 dark:bg-white/[0.02] px-3.5 py-2.5 shadow-2xs">
-                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-center">
-                            <!-- Stay Schedule Info (5 cols) -->
-                            <div class="lg:col-span-5 flex items-center gap-2.5 min-w-0">
-                                <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-xs">
-                                    <i class="bi bi-calendar-check-fill"></i>
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="text-[0.65rem] font-bold uppercase tracking-wider text-hp-text-muted">Stay Schedule:</span>
-                                        <span id="checkInScheduleSummaryText" class="font-bold text-xs text-hp-text dark:text-[#f3f4f6] truncate">
-                                            Today — 1 Day
-                                        </span>
-                                        <span id="checkInStaySessionBadge" class="rounded-md bg-hp-green/10 border border-hp-green/20 px-1.5 py-0.2 text-[0.62rem] font-bold text-hp-green">
-                                            Scheduled
-                                        </span>
-                                    </div>
-                                    <p class="m-0 text-[0.68rem] text-hp-text-muted truncate mt-0.5" id="checkInScheduleDatesText">Check-in schedule</p>
-                                </div>
-                            </div>
-
-                            <!-- Policies (7 cols: 2 side-by-side compact selects) -->
-                            <div class="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <!-- Entrance Fee Policy -->
-                                <div class="flex flex-col gap-0.5">
-                                    <label class="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300" for="checkInEntranceOption">
-                                        <i class="bi bi-ticket-perforated-fill text-amber-600 text-[0.65rem]"></i>
-                                        <span>Entrance Policy</span>
-                                    </label>
-                                    <select name="entrance_option" id="checkInEntranceOption" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#232725] px-2 py-1 text-xs font-semibold text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                        <option value="all_paid" selected>Standard Rate (Pay by Age)</option>
-                                        <option value="all_free">Free Entrance (Promo • ₱0.00)</option>
-                                    </select>
-                                    <span class="hidden" id="checkInEntranceOptionHelp"></span>
-                                </div>
-
-                                <!-- Pool Access Policy -->
-                                <div class="flex flex-col gap-0.5">
-                                    <label class="flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-wider text-sky-800 dark:text-sky-300" for="checkInPoolOption">
-                                        <i class="bi bi-water text-sky-600 text-[0.65rem]"></i>
-                                        <span>Pool Policy</span>
-                                    </label>
-                                    <select name="pool_option" id="checkInPoolOption" class="w-full rounded-lg border border-glass-border bg-white dark:bg-[#232725] px-2 py-1 text-xs font-semibold text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                        <option value="no_pool" selected>No Pool (Default • ₱0.00)</option>
-                                        <option value="specific">Specific (Selected Guests)</option>
-                                        <option value="all_paid">All Paid (Standard Rate)</option>
-                                        <option value="all_free">All Free (Promo • ₱0.00)</option>
-                                    </select>
-                                    <input type="hidden" name="check_in_include_pool" id="checkInIncludePoolLegacy" value="0">
-                                    <span class="hidden" id="checkInPoolOptionHelp"></span>
-                                </div>
-                            </div>
+                <div class="guest-form__section rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>
+                            <p class="m-0 text-xs text-hp-text-muted" id="checkInCompanionCountBadge">0 companions added</p>
                         </div>
-                    </div>
-
-                    <!-- THIN SECTION DIVIDER -->
-                    <div class="border-t border-gray-300/80 dark:border-white/15 my-2" role="separator"></div>
-
-                    <!-- SECTION 2: RESERVED AMENITIES -->
-                    <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/[0.02] p-4.5 space-y-3" id="checkInAmenitiesTab">
-                        <div class="flex items-center justify-between gap-2 border-b border-glass-border pb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-sm">
-                                    <i class="bi bi-house-door-fill"></i>
-                                </div>
-                                <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Reserved Amenities</h4>
-                            </div>
-                            <span class="inline-flex items-center gap-1 text-xs font-bold text-hp-green bg-hp-green/10 border border-hp-green/20 rounded-full px-3 py-0.5" id="checkInAmenitiesCountBadge">0 Booked</span>
-                        </div>
-                        <div id="checkInAmenitiesContainer" class="selected-amenities-grid grid gap-2.5 max-h-[300px] overflow-y-auto pr-1"></div>
-                    </div>
-
-                    <!-- THIN SECTION DIVIDER -->
-                    <div class="border-t border-gray-300/80 dark:border-white/15 my-2" role="separator"></div>
-
-                    <!-- SECTION 3: MAIN GUEST (PRIMARY BOOKER) - INLINE FORM -->
-                    <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/[0.02] p-4.5 space-y-3" id="checkInGuestsTab">
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-glass-border pb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 text-sm">
-                                    <i class="bi bi-person-fill-check"></i>
-                                </div>
-                                <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Main Guest (Primary Booker)</h4>
-                            </div>
-                            <span id="checkInMainGuestReadyBadge" class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                                <i class="bi bi-check-circle-fill text-[0.7rem]"></i>
-                                <span>Primary Guest</span>
-                            </span>
-                        </div>
-
-                        <!-- Direct Inline Inputs for Main Guest -->
-                        <div class="grid gap-3 pt-1">
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainFirstName">First name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="checkInMainFirstName" placeholder="Enter first name" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainMiddleName">Middle name <span class="text-hp-text-muted font-normal text-[0.68rem]">(Optional)</span></label>
-                                    <input type="text" id="checkInMainMiddleName" placeholder="Optional" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainLastName">Last name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="checkInMainLastName" placeholder="Enter last name" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div class="guest-form__field-group grid gap-1">
-                                    <div class="flex items-center justify-between">
-                                        <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainAge">Age <span class="text-red-500">*</span></label>
-                                        <span id="checkInMainAgeBadge" class="hidden rounded px-1.5 py-0.2 text-[0.65rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
-                                    </div>
-                                    <input type="number" id="checkInMainAge" min="0" placeholder="e.g. 25" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainGender">Gender <span class="text-red-500">*</span></label>
-                                    <select id="checkInMainGender" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                        <option value="" disabled selected>Select Gender</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                    </select>
-                                </div>
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainIsForeigner">Nationality <span class="text-red-500">*</span></label>
-                                    <select id="checkInMainIsForeigner" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                        <option value="0" selected>Filipino</option>
-                                        <option value="1">Foreigner</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainPhone">Phone Number</label>
-                                    <input type="text" id="checkInMainPhone" placeholder="09xxxxxxxxx" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                                <div class="guest-form__field-group grid gap-1">
-                                    <label class="guest-form__label text-xs font-bold text-hp-text" for="checkInMainEmail">Email Address</label>
-                                    <input type="email" id="checkInMainEmail" placeholder="example@email.com" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-3.5 py-2 text-xs text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                </div>
-                            </div>
-
-                            <div id="checkInMainPoolAccessRow" class="mt-1 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
-                                <div class="flex items-center gap-2">
-                                    <i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
-                                    <div>
-                                        <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Main Guest Pool Access</p>
-                                        <p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80">Grant pool access pass for the primary guest under specific pool policy</p>
-                                    </div>
-                                </div>
-                                <label class="relative inline-flex cursor-pointer items-center">
-                                    <input type="checkbox" id="checkInPrimaryGuestHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
-                                </label>
-                            </div>
-
-                            <!-- Inline Validation Error -->
-                            <div id="checkInMainGuestModalError" class="hidden rounded-xl border border-red-300 bg-red-50 p-2.5 text-xs font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400">
-                                Please fill up all required fields for the main guest (first name, last name, age, gender).
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- THIN SECTION DIVIDER -->
-                    <div class="border-t border-gray-300/80 dark:border-white/15 my-2" role="separator"></div>
-
-                    <!-- SECTION 4: COMPANIONS & ADDITIONAL GUESTS -->
-                    <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/[0.02] p-4.5 space-y-3" id="checkInCompanionSection">
-                        <div class="guest-form__section-header flex flex-wrap items-center justify-between gap-2 border-b border-glass-border pb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-sm">
-                                    <i class="bi bi-people-fill"></i>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Companions & Group Members</h4>
-                                    <span id="checkInCompanionCountBadge" class="rounded-full bg-hp-green/10 border border-hp-green/20 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" id="toggleCheckInCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" title="Toggle Search & Filters">
-                                    <i class="bi bi-funnel text-xs text-hp-green"></i>
-                                    <span>Filter</span>
-                                </button>
-                                <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:bg-hp-green-dark hover:shadow active:scale-[0.98]" id="checkInAddCompanionBtn">
-                                    <i class="bi bi-person-plus-fill text-xs"></i>
-                                    <span>+ Add Companions</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Filter toolbar -->
-                        <div id="checkInCompanionFilterToolbar" class="hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
-                            <div class="relative flex-1 min-w-[170px]">
-                                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
-                                <input type="text" id="checkInCompanionSearchInput" placeholder="Search companion name..." class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                            </div>
-                            <div class="w-auto min-w-[110px]">
-                                <select id="checkInCompanionFilterGender" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                    <option value="">All Genders</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                </select>
-                            </div>
-                            <div class="w-auto min-w-[125px]">
-                                <select id="checkInCompanionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-white dark:bg-[#232725] px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:text-[#f3f4f6]">
-                                    <option value="">All Age Groups</option>
-                                    <option value="0-12">Kids (0-12)</option>
-                                    <option value="13-17">Teens (13-17)</option>
-                                    <option value="18-59">Adults (18-59)</option>
-                                    <option value="60+">Seniors (60+)</option>
-                                </select>
-                            </div>
-                            <button type="button" id="checkInCompanionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
-                                <i class="bi bi-x-circle"></i>
-                                <span>Reset</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="toggleCheckInCompanionFilterBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong active:scale-[0.98]" title="Toggle companion search & filters">
+                                <i class="bi bi-funnel text-xs text-hp-green"></i>
+                                <span>Filter & Search</span>
+                            </button>
+                            <button type="button" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-600/30 bg-hp-green px-4 py-2 text-xs font-bold text-white shadow-md transition-all duration-200 hover:bg-hp-green-dark hover:shadow-lg active:scale-[0.98]" id="checkInAddCompanionBtn">
+                                <svg class="h-4 w-4 shrink-0 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                </svg>
+                                <span>+ Add Companions</span>
                             </button>
                         </div>
-
-                        <div id="checkInCompanionList" class="guest-companion-list grid gap-2 max-h-[260px] overflow-y-auto overflow-x-hidden pr-1"></div>
-                        <div id="checkInCompanionHiddenFields"></div>
                     </div>
 
-                    <!-- THIN SECTION DIVIDER -->
-                    <div class="border-t border-gray-300/80 dark:border-white/15 my-2" role="separator"></div>
-
-                    <!-- SECTION 5: FEES & PAYMENT BREAKDOWN -->
-                    <div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/[0.02] p-4.5 space-y-4" id="checkInFeesTab">
-                        <div class="flex items-center justify-between border-b border-glass-border pb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green text-sm">
-                                    <i class="bi bi-receipt"></i>
-                                </div>
-                                <h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Fees & Payment Summary</h4>
-                            </div>
-                            <span id="checkInEffectivePeriodBadge" class="inline-flex items-center rounded-full border border-glass-border bg-[rgba(255,152,0,0.15)] px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-[0.06em] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">—</span>
+                    <!-- Companions Filter & Search Bar (Default is hidden) -->
+                    <div id="checkInCompanionFilterToolbar" class="mb-3 hidden flex-wrap items-center gap-2 rounded-xl border border-glass-border/70 bg-glass/70 p-2.5 transition-all animate-fade-in">
+                        <!-- Search single companion by name -->
+                        <div class="relative flex-1 min-w-[170px]">
+                            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted/70"></i>
+                            <input type="text" id="checkInCompanionSearchInput" placeholder="Search single companion..." class="w-full rounded-xl border border-glass-border bg-glass py-1.5 pl-8 pr-3 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                        </div>
+                        
+                        <!-- Filter bulk: Gender -->
+                        <div class="w-auto min-w-[110px]">
+                            <select id="checkInCompanionFilterGender" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                <option value="">All Genders</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Entrance & Pool Breakdown -->
-                            <div class="rounded-xl border border-glass-border bg-white/70 dark:bg-[#202422] p-4">
-                                <div class="text-xs font-bold text-hp-text mb-2.5 flex items-center gap-1.5">
-                                    <i class="bi bi-ticket-detailed text-hp-green"></i> Entrance & Pool Fees
-                                </div>
-                                <div class="flex flex-col gap-2 text-xs text-hp-text-muted">
-                                    <div class="flex justify-between">
-                                        <span>Adults Entrance:</span>
-                                        <strong class="text-hp-text dark:text-gray-200" id="checkInAdultSummary">0 × ₱0.00</strong>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Children Entrance:</span>
-                                        <strong class="text-hp-text dark:text-gray-200" id="checkInChildSummary">0 × ₱0.00</strong>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Pool Fee:</span>
-                                        <strong class="text-hp-text dark:text-gray-200" id="checkInPoolSummary">₱0.00</strong>
-                                    </div>
-                                    <div class="flex justify-between border-t border-glass-border pt-2 font-bold">
-                                        <span class="text-hp-text dark:text-gray-100">Entrance Subtotal:</span>
-                                        <strong class="text-hp-green dark:text-emerald-400" id="checkInEntranceTotal">₱0.00</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Online Reservation & Extras Breakdown -->
-                            <div class="rounded-xl border border-glass-border bg-white/70 dark:bg-[#202422] p-4 flex flex-col justify-between">
-                                <div>
-                                    <div class="text-xs font-bold text-hp-text mb-2.5 flex items-center gap-1.5">
-                                        <i class="bi bi-shield-check text-hp-green"></i> Online Booking & Extras
-                                    </div>
-                                    <div class="flex flex-col gap-2 text-xs text-hp-text-muted">
-                                        <div class="flex justify-between">
-                                            <span>Booking Amount:</span>
-                                            <strong class="text-hp-text dark:text-gray-200" id="checkInBookingTotalText">₱0.00</strong>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span>Online Paid Deposit:</span>
-                                            <strong class="text-hp-green dark:text-emerald-400" id="checkInBookingPaidText">₱0.00</strong>
-                                        </div>
-                                        <div class="flex justify-between font-semibold">
-                                            <span>Remaining Balance:</span>
-                                            <strong class="text-[#e65100] dark:text-[#ffb74d]" id="checkInReservationBalance">₱0.00</strong>
-                                        </div>
-                                        <div id="checkInExtraHeadCard" class="flex justify-between border-t border-glass-border pt-2">
-                                            <span>Extra Guest Fee:</span>
-                                            <strong class="text-[#e65100] dark:text-[#ffb74d]" id="checkInExtraHeadTotal">₱0.00</strong>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-3 rounded-lg bg-hp-green/5 p-2 text-[0.68rem] text-hp-text-muted">
-                                    Online remaining balance and admission fees are consolidated into total to pay.
-                                </div>
-                            </div>
+                        <!-- Filter bulk: Age Group -->
+                        <div class="w-auto min-w-[125px]">
+                            <select id="checkInCompanionFilterAgeGroup" class="w-full rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-medium text-hp-text focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                <option value="">All Age Groups</option>
+                                <option value="0-12">Kids (0-12)</option>
+                                <option value="13-17">Teens (13-17)</option>
+                                <option value="18-59">Adults (18-59)</option>
+                                <option value="60+">Seniors (60+)</option>
+                            </select>
                         </div>
 
-                        <!-- Highlighted Total Amount Callout Card -->
-                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-hp-green/30 bg-hp-green/10 p-4 dark:bg-hp-green/5">
-                            <div>
-                                <div class="text-[0.7rem] font-bold uppercase tracking-wider text-hp-text-muted">Total Amount to Pay at Check-In</div>
-                                <div class="text-2xl sm:text-3xl font-black text-hp-green dark:text-emerald-400" id="checkInGrandTotal">₱0.00</div>
-                            </div>
-                            <div class="text-right">
-                                <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                                    <i class="bi bi-cash-stack"></i>
-                                    <span>Consolidated Payment</span>
-                                </span>
-                            </div>
-                        </div>
+                        <button type="button" id="checkInCompanionFilterResetBtn" class="hidden items-center gap-1 rounded-xl border border-glass-border bg-glass px-2.5 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-red-500 hover:border-red-500/30 transition-colors cursor-pointer" title="Reset filters">
+                            <i class="bi bi-x-circle"></i>
+                            <span>Reset</span>
+                        </button>
                     </div>
 
+                    <div id="checkInCompanionList" class="guest-companion-list grid gap-2 max-h-[290px] overflow-y-auto overflow-x-hidden pr-1"></div>
+                    <div id="checkInCompanionHiddenFields"></div>
                 </div>
 
-                <!-- Sticky Bottom Action Footer -->
-                <div class="shrink-0 flex items-center justify-between gap-4 px-6 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/95 dark:bg-[rgba(26,30,28,0.98)] backdrop-blur-sm z-20">
-                    <div class="flex items-baseline gap-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Total to pay:</span>
-                        <strong class="text-lg sm:text-xl font-black text-hp-green dark:text-emerald-400 tracking-tight" id="checkInSidebarGrandTotalText">₱0.00</strong>
+                <div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+                    <div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
+                        <h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Entrance Fee</h4>
+                        <span id="checkInEffectivePeriodBadge" class="inline-flex items-center rounded-full border border-glass-border bg-[rgba(255,152,0,0.15)] px-2.5 py-1 text-[0.72rem] font-bold uppercase tracking-[0.06em] text-[#e65100] dark:bg-[rgba(255,152,0,0.2)] dark:text-[#ffb74d]">—</span>
                     </div>
-                    <div class="flex items-center gap-2.5">
-                        <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-colors" data-close-check-in-modal="true">
-                            Cancel
-                        </button>
-                        <button type="submit" class="w-auto cursor-pointer rounded-xl border-0 bg-hp-green py-2.5 px-5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2" id="checkInSubmitBtn">
-                            <i class="bi bi-check2-circle text-sm"></i>
-                            <span>Check In Reservation</span>
-                        </button>
+
+                    <!-- Entrance Fee Policy Selector -->
+                    <div class="guest-form__field-group mb-1 grid gap-1.5">
+                        <label class="guest-form__label text-sm font-semibold text-hp-text" for="checkInEntranceOption">Entrance Fee Policy</label>
+                        <select name="entrance_option" id="checkInEntranceOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                            <option value="all_paid" selected>All Pay Entrance Fee (Standard Rate)</option>
+                            <option value="all_free">All Free Entrance Fee (Promo • ₱0.00)</option>
+                        </select>
+                        <p class="m-0 text-[0.72rem] text-hp-text-muted" id="checkInEntranceOptionHelp">All guests will pay the standard entrance fee based on age.</p>
                     </div>
+
+                    <!-- Pool Access Policy Selector -->
+                    <div class="guest-form__field-group mb-1 grid gap-1.5">
+                        <label class="guest-form__label text-sm font-semibold text-hp-text" for="checkInPoolOption">Pool Access Policy</label>
+                        <select name="pool_option" id="checkInPoolOption" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                            <option value="no_pool" selected>No Pool Access (Default • ₱0.00)</option>
+                            <option value="specific">Specific Pool Access (Select Guests / Groups)</option>
+                            <option value="all_paid">All Pool Access (Standard Rate)</option>
+                            <option value="all_free">All Pool Access Free (Promo • ₱0.00)</option>
+                        </select>
+                        <input type="hidden" name="check_in_include_pool" id="checkInIncludePoolLegacy" value="0">
+                        <p class="m-0 text-[0.72rem] text-hp-text-muted" id="checkInPoolOptionHelp">No pool fee will be charged for any guest in this reservation.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Adults</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#f3f4f6]" id="checkInAdultSummary">0 × ₱0.00</p>
+                        </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Children</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#f3f4f6]" id="checkInChildSummary">0 × ₱0.00</p>
+                        </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Pool</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-hp-text dark:text-[#f3f4f6]" id="checkInPoolSummary">₱0.00</p>
+                        </div>
+                        <div class="rounded-xl border border-glass-border bg-glass px-3.5 py-2.5" id="checkInExtraHeadCard">
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Extra Head Fee</p>
+                            <p class="m-0 text-[0.95rem] font-bold text-[#e65100] dark:text-[#ffb74d]" id="checkInExtraHeadSummary">₱0.00</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-hp-green/30 bg-[rgba(26,58,31,0.08)] px-3.5 py-2.5 dark:bg-[rgba(129,199,132,0.08)]">
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Entrance subtotal</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-hp-green" id="checkInEntranceTotal">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Extra guest fee</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-[#e65100]" id="checkInExtraHeadTotal">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Reservation balance</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-[#e65100]" id="checkInReservationBalance">₱0.00</p>
+                        </div>
+                        <div>
+                            <p class="m-0 text-[0.7rem] font-bold uppercase tracking-[0.06em] text-hp-text-muted">Total to pay</p>
+                            <p class="m-0 text-[1.05rem] font-extrabold text-hp-text dark:text-[#f3f4f6]" id="checkInGrandTotal">₱0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="guest-form__actions flex flex-wrap justify-end gap-3">
+                    <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-in-modal="true">Cancel</button>
+                    <button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Check In</button>
                 </div>
             </form>
         </div>
@@ -1153,7 +1042,7 @@
     <!-- UNIFIED TWO-COLUMN COMPANION MODAL -->
     <div class="guest-modal guest-modal--wide fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="checkInCompanionModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-check-in-companion-modal="true"></div>
-        <div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border !w-[min(1360px,95vw)] !max-w-[1360px]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
+        <div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
             <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text hover:opacity-75 transition-opacity" data-close-check-in-companion-modal="true" aria-label="Close modal">&times;</button>
             
             <div class="guest-modal__header mb-4 flex items-center justify-between border-b border-glass-border pb-3">
@@ -1171,6 +1060,15 @@
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <!-- LEFT SIDE: COMPANION CREATOR FORMS (6 cols) -->
                 <div class="lg:col-span-6 flex flex-col gap-3">
+                    <!-- Tab Switching: Single vs Bulk -->
+                    <div class="flex rounded-xl bg-black/5 dark:bg-white/5 p-1 border border-glass-border/40">
+                        <button type="button" class="guest-form__tab hidden" data-checkin-companion-tab="single" aria-hidden="true" tabindex="-1">
+                            <i class="bi bi-person me-1"></i> Single Companion
+                        </button>
+                        <button type="button" class="guest-form__tab guest-form__tab--active flex-1 cursor-pointer rounded-lg py-2 text-xs font-bold text-white transition-all bg-hp-green shadow-xs text-center" data-checkin-companion-tab="bulk">
+                            <i class="bi bi-people me-1"></i> Bulk Companions
+                        </button>
+                    </div>
 
                     <!-- SINGLE COMPANION FORM -->
                     <form id="checkInCompanionForm" class="guest-form--tab-content hidden" data-checkin-companion-content="single" action="#" aria-hidden="true">
@@ -1219,11 +1117,9 @@
                                     <input type="email" name="email" placeholder="Optional email" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
                                 </div>
                             </div>
-                            <div class="guest-form__field-group hidden gap-1" id="checkInCompanionAmenityWrap">
+                            <div class="guest-form__field-group grid gap-1" id="checkInCompanionAmenityWrap" style="display: none;">
                                 <label class="guest-form__label text-xs font-semibold text-hp-text">Assign to Amenity</label>
-                                <select name="amenity_id" id="checkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                                    <option value="" selected>No amenity</option>
-                                </select>
+                                <select name="amenity_id" id="checkInCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
                             </div>
                             <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5" id="checkInCompanionPoolWrap">
                                 <div class="flex items-center gap-2">
@@ -1311,11 +1207,9 @@
                                 </div>
                             </div>
 
-                            <div class="guest-form__field-group hidden gap-1" id="checkInBulkCompanionAmenityWrap">
+                            <div class="guest-form__field-group grid gap-1" id="checkInBulkCompanionAmenityWrap" style="display: none;">
                                 <label class="guest-form__label text-xs font-semibold text-hp-text">Assign to Amenity</label>
-                                <select name="amenity_id" id="checkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-                                    <option value="" selected>No amenity</option>
-                                </select>
+                                <select name="amenity_id" id="checkInBulkCompanionAmenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]"></select>
                             </div>
 
                             <div class="guest-form__field-group grid gap-1 sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="checkInBulkCompanionPoolWrap">
@@ -1331,7 +1225,7 @@
                         <div class="guest-form__actions flex flex-wrap justify-end pt-1">
                             <button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
                                 <i class="bi bi-people-fill"></i>
-                                <span>Add Companions</span>
+                                <span>Add Bulk Companions</span>
                             </button>
                         </div>
                     </form>
@@ -1414,84 +1308,8 @@
         </div>
     </div>
 
-    <!-- Check-In Companion Group Edit Modal -->
-    <div class="guest-modal hidden fixed inset-0 items-center justify-center is-open:flex" id="checkInCompanionGroupEditModal" aria-hidden="true" style="z-index: 1060;">
-        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-checkin-group-edit-modal="true"></div>
-        <div class="guest-modal__content relative z-[1] w-full max-w-[560px] !max-h-none !overflow-visible rounded-2xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="checkInGroupEditTitle">
-            <button type="button" class="group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs z-10" data-close-checkin-group-edit-modal="true" aria-label="Close modal">
-                <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
-            </button>
-
-            <!-- Modal Header -->
-            <div class="mb-3 flex items-center gap-3 border-b border-glass-border/60 pb-3">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
-                    <i class="bi bi-people-fill text-lg"></i>
-                </div>
-                <div>
-                    <h3 id="checkInGroupEditTitle" class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Edit Companion Group</h3>
-                    <p class="m-0 text-xs text-hp-text-muted">Adjust group size and access privileges</p>
-                </div>
-            </div>
-
-            <!-- Demographics Badge -->
-            <div class="mb-3 flex flex-wrap items-center gap-2">
-                <span id="checkInGroupEditDemographicsBadge" class="inline-flex items-center gap-1.5 rounded-lg bg-hp-green/15 text-hp-green px-3 py-1 text-xs font-bold"></span>
-                <span id="checkInGroupEditAmenityBadge" class="hidden inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2.5 py-1 text-xs font-bold"></span>
-            </div>
-
-            <form id="checkInGroupEditForm" class="grid gap-3" action="#">
-                <input type="hidden" id="checkInGroupEditGroupIndex" value="-1">
-
-                <!-- Row 1: Group Quantity (Inline Row) -->
-                <div class="flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/60 dark:bg-white/5 px-3.5 py-2.5">
-                    <div>
-                        <label class="text-sm font-bold text-hp-text dark:text-[#f3f4f6] flex items-center gap-2 cursor-pointer m-0" for="checkInGroupEditQuantityInput">
-                            <i class="bi bi-people text-hp-green text-base"></i> Group Quantity
-                        </label>
-                        <p class="m-0 text-xs text-hp-text-muted">Total number of guests in this group</p>
-                    </div>
-                    <div class="flex items-center gap-1 rounded-lg border border-glass-border bg-white/90 dark:bg-black/30 p-1 shadow-2xs">
-                        <button type="button" id="checkInGroupEditQtyMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Decrease quantity">−</button>
-                        <input type="number" id="checkInGroupEditQuantityInput" min="1" max="500" value="1" class="no-spinners m-0 w-14 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom quantity">
-                        <button type="button" id="checkInGroupEditQtyPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Increase quantity">+</button>
-                    </div>
-                </div>
-
-                <!-- Row 2: Pool Access Passes -->
-                <div class="grid grid-cols-1 gap-3" id="checkInGroupEditAccessRow">
-                    <div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all" id="checkInGroupEditPoolWrap">
-                        <div class="flex items-center justify-between gap-1.5">
-                            <label class="text-xs font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="checkInGroupEditPoolInput">
-                                <i class="bi bi-water text-sky-600 text-sm"></i> Pool Passes
-                            </label>
-                            <span class="text-xs font-bold text-sky-800 dark:text-sky-300 shrink-0" id="checkInGroupEditPoolHint">0 of 1</span>
-                        </div>
-                        <div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
-                            <button type="button" id="checkInGroupEditPoolMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool">−</button>
-                            <input type="number" id="checkInGroupEditPoolInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type custom pool pass count">
-                            <button type="button" id="checkInGroupEditPoolPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all">+</button>
-                        </div>
-                        <div class="flex items-center justify-end gap-1.5 pt-0.5">
-                            <button type="button" id="checkInGroupEditPoolZeroBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">None (0)</button>
-                            <button type="button" id="checkInGroupEditPoolAllBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">All Pool</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="mt-1 flex items-center justify-end gap-2.5 border-t border-glass-border/60 pt-3">
-                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs sm:text-sm font-semibold text-hp-text transition-colors hover:bg-glass-hover" data-close-checkin-group-edit-modal="true">Cancel</button>
-                    <button type="submit" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:bg-hp-green-dark active:scale-[0.98]">
-                        <i class="bi bi-check-lg text-sm"></i>
-                        <span>Apply Changes</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Duplicate Companion Warning Modal -->
-    <div class="guest-modal hidden z-[1065]" id="duplicateCompanionModal" aria-hidden="true">
+    <div class="guest-modal hidden" id="duplicateCompanionModal" aria-hidden="true" style="z-index: 1065;">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-duplicate-modal="true"></div>
         <div class="guest-modal__content relative z-[1] w-full max-w-[440px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="duplicateCompanionTitle">
             <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -1510,7 +1328,7 @@
     </div>
 
     <!-- Remove Companion Confirmation Modal -->
-    <div class="guest-modal hidden z-[1070]" id="removeCompanionConfirmModal" aria-hidden="true">
+    <div class="guest-modal hidden" id="removeCompanionConfirmModal" aria-hidden="true" style="z-index: 1070;">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-remove-companion-modal="true"></div>
         <div class="guest-modal__content relative z-[1] w-full max-w-[420px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="removeCompanionModalTitle">
             <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/20 shadow-xs">
@@ -1555,6 +1373,9 @@
                 <button type="button" class="guest-form__secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-companion-summary="true">Cancel</button>
                 <button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="proceedToCheckInBtn">Proceed to Check In</button>
             </div>
+        </div>
+    </div>           </div>
+            </form>
         </div>
     </div>
 

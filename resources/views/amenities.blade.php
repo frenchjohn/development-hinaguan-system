@@ -16,13 +16,13 @@
         'resources/js/guest_chatbot.js'
     ])
 </head>
-<body class="antialiased am-page" style="--am-page-bg: url('{{ asset('images/background.jpeg') }}')">
+<body class="antialiased min-h-screen bg-[#0b2418] text-white font-['Montserrat',system-ui,sans-serif] relative bg-cover bg-center bg-fixed before:fixed before:inset-0 before:bg-gradient-to-b before:from-[#0b2418]/90 before:via-[#0b2418]/80 before:to-[#0b2418]/95 before:pointer-events-none before:z-0" style="background-image: url('{{ asset('images/background.jpeg') }}')">
 
-    <div class="am-site-header" id="amSiteHeader">
-        <div class="am-topbar {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'bg-red-100 border-b border-red-300' : '' }}">
-            <div class="am-topbar__inner">
+    <div class="fixed top-0 left-0 right-0 z-50" id="amSiteHeader">
+        <div class="bg-[#c8a45d] py-1 {{ ($parkSettings->park_status ?? 'open') === 'closed' ? '!bg-red-100 border-b border-red-300' : '' }}">
+            <div class="max-w-7xl mx-auto px-5 text-center">
                 @if (($parkSettings->park_status ?? 'open') === 'closed')
-                    <p class="am-topbar__text text-red-800 font-medium">
+                    <p class="m-0 text-xs font-medium text-red-800">
                         <span class="inline-flex items-center gap-1.5 py-0.5 px-2.5 rounded-full bg-red-600 text-white font-bold text-xs shadow-sm mr-1">
                             <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
                             Park Closed
@@ -31,139 +31,48 @@
                         &nbsp;|&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
                     </p>
                 @else
-                    <p class="am-topbar__text">
+                    <p class="m-0 text-xs font-medium text-[#001a11]">
                         <strong>Now Open!</strong>
                         Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
                         Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
-                        <a href="{{ route('reservation') }}">Reserve Now</a>
+                        <a href="{{ route('reservation') }}" class="font-bold text-[#001a11] underline hover:text-black">Reserve Now</a>
                         &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
                     </p>
                 @endif
             </div>
         </div>
-        <header class="am-header">
-            <div class="am-header__inner">
-                <a href="{{ route('home') }}" class="am-logo">
-                    <span class="am-logo__icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/></svg>
+        <header class="bg-[#0b2418]/95 backdrop-blur-md py-2 shadow-[0_4px_20px_rgba(0,0,0,0.25)] border-b border-[rgba(200,164,93,0.2)]">
+            <div class="max-w-7xl mx-auto px-5 flex items-center justify-between gap-5">
+                <a href="{{ route('home') }}" class="flex items-center gap-2.5 no-underline group">
+                    <span class="w-8 h-8 bg-[#c8a45d] rounded-full flex items-center justify-center text-[#0b2418] shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/></svg>
                     </span>
-                    <span class="am-logo__text">
-                        <span class="am-logo__name">Hinaguan Nature Park</span>
-                        <span class="am-logo__location">Jasaan, Misamis Oriental</span>
+                    <span class="flex flex-col">
+                        <span class="font-['Playfair_Display',Georgia,serif] font-semibold text-base text-[#c8a45d] leading-tight">Hinaguan Nature Park</span>
+                        <span class="text-[0.58rem] tracking-wider uppercase text-white/65">Jasaan, Misamis Oriental</span>
                     </span>
                 </a>
-                <nav class="am-nav">
-                    <ul class="am-nav__links">
-                        <li><a href="{{ route('home') }}#about">About</a></li>
-                        <li><a href="{{ route('amenities') }}" class="active-link">Amenities</a></li>
-                        <li><a href="{{ route('home') }}#activities">Activities</a></li>
-                        <li><a href="{{ route('home') }}#rates">Rates</a></li>
-                        <li><a href="{{ route('home') }}#gallery">Gallery</a></li>
-                        <li><a href="{{ route('home') }}#directions">Directions</a></li>
+                <nav class="flex items-center gap-4">
+                    <ul class="hidden min-[900px]:flex items-center gap-4 list-none m-0 p-0">
+                        <li><a href="{{ route('home') }}#about" class="text-xs font-semibold uppercase tracking-wider text-white/85 transition hover:text-[#c8a45d] no-underline">About</a></li>
+                        <li><a href="{{ route('amenities') }}" class="text-xs font-semibold uppercase tracking-wider text-[#c8a45d] no-underline">Amenities</a></li>
+                        <li><a href="{{ route('home') }}#activities" class="text-xs font-semibold uppercase tracking-wider text-white/85 transition hover:text-[#c8a45d] no-underline">Activities</a></li>
+                        <li><a href="{{ route('home') }}#rates" class="text-xs font-semibold uppercase tracking-wider text-white/85 transition hover:text-[#c8a45d] no-underline">Rates</a></li>
+                        <li><a href="{{ route('home') }}#gallery" class="text-xs font-semibold uppercase tracking-wider text-white/85 transition hover:text-[#c8a45d] no-underline">Gallery</a></li>
+                        <li><a href="{{ route('home') }}#directions" class="text-xs font-semibold uppercase tracking-wider text-white/85 transition hover:text-[#c8a45d] no-underline">Directions</a></li>
                     </ul>
-                    <a href="{{ route('home') }}" class="am-btn bg-white/10 text-white hover:bg-white/20 border border-[rgba(200,164,93,0.4)] transition">
+                    <a href="{{ route('home') }}" class="inline-flex items-center justify-center rounded px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider no-underline transition cursor-pointer bg-white/10 text-white hover:bg-white/20 border border-[rgba(200,164,93,0.4)]">
                         <svg class="h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
                         Back to Home
                     </a>
-                    <a href="{{ route('reservation') }}" class="am-btn am-btn--book">Book Now</a>
+                    <a href="{{ route('reservation') }}" class="inline-flex items-center justify-center rounded px-4 py-1.5 text-xs font-bold uppercase tracking-wider no-underline transition cursor-pointer bg-[#c8a45d] text-[#0b2418] hover:bg-[#d4b06a] shadow-md">Book Now</a>
                 </nav>
             </div>
         </header>
     </div>
 
-    <main class="am-main">
-        <div class="am-container">
-
-            <!-- Live Demographic & Guest Counters Strip -->
-            <div class="mb-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8" data-animate="fade-up">
-                <!-- Total Guests Inside -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-900/60 text-emerald-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-white tabular-nums" data-count="{{ $totalGuestsInside }}">{{ $totalGuestsInside }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Guests Inside</p>
-                    </div>
-                </article>
-
-                <!-- Female / Girls Counter -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-pink-900/60 text-pink-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7m-3-3h6m-3-4a6 6 0 100-12 6 6 0 000 12z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-pink-200 tabular-nums" data-count="{{ $femaleCount }}">{{ $femaleCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Girls / Females</p>
-                    </div>
-                </article>
-
-                <!-- Male Guests Counter -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-900/60 text-blue-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8l5-5m0 0h-5m5 0v5M12 14a6 6 0 100-12 6 6 0 000 12z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-blue-200 tabular-nums" data-count="{{ $maleCount }}">{{ $maleCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Male Guests</p>
-                    </div>
-                </article>
-
-                <!-- Adults Counter -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-900/60 text-amber-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-amber-200 tabular-nums" data-count="{{ $adultCount }}">{{ $adultCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Adults</p>
-                    </div>
-                </article>
-
-                <!-- Children Counter -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-purple-900/60 text-purple-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-purple-200 tabular-nums" data-count="{{ $childCount }}">{{ $childCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Children</p>
-                    </div>
-                </article>
-
-                <!-- Occupied Amenities -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-900/60 text-red-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-white tabular-nums" data-count="{{ $occupiedCount }}">{{ $occupiedCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Occupied</p>
-                    </div>
-                </article>
-
-                <!-- Available Amenities -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-900/60 text-emerald-300">
-                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="occupancy-stat__value m-0 font-display text-base font-bold leading-none text-white tabular-nums" data-count="{{ $availableCount }}">{{ $availableCount }}</p>
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Available</p>
-                    </div>
-                </article>
-
-                <!-- Occupancy Rate -->
-                <article class="flex items-center gap-2 rounded-xl border border-[rgba(200,164,93,0.25)] bg-[#0b2418]/90 p-2 shadow-sm backdrop-blur-md">
-                    <div class="relative grid h-7 w-7 shrink-0 place-items-center rounded-full" style="background: conic-gradient(#c8a45d calc(var(--pct) * 1%), rgba(255,255,255,0.15) 0); --pct: {{ $occupancyRate }}">
-                        <span class="grid h-5 w-5 place-items-center rounded-full bg-[#061810] text-[0.55rem] font-bold text-[#c8a45d]">{{ $occupancyRate }}%</span>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-[0.58rem] font-bold uppercase tracking-wider text-white/70">Rate</p>
-                        <p class="truncate text-[0.62rem] text-white/60">{{ $inUseCount }}/{{ $totalAmenities }} used</p>
-                    </div>
-                </article>
-            </div>
+    <main class="relative z-10 pb-8" style="padding-top: calc(var(--am-header-offset, 4.8rem) + 0.75rem);">
+        <div class="max-w-7xl mx-auto px-4">
 
             <!-- Filter Controls Toolbar -->
             <div class="mb-3.5 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-[rgba(200,164,93,0.3)] bg-[#0b2418]/90 px-3 py-2 backdrop-blur-md shadow-md">
@@ -190,7 +99,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="clearFiltersBtn" class="cursor-pointer rounded-lg border border-[rgba(200,164,93,0.25)] bg-white/5 px-2.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-wider text-white transition hover:bg-white/15">Reset</button>
-                    <a href="{{ route('reservation') }}" class="am-btn am-btn--book shadow-md text-xs py-1.5 px-3.5">Reserve Facility</a>
+                    <a href="{{ route('reservation') }}" class="inline-flex items-center justify-center rounded px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider no-underline transition cursor-pointer bg-[#c8a45d] text-[#0b2418] hover:bg-[#d4b06a] shadow-md">Reserve Facility</a>
                 </div>
             </div>
 
@@ -306,42 +215,63 @@
                                 <i class="h-1 w-1 rounded-full bg-white animate-pulse"></i>{{ $cardStatusLabel }}
                             </span>
 
-                            <!-- Occupied Overlay (Bottom) -->
+                            @php
+                                $allReservations = [];
+                                if (!empty($amenityOccupancy['occupied'])) {
+                                    foreach ($amenityOccupancy['occupied'] as $occupied) {
+                                        $allReservations[] = [
+                                            'id' => $occupied['reservation_id'],
+                                            'type' => 'occupied',
+                                            'label' => ($occupied['time_slot_label'] ?? $occupied['time_slot']),
+                                            'guest_count' => ($occupied['guest_count'] ?? 0),
+                                            'is_shared' => !empty($occupied['is_shared_group']),
+                                            'total_amenities' => ($occupied['total_amenities_count'] ?? 0)
+                                        ];
+                                    }
+                                }
+                                if (!empty($amenityOccupancy['reserved'])) {
+                                    foreach ($amenityOccupancy['reserved'] as $reserved) {
+                                        $allReservations[] = [
+                                            'id' => $reserved['reservation_id'],
+                                            'type' => 'reserved',
+                                            'label' => ($reserved['time_slot_label'] ?? $reserved['time_slot']),
+                                            'is_shared' => !empty($reserved['is_shared_group']),
+                                            'total_amenities' => ($reserved['total_amenities_count'] ?? 0)
+                                        ];
+                                    }
+                                }
+                                $overflowCount = count($allReservations) - 4;
+                            @endphp
+
+                            {{-- Occupied circles at top right (Red) --}}
                             @if (!empty($amenityOccupancy['occupied']))
-                                <div class="occupancy-card__status-overlay absolute bottom-0 left-0 right-0 z-10 border-t border-red-500/80 bg-red-950/90 px-2.5 py-1.5 text-[0.68rem] text-white backdrop-blur-md">
-                                    @foreach ($amenityOccupancy['occupied'] as $occupied)
-                                        <div class="occupancy-card__status-item flex flex-wrap items-center gap-1 leading-snug">
-                                            <span class="font-semibold text-white/90">Occupied:</span>
-                                            <span class="font-bold text-white">#{{ $occupied['reservation_id'] }}</span>
-                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}</span>
-                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold text-white">{{ $occupied['guest_count'] ?? 0 }} inside</span>
-                                            @if (!empty($occupied['is_shared_group']))
-                                                <span class="inline-flex items-center gap-0.5 rounded-full border border-amber-300/80 bg-amber-500/90 px-1.5 py-0.2 text-[0.62rem] font-bold text-white shadow-sm">
-                                                    <svg class="h-2.5 w-2.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                    Shared Group ({{ $occupied['total_amenities_count'] }})
-                                                </span>
-                                            @endif
+                                @foreach ($amenityOccupancy['occupied'] as $index => $occupied)
+                                    @if ($index < 2)
+                                        <div class="absolute top-2.5 {{ $index === 0 ? 'right-2.5' : 'right-12' }} z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#dc2626] text-[0.72rem] font-bold text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                                             title="Occupied: #{{ $occupied['reservation_id'] }} ({{ $occupied['time_slot_label'] ?? $occupied['time_slot'] }}) - {{ $occupied['guest_count'] ?? 0 }} inside{{ !empty($occupied['is_shared_group']) ? ' [Shared Group]' : '' }}">
+                                            #{{ $occupied['reservation_id'] }}
                                         </div>
-                                    @endforeach
-                                </div>
+                                    @endif
+                                @endforeach
                             @endif
 
-                            <!-- Reserved Overlay (Top) -->
+                            {{-- Reserved circles at bottom right (Amber/Gold) --}}
                             @if (!empty($amenityOccupancy['reserved']))
-                                <div class="occupancy-card__status-overlay absolute left-0 right-0 top-0 z-10 border-b border-amber-500/80 bg-amber-950/90 px-2.5 py-1.5 text-[0.68rem] text-white backdrop-blur-md">
-                                    @foreach ($amenityOccupancy['reserved'] as $reserved)
-                                        <div class="occupancy-card__status-item flex flex-wrap items-center gap-1 leading-snug">
-                                            <span class="font-semibold text-white/90">Reserved:</span>
-                                            <span class="font-bold text-white">#{{ $reserved['reservation_id'] }}</span>
-                                            <span class="rounded-full bg-white/20 px-1.5 py-0.2 text-[0.62rem] font-bold capitalize text-white">{{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}</span>
-                                            @if (!empty($reserved['is_shared_group']))
-                                                <span class="inline-flex items-center gap-0.5 rounded-full border border-amber-300/80 bg-amber-500/90 px-1.5 py-0.2 text-[0.62rem] font-bold text-white shadow-sm">
-                                                    <svg class="h-2.5 w-2.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                                    Shared Group ({{ $reserved['total_amenities_count'] }})
-                                                </span>
-                                            @endif
+                                @foreach ($amenityOccupancy['reserved'] as $index => $reserved)
+                                    @if ($index < 2)
+                                        <div class="absolute bottom-2.5 {{ $index === 0 ? 'right-2.5' : 'right-12' }} z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-[#c8a45d] text-[0.72rem] font-bold text-white shadow-lg transition-transform duration-200 hover:scale-110"
+                                             title="Reserved: #{{ $reserved['reservation_id'] }} ({{ $reserved['time_slot_label'] ?? $reserved['time_slot'] }}){{ !empty($reserved['is_shared_group']) ? ' [Shared Group]' : '' }}">
+                                            #{{ $reserved['reservation_id'] }}
                                         </div>
-                                    @endforeach
+                                    @endif
+                                @endforeach
+                            @endif
+
+                            {{-- Overflow indicator if more than 4 total --}}
+                            @if ($overflowCount > 0)
+                                <div class="absolute bottom-2.5 right-12 z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-gray-600 text-[0.68rem] font-bold text-white shadow-lg"
+                                     title="+{{ $overflowCount }} more reservations">
+                                    +{{ $overflowCount }}
                                 </div>
                             @endif
                         </div>
@@ -466,7 +396,9 @@
         </div>
     </div>
 
-    <footer class="am-footer"><p>&copy; {{ date('Y') }} <strong>Hinaguan Nature Park</strong>. All rights reserved.</p></footer>
+    <footer class="relative z-10 bg-[#001a11]/95 text-white/55 p-5 text-center text-xs border-t border-[rgba(200,164,93,0.2)]">
+        <p class="m-0">&copy; {{ date('Y') }} <strong class="text-[#c8a45d]">Hinaguan Nature Park</strong>. All rights reserved.</p>
+    </footer>
 
     <x-guest_chatbot />
 </body>

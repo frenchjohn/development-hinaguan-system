@@ -299,37 +299,42 @@
                         {{-- Celebrity Host Spotlight Widget (Directly Under Weather) --}}
                         <div class="hp-brenda-widget group" tabindex="0" aria-label="Celebrity host Brenda Mage is in the park today">
                             <div class="hp-brenda-widget__shimmer" aria-hidden="true"></div>
-                            <div class="hp-brenda-widget__header">
-                                <span class="hp-brenda-widget__badge">
-                                    <span class="hp-brenda-widget__dot">
-                                        <span class="hp-brenda-widget__ping"></span>
-                                    </span>
-                                    <span>Celebrity In Park</span>
-                                </span>
-                                <span class="hp-brenda-widget__sparkle" title="Celebrity presence">
-                                    <i class="bi bi-stars"></i>
-                                </span>
+                            
+                            <!-- Left Side: Edge-to-Edge Image -->
+                            <div class="hp-brenda-widget__image-side">
+                                <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="hp-brenda-widget__img" loading="lazy">
+                                <div class="hp-brenda-widget__image-gradient" aria-hidden="true"></div>
                             </div>
 
-                            <div class="hp-brenda-widget__body">
-                                <div class="hp-brenda-widget__avatar" aria-hidden="true">
-                                    <i class="bi bi-patch-check-fill"></i>
+                            <!-- Right Side: Content Details -->
+                            <div class="hp-brenda-widget__content-side">
+                                <div class="hp-brenda-widget__header">
+                                    <span class="hp-brenda-widget__badge">
+                                        <span class="hp-brenda-widget__dot">
+                                            <span class="hp-brenda-widget__ping"></span>
+                                        </span>
+                                        <span>Celebrity In Park</span>
+                                    </span>
+                                    <span class="hp-brenda-widget__sparkle" title="Celebrity presence">
+                                        <i class="bi bi-stars"></i>
+                                    </span>
                                 </div>
+
                                 <div class="hp-brenda-widget__info">
                                     <h3 class="hp-brenda-widget__name">Brenda is in the park!</h3>
                                     <p class="hp-brenda-widget__subtitle">Celebrity owner Brenda Mage is on-site today</p>
                                 </div>
-                            </div>
 
-                            <div class="hp-brenda-widget__footer">
-                                <div class="hp-brenda-widget__loc">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>Hinaguan Nature Park</span>
+                                <div class="hp-brenda-widget__footer">
+                                    <div class="hp-brenda-widget__loc">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                        <span>Hinaguan Park</span>
+                                    </div>
+                                    <span class="hp-brenda-widget__pill">
+                                        <i class="bi bi-camera-fill"></i>
+                                        <span>Meet &amp; Greet</span>
+                                    </span>
                                 </div>
-                                <span class="hp-brenda-widget__pill">
-                                    <i class="bi bi-camera-fill"></i>
-                                    <span>Meet &amp; Greet</span>
-                                </span>
                             </div>
                         </div>
                     @endif
@@ -384,7 +389,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                         </svg>
-                        Reserve Now
+                        <span>Reserve Now</span>
                     </a>
                     <a href="#about" class="hp-btn hp-btn--outline" data-nav-link>Explore the Park</a>
                 </div>
@@ -404,7 +409,7 @@
             <div class="hp-about-grid">
                 <div class="hp-about__visual" data-animate="fade-right">
                     <div class="hp-about__image-main">
-                        <img src="{{ asset('images/picnic_and_bonding.jpg') }}" alt="Guests enjoying Hinaguan Nature Park" loading="lazy">
+                        <img src="{{ asset('images/About_Image.jpeg') }}" alt="Guests enjoying Hinaguan Nature Park" loading="lazy">
                     </div>
                     <div class="hp-about__image-secondary">
                         <img src="{{ asset('images/River_Trecking.jpg') }}" alt="River trekking at Hinaguan Nature Park" loading="lazy">
@@ -413,26 +418,24 @@
                 </div>
 
                 <div class="hp-about__text" data-animate="fade-up" data-delay="150">
-                    <span class="hp-section__label">About the Park</span>
-                    <h2 class="hp-section__title">A True Escape Into Nature's Embrace</h2>
+                    <span class="hp-section__label">About Hinaguan Nature Park</span>
+                    <h2 class="hp-section__title">Where Nature Feels Like Home</h2>
                     <p>
-                        Nestled along the banks of a pristine river in Jasaan, Misamis Oriental, Hinaguan Nature Park
-                        offers a serene retreat where lush greenery, crystal-clear waters, and the gentle sounds of
-                        nature create the perfect backdrop for relaxation and adventure.
+                        Nestled beside the beautiful river of Jasaan, Misamis Oriental, Hinaguan Nature Park is a peaceful escape where nature, adventure, and unforgettable moments come together.
                     </p>
                     <p>
-                        Owned and hosted by beloved celebrity Brenda Mage, this riverside sanctuary welcomes families,
-                        friends, and nature lovers to unwind, explore, and create lasting memories in one of Mindanao's
-                        most enchanting destinations.
+                        Surrounded by lush greenery and refreshing river waters, Hinaguan offers the perfect place to relax, explore, swim, dine, and create memories with family and friends. Whether you are looking for a quiet retreat or a fun-filled outdoor experience, Hinaguan welcomes you to slow down, breathe in the fresh air, and enjoy the beauty of nature.
                     </p>
                     <p>
-                        From natural river streams and fresh swimming spots to cozy cottages and open-air dining, every corner
-                        of Hinaguan is designed to bring you closer to the beauty of the outdoors.
+                        Come for the scenery. Stay for the experience. Leave with memories.
+                    </p>
+                    <p class="font-semibold text-hp-green dark:text-emerald-400">
+                        Hinaguan Nature Park &mdash; Your escape into nature.
                     </p>
 
                     <div class="hp-about__host">
                         <div class="hp-about__host-avatar">
-                            <img src="{{ asset('images/photography.jpg') }}" alt="Brenda Mage at Hinaguan Nature Park" loading="lazy">
+                            <img src="{{ asset('images/brendamage_profile.jpeg') }}" alt="Brenda Mage at Hinaguan Nature Park" loading="lazy">
                         </div>
                         <div>
                             <p class="hp-about__host-name">Brenda Mage</p>
@@ -500,8 +503,11 @@
                 </div>
             </div>
 
-            <div class="hp-section__cta" data-animate="fade-up">
-                <a href="{{ route('amenities') }}" class="hp-btn hp-btn--outline-dark">View All Amenities</a>
+            <div class="mt-8 flex justify-center">
+                <a href="{{ route('amenities') }}" class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white transition-all duration-200 hover:bg-white/20 hover:border-white/50 no-underline shadow-sm">
+                    <span>View All Amenities</span>
+                    <i class="bi bi-arrow-right text-xs"></i>
+                </a>
             </div>
         </div>
     </section>

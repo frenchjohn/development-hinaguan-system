@@ -268,4 +268,39 @@ class StaffReservationsPageTest extends TestCase
             'status' => 'Confirmed',
         ]);
     }
+
+    public function test_online_reservation_check_in_modal_renders_single_section_layout(): void
+    {
+        $this->staffSession();
+        $this->createAmenity('amenity-1');
+        $reservation = $this->createReservation('2026-08-10');
+
+        $response = $this->get('/staff/reservations');
+
+        $response->assertOk();
+        // Assert modal container exists
+        $response->assertSee('id="checkInModal"', false);
+        $response->assertSee('id="checkInScrollContent"', false);
+        // Assert Stay Schedule & Admission Policies are present
+        $response->assertSee('Stay Schedule', false);
+        $response->assertSee('id="checkInEntranceOption"', false);
+        $response->assertSee('id="checkInPoolOption"', false);
+        // Assert Reserved Amenities section
+        $response->assertSee('id="checkInAmenitiesContainer"', false);
+        // Assert inline Main Guest form inputs
+        $response->assertSee('id="checkInMainFirstName"', false);
+        $response->assertSee('id="checkInMainLastName"', false);
+        $response->assertSee('id="checkInMainAge"', false);
+        $response->assertSee('id="checkInMainGender"', false);
+        $response->assertSee('id="checkInMainIsForeigner"', false);
+        // Assert Companions section
+        $response->assertSee('id="checkInCompanionList"', false);
+        $response->assertSee('id="checkInAddCompanionBtn"', false);
+        // Assert Fees and Totals
+        $response->assertSee('id="checkInGrandTotal"', false);
+        $response->assertSee('id="checkInSubmitBtn"', false);
+        // Assert multi-tab sidebar navigation has been removed
+        $response->assertDontSee('walkin-modal-sidebar');
+    }
 }
+

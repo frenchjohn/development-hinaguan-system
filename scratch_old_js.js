@@ -177,10 +177,10 @@ window.AppPage['staff_reservations'] = function () {
         const statusClass = statusColors[statusLower] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300';
 
         return `
-                <td class="py-3.5 pl-5 pr-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5 whitespace-nowrap">
+                <td class="py-3.5 px-2 text-center whitespace-nowrap">
                     <span class="inline-flex items-center rounded-lg bg-[#e8f5e9] px-2 py-0.5 text-xs font-bold text-[#1b4332] font-mono dark:bg-[rgba(46,125,50,0.25)] dark:text-[#9ca3af]">#${escapeHtml(reservation.id)}</span>
                 </td>
-                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                <td class="py-3.5 px-4 text-left">
                     <div class="resv-booker flex items-center gap-3">
                         <span class="resv-avatar flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full bg-[#183d28] text-[0.78rem] font-bold uppercase tracking-[0.03em] text-white dark:bg-[#2e7d55]">${escapeHtml(getInitials(reservation.booker_name))}</span>
                         <div class="resv-booker__info flex min-w-0 flex-col gap-0.5">
@@ -192,12 +192,18 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
                     </div>
                 </td>
-                <td class="py-3.5 px-4 text-left align-middle border-t border-[#f0f4ef] dark:border-white/5">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
-                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">${renderTimeSlots(reservation)}</td>
-                <td class="py-3.5 px-3 text-center align-middle border-t border-[#f0f4ef] dark:border-white/5">
+                <td class="py-3.5 px-4 text-left">${formatDate(reservation.reservation_date, reservation.end_date, reservation.total_days)}</td>
+                <td class="py-3.5 px-2 text-center">${renderTimeSlots(reservation)}</td>
+                <td class="py-3.5 px-2 text-center font-semibold text-sm text-[#183d28] dark:text-[#e8f5e9]">${escapeHtml(reservation.number_of_guests)}</td>
+                <td class="py-3.5 px-2 text-center">
                     <span class="reservation-status inline-flex items-center justify-center rounded-full border px-3 py-0.5 text-xs font-bold capitalize ${statusClass}">${escapeHtml(reservation.status)}</span>
                 </td>
-                <td class="py-3.5 pl-4 pr-6 sm:pr-8 text-right align-middle border-t border-[#f0f4ef] dark:border-white/5 font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
+                <td class="py-3.5 px-4 text-right font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">₱${Number(reservation.total_amount || 0).toFixed(2)}</td>
+                <td class="py-3.5 px-2 text-center">
+                    <button type="button" class="resv-row-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[#dfe5e0] bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#2d6a4f] hover:bg-[#2d6a4f] hover:text-white dark:border-white/15 dark:bg-white/5 dark:text-[#9ca3af] dark:hover:bg-[#2e7d55]" aria-label="View reservation details">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </td>
             `;
     };
 
@@ -321,22 +327,6 @@ window.AppPage['staff_reservations'] = function () {
         return singleCount + bulkCount;
     };
 
-    const getGenderBadgeHtml = (gender) => {
-        const isFemale = String(gender || '').trim().toLowerCase() === 'female';
-        if (isFemale) {
-            return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/25 shrink-0 shadow-2xs" title="Gender: Female"><i class="bi bi-gender-female text-xs font-bold"></i></span>`;
-        }
-        return `<span class="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/25 shrink-0 shadow-2xs" title="Gender: Male"><i class="bi bi-gender-male text-xs font-bold"></i></span>`;
-    };
-
-    const getAgeBadgeHtml = (ageText) => {
-        return `<span class="inline-flex items-center gap-1 rounded-md bg-emerald-100/70 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300/70 dark:border-emerald-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(ageText)}</span>`;
-    };
-
-    const getNationalityBadgeHtml = (nationality) => {
-        return `<span class="inline-flex items-center gap-1 rounded-md bg-amber-100/70 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-300/70 dark:border-amber-800/60 px-2 py-0.5 text-xs font-semibold shadow-2xs shrink-0">${escapeHtml(nationality)}</span>`;
-    };
-
     // Modal Staged companion search and filter controls
     const checkInModalCompanionPreviewList = document.getElementById('checkInModalCompanionPreviewList');
     const checkInModalCompanionPreviewCountBadge = document.getElementById('checkInModalCompanionPreviewCountBadge');
@@ -374,191 +364,6 @@ window.AppPage['staff_reservations'] = function () {
         renderCheckInModalCompanionPreview();
     });
 
-    // Check-In Companion Group Edit Modal Controls
-    const checkInCompanionGroupEditModal = document.getElementById('checkInCompanionGroupEditModal');
-    const checkInGroupEditForm = document.getElementById('checkInGroupEditForm');
-    const checkInGroupEditGroupIndex = document.getElementById('checkInGroupEditGroupIndex');
-    const checkInGroupEditDemographicsBadge = document.getElementById('checkInGroupEditDemographicsBadge');
-    const checkInGroupEditAmenityBadge = document.getElementById('checkInGroupEditAmenityBadge');
-    const checkInGroupEditQuantityInput = document.getElementById('checkInGroupEditQuantityInput');
-    const checkInGroupEditQtyMinusBtn = document.getElementById('checkInGroupEditQtyMinusBtn');
-    const checkInGroupEditQtyPlusBtn = document.getElementById('checkInGroupEditQtyPlusBtn');
-    const checkInGroupEditAccessRow = document.getElementById('checkInGroupEditAccessRow');
-    const checkInGroupEditPoolWrap = document.getElementById('checkInGroupEditPoolWrap');
-    const checkInGroupEditPoolInput = document.getElementById('checkInGroupEditPoolInput');
-    const checkInGroupEditPoolHint = document.getElementById('checkInGroupEditPoolHint');
-    const checkInGroupEditPoolMinusBtn = document.getElementById('checkInGroupEditPoolMinusBtn');
-    const checkInGroupEditPoolPlusBtn = document.getElementById('checkInGroupEditPoolPlusBtn');
-    const checkInGroupEditPoolZeroBtn = document.getElementById('checkInGroupEditPoolZeroBtn');
-    const checkInGroupEditPoolAllBtn = document.getElementById('checkInGroupEditPoolAllBtn');
-
-    const openCheckInGroupEditModal = (groupIndex) => {
-        const group = bulkCompanionGroups[groupIndex];
-        if (!group || !checkInCompanionGroupEditModal) return;
-
-        if (checkInGroupEditGroupIndex) checkInGroupEditGroupIndex.value = groupIndex;
-        const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
-        const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
-
-        if (checkInGroupEditDemographicsBadge) {
-            checkInGroupEditDemographicsBadge.innerHTML = `
-                ${getGenderBadgeHtml(group.gender)}
-                <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
-                <span class="text-hp-text-muted/40">•</span>
-                <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${group.is_foreigner ? 'Foreigner' : 'Filipino'}</span>
-            `;
-            checkInGroupEditDemographicsBadge.className = 'flex flex-wrap items-center gap-2';
-        }
-
-        const resAmenities = currentReservationData?.reservation_amenities || [];
-        if (checkInGroupEditAmenityBadge) {
-            if (group.amenity_id) {
-                const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                if (foundAm) {
-                    const amName = foundAm?.amenity?.amenities_name || 'Amenity';
-                    checkInGroupEditAmenityBadge.innerHTML = `<i class="bi bi-house-door-fill me-1"></i>${escapeHtml(amName)}`;
-                    checkInGroupEditAmenityBadge.classList.remove('hidden');
-                } else {
-                    checkInGroupEditAmenityBadge.classList.add('hidden');
-                }
-            } else {
-                checkInGroupEditAmenityBadge.classList.add('hidden');
-            }
-        }
-
-        const qty = parseInt(group.quantity, 10) || 1;
-        if (checkInGroupEditQuantityInput) {
-            checkInGroupEditQuantityInput.value = qty;
-        }
-
-        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const showPool = (currentPoolOpt === 'specific');
-
-        const curPool = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), qty);
-        if (checkInGroupEditPoolInput) {
-            checkInGroupEditPoolInput.value = curPool;
-            checkInGroupEditPoolInput.max = qty;
-        }
-        if (checkInGroupEditPoolHint) {
-            checkInGroupEditPoolHint.textContent = `${curPool} of ${qty} with pool`;
-        }
-
-        if (checkInGroupEditAccessRow) {
-            checkInGroupEditAccessRow.classList.toggle('hidden', !showPool);
-        }
-        if (checkInGroupEditPoolWrap) {
-            checkInGroupEditPoolWrap.classList.toggle('hidden', !showPool);
-        }
-
-        checkInCompanionGroupEditModal.classList.add('is-open');
-        checkInCompanionGroupEditModal.classList.remove('hidden');
-        checkInCompanionGroupEditModal.setAttribute('aria-hidden', 'false');
-    };
-
-    const closeCheckInGroupEditModal = () => {
-        if (!checkInCompanionGroupEditModal) return;
-        checkInCompanionGroupEditModal.classList.remove('is-open');
-        checkInCompanionGroupEditModal.classList.add('hidden');
-        checkInCompanionGroupEditModal.setAttribute('aria-hidden', 'true');
-    };
-
-    document.querySelectorAll('[data-close-checkin-group-edit-modal="true"]').forEach(btn => {
-        btn.addEventListener('click', closeCheckInGroupEditModal);
-    });
-
-    const syncCheckInGroupEditHints = () => {
-        const qty = Math.max(1, parseInt(checkInGroupEditQuantityInput?.value, 10) || 1);
-        if (checkInGroupEditPoolInput) {
-            checkInGroupEditPoolInput.max = qty;
-            let poolVal = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
-            if (poolVal > qty) {
-                poolVal = qty;
-                checkInGroupEditPoolInput.value = qty;
-            }
-            if (checkInGroupEditPoolHint) {
-                checkInGroupEditPoolHint.textContent = `${poolVal} of ${qty} with pool`;
-            }
-        }
-    };
-
-    checkInGroupEditQtyMinusBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditQuantityInput) return;
-        const cur = parseInt(checkInGroupEditQuantityInput.value, 10) || 1;
-        if (cur > 1) {
-            checkInGroupEditQuantityInput.value = cur - 1;
-            syncCheckInGroupEditHints();
-        }
-    });
-
-    checkInGroupEditQtyPlusBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditQuantityInput) return;
-        const cur = parseInt(checkInGroupEditQuantityInput.value, 10) || 1;
-        if (cur < 500) {
-            checkInGroupEditQuantityInput.value = cur + 1;
-            syncCheckInGroupEditHints();
-        }
-    });
-
-    checkInGroupEditQuantityInput?.addEventListener('input', syncCheckInGroupEditHints);
-
-    checkInGroupEditPoolMinusBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditPoolInput) return;
-        const cur = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
-        if (cur > 0) {
-            checkInGroupEditPoolInput.value = cur - 1;
-            syncCheckInGroupEditHints();
-        }
-    });
-
-    checkInGroupEditPoolPlusBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditPoolInput || !checkInGroupEditQuantityInput) return;
-        const max = Math.max(1, parseInt(checkInGroupEditQuantityInput.value, 10) || 1);
-        const cur = parseInt(checkInGroupEditPoolInput.value, 10) || 0;
-        if (cur < max) {
-            checkInGroupEditPoolInput.value = cur + 1;
-            syncCheckInGroupEditHints();
-        }
-    });
-
-    checkInGroupEditPoolInput?.addEventListener('input', syncCheckInGroupEditHints);
-
-    checkInGroupEditPoolZeroBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditPoolInput) return;
-        checkInGroupEditPoolInput.value = 0;
-        syncCheckInGroupEditHints();
-    });
-
-    checkInGroupEditPoolAllBtn?.addEventListener('click', () => {
-        if (!checkInGroupEditPoolInput || !checkInGroupEditQuantityInput) return;
-        const max = Math.max(1, parseInt(checkInGroupEditQuantityInput.value, 10) || 1);
-        checkInGroupEditPoolInput.value = max;
-        syncCheckInGroupEditHints();
-    });
-
-    checkInGroupEditForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const gIdx = parseInt(checkInGroupEditGroupIndex?.value, 10);
-        if (isNaN(gIdx) || !bulkCompanionGroups[gIdx]) return;
-
-        const group = bulkCompanionGroups[gIdx];
-        const newQty = Math.max(1, parseInt(checkInGroupEditQuantityInput?.value, 10) || 1);
-        const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-
-        group.quantity = newQty;
-
-        let newPool = Math.min(Math.max(0, parseInt(checkInGroupEditPoolInput?.value, 10) || 0), newQty);
-        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
-            newPool = newQty;
-        } else if (currentPoolOpt === 'no_pool') {
-            newPool = 0;
-        }
-        group.pool_quantity = newPool;
-
-        renderCheckInCompanions();
-        renderCheckInModalCompanionPreview();
-        closeCheckInGroupEditModal();
-    });
-
     const handleCheckInBulkQtyChange = (bIdx, rawVal) => {
         if (isNaN(bIdx) || !bulkCompanionGroups[bIdx]) return;
         const group = bulkCompanionGroups[bIdx];
@@ -583,7 +388,6 @@ window.AppPage['staff_reservations'] = function () {
         checkInModalCompanionPreviewList.innerHTML = '';
 
         const totalCount = getTotalCheckInCompanionCount();
-        const currentEntranceOpt = checkInEntranceOption?.value || 'all_paid';
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
         const resAmenities = currentReservationData?.reservation_amenities || [];
 
@@ -640,62 +444,44 @@ window.AppPage['staff_reservations'] = function () {
             const parsedAge = parseInt(companion.age, 10);
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
-            let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
-            } else if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
+            let poolBadge = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadge = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
-                poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
-                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
+                poolBadge = companion.has_pool_access
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to remove pool pass"><i class="bi bi-water"></i> Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-1.5 py-0.5 text-[0.65rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-modal-toggle-companion-pool="${index}" title="Click to grant pool pass">+ Pool Pass</button>`;
             }
 
-            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
-                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
-                : '';
-
-            let amenityName = '';
-            if (companion.amenity_id) {
+            let amenityBadge = '';
+            if (resAmenities.length > 1) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
-                if (foundAm) {
-                    amenityName = foundAm?.amenity?.amenities_name || '';
-                }
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
             }
-            const amenityHtml = amenityName ? `
-                <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
-            ` : '';
-
-            const genderBadge = getGenderBadgeHtml(companion.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/30 hover:bg-glass';
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
-                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
-                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-xs font-bold text-hp-green">
+                        ${escapeHtml(getInitials(`${companion.first_name || ''} ${companion.last_name || ''}`))}
                     </div>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    ${genderBadge}
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
-                    ${amenityHtml}
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="flex items-center gap-1.5">
-                        ${entranceBadgeHtml}
-                        ${poolBadgeHtml}
-                    </div>
-                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-single="${index}" title="Remove staged companion">
-                            <i class="bi bi-trash3 text-xs"></i>
-                        </button>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(companion.gender || 'Male')}, ${escapeHtml(companion.age || '—')} yrs (${rateLabel})</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${amenityBadge}
+                            ${poolBadge}
+                        </div>
                     </div>
                 </div>
+                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-single="${index}" title="Remove staged companion">
+                    <i class="bi bi-trash3 text-xs"></i>
+                </button>
             `;
             checkInModalCompanionPreviewList.appendChild(item);
         });
@@ -714,73 +500,56 @@ window.AppPage['staff_reservations'] = function () {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
-            let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-            } else if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            let poolBadge = '';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All with Pool</span>`;
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadge = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.65rem] font-bold"><i class="bi bi-water"></i> All Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
-                group.pool_quantity = pQty;
-                if (pQty === group.quantity && pQty > 0) {
-                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-                } else if (pQty > 0) {
-                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool access passes for ${pQty} of ${group.quantity} guests">
-                        <i class="bi bi-water text-xs"></i>
-                        <span>${pQty}/${group.quantity}</span>
-                    </div>`;
-                }
+                const pQty = group.pool_quantity || 0;
+                poolBadge = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold text-sky-800 dark:text-sky-300">
+                        <i class="bi bi-water text-sky-600 dark:text-sky-400"></i>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-dec="${index}" title="Decrease pool pass">−</button>
+                        <span class="px-1 min-w-[1.8rem] text-center font-bold text-[0.68rem]">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-4 w-4 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-[0.65rem] font-extrabold transition-colors cursor-pointer" data-modal-bulk-pool-inc="${index}" title="Increase pool pass">+</button>
+                    </div>
+                `;
             }
 
-            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
-                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
-                : '';
-
-            let bulkAmenityName = '';
-            if (group.amenity_id) {
+            let amenityBadge = '';
+            if (resAmenities.length > 1) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                if (foundAm) {
-                    bulkAmenityName = foundAm?.amenity?.amenities_name || '';
-                }
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadge = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 text-[0.65rem] font-bold">🏠 ${escapeHtml(amName)}</span>`;
             }
-            const bulkAmenityHtml = bulkAmenityName ? `
-                <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
-            ` : '';
-
-            const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
-            item.setAttribute('data-modal-open-group-edit', index);
-            item.setAttribute('title', 'Click to edit quantity and access passes');
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass-hover';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
-                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
-                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600/15 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-people-fill"></i>
                     </div>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    ${genderBadge}
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
-                    ${bulkAmenityHtml}
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Bulk: ${group.quantity} guests</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(group.gender)}, Age ${escapeHtml(group.age_group)} (${rateLabel})</span>
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-medium text-hp-text-muted">${escapeHtml(nationality)}</span>
+                            ${amenityBadge}
+                            ${poolBadge}
+                        </div>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="flex items-center gap-1.5">
-                        ${bulkEntranceBadgeHtml}
-                        ${bulkPoolBadgeHtml}
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
+                        <input type="number" min="1" max="500" value="${group.quantity}" data-modal-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-modal-bulk-qty-inc="${index}" title="Increase quantity">+</button>
                     </div>
-                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2 ml-0.5">
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-modal-open-group-edit="${index}" title="Edit group">
-                            <i class="bi bi-pencil-fill text-xs"></i>
-                        </button>
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-modal-remove-bulk="${index}" title="Remove staged bulk group">
-                            <i class="bi bi-trash3 text-xs"></i>
-                        </button>
-                    </div>
+                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-modal-remove-bulk="${index}" title="Remove staged bulk group">
+                        <i class="bi bi-trash3 text-xs"></i>
+                    </button>
                 </div>
             `;
             checkInModalCompanionPreviewList.appendChild(item);
@@ -793,7 +562,7 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
-    // In-modal preview click listeners (Remove single, remove bulk, toggle pool, open group edit)
+    // In-modal preview click listeners (Remove single, remove bulk, toggle pool, inc/dec pool/free, inc/dec bulk qty)
     checkInModalCompanionPreviewList?.addEventListener('click', (e) => {
         const removeSingleBtn = e.target.closest('[data-modal-remove-single]');
         if (removeSingleBtn) {
@@ -831,12 +600,23 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        // Open Group Edit Modal from staged preview
-        const openModalGroupEditBtn = e.target.closest('[data-modal-open-group-edit]');
-        if (openModalGroupEditBtn && !e.target.closest('[data-modal-remove-bulk]')) {
-            const bIdx = parseInt(openModalGroupEditBtn.dataset.modalOpenGroupEdit || openModalGroupEditBtn.getAttribute('data-modal-open-group-edit'), 10);
+        // Increase/Decrease Bulk Group Quantity inside modal preview
+        const bulkQtyIncBtn = e.target.closest('[data-modal-bulk-qty-inc]');
+        if (bulkQtyIncBtn) {
+            const bIdx = parseInt(bulkQtyIncBtn.dataset.modalBulkQtyInc, 10);
             if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                openCheckInGroupEditModal(bIdx);
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
+            }
+            return;
+        }
+
+        const bulkQtyDecBtn = e.target.closest('[data-modal-bulk-qty-dec]');
+        if (bulkQtyDecBtn) {
+            const bIdx = parseInt(bulkQtyDecBtn.dataset.modalBulkQtyDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
             }
             return;
         }
@@ -851,6 +631,45 @@ window.AppPage['staff_reservations'] = function () {
                 renderCheckInModalCompanionPreview();
             }
             return;
+        }
+
+        // Increase/Decrease Bulk Pool Passes inside modal preview
+        const bulkPoolIncBtn = e.target.closest('[data-modal-bulk-pool-inc]');
+        if (bulkPoolIncBtn) {
+            const bIdx = parseInt(bulkPoolIncBtn.dataset.modalBulkPoolInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur < group.quantity) {
+                    group.pool_quantity = cur + 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+
+        const bulkPoolDecBtn = e.target.closest('[data-modal-bulk-pool-dec]');
+        if (bulkPoolDecBtn) {
+            const bIdx = parseInt(bulkPoolDecBtn.dataset.modalBulkPoolDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur > 0) {
+                    group.pool_quantity = cur - 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+    });
+
+    checkInModalCompanionPreviewList?.addEventListener('change', (e) => {
+        const input = e.target.closest('[data-modal-bulk-qty-input]');
+        if (input) {
+            const bIdx = parseInt(input.dataset.modalBulkQtyInput, 10);
+            handleCheckInBulkQtyChange(bIdx, input.value);
         }
     });
 
@@ -907,13 +726,14 @@ window.AppPage['staff_reservations'] = function () {
     const getAllCheckInCompanions = () => {
         const opt = checkInPoolOption?.value || 'no_pool';
         const allCompanions = [];
+        const defaultAmId = String(currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
 
         checkInCompanions.forEach((c) => {
             const hasPool = (opt === 'all_paid' || opt === 'all_free') ? true : (opt === 'specific' ? !!c.has_pool_access : false);
             allCompanions.push({
                 ...c,
                 has_pool_access: hasPool,
-                amenity_id: c.amenity_id || '',
+                amenity_id: c.amenity_id || defaultAmId,
             });
         });
 
@@ -931,7 +751,7 @@ window.AppPage['staff_reservations'] = function () {
                     phone: '',
                     email: '',
                     has_pool_access: i < poolLimit,
-                    amenity_id: group.amenity_id || '',
+                    amenity_id: group.amenity_id || defaultAmId,
                 });
             }
         });
@@ -945,15 +765,10 @@ window.AppPage['staff_reservations'] = function () {
 
         const totalCount = getTotalCheckInCompanionCount();
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const currentEntranceOpt = checkInEntranceOption?.value || 'all_paid';
         const resAmenities = currentReservationData?.reservation_amenities || [];
 
         if (checkInCompanionCountBadge) {
             checkInCompanionCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'} added`;
-        }
-        const sidebarCompBadge = document.getElementById('checkInSidebarCompanionsBadge');
-        if (sidebarCompBadge) {
-            sidebarCompBadge.textContent = totalCount;
         }
 
         const searchTerm = (checkInCompanionSearchInput?.value || '').trim().toLowerCase();
@@ -998,61 +813,34 @@ window.AppPage['staff_reservations'] = function () {
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
-                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
-            } else if (currentPoolOpt === 'all_paid') {
-                poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
+            if (currentPoolOpt === 'all_paid') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Pool Pass</span>';
+            } else if (currentPoolOpt === 'all_free') {
+                poolBadgeHtml = '<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> Free Pool</span>';
             } else if (currentPoolOpt === 'specific') {
                 poolBadgeHtml = companion.has_pool_access
-                    ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
-                    : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
+                    ? `<button type="button" class="inline-flex items-center gap-1 rounded bg-sky-500/20 text-sky-800 dark:text-sky-300 border border-sky-500/30 px-2 py-0.5 text-[0.7rem] font-bold cursor-pointer hover:bg-sky-500/30 transition-colors" data-toggle-companion-pool="${index}" title="Click to remove pool access"><i class="bi bi-water"></i> Pool Pass ✓</button>`
+                    : `<button type="button" class="inline-flex items-center gap-1 rounded bg-gray-500/15 text-hp-text-muted border border-glass-border px-2 py-0.5 text-[0.7rem] font-medium cursor-pointer hover:bg-glass-hover transition-colors" data-toggle-companion-pool="${index}" title="Click to grant pool access">+ Pool Access</button>`;
             }
 
-            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
-                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
-                : '';
-
-            let amenityName = '';
-            if (companion.amenity_id) {
+            let amenityBadgeHtml = '';
+            if (resAmenities.length > 1) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
-                if (foundAm) {
-                    amenityName = foundAm?.amenity?.amenities_name || '';
-                }
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                amenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
             }
-            const amenityHtml = amenityName ? `
-                <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
-            ` : '';
-
-            const genderBadge = getGenderBadgeHtml(companion.gender);
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/30 hover:bg-glass shadow-xs';
+            item.className = 'guest-companion-pill flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
-                        <i class="bi bi-person-fill text-hp-green text-sm"></i>
-                        <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
-                    </div>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    ${genderBadge}
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${companion.age ? `${companion.age} yrs (${rateLabel})` : rateLabel}</span>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
-                    ${amenityHtml}
+                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)} - ${escapeHtml(nationality)} - ${companion.age ? companion.age + ' yrs (' + rateLabel + ')' : rateLabel} - ${escapeHtml(companion.gender)}</span>
+                    ${amenityBadgeHtml}
+                    ${poolBadgeHtml}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="flex items-center gap-1.5">
-                        ${entranceBadgeHtml}
-                        ${poolBadgeHtml}
-                    </div>
-                    <div class="flex items-center border-l border-glass-border pl-2 ml-0.5">
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-companion-index="${index}" title="Remove companion">
-                            <i class="bi bi-trash3 text-xs"></i>
-                        </button>
-                    </div>
-                </div>
+                <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-companion-index="${index}" title="Remove companion">
+                    <i class="bi bi-trash3 text-xs"></i>
+                </button>
             `;
             checkInCompanionList.appendChild(item);
         });
@@ -1072,72 +860,46 @@ window.AppPage['staff_reservations'] = function () {
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
-                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-            } else if (currentPoolOpt === 'all_paid') {
-                bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
+            if (currentPoolOpt === 'all_paid') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-sky-500/15 text-sky-700 dark:text-sky-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} with Pool</span>`;
+            } else if (currentPoolOpt === 'all_free') {
+                bulkPoolBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-water"></i> All ${group.quantity} Free Pool</span>`;
             } else if (currentPoolOpt === 'specific') {
-                const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
-                group.pool_quantity = pQty;
-                if (pQty === group.quantity && pQty > 0) {
-                    bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-                } else if (pQty > 0) {
-                    bulkPoolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool access passes for ${pQty} of ${group.quantity} guests">
-                        <i class="bi bi-water text-xs"></i>
-                        <span>${pQty}/${group.quantity}</span>
-                    </div>`;
-                }
+                const pQty = group.pool_quantity || 0;
+                bulkPoolBadgeHtml = `
+                    <div class="inline-flex items-center gap-1 rounded-lg bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[0.72rem] font-bold text-sky-800 dark:text-sky-300">
+                        <span class="inline-flex items-center gap-1"><i class="bi bi-water text-sky-600 dark:text-sky-400"></i> Pool:</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-dec="${index}" title="Decrease pool access quantity">−</button>
+                        <span class="px-1 min-w-[2.2rem] text-center font-bold text-xs">${pQty} / ${group.quantity}</span>
+                        <button type="button" class="flex h-5 w-5 items-center justify-center rounded bg-sky-600/20 text-sky-900 dark:text-white hover:bg-sky-600/40 text-xs font-extrabold transition-colors cursor-pointer" data-bulk-pool-inc="${index}" title="Increase pool access quantity">+</button>
+                    </div>
+                `;
             }
 
-            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
-                ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
-                : '';
-
-            let bulkAmenityName = '';
-            if (group.amenity_id) {
+            let bulkAmenityBadgeHtml = '';
+            if (resAmenities.length > 1) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
-                if (foundAm) {
-                    bulkAmenityName = foundAm?.amenity?.amenities_name || '';
-                }
+                const amName = foundAm?.amenity?.amenities_name || 'Amenity';
+                bulkAmenityBadgeHtml = `<span class="inline-flex items-center gap-1 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[0.7rem] font-bold"><i class="bi bi-house-door-fill"></i> ${escapeHtml(amName)}</span>`;
             }
-            const bulkAmenityHtml = bulkAmenityName ? `
-                <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
-            ` : '';
-
-            const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'guest-companion-pill guest-companion-pill--bulk group flex items-center justify-between gap-3 p-2.5 sm:p-3 rounded-xl border border-glass-border bg-glass/80 transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer shadow-xs';
-            item.setAttribute('data-open-group-edit', index);
-            item.setAttribute('title', 'Click to edit quantity and pool passes');
+            item.className = 'guest-companion-pill guest-companion-pill--bulk flex items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass mb-2 shadow-xs';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
-                        <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
-                        <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
-                    </div>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    ${genderBadge}
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
-                    <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                    <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
-                    ${bulkAmenityHtml}
+                <div class="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                    <span class="guest-companion-pill__name text-sm font-medium text-hp-text">Bulk: ${group.quantity} × ${escapeHtml(group.gender)} - ${escapeHtml(nationality)} - Age Group: ${escapeHtml(group.age_group)} (${rateLabel})</span>
+                    ${bulkAmenityBadgeHtml}
+                    ${bulkPoolBadgeHtml}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <div class="flex items-center gap-1.5">
-                        ${bulkEntranceBadgeHtml}
-                        ${bulkPoolBadgeHtml}
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center rounded-lg border border-glass-border bg-glass p-0.5">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-dec="${index}" title="Decrease quantity">−</button>
+                        <input type="number" min="1" max="500" value="${group.quantity}" data-bulk-qty-input="${index}" class="no-spinners w-9 border-0 bg-transparent text-center font-display text-xs font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" title="Type to change bulk quantity directly">
+                        <button type="button" class="flex h-6 w-6 items-center justify-center rounded bg-black/5 dark:bg-white/10 text-xs font-extrabold text-hp-text hover:bg-black/10 transition-colors cursor-pointer" data-bulk-qty-inc="${index}" title="Increase quantity">+</button>
                     </div>
-                    <div class="flex items-center gap-1.5 border-l border-glass-border pl-2 ml-0.5">
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-open-group-edit="${index}" title="Edit group">
-                            <i class="bi bi-pencil-fill text-xs"></i>
-                        </button>
-                        <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer text-xs shadow-2xs active:scale-95" data-bulk-index="${index}" title="Remove bulk group">
-                            <i class="bi bi-trash3 text-xs"></i>
-                        </button>
-                    </div>
+                    <button type="button" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95" data-bulk-index="${index}" title="Remove bulk group">
+                        <i class="bi bi-trash3 text-xs"></i>
+                    </button>
                 </div>
             `;
             checkInCompanionList.appendChild(item);
@@ -1196,7 +958,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const opt = checkInPoolOption?.value || 'no_pool';
-        let html = '<div class="mb-3"><h4 class="font-bold text-sm text-hp-text dark:text-gray-200 mb-2">Companion Groups:</h4>';
+        let html = '<div style="margin-bottom: 1rem;"><h4>Companion Groups:</h4>';
         let totalCompanions = 0;
 
         bulkCompanionGroups.forEach(group => {
@@ -1208,15 +970,15 @@ window.AppPage['staff_reservations'] = function () {
                 poolGroupNote = ` | <strong>Pool:</strong> ${group.pool_quantity || 0} of ${group.quantity}`;
             }
             html += `
-                <div class="p-2.5 bg-black/5 dark:bg-white/5 border border-glass-border rounded-xl mb-2 text-xs text-hp-text dark:text-gray-200">
-                    <p class="m-0"><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}${poolGroupNote}</p>
+                <div style="padding: 0.5rem; background-color: #e5e5e5; border: 1px solid #d4d4d4; border-radius: 0.25rem; margin-bottom: 0.5rem; color: #000;">
+                    <p><strong>Gender:</strong> ${group.gender} | <strong>Nationality:</strong> ${nationality} | <strong>Age Group:</strong> ${group.age_group} | <strong>Quantity:</strong> ${group.quantity}${poolGroupNote}</p>
                 </div>
             `;
             totalCompanions += group.quantity;
         });
 
-        html += `<p class="font-bold text-xs text-hp-text dark:text-gray-200 mt-2"><strong>Total Companions:</strong> ${totalCompanions}</p></div>`;
-        html += '<p class="text-xs text-hp-text-muted mt-1">Please review the companion groups above before checking in.</p>';
+        html += `<p><strong>Total Companions:</strong> ${totalCompanions}</p></div>`;
+        html += '<p style="color: #666; font-size: 0.875rem;">Please review the companion groups above before checking in.</p>';
 
         companionSummaryBody.innerHTML = html;
         if (companionSummaryModal) {
@@ -1261,49 +1023,49 @@ window.AppPage['staff_reservations'] = function () {
         if (extraHeadTotal > 0) {
             const breakdownLines = extraHeadBreakdown.map(b => `${escapeHtml(b.amenity_name)}: ${b.excess} extra × ₱${b.add_rate.toFixed(2)} = ₱${b.fee.toFixed(2)}`).join('<br>');
             extraHeadHtml = `
-                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-amber-700 dark:text-amber-300 bg-amber-500/10">
-                    <span class="text-xs font-semibold">Extra Head Fee (${extraHeadBreakdown.reduce((s, b) => s + b.excess, 0)} extra)</span>
-                    <strong class="text-xs font-bold">₱${extraHeadTotal.toFixed(2)}</strong>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #b45309; background: #fffbeb;">
+                    <span style="font-size: 0.85rem; font-weight: 600;">Extra Head Fee (${extraHeadBreakdown.reduce((s, b) => s + b.excess, 0)} extra)</span>
+                    <strong style="font-size: 0.85rem;">₱${extraHeadTotal.toFixed(2)}</strong>
                 </div>
-                <div class="px-3.5 py-2 text-[0.72rem] text-amber-800 dark:text-amber-200 bg-amber-500/10 border-t border-dashed border-amber-500/30">
+                <div style="padding: 0.4rem 0.9rem; font-size: 0.75rem; color: #92400e; background: #fffbeb; border-top: 1px dashed #fde68a;">
                     ${breakdownLines}
                 </div>
             `;
         }
 
-        let html = `<p class="text-sm text-hp-text dark:text-gray-200 mb-3">Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
+        let html = `<p>Are you sure you want to check in <strong>Reservation #${escapeHtml(currentReservationData?.id || pendingReservationId)}</strong> now?</p>`;
 
         html += `
-            <div class="mt-3 border border-glass-border rounded-xl overflow-hidden bg-glass">
-                <div class="px-3.5 py-2 bg-black/5 dark:bg-white/5 text-[0.7rem] font-bold uppercase tracking-wider text-hp-text-muted">Payment Summary</div>
-                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 text-xs text-hp-text dark:text-gray-200">
-                    <span>Entrance fee</span>
-                    <strong class="font-bold">${entranceOpt === 'all_free' ? 'Free Promo (₱0.00)' : '₱' + entranceTotal.toFixed(2)}</strong>
+            <div style="margin-top: 1rem; border: 1px solid #f3f4f6; border-radius: 0.6rem; overflow: hidden;">
+                <div style="padding: 0.65rem 0.9rem; background: #f8fafc; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Payment Summary</div>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; color: #334155;">
+                    <span style="font-size: 0.85rem;">Entrance fee</span>
+                    <strong style="font-size: 0.85rem;">${entranceOpt === 'all_free' ? 'Free Promo (₱0.00)' : '₱' + entranceTotal.toFixed(2)}</strong>
                 </div>
-                <div class="flex justify-between items-center gap-4 px-3.5 py-2 border-t border-glass-border text-[0.75rem] text-hp-text-muted">
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #9ca3af; font-size: 0.8rem;">
                     <span>${adultCount} adult${adultCount === 1 ? '' : 's'}${entranceOpt === 'all_free' ? ' (Free Promo)' : ' × ₱' + adultRate.toFixed(2)} + ${childCount} child${childCount === 1 ? '' : 'ren'}${entranceOpt === 'all_free' ? ' (Free Promo)' : ' × ₱' + childRate.toFixed(2)}</span>
                     <span>₱${entranceTotal.toFixed(2)}</span>
                 </div>
-                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-xs text-hp-text dark:text-gray-200">
-                    <span>Pool access</span>
-                    <strong class="font-bold">${poolText}</strong>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
+                    <span style="font-size: 0.85rem;">Pool access</span>
+                    <strong style="font-size: 0.85rem;">${poolText}</strong>
                 </div>
                 ${extraHeadHtml}
-                <div class="flex justify-between items-center gap-4 px-3.5 py-2.5 border-t border-glass-border text-xs text-hp-text dark:text-gray-200">
-                    <span>Remaining reservation balance</span>
-                    <strong class="font-bold">₱${balance.toFixed(2)}</strong>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.6rem 0.9rem; border-top: 1px solid #eef2f7; color: #334155;">
+                    <span style="font-size: 0.85rem;">Remaining reservation balance</span>
+                    <strong style="font-size: 0.85rem;">₱${balance.toFixed(2)}</strong>
                 </div>
-                <div class="flex justify-between items-center gap-4 px-3.5 py-3 bg-emerald-500/15 border-t border-glass-border">
-                    <strong class="text-sm font-bold text-hp-text dark:text-gray-100">Total to pay</strong>
-                    <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${grandTotal.toFixed(2)}</strong>
+                <div style="display: flex; justify-content: space-between; gap: 1rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border-top: 1px solid #f3f4f6;">
+                    <strong style="font-size: 0.95rem;">Total to pay</strong>
+                    <strong style="font-size: 0.95rem; color: #16a34a;">₱${grandTotal.toFixed(2)}</strong>
                 </div>
             </div>
-            <p class="mt-3 text-xs text-hp-text-muted">This reservation will be marked as <strong>Checked In</strong> and paid.</p>
+            <p style="margin-top: 0.75rem; font-size: 0.8rem; color: #64748b;">This reservation will be marked as <strong>Checked In</strong> and paid.</p>
         `;
 
         if (!isToday && reservationDate) {
             html += `
-                <div class="mt-3 p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-800 dark:text-amber-300 text-xs">
+                <div style="margin-top: 1rem; padding: 0.75rem; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 0.25rem; color: #856404;">
                     <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Warning:</strong> This reservation is not scheduled for today.<br>
                     <strong>Reservation Date:</strong> ${reservationDate}<br>
                     <strong>Today:</strong> ${today}
@@ -1430,14 +1192,14 @@ window.AppPage['staff_reservations'] = function () {
         const hasPrimary = guestMode === 'with_primary';
 
         if (hasPrimary) {
-            const primaryAge = parseInt(checkInPrimaryGuest.age, 10);
+            const primaryAge = parseInt(checkInForm?.querySelector('input[name="check_in_primary_guest[age]"]')?.value, 10);
             if (!isNaN(primaryAge) && primaryAge <= 12) childCount += 1;
             else adultCount += 1;
 
             if (poolOpt === 'all_paid' || poolOpt === 'all_free') {
                 poolCount += 1;
             } else if (poolOpt === 'specific') {
-                if (checkInPrimaryGuest.has_pool_access) {
+                if (checkInPrimaryGuestHasPool?.checked) {
                     poolCount += 1;
                 }
             }
@@ -1472,15 +1234,13 @@ window.AppPage['staff_reservations'] = function () {
             const amenityCounts = {};
 
             if (hasPrimary) {
-                const pAmenityId = String(defaultAmenityId);
+                const pAmenityId = String(checkInForm?.querySelector('[name="check_in_primary_guest[amenity_id]"]')?.value || defaultAmenityId);
                 amenityCounts[pAmenityId] = (amenityCounts[pAmenityId] || 0) + 1;
             }
 
             companions.forEach(c => {
-                if (c.amenity_id) {
-                    const cAmenityId = String(c.amenity_id);
-                    amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
-                }
+                const cAmenityId = String(c.amenity_id || defaultAmenityId);
+                amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
             });
 
             resAmenities.forEach(ra => {
@@ -1526,10 +1286,7 @@ window.AppPage['staff_reservations'] = function () {
 
     const updateCheckInFeeSummary = () => {
         const { period, adultCount, childCount, adultRate, childRate, entranceOpt, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
-        const totalAmount = Number(currentReservationData?.total_amount || 0);
         const balance = Number(currentReservationData?.remaining_balance || 0);
-        const paidDeposit = Number(currentReservationData?.amount_paid !== undefined && currentReservationData?.amount_paid !== null ? currentReservationData.amount_paid : Math.max(0, totalAmount - balance));
-        const grandTotal = total + balance;
 
         const badge = document.getElementById('checkInEffectivePeriodBadge');
         if (badge) badge.textContent = getCheckInPeriodLabel(period);
@@ -1575,209 +1332,58 @@ window.AppPage['staff_reservations'] = function () {
         if (extraHeadTotalEl) {
             extraHeadTotalEl.textContent = `₱${extraHeadTotal.toFixed(2)}`;
         }
-        const bookingTotalEl = document.getElementById('checkInBookingTotalText');
-        if (bookingTotalEl) bookingTotalEl.textContent = `₱${totalAmount.toFixed(2)}`;
-        const bookingPaidEl = document.getElementById('checkInBookingPaidText');
-        if (bookingPaidEl) bookingPaidEl.textContent = `₱${paidDeposit.toFixed(2)}`;
         const balanceEl = document.getElementById('checkInReservationBalance');
         if (balanceEl) balanceEl.textContent = `₱${balance.toFixed(2)}`;
         const grandEl = document.getElementById('checkInGrandTotal');
-        if (grandEl) grandEl.textContent = `₱${grandTotal.toFixed(2)}`;
-        const sidebarGrandEl = document.getElementById('checkInSidebarGrandTotalText');
-        if (sidebarGrandEl) sidebarGrandEl.textContent = `₱${grandTotal.toFixed(2)}`;
-        const sidebarFeesBadge = document.getElementById('checkInSidebarFeesBadge');
-        if (sidebarFeesBadge) sidebarFeesBadge.textContent = `₱${grandTotal.toFixed(2)}`;
-
-        const entranceCompactEl = document.getElementById('checkInEntranceCompactText');
-        if (entranceCompactEl) {
-            entranceCompactEl.textContent = entranceOpt === 'all_free' ? 'Entrance: Free Promo' : 'Entrance: Standard Rate';
-        }
-        const poolCompactEl = document.getElementById('checkInPoolCompactText');
-        if (poolCompactEl) {
-            if (poolOpt === 'no_pool') poolCompactEl.textContent = 'Pool: None';
-            else if (poolOpt === 'all_free') poolCompactEl.textContent = 'Pool: Free Promo';
-            else if (poolOpt === 'all_paid') poolCompactEl.textContent = 'Pool: All Paid';
-            else poolCompactEl.textContent = `Pool: Specific (${poolCount})`;
-        }
+        if (grandEl) grandEl.textContent = `₱${(total + balance).toFixed(2)}`;
     };
 
-    let checkInPrimaryGuest = {
-        first_name: '',
-        middle_name: '',
-        last_name: '',
-        age: '',
-        gender: '',
-        is_foreigner: false,
-        phone: '',
-        email: '',
-        has_pool_access: false,
+    const fillFormWithGuestData = (guestData, namePrefix) => {
+        if (!guestData || !checkInForm) return;
+
+        const firstNameInput = checkInForm.querySelector(`input[name="${namePrefix}[first_name]"]`);
+        const middleNameInput = checkInForm.querySelector(`input[name="${namePrefix}[middle_name]"]`);
+        const lastNameInput = checkInForm.querySelector(`input[name="${namePrefix}[last_name]"]`);
+        const ageInput = checkInForm.querySelector(`input[name="${namePrefix}[age]"]`);
+        const genderSelect = checkInForm.querySelector(`select[name="${namePrefix}[gender]"]`);
+        const isForeignerSelect = checkInForm.querySelector(`select[name="${namePrefix}[is_foreigner]"]`);
+        const phoneInput = checkInForm.querySelector(`input[name="${namePrefix}[phone]"]`);
+        const emailInput = checkInForm.querySelector(`input[name="${namePrefix}[email]"]`);
+
+        if (firstNameInput) firstNameInput.value = guestData.first_name || '';
+        if (middleNameInput) middleNameInput.value = guestData.middle_name || '';
+        if (lastNameInput) lastNameInput.value = guestData.last_name || '';
+        if (ageInput) ageInput.value = guestData.age || '';
+        if (genderSelect) genderSelect.value = guestData.gender || 'Male';
+
+        if (isForeignerSelect) {
+            isForeignerSelect.value = guestData.is_foreigner ? '1' : '0';
+        }
+
+        if (phoneInput) phoneInput.value = guestData.phone || '';
+        if (emailInput) emailInput.value = guestData.email || '';
     };
 
-    const syncCheckInPrimaryGuestUI = () => {
-        // Sync to hidden form inputs
-        const hFirst = document.getElementById('checkInHiddenPrimaryFirstName');
-        const hMiddle = document.getElementById('checkInHiddenPrimaryMiddleName');
-        const hLast = document.getElementById('checkInHiddenPrimaryLastName');
-        const hAge = document.getElementById('checkInHiddenPrimaryAge');
-        const hGender = document.getElementById('checkInHiddenPrimaryGender');
-        const hNat = document.getElementById('checkInHiddenPrimaryIsForeigner');
-        const hPhone = document.getElementById('checkInHiddenPrimaryPhone');
-        const hEmail = document.getElementById('checkInHiddenPrimaryEmail');
-        const hPool = document.getElementById('checkInHiddenPrimaryHasPool');
-
-        if (hFirst) hFirst.value = checkInPrimaryGuest.first_name || '';
-        if (hMiddle) hMiddle.value = checkInPrimaryGuest.middle_name || '';
-        if (hLast) hLast.value = checkInPrimaryGuest.last_name || '';
-        if (hAge) hAge.value = checkInPrimaryGuest.age || '';
-        if (hGender) hGender.value = checkInPrimaryGuest.gender || '';
-        if (hNat) hNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
-        if (hPhone) hPhone.value = checkInPrimaryGuest.phone || '';
-        if (hEmail) hEmail.value = checkInPrimaryGuest.email || '';
-        if (hPool) hPool.value = checkInPrimaryGuest.has_pool_access ? '1' : '0';
-
-        // Sync directly to the inline form inputs
-        const mFirst = document.getElementById('checkInMainFirstName');
-        const mMiddle = document.getElementById('checkInMainMiddleName');
-        const mLast = document.getElementById('checkInMainLastName');
-        const mAge = document.getElementById('checkInMainAge');
-        const mGender = document.getElementById('checkInMainGender');
-        const mNat = document.getElementById('checkInMainIsForeigner');
-        const mPhone = document.getElementById('checkInMainPhone');
-        const mEmail = document.getElementById('checkInMainEmail');
-        const mPool = document.getElementById('checkInPrimaryGuestHasPool');
-        const poolRow = document.getElementById('checkInMainPoolAccessRow');
-        const ageBadge = document.getElementById('checkInMainAgeBadge');
-
-        if (mFirst && document.activeElement !== mFirst) mFirst.value = checkInPrimaryGuest.first_name || '';
-        if (mMiddle && document.activeElement !== mMiddle) mMiddle.value = checkInPrimaryGuest.middle_name || '';
-        if (mLast && document.activeElement !== mLast) mLast.value = checkInPrimaryGuest.last_name || '';
-        if (mAge && document.activeElement !== mAge) mAge.value = checkInPrimaryGuest.age || '';
-        if (mGender && document.activeElement !== mGender) mGender.value = checkInPrimaryGuest.gender || '';
-        if (mNat && document.activeElement !== mNat) mNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
-        if (mPhone && document.activeElement !== mPhone) mPhone.value = checkInPrimaryGuest.phone || '';
-        if (mEmail && document.activeElement !== mEmail) mEmail.value = checkInPrimaryGuest.email || '';
-        if (mPool) mPool.checked = !!checkInPrimaryGuest.has_pool_access;
-
-        if (ageBadge) {
-            const parsedAge = parseInt(checkInPrimaryGuest.age, 10);
-            if (!isNaN(parsedAge) && parsedAge >= 0) {
-                ageBadge.textContent = parsedAge <= 12 ? 'Child Rate' : 'Adult Rate';
-                ageBadge.className = parsedAge <= 12
-                    ? 'rounded px-1.5 py-0.2 text-[0.65rem] font-bold text-amber-700 bg-amber-500/10 dark:text-amber-300'
-                    : 'rounded px-1.5 py-0.2 text-[0.65rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300';
-                ageBadge.classList.remove('hidden');
-            } else {
-                ageBadge.classList.add('hidden');
-            }
+    const toggleCheckInPrimaryGuestSection = () => {
+        if (!checkInForm) return;
+        const guestMode = checkInForm.querySelector('input[name="check_in_guest_mode"]:checked')?.value;
+        const primarySection = document.getElementById('checkInPrimaryGuestSection');
+        if (primarySection) {
+            primarySection.style.display = guestMode === 'with_primary' ? 'block' : 'none';
         }
-
-        const poolOpt = checkInPoolOption?.value || 'no_pool';
-        if (poolRow) poolRow.style.display = poolOpt === 'specific' ? 'flex' : 'none';
-
-        // Ready badge indicator for main guest
-        const readyBadge = document.getElementById('checkInMainGuestReadyBadge');
-        const isComplete = Boolean(
-            checkInPrimaryGuest.first_name &&
-            checkInPrimaryGuest.last_name &&
-            checkInPrimaryGuest.age &&
-            checkInPrimaryGuest.gender
-        );
-        if (readyBadge) {
-            if (isComplete) {
-                readyBadge.className = 'inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400';
-                readyBadge.innerHTML = '<i class="bi bi-check-circle-fill text-[0.7rem]"></i><span>Primary Guest Verified</span>';
-            } else {
-                readyBadge.className = 'inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-400';
-                readyBadge.innerHTML = '<i class="bi bi-exclamation-circle-fill text-[0.7rem]"></i><span>Details Needed</span>';
-            }
-        }
-
-        const err = document.getElementById('checkInMainGuestModalError');
-        if (err && isComplete) {
-            err.classList.add('hidden');
-        }
+        updateCheckInFeeSummary();
     };
 
-    // Bind inline input listeners for real-time reactivity
-    const bindCheckInMainGuestInputs = () => {
-        const mFirst = document.getElementById('checkInMainFirstName');
-        const mMiddle = document.getElementById('checkInMainMiddleName');
-        const mLast = document.getElementById('checkInMainLastName');
-        const mAge = document.getElementById('checkInMainAge');
-        const mGender = document.getElementById('checkInMainGender');
-        const mNat = document.getElementById('checkInMainIsForeigner');
-        const mPhone = document.getElementById('checkInMainPhone');
-        const mEmail = document.getElementById('checkInMainEmail');
-        const mPool = document.getElementById('checkInPrimaryGuestHasPool');
+    checkInForm?.addEventListener('change', (e) => {
+        if (e.target.name === 'check_in_guest_mode') {
+            toggleCheckInPrimaryGuestSection();
+        }
+    });
 
-        mFirst?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.first_name = e.target.value.trim();
-            const hFirst = document.getElementById('checkInHiddenPrimaryFirstName');
-            if (hFirst) hFirst.value = checkInPrimaryGuest.first_name;
-            syncCheckInPrimaryGuestUI();
-        });
-        mMiddle?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.middle_name = e.target.value.trim();
-            const hMiddle = document.getElementById('checkInHiddenPrimaryMiddleName');
-            if (hMiddle) hMiddle.value = checkInPrimaryGuest.middle_name;
-        });
-        mLast?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.last_name = e.target.value.trim();
-            const hLast = document.getElementById('checkInHiddenPrimaryLastName');
-            if (hLast) hLast.value = checkInPrimaryGuest.last_name;
-            syncCheckInPrimaryGuestUI();
-        });
-        mAge?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.age = e.target.value.trim();
-            const hAge = document.getElementById('checkInHiddenPrimaryAge');
-            if (hAge) hAge.value = checkInPrimaryGuest.age;
-            syncCheckInPrimaryGuestUI();
+    checkInForm?.addEventListener('input', (e) => {
+        if (e.target.name === 'check_in_primary_guest[age]') {
             updateCheckInFeeSummary();
-        });
-        mGender?.addEventListener('change', (e) => {
-            checkInPrimaryGuest.gender = e.target.value;
-            const hGender = document.getElementById('checkInHiddenPrimaryGender');
-            if (hGender) hGender.value = checkInPrimaryGuest.gender;
-            syncCheckInPrimaryGuestUI();
-        });
-        mNat?.addEventListener('change', (e) => {
-            checkInPrimaryGuest.is_foreigner = e.target.value === '1';
-            const hNat = document.getElementById('checkInHiddenPrimaryIsForeigner');
-            if (hNat) hNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
-            syncCheckInPrimaryGuestUI();
-        });
-        mPhone?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.phone = e.target.value.trim();
-            const hPhone = document.getElementById('checkInHiddenPrimaryPhone');
-            if (hPhone) hPhone.value = checkInPrimaryGuest.phone;
-        });
-        mEmail?.addEventListener('input', (e) => {
-            checkInPrimaryGuest.email = e.target.value.trim();
-            const hEmail = document.getElementById('checkInHiddenPrimaryEmail');
-            if (hEmail) hEmail.value = checkInPrimaryGuest.email;
-        });
-        mPool?.addEventListener('change', (e) => {
-            checkInPrimaryGuest.has_pool_access = e.target.checked;
-            const hPool = document.getElementById('checkInHiddenPrimaryHasPool');
-            if (hPool) hPool.value = checkInPrimaryGuest.has_pool_access ? '1' : '0';
-            updateCheckInFeeSummary();
-        });
-    };
-    bindCheckInMainGuestInputs();
-
-    // Check-in navigation helper (Smooth scroll instead of tab hiding)
-    const switchCheckInTab = (targetId) => {
-        const targetEl = document.getElementById(targetId);
-        if (targetEl) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-    };
-
-    document.querySelectorAll('[data-checkin-step-to]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const target = btn.dataset.checkinStepTo;
-            if (target) switchCheckInTab(target);
-        });
     });
 
     checkInPoolOption?.addEventListener('change', () => {
@@ -1925,7 +1531,7 @@ window.AppPage['staff_reservations'] = function () {
         const genderVal = (formData.get('gender') || '').trim();
         const isForeigner = formData.get('is_foreigner') === '1';
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const cAmenityId = String(formData.get('amenity_id') || '');
+        const cAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
 
         // Check duplicate against primary guest
         const primaryFirst = (checkInForm?.querySelector('input[name="check_in_primary_guest[first_name]"]')?.value || '').trim();
@@ -2009,7 +1615,7 @@ window.AppPage['staff_reservations'] = function () {
         const ageGroup = formData.get('age_group') || '18-59';
         const quantity = parseInt(formData.get('quantity'), 10) || 1;
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const bAmenityId = String(formData.get('amenity_id') || '');
+        const bAmenityId = String(formData.get('amenity_id') || currentReservationData?.reservation_amenities?.[0]?.amenity?.id || currentReservationData?.reservation_amenities?.[0]?.amenity_id || '');
 
         const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
         let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
@@ -2099,12 +1705,24 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        // Click to open group edit modal
-        const openGroupEditBtn = e.target.closest('[data-open-group-edit]');
-        if (openGroupEditBtn && !e.target.closest('[data-bulk-index]')) {
-            const bIdx = parseInt(openGroupEditBtn.dataset.openGroupEdit || openGroupEditBtn.getAttribute('data-open-group-edit'), 10);
+        // Stepper: Increase Bulk Group Quantity
+        const bulkQtyIncBtn = e.target.closest('[data-bulk-qty-inc]');
+        if (bulkQtyIncBtn) {
+            const bIdx = parseInt(bulkQtyIncBtn.dataset.bulkQtyInc, 10);
             if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
-                openCheckInGroupEditModal(bIdx);
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) + 1);
+            }
+            return;
+        }
+
+        // Stepper: Decrease Bulk Group Quantity
+        const bulkQtyDecBtn = e.target.closest('[data-bulk-qty-dec]');
+        if (bulkQtyDecBtn) {
+            const bIdx = parseInt(bulkQtyDecBtn.dataset.bulkQtyDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                handleCheckInBulkQtyChange(bIdx, (parseInt(group.quantity, 10) || 1) - 1);
             }
             return;
         }
@@ -2119,6 +1737,46 @@ window.AppPage['staff_reservations'] = function () {
                 renderCheckInModalCompanionPreview();
             }
             return;
+        }
+
+        // Increment bulk group pool count
+        const bulkIncBtn = e.target.closest('[data-bulk-pool-inc]');
+        if (bulkIncBtn) {
+            const bIdx = parseInt(bulkIncBtn.dataset.bulkPoolInc, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur < group.quantity) {
+                    group.pool_quantity = cur + 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+
+        // Decrement bulk group pool count
+        const bulkDecBtn = e.target.closest('[data-bulk-pool-dec]');
+        if (bulkDecBtn) {
+            const bIdx = parseInt(bulkDecBtn.dataset.bulkPoolDec, 10);
+            if (!isNaN(bIdx) && bulkCompanionGroups[bIdx]) {
+                const group = bulkCompanionGroups[bIdx];
+                const cur = group.pool_quantity || 0;
+                if (cur > 0) {
+                    group.pool_quantity = cur - 1;
+                    renderCheckInCompanions();
+                    renderCheckInModalCompanionPreview();
+                }
+            }
+            return;
+        }
+    });
+
+    checkInCompanionList?.addEventListener('change', (e) => {
+        const input = e.target.closest('[data-bulk-qty-input]');
+        if (input) {
+            const bIdx = parseInt(input.dataset.bulkQtyInput, 10);
+            handleCheckInBulkQtyChange(bIdx, input.value);
         }
     });
 
@@ -2167,115 +1825,15 @@ window.AppPage['staff_reservations'] = function () {
             }
         }
 
-        // 1. Setup Stay Schedule compact pills & popover details
-        const sDate = reservation?.check_in || reservation?.start_date || reservation?.reservation_date || '';
-        const eDate = reservation?.check_out || reservation?.end_date || sDate;
-        const slot = reservation?.start_slot || reservation?.time_period || 'Daytime';
-        const days = reservation?.total_days || 1;
-
-        const formatDisplayDate = (dStr) => {
-            if (!dStr) return '';
-            const d = new Date(dStr.includes('T') ? dStr : dStr + 'T00:00:00');
-            if (isNaN(d.getTime())) return dStr;
-            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        };
-        const sDisplay = formatDisplayDate(sDate);
-        const eDisplay = formatDisplayDate(eDate);
-
-        const compactTextEl = document.getElementById('checkInStayCompactText');
-        if (compactTextEl) {
-            compactTextEl.textContent = sDisplay === eDisplay ? `${sDisplay} • ${days} Day${days > 1 ? 's' : ''}` : `${sDisplay} – ${eDisplay} • ${days} Days`;
-        }
-        const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
-        if (sessionBadgeEl) {
-            sessionBadgeEl.textContent = slot;
-        }
-        const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
-        if (schedSummaryEl) {
-            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slot} Session)`;
-        }
-        const schedDatesEl = document.getElementById('checkInScheduleDatesText');
-        if (schedDatesEl) {
-            schedDatesEl.textContent = `Check-in: ${sDisplay} • Check-out: ${eDisplay}`;
-        }
-
-        // 2. Setup Pre-booked Amenity cards inside #checkInAmenitiesContainer
-        const resAmenities = reservation?.reservation_amenities || [];
-        const amenitiesContainer = document.getElementById('checkInAmenitiesContainer');
-        const amenitiesCountBadge = document.getElementById('checkInAmenitiesCountBadge');
-        const sidebarAmenitiesBadge = document.getElementById('checkInSidebarAmenitiesBadge');
-
-        if (amenitiesCountBadge) {
-            amenitiesCountBadge.textContent = `${resAmenities.length} Booked`;
-        }
-        if (sidebarAmenitiesBadge) {
-            sidebarAmenitiesBadge.textContent = String(resAmenities.length);
-        }
-
-        if (amenitiesContainer) {
-            if (resAmenities.length === 0) {
-                amenitiesContainer.innerHTML = `
-                    <div class="py-12 text-center text-xs text-hp-text-muted/70 italic">
-                        <i class="bi bi-inbox text-3xl block mb-2 opacity-50"></i>
-                        No amenities reserved for this booking.
-                    </div>
-                `;
-            } else {
-                let amCardsHtml = '';
-                resAmenities.forEach((ra) => {
-                    const am = ra.amenity || {};
-                    const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id)) || {};
-                    const amName = am.amenities_name || fullAm.amenities_name || 'Amenity';
-                    const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? am.maximum_capacity : (fullAm.maximum_capacity || 'No limit');
-                    const addHead = parseFloat(am.additional_per_head || fullAm.additional_per_head || 0);
-                    const addHeadText = addHead > 0 ? `+₱${addHead.toFixed(2)}/head` : '';
-
-                    const bookingPrice = parseFloat(ra.price_at_booking ?? ra.price);
-                    let price = !isNaN(bookingPrice) && bookingPrice > 0 ? bookingPrice : 0;
-                    if (price === 0) {
-                        const isNight = String(ra.start_slot || ra.pricing_type || slot || '').toLowerCase().includes('night');
-                        const slotPrice = isNight
-                            ? (parseFloat(am.nighttime_price ?? fullAm.nighttime_price ?? 0))
-                            : (parseFloat(am.daytime_price ?? fullAm.daytime_price ?? 0));
-                        price = !isNaN(slotPrice) ? slotPrice : 0;
-                    }
-
-                    const hasFreeEntrance = Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm.benefits?.free_entrance || fullAm.free_entrance);
-                    const hasFreePool = Boolean(am.free_pool || am.benefits?.free_pool || fullAm.benefits?.free_pool || fullAm.free_pool);
-
-                    amCardsHtml += `
-                        <div class="group flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-glass-border bg-glass hover:border-hp-green/40 hover:bg-glass-hover transition-all">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate">${escapeHtml(amName)}</span>
-                                    ${hasFreeEntrance ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-emerald-700 bg-emerald-500/15 border border-emerald-500/30 dark:text-emerald-300 shadow-2xs" title="Free Entrance Included"><i class="bi bi-ticket-perforated-fill"></i></span>' : ''}
-                                    ${hasFreePool ? '<span class="inline-flex items-center justify-center rounded-md px-1.5 py-0.5 text-xs text-sky-700 bg-sky-500/15 border border-sky-500/30 dark:text-sky-300 shadow-2xs" title="Free Pool Included"><i class="bi bi-water"></i></span>' : ''}
-                                </div>
-                                <div class="flex items-center gap-3 text-xs text-hp-text-muted mt-1 flex-wrap">
-                                    <span><i class="bi bi-people-fill text-[0.7rem] text-hp-green mr-1"></i>Capacity: ${maxCap}</span>
-                                    ${addHeadText ? `<span><i class="bi bi-plus-circle text-[0.7rem] text-amber-500 mr-1"></i>${addHeadText}</span>` : ''}
-                                    <span><i class="bi bi-clock-history text-[0.7rem] text-hp-text-muted mr-1"></i>${escapeHtml(slot)}</span>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <div class="text-[0.7rem] uppercase tracking-wider text-hp-text-muted font-bold">Rate</div>
-                                <strong class="text-sm font-black text-hp-green dark:text-emerald-400">₱${price.toFixed(2)}</strong>
-                            </div>
-                        </div>
-                    `;
-                });
-                amenitiesContainer.innerHTML = amCardsHtml;
-            }
-        }
-
         // Setup Amenity select dropdowns for companion modals
         const companionAmenityWrap = document.getElementById('checkInCompanionAmenityWrap');
         const companionAmenitySelect = document.getElementById('checkInCompanionAmenity');
         const bulkAmenityWrap = document.getElementById('checkInBulkCompanionAmenityWrap');
         const bulkAmenitySelect = document.getElementById('checkInBulkCompanionAmenity');
 
-        if (resAmenities.length >= 1) {
-            let optionsHtml = '<option value="" selected>No amenity</option>';
+        const resAmenities = reservation?.reservation_amenities || [];
+        if (resAmenities.length > 1) {
+            let optionsHtml = '';
             resAmenities.forEach(ra => {
                 const am = ra.amenity || {};
                 const amId = String(am.id || ra.amenity_id || '');
@@ -2286,18 +1844,22 @@ window.AppPage['staff_reservations'] = function () {
             });
             if (companionAmenitySelect) companionAmenitySelect.innerHTML = optionsHtml;
             if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = optionsHtml;
-            if (companionAmenityWrap) companionAmenityWrap.classList.remove('hidden');
-            if (bulkAmenityWrap) bulkAmenityWrap.classList.remove('hidden');
+            if (companionAmenityWrap) companionAmenityWrap.style.display = 'grid';
+            if (bulkAmenityWrap) bulkAmenityWrap.style.display = 'flex';
         } else {
-            if (companionAmenitySelect) companionAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (companionAmenityWrap) companionAmenityWrap.classList.add('hidden');
-            if (bulkAmenityWrap) bulkAmenityWrap.classList.add('hidden');
+            if (companionAmenityWrap) companionAmenityWrap.style.display = 'none';
+            if (bulkAmenityWrap) bulkAmenityWrap.style.display = 'none';
+            if (resAmenities.length === 1) {
+                const singleAmId = String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '');
+                const singleAmName = resAmenities[0].amenity?.amenities_name || 'Amenity';
+                if (companionAmenitySelect) companionAmenitySelect.innerHTML = `<option value="${singleAmId}" selected>${escapeHtml(singleAmName)}</option>`;
+                if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = `<option value="${singleAmId}" selected>${escapeHtml(singleAmName)}</option>`;
+            }
         }
 
         checkInForm.reset();
 
-        // 3. Check if any booked amenity includes free entrance or free pool benefits
+        // Check if any booked amenity includes free entrance or free pool benefits
         const hasFreeEntrance = resAmenities.some(ra => {
             const am = ra.amenity || {};
             const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
@@ -2322,59 +1884,23 @@ window.AppPage['staff_reservations'] = function () {
         }
         syncCheckInPoolOptionUI();
 
-        // 4. Populate primary guest from booker info or existing primary guest
-        let custFirst = '';
-        let custMiddle = '';
-        let custLast = '';
-        let custAge = '';
-        let custGender = '';
-        let custNat = false;
-        let custPhone = reservation?.phone || '';
-        let custEmail = reservation?.email || '';
-        let custPool = false;
-
-        if (primaryGuestToUpdate && primaryGuestToUpdate.customer) {
-            const c = primaryGuestToUpdate.customer;
-            custFirst = c.first_name || '';
-            custMiddle = c.middle_name || '';
-            custLast = c.last_name || '';
-            custAge = (c.age !== null && c.age !== undefined && c.age !== '') ? String(c.age) : '';
-            custGender = c.gender || '';
-            custNat = c.is_foreigner === 1 || c.is_foreigner === true;
-            custPhone = c.phone || custPhone;
-            custEmail = c.email || custEmail;
-            custPool = !!primaryGuestToUpdate.has_pool_access;
-        } else if (reservation?.booker_name) {
-            const names = reservation.booker_name.trim().split(' ');
-            custFirst = names[0] || '';
-            custLast = names.slice(1).join(' ') || '';
+        // Always use the booker info as the main guest (booker is the primary)
+        if (reservation) {
+            const bookerData = {
+                first_name: reservation.booker_name?.split(' ')[0] || '',
+                last_name: reservation.booker_name?.split(' ').slice(1).join(' ') || '',
+                email: reservation.email || '',
+                phone: reservation.phone || '',
+            };
+            fillFormWithGuestData(bookerData, 'check_in_primary_guest');
         }
 
-        checkInPrimaryGuest = {
-            first_name: custFirst,
-            middle_name: custMiddle,
-            last_name: custLast,
-            age: custAge,
-            gender: custGender,
-            is_foreigner: custNat,
-            phone: custPhone,
-            email: custEmail,
-            has_pool_access: custPool,
-        };
-
-        syncCheckInPrimaryGuestUI();
-
-        const guestModeWithPrimary = checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]');
-        if (guestModeWithPrimary) guestModeWithPrimary.checked = true;
-
+        checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]').checked = true;
+        toggleCheckInPrimaryGuestSection();
         renderCheckInCompanions();
-        renderCheckInModalCompanionPreview();
-        switchCheckInTab('checkInAmenitiesTab');
         updateCheckInFeeSummary();
-
         if (checkInModal) {
             checkInModal.classList.add('is-open');
-            checkInModal.classList.remove('hidden');
             checkInModal.setAttribute('aria-hidden', 'false');
         }
     };
@@ -2385,7 +1911,6 @@ window.AppPage['staff_reservations'] = function () {
         bulkCompanionGroups = [];
         if (checkInModal) {
             checkInModal.classList.remove('is-open');
-            checkInModal.classList.add('hidden');
             checkInModal.setAttribute('aria-hidden', 'true');
         }
     };
@@ -2973,10 +2498,10 @@ window.AppPage['staff_reservations'] = function () {
                             </div>
                         </div>
                         <div>
-                            <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Expected Guests</div>
+                            <div class="text-xs font-medium text-gray-400 dark:text-gray-400 mb-1">Guests</div>
                             <div class="flex items-center gap-2 text-xs font-bold text-gray-900 dark:text-white">
                                 <svg class="w-4 h-4 text-[#1b4332] dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <span>${escapeHtml(reservation.number_of_guests || 1)} Expected Guest${(reservation.number_of_guests > 1) ? 's' : ''}</span>
+                                <span>${escapeHtml(reservation.number_of_guests || 1)} Guest${(reservation.number_of_guests > 1) ? 's' : ''}</span>
                             </div>
                         </div>
                     </div>
@@ -4646,28 +4171,6 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        if (!checkInPrimaryGuest.first_name || !checkInPrimaryGuest.last_name || !checkInPrimaryGuest.age || !checkInPrimaryGuest.gender) {
-            const err = document.getElementById('checkInMainGuestModalError');
-            if (err) {
-                err.textContent = 'Please complete the main guest information (first name, last name, age, and gender required) before checking in.';
-                err.classList.remove('hidden');
-            }
-            const emptyField = !checkInPrimaryGuest.first_name ? document.getElementById('checkInMainFirstName')
-                : !checkInPrimaryGuest.last_name ? document.getElementById('checkInMainLastName')
-                : !checkInPrimaryGuest.age ? document.getElementById('checkInMainAge')
-                : document.getElementById('checkInMainGender');
-            if (emptyField) {
-                emptyField.focus();
-                emptyField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
-        }
-
-        const err = document.getElementById('checkInMainGuestModalError');
-        if (err) {
-            err.classList.add('hidden');
-        }
-
         // Show companion summary modal instead of directly submitting
         openCompanionSummaryModal();
     });
@@ -4677,28 +4180,28 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        const submitButton = document.getElementById('checkInSubmitBtn') || checkInForm.querySelector('button[type="submit"]');
+        const submitButton = checkInForm.querySelector('button[type="submit"]');
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Checking in...</span>';
+            submitButton.textContent = 'Checking in...';
         }
 
         const formData = new FormData(checkInForm);
-        const guestMode = formData.get('check_in_guest_mode') || 'with_primary';
+        const guestMode = formData.get('check_in_guest_mode');
         const poolOpt = checkInPoolOption?.value || 'no_pool';
         const primaryHasPool = (poolOpt === 'all_paid' || poolOpt === 'all_free')
             ? true
-            : (poolOpt === 'specific' ? !!checkInPrimaryGuest.has_pool_access : false);
+            : (poolOpt === 'specific' ? !!checkInPrimaryGuestHasPool?.checked : false);
 
         const primaryGuest = guestMode === 'with_primary' ? {
-            first_name: checkInPrimaryGuest.first_name || formData.get('check_in_primary_guest[first_name]') || '',
-            middle_name: checkInPrimaryGuest.middle_name || formData.get('check_in_primary_guest[middle_name]') || '',
-            last_name: checkInPrimaryGuest.last_name || formData.get('check_in_primary_guest[last_name]') || '',
-            age: checkInPrimaryGuest.age || formData.get('check_in_primary_guest[age]') || '',
-            gender: checkInPrimaryGuest.gender || formData.get('check_in_primary_guest[gender]') || 'Male',
-            is_foreigner: checkInPrimaryGuest.is_foreigner !== undefined ? Boolean(checkInPrimaryGuest.is_foreigner) : (formData.get('check_in_primary_guest[is_foreigner]') === '1'),
-            phone: checkInPrimaryGuest.phone || formData.get('check_in_primary_guest[phone]') || '',
-            email: checkInPrimaryGuest.email || formData.get('check_in_primary_guest[email]') || '',
+            first_name: formData.get('check_in_primary_guest[first_name]'),
+            middle_name: formData.get('check_in_primary_guest[middle_name]'),
+            last_name: formData.get('check_in_primary_guest[last_name]'),
+            age: formData.get('check_in_primary_guest[age]'),
+            gender: formData.get('check_in_primary_guest[gender]'),
+            is_foreigner: formData.get('check_in_primary_guest[is_foreigner]') === '1',
+            phone: formData.get('check_in_primary_guest[phone]'),
+            email: formData.get('check_in_primary_guest[email]'),
             has_pool_access: primaryHasPool,
         } : null;
 
@@ -4752,7 +4255,7 @@ window.AppPage['staff_reservations'] = function () {
             window.alert(error.message || 'Unable to check in this reservation.');
             if (submitButton) {
                 submitButton.disabled = false;
-                submitButton.innerHTML = '<i class="bi bi-check2-circle text-sm"></i><span>Check In Reservation</span>';
+                submitButton.textContent = 'Check In';
             }
         }
     };

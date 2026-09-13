@@ -422,17 +422,6 @@ body {
     border-color: #fff;
 }
 
-.hp-btn--outline-dark {
-    color: var(--hp-green-dark);
-    background: transparent;
-    border: 2px solid var(--hp-green-dark);
-    padding: 0.75rem 1.75rem;
-}
-
-.hp-btn--outline-dark:hover {
-    background: var(--hp-green-dark);
-    color: #fff;
-}
 
 .hp-menu-toggle {
     display: none;
@@ -1115,8 +1104,9 @@ body {
     position: relative;
     width: 100%;
     box-sizing: border-box;
-    padding: 0.9rem 1.05rem;
-    background: linear-gradient(135deg, rgba(200, 164, 93, 0.24) 0%, rgba(11, 36, 24, 0.88) 55%, rgba(13, 50, 31, 0.95) 100%);
+    display: flex;
+    align-items: stretch;
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.2) 0%, rgba(11, 36, 24, 0.92) 35%, rgba(13, 50, 31, 0.98) 100%);
     border: 1px solid rgba(200, 164, 93, 0.48);
     border-radius: 0.85rem;
     backdrop-filter: blur(16px);
@@ -1129,6 +1119,8 @@ body {
                 box-shadow 0.35s ease,
                 background 0.3s ease;
     cursor: default;
+    padding: 0;
+    min-height: 6.8rem;
 }
 
 .hp-brenda-widget:hover,
@@ -1136,7 +1128,7 @@ body {
     transform: translateY(-2px);
     border-color: rgba(230, 195, 125, 0.8);
     box-shadow: 0 14px 38px rgba(0, 0, 0, 0.38), 0 0 28px rgba(200, 164, 93, 0.32);
-    background: linear-gradient(135deg, rgba(200, 164, 93, 0.32) 0%, rgba(11, 36, 24, 0.92) 50%, rgba(13, 50, 31, 0.98) 100%);
+    background: linear-gradient(135deg, rgba(200, 164, 93, 0.26) 0%, rgba(11, 36, 24, 0.95) 35%, rgba(13, 50, 31, 1) 100%);
 }
 
 .hp-brenda-widget__shimmer {
@@ -1147,36 +1139,82 @@ body {
     height: 2px;
     background: linear-gradient(90deg, transparent, #f5d485, #c8a45d, transparent);
     opacity: 0.85;
+    z-index: 3;
+}
+
+/* Left-side full bleed image (the left side of the widget itself is an image) */
+.hp-brenda-widget__image-side {
+    position: relative;
+    flex: 0 0 34%;
+    width: 34%;
+    min-width: 82px;
+    max-width: 105px;
+    overflow: hidden;
+    background: #0b2418;
+}
+
+.hp-brenda-widget__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hp-brenda-widget:hover .hp-brenda-widget__img {
+    transform: scale(1.08);
+}
+
+.hp-brenda-widget__image-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(11, 36, 24, 0) 25%, rgba(11, 36, 24, 0.45) 70%, rgba(11, 36, 24, 0.95) 100%);
+    pointer-events: none;
+}
+
+/* Right-side content */
+.hp-brenda-widget__content-side {
+    flex: 1;
+    min-width: 0;
+    padding: 0.75rem 0.85rem 0.75rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    z-index: 2;
 }
 
 .hp-brenda-widget__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    gap: 0.4rem;
+    margin-bottom: 0.25rem;
 }
 
 .hp-brenda-widget__badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.62rem;
+    gap: 0.35rem;
+    font-size: 0.56rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #f7e7be;
     background: rgba(200, 164, 93, 0.18);
     border: 1px solid rgba(200, 164, 93, 0.35);
-    padding: 0.2rem 0.55rem;
+    padding: 0.15rem 0.48rem;
     border-radius: 9999px;
 }
 
 .hp-brenda-widget__dot {
     position: relative;
     display: inline-flex;
-    width: 0.45rem;
-    height: 0.45rem;
+    width: 0.42rem;
+    height: 0.42rem;
     border-radius: 50%;
     background: #4ade80;
 }
@@ -1192,37 +1230,10 @@ body {
 
 .hp-brenda-widget__sparkle {
     color: var(--hp-gold);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     display: inline-flex;
     align-items: center;
     animation: hp-brenda-sparkle 3s ease-in-out infinite;
-}
-
-.hp-brenda-widget__body {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 0.55rem;
-}
-
-.hp-brenda-widget__avatar {
-    flex-shrink: 0;
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #f5d485 0%, #c8a45d 50%, #8e6c27 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #0b2418;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 10px rgba(200, 164, 93, 0.35);
-    border: 1.5px solid rgba(255, 255, 255, 0.6);
-    transition: transform 0.3s ease;
-}
-
-.hp-brenda-widget:hover .hp-brenda-widget__avatar {
-    transform: scale(1.08) rotate(4deg);
 }
 
 .hp-brenda-widget__info {
@@ -1233,7 +1244,7 @@ body {
 .hp-brenda-widget__name {
     margin: 0;
     font-family: var(--hp-font-display);
-    font-size: 0.98rem;
+    font-size: 0.92rem;
     font-weight: 700;
     line-height: 1.2;
     color: #ffffff;
@@ -1243,35 +1254,42 @@ body {
 
 .hp-brenda-widget__subtitle {
     margin: 0.2rem 0 0;
-    font-size: 0.7rem;
-    line-height: 1.35;
+    font-size: 0.68rem;
+    line-height: 1.3;
     color: rgba(255, 255, 255, 0.82);
     font-weight: 500;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .hp-brenda-widget__footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    padding-top: 0.45rem;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+    padding-top: 0.35rem;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
-    font-size: 0.65rem;
+    font-size: 0.63rem;
     color: rgba(255, 255, 255, 0.72);
 }
 
 .hp-brenda-widget__loc {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.25rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.63rem;
+    color: #d1fae5;
 }
 
 .hp-brenda-widget__loc i {
     color: var(--hp-gold);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
 }
 
 .hp-brenda-widget__pill {
@@ -1280,9 +1298,9 @@ body {
     gap: 0.25rem;
     background: rgba(255, 255, 255, 0.12);
     color: #fff;
-    padding: 0.15rem 0.45rem;
+    padding: 0.12rem 0.42rem;
     border-radius: 9999px;
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     white-space: nowrap;
