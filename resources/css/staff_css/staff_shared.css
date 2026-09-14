@@ -4361,6 +4361,31 @@ tr.row-checkout-near:hover td {
     z-index: 1500 !important;
 }
 
+/* Additional Charges Modal - Sized identically to details modal & top stacking */
+#reservationChargesModal {
+    z-index: 2500 !important;
+}
+
+#reservationChargesModal.is-open,
+#reservationChargesModal[aria-hidden="false"] {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 2500 !important;
+}
+
+#reservationChargesModal .guest-modal__content {
+    width: min(94vw, 780px) !important;
+    max-width: 780px !important;
+    height: min(92vh, 880px) !important;
+    min-height: min(86vh, 760px) !important;
+    max-height: 94vh !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
 .guest-modal__backdrop {
     position: absolute;
     inset: 0;

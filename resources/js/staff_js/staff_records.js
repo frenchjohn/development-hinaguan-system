@@ -1316,7 +1316,7 @@ window.AppPage['staff_records'] = function () {
     let reservationFilteredRows = [];
 
     const renderReservationPagination = () => {
-        const perPage = Number(reservationPerPage?.value || 10);
+        const perPage = Number(reservationPerPage?.value || 100);
         const total = reservationFilteredRows.length;
         const totalPages = Math.max(1, Math.ceil(total / perPage));
         reservationPage = Math.min(Math.max(1, reservationPage), totalPages);
@@ -1537,7 +1537,7 @@ window.AppPage['staff_records'] = function () {
         if (reservationPage > 1) { reservationPage--; renderReservationPagination(); }
     });
     reservationNextPageBtn?.addEventListener('click', () => {
-        if (reservationPage < Math.ceil(reservationFilteredRows.length / Number(reservationPerPageSel?.value || 10))) { reservationPage++; renderReservationPagination(); }
+        if (reservationPage < Math.ceil(reservationFilteredRows.length / Number(reservationPerPageSel?.value || 100))) { reservationPage++; renderReservationPagination(); }
     });
     reservationGoPageBtn?.addEventListener('click', () => {
         const page = parseInt(reservationPageInput?.value, 10);
@@ -1550,6 +1550,338 @@ window.AppPage['staff_records'] = function () {
         reservationPage = 1;
         renderReservationPagination();
     });
+
+    // ============================================================
+    // PRINT AS PDF (MINIMAL, CLEAN, MONOCHROME, STRICT TO FILTERS)
+    // ============================================================
+    const printRecordsAsPdf = () => {
+        // Strictly print what is currently visible on screen (respects active tab, search, status, dates, and pagination)
+        const visibleRows = Array.from(reservationTableBodyEl ? reservationTableBodyEl.querySelectorAll('tr.reservation-row:not(.hidden)') : []);
+
+        if (visibleRows.length === 0) {
+            window.alert('No records are currently visible to print. Please adjust your filters or search.');
+            return;
+        }
+
+        const typeLabel = currentTypeTab === 'walk_in' ? 'Walk-in Reservations' : 'Online Reservations';
+        const statusSelected = reservationStatusFilter ? reservationStatusFilter.options[reservationStatusFilter.selectedIndex]?.text : 'All Statuses';
+        const dateFromVal = reservationCheckOutFrom?.value || '';
+        const dateToVal = reservationCheckOutTo?.value || '';
+        let dateRangeStr = 'All Dates';
+        if (dateFromVal && dateToVal) {
+            dateRangeStr = `${dateFromVal} to ${dateToVal}`;
+        } else if (dateFromVal) {
+            dateRangeStr = `From ${dateFromVal}`;
+        } else if (dateToVal) {
+            dateRangeStr = `Until ${dateToVal}`;
+        }
+        const searchVal = reservationSearchInput?.value.trim() || '';
+        const perPage = Number(reservationPerPageSel?.value || 100);
+        const totalFiltered = reservationFilteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalFiltered / perPage));
+
+        const now = new Date();
+        const formattedDate = now.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        const formattedTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        let totalGuests = 0;
+        let totalPaid = 0;
+        let totalAmountSum = 0;
+
+        let rowsHtml = '';
+        visibleRows.forEach((row, index) => {
+            const resId = row.getAttribute('data-reservation-id') || '';
+
+            // Booker & Contact
+            const bookerEl = row.querySelector('td:nth-child(2) .font-bold');
+            const bookerName = bookerEl ? bookerEl.textContent.trim() : (row.getAttribute('data-booker-name') || 'N/A');
+            const contactEl = row.querySelector('td:nth-child(2) div:nth-child(2)');
+            const contactInfo = contactEl ? contactEl.textContent.trim() : '';
+
+            // Guests
+            const guestCount = parseInt(row.getAttribute('data-guest-count') || '1', 10);
+            totalGuests += guestCount;
+
+            // Status
+            const statusEl = row.querySelector('td:nth-child(4) span');
+            const statusText = statusEl ? statusEl.textContent.trim() : (row.getAttribute('data-status') || 'Checked Out');
+
+            // Check-in / Schedule
+            const checkInCell = row.querySelector('td:nth-child(5)');
+            const checkInDate = checkInCell?.querySelector('.font-bold')?.textContent.trim() || '';
+            const checkInSlot = checkInCell?.querySelector('div:nth-child(2)')?.textContent.trim() || '';
+            const checkInCombined = checkInDate ? (checkInSlot ? `${checkInDate} · ${checkInSlot}` : checkInDate) : (checkInCell?.textContent.trim() || 'N/A');
+
+            // Check-out / Activity
+            const checkOutCell = row.querySelector('td:nth-child(6)');
+            const checkOutDate = checkOutCell?.querySelector('.font-bold')?.textContent.trim() || '';
+            const checkOutSlot = checkOutCell?.querySelector('div:nth-child(2)')?.textContent.trim() || '';
+            const checkOutCombined = checkOutDate ? (checkOutSlot ? `${checkOutDate} · ${checkOutSlot}` : checkOutDate) : (checkOutCell?.textContent.trim() || 'N/A');
+
+            // Paid & Total
+            const paidCell = row.querySelector('td:nth-child(7)');
+            const paidText = paidCell?.querySelector('div:nth-child(1)')?.textContent.trim() || '₱0.00';
+            const totalText = paidCell?.querySelector('div:nth-child(2)')?.textContent.trim() || paidText;
+
+            const rawPaid = parseFloat(row.getAttribute('data-amount') || '0');
+            totalPaid += isNaN(rawPaid) ? 0 : rawPaid;
+
+            const totalMatch = totalText.match(/[\d,]+(?:\.\d+)?/);
+            const rawTotal = totalMatch ? parseFloat(totalMatch[0].replace(/,/g, '')) : rawPaid;
+            totalAmountSum += isNaN(rawTotal) ? 0 : rawTotal;
+
+            rowsHtml += `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 8px 6px; text-align: center; font-size: 8pt; color: #94a3b8; vertical-align: middle;">${index + 1}</td>
+                    <td style="padding: 8px 8px; font-family: monospace; font-size: 8.5pt; color: #334155; vertical-align: middle;">#${escapeHtml(resId)}</td>
+                    <td style="padding: 8px 8px; vertical-align: middle;">
+                        <div style="font-size: 8.5pt; font-weight: 500; color: #0f172a;">${escapeHtml(bookerName)}</div>
+                        ${contactInfo ? `<div style="font-size: 7.5pt; color: #64748b; margin-top: 1.5px;">${escapeHtml(contactInfo)}</div>` : ''}
+                    </td>
+                    <td style="padding: 8px 6px; text-align: center; font-size: 8.5pt; color: #334155; vertical-align: middle;">${guestCount}</td>
+                    <td style="padding: 8px 8px; text-align: center; font-size: 8pt; color: #334155; vertical-align: middle;">${escapeHtml(statusText)}</td>
+                    <td style="padding: 8px 8px; font-size: 8pt; color: #334155; vertical-align: middle;">${escapeHtml(checkInCombined)}</td>
+                    <td style="padding: 8px 8px; font-size: 8pt; color: #334155; vertical-align: middle;">${escapeHtml(checkOutCombined)}</td>
+                    <td style="padding: 8px 8px; text-align: right; font-size: 8.5pt; font-weight: 500; color: #0f172a; vertical-align: middle;">${escapeHtml(paidText)}</td>
+                    <td style="padding: 8px 8px; text-align: right; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(totalText.replace(/^of\s*/i, ''))}</td>
+                </tr>
+            `;
+
+            // If user has expanded companions on screen for this reservation, include them
+            const companionRows = Array.from(document.querySelectorAll(`.companion-of-${resId}:not(.hidden)`))
+                .filter(c => c.style.display !== 'none');
+
+            if (companionRows.length > 0) {
+                companionRows.forEach(cRow => {
+                    const cNameEl = cRow.querySelector('.guest-name span') || cRow.querySelector('.font-bold');
+                    const cName = cNameEl ? cNameEl.textContent.trim() : 'Companion';
+                    const cMetaEl = cRow.querySelector('.guest-meta');
+                    const cMeta = cMetaEl ? cMetaEl.textContent.trim() : '';
+                    const cAge = cRow.querySelector('td:nth-child(2)')?.textContent.trim() || '';
+                    const cNation = cRow.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+                    const cCheck = cRow.querySelector('td:nth-child(4)')?.textContent.trim() || '';
+
+                    rowsHtml += `
+                        <tr style="border-bottom: 1px solid #f1f5f9; background-color: transparent;">
+                            <td style="text-align: center; font-size: 7pt; color: #cbd5e1; vertical-align: middle;">&bull;</td>
+                            <td style="font-size: 7.5pt; color: #94a3b8; text-align: right; padding-right: 6px; vertical-align: middle;">&mdash;</td>
+                            <td style="padding: 6px 8px; font-size: 8pt; vertical-align: middle;">
+                                <span style="font-weight: 500; color: #334155;">${escapeHtml(cName)}</span>
+                                ${cMeta ? `<span style="font-size: 7.5pt; color: #94a3b8;"> (${escapeHtml(cMeta)})</span>` : ''}
+                            </td>
+                            <td style="padding: 6px 6px; text-align: center; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cAge)}</td>
+                            <td style="padding: 6px 8px; text-align: center; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cNation)}</td>
+                            <td colspan="2" style="padding: 6px 8px; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cCheck)}</td>
+                            <td colspan="2" style="padding: 6px 8px; text-align: right; font-size: 7.5pt; color: #94a3b8; vertical-align: middle;">(included)</td>
+                        </tr>
+                    `;
+                });
+            }
+        });
+
+        const printDoc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Staff Records - ${escapeHtml(typeLabel)}</title>
+    <style>
+        @page {
+            size: landscape;
+            margin: 10mm 12mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #1e293b;
+            font-size: 8.5pt;
+            line-height: 1.4;
+            -webkit-font-smoothing: antialiased;
+        }
+        .report-header {
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .report-title h1 {
+            margin: 0;
+            font-size: 15pt;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            color: #0f172a;
+        }
+        .report-title p {
+            margin: 3px 0 0 0;
+            font-size: 9.5pt;
+            font-weight: 400;
+            color: #64748b;
+        }
+        .report-meta {
+            text-align: right;
+            font-size: 8pt;
+            color: #64748b;
+            line-height: 1.45;
+        }
+        .filter-summary {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 20px;
+            border-top: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 7px 0;
+            margin-bottom: 14px;
+            font-size: 8pt;
+            color: #475569;
+        }
+        .filter-summary-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-summary-item .label {
+            color: #94a3b8;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .filter-summary-item .val {
+            font-weight: 500;
+            color: #1e293b;
+        }
+        table.records-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            page-break-inside: auto;
+        }
+        table.records-table thead {
+            display: table-header-group;
+        }
+        table.records-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        table.records-table th {
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            background: transparent;
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 8pt;
+            padding: 8px 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        table.records-table tfoot td {
+            border-top: 1px solid #1e293b;
+            border-bottom: 1px solid #1e293b;
+            font-weight: 600;
+            background: transparent;
+            padding: 8px 8px;
+            font-size: 8.5pt;
+            color: #0f172a;
+        }
+        .report-footer {
+            margin-top: 16px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            font-size: 7.5pt;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <div class="report-title">
+            <h1>Hinaguan Nature Park</h1>
+            <p>Staff Records Archive &mdash; ${escapeHtml(typeLabel)}</p>
+        </div>
+        <div class="report-meta">
+            <div>Printed: ${formattedDate} &bull; ${formattedTime}</div>
+            <div>Staff Management Portal</div>
+            <div>Page ${reservationPage} of ${totalPages}</div>
+        </div>
+    </div>
+
+    <div class="filter-summary">
+        <div class="filter-summary-item"><span class="label">Status:</span> <span class="val">${escapeHtml(statusSelected)}</span></div>
+        <div class="filter-summary-item"><span class="label">Date Range:</span> <span class="val">${escapeHtml(dateRangeStr)}</span></div>
+        ${searchVal ? `<div class="filter-summary-item"><span class="label">Search:</span> <span class="val">"${escapeHtml(searchVal)}"</span></div>` : ''}
+        <div class="filter-summary-item"><span class="label">Showing:</span> <span class="val">${visibleRows.length} of ${totalFiltered} records</span></div>
+    </div>
+
+    <table class="records-table">
+        <thead>
+            <tr>
+                <th style="width: 32px; text-align: center;">#</th>
+                <th style="width: 75px;">RES ID</th>
+                <th>MAIN BOOKER & CONTACT</th>
+                <th style="width: 55px; text-align: center;">GUESTS</th>
+                <th style="width: 90px; text-align: center;">STATUS</th>
+                <th style="width: 145px;">SCHEDULE / CHECK-IN</th>
+                <th style="width: 145px;">CHECK-OUT / ACTIVITY</th>
+                <th style="width: 85px; text-align: right;">PAID</th>
+                <th style="width: 85px; text-align: right;">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rowsHtml}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align: left;">SUMMARY (Visible ${visibleRows.length} Records)</td>
+                <td style="text-align: center;">${totalGuests}</td>
+                <td colspan="3"></td>
+                <td style="text-align: right;">₱${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td style="text-align: right;">₱${totalAmountSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="report-footer">
+        <div>Hinaguan Nature Park Management System &bull; Staff Records Archive Report</div>
+        <div>Confidential &bull; Filter-dependent print record</div>
+    </div>
+</body>
+</html>`;
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(printDoc);
+        doc.close();
+
+        iframe.contentWindow.focus();
+        setTimeout(() => {
+            iframe.contentWindow.print();
+            setTimeout(() => {
+                iframe.remove();
+            }, 1000);
+        }, 300);
+    };
+
+    const printRecordsPdfBtn = document.getElementById('printRecordsPdfBtn');
+    printRecordsPdfBtn?.addEventListener('click', printRecordsAsPdf);
 
     // Expandable Row Logic
     document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
