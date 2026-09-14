@@ -3829,6 +3829,25 @@ html {
     margin-left: 0.25rem;
 }
 
+/* Guest reservation input validation styles */
+.rp-booking-form input.is-invalid,
+.rp-booking-form .rp-phone-input-group.is-invalid {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22) !important;
+    outline: none !important;
+}
+
+.rp-booking-form input.is-invalid:focus,
+.rp-booking-form .rp-phone-input-group.is-invalid:focus-within {
+    border-color: #b91c1c !important;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.35) !important;
+    outline: none !important;
+}
+
+.rp-phone-input-group.is-invalid .rp-phone-prefix {
+    border-right-color: #dc2626 !important;
+}
+
 .rp-booking-form__button {
     background: linear-gradient(135deg, #0b2418, #14532d);
     color: #ffffff;
@@ -3855,6 +3874,10 @@ html {
     color: #16a34a;
     font-weight: 600;
     font-size: 0.875rem;
+}
+
+.rp-booking-form__message.has-error {
+    color: #dc2626 !important;
 }
 
 .rp-modal__text {

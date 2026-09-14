@@ -2508,6 +2508,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const openModal = (card) => {
         activeAmenity = card;
         bookingNotice.textContent = '';
+        if (bookingNotice) bookingNotice.classList.remove('has-error');
+        if (bookingForm) {
+            bookingForm.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        }
         const currentChoice = multiSelectionChoices[card.dataset.amenityId] || 'without';
 
         if (multiSelectionEnabled && selectedCards.length > 0) {
@@ -4194,6 +4198,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         inp.addEventListener('input', (e) => {
+            inp.classList.remove('is-invalid');
+            if (bookingNotice && bookingNotice.classList.contains('has-error')) {
+                bookingNotice.classList.remove('has-error');
+                bookingNotice.textContent = '';
+            }
             const cur = e.target.value;
             const cleaned = cur.replace(/[^a-zA-Z\s]/g, '').replace(/\s{2,}/g, ' ');
             if (cur !== cleaned) {
@@ -4379,6 +4388,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         bookingPhoneInput.addEventListener('input', (e) => {
+            bookingPhoneInput.classList.remove('is-invalid');
+            const phoneGroup = bookingPhoneInput.closest('.rp-phone-input-group');
+            if (phoneGroup) phoneGroup.classList.remove('is-invalid');
+            if (bookingNotice && bookingNotice.classList.contains('has-error')) {
+                bookingNotice.classList.remove('has-error');
+                bookingNotice.textContent = '';
+            }
             let val = e.target.value.replace(/\D/g, '');
             // Strip leading 63 or 0 if pasted
             if (val.startsWith('639')) {
@@ -4402,8 +4418,29 @@ document.addEventListener('DOMContentLoaded', () => {
     // Email Input
     const bookingEmailInput = document.getElementById('bookingEmailInput') || (bookingForm ? bookingForm.querySelector('input[name="email"]') : null);
     if (bookingEmailInput) {
+        bookingEmailInput.addEventListener('input', () => {
+            bookingEmailInput.classList.remove('is-invalid');
+            if (bookingNotice && bookingNotice.classList.contains('has-error')) {
+                bookingNotice.classList.remove('has-error');
+                bookingNotice.textContent = '';
+            }
+        });
         bookingEmailInput.addEventListener('blur', (e) => {
             e.target.value = e.target.value.trim();
+        });
+    }
+
+    // Number of Guests Input
+    const bookingGuestCountInput = document.getElementById('bookingGuestCount') || (bookingForm ? bookingForm.querySelector('input[name="number_of_guests"]') : null);
+    if (bookingGuestCountInput) {
+        ['input', 'change'].forEach(evt => {
+            bookingGuestCountInput.addEventListener(evt, () => {
+                bookingGuestCountInput.classList.remove('is-invalid');
+                if (bookingNotice && bookingNotice.classList.contains('has-error')) {
+                    bookingNotice.classList.remove('has-error');
+                    bookingNotice.textContent = '';
+                }
+            });
         });
     }
 
@@ -4413,63 +4450,123 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeAmenity || isSubmitting) {
             if (!activeAmenity) {
                 bookingNotice.textContent = 'Please select an amenity first.';
+                bookingNotice.classList.add('has-error');
             }
             return;
         }
 
         const formData = new FormData(bookingForm);
+        const phoneGroup = bookingPhoneInput?.closest('.rp-phone-input-group') || bookingPhoneInput;
 
         // Validate First Name and Last Name
         const firstName = (bookingFirstNameInput ? bookingFirstNameInput.value : '').trim();
-        const lastName = (bookingLastNameInput ? bookingLastNameInput.value : '').trim();
+        const isFirstNameValid = Boolean(firstName && firstName.replace(/\s/g, '').length >= 2 && /^[a-zA-Z\s]+$/.test(firstName));
 
-        if (bookingFirstNameInput && !firstName) {
-            bookingNotice.textContent = 'Please enter the booker first name.';
-            bookingFirstNameInput.focus();
-            return;
-        }
-        if (bookingLastNameInput && !lastName) {
-            bookingNotice.textContent = 'Please enter the booker last name.';
-            bookingLastNameInput.focus();
-            return;
-        }
+        const lastName = (bookingLastNameInput ? bookingLastNameInput.value : '').trim();
+        const isLastNameValid = Boolean(lastName && lastName.replace(/\s/g, '').length >= 1 && /^[a-zA-Z\s]+$/.test(lastName));
 
         updateCombinedBookerName();
         const rawBookerName = (bookingBookerNameInput?.value || formData.get('booker_name') || `${firstName} ${lastName}`).trim();
 
-        if (!rawBookerName) {
-            bookingNotice.textContent = 'Please enter the booker name.';
-            if (bookingFirstNameInput) bookingFirstNameInput.focus();
-            return;
-        }
-        if (!/^[a-zA-Z\s]+$/.test(rawBookerName) || rawBookerName.replace(/\s/g, '').length < 2) {
-            bookingNotice.textContent = 'Booker name must contain letters only (no numbers or symbols).';
-            if (bookingFirstNameInput) bookingFirstNameInput.focus();
-            return;
-        }
-
         // Validate Phone: Philippine mobile starting with 9 (10 digits)
-        const rawPhoneDigits = (formData.get('phone') || '').replace(/\D/g, '');
+        const rawPhoneDigits = (formData.get('phone') || bookingPhoneInput?.value || '').replace(/\D/g, '');
         let mobileTenDigits = rawPhoneDigits;
         if (mobileTenDigits.startsWith('639')) {
             mobileTenDigits = mobileTenDigits.slice(2);
         } else if (mobileTenDigits.startsWith('09')) {
             mobileTenDigits = mobileTenDigits.slice(1);
         }
-        if (!mobileTenDigits.startsWith('9') || mobileTenDigits.length !== 10) {
-            bookingNotice.textContent = 'Please enter a valid 10-digit Philippine mobile number starting with 9 (e.g. +63 912 345 6789).';
-            if (bookingPhoneInput) bookingPhoneInput.focus();
-            return;
-        }
+        const isPhoneValid = Boolean(mobileTenDigits.startsWith('9') && mobileTenDigits.length === 10);
         const fullPhoneNumber = `+63${mobileTenDigits}`;
 
         // Validate Email: valid email format
-        const rawEmail = (formData.get('email') || '').trim();
+        const rawEmail = (formData.get('email') || bookingEmailInput?.value || '').trim();
         const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-        if (!rawEmail || !emailRegex.test(rawEmail)) {
-            bookingNotice.textContent = 'Please enter a valid email address (e.g. name@example.com).';
-            if (bookingEmailInput) bookingEmailInput.focus();
+        const isEmailValid = Boolean(rawEmail && emailRegex.test(rawEmail));
+
+        // Validate Number of Guests
+        const guestVal = parseInt(bookingGuestCountInput?.value, 10);
+        const minAllowed = (multiSelectionEnabled && selectedCards.length > 0)
+            ? selectedCards.reduce((acc, c) => acc + Number(c.dataset.minCapacity || 1), 0)
+            : Number(activeAmenity?.dataset?.minCapacity || 1);
+        const maxAllowed = (multiSelectionEnabled && selectedCards.length > 0)
+            ? selectedCards.reduce((acc, c) => acc + Number(c.dataset.maxCapacity || c.dataset.minCapacity || 1), 0)
+            : Number(activeAmenity?.dataset?.maxCapacity || 0);
+
+        let isGuestCountValid = Boolean(!isNaN(guestVal) && guestVal >= minAllowed);
+        if (maxAllowed > 0 && guestVal > maxAllowed) {
+            isGuestCountValid = false;
+        }
+
+        const validationFields = [
+            {
+                input: bookingFirstNameInput,
+                elementToHighlight: bookingFirstNameInput,
+                isValid: isFirstNameValid,
+                message: !firstName ? 'Please enter the booker first name.' : 'First name must contain letters only (at least 2 letters).'
+            },
+            {
+                input: bookingLastNameInput,
+                elementToHighlight: bookingLastNameInput,
+                isValid: isLastNameValid,
+                message: !lastName ? 'Please enter the booker last name.' : 'Last name must contain letters only.'
+            },
+            {
+                input: bookingPhoneInput,
+                elementToHighlight: phoneGroup,
+                isValid: isPhoneValid,
+                message: !rawPhoneDigits ? 'Please enter the booker phone number.' : 'Please enter a valid 10-digit Philippine mobile number starting with 9 (e.g. +63 912 345 6789).'
+            },
+            {
+                input: bookingEmailInput,
+                elementToHighlight: bookingEmailInput,
+                isValid: isEmailValid,
+                message: !rawEmail ? 'Please enter the booker email address.' : 'Please enter a valid email address (e.g. name@example.com).'
+            },
+            {
+                input: bookingGuestCountInput,
+                elementToHighlight: bookingGuestCountInput,
+                isValid: isGuestCountValid,
+                message: isNaN(guestVal) || guestVal < minAllowed
+                    ? `Number of guests must be at least ${minAllowed}.`
+                    : `Number of guests exceeds amenity capacity (max: ${maxAllowed}).`
+            }
+        ];
+
+        let hasErrors = false;
+        let firstInvalidField = null;
+        let firstErrorMessage = '';
+
+        validationFields.forEach(field => {
+            if (!field.input) return;
+            if (!field.isValid) {
+                hasErrors = true;
+                field.elementToHighlight?.classList.add('is-invalid');
+                field.input.classList.add('is-invalid');
+                if (!firstInvalidField) {
+                    firstInvalidField = field.input;
+                    firstErrorMessage = field.message;
+                }
+            } else {
+                field.elementToHighlight?.classList.remove('is-invalid');
+                field.input.classList.remove('is-invalid');
+            }
+        });
+
+        if (hasErrors) {
+            if (bookingNotice) {
+                bookingNotice.textContent = firstErrorMessage || 'Please fill in all required fields correctly.';
+                bookingNotice.classList.add('has-error');
+            }
+            if (firstInvalidField) {
+                firstInvalidField.focus();
+            }
             return;
+        }
+
+        if (bookingNotice) {
+            bookingNotice.classList.remove('has-error');
+            bookingNotice.textContent = '';
         }
 
         // ── Pre-check Database for Upcoming Pending or Confirmed Reservations ──

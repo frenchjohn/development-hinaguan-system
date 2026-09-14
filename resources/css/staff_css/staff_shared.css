@@ -4301,7 +4301,6 @@ tr.row-checkout-near:hover td {
 }
 
 /* Stacked Modal z-index hierarchy */
-#editCalendarModal,
 #checkInAmenityPickerModal,
 #checkInCompanionModal {
     z-index: 1060;
@@ -4323,6 +4322,7 @@ tr.row-checkout-near:hover td {
 }
 
 /* Modals opened over #reservationModal (Edit stay, add amenity, extend amenity, companion modals) */
+#editCalendarModal,
 #extendStayModal,
 #extendAmenityModal,
 #addAmenityMidStayModal,

@@ -999,7 +999,7 @@
 
                     <div class="rp-modal__right">
 
-                        <form class="rp-booking-form is-hidden" id="bookingForm">
+                        <form class="rp-booking-form is-hidden" id="bookingForm" novalidate>
 
                             <h3>Guest reservation</h3>
 

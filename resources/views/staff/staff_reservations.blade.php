@@ -482,7 +482,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1060] hidden items-center justify-center is-open:flex" style="z-index: 1060 !important;" id="editCalendarModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1250] hidden items-center justify-center is-open:flex" style="z-index: 1250 !important;" id="editCalendarModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-edit-calendar="true"></div>
         <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">
             <div class="guest-modal__header mb-2.5 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] pb-2.5 dark:border-white/10">
@@ -609,7 +609,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1100] hidden items-center justify-center is-open:flex" style="z-index: 1100 !important;" id="confirmModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="confirmModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75 backdrop-blur-sm" data-close-confirm-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--confirm relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
             <div class="guest-modal__confirm-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400">
@@ -626,7 +626,7 @@
         </div>
     </div>
 
-    <div class="guest-modal guest-modal--success fixed inset-0 z-[1200] hidden items-center justify-center is-open:flex" style="z-index: 1200 !important;" id="successModal" aria-hidden="true">
+    <div class="guest-modal guest-modal--success fixed inset-0 z-[1500] hidden items-center justify-center is-open:flex" style="z-index: 1500 !important;" id="successModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-success-modal="true"></div>
         <div class="guest-modal__content guest-modal__content--success relative z-[1] w-full max-w-[400px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-8 text-center shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="successModalTitle">
             <div class="guest-modal__success-icon mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(34,197,94,0.1)] text-[#22c55e] dark:bg-[rgba(34,197,94,0.2)]">
