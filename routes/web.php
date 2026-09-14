@@ -7502,6 +7502,138 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.update');
 
+    Route::post('/reservations/{reservation}/status', function (Request $request, Reservation $reservation) use ($computeReservationCheckoutAt, $formatLocalDate) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:Pending,Confirmed,Cancelled,No Show',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $oldStatus = $reservation->status;
+        $newStatus = $validated['status'];
+        $reservation->status = $newStatus;
+        $reservation->save();
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $title = match ($newStatus) {
+            'Cancelled' => 'Reservation Cancelled',
+            'No Show' => 'Reservation Marked as No-Show',
+            'Pending' => 'Reservation Reopened',
+            default => 'Reservation Status Updated',
+        };
+        $activityType = match ($newStatus) {
+            'Cancelled' => 'reservation_cancelled',
+            'No Show' => 'reservation_no_show',
+            default => 'reservation_update',
+        };
+
+        ActivityLog::log(
+            activityType: $activityType,
+            title: $title,
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) status changed from {$oldStatus} to {$newStatus} by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'previous_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'reason' => $validated['reason'] ?? null,
+            ]
+        );
+
+        $reservation->load(['reservationAmenities.amenity.benefits', 'reservationGuests.customer', 'entranceFee']);
+        $checkoutAt = $computeReservationCheckoutAt($reservation);
+
+        $timeSlots = $reservation->reservationAmenities
+            ->pluck('pricing_type')
+            ->map(function ($pricingType) {
+                $baseSlot = str_replace([' Aircon', 'Aircon'], '', $pricingType);
+                if (str_contains($baseSlot, 'DayToNight')) return 'DayToNight';
+                if (str_contains($baseSlot, 'NightToDay')) return 'NightToDay';
+                if (str_contains($baseSlot, 'Daytime')) return 'Daytime';
+                if (str_contains($baseSlot, 'Nighttime')) return 'Nighttime';
+                return $baseSlot;
+            })
+            ->unique()
+            ->values()
+            ->sort()
+            ->toArray();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Reservation #{$reservation->id} marked as {$newStatus}.",
+            'reservation' => [
+                'id' => $reservation->id,
+                'booker_name' => $reservation->booker_name,
+                'email' => $reservation->email,
+                'phone' => $reservation->phone,
+                'reservation_date' => $formatLocalDate($reservation, 'reservation_date'),
+                'end_date' => $formatLocalDate($reservation, 'end_date'),
+                'start_slot' => $reservation->start_slot ?? 'Daytime',
+                'end_slot' => $reservation->end_slot ?? 'Daytime',
+                'time_slots' => $timeSlots,
+                'total_days' => $reservation->total_days ?? 1,
+                'number_of_guests' => $reservation->number_of_guests,
+                'status' => $reservation->status,
+                'total_amount' => (float) $reservation->total_amount,
+                'amount_paid' => (float) $reservation->amount_paid,
+                'remaining_balance' => (float) $reservation->remaining_balance,
+                'payment_status' => $reservation->payment_status,
+                'payment_method' => $reservation->payment_method,
+                'checkout_at' => $checkoutAt?->toIso8601String(),
+                'reservation_amenities' => $reservation->reservationAmenities->map(function ($ra) use ($formatLocalDate) {
+                    return [
+                        'id' => $ra->id,
+                        'amenity_id' => $ra->amenity_id,
+                        'amenity_name' => $ra->amenity?->amenities_name,
+                        'pricing_type' => $ra->pricing_type,
+                        'price_at_booking' => (float) $ra->price_at_booking,
+                        'quantity' => (int) $ra->quantity,
+                        'start_date' => $formatLocalDate($ra, 'start_date'),
+                        'end_date' => $formatLocalDate($ra, 'end_date'),
+                        'start_slot' => $ra->start_slot,
+                        'end_slot' => $ra->end_slot,
+                        'day_slots_count' => $ra->day_slots_count,
+                        'night_slots_count' => $ra->night_slots_count,
+                        'amenity' => [
+                            'id' => $ra->amenity?->id,
+                            'amenities_name' => $ra->amenity?->amenities_name,
+                            'daytime_price' => (float) ($ra->amenity?->daytime_price ?? 0),
+                            'nighttime_price' => (float) ($ra->amenity?->nighttime_price ?? 0),
+                            'is_aircon' => (bool) ($ra->amenity?->benefits?->is_aircon ?? false),
+                            'free_entrance' => (bool) ($ra->amenity?->benefits?->free_entrance ?? false),
+                            'free_pool' => (bool) ($ra->amenity?->benefits?->free_pool ?? false),
+                        ],
+                    ];
+                })->values(),
+                'reservation_guests' => $reservation->reservationGuests->map(function ($guestEntry) {
+                    $customer = $guestEntry->customer;
+                    return [
+                        'id' => $guestEntry->id,
+                        'is_primary_guest' => $guestEntry->is_primary_guest,
+                        'checked_out_at' => $guestEntry->checked_out_at,
+                        'customer' => $customer ? [
+                            'id' => $customer->id,
+                            'first_name' => $customer->first_name,
+                            'middle_name' => $customer->middle_name,
+                            'last_name' => $customer->last_name,
+                            'age' => $customer->age,
+                            'gender' => $customer->gender,
+                            'is_foreigner' => $customer->is_foreigner,
+                            'phone' => $customer->phone,
+                            'email' => $customer->email,
+                        ] : null,
+                    ];
+                })->values(),
+            ],
+        ]);
+    })->name('reservations.update-status');
+
     Route::get('/reservations/refresh', function (Request $request) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {

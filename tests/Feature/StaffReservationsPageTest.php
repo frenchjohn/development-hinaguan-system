@@ -620,5 +620,57 @@ class StaffReservationsPageTest extends TestCase
         $this->assertEquals('2026-11-15', $ra->start_date instanceof \Illuminate\Support\Carbon ? $ra->start_date->toDateString() : substr((string)$ra->start_date, 0, 10));
         $this->assertEquals('2026-11-16', $ra->end_date instanceof \Illuminate\Support\Carbon ? $ra->end_date->toDateString() : substr((string)$ra->end_date, 0, 10));
     }
+
+    public function test_staff_can_update_reservation_status_to_cancelled_no_show_and_reopen(): void
+    {
+        $this->staffSession();
+        $this->createAmenity('cottage-status-1');
+        $res = $this->createReservation('2026-12-01');
+
+        // 1. Mark as Cancelled
+        $cancelResponse = $this->postJson("/staff/reservations/{$res->id}/status", [
+            'status' => 'Cancelled',
+        ]);
+        $cancelResponse->assertOk();
+        $cancelResponse->assertJson([
+            'success' => true,
+            'reservation' => [
+                'id' => $res->id,
+                'status' => 'Cancelled',
+            ],
+        ]);
+        $res->refresh();
+        $this->assertEquals('Cancelled', $res->status);
+
+        // 2. Mark as No Show
+        $noShowResponse = $this->postJson("/staff/reservations/{$res->id}/status", [
+            'status' => 'No Show',
+        ]);
+        $noShowResponse->assertOk();
+        $noShowResponse->assertJson([
+            'success' => true,
+            'reservation' => [
+                'id' => $res->id,
+                'status' => 'No Show',
+            ],
+        ]);
+        $res->refresh();
+        $this->assertEquals('No Show', $res->status);
+
+        // 3. Reopen to Pending
+        $reopenResponse = $this->postJson("/staff/reservations/{$res->id}/status", [
+            'status' => 'Pending',
+        ]);
+        $reopenResponse->assertOk();
+        $reopenResponse->assertJson([
+            'success' => true,
+            'reservation' => [
+                'id' => $res->id,
+                'status' => 'Pending',
+            ],
+        ]);
+        $res->refresh();
+        $this->assertEquals('Pending', $res->status);
+    }
 }
 

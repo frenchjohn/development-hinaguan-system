@@ -172,7 +172,7 @@ window.AppPage['staff_reservations'] = function () {
             'checked in': 'bg-[#e3f2fd] text-[#1565c0] border-[#bbdefb] dark:bg-[rgba(21,101,192,0.2)] dark:text-[#64b5f6] dark:border-[#64b5f6]/30',
             'checked out': 'bg-[#ede7f6] text-[#6a1b9a] border-[#d1c4e9] dark:bg-[rgba(106,27,154,0.2)] dark:text-[#ce93d8] dark:border-[#ce93d8]/30',
             cancelled: 'bg-[#ffebee] text-[#c62828] border-[#ffcdd2] dark:bg-[rgba(198,40,40,0.2)] dark:text-[#ef5350] dark:border-[#ef5350]/30',
-            'no show': 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700',
+            'no show': 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/40',
         };
         const statusClass = statusColors[statusLower] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/10 dark:text-gray-300';
 
@@ -3482,6 +3482,8 @@ window.AppPage['staff_reservations'] = function () {
                 modalStatus.className = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-[#e8f5e9] text-[#1b4332] border border-[#c8e6c9]/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40';
             } else if (sLower === 'cancelled' || sLower === 'rejected') {
                 modalStatus.className = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40';
+            } else if (sLower === 'no show' || sLower === 'noshow' || sLower === 'no-show') {
+                modalStatus.className = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-purple-50 text-purple-800 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/40';
             } else {
                 modalStatus.className = 'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200 dark:bg-white/10 dark:text-gray-300 dark:border-white/10';
             }
@@ -3678,30 +3680,108 @@ window.AppPage['staff_reservations'] = function () {
             </div>
         `;
 
-        // Populate sticky action footer with Confirm button
+        // Populate sticky action footer with Left Status actions (Cancelled / No-Show / Reopen) and Right Action buttons
         const resFooter = document.getElementById('reservationModalFooter');
         if (resFooter) {
-            if (reservation.status === 'Checked In') {
-                resFooter.innerHTML = `
-                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
-                    <button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-md inline-flex items-center gap-2 active:scale-[0.98]" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">
-                        <i class="bi bi-box-arrow-right text-xs"></i>
-                        <span>Check Out</span>
-                    </button>
+            const currentStatus = String(reservation.status || '').trim();
+            const statusLower = currentStatus.toLowerCase();
+            const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
+            const isCancelled = statusLower === 'cancelled';
+            const isNoShow = ['no show', 'noshow', 'no-show'].includes(statusLower);
+            const isCheckedIn = statusLower === 'checked in';
+            const isCheckedOut = statusLower === 'checked out';
+
+            // Left side HTML: Status management (Cancelled / No-Show / Reopen)
+            let leftActionsHtml = '';
+            if (isPendingOrConfirmed) {
+                leftActionsHtml = `
+                    <div class="flex items-center gap-2 flex-wrap" id="reservationModalFooterLeft">
+                        <span class="text-[11px] font-semibold text-gray-400 dark:text-gray-400 uppercase tracking-wider hidden sm:inline-flex items-center gap-1">
+                            <i class="bi bi-sliders text-[0.7rem]"></i> Status:
+                        </span>
+                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm active:scale-[0.98]" id="reservationCancelBtn" title="Cancel this reservation">
+                            <i class="bi bi-x-circle text-xs"></i>
+                            <span>Cancel</span>
+                        </button>
+                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm active:scale-[0.98]" id="reservationNoShowBtn" title="Mark this guest as No-Show">
+                            <i class="bi bi-person-x text-xs"></i>
+                            <span>No-Show</span>
+                        </button>
+                    </div>
                 `;
-            } else if (reservation.status !== 'Checked Out' && reservation.status !== 'Cancelled') {
-                resFooter.innerHTML = `
-                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
-                    <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-md active:scale-[0.98] inline-flex items-center gap-2" id="reservationModalConfirmBtn" data-open-check-in-modal="${reservation.id}">
-                        <i class="bi bi-check2-circle text-sm"></i>
-                        <span>Confirm</span>
-                    </button>
+            } else if (isCancelled || isNoShow) {
+                const badgeLabel = isCancelled ? 'Cancelled' : 'No-Show';
+                const badgeIcon = isCancelled ? 'bi-x-circle' : 'bi-person-x';
+                const badgeClass = isCancelled
+                    ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-300'
+                    : 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800/40 dark:bg-purple-950/40 dark:text-purple-300';
+
+                leftActionsHtml = `
+                    <div class="flex items-center gap-2 flex-wrap" id="reservationModalFooterLeft">
+                        <span class="inline-flex items-center gap-1.5 rounded-lg border ${badgeClass} px-2.5 py-1.5 text-xs font-semibold">
+                            <i class="bi ${badgeIcon} text-xs"></i>
+                            <span>${badgeLabel}</span>
+                        </span>
+                        <button type="button" class="cursor-pointer rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:bg-gray-50 hover:border-gray-300 dark:border-white/15 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10 inline-flex items-center gap-1.5 shadow-2xs active:scale-[0.98]" id="reservationReopenBtn" title="Reopen reservation back to Pending">
+                            <i class="bi bi-arrow-counterclockwise text-xs"></i>
+                            <span>Reopen</span>
+                        </button>
+                    </div>
+                `;
+            } else if (isCheckedIn) {
+                leftActionsHtml = `
+                    <div class="flex items-center gap-2" id="reservationModalFooterLeft">
+                        <span class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 dark:border-blue-800/40 dark:bg-blue-950/40 dark:text-blue-300">
+                            <i class="bi bi-geo-alt text-xs"></i>
+                            <span>Currently In Park</span>
+                        </span>
+                    </div>
+                `;
+            } else if (isCheckedOut) {
+                leftActionsHtml = `
+                    <div class="flex items-center gap-2" id="reservationModalFooterLeft">
+                        <span class="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-purple-700 dark:border-purple-800/40 dark:bg-purple-950/40 dark:text-purple-300">
+                            <i class="bi bi-check-all text-xs"></i>
+                            <span>Completed Stay</span>
+                        </span>
+                    </div>
                 `;
             } else {
-                resFooter.innerHTML = `
-                    <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15" data-close-reservation-modal="true">Close</button>
+                leftActionsHtml = `<div id="reservationModalFooterLeft"></div>`;
+            }
+
+            // Right side HTML: Standard Close, Confirm, Check Out
+            let rightActionsHtml = '';
+            if (isCheckedIn) {
+                rightActionsHtml = `
+                    <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
+                        <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-emerald-600 px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-emerald-700 shadow-md inline-flex items-center gap-2 active:scale-[0.98]" id="reservationCheckOutBtn" data-reservation-checkout="${reservation.id}">
+                            <i class="bi bi-box-arrow-right text-xs"></i>
+                            <span>Check Out</span>
+                        </button>
+                    </div>
+                `;
+            } else if (isPendingOrConfirmed) {
+                rightActionsHtml = `
+                    <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
+                        <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-md active:scale-[0.98] inline-flex items-center gap-2" id="reservationModalConfirmBtn" data-open-check-in-modal="${reservation.id}">
+                            <i class="bi bi-check2-circle text-sm"></i>
+                            <span>Confirm</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                rightActionsHtml = `
+                    <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
+                        <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                    </div>
                 `;
             }
+
+            resFooter.innerHTML = `${leftActionsHtml}${rightActionsHtml}`;
+
             resFooter.querySelectorAll('[data-close-reservation-modal="true"]').forEach((btn) => {
                 btn.addEventListener('click', closeModal);
             });
@@ -3720,6 +3800,55 @@ window.AppPage['staff_reservations'] = function () {
                     e.preventDefault();
                     e.stopPropagation();
                     checkOutReservation(reservation.id);
+                });
+            }
+
+            const cancelBtn = resFooter.querySelector('#reservationCancelBtn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const resDisplay = `#${reservation.id} - ${reservation.booker_name || 'Guest'}`;
+                    showConfirmModal(
+                        'Cancel Reservation?',
+                        `Are you sure you want to cancel this reservation (${resDisplay})?`,
+                        () => updateReservationStatus(reservation.id, 'Cancelled'),
+                        {
+                            confirmText: 'Yes, Cancel',
+                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 shadow-sm',
+                        }
+                    );
+                });
+            }
+
+            const noShowBtn = resFooter.querySelector('#reservationNoShowBtn');
+            if (noShowBtn) {
+                noShowBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const resDisplay = `#${reservation.id} - ${reservation.booker_name || 'Guest'}`;
+                    showConfirmModal(
+                        'Mark as No-Show?',
+                        `Are you sure you want to mark this reservation (${resDisplay}) as No-Show?`,
+                        () => updateReservationStatus(reservation.id, 'No Show'),
+                        {
+                            confirmText: 'Yes, Mark No-Show',
+                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-purple-700 shadow-sm',
+                        }
+                    );
+                });
+            }
+
+            const reopenBtn = resFooter.querySelector('#reservationReopenBtn');
+            if (reopenBtn) {
+                reopenBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showConfirmModal(
+                        'Reopen Reservation?',
+                        `Are you sure you want to restore reservation #${reservation.id} back to Pending status?`,
+                        () => updateReservationStatus(reservation.id, 'Pending')
+                    );
                 });
             }
         }
@@ -3744,6 +3873,55 @@ window.AppPage['staff_reservations'] = function () {
 
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
+    };
+
+    const updateReservationStatus = async (reservationId, targetStatus) => {
+        try {
+            const response = await fetch(`/staff/reservations/${reservationId}/status`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ status: targetStatus }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(data.message || `Failed to update status to ${targetStatus}.`);
+            }
+
+            const updatedRes = data.reservation;
+            if (updatedRes) {
+                if (reservationData[reservationId]) {
+                    Object.assign(reservationData[reservationId], updatedRes);
+                } else {
+                    reservationData[reservationId] = updatedRes;
+                }
+                if (window.staffReservationData) {
+                    if (window.staffReservationData[reservationId]) {
+                        Object.assign(window.staffReservationData[reservationId], updatedRes);
+                    } else {
+                        window.staffReservationData[reservationId] = updatedRes;
+                    }
+                }
+                if (typeof updateReservationTableRow === 'function') {
+                    updateReservationTableRow(reservationId, updatedRes);
+                }
+                if (typeof applyFilters === 'function') {
+                    applyFilters();
+                }
+                openModal(reservationId);
+            }
+
+            window.dispatchEvent(new CustomEvent('app:data-mutated'));
+            showToast(data.message || `Reservation #${reservationId} marked as ${targetStatus}.`);
+        } catch (err) {
+            console.error(err);
+            window.alert(err.message || `Failed to update reservation status to ${targetStatus}.`);
+        }
     };
 
     const closeModal = () => {
@@ -3876,9 +4054,17 @@ window.AppPage['staff_reservations'] = function () {
 
     let confirmCallback = null;
 
-    const showConfirmModal = (title, message, callback) => {
+    const showConfirmModal = (title, message, callback, options = {}) => {
         if (confirmModalTitle) confirmModalTitle.textContent = title;
         if (confirmModalMessage) confirmModalMessage.textContent = message;
+        if (confirmModalConfirm) {
+            confirmModalConfirm.textContent = options.confirmText || 'Yes';
+            if (options.confirmClass) {
+                confirmModalConfirm.className = options.confirmClass;
+            } else {
+                confirmModalConfirm.className = 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark';
+            }
+        }
         confirmCallback = callback;
         confirmModal.classList.add('is-open');
         confirmModal.setAttribute('aria-hidden', 'false');
@@ -3887,6 +4073,10 @@ window.AppPage['staff_reservations'] = function () {
     const closeConfirmModal = () => {
         confirmModal.classList.remove('is-open');
         confirmModal.setAttribute('aria-hidden', 'true');
+        if (confirmModalConfirm) {
+            confirmModalConfirm.textContent = 'Yes';
+            confirmModalConfirm.className = 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark';
+        }
         confirmCallback = null;
     };
 

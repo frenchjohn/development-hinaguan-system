@@ -477,8 +477,8 @@
                 </div>
             </div>
             <div id="reservationModalBody" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 sm:px-8 py-5"></div>
-            <!-- Sticky Action Footer with Confirm button -->
-            <div id="reservationModalFooter" class="shrink-0 sticky bottom-0 z-10 flex items-center justify-end gap-3 px-6 sm:px-8 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/85 dark:bg-[#1a1e1c]/95 backdrop-blur-md"></div>
+            <!-- Sticky Action Footer with Left Status actions (Cancelled/No-Show) and Right Confirm/Close -->
+            <div id="reservationModalFooter" class="shrink-0 sticky bottom-0 z-10 flex items-center justify-between gap-3 px-6 sm:px-8 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/85 dark:bg-[#1a1e1c]/95 backdrop-blur-md flex-wrap sm:flex-nowrap"></div>
         </div>
     </div>
 
