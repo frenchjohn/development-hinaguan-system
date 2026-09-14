@@ -1640,7 +1640,7 @@
 	</div>
 
 				<!-- Walk-In Main Guest Fill Up Modal -->
-				<div class="guest-modal guest-modal--compact" id="walkInMainGuestModal" aria-hidden="true" style="z-index: 1060;">
+				<div class="guest-modal guest-modal--compact" id="walkInMainGuestModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-main-guest-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[620px] max-h-[min(90vh,780px)] overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="walkInMainGuestModalTitle">
 						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-main-guest-modal="true" aria-label="Close form">
@@ -1728,7 +1728,7 @@
 				</div>
 
 				<!-- Walk-In Range Calendar Modal -->
-				<div class="guest-modal guest-modal--calendar" id="walkInCalendarModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--calendar" id="walkInCalendarModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-calendar="true"></div>
 					<div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="walkInCalendarModalTitle">
 						<!-- Header with cleanly aligned close button -->
@@ -1841,7 +1841,7 @@
 				</div>
 
 				<!-- Walk-In Per-Amenity Schedule Customizer Modal -->
-				<div class="guest-modal guest-modal--compact" id="walkInAmenityScheduleModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="walkInAmenityScheduleModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-walkin-amenity-schedule="true"></div>
 					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="walkInAmenityScheduleTitle">
 						<button type="button" class="guest-modal__close group absolute right-3 top-3 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-walkin-amenity-schedule="true" aria-label="Close schedule form">
@@ -1915,7 +1915,7 @@
 				</div>
 
 				<!-- Choose Amenities Modal -->
-				<div class="guest-modal guest-modal--compact" id="amenityModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--compact" id="amenityModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-amenity-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[760px] max-h-[min(88vh,800px)] flex flex-col overflow-hidden rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="amenityModalTitle">
 						<button type="button" class="guest-modal__close group absolute right-3.5 top-3.5 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-amenity-modal="true" aria-label="Close amenity selection">
@@ -1980,7 +1980,7 @@
 				</div>
 
 				<!-- TWO COLUMN COMPANION MODAL (WALK-IN) -->
-				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true">
+				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
 					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(94vh,740px)] !overflow-visible flex flex-col rounded-3xl bg-hp-cream p-4 sm:p-5 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(1360px, 95vw) !important; max-width: 1360px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
 						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-companion-modal="true" aria-label="Close companion form">
@@ -2295,7 +2295,7 @@
 				</div>
 
 				<!-- Walk-In Edit Companion Group Modal -->
-				<div class="guest-modal hidden" id="walkInCompanionGroupEditModal" aria-hidden="true" style="z-index: 1060;">
+				<div class="guest-modal hidden" id="walkInCompanionGroupEditModal" aria-hidden="true" style="z-index: 1350 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-group-edit-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[560px] !max-h-none !overflow-visible rounded-2xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="walkInGroupEditTitle">
 						<button type="button" class="group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs z-10" data-close-group-edit-modal="true" aria-label="Close modal">
@@ -2395,7 +2395,7 @@
 				</div>
 
 				<!-- Duplicate Companion Warning Modal -->
-				<div class="guest-modal hidden" id="duplicateCompanionModal" aria-hidden="true" style="z-index: 1065;">
+				<div class="guest-modal hidden" id="duplicateCompanionModal" aria-hidden="true" style="z-index: 1350 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-duplicate-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[440px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="duplicateCompanionTitle">
 						<div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -2414,7 +2414,7 @@
 				</div>
 
 				<!-- Remove Companion Confirmation Modal -->
-				<div class="guest-modal hidden" id="removeCompanionConfirmModal" aria-hidden="true" style="z-index: 1070;">
+				<div class="guest-modal hidden" id="removeCompanionConfirmModal" aria-hidden="true" style="z-index: 1350 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-remove-companion-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[420px] rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)] text-center animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="removeCompanionModalTitle">
 						<div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/15 text-red-500 dark:text-red-400 border border-red-500/20 shadow-xs">
@@ -2437,7 +2437,7 @@
 				</div>
 
 				<!-- Payment & Review Confirmation Modal -->
-				<div class="guest-modal" id="paymentConfirmModal" aria-hidden="true" style="z-index: 1050;">
+				<div class="guest-modal" id="paymentConfirmModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/75" data-close-payment-modal="true"></div>
 					<div class="guest-modal__content relative z-[1] w-full max-w-[640px] max-h-[min(90vh,840px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-2xl dark:bg-[rgba(30,30,30,0.98)]" role="dialog" aria-modal="true" aria-labelledby="paymentConfirmTitle">
 						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-payment-modal="true" aria-label="Close modal">

@@ -4321,7 +4321,7 @@ tr.row-checkout-near:hover td {
     z-index: 1100;
 }
 
-/* Modals opened over #reservationModal (Edit stay, add amenity, extend amenity, companion modals) */
+/* Modals opened over #reservationModal and #addGuestModal (Walk-in sub-modals, edit stay, add amenity, extend amenity, companion modals) */
 #editCalendarModal,
 #extendStayModal,
 #extendAmenityModal,
@@ -4329,12 +4329,21 @@ tr.row-checkout-near:hover td {
 #reservationAddCompanionModal,
 #reservationCompanionCheckoutModal,
 #bulkCompanionModal,
-#bulkGroupManageModal {
+#bulkGroupManageModal,
+#walkInMainGuestModal,
+#walkInCalendarModal,
+#walkInAmenityScheduleModal,
+#amenityModal,
+#companionModal,
+#paymentConfirmModal {
     z-index: 1250 !important;
 }
 
-/* Sub-modals opened from stay/amenity extension modals (Payment step) */
-#extensionPaymentModal {
+/* Sub-modals opened from stay/amenity extension modals (Payment step) and walk-in submodals (Group edit, duplicates, remove companion) */
+#extensionPaymentModal,
+#walkInCompanionGroupEditModal,
+#duplicateCompanionModal,
+#removeCompanionConfirmModal {
     z-index: 1350 !important;
 }
 

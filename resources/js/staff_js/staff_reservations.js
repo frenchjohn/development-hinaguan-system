@@ -3558,8 +3558,7 @@ window.AppPage['staff_reservations'] = function () {
                                 <span class="text-xs font-medium text-gray-400 dark:text-gray-400">Reservation Stay</span>
                                 ${canReschedule ? `
                                     <button type="button" id="detailRescheduleBtn" data-reservation-id="${reservation.id}" class="inline-flex items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 px-2.5 py-1 text-[0.7rem] font-bold text-hp-green hover:bg-hp-green hover:text-white transition-colors cursor-pointer shrink-0 shadow-2xs" title="Reschedule stay dates or sessions">
-                                        <i class="bi bi-calendar-event"></i>
-                                        <span>Change</span>
+                                        <span>Reschedule</span>
                                     </button>
                                 ` : ''}
                             </div>
