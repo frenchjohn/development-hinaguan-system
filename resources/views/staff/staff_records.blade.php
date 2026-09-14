@@ -185,19 +185,19 @@
                     @endphp
                     <section data-tab-content="reservations">
                         <div class="guest-panel my-4 rounded-2xl border border-[#dbe3de] dark:border-[#282c29] bg-white/95 dark:bg-[#181b19]/95 shadow-sm overflow-hidden transition-all">
-                            {{-- Walk-in / Online tab switcher --}}
+                            {{-- Online / Walk-in tab switcher --}}
                             <div class="flex items-center gap-2 border-b border-[#e8eee9] dark:border-[#282c29] px-5 sm:px-6 py-3 bg-[#f8faf9] dark:bg-[#141715]">
-                                <button type="button" id="tabWalkIn" data-resv-type="walk_in"
-                                    class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                                    Walk-in
-                                    <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $walkInCount }}</span>
-                                </button>
                                 <button type="button" id="tabOnline" data-resv-type="online"
-                                    class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
+                                    class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all">
                                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     Online
-                                    <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $onlineCount }}</span>
+                                    <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $onlineCount }}</span>
+                                </button>
+                                <button type="button" id="tabWalkIn" data-resv-type="walk_in"
+                                    class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                                    Walk-in
+                                    <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $walkInCount }}</span>
                                 </button>
                             </div>
 
@@ -300,7 +300,7 @@
                                             };
                                         @endphp
 
-                                        @forelse ($walkInReservations as $reservation)
+                                        @forelse ($onlineReservations as $reservation)
                                             @php
                                                 $normalizedStatus = trim((string) $reservation->status);
                                                 $allGuestsCheckedOut = $reservation->reservationGuests->isNotEmpty() && $reservation->reservationGuests->every(fn ($g) => $g->checked_out_at !== null);
@@ -386,8 +386,10 @@
                                                     <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
                                                 </td>
                                                 <td class="py-3.5 px-4 text-right">
-                                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab] ml-auto" title="View booking details">
-                                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                    <div class="flex items-center justify-end">
+                                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab]" title="View booking details">
+                                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -603,10 +605,10 @@
                                                 @endif
                                             @endforeach
                                         @empty
-                                            <tr class="walk-in-empty-placeholder empty-placeholder-row"><td colspan="8" class="px-5 py-8 text-center text-xs text-[#889b8a] italic">No walk-in reservation records.</td></tr>
+                                            <tr class="online-empty-placeholder empty-placeholder-row"><td colspan="8" class="px-5 py-8 text-center text-xs text-[#889b8a] italic">No online reservation records.</td></tr>
                                         @endforelse
 
-                                        @forelse ($onlineReservations as $reservation)
+                                        @forelse ($walkInReservations as $reservation)
                                             @php
                                                 $normalizedStatus = trim((string) $reservation->status);
                                                 $allGuestsCheckedOut = $reservation->reservationGuests->isNotEmpty() && $reservation->reservationGuests->every(fn ($g) => $g->checked_out_at !== null);
@@ -692,8 +694,10 @@
                                                     <div class="text-[0.68rem] text-[#889b8a] font-normal">of ₱{{ number_format($reservation->total_amount, 2) }}</div>
                                                 </td>
                                                 <td class="py-3.5 px-4 text-right">
-                                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab] ml-auto" title="View booking details">
-                                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                    <div class="flex items-center justify-end">
+                                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg text-[#889b8a] transition-all group-hover:bg-[#178a52]/10 group-hover:text-[#178a52] dark:group-hover:text-[#8fd0ab]" title="View booking details">
+                                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -889,7 +893,7 @@
                                                 @endif
                                             @endforeach
                                         @empty
-                                            <tr class="online-empty-placeholder empty-placeholder-row"><td colspan="8" class="px-5 py-8 text-center text-xs text-[#889b8a] italic">No online reservation records.</td></tr>
+                                            <tr class="walk-in-empty-placeholder empty-placeholder-row"><td colspan="8" class="px-5 py-8 text-center text-xs text-[#889b8a] italic">No walk-in reservation records.</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
@@ -951,6 +955,109 @@
                             <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
                         </div>
                         <div id="reservationModalBody" class="guest-modal__body p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
+                        <div id="reservationModalFooter" class="p-3.5 sm:px-6 border-t border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
+                            <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]" id="reservationModalFooterInfo"></span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="modalReopenBtn" style="display: none;" class="hidden inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                    <span>Reopen Reservation</span>
+                                </button>
+                                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715]" data-close-reservation-modal="true">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- REOPEN CONFIRMATION MODAL --}}
+                <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="reopenConfirmModal" aria-hidden="true">
+                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-confirm="true"></div>
+                    <div class="guest-modal__content relative z-[1] w-full max-w-[480px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="reopenConfirmTitle">
+                        <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-confirm="true" aria-label="Close modal">&times;</button>
+                        <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        </div>
+                        <div class="text-center space-y-1">
+                            <h3 id="reopenConfirmTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reopen Reservation</h3>
+                            <p class="text-xs text-[#5a6b5c] dark:text-[#a8b8a8]" id="reopenConfirmSubtitle">Change booking status back to Pending</p>
+                        </div>
+
+                        <div class="my-4 p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[#718774] dark:text-[#889b8a]">Reservation ID:</span>
+                                <span class="font-bold font-mono text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmResId">#0</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[#718774] dark:text-[#889b8a]">Booker Name:</span>
+                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmBookerName">—</span>
+                            </div>
+
+                            {{-- Stay Schedule (Check-in to Check-out) --}}
+                            <div class="p-3 rounded-xl bg-white dark:bg-[#181b19] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Reserved Stay Schedule</span>
+                                    <span class="text-[0.68rem] text-[#178a52] dark:text-[#8fd0ab] font-bold" id="reopenConfirmStayDays">1 Day Stay</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
+                                        <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold text-[0.7rem] mb-1">
+                                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                                            <span>Check-In</span>
+                                        </div>
+                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckIn">—</div>
+                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckInSlot">Daytime</div>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
+                                        <div class="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold text-[0.7rem] mb-1">
+                                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                                            <span>Check-Out</span>
+                                        </div>
+                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckOut">—</div>
+                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckOutSlot">Daytime</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-1.5 border-t border-[#e8eee9] dark:border-[#282c29]">
+                                <span class="text-[#718774] dark:text-[#889b8a]">New Status:</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">Pending</span>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-center text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed mb-4">
+                            Original dates, reserved amenities, guests, and payment records will be preserved and listed on the active Staff Reservations page.
+                        </p>
+
+                        <div id="reopenConfirmError" class="hidden mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300 text-center"></div>
+
+                        <div class="flex items-center justify-center gap-2.5">
+                            <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-confirm="true">Cancel</button>
+                            <button type="button" id="confirmReopenActionBtn" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-amber-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-amber-700 active:scale-[0.98] transition-all">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                <span>Yes, Reopen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- REOPEN SUCCESS MODAL --}}
+                <div class="guest-modal guest-modal--success fixed inset-0 z-[1500] hidden items-center justify-center is-open:flex" style="z-index: 1500 !important;" id="reopenSuccessModal" aria-hidden="true">
+                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-success="true"></div>
+                    <div class="guest-modal__content relative z-[1] w-full max-w-[440px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in text-center" role="dialog" aria-modal="true" aria-labelledby="reopenSuccessTitle">
+                        <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-success="true" aria-label="Close modal">&times;</button>
+                        <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shadow-xs">
+                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                        </div>
+                        <h3 id="reopenSuccessTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reservation Reopened!</h3>
+                        <p id="reopenSuccessMessage" class="mt-2 mb-5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
+                            The reservation has been returned to Pending status and is now listed on the active Staff Reservations page.
+                        </p>
+                        <div class="flex items-center justify-center gap-2.5">
+                            <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-success="true">Stay on Records</button>
+                            <a href="{{ route('staff.reservations') }}" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-[#178a52] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#126e41] active:scale-[0.98] transition-all no-underline">
+                                <span>Go to Reservations</span>
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                            </a>
+                        </div>
                     </div>
                 </div>
 

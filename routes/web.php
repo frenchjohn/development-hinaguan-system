@@ -7021,7 +7021,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                   ->orWhere('status', '!=', 'Completed');
             })
             ->whereHas('reservation', function ($rq) use ($reservation) {
-                $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out'])
+                $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'No Show', 'cancelled', 'checked out', 'checked_out', 'checked-out', 'no show', 'no_show', 'noshow'])
                    ->when($reservation->id, fn ($q) => $q->whereKeyNot($reservation->id));
             })
             ->where(function ($q) use ($minDate, $maxDate) {
@@ -7501,6 +7501,79 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ],
         ]);
     })->name('reservations.update');
+
+    Route::post('/reservations/{reservation}/reopen', function (Request $request, Reservation $reservation) use ($computeReservationCheckoutAt, $formatLocalDate) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $oldStatus = $reservation->status;
+        $statusRaw = strtolower(trim((string) $oldStatus));
+        $isCancelled = str_contains($statusRaw, 'cancel');
+        $isNoShow = str_contains($statusRaw, 'no show') || str_contains($statusRaw, 'no_show') || str_contains($statusRaw, 'noshow');
+
+        // STRICT GUARD: Only No Show and Cancelled are reopenable. Checked Out reservations CANNOT be reopened.
+        if ((! $isCancelled && ! $isNoShow) || ! empty($reservation->check_out) || str_contains($statusRaw, 'checked out') || str_contains($statusRaw, 'checked_out')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Cancelled or No Show reservations can be reopened. Checked Out reservations cannot be reopened.',
+            ], 422);
+        }
+
+        $reservation->update([
+            'status' => 'Pending',
+            'reservation_type' => 'online',
+            'check_in' => null,
+            'check_out' => null,
+        ]);
+
+        // Reset any guest checkout timestamps
+        $reservation->reservationGuests()->update(['checked_out_at' => null]);
+
+        // Reactivate amenities if needed
+        $reservation->reservationAmenities()->update(['status' => 'Active']);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'reservation_reopened',
+            title: 'Reservation Reopened',
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) reopened from {$oldStatus} to Pending by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'previous_status' => $oldStatus,
+                'new_status' => 'Pending',
+            ]
+        );
+
+        $reservation->load(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee']);
+        $checkoutAt = $computeReservationCheckoutAt($reservation);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Reservation #{$reservation->id} ({$reservation->booker_name}) reopened successfully! Status is now Pending and will appear on the Staff Reservations page.",
+            'redirect_url' => route('staff.reservations'),
+            'reservation' => [
+                'id' => $reservation->id,
+                'booker_name' => $reservation->booker_name,
+                'status' => 'Pending',
+                'reservation_type' => $reservation->reservation_type,
+                'reservation_date' => $formatLocalDate($reservation, 'reservation_date'),
+                'end_date' => $formatLocalDate($reservation, 'end_date'),
+                'start_slot' => $reservation->start_slot,
+                'end_slot' => $reservation->end_slot,
+                'total_days' => $reservation->total_days,
+                'total_amount' => (float) $reservation->total_amount,
+                'amount_paid' => (float) $reservation->amount_paid,
+                'remaining_balance' => (float) $reservation->remaining_balance,
+                'payment_status' => $reservation->payment_status,
+                'checkout_at' => $checkoutAt?->toIso8601String(),
+            ],
+        ]);
+    })->name('reservations.reopen');
 
     Route::post('/reservations/{reservation}/status', function (Request $request, Reservation $reservation) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');

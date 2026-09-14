@@ -29,6 +29,8 @@ window.AppPage['staff_records'] = function () {
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
     // ============================================================
     // DYNAMIC STATS COUNTER UPDATERS
     // ============================================================
@@ -404,14 +406,126 @@ window.AppPage['staff_records'] = function () {
     const reservationModalBody = document.getElementById('reservationModalBody');
     const reservationCloseButtons = document.querySelectorAll('[data-close-reservation-modal="true"]');
 
+    const reopenConfirmModal = document.getElementById('reopenConfirmModal');
+    const reopenSuccessModal = document.getElementById('reopenSuccessModal');
+    let activeReopeningRes = null;
+
     // Move modals to be direct children of <body>. The dashboard layout has
     // ancestor elements (.dash-content / .dash-main) that establish their own
     // CSS stacking context, which caps these fixed-position modals below the
     // sticky header no matter how high their own z-index is set. Re-parenting
     // them to <body> escapes that trap entirely (a standard "portal" pattern).
-    [guestModal, reservationModal].forEach((modal) => {
+    [guestModal, reservationModal, reopenConfirmModal, reopenSuccessModal].forEach((modal) => {
         if (modal && modal.parentElement !== document.body) {
             document.body.appendChild(modal);
+        }
+    });
+
+    // Close listeners for Reopen Confirm Modal
+    const closeReopenConfirmModal = () => {
+        if (!reopenConfirmModal) return;
+        reopenConfirmModal.classList.remove('is-open');
+        reopenConfirmModal.setAttribute('aria-hidden', 'true');
+        const errBox = document.getElementById('reopenConfirmError');
+        if (errBox) {
+            errBox.textContent = '';
+            errBox.classList.add('hidden');
+        }
+    };
+    document.querySelectorAll('[data-close-reopen-confirm="true"]').forEach(btn => btn.addEventListener('click', closeReopenConfirmModal));
+    reopenConfirmModal?.addEventListener('click', (e) => {
+        if (e.target === reopenConfirmModal || e.target.hasAttribute('data-close-reopen-confirm') || e.target.classList.contains('guest-modal__backdrop')) {
+            closeReopenConfirmModal();
+        }
+    });
+
+    // Close listeners for Reopen Success Modal
+    const closeReopenSuccessModal = () => {
+        if (!reopenSuccessModal) return;
+        reopenSuccessModal.classList.remove('is-open');
+        reopenSuccessModal.setAttribute('aria-hidden', 'true');
+    };
+    document.querySelectorAll('[data-close-reopen-success="true"]').forEach(btn => btn.addEventListener('click', closeReopenSuccessModal));
+    reopenSuccessModal?.addEventListener('click', (e) => {
+        if (e.target === reopenSuccessModal || e.target.hasAttribute('data-close-reopen-success') || e.target.classList.contains('guest-modal__backdrop')) {
+            closeReopenSuccessModal();
+        }
+    });
+
+    // Confirm Reopen Action Submission Listener
+    const confirmReopenActionBtn = document.getElementById('confirmReopenActionBtn');
+    confirmReopenActionBtn?.addEventListener('click', async () => {
+        if (!activeReopeningRes) return;
+        const resId = activeReopeningRes.id;
+        const origContent = confirmReopenActionBtn.innerHTML;
+        const errBox = document.getElementById('reopenConfirmError');
+
+        confirmReopenActionBtn.disabled = true;
+        confirmReopenActionBtn.innerHTML = `
+            <svg class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span>Reopening...</span>
+        `;
+
+        try {
+            const response = await fetch(`/staff/reservations/${resId}/reopen`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to reopen reservation.');
+            }
+
+            // Close Confirm Modal and Details Modal
+            closeReopenConfirmModal();
+            reservationModal.classList.remove('is-open');
+            reservationModal.setAttribute('aria-hidden', 'true');
+
+            // Remove reservation row & companion rows from records table since it is now Pending
+            const row = document.querySelector(`tr.reservation-row[data-reservation-id="${resId}"]`);
+            if (row) {
+                const companions = document.querySelectorAll(`.companion-of-${resId}`);
+                companions.forEach(c => c.remove());
+                const rowIndex = reservationTableRows.indexOf(row);
+                if (rowIndex > -1) {
+                    reservationTableRows.splice(rowIndex, 1);
+                }
+                row.remove();
+            }
+
+            applyReservationFilters();
+            updateCountersFromReservations(reservationTableRows);
+
+            // Open Success Modal
+            const successMsgEl = document.getElementById('reopenSuccessMessage');
+            if (successMsgEl) {
+                successMsgEl.textContent = data.message || `Reservation #${resId} has been returned to Pending status and is now listed on the active Staff Reservations page.`;
+            }
+            if (reopenSuccessModal) {
+                if (reopenSuccessModal.parentElement !== document.body) {
+                    document.body.appendChild(reopenSuccessModal);
+                }
+                reopenSuccessModal.style.zIndex = '1500';
+                reopenSuccessModal.classList.add('is-open');
+                reopenSuccessModal.setAttribute('aria-hidden', 'false');
+            }
+        } catch (err) {
+            if (errBox) {
+                errBox.textContent = err.message || 'An error occurred while reopening the reservation.';
+                errBox.classList.remove('hidden');
+            } else {
+                window.alert(err.message || 'An error occurred while reopening the reservation.');
+            }
+        } finally {
+            confirmReopenActionBtn.disabled = false;
+            confirmReopenActionBtn.innerHTML = origContent;
         }
     });
     const reservationData = window.staffReservationData || {};
@@ -439,6 +553,13 @@ window.AppPage['staff_records'] = function () {
         const modalTitle = document.getElementById('reservationModalTitle');
         const modalIdBadge = document.getElementById('reservationModalIdBadge');
         const modalStatusBadge = document.getElementById('reservationModalStatusBadge');
+        const modalReopenBtn = document.getElementById('modalReopenBtn');
+
+        if (modalReopenBtn) {
+            modalReopenBtn.classList.add('hidden');
+            modalReopenBtn.style.display = 'none';
+            modalReopenBtn.onclick = null;
+        }
 
         if (!reservation) {
             if (modalIdBadge) modalIdBadge.textContent = `#${reservationId || 'N/A'}`;
@@ -1036,6 +1157,7 @@ window.AppPage['staff_records'] = function () {
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         `;
@@ -1068,6 +1190,120 @@ window.AppPage['staff_records'] = function () {
                 });
             });
         });
+
+        // Wire Single Reopen Button Inside Reservation Modal Footer
+        // STRICT RULE: ONLY Cancelled or No Show reservations are eligible to reopen. NEVER Checked Out!
+        const modalFooterInfo = document.getElementById('reservationModalFooterInfo');
+
+        const row = document.querySelector(`tr.reservation-row[data-reservation-id="${reservation.id}"]`);
+        const rowStatus = row ? (row.getAttribute('data-status') || '').trim().toLowerCase() : '';
+        const normStatus = (reservation.status || '').trim().toLowerCase();
+
+        const isCancelled = normStatus.includes('cancel') || rowStatus.includes('cancel');
+        const isNoShow = normStatus.includes('no show') || normStatus.includes('noshow') || rowStatus.includes('no show') || rowStatus.includes('noshow');
+        const isCheckedOut = normStatus.includes('checked out') || normStatus.includes('checked_out') || rowStatus.includes('checked out') || rowStatus.includes('checked_out') || Boolean(reservation.check_out);
+
+        const isReopenable = (isCancelled || isNoShow) && !isCheckedOut;
+
+        if (modalReopenBtn) {
+            if (isReopenable) {
+                modalReopenBtn.classList.remove('hidden');
+                modalReopenBtn.style.display = 'inline-flex';
+                modalReopenBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    activeReopeningRes = reservation;
+
+                    // Populate Reopen Confirmation Modal
+                    const resIdEl = document.getElementById('reopenConfirmResId');
+                    const bookerEl = document.getElementById('reopenConfirmBookerName');
+                    const schedEl = document.getElementById('reopenConfirmSchedule');
+                    const stayDaysEl = document.getElementById('reopenConfirmStayDays');
+                    const checkInEl = document.getElementById('reopenConfirmCheckIn');
+                    const checkInSlotEl = document.getElementById('reopenConfirmCheckInSlot');
+                    const checkOutEl = document.getElementById('reopenConfirmCheckOut');
+                    const checkOutSlotEl = document.getElementById('reopenConfirmCheckOutSlot');
+                    const errBox = document.getElementById('reopenConfirmError');
+
+                if (resIdEl) resIdEl.textContent = `#${reservation.id}`;
+                if (bookerEl) bookerEl.textContent = reservation.booker_name || 'Guest';
+
+                // Helpers for formatting date & time
+                const formatDateStr = (rawDate) => {
+                    if (!rawDate) return 'N/A';
+                    try {
+                        const d = new Date(rawDate);
+                        if (isNaN(d.getTime())) return String(rawDate);
+                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    } catch {
+                        return String(rawDate);
+                    }
+                };
+
+                const formatTimeStr = (rawDateTime) => {
+                    if (!rawDateTime) return '';
+                    try {
+                        const d = new Date(rawDateTime);
+                        if (isNaN(d.getTime())) return '';
+                        if (String(rawDateTime).includes('T') || String(rawDateTime).includes(':')) {
+                            return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                        }
+                        return '';
+                    } catch {
+                        return '';
+                    }
+                };
+
+                const checkInDate = reservation.check_in || reservation.reservation_date;
+                const checkOutDate = reservation.check_out || reservation.end_date || reservation.reservation_date;
+
+                const checkInDateFormatted = formatDateStr(checkInDate);
+                const checkInTime = formatTimeStr(reservation.check_in);
+                const checkInSlotText = checkInTime ? `${reservation.start_slot || 'Daytime'} · ${checkInTime}` : (reservation.start_slot || 'Daytime');
+
+                const checkOutDateFormatted = formatDateStr(checkOutDate);
+                const checkOutTime = formatTimeStr(reservation.check_out);
+                const checkOutSlotText = checkOutTime ? `${reservation.end_slot || reservation.start_slot || 'Daytime'} · ${checkOutTime}` : (reservation.end_slot || reservation.start_slot || 'Daytime');
+
+                const totalDays = parseInt(reservation.total_days || '1', 10);
+                const daysLabel = totalDays > 1 ? `${totalDays} Days Stay` : '1 Day Stay';
+
+                if (stayDaysEl) stayDaysEl.textContent = daysLabel;
+                if (checkInEl) checkInEl.textContent = checkInDateFormatted;
+                if (checkInSlotEl) checkInSlotEl.textContent = checkInSlotText;
+                if (checkOutEl) checkOutEl.textContent = checkOutDateFormatted;
+                if (checkOutSlotEl) checkOutSlotEl.textContent = checkOutSlotText;
+                if (schedEl) {
+                    schedEl.textContent = `${checkInDateFormatted} (${reservation.start_slot || 'Daytime'}) – ${checkOutDateFormatted} (${reservation.end_slot || reservation.start_slot || 'Daytime'})`;
+                }
+
+                if (errBox) {
+                    errBox.textContent = '';
+                    errBox.classList.add('hidden');
+                }
+
+                if (reopenConfirmModal) {
+                    if (reopenConfirmModal.parentElement !== document.body) {
+                        document.body.appendChild(reopenConfirmModal);
+                    }
+                    reopenConfirmModal.style.zIndex = '1400';
+                    reopenConfirmModal.classList.add('is-open');
+                    reopenConfirmModal.setAttribute('aria-hidden', 'false');
+                }
+            };
+        } else {
+            modalReopenBtn.classList.add('hidden');
+            modalReopenBtn.style.display = 'none';
+            modalReopenBtn.onclick = null;
+        }
+    }
+
+        if (modalFooterInfo) {
+            modalFooterInfo.innerHTML = isReopenable
+                ? '<span class="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5"><svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>Eligible to Reopen (Returns to Pending)</span>'
+                : '<span class="text-[#889b8a]">Hinaguan Nature Park Archive Record</span>';
+        }
 
         guestModal.classList.remove('is-open');
         reservationModal.classList.add('is-open');
@@ -1142,7 +1378,7 @@ window.AppPage['staff_records'] = function () {
     };
 
     // Which reservation type tab is active ('walk_in' or 'online')
-    let currentTypeTab = 'walk_in';
+    let currentTypeTab = 'online';
 
     // Hide static section-header rows — not needed with tab switching
     document.querySelectorAll('.reservation-section-header').forEach(r => r.style.display = 'none');
@@ -1248,7 +1484,7 @@ window.AppPage['staff_records'] = function () {
 
     reservationTableRows.forEach((row) => {
         row.addEventListener('click', (e) => {
-            if (e.target.closest('.btn-expand-row')) return;
+            if (e.target.closest('.btn-expand-row') || e.target.closest('.btn-reopen-reservation')) return;
             const reservationId = row.getAttribute('data-reservation-id');
             openReservationModal(reservationId);
         });

@@ -4350,12 +4350,14 @@ tr.row-checkout-near:hover td {
 /* Confirmation and success modals */
 .guest-modal--confirm,
 #confirmModal,
-#checkOutConfirmModal {
+#checkOutConfirmModal,
+#reopenConfirmModal {
     z-index: 1400 !important;
 }
 
 .guest-modal--success,
-#successModal {
+#successModal,
+#reopenSuccessModal {
     z-index: 1500 !important;
 }
 
