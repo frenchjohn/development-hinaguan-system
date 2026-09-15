@@ -1068,6 +1068,62 @@
                     </div>
                 </div>
 
+                {{-- NO RECORDS TO PRINT MODAL MESSAGE (1.5s fade in and fade out animation, no buttons) --}}
+                <style>
+                    @keyframes recordModalFadeInOut {
+                        0% {
+                            opacity: 0;
+                            transform: scale(0.9);
+                        }
+                        18% {
+                            opacity: 1;
+                            transform: scale(1);
+                        }
+                        78% {
+                            opacity: 1;
+                            transform: scale(1);
+                        }
+                        100% {
+                            opacity: 0;
+                            transform: scale(0.9);
+                        }
+                    }
+                    @keyframes recordBackdropFadeInOut {
+                        0% { opacity: 0; }
+                        18% { opacity: 1; }
+                        78% { opacity: 1; }
+                        100% { opacity: 0; }
+                    }
+                    .animate-modal-fade-15 {
+                        animation: recordModalFadeInOut 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+                    }
+                    .animate-backdrop-fade-15 {
+                        animation: recordBackdropFadeInOut 1.5s ease forwards !important;
+                    }
+                </style>
+                <div class="fixed inset-0 pointer-events-none"
+                     style="display: none; align-items: center; justify-content: center; z-index: 9999 !important;"
+                     id="noRecordsModal"
+                     role="status"
+                     aria-live="polite">
+                    <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs pointer-events-none"
+                         id="noRecordsModalBackdrop"></div>
+                    <div class="relative z-[1] w-full max-w-[360px] mx-4 flex flex-col items-center overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl text-center pointer-events-auto"
+                         id="noRecordsModalCard">
+                        <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <h3 id="noRecordsModalTitle" class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">
+                            No Records to Print
+                        </h3>
+                        <p id="noRecordsModalMsg" class="mt-1.5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
+                            There are currently no records available in the table.
+                        </p>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>

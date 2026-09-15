@@ -521,7 +521,7 @@ window.AppPage['staff_records'] = function () {
                 errBox.textContent = err.message || 'An error occurred while reopening the reservation.';
                 errBox.classList.remove('hidden');
             } else {
-                window.alert(err.message || 'An error occurred while reopening the reservation.');
+                showNoRecordsModal(err.message || 'An error occurred while reopening the reservation.', 'Error');
             }
         } finally {
             confirmReopenActionBtn.disabled = false;
@@ -1552,6 +1552,64 @@ window.AppPage['staff_records'] = function () {
     });
 
     // ============================================================
+    // NO RECORDS MODAL MESSAGE (1.5s Fade In and Fade Out, No Buttons)
+    // ============================================================
+    const noRecordsModal = document.getElementById('noRecordsModal');
+    const noRecordsModalCard = document.getElementById('noRecordsModalCard');
+    const noRecordsModalBackdrop = document.getElementById('noRecordsModalBackdrop');
+    const noRecordsModalTitle = document.getElementById('noRecordsModalTitle');
+    const noRecordsModalMsg = document.getElementById('noRecordsModalMsg');
+    let noRecordsTimer = null;
+
+    function showNoRecordsModal(message = 'There are currently no records available in the table.', title = 'No Records to Print') {
+        if (!noRecordsModal || !noRecordsModalCard) return;
+
+        if (noRecordsTimer) {
+            clearTimeout(noRecordsTimer);
+            noRecordsTimer = null;
+        }
+
+        if (noRecordsModalTitle && title) {
+            noRecordsModalTitle.textContent = title;
+        }
+        if (noRecordsModalMsg && message) {
+            noRecordsModalMsg.textContent = message;
+        }
+
+        if (noRecordsModal.parentElement !== document.body) {
+            document.body.appendChild(noRecordsModal);
+        }
+
+        // Reset animation classes
+        noRecordsModalCard.classList.remove('animate-modal-fade-15');
+        if (noRecordsModalBackdrop) {
+            noRecordsModalBackdrop.classList.remove('animate-backdrop-fade-15');
+        }
+
+        // Make modal visible
+        noRecordsModal.style.display = 'flex';
+
+        // Force reflow
+        void noRecordsModalCard.offsetWidth;
+
+        // Apply 1.5s fade-in & fade-out CSS keyframe animation
+        noRecordsModalCard.classList.add('animate-modal-fade-15');
+        if (noRecordsModalBackdrop) {
+            noRecordsModalBackdrop.classList.add('animate-backdrop-fade-15');
+        }
+
+        // Automatically hide modal when 1.5s animation completes
+        noRecordsTimer = setTimeout(() => {
+            noRecordsModal.style.display = 'none';
+            noRecordsModalCard.classList.remove('animate-modal-fade-15');
+            if (noRecordsModalBackdrop) {
+                noRecordsModalBackdrop.classList.remove('animate-backdrop-fade-15');
+            }
+            noRecordsTimer = null;
+        }, 1500);
+    }
+
+    // ============================================================
     // PRINT AS PDF (MINIMAL, CLEAN, MONOCHROME, STRICT TO FILTERS)
     // ============================================================
     const printRecordsAsPdf = () => {
@@ -1559,7 +1617,7 @@ window.AppPage['staff_records'] = function () {
         const visibleRows = Array.from(reservationTableBodyEl ? reservationTableBodyEl.querySelectorAll('tr.reservation-row:not(.hidden)') : []);
 
         if (visibleRows.length === 0) {
-            window.alert('No records are currently visible to print. Please adjust your filters or search.');
+            showNoRecordsModal('There are no records currently visible to print. Please adjust your filters or search query.', 'No Records to Print');
             return;
         }
 
