@@ -187,25 +187,32 @@
                         </div>
                     </article>
 
-                    <!-- 5. TODAY'S CHECK-INS -->
+                    <!-- 5. SCHEDULED / PAST SCHEDULE -->
                     <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ ($pastScheduleCount ?? 0) > 0 ? 'bg-[#fee2e2] text-[#dc2626] dark:bg-[rgba(220,38,38,0.2)] dark:text-[#f87171]' : 'bg-[#e8f5e9] text-[#2e7d32] dark:bg-[rgba(46,125,50,0.2)] dark:text-[#9ca3af]' }}">
+                            <i class="bi bi-calendar-event text-lg"></i>
                         </span>
                         <div class="flex flex-col gap-0.5 min-w-0">
-                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $todayCheckIns }}</p>
-                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Today's Check-ins</p>
+                            <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $scheduledOrPastCount ?? 0 }}</p>
+                            <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Scheduled / Past Schedule</p>
+                            <p class="m-0 text-[0.68rem] text-[#718076] dark:text-[#9baaa1]">
+                                <span>{{ $todayScheduledCount ?? 0 }} today</span>
+                                @if(($pastScheduleCount ?? 0) > 0)
+                                    &middot; <span class="font-bold text-[#dc2626] dark:text-[#f87171]">{{ $pastScheduleCount }} past schedule</span>
+                                @endif
+                            </p>
                         </div>
                     </article>
 
                     <!-- 6. EXPECTED GUESTS -->
                     <article class="flex items-center gap-3.5 rounded-2xl border border-white/80 bg-white/90 p-4 shadow-[0_4px_20px_rgba(20,50,30,0.03)] backdrop-blur-sm dark:border-white/10 dark:bg-[#181b19]/90">
                         <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#e3f2fd] text-[#1976d2] dark:bg-[rgba(25,118,210,0.2)] dark:text-[#64b5f6]">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <i class="bi bi-people-fill text-lg"></i>
                         </span>
                         <div class="flex flex-col gap-0.5 min-w-0">
                             <p class="m-0 text-2xl font-extrabold leading-none text-[#183d28] dark:text-[#e8f5e9]">{{ $expectedGuests }}</p>
                             <p class="m-0 text-xs font-medium text-[#718076] dark:text-[#9baaa1]">Expected Guests</p>
+                            <p class="m-0 text-[0.68rem] text-[#718076] dark:text-[#9baaa1]">Today's scheduled visitors</p>
                         </div>
                     </article>
                 </div>

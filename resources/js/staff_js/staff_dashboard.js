@@ -22,17 +22,19 @@ window.AppPage['staff_dashboard'] = function () {
         }, 10000);
     }
 
+    // Active Overview Graph (Donut Gauge & Grouped Bar Chart)
+    const aoControl = initActiveOverviewGraph();
+
     // Area chart rendering
     const chartData = window.__sdChartData;
-    if (!chartData) return;
-
     const canvas = document.getElementById('sdAreaChartCanvas');
-    if (!canvas) return;
+    let drawChart = function () {};
 
-    const ctx = canvas.getContext('2d');
-    const container = canvas.parentElement;
+    if (chartData && canvas) {
+        const ctx = canvas.getContext('2d');
+        const container = canvas.parentElement;
 
-    function drawChart() {
+        drawChart = function () {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
         const W = rect.width;
@@ -184,23 +186,323 @@ window.AppPage['staff_dashboard'] = function () {
             ctx.lineWidth = 2;
             ctx.stroke();
         });
-    }
+        };
 
-    drawChart();
+        drawChart();
+    }
 
     // Redraw on resize
     let resizeTimer;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(drawChart, 150);
+        resizeTimer = setTimeout(() => {
+            drawChart();
+            aoControl?.redraw();
+        }, 150);
     });
 
     // Redraw on theme change
     const observer = new MutationObserver(() => {
-        setTimeout(drawChart, 100);
+        setTimeout(() => {
+            drawChart();
+            aoControl?.redraw();
+        }, 100);
     });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 };
+
+function initActiveOverviewGraph() {
+    const data = window.__sdActiveOverviewData;
+    if (!data) return null;
+
+    const donutCanvas = document.getElementById('activeOverviewDonutCanvas');
+    const barCanvas = document.getElementById('activeOverviewBarCanvas');
+    const splitView = document.getElementById('sdActiveOverviewSplitView');
+    const columnsView = document.getElementById('sdActiveOverviewColumnsView');
+    const tabSplit = document.getElementById('sdTabSplit');
+    const tabColumns = document.getElementById('sdTabColumns');
+
+    let currentMode = 'split';
+    try {
+        currentMode = localStorage.getItem('sd_ao_view') || 'split';
+    } catch (e) {
+        currentMode = 'split';
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        try {
+            localStorage.setItem('sd_ao_view', mode);
+        } catch (e) {}
+
+        if (mode === 'columns') {
+            splitView?.classList.add('hidden');
+            columnsView?.classList.remove('hidden');
+
+            tabColumns?.classList.add('bg-white', 'text-hp-text', 'shadow-sm', 'dark:bg-[#222723]', 'dark:text-[#f3f4f6]', 'font-bold');
+            tabColumns?.classList.remove('text-hp-text-muted', 'font-semibold');
+
+            tabSplit?.classList.remove('bg-white', 'text-hp-text', 'shadow-sm', 'dark:bg-[#222723]', 'dark:text-[#f3f4f6]', 'font-bold');
+            tabSplit?.classList.add('text-hp-text-muted', 'font-semibold');
+
+            requestAnimationFrame(() => drawBarChart());
+        } else {
+            columnsView?.classList.add('hidden');
+            splitView?.classList.remove('hidden');
+
+            tabSplit?.classList.add('bg-white', 'text-hp-text', 'shadow-sm', 'dark:bg-[#222723]', 'dark:text-[#f3f4f6]', 'font-bold');
+            tabSplit?.classList.remove('text-hp-text-muted', 'font-semibold');
+
+            tabColumns?.classList.remove('bg-white', 'text-hp-text', 'shadow-sm', 'dark:bg-[#222723]', 'dark:text-[#f3f4f6]', 'font-bold');
+            tabColumns?.classList.add('text-hp-text-muted', 'font-semibold');
+
+            requestAnimationFrame(() => drawDonutChart());
+        }
+    }
+
+    tabSplit?.addEventListener('click', () => setMode('split'));
+    tabColumns?.addEventListener('click', () => setMode('columns'));
+
+    function drawDonutChart() {
+        if (!donutCanvas || donutCanvas.offsetParent === null) return;
+        const ctx = donutCanvas.getContext('2d');
+        const container = donutCanvas.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = container.getBoundingClientRect();
+        const W = rect.width || 110;
+        const H = rect.height || 110;
+
+        donutCanvas.width = W * dpr;
+        donutCanvas.height = H * dpr;
+        donutCanvas.style.width = W + 'px';
+        donutCanvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const cx = W / 2;
+        const cy = H / 2;
+        const radius = Math.min(W, H) / 2 - 7;
+        const strokeW = 9;
+
+        // Base Track
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.lineWidth = strokeW;
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+        ctx.stroke();
+
+        const total = data.totalGuests;
+        const walkIn = data.walkInGuests;
+        const online = data.onlineGuests;
+
+        if (total <= 0) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.lineWidth = strokeW;
+            ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+            ctx.stroke();
+        } else {
+            const startAngle = -Math.PI / 2;
+            const walkInAngle = (walkIn / total) * Math.PI * 2;
+            const gap = (walkIn > 0 && online > 0) ? 0.08 : 0;
+
+            // Walk-in Arc
+            if (walkIn > 0) {
+                ctx.beginPath();
+                const a1 = startAngle + (gap / 2);
+                const a2 = startAngle + walkInAngle - (gap / 2);
+                ctx.arc(cx, cy, radius, a1, Math.max(a1, a2));
+                const grad = ctx.createLinearGradient(0, 0, W, H);
+                grad.addColorStop(0, '#f59e0b');
+                grad.addColorStop(1, '#fbbf24');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = strokeW;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            // Online Arc
+            if (online > 0) {
+                ctx.beginPath();
+                const a1 = startAngle + walkInAngle + (gap / 2);
+                const a2 = startAngle + Math.PI * 2 - (gap / 2);
+                ctx.arc(cx, cy, radius, a1, Math.max(a1, a2));
+                const grad = ctx.createLinearGradient(0, 0, W, H);
+                grad.addColorStop(0, '#3b82f6');
+                grad.addColorStop(1, '#60a5fa');
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = strokeW;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+        }
+
+        // Inner Reservation Ring
+        const innerR = radius - 10;
+        const innerW = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+        ctx.lineWidth = innerW;
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)';
+        ctx.stroke();
+
+        const resTotal = data.totalReservations;
+        if (resTotal > 0) {
+            const startAngle = -Math.PI / 2;
+            const resWalkIn = data.walkInReservations;
+            const resOnline = data.onlineReservations;
+            const resWalkInAngle = (resWalkIn / resTotal) * Math.PI * 2;
+
+            if (resWalkIn > 0) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, innerR, startAngle, startAngle + resWalkInAngle);
+                ctx.strokeStyle = 'rgba(245, 158, 11, 0.75)';
+                ctx.lineWidth = innerW;
+                ctx.stroke();
+            }
+            if (resOnline > 0) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, innerR, startAngle + resWalkInAngle, startAngle + Math.PI * 2);
+                ctx.strokeStyle = 'rgba(59, 130, 246, 0.75)';
+                ctx.lineWidth = innerW;
+                ctx.stroke();
+            }
+        }
+    }
+
+    function drawBarChart() {
+        if (!barCanvas || barCanvas.offsetParent === null) return;
+        const ctx = barCanvas.getContext('2d');
+        const container = barCanvas.parentElement;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = container.getBoundingClientRect();
+        const W = rect.width || 300;
+        const H = rect.height || 125;
+
+        barCanvas.width = W * dpr;
+        barCanvas.height = H * dpr;
+        barCanvas.style.width = W + 'px';
+        barCanvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+        const padL = 30;
+        const padR = 15;
+        const padT = 20;
+        const padB = 25;
+        const chartW = W - padL - padR;
+        const chartH = H - padT - padB;
+
+        const groups = [
+            {
+                name: 'Guests (On-Site)',
+                bars: [
+                    { label: 'Walk-in', val: data.walkInGuests, color: '#f59e0b', colorEnd: '#fbbf24' },
+                    { label: 'Online', val: data.onlineGuests, color: '#3b82f6', colorEnd: '#60a5fa' }
+                ]
+            },
+            {
+                name: 'Reservations (Active)',
+                bars: [
+                    { label: 'Walk-in', val: data.walkInReservations, color: '#f59e0b', colorEnd: '#fbbf24' },
+                    { label: 'Online', val: data.onlineReservations, color: '#3b82f6', colorEnd: '#60a5fa' }
+                ]
+            }
+        ];
+
+        const allVals = [
+            data.walkInGuests, data.onlineGuests,
+            data.walkInReservations, data.onlineReservations
+        ];
+        const rawMax = Math.max(1, ...allVals);
+        const yMax = Math.ceil(rawMax * 1.25);
+
+        // Y-axis grid lines
+        ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+        ctx.lineWidth = 1;
+        ctx.font = '500 10px Montserrat, sans-serif';
+        ctx.fillStyle = isDark ? '#9baaa1' : '#5c6b62';
+        ctx.textAlign = 'right';
+
+        const ticks = [0, Math.round(yMax / 2), yMax];
+        ticks.forEach((tick) => {
+            const y = padT + chartH - (tick / yMax) * chartH;
+            ctx.beginPath();
+            ctx.moveTo(padL, y);
+            ctx.lineTo(W - padR, y);
+            ctx.stroke();
+            ctx.fillText(tick.toString(), padL - 6, y + 3);
+        });
+
+        // Grouped bars
+        const groupW = chartW / groups.length;
+        const barW = Math.min(26, (groupW - 40) / 2);
+        const barGap = 6;
+
+        groups.forEach((group, gIdx) => {
+            const groupCenterX = padL + gIdx * groupW + groupW / 2;
+            const totalBarsW = (group.bars.length * barW) + ((group.bars.length - 1) * barGap);
+            const groupStartX = groupCenterX - (totalBarsW / 2);
+
+            // Group Label
+            ctx.textAlign = 'center';
+            ctx.font = '600 10px Montserrat, sans-serif';
+            ctx.fillStyle = isDark ? '#d1d5db' : '#374151';
+            ctx.fillText(group.name, groupCenterX, H - 7);
+
+            group.bars.forEach((bar, bIdx) => {
+                const x = groupStartX + bIdx * (barW + barGap);
+                const bH = (bar.val / yMax) * chartH;
+                const y = padT + chartH - bH;
+
+                const grad = ctx.createLinearGradient(x, y, x, padT + chartH);
+                grad.addColorStop(0, bar.colorEnd);
+                grad.addColorStop(1, bar.color);
+
+                ctx.beginPath();
+                const r = Math.min(4, barW / 2);
+                if (bH > 0) {
+                    ctx.moveTo(x + r, y);
+                    ctx.lineTo(x + barW - r, y);
+                    ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
+                    ctx.lineTo(x + barW, padT + chartH);
+                    ctx.lineTo(x, padT + chartH);
+                    ctx.lineTo(x, y + r);
+                    ctx.quadraticCurveTo(x, y, x + r, y);
+                    ctx.closePath();
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                } else {
+                    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)';
+                    ctx.lineWidth = 2;
+                    ctx.moveTo(x, padT + chartH - 1);
+                    ctx.lineTo(x + barW, padT + chartH - 1);
+                    ctx.stroke();
+                }
+
+                ctx.textAlign = 'center';
+                ctx.font = '700 10px Montserrat, sans-serif';
+                ctx.fillStyle = isDark ? '#f3f4f6' : '#1f2937';
+                ctx.fillText(bar.val.toString(), x + barW / 2, Math.max(padT - 3, y - 4));
+            });
+        });
+    }
+
+    setMode(currentMode);
+
+    return {
+        redraw: function () {
+            if (currentMode === 'columns') {
+                drawBarChart();
+            } else {
+                drawDonutChart();
+            }
+        }
+    };
+}
 
 // Store raw revenue for chart scaling
 (function () {

@@ -4047,10 +4047,27 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->whereDate('check_in', now()->toDateString())
             ->where('status', 'Checked In')
             ->count();
-        $expectedGuests = Reservation::query()
-            ->whereDate('reservation_date', now()->toDateString())
-            ->whereIn('status', ['Pending', 'Confirmed'])
-            ->sum('number_of_guests');
+
+        $todayObj = now()->startOfDay();
+        $todayScheduledCount = 0;
+        $pastScheduleCount = 0;
+        $expectedGuests = 0;
+
+        foreach ($reservations as $res) {
+            $dateStr = $formatLocalDate($res, 'reservation_date') ?? ($res->reservation_date ? \Carbon\Carbon::parse($res->reservation_date)->format('Y-m-d') : null);
+            $resDateObj = $dateStr ? \Carbon\Carbon::parse($dateStr)->startOfDay() : null;
+
+            if ($resDateObj) {
+                if ($resDateObj->equalTo($todayObj)) {
+                    $todayScheduledCount++;
+                    $expectedGuests += (int) ($res->number_of_guests ?? 0);
+                } elseif ($resDateObj->lessThan($todayObj)) {
+                    $pastScheduleCount++;
+                }
+            }
+        }
+
+        $scheduledOrPastCount = $todayScheduledCount + $pastScheduleCount;
 
         $activeOccupiedAmenityIds = ReservationAmenity::query()
             ->where(function ($q) {
@@ -4072,6 +4089,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'reservationData',
             'pendingCount',
             'todayCheckIns',
+            'todayScheduledCount',
+            'pastScheduleCount',
+            'scheduledOrPastCount',
             'expectedGuests',
             'allAmenities',
             'activeOccupiedAmenityIds'

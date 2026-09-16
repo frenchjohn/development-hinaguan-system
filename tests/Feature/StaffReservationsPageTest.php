@@ -672,5 +672,72 @@ class StaffReservationsPageTest extends TestCase
         $res->refresh();
         $this->assertEquals('Pending', $res->status);
     }
+
+    public function test_scheduled_or_past_counter_and_today_expected_guests_metrics(): void
+    {
+        $this->staffSession();
+
+        // 1. Past overdue reservation (yesterday, 3 guests)
+        Reservation::create([
+            'booker_name' => 'Past Booker',
+            'phone' => '09170000001',
+            'email' => 'past@example.com',
+            'reservation_date' => now()->subDay()->toDateString(),
+            'check_in' => null,
+            'number_of_guests' => 3,
+            'reservation_type' => 'online',
+            'status' => 'Pending',
+            'total_amount' => 1000,
+            'amount_paid' => 500,
+            'remaining_balance' => 500,
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        // 2. Today scheduled reservation (today, 5 guests)
+        Reservation::create([
+            'booker_name' => 'Today Booker',
+            'phone' => '09170000002',
+            'email' => 'today@example.com',
+            'reservation_date' => now()->toDateString(),
+            'check_in' => null,
+            'number_of_guests' => 5,
+            'reservation_type' => 'online',
+            'status' => 'Pending',
+            'total_amount' => 1500,
+            'amount_paid' => 1500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        // 3. Future reservation (tomorrow, 4 guests)
+        Reservation::create([
+            'booker_name' => 'Future Booker',
+            'phone' => '09170000003',
+            'email' => 'future@example.com',
+            'reservation_date' => now()->addDay()->toDateString(),
+            'check_in' => null,
+            'number_of_guests' => 4,
+            'reservation_type' => 'online',
+            'status' => 'Pending',
+            'total_amount' => 1200,
+            'amount_paid' => 600,
+            'remaining_balance' => 600,
+            'payment_status' => 'Partially Paid',
+        ]);
+
+        $response = $this->get('/staff/reservations');
+
+        $response->assertOk();
+        $response->assertViewHas('pendingCount', 3);
+        $response->assertViewHas('todayScheduledCount', 1);
+        $response->assertViewHas('pastScheduleCount', 1);
+        $response->assertViewHas('scheduledOrPastCount', 2);
+        $response->assertViewHas('expectedGuests', 5);
+
+        // Verify HTML elements
+        $response->assertSee('Scheduled / Past Schedule');
+        $response->assertSee('Expected Guests');
+        $response->assertSee("Today's scheduled visitors", false);
+    }
 }
 

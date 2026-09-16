@@ -69,5 +69,8 @@ class StaffDashboardTest extends TestCase
         $response->assertViewHas('todayCheckIns', 1);
         $response->assertViewHas('pendingReservationsCount', 1);
         $response->assertViewHas('guestsOnSiteCount', 1);
+        $response->assertSee('activeOverviewDonutCanvas');
+        $response->assertSee('activeOverviewBarCanvas');
+        $response->assertSee('window.__sdActiveOverviewData');
     }
 }

@@ -15,6 +15,7 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -169,46 +170,132 @@
 
                 {{-- ===== LIVE ANALYTICS: 2-column first card + 4 cards (5 total) ===== --}}
                 <h3 class="mb-3 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Live Analytics</h3>
-                @php $laPoolNoPct = 100 - $laPoolAccessPct; @endphp
+                @php
+                    $laPoolNoPct = 100 - $laPoolAccessPct;
+                    $laWalkInGuestPct = $laTotalLive > 0 ? round(($activeWalkInGuests / $laTotalLive) * 100) : 0;
+                    $laOnlineGuestPct = $laTotalLive > 0 ? max(0, 100 - $laWalkInGuestPct) : 0;
+                    $laWalkInResPct = $activeCheckedInCount > 0 ? round(($activeWalkInReservations / $activeCheckedInCount) * 100) : 0;
+                    $laOnlineResPct = $activeCheckedInCount > 0 ? max(0, 100 - $laWalkInResPct) : 0;
+                @endphp
                 <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
-                    {{-- Card 1: Active Overview (Guests & Reservations with Walk-in vs Online) --}}
-                    <div class="lg:col-span-2 flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Active Overview</span>
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green">
-                                <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            </span>
+                    {{-- Card 1: Active Overview Graph (Guests & Reservations with Walk-in vs Online) --}}
+                    <div class="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                        {{-- Card Header --}}
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/60 pb-2 dark:border-white/5">
+                            <div class="flex items-center gap-2">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green">
+                                    <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-hp-text dark:text-[#f3f4f6]">Active Overview</span>
+                                    <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-hp-green" title="Live"></span>
+                                </div>
+                            </div>
+
+                            {{-- Channel Legends & View Switcher --}}
+                            <div class="flex items-center gap-2.5">
+                                <div class="flex items-center gap-2 text-[0.62rem] font-semibold text-hp-text-muted">
+                                    <span class="inline-flex items-center gap-1">
+                                        <span class="h-2 w-2 rounded-full bg-[#f59e0b]"></span> Walk-in
+                                    </span>
+                                    <span class="inline-flex items-center gap-1">
+                                        <span class="h-2 w-2 rounded-full bg-[#3b82f6]"></span> Online
+                                    </span>
+                                </div>
+                                <div class="inline-flex rounded-lg bg-black/5 p-0.5 dark:bg-white/5" role="tablist" id="sdActiveOverviewTabs">
+                                    <button type="button" id="sdTabSplit" class="sd-ao-tab-btn inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.65rem] font-bold transition-all bg-white text-hp-text shadow-sm dark:bg-[#222723] dark:text-[#f3f4f6]" title="Ratio View">
+                                        <i class="bi bi-pie-chart-fill"></i> Ratio
+                                    </button>
+                                    <button type="button" id="sdTabColumns" class="sd-ao-tab-btn inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.65rem] font-semibold text-hp-text-muted transition-all hover:text-hp-text dark:hover:text-[#f3f4f6]" title="Bar Chart View">
+                                        <i class="bi bi-bar-chart-fill"></i> Bars
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <div class="flex-1 rounded-lg bg-[rgba(23,138,82,0.06)] px-2.5 py-2 dark:bg-[rgba(23,138,82,0.12)]">
-                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Guests</div>
-                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laTotalLive }}</div>
-                                <div class="text-[0.6rem] font-bold text-hp-green">On-site</div>
+
+                        {{-- VIEW 1: Split View (Donut Gauge + Channel Bars) --}}
+                        <div id="sdActiveOverviewSplitView" class="grid grid-cols-1 items-center gap-3 py-2 sm:grid-cols-[115px_minmax(0,1fr)]">
+                            {{-- Donut Gauge with Center Total --}}
+                            <div class="relative flex flex-col items-center justify-center">
+                                <div class="relative h-[105px] w-[105px]">
+                                    <canvas id="activeOverviewDonutCanvas" class="h-full w-full"></canvas>
+                                    <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                                        <span class="font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laTotalLive }}</span>
+                                        <span class="mt-0.5 text-[0.55rem] font-bold uppercase tracking-wider text-hp-text-muted">On-Site</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex-1 rounded-lg bg-[rgba(23,138,82,0.06)] px-2.5 py-2 dark:bg-[rgba(23,138,82,0.12)]">
-                                <div class="text-[0.6rem] font-semibold uppercase text-hp-text-muted">Reservations</div>
-                                <div class="mt-0.5 font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeCheckedInCount }}</div>
-                                <div class="text-[0.6rem] font-bold text-hp-green">Active</div>
+
+                            {{-- Comparative Channel Proportion Bars --}}
+                            <div class="flex flex-col justify-center gap-2.5">
+                                {{-- Guests Bar --}}
+                                <div>
+                                    <div class="mb-1 flex items-center justify-between text-[0.65rem]">
+                                        <span class="font-bold text-hp-text dark:text-[#f3f4f6]">Guests</span>
+                                        <span class="font-extrabold text-hp-green dark:text-[#4c9a5f]">{{ $laTotalLive }}</span>
+                                    </div>
+                                    <div class="flex h-2.5 w-full overflow-hidden rounded-full bg-black/5 p-0.5 dark:bg-white/10">
+                                        @if($laTotalLive > 0)
+                                            @if($activeWalkInGuests > 0)
+                                                <div class="h-full rounded-l-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] transition-all duration-500" style="width: {{ $laWalkInGuestPct }}%" title="Walk-in: {{ $activeWalkInGuests }} ({{ $laWalkInGuestPct }}%)"></div>
+                                            @endif
+                                            @if($activeOnlineGuests > 0)
+                                                <div class="h-full {{ $activeWalkInGuests > 0 ? '' : 'rounded-l-full' }} rounded-r-full bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] transition-all duration-500" style="width: {{ $laOnlineGuestPct }}%" title="Online: {{ $activeOnlineGuests }} ({{ $laOnlineGuestPct }}%)"></div>
+                                            @endif
+                                        @else
+                                            <div class="h-full w-full rounded-full bg-slate-200 dark:bg-white/10"></div>
+                                        @endif
+                                    </div>
+                                    <div class="mt-0.5 flex items-center justify-between text-[0.6rem] font-medium">
+                                        <span class="text-[#f59e0b]">{{ $activeWalkInGuests }} Walk-in ({{ $laWalkInGuestPct }}%)</span>
+                                        <span class="text-[#3b82f6]">{{ $activeOnlineGuests }} Online ({{ $laOnlineGuestPct }}%)</span>
+                                    </div>
+                                </div>
+
+                                {{-- Reservations Bar --}}
+                                <div>
+                                    <div class="mb-1 flex items-center justify-between text-[0.65rem]">
+                                        <span class="font-bold text-hp-text dark:text-[#f3f4f6]">Reservations</span>
+                                        <span class="font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeCheckedInCount }}</span>
+                                    </div>
+                                    <div class="flex h-2.5 w-full overflow-hidden rounded-full bg-black/5 p-0.5 dark:bg-white/10">
+                                        @if($activeCheckedInCount > 0)
+                                            @if($activeWalkInReservations > 0)
+                                                <div class="h-full rounded-l-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] transition-all duration-500" style="width: {{ $laWalkInResPct }}%" title="Walk-in: {{ $activeWalkInReservations }} ({{ $laWalkInResPct }}%)"></div>
+                                            @endif
+                                            @if($activeOnlineReservations > 0)
+                                                <div class="h-full {{ $activeWalkInReservations > 0 ? '' : 'rounded-l-full' }} rounded-r-full bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] transition-all duration-500" style="width: {{ $laOnlineResPct }}%" title="Online: {{ $activeOnlineReservations }} ({{ $laOnlineResPct }}%)"></div>
+                                            @endif
+                                        @else
+                                            <div class="h-full w-full rounded-full bg-slate-200 dark:bg-white/10"></div>
+                                        @endif
+                                    </div>
+                                    <div class="mt-0.5 flex items-center justify-between text-[0.6rem] font-medium">
+                                        <span class="text-[#f59e0b]">{{ $activeWalkInReservations }} Walk-in ({{ $laWalkInResPct }}%)</span>
+                                        <span class="text-[#3b82f6]">{{ $activeOnlineReservations }} Online ({{ $laOnlineResPct }}%)</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <div class="flex-1 rounded-lg bg-[rgba(245,158,11,0.07)] px-2.5 py-2 dark:bg-[rgba(245,158,11,0.10)]">
-                                <div class="text-[0.6rem] font-semibold uppercase text-[#f59e0b]">Walk-in</div>
-                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeWalkInGuests }} / {{ $activeWalkInReservations }}</div>
-                                <div class="text-[0.6rem] font-bold text-[#f59e0b]">Guests / Res</div>
+
+                        {{-- VIEW 2: Columns View (Canvas Grouped Bar Chart) --}}
+                        <div id="sdActiveOverviewColumnsView" class="hidden py-1">
+                            <div class="relative h-[125px] w-full">
+                                <canvas id="activeOverviewBarCanvas" class="h-full w-full"></canvas>
                             </div>
-                            <div class="flex-1 rounded-lg bg-[rgba(59,130,246,0.07)] px-2.5 py-2 dark:bg-[rgba(59,130,246,0.10)]">
-                                <div class="text-[0.6rem] font-semibold uppercase text-[#3b82f6]">Online</div>
-                                <div class="mt-0.5 text-lg font-extrabold text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $activeOnlineGuests }} / {{ $activeOnlineReservations }}</div>
-                                <div class="text-[0.6rem] font-bold text-[#3b82f6]">Guests / Res</div>
-                            </div>
-                        </div>
-                        <div class="mt-auto flex items-center gap-1 text-[0.6rem] font-semibold text-hp-green">
-                            <span class="inline-block h-1 w-1 animate-pulse rounded-full bg-hp-green"></span>
-                            Live count
                         </div>
                     </div>
+                    <script>
+                        window.__sdActiveOverviewData = {
+                            totalGuests: {{ (int) $laTotalLive }},
+                            walkInGuests: {{ (int) $activeWalkInGuests }},
+                            onlineGuests: {{ (int) $activeOnlineGuests }},
+                            totalReservations: {{ (int) $activeCheckedInCount }},
+                            walkInReservations: {{ (int) $activeWalkInReservations }},
+                            onlineReservations: {{ (int) $activeOnlineReservations }},
+                        };
+                    </script>
 
                     {{-- Card 2: Demographics --}}
                     <div class="flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
