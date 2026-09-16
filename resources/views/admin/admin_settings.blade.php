@@ -303,20 +303,6 @@
                         </section>
                     </div>
 
-                    <!-- Park Settings Success Modal -->
-                    <div id="parkSettingsSuccessModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content admin-settings__modal-content--success">
-                            <div class="admin-settings__modal-icon admin-settings__modal-icon--success">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                            </div>
-                            <h3 class="admin-settings__modal-title">Success!</h3>
-                            <p class="admin-settings__modal-text">Park settings have been successfully updated.</p>
-                            <button type="button" id="closeParkSettingsSuccessModal" class="admin-settings__btn admin-settings__btn--primary">OK</button>
-                        </div>
-                    </div>
-
                     <!-- Park Rules Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-rules">
                         <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromRules">
@@ -372,103 +358,6 @@
                         </section>
                     </div>
 
-                    <!-- View Park Rule Modal -->
-                    <div id="viewParkRuleModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-lg text-left">
-                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
-                                <div class="flex items-center gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewRuleIdBadge">
-                                        #1
-                                    </span>
-                                    <div>
-                                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewRuleModalTitle">Rule Name</h3>
-                                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewRuleModalUpdated">Updated recently</p>
-                                    </div>
-                                </div>
-                                <button type="button" id="closeViewRuleModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition">
-                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <div class="mt-4">
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Rule Description &amp; Policy</label>
-                                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewRuleModalDesc">
-                                    Rule description goes here...
-                                </div>
-                            </div>
-
-                            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
-                                <button type="button" id="viewModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    Delete Rule
-                                </button>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" id="viewModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
-                                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Edit Rule
-                                    </button>
-                                    <button type="button" id="closeViewRuleModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Add / Edit Park Rule Modal -->
-                    <div id="parkRuleModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-lg">
-                            <h3 class="admin-settings__modal-title text-left" id="parkRuleModalTitle">Add Park Rule</h3>
-                            <p class="admin-settings__modal-text text-left" id="parkRuleModalSubtitle">Create a new operational rule or guideline for Hinaguan Nature Park.</p>
-                            
-                            <form id="parkRuleForm" class="mt-4 flex flex-col gap-4 text-left">
-                                @csrf
-                                <input type="hidden" id="ruleIdInput" name="rule_id" value="">
-                                
-                                <div class="admin-settings__group admin-settings__group--full">
-                                    <label for="ruleNameInput" class="admin-settings__label font-semibold">Rule Name / Title</label>
-                                    <input type="text" id="ruleNameInput" name="rule_name" class="admin-settings__input" placeholder="e.g. Proper Swimming Attire" required>
-                                    <span class="admin-settings__error" id="ruleNameError"></span>
-                                </div>
-
-                                <div class="admin-settings__group admin-settings__group--full">
-                                    <label for="ruleDescInput" class="admin-settings__label font-semibold">Rule Description / Guidelines</label>
-                                    <textarea id="ruleDescInput" name="rule_descriptions" rows="4" class="admin-settings__input h-auto resize-y" placeholder="Describe the policy, requirements, or restrictions..." required></textarea>
-                                    <span class="admin-settings__error" id="ruleDescError"></span>
-                                </div>
-
-                                <div class="admin-settings__form-actions mt-2 flex justify-end gap-3">
-                                    <button type="submit" class="admin-settings__btn admin-settings__btn--primary" id="saveRuleSubmitBtn">Save Rule</button>
-                                    <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelRuleModalBtn">Cancel</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Delete Rule Confirmation Modal -->
-                    <div id="deleteParkRuleModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-md text-center">
-                            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
-                                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </div>
-                            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Rule?</h3>
-                            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteRuleConfirmText">Are you sure you want to delete this rule? This action cannot be undone.</p>
-                            
-                            <input type="hidden" id="deleteRuleIdInput" value="">
-
-                            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
-                                <button type="button" id="confirmDeleteRuleBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Rule</button>
-                                <button type="button" id="cancelDeleteRuleBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Park Activities Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="park-activities">
                         <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromActivities">
@@ -514,37 +403,6 @@
                                 @endforelse
                             </div>
                         </section>
-                    </div>
-
-                    <div id="addActivityModal" class="fixed inset-0 z-[2000] hidden items-center justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="addActivityModalTitle">
-                        <div class="relative z-[2001] w-full max-w-3xl rounded-2xl bg-white p-6 text-left shadow-2xl dark:border dark:border-white/10 dark:bg-[#181b19] sm:p-8">
-                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
-                                <div>
-                                    <h3 id="addActivityModalTitle" class="m-0 text-xl font-bold text-[var(--hp-text)]">Add New Activity</h3>
-                                    <p class="m-0 mt-1 text-sm text-[var(--hp-text-muted)]">Add an experience visitors can discover on the homepage.</p>
-                                </div>
-                                <button type="button" class="text-xl text-[var(--hp-text-muted)] transition hover:text-[var(--hp-text)]" id="closeAddActivityXBtn" aria-label="Close add activity dialog"><i class="bi bi-x-lg"></i></button>
-                            </div>
-                            <form method="POST" action="{{ route('admin.settings.activities.store') }}" enctype="multipart/form-data" class="mt-5 grid gap-6 text-left lg:grid-cols-2">
-                                @csrf
-                                <div class="grid content-start gap-4">
-                                    <label class="grid gap-1.5 text-sm font-semibold text-[var(--hp-text)]">Activity name<input class="admin-settings__input" name="activity" placeholder="Activity name" required></label>
-                                    <label class="grid gap-1.5 text-sm font-semibold text-[var(--hp-text)]">Description<textarea class="admin-settings__input h-auto" name="description" rows="7" placeholder="Full activity description" required></textarea></label>
-                                    <div class="flex justify-end gap-2 pt-1 lg:justify-start"><button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelActivityBtn">Cancel</button><button class="admin-settings__btn admin-settings__btn--primary">Add Activity</button></div>
-                                </div>
-                                <div class="grid content-start gap-3 rounded-2xl border border-dashed border-[rgba(13,44,29,0.2)] bg-[rgba(13,44,29,0.025)] p-4 dark:border-white/15 dark:bg-white/5">
-                                    <div>
-                                        <label class="text-sm font-semibold text-[var(--hp-text)]" for="activityImageInput">Activity image</label>
-                                        <p class="m-0 mt-1 text-xs text-[var(--hp-text-muted)]">JPG, PNG, WEBP, or AVIF up to 5 MB.</p>
-                                    </div>
-                                    <label class="flex min-h-48 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-[rgba(13,44,29,0.1)] bg-white text-sm text-[var(--hp-text-muted)] transition hover:border-[var(--hp-green)] dark:border-white/10 dark:bg-[#111512]" for="activityImageInput">
-                                        <span id="activityImagePlaceholder" class="flex flex-col items-center gap-2"><i class="bi bi-cloud-arrow-up text-3xl text-[var(--hp-green)]"></i><span>Choose an image</span></span>
-                                        <img id="activityImagePreview" class="hidden h-48 max-h-48 w-full object-cover" alt="Selected activity preview">
-                                    </label>
-                                    <input class="sr-only" id="activityImageInput" type="file" name="image" accept="image/jpeg,image/png,image/webp,image/avif">
-                                </div>
-                            </form>
-                        </div>
                     </div>
 
                     <!-- Event Settings Content -->
@@ -611,145 +469,6 @@
                         </section>
                     </div>
 
-                    <!-- View Park Event Modal -->
-                    <div id="viewParkEventModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-lg text-left">
-                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
-                                <div class="flex items-center gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewEventIdBadge">
-                                        #1
-                                    </span>
-                                    <div>
-                                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewEventModalTitle">Event Title</h3>
-                                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewEventModalMeta">Date &middot; Day</p>
-                                    </div>
-                                </div>
-                                <button type="button" id="closeViewEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
-                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <div class="mt-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
-                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Event Date</span>
-                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDateDisplay">--</span>
-                                    </div>
-                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
-                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">What Day</span>
-                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDayDisplay">--</span>
-                                    </div>
-                                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
-                                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Time</span>
-                                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalTimeDisplay">--</span>
-                                    </div>
-                                </div>
-
-                                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Event Description</label>
-                                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewEventModalDesc">
-                                    Event description goes here...
-                                </div>
-                            </div>
-
-                            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
-                                <button type="button" id="viewEventModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                    Delete Event
-                                </button>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" id="viewEventModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
-                                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                        Edit Event
-                                    </button>
-                                    <button type="button" id="closeViewEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Add / Edit Park Event Modal -->
-                    <div id="parkEventModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-lg text-left">
-                            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
-                                <div>
-                                    <h3 class="admin-settings__modal-title text-left m-0 text-xl font-bold" id="parkEventModalTitle">Add Park Event</h3>
-                                    <p class="admin-settings__modal-text text-left m-0 mt-1 text-xs text-[var(--hp-text-muted)]" id="parkEventModalSubtitle">Schedule a new event for Hinaguan Nature Park.</p>
-                                </div>
-                                <button type="button" id="closeAddEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
-                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                            
-                            <form id="parkEventForm" class="mt-4 flex flex-col gap-4 text-left">
-                                @csrf
-                                <input type="hidden" id="eventIdInput" name="event_id" value="">
-
-                                <div class="admin-settings__group admin-settings__group--full">
-                                    <label for="eventTitleInput" class="admin-settings__label font-semibold">Event Title</label>
-                                    <input type="text" id="eventTitleInput" name="title" class="admin-settings__input w-full" placeholder="e.g. Riverside Acoustic Sunset Sessions" required maxlength="255">
-                                    <span class="admin-settings__error" id="eventTitleError"></span>
-                                </div>
-
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div class="admin-settings__group">
-                                        <label for="eventDateInput" class="admin-settings__label font-semibold">Date</label>
-                                        <input type="date" id="eventDateInput" name="date" class="admin-settings__input w-full" required>
-                                        <span class="admin-settings__error" id="eventDateError"></span>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day</label>
-                                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto from date">
-                                        <span class="admin-settings__error" id="eventDayError"></span>
-                                    </div>
-                                    <div class="admin-settings__group">
-                                        <label for="eventTimeInput" class="admin-settings__label font-semibold">Time</label>
-                                        <input type="text" id="eventTimeInput" name="time" class="admin-settings__input w-full" placeholder="e.g. 4:00 PM - 8:00 PM" maxlength="100">
-                                        <span class="admin-settings__error" id="eventTimeError"></span>
-                                    </div>
-                                </div>
-
-                                <div class="admin-settings__group admin-settings__group--full">
-                                    <label for="eventDescInput" class="admin-settings__label font-semibold">Event Description (What event)</label>
-                                    <textarea id="eventDescInput" name="event" rows="4" class="admin-settings__input w-full h-auto resize-y" placeholder="Describe what event or activity is taking place..." required maxlength="2000"></textarea>
-                                    <span class="admin-settings__error" id="eventDescError"></span>
-                                </div>
-
-                                <div class="admin-settings__modal-actions mt-2 flex justify-end gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
-                                    <button type="button" id="cancelEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                                    <button type="submit" id="saveEventSubmitBtn" class="admin-settings__btn admin-settings__btn--primary">Save Event</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Delete Event Confirmation Modal -->
-                    <div id="deleteParkEventModal" class="admin-settings__modal" style="display: none;">
-                        <div class="admin-settings__modal-content max-w-md text-center">
-                            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
-                                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </div>
-                            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Event?</h3>
-                            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteEventConfirmText">Are you sure you want to delete this event? This action cannot be undone.</p>
-                            
-                            <input type="hidden" id="deleteEventIdInput" value="">
-
-                            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
-                                <button type="button" id="confirmDeleteEventBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Event</button>
-                                <button type="button" id="cancelDeleteEventBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Security Content -->
                     <div class="admin-settings__content admin-settings__content--hidden" id="security">
                         <button type="button" class="admin-settings__back-btn mb-6 inline-flex items-center gap-2 rounded-xl border border-[rgba(13,44,29,0.1)] bg-white px-6 py-3 font-medium text-[var(--hp-text)] transition-all duration-300 hover:-translate-x-1 hover:border-[var(--hp-green)] hover:bg-[var(--hp-green)] hover:text-white dark:border-white/10 dark:bg-white/5 dark:hover:border-[var(--hp-gold)] dark:hover:bg-[var(--hp-gold)]" id="backToMenuFromSecurity">
@@ -800,20 +519,6 @@
                                 <button type="button" class="admin-settings__btn admin-settings__btn--outline" id="togglePasswordBtn">
                                     Change Password
                                 </button>
-
-                                <!-- OTP Verification Modal for Password -->
-                                <div id="otpPasswordModal" class="admin-settings__modal" style="display: none;">
-                                    <div class="admin-settings__modal-content">
-                                        <h3 class="admin-settings__modal-title">Verify OTP Code</h3>
-                                        <p class="admin-settings__modal-text">An OTP code has been sent to your email address.</p>
-                                        <input type="text" id="otpPasswordCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
-                                        <span class="admin-settings__error" id="otpPasswordError"></span>
-                                        <div class="admin-settings__modal-actions">
-                                            <button type="button" id="verifyPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Change Password</button>
-                                            <button type="button" id="cancelPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
                             </section>
 
                             <!-- Change Email Section -->
@@ -849,20 +554,6 @@
                                 <button type="button" class="admin-settings__btn admin-settings__btn--outline" id="toggleEmailBtn">
                                     Change Email
                                 </button>
-
-                                <!-- OTP Verification Modal for Email -->
-                                <div id="otpEmailModal" class="admin-settings__modal" style="display: none;">
-                                    <div class="admin-settings__modal-content">
-                                        <h3 class="admin-settings__modal-title">Verify Email Change</h3>
-                                        <p class="admin-settings__modal-text">An OTP code has been sent to your current email address.</p>
-                                        <input type="text" id="otpEmailCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
-                                        <span class="admin-settings__error" id="otpEmailError"></span>
-                                        <div class="admin-settings__modal-actions">
-                                            <button type="button" id="verifyEmailOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Update Email</button>
-                                            <button type="button" id="cancelEmailOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
                             </section>
                         </div>
                     </div>
@@ -871,12 +562,315 @@
         </div>
     </div>
 
-    {{-- Admin AI Intelligence Chatbot --}}
-    <x-admin_chatbot />
-</body>
-</html>
+    <!-- ==================== ADMIN SETTINGS MODALS (Placed outside dash-layout to prevent header overlay) ==================== -->
+
+    <!-- Park Settings Success Modal -->
+    <div id="parkSettingsSuccessModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content admin-settings__modal-content--success">
+            <div class="admin-settings__modal-icon admin-settings__modal-icon--success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h3 class="admin-settings__modal-title">Success!</h3>
+            <p class="admin-settings__modal-text">Park settings have been successfully updated.</p>
+            <button type="button" id="closeParkSettingsSuccessModal" class="admin-settings__btn admin-settings__btn--primary">OK</button>
+        </div>
+    </div>
+
+    <!-- View Park Rule Modal -->
+    <div id="viewParkRuleModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-lg text-left">
+            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewRuleIdBadge">
+                        #1
+                    </span>
+                    <div>
+                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewRuleModalTitle">Rule Name</h3>
+                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewRuleModalUpdated">Updated recently</p>
+                    </div>
                 </div>
-            </main>
+                <button type="button" id="closeViewRuleModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Rule Description &amp; Policy</label>
+                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewRuleModalDesc">
+                    Rule description goes here...
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                <button type="button" id="viewModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Delete Rule
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
+                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit Rule
+                    </button>
+                    <button type="button" id="closeViewRuleModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add / Edit Park Rule Modal -->
+    <div id="parkRuleModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-lg">
+            <h3 class="admin-settings__modal-title text-left" id="parkRuleModalTitle">Add Park Rule</h3>
+            <p class="admin-settings__modal-text text-left" id="parkRuleModalSubtitle">Create a new operational rule or guideline for Hinaguan Nature Park.</p>
+            
+            <form id="parkRuleForm" class="mt-4 flex flex-col gap-4 text-left">
+                @csrf
+                <input type="hidden" id="ruleIdInput" name="rule_id" value="">
+                
+                <div class="admin-settings__group admin-settings__group--full">
+                    <label for="ruleNameInput" class="admin-settings__label font-semibold">Rule Name / Title</label>
+                    <input type="text" id="ruleNameInput" name="rule_name" class="admin-settings__input" placeholder="e.g. Proper Swimming Attire" required>
+                    <span class="admin-settings__error" id="ruleNameError"></span>
+                </div>
+
+                <div class="admin-settings__group admin-settings__group--full">
+                    <label for="ruleDescInput" class="admin-settings__label font-semibold">Rule Description / Guidelines</label>
+                    <textarea id="ruleDescInput" name="rule_descriptions" rows="4" class="admin-settings__input h-auto resize-y" placeholder="Describe the policy, requirements, or restrictions..." required></textarea>
+                    <span class="admin-settings__error" id="ruleDescError"></span>
+                </div>
+
+                <div class="admin-settings__form-actions mt-2 flex justify-end gap-3">
+                    <button type="submit" class="admin-settings__btn admin-settings__btn--primary" id="saveRuleSubmitBtn">Save Rule</button>
+                    <button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelRuleModalBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Rule Confirmation Modal -->
+    <div id="deleteParkRuleModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-md text-center">
+            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Rule?</h3>
+            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteRuleConfirmText">Are you sure you want to delete this rule? This action cannot be undone.</p>
+            
+            <input type="hidden" id="deleteRuleIdInput" value="">
+
+            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
+                <button type="button" id="confirmDeleteRuleBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Rule</button>
+                <button type="button" id="cancelDeleteRuleBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Activity Modal -->
+    <div id="addActivityModal" class="fixed inset-0 z-[2000] hidden items-center justify-center overflow-y-auto bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="addActivityModalTitle">
+        <div class="relative z-[2001] w-full max-w-3xl rounded-2xl bg-white p-6 text-left shadow-2xl dark:border dark:border-white/10 dark:bg-[#181b19] sm:p-8">
+            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                <div>
+                    <h3 id="addActivityModalTitle" class="m-0 text-xl font-bold text-[var(--hp-text)]">Add New Activity</h3>
+                    <p class="m-0 mt-1 text-sm text-[var(--hp-text-muted)]">Add an experience visitors can discover on the homepage.</p>
+                </div>
+                <button type="button" class="text-xl text-[var(--hp-text-muted)] transition hover:text-[var(--hp-text)]" id="closeAddActivityXBtn" aria-label="Close add activity dialog"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <form method="POST" action="{{ route('admin.settings.activities.store') }}" enctype="multipart/form-data" class="mt-5 grid gap-6 text-left lg:grid-cols-2">
+                @csrf
+                <div class="grid content-start gap-4">
+                    <label class="grid gap-1.5 text-sm font-semibold text-[var(--hp-text)]">Activity name<input class="admin-settings__input" name="activity" placeholder="Activity name" required></label>
+                    <label class="grid gap-1.5 text-sm font-semibold text-[var(--hp-text)]">Description<textarea class="admin-settings__input h-auto" name="description" rows="7" placeholder="Full activity description" required></textarea></label>
+                    <div class="flex justify-end gap-2 pt-1 lg:justify-start"><button type="button" class="admin-settings__btn admin-settings__btn--secondary" id="cancelActivityBtn">Cancel</button><button class="admin-settings__btn admin-settings__btn--primary">Add Activity</button></div>
+                </div>
+                <div class="grid content-start gap-3 rounded-2xl border border-dashed border-[rgba(13,44,29,0.2)] bg-[rgba(13,44,29,0.025)] p-4 dark:border-white/15 dark:bg-white/5">
+                    <div>
+                        <label class="text-sm font-semibold text-[var(--hp-text)]" for="activityImageInput">Activity image</label>
+                        <p class="m-0 mt-1 text-xs text-[var(--hp-text-muted)]">JPG, PNG, WEBP, or AVIF up to 5 MB.</p>
+                    </div>
+                    <label class="flex min-h-48 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-[rgba(13,44,29,0.1)] bg-white text-sm text-[var(--hp-text-muted)] transition hover:border-[var(--hp-green)] dark:border-white/10 dark:bg-[#111512]" for="activityImageInput">
+                        <span id="activityImagePlaceholder" class="flex flex-col items-center gap-2"><i class="bi bi-cloud-arrow-up text-3xl text-[var(--hp-green)]"></i><span>Choose an image</span></span>
+                        <img id="activityImagePreview" class="hidden h-48 max-h-48 w-full object-cover" alt="Selected activity preview">
+                    </label>
+                    <input class="sr-only" id="activityImageInput" type="file" name="image" accept="image/jpeg,image/png,image/webp,image/avif">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Park Event Modal -->
+    <div id="viewParkEventModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-lg text-left">
+            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-4 dark:border-white/10">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[rgba(26,58,31,0.1)] text-xs font-bold text-[var(--hp-green)] dark:bg-[rgba(200,164,93,0.15)] dark:text-[var(--hp-gold)]" id="viewEventIdBadge">
+                        #1
+                    </span>
+                    <div>
+                        <h3 class="m-0 text-lg font-bold text-[var(--hp-text)]" id="viewEventModalTitle">Event Title</h3>
+                        <p class="m-0 text-xs text-[var(--hp-text-muted)]" id="viewEventModalMeta">Date &middot; Day</p>
+                    </div>
+                </div>
+                <button type="button" id="closeViewEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mt-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Event Date</span>
+                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDateDisplay">--</span>
+                    </div>
+                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">What Day</span>
+                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalDayDisplay">--</span>
+                    </div>
+                    <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-3 dark:border-white/10 dark:bg-white/5">
+                        <span class="block text-[0.7rem] uppercase tracking-wider text-[var(--hp-text-muted)] font-bold">Time</span>
+                        <span class="text-sm font-semibold text-[var(--hp-text)]" id="viewEventModalTimeDisplay">--</span>
+                    </div>
+                </div>
+
+                <label class="block text-xs font-semibold uppercase tracking-wider text-[var(--hp-text-muted)] mb-1.5">Event Description</label>
+                <div class="rounded-xl border border-[rgba(13,44,29,0.08)] bg-[rgba(13,44,29,0.02)] p-4 text-sm leading-relaxed text-[var(--hp-text)] dark:border-white/10 dark:bg-white/5 whitespace-pre-line max-h-60 overflow-y-auto" id="viewEventModalDesc">
+                    Event description goes here...
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                <button type="button" id="viewEventModalDeleteBtn" class="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-600 hover:text-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Delete Event
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="viewEventModalEditBtn" class="admin-settings__btn admin-settings__btn--primary text-sm px-4 py-2">
+                        <svg class="h-4 w-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit Event
+                    </button>
+                    <button type="button" id="closeViewEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary text-sm px-4 py-2">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add / Edit Park Event Modal -->
+    <div id="parkEventModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-lg text-left">
+            <div class="flex items-start justify-between gap-4 border-b border-[rgba(13,44,29,0.1)] pb-3 dark:border-white/10">
+                <div>
+                    <h3 class="admin-settings__modal-title text-left m-0 text-xl font-bold" id="parkEventModalTitle">Add Park Event</h3>
+                    <p class="admin-settings__modal-text text-left m-0 mt-1 text-xs text-[var(--hp-text-muted)]" id="parkEventModalSubtitle">Schedule a new event for Hinaguan Nature Park.</p>
+                </div>
+                <button type="button" id="closeAddEventModalXBtn" class="text-[var(--hp-text-muted)] hover:text-[var(--hp-text)] transition p-1">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="parkEventForm" class="mt-4 flex flex-col gap-4 text-left">
+                @csrf
+                <input type="hidden" id="eventIdInput" name="event_id" value="">
+
+                <div class="admin-settings__group admin-settings__group--full">
+                    <label for="eventTitleInput" class="admin-settings__label font-semibold">Event Title</label>
+                    <input type="text" id="eventTitleInput" name="title" class="admin-settings__input w-full" placeholder="e.g. Riverside Acoustic Sunset Sessions" required maxlength="255">
+                    <span class="admin-settings__error" id="eventTitleError"></span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="admin-settings__group">
+                        <label for="eventDateInput" class="admin-settings__label font-semibold">Date</label>
+                        <input type="date" id="eventDateInput" name="date" class="admin-settings__input w-full" required>
+                        <span class="admin-settings__error" id="eventDateError"></span>
+                    </div>
+                    <div class="admin-settings__group">
+                        <label for="eventDayInput" class="admin-settings__label font-semibold">What Day</label>
+                        <input type="text" id="eventDayInput" name="day" class="admin-settings__input w-full" placeholder="Auto from date">
+                        <span class="admin-settings__error" id="eventDayError"></span>
+                    </div>
+                    <div class="admin-settings__group">
+                        <label for="eventTimeInput" class="admin-settings__label font-semibold">Time</label>
+                        <input type="text" id="eventTimeInput" name="time" class="admin-settings__input w-full" placeholder="e.g. 4:00 PM - 8:00 PM" maxlength="100">
+                        <span class="admin-settings__error" id="eventTimeError"></span>
+                    </div>
+                </div>
+
+                <div class="admin-settings__group admin-settings__group--full">
+                    <label for="eventDescInput" class="admin-settings__label font-semibold">Event Description (What event)</label>
+                    <textarea id="eventDescInput" name="event" rows="4" class="admin-settings__input w-full h-auto resize-y" placeholder="Describe what event or activity is taking place..." required maxlength="2000"></textarea>
+                    <span class="admin-settings__error" id="eventDescError"></span>
+                </div>
+
+                <div class="admin-settings__modal-actions mt-2 flex justify-end gap-3 border-t border-[rgba(13,44,29,0.1)] pt-4 dark:border-white/10">
+                    <button type="button" id="cancelEventModalBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+                    <button type="submit" id="saveEventSubmitBtn" class="admin-settings__btn admin-settings__btn--primary">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Event Confirmation Modal -->
+    <div id="deleteParkEventModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content max-w-md text-center">
+            <div class="admin-settings__modal-icon mb-4 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+                <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </div>
+            <h3 class="admin-settings__modal-title text-xl font-bold text-[var(--hp-text)]">Delete Park Event?</h3>
+            <p class="admin-settings__modal-text mt-2 text-sm text-[var(--hp-text-muted)]" id="deleteEventConfirmText">Are you sure you want to delete this event? This action cannot be undone.</p>
+            
+            <input type="hidden" id="deleteEventIdInput" value="">
+
+            <div class="admin-settings__modal-actions mt-6 flex justify-center gap-3">
+                <button type="button" id="confirmDeleteEventBtn" class="admin-settings__btn bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2.5 rounded-xl transition">Delete Event</button>
+                <button type="button" id="cancelDeleteEventBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal for Password -->
+    <div id="otpPasswordModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content">
+            <h3 class="admin-settings__modal-title">Verify OTP Code</h3>
+            <p class="admin-settings__modal-text">An OTP code has been sent to your email address.</p>
+            <input type="text" id="otpPasswordCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
+            <span class="admin-settings__error" id="otpPasswordError"></span>
+            <div class="admin-settings__modal-actions">
+                <button type="button" id="verifyPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Change Password</button>
+                <button type="button" id="cancelPasswordOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OTP Verification Modal for Email -->
+    <div id="otpEmailModal" class="admin-settings__modal" style="display: none;">
+        <div class="admin-settings__modal-content">
+            <h3 class="admin-settings__modal-title">Verify Email Change</h3>
+            <p class="admin-settings__modal-text">An OTP code has been sent to your current email address.</p>
+            <input type="text" id="otpEmailCode" class="admin-settings__input" placeholder="Enter 6-digit OTP code" maxlength="6">
+            <span class="admin-settings__error" id="otpEmailError"></span>
+            <div class="admin-settings__modal-actions">
+                <button type="button" id="verifyEmailOtpBtn" class="admin-settings__btn admin-settings__btn--primary">Verify & Update Email</button>
+                <button type="button" id="cancelEmailOtpBtn" class="admin-settings__btn admin-settings__btn--secondary">Cancel</button>
+            </div>
         </div>
     </div>
 

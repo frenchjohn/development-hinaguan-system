@@ -51,10 +51,12 @@ window.AppPage['admin_settings'] = function () {
     const activityImagePreview = document.getElementById('activityImagePreview');
     const activityImagePlaceholder = document.getElementById('activityImagePlaceholder');
 
-    // Move the dialog to body so dashboard stacking contexts cannot cover it.
-    if (addActivityModal && addActivityModal.parentElement !== document.body) {
-        document.body.appendChild(addActivityModal);
-    }
+    // Move all dialogs/modals to body so dashboard stacking contexts and sticky header cannot cover them.
+    document.querySelectorAll('.admin-settings__modal, #addActivityModal').forEach(modalEl => {
+        if (modalEl && modalEl.parentElement !== document.body) {
+            document.body.appendChild(modalEl);
+        }
+    });
 
     const closeActivityModal = () => {
         addActivityModal?.classList.add('hidden');

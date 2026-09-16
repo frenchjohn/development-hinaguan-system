@@ -1795,7 +1795,9 @@ body.admin-portal .admin-settings__modal {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 2000;
+    padding: 1rem;
+    overflow-y: auto;
     animation: adminFadeIn 0.3s ease;
 }
 
@@ -1805,6 +1807,8 @@ body.admin-portal .admin-settings__modal-content {
     padding: 2rem;
     max-width: 400px;
     width: 90%;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
     text-align: center;
     animation: adminSlideUp 0.3s ease;
     box-shadow: 0 20px 25px rgba(0, 0, 0, 0.15);
