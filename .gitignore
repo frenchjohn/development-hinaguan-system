@@ -22,3 +22,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+.freebuff/
+*.db-shm
+*.db-wal
+diff_*.txt
+test-output.txt
+phpunit_debug.txt
+build_log.txt
