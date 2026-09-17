@@ -8,7 +8,7 @@ window.AppPage['staff_reports'] = function () {
     const statusFilter = document.getElementById('statusFilter');
     const dateFrom = document.getElementById('dateFrom');
     const dateTo = document.getElementById('dateTo');
-    
+
     // Filter Toggle
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const reportsFilters = document.getElementById('reportsFilters');
@@ -167,7 +167,7 @@ window.AppPage['staff_reports'] = function () {
                             grid: { color: gridColor },
                             border: { display: false },
                             ticks: {
-                                callback: (value) => value >= 1000 ? '₱' + (value/1000) + 'k' : '₱' + value
+                                callback: (value) => value >= 1000 ? '₱' + (value / 1000) + 'k' : '₱' + value
                             }
                         }
                     }
@@ -179,7 +179,7 @@ window.AppPage['staff_reports'] = function () {
         if (ctxDonut && data.statusCounts) {
             const statusLabels = Object.keys(data.statusCounts);
             const statusValues = Object.values(data.statusCounts);
-            
+
             const colorMap = {
                 'Pending': '#d3a94e',
                 'Confirmed': '#2e9d68',
@@ -212,7 +212,7 @@ window.AppPage['staff_reports'] = function () {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: (context) => ` ${context.label}: ${context.raw} (${Math.round(context.raw/total*100)}%)`
+                                label: (context) => ` ${context.label}: ${context.raw} (${Math.round(context.raw / total * 100)}%)`
                             }
                         }
                     }
@@ -259,11 +259,11 @@ window.AppPage['staff_reports'] = function () {
 
             const checkInDate = new Date(row.check_in || row.reservation_date);
             const dateStr = checkInDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            
+
             const guests = row.reservation_guests || [];
             const primaryGuest = guests.find(g => g.is_primary_guest);
             const primaryCustomer = primaryGuest ? primaryGuest.customer : null;
-            
+
             let guestInitials = '?';
             if (primaryCustomer) {
                 guestInitials = (primaryCustomer.first_name?.[0] || '') + (primaryCustomer.last_name?.[0] || '');
@@ -446,7 +446,7 @@ window.AppPage['staff_reports'] = function () {
 
             // Toggle Expand
             tr.addEventListener('click', (e) => {
-                if(e.target.closest('button') && !e.target.closest('.expand-btn')) return;
+                if (e.target.closest('button') && !e.target.closest('.expand-btn')) return;
                 const isExpanded = tr.classList.contains('is-expanded');
                 if (isExpanded) {
                     tr.classList.remove('is-expanded');
@@ -467,7 +467,7 @@ window.AppPage['staff_reports'] = function () {
         let visibleCount = 0;
         let visibleRevenue = 0;
         let visibleGuests = 0;
-        
+
         const filteredRows = rawRows.filter(row => {
             if (matchesFilter(row)) {
                 visibleCount++;
@@ -731,18 +731,18 @@ window.AppPage['staff_reports'] = function () {
             metricsHtml = `
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-${Math.min(report.key_metrics.length, 4)}">
                     ${report.key_metrics.map(m => {
-                        let changeClass = 'text-hp-text-muted bg-glass';
-                        if (m.change_type === 'positive') changeClass = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20';
-                        else if (m.change_type === 'negative') changeClass = 'text-rose-700 bg-rose-500/10 border-rose-500/20';
+                let changeClass = 'text-hp-text-muted bg-glass';
+                if (m.change_type === 'positive') changeClass = 'text-emerald-700 bg-emerald-500/10 border-emerald-500/20';
+                else if (m.change_type === 'negative') changeClass = 'text-rose-700 bg-rose-500/10 border-rose-500/20';
 
-                        return `
+                return `
                             <article class="flex flex-col justify-between rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                                 <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">${m.label || 'Metric'}</span>
                                 <div class="my-2 text-2xl md:text-3xl font-display font-bold text-hp-text">${m.value || '0'}</div>
                                 ${m.subtext ? `<span class="inline-block self-start rounded-lg border border-glass-border px-2.5 py-1 text-[0.7rem] font-semibold ${changeClass}">${m.subtext}</span>` : ''}
                             </article>
                         `;
-                    }).join('')}
+            }).join('')}
                 </div>
             `;
         }
@@ -762,13 +762,13 @@ window.AppPage['staff_reports'] = function () {
                     </div>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         ${report.insights.map(item => {
-                            let badgeBg = 'bg-glass text-hp-text-muted';
-                            if (item.badge === 'High Impact') badgeBg = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30';
-                            else if (item.badge === 'Trend') badgeBg = 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30';
-                            else if (item.badge === 'Opportunity') badgeBg = 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30';
-                            else if (item.badge === 'Alert') badgeBg = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
+                let badgeBg = 'bg-glass text-hp-text-muted';
+                if (item.badge === 'High Impact') badgeBg = 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30';
+                else if (item.badge === 'Trend') badgeBg = 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30';
+                else if (item.badge === 'Opportunity') badgeBg = 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30';
+                else if (item.badge === 'Alert') badgeBg = 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30';
 
-                            return `
+                return `
                                 <div class="flex flex-col justify-between rounded-2xl border border-glass-border bg-glass-hover/40 p-4 transition-all hover:bg-glass-hover">
                                     <div>
                                         <div class="mb-2 flex items-center justify-between gap-2">
@@ -779,7 +779,7 @@ window.AppPage['staff_reports'] = function () {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
                 </section>
             `;

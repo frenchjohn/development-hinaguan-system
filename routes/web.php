@@ -5064,12 +5064,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'companions_checkout_summary' => $companionsCheckoutSummary,
                 'entrance_fee' => $reservation->entranceFee ? [
                     'pricing_type' => $reservation->entranceFee->pricing_type,
-                    'base_entrance_fee' => (float) ($reservation->entranceFee->base_entrance_fee ?? 0),
+                    'base_entrance_fee' => (float) max(0, ($reservation->entranceFee->total_amount ?? 0) - ($reservation->entranceFee->pool_fee ?? 0)),
                     'adult_count' => (int) ($reservation->entranceFee->adult_count ?? 0),
                     'child_count' => (int) ($reservation->entranceFee->child_count ?? 0),
                     'senior_pwd_count' => (int) ($reservation->entranceFee->senior_pwd_count ?? 0),
                     'additional_guest_fee' => (float) ($reservation->entranceFee->additional_guest_fee ?? 0),
-                    'total_entrance_fee' => (float) ($reservation->entranceFee->total_entrance_fee ?? 0),
+                    'total_entrance_fee' => (float) ($reservation->entranceFee->total_amount ?? 0),
+                    'total_amount' => (float) ($reservation->entranceFee->total_amount ?? 0),
                     'pool_fee' => (float) ($reservation->entranceFee->pool_fee ?? 0),
                     'pool_option' => $reservation->entranceFee->pool_option,
                     'pool_access_count' => (int) ($reservation->entranceFee->pool_access_count ?? 0),
@@ -5999,11 +6000,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $oldTotal = (float) $reservation->total_amount;
         $oldPaid = (float) $reservation->amount_paid;
+        $newTotal = round($oldTotal + $grandTotal, 2);
         $reservation->update([
             'check_in' => now()->toDateTimeString(),
             'status' => 'Checked In',
-            'total_amount' => round($oldTotal + $grandTotal, 2),
-            'amount_paid' => round($oldPaid + $grandTotal, 2),
+            'total_amount' => $newTotal,
+            'amount_paid' => $newTotal,
             'remaining_balance' => 0,
             'payment_status' => 'Paid',
         ]);

@@ -926,15 +926,6 @@
         </div>
     </footer>
 
-    {{-- Floating action buttons --}}
-    <div class="hp-fab-group hp-fab-group--left">
-        <a href="https://m.me/hinaguannaturepark" class="hp-fab hp-fab--messenger" target="_blank" rel="noopener noreferrer" aria-label="Message us on Messenger">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.906 1.446 5.502 3.709 7.17V22l3.405-1.871c.907.252 1.871.389 2.886.389 5.523 0 10-4.145 10-9.243S17.523 2 12 2zm1.017 12.443-2.558-2.726-5.002 2.726 5.511-5.847 2.624 2.726 4.933-2.726-5.508 5.847z"/></svg>
-        </a>
-        <a href="tel:+639178618383" class="hp-fab hp-fab--phone" aria-label="Call us">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-        </a>
-    </div>
 
     <div class="hp-activity-modal" id="hpActivityModal" aria-hidden="true" role="dialog" aria-labelledby="hpActivityModalTitle">
         <div class="hp-activity-modal__backdrop" data-activity-modal-close></div>

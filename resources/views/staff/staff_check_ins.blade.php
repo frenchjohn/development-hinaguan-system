@@ -767,8 +767,8 @@
 
 					{{-- RESERVATION TABLE --}}
 					<div id="reservationTableSection" class="tab-content-section">
-						<section class="overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass dark:border-white/15 dark:bg-[#181b19]/80">
-							<div class="flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5 dark:border-white/10">
+						<section class="rounded-2xl border border-glass-border bg-glass shadow-glass dark:border-white/15 dark:bg-[#181b19]/80 relative">
+							<div class="flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5 rounded-t-2xl dark:border-white/10">
 								<div class="flex items-center">
 									<h2 class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Data View</h2>
 								</div>
@@ -784,7 +784,7 @@
 							</div>
 
 					{{-- Unified Filter, Search & Sort Control Strip --}}
-					<div class="resv-control-strip flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/40 bg-black/[0.015] px-6 py-3.5 dark:border-white/10 dark:bg-white/[0.015]">
+					<div class="resv-control-strip relative z-30 flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/40 bg-black/[0.015] px-6 py-3.5 dark:border-white/10 dark:bg-white/[0.015]">
 						<div class="flex flex-wrap items-center gap-2.5">
 							{{-- Search Input --}}
 							<div class="relative w-64 sm:w-72 max-w-full">
@@ -811,17 +811,69 @@
 								<i class="bi bi-chevron-down text-[0.6rem] transition-transform duration-200" id="resvFilterChevron"></i>
 							</button>
 
-							{{-- Current Sort Indicator Pill (Clickable shortcut into filter drawer) --}}
-							<button
-								type="button"
-								id="resvQuickSortPill"
-								class="hidden md:inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-white/5 px-3 py-1.5 text-xs text-hp-text transition-all duration-150 hover:border-hp-green shadow-xs"
-								title="Current sort order (Click to customize in filter panel)"
-							>
-								<i class="bi bi-arrow-down-up text-emerald-600 dark:text-emerald-400 text-xs"></i>
-								<span class="text-hp-text-muted text-[0.72rem]">Sort:</span>
-								<span id="resvCurrentSortLabel" class="font-bold text-[0.75rem] text-hp-text dark:text-[#f3f4f6]">Nearest to Checkout</span>
-							</button>
+							{{-- Dedicated Sort Dropdown --}}
+							<div class="relative inline-block" id="resvSortDropdownContainer">
+								<button
+									type="button"
+									id="resvQuickSortPill"
+									class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/90 dark:bg-white/5 px-3 py-2 text-xs text-hp-text transition-all duration-150 hover:border-hp-green hover:bg-emerald-50/50 dark:hover:bg-white/10 shadow-xs select-none"
+									title="Sort reservations"
+									aria-haspopup="true"
+									aria-expanded="false"
+								>
+									<i class="bi bi-arrow-down-up text-emerald-600 dark:text-emerald-400 text-xs"></i>
+									<span class="text-hp-text-muted text-[0.72rem]">Sort:</span>
+									<span id="resvCurrentSortLabel" class="font-bold text-[0.75rem] text-hp-text dark:text-[#f3f4f6]">Nearest to Checkout</span>
+									<i class="bi bi-chevron-down text-[0.6rem] text-hp-text-muted transition-transform duration-200" id="resvSortDropdownChevron"></i>
+								</button>
+
+								{{-- Sort Choices Dropdown Menu --}}
+								<div
+									id="resvSortDropdownMenu"
+									class="hidden absolute left-0 top-full mt-1.5 z-[100] w-64 sm:w-72 rounded-2xl border border-glass-border bg-white dark:bg-[#1a1e1c] p-1.5 shadow-2xl backdrop-blur-md dark:border-white/15 animate-fade-in"
+									role="menu"
+									aria-orientation="vertical"
+								>
+									<div class="px-2.5 py-1.5 text-[0.68rem] font-bold uppercase tracking-wider text-hp-text-muted border-b border-glass-border/40 dark:border-white/10 mb-1 flex items-center justify-between">
+										<span>Sort Reservations</span>
+										<i class="bi bi-arrow-down-up text-[0.7rem] text-emerald-600 dark:text-emerald-400"></i>
+									</div>
+									<div class="space-y-0.5 max-h-[165px] overflow-y-auto pr-1" id="resvSortDropdownOptions">
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="nearest_checkout">
+											<span>Nearest to Checkout</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="latest_checkout">
+											<span>Latest Checkout</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_newest">
+											<span>Check-in: Newest First</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="checkin_oldest">
+											<span>Check-in: Oldest First</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_desc">
+											<span>Reservation # (High to Low)</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="id_asc">
+											<span>Reservation # (Low to High)</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_name">
+											<span>Main Guest (A - Z)</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+										<button type="button" class="resv-sort-option w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium text-hp-text dark:text-[#f3f4f6] hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-left cursor-pointer" data-sort-val="guest_count">
+											<span>Guest Count (High to Low)</span>
+											<i class="bi bi-check2 text-emerald-600 dark:text-emerald-400 font-bold hidden sort-check"></i>
+										</button>
+									</div>
+								</div>
+							</div>
 						</div>
 
 						{{-- Right: Quick Status Filter Chips --}}
@@ -1040,6 +1092,8 @@
 										data-checkout-timestamp="{{ $checkoutAtStr ? \Carbon\Carbon::parse($checkoutAtStr)->timestamp : 9999999999 }}"
 										data-checkout-status="{{ $checkoutDue ? 'due' : ($checkoutNear ? 'near' : 'normal') }}"
 										data-primary-name="{{ strtolower($rowPrimaryName) }}"
+										data-amenities-name="{{ strtolower($rowAmenityNames) }}"
+										data-amount-total="{{ (float) ($reservation->total_amount ?? 0) }}"
 										data-guest-count="{{ $totalResGuests }}"
 										data-reservation-search="{{ strtolower(trim($reservation->id . ' ' . ($reservation->reservation_type === 'walk_in' ? 'walk-in' : 'online') . ' ' . $rowPrimaryName . ' ' . ($reservation->booker_name ?? '') . ' ' . $rowAmenityNames . ' ' . ($reservation->status ?? ''))) }}"
 										data-amenity-checkout-times="{{ implode(',', $amenityCheckoutTimes) }}"

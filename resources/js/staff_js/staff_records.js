@@ -606,15 +606,37 @@ window.AppPage['staff_records'] = function () {
             return sum + price;
         }, 0);
 
-        // Entrance fee total
-        const entranceFeeTotal = parseFloat(reservation.entrance_fee?.total_entrance_fee || 0);
-        const baseEntranceFee = parseFloat(reservation.entrance_fee?.base_entrance_fee || 0);
-        const addHeadFee = parseFloat(reservation.entrance_fee?.additional_guest_fee || 0);
-
         // Grand totals
         const totalAmount = parseFloat(reservation.total_amount || 0);
-        const amountPaid = parseFloat(reservation.amount_paid || 0);
-        const remainingBal = parseFloat(reservation.remaining_balance ?? (totalAmount - amountPaid));
+        const rawAmountPaid = parseFloat(reservation.amount_paid || 0);
+        const isPaidStatus = (reservation.payment_status || '').toLowerCase() === 'paid';
+        const hasZeroBalance = parseFloat(reservation.remaining_balance || 0) <= 0;
+        const amountPaid = (isPaidStatus && hasZeroBalance && rawAmountPaid < totalAmount) ? totalAmount : rawAmountPaid;
+        const paidChargesTotal = charges.filter(c => (c.status || 'Paid').toLowerCase() === 'paid').reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+        const totalSettledPaid = amountPaid + paidChargesTotal;
+        const finalBilledTotal = totalAmount + chargesTotal;
+        const remainingBal = Math.max(0, parseFloat(reservation.remaining_balance ?? (finalBilledTotal - totalSettledPaid)));
+
+        // Format money helper
+        const formatMoney = (val) => {
+            const num = parseFloat(val) || 0;
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        // Entrance fee total
+        const derivedEntranceFee = (totalAmount > (amenitiesTotal + poolFee)) ? (totalAmount - amenitiesTotal - poolFee) : 0;
+        const entranceFeeTotal = parseFloat(reservation.entrance_fee?.total_entrance_fee ?? reservation.entrance_fee?.total_amount ?? derivedEntranceFee) || derivedEntranceFee;
+        const baseEntranceFee = parseFloat(reservation.entrance_fee?.base_entrance_fee ?? Math.max(0, entranceFeeTotal - poolFee));
+        const addHeadFee = parseFloat(reservation.entrance_fee?.additional_guest_fee || 0);
+
+        // Payment status badge styling
+        const paymentStatusRaw = (reservation.payment_status || 'Paid').trim();
+        let paymentBadgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40';
+        if (paymentStatusRaw.toLowerCase().includes('pend') || paymentStatusRaw.toLowerCase().includes('part')) {
+            paymentBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40';
+        } else if (paymentStatusRaw.toLowerCase().includes('unpaid') || paymentStatusRaw.toLowerCase().includes('fail')) {
+            paymentBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/40';
+        }
 
         // Format dates helper
         const formatStayDate = (d) => d ? formatDateTime(d) : 'N/A';
@@ -758,7 +780,7 @@ window.AppPage['staff_records'] = function () {
                                     ${hasPoolAccess ? `Pool Access Included (${poolAccessCount} passes)` : 'Standard Park Entrance (No Pool Access)'}
                                 </div>
                                 <div class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">
-                                    Admission Type: ${escapeHtml(reservation.entrance_fee?.pricing_type || 'Standard')} · ${hasPoolAccess ? `₱${poolFee.toFixed(2)} total pool charge` : 'Eco-park entrance privilege'}
+                                    Admission Type: ${escapeHtml(reservation.entrance_fee?.pricing_type || 'Standard')} · ${hasPoolAccess ? `₱${formatMoney(poolFee)} total pool charge` : 'Eco-park entrance privilege'}
                                 </div>
                             </div>
                         </div>
@@ -771,19 +793,19 @@ window.AppPage['staff_records'] = function () {
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
                         <div>
                             <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Base Booking</span>
-                            <span class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">₱${totalAmount.toFixed(2)}</span>
+                            <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(totalAmount)}</span>
                         </div>
                         <div>
                             <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Total Paid</span>
-                            <span class="font-bold text-sm text-emerald-700 dark:text-emerald-400">₱${amountPaid.toFixed(2)}</span>
+                            <span class="font-bold text-sm tabular-nums text-emerald-700 dark:text-emerald-400">₱${formatMoney(totalSettledPaid)}</span>
                         </div>
                         <div>
                             <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Post-Checkout Fees</span>
-                            <span class="font-bold text-sm ${chargesTotal > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-[#889b8a]'}">₱${chargesTotal.toFixed(2)}</span>
+                            <span class="font-bold text-sm tabular-nums ${chargesTotal > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-[#889b8a]'}">₱${formatMoney(chargesTotal)}</span>
                         </div>
                         <div>
                             <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Remaining Balance</span>
-                            <span class="font-bold text-sm ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">₱${remainingBal.toFixed(2)}</span>
+                            <span class="font-bold text-sm tabular-nums ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">₱${formatMoney(remainingBal)}</span>
                         </div>
                     </div>
                 </div>
@@ -815,11 +837,11 @@ window.AppPage['staff_records'] = function () {
                         ` : `
                             <!-- Lead Guests / Primary Booker -->
                             ${leadGuests.map((g, index) => {
-                                const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
-                                const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
-                                const guestHasPool = Boolean(g.has_pool_access);
+            const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
+            const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
+            const guestHasPool = Boolean(g.has_pool_access);
 
-                                return `
+            return `
                                     <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-emerald-600/40 dark:border-emerald-600/30 space-y-2.5">
                                         <div class="flex items-start justify-between gap-2 flex-wrap">
                                             <div class="flex items-center gap-2.5">
@@ -866,14 +888,14 @@ window.AppPage['staff_records'] = function () {
                                         </div>
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
 
                             <!-- Bulk Companion Groups -->
                             ${bulkGroups.map((bg, bgIdx) => {
-                                const bgCheckIn = formatStayDate(bg.members?.[0]?.check_in || reservation.check_in);
-                                const bgCheckOut = bg.formatted_checkout || formatGroupCheckOut(bg.members, reservation.check_out);
+            const bgCheckIn = formatStayDate(bg.members?.[0]?.check_in || reservation.check_in);
+            const bgCheckOut = bg.formatted_checkout || formatGroupCheckOut(bg.members, reservation.check_out);
 
-                                return `
+            return `
                                     <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-emerald-600/30 dark:border-emerald-700/30 space-y-2.5">
                                         <div class="flex items-start justify-between gap-2 flex-wrap">
                                             <div class="flex items-center gap-2.5">
@@ -934,15 +956,15 @@ window.AppPage['staff_records'] = function () {
                                         ` : ''}
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
 
                             <!-- Regular Individual Companions -->
                             ${regularCompanions.map((g, index) => {
-                                const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
-                                const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
-                                const guestHasPool = Boolean(g.has_pool_access);
+            const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
+            const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
+            const guestHasPool = Boolean(g.has_pool_access);
 
-                                return `
+            return `
                                     <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-2.5">
                                         <div class="flex items-start justify-between gap-2 flex-wrap">
                                             <div class="flex items-center gap-2.5">
@@ -989,7 +1011,7 @@ window.AppPage['staff_records'] = function () {
                                         </div>
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
                         `}
                     </div>
                 </div>
@@ -1012,10 +1034,10 @@ window.AppPage['staff_records'] = function () {
                         ` : `
                             <div class="space-y-2">
                                 ${amenities.map(a => {
-                                    const price = parseFloat(a.price || a.price_at_booking || 0);
-                                    const qty = parseInt(a.quantity || 1, 10);
-                                    const subtotal = parseFloat(a.subtotal || (price * qty));
-                                    return `
+            const price = parseFloat(a.price || a.price_at_booking || 0);
+            const qty = parseInt(a.quantity || 1, 10);
+            const subtotal = parseFloat(a.subtotal || (price * qty));
+            return `
                                         <div class="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
                                             <div class="space-y-0.5">
                                                 <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-2">
@@ -1030,7 +1052,7 @@ window.AppPage['staff_records'] = function () {
                                             </div>
                                         </div>
                                     `;
-                                }).join('')}
+        }).join('')}
                             </div>
                         `}
                     </div>
@@ -1041,17 +1063,17 @@ window.AppPage['staff_records'] = function () {
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                             <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                                 <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Base Entrance</span>
-                                <span class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">₱${baseEntranceFee.toFixed(2)}</span>
+                                <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(baseEntranceFee)}</span>
                                 <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${reservation.entrance_fee?.adult_count || 0} Adults, ${reservation.entrance_fee?.child_count || 0} Children</div>
                             </div>
                             <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                                 <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Additional Headcount</span>
-                                <span class="font-bold text-sm text-[#0d2c1d] dark:text-[#f5f5f0]">₱${addHeadFee.toFixed(2)}</span>
+                                <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(addHeadFee)}</span>
                                 <div class="text-[0.68rem] text-[#889b8a] mt-0.5">Extra guest fees</div>
                             </div>
                             <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
                                 <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Pool Access Passes</span>
-                                <span class="font-bold text-sm text-[#0284c7] dark:text-[#38bdf8]">₱${poolFee.toFixed(2)}</span>
+                                <span class="font-bold text-sm tabular-nums text-[#0284c7] dark:text-[#38bdf8]">₱${formatMoney(poolFee)}</span>
                                 <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${poolAccessCount} swimmers pass</div>
                             </div>
                         </div>
@@ -1063,46 +1085,49 @@ window.AppPage['staff_records'] = function () {
                 <!-- ════════════════════════════════════════════════════════ -->
                 <div id="paneBilling" class="resv-modal-pane space-y-4 hidden">
                     <!-- Base Booking Breakdown -->
-                    <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-2.5">
-                        <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Base Booking Charges</span>
-                        <div class="space-y-1.5 text-xs">
-                            <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
+                    <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
+                        <div class="flex items-center justify-between pb-2 border-b border-[#e8eee9] dark:border-[#282c29]">
+                            <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Base Booking Charges</span>
+                            <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] font-medium">Initial reservation breakdown</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
                                 <span>Total Entrance Admission:</span>
-                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${entranceFeeTotal.toFixed(2)}</span>
+                                <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(entranceFeeTotal)}</span>
                             </div>
                             ${poolFee > 0 ? `
-                                <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
                                     <span>Pool Access Passes (${poolAccessCount}x):</span>
-                                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${poolFee.toFixed(2)}</span>
+                                    <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(poolFee)}</span>
                                 </div>
                             ` : ''}
                             ${amenitiesTotal > 0 ? `
-                                <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
+                                <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
                                     <span>Reserved Amenities Subtotal:</span>
-                                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${amenitiesTotal.toFixed(2)}</span>
+                                    <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(amenitiesTotal)}</span>
                                 </div>
                             ` : ''}
-                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex justify-between font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">
+                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">
                                 <span>Base Booking Total:</span>
-                                <span>₱${totalAmount.toFixed(2)}</span>
+                                <span class="tabular-nums text-right text-sm">₱${formatMoney(totalAmount)}</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Post-Checkout / Additional Charges Section -->
                     <div class="p-4 rounded-xl ${hasCharges ? 'bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/25' : 'bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]'} space-y-3">
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${hasCharges ? 'bg-amber-500 text-white' : 'bg-[#178a52] text-white'}">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${hasCharges ? 'bg-amber-500 text-white' : 'bg-[#178a52] text-white'}">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </span>
-                                <div>
-                                    <span class="text-xs font-bold uppercase tracking-wider ${hasCharges ? 'text-amber-800 dark:text-amber-300' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">Additional Fees / Charges After Checkout</span>
-                                    <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]">Damages, extra hours, or fees incurred during/after stay</div>
+                                <div class="min-w-0">
+                                    <span class="text-xs font-bold uppercase tracking-wider block ${hasCharges ? 'text-amber-800 dark:text-amber-300' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">Additional Fees / Charges After Checkout</span>
+                                    <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] truncate">Damages, extra hours, or fees incurred during/after stay</div>
                                 </div>
                             </div>
-                            <span class="font-bold text-xs ${hasCharges ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}">
-                                ${hasCharges ? `+ ₱${chargesTotal.toFixed(2)}` : '₱0.00'}
+                            <span class="shrink-0 font-bold text-xs tabular-nums text-right ${hasCharges ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}">
+                                ${hasCharges ? `+ ₱${formatMoney(chargesTotal)}` : '₱0.00'}
                             </span>
                         </div>
 
@@ -1114,10 +1139,10 @@ window.AppPage['staff_records'] = function () {
                         ` : `
                             <div class="space-y-2">
                                 ${charges.map(c => {
-                                    const amt = parseFloat(c.amount || 0);
-                                    return `
-                                        <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-amber-500/20 dark:border-amber-500/20 text-xs flex items-center justify-between gap-2 flex-wrap">
-                                            <div>
+            const amt = parseFloat(c.amount || 0);
+            return `
+                                        <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-amber-500/20 dark:border-amber-500/20 text-xs flex items-center justify-between gap-3">
+                                            <div class="min-w-0">
                                                 <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
                                                     <span>${escapeHtml(c.description || 'Additional charge')}</span>
                                                     <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">${escapeHtml(c.charge_type || 'Fee')}</span>
@@ -1125,35 +1150,34 @@ window.AppPage['staff_records'] = function () {
                                                 </div>
                                                 ${c.created_at ? `<div class="text-[0.68rem] text-[#889b8a] mt-0.5">Assessed: ${escapeHtml(c.created_at)}</div>` : ''}
                                             </div>
-                                            <span class="font-bold text-sm text-amber-700 dark:text-amber-400">+ ₱${amt.toFixed(2)}</span>
+                                            <span class="shrink-0 font-bold text-sm tabular-nums text-right text-amber-700 dark:text-amber-400">+ ₱${formatMoney(amt)}</span>
                                         </div>
                                     `;
-                                }).join('')}
+        }).join('')}
                             </div>
                         `}
                     </div>
 
                     <!-- Final Settlement Card -->
                     <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Settlement & Balance</span>
+                        <div class="flex items-center justify-between pb-2 border-b border-[#e8eee9] dark:border-[#282c29]">
+                            <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Settlement & Balance</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold tracking-wide border ${paymentBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
+                        </div>
                         <div class="space-y-2 text-xs">
-                            <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
+                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
                                 <span>Final Total Billed (Base + Additional):</span>
-                                <span class="font-bold text-base text-[#0d2c1d] dark:text-[#f5f5f0]">₱${(totalAmount + chargesTotal).toFixed(2)}</span>
+                                <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(totalAmount + chargesTotal)}</span>
                             </div>
-                            <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
+                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
                                 <span>Total Amount Paid:</span>
-                                <span class="font-bold text-base text-emerald-700 dark:text-emerald-400">₱${amountPaid.toFixed(2)}</span>
+                                <span class="font-semibold tabular-nums text-right text-emerald-700 dark:text-emerald-400">₱${formatMoney(totalSettledPaid)}</span>
                             </div>
-                            <div class="flex justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Remaining Balance:</span>
-                                <span class="font-bold text-sm ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
-                                    ₱${remainingBal.toFixed(2)} ${remainingBal <= 0 ? '· Fully Settled' : '· Pending'}
+                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between text-xs">
+                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Remaining Balance:</span>
+                                <span class="font-bold text-sm tabular-nums text-right ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
+                                    ₱${formatMoney(remainingBal)} <span class="font-medium text-xs">${remainingBal <= 0 ? '· Fully Settled' : '· Pending'}</span>
                                 </span>
-                            </div>
-                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex justify-between items-center text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Payment Method: <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.payment_method || 'Cash')}</span></span>
-                                <span class="px-2 py-0.5 rounded-full text-[0.68rem] font-bold ${statusBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
                             </div>
                         </div>
                     </div>
@@ -1226,78 +1250,78 @@ window.AppPage['staff_records'] = function () {
                     const checkOutSlotEl = document.getElementById('reopenConfirmCheckOutSlot');
                     const errBox = document.getElementById('reopenConfirmError');
 
-                if (resIdEl) resIdEl.textContent = `#${reservation.id}`;
-                if (bookerEl) bookerEl.textContent = reservation.booker_name || 'Guest';
+                    if (resIdEl) resIdEl.textContent = `#${reservation.id}`;
+                    if (bookerEl) bookerEl.textContent = reservation.booker_name || 'Guest';
 
-                // Helpers for formatting date & time
-                const formatDateStr = (rawDate) => {
-                    if (!rawDate) return 'N/A';
-                    try {
-                        const d = new Date(rawDate);
-                        if (isNaN(d.getTime())) return String(rawDate);
-                        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    } catch {
-                        return String(rawDate);
-                    }
-                };
-
-                const formatTimeStr = (rawDateTime) => {
-                    if (!rawDateTime) return '';
-                    try {
-                        const d = new Date(rawDateTime);
-                        if (isNaN(d.getTime())) return '';
-                        if (String(rawDateTime).includes('T') || String(rawDateTime).includes(':')) {
-                            return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    // Helpers for formatting date & time
+                    const formatDateStr = (rawDate) => {
+                        if (!rawDate) return 'N/A';
+                        try {
+                            const d = new Date(rawDate);
+                            if (isNaN(d.getTime())) return String(rawDate);
+                            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        } catch {
+                            return String(rawDate);
                         }
-                        return '';
-                    } catch {
-                        return '';
+                    };
+
+                    const formatTimeStr = (rawDateTime) => {
+                        if (!rawDateTime) return '';
+                        try {
+                            const d = new Date(rawDateTime);
+                            if (isNaN(d.getTime())) return '';
+                            if (String(rawDateTime).includes('T') || String(rawDateTime).includes(':')) {
+                                return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            }
+                            return '';
+                        } catch {
+                            return '';
+                        }
+                    };
+
+                    const checkInDate = reservation.check_in || reservation.reservation_date;
+                    const checkOutDate = reservation.check_out || reservation.end_date || reservation.reservation_date;
+
+                    const checkInDateFormatted = formatDateStr(checkInDate);
+                    const checkInTime = formatTimeStr(reservation.check_in);
+                    const checkInSlotText = checkInTime ? `${reservation.start_slot || 'Daytime'} · ${checkInTime}` : (reservation.start_slot || 'Daytime');
+
+                    const checkOutDateFormatted = formatDateStr(checkOutDate);
+                    const checkOutTime = formatTimeStr(reservation.check_out);
+                    const checkOutSlotText = checkOutTime ? `${reservation.end_slot || reservation.start_slot || 'Daytime'} · ${checkOutTime}` : (reservation.end_slot || reservation.start_slot || 'Daytime');
+
+                    const totalDays = parseInt(reservation.total_days || '1', 10);
+                    const daysLabel = totalDays > 1 ? `${totalDays} Days Stay` : '1 Day Stay';
+
+                    if (stayDaysEl) stayDaysEl.textContent = daysLabel;
+                    if (checkInEl) checkInEl.textContent = checkInDateFormatted;
+                    if (checkInSlotEl) checkInSlotEl.textContent = checkInSlotText;
+                    if (checkOutEl) checkOutEl.textContent = checkOutDateFormatted;
+                    if (checkOutSlotEl) checkOutSlotEl.textContent = checkOutSlotText;
+                    if (schedEl) {
+                        schedEl.textContent = `${checkInDateFormatted} (${reservation.start_slot || 'Daytime'}) – ${checkOutDateFormatted} (${reservation.end_slot || reservation.start_slot || 'Daytime'})`;
+                    }
+
+                    if (errBox) {
+                        errBox.textContent = '';
+                        errBox.classList.add('hidden');
+                    }
+
+                    if (reopenConfirmModal) {
+                        if (reopenConfirmModal.parentElement !== document.body) {
+                            document.body.appendChild(reopenConfirmModal);
+                        }
+                        reopenConfirmModal.style.zIndex = '1400';
+                        reopenConfirmModal.classList.add('is-open');
+                        reopenConfirmModal.setAttribute('aria-hidden', 'false');
                     }
                 };
-
-                const checkInDate = reservation.check_in || reservation.reservation_date;
-                const checkOutDate = reservation.check_out || reservation.end_date || reservation.reservation_date;
-
-                const checkInDateFormatted = formatDateStr(checkInDate);
-                const checkInTime = formatTimeStr(reservation.check_in);
-                const checkInSlotText = checkInTime ? `${reservation.start_slot || 'Daytime'} · ${checkInTime}` : (reservation.start_slot || 'Daytime');
-
-                const checkOutDateFormatted = formatDateStr(checkOutDate);
-                const checkOutTime = formatTimeStr(reservation.check_out);
-                const checkOutSlotText = checkOutTime ? `${reservation.end_slot || reservation.start_slot || 'Daytime'} · ${checkOutTime}` : (reservation.end_slot || reservation.start_slot || 'Daytime');
-
-                const totalDays = parseInt(reservation.total_days || '1', 10);
-                const daysLabel = totalDays > 1 ? `${totalDays} Days Stay` : '1 Day Stay';
-
-                if (stayDaysEl) stayDaysEl.textContent = daysLabel;
-                if (checkInEl) checkInEl.textContent = checkInDateFormatted;
-                if (checkInSlotEl) checkInSlotEl.textContent = checkInSlotText;
-                if (checkOutEl) checkOutEl.textContent = checkOutDateFormatted;
-                if (checkOutSlotEl) checkOutSlotEl.textContent = checkOutSlotText;
-                if (schedEl) {
-                    schedEl.textContent = `${checkInDateFormatted} (${reservation.start_slot || 'Daytime'}) – ${checkOutDateFormatted} (${reservation.end_slot || reservation.start_slot || 'Daytime'})`;
-                }
-
-                if (errBox) {
-                    errBox.textContent = '';
-                    errBox.classList.add('hidden');
-                }
-
-                if (reopenConfirmModal) {
-                    if (reopenConfirmModal.parentElement !== document.body) {
-                        document.body.appendChild(reopenConfirmModal);
-                    }
-                    reopenConfirmModal.style.zIndex = '1400';
-                    reopenConfirmModal.classList.add('is-open');
-                    reopenConfirmModal.setAttribute('aria-hidden', 'false');
-                }
-            };
-        } else {
-            modalReopenBtn.classList.add('hidden');
-            modalReopenBtn.style.display = 'none';
-            modalReopenBtn.onclick = null;
+            } else {
+                modalReopenBtn.classList.add('hidden');
+                modalReopenBtn.style.display = 'none';
+                modalReopenBtn.onclick = null;
+            }
         }
-    }
 
         if (modalFooterInfo) {
             modalFooterInfo.innerHTML = isReopenable
@@ -1960,10 +1984,10 @@ window.AppPage['staff_records'] = function () {
     document.querySelectorAll('.btn-expand-row').forEach(expandBtn => {
         expandBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            
+
             const tr = expandBtn.closest('tr');
             if (!tr) return;
-            
+
             const isExpanded = expandBtn.classList.toggle('expanded');
             expandBtn.style.transform = isExpanded ? 'rotate(180deg)' : '';
 

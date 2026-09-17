@@ -8558,6 +8558,10 @@ window.AppPage['staff_check_ins'] = function () {
     const resvPanelResetBtn = document.getElementById('resvPanelResetBtn');
     const resvQuickSortPill = document.getElementById('resvQuickSortPill');
     const resvCurrentSortLabel = document.getElementById('resvCurrentSortLabel');
+    const resvSortDropdownContainer = document.getElementById('resvSortDropdownContainer');
+    const resvSortDropdownMenu = document.getElementById('resvSortDropdownMenu');
+    const resvSortDropdownChevron = document.getElementById('resvSortDropdownChevron');
+    const resvSortOptions = document.querySelectorAll('.resv-sort-option');
     const resvSearchInput = document.getElementById('resvSearchInput');
     const resvTypeFilter = document.getElementById('resvTypeFilter');
     const resvStatusFilter = document.getElementById('resvStatusFilter');
@@ -8570,6 +8574,7 @@ window.AppPage['staff_check_ins'] = function () {
     const resvQuickFilters = document.querySelectorAll('.resv-quick-filter');
 
     const openFilterPanel = () => {
+        closeSortDropdown();
         if (resvFilterPanel) {
             resvFilterPanel.hidden = false;
             resvFilterPanel.classList.remove('guest-toolbar--collapsed');
@@ -8595,7 +8600,88 @@ window.AppPage['staff_check_ins'] = function () {
         }
     };
 
+    // ── Dedicated Sort Dropdown Handlers ─────────────────────────────
+    const openSortDropdown = () => {
+        if (resvSortDropdownMenu) {
+            resvSortDropdownMenu.classList.remove('hidden');
+        }
+        if (resvQuickSortPill) {
+            resvQuickSortPill.setAttribute('aria-expanded', 'true');
+        }
+        if (resvSortDropdownChevron) {
+            resvSortDropdownChevron.classList.add('rotate-180');
+        }
+        updateSortDropdownActiveOption();
+        const activeOption = resvSortDropdownMenu?.querySelector('.resv-sort-option.font-bold');
+        if (activeOption) {
+            activeOption.scrollIntoView({ block: 'nearest' });
+        }
+    };
+
+    const closeSortDropdown = () => {
+        if (resvSortDropdownMenu) {
+            resvSortDropdownMenu.classList.add('hidden');
+        }
+        if (resvQuickSortPill) {
+            resvQuickSortPill.setAttribute('aria-expanded', 'false');
+        }
+        if (resvSortDropdownChevron) {
+            resvSortDropdownChevron.classList.remove('rotate-180');
+        }
+    };
+
+    const toggleSortDropdown = () => {
+        const isOpened = resvSortDropdownMenu && !resvSortDropdownMenu.classList.contains('hidden');
+        if (isOpened) {
+            closeSortDropdown();
+        } else {
+            closeFilterPanel();
+            openSortDropdown();
+        }
+    };
+
+    const updateSortDropdownActiveOption = () => {
+        const currentSort = resvSortSelect?.value || 'nearest_checkout';
+        resvSortOptions.forEach((opt) => {
+            const isMatch = opt.getAttribute('data-sort-val') === currentSort;
+            const checkIcon = opt.querySelector('.sort-check');
+            if (isMatch) {
+                opt.classList.add('bg-emerald-50', 'dark:bg-emerald-950/40', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+                opt.classList.remove('font-medium');
+                checkIcon?.classList.remove('hidden');
+            } else {
+                opt.classList.remove('bg-emerald-50', 'dark:bg-emerald-950/40', 'text-emerald-700', 'dark:text-emerald-300', 'font-bold');
+                opt.classList.add('font-medium');
+                checkIcon?.classList.add('hidden');
+            }
+        });
+    };
+
+    resvQuickSortPill?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSortDropdown();
+    });
+
+    resvSortOptions.forEach((optBtn) => {
+        optBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const chosenSort = optBtn.getAttribute('data-sort-val');
+            if (chosenSort && resvSortSelect) {
+                resvSortSelect.value = chosenSort;
+                applyResvFilters();
+            }
+            closeSortDropdown();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (resvSortDropdownContainer && !resvSortDropdownContainer.contains(e.target)) {
+            closeSortDropdown();
+        }
+    });
+
     resvFilterToggle?.addEventListener('click', () => {
+        closeSortDropdown();
         const isExpanded = resvFilterToggle.getAttribute('aria-expanded') === 'true';
         if (isExpanded) {
             closeFilterPanel();
@@ -8606,11 +8692,6 @@ window.AppPage['staff_check_ins'] = function () {
 
     resvFilterCloseBtn?.addEventListener('click', () => {
         closeFilterPanel();
-    });
-
-    resvQuickSortPill?.addEventListener('click', () => {
-        openFilterPanel();
-        resvSortSelect?.focus();
     });
 
     resvPanelResetBtn?.addEventListener('click', () => {
@@ -8633,6 +8714,7 @@ window.AppPage['staff_check_ins'] = function () {
                 resvCurrentSortLabel.textContent = cleanLabel;
             }
         }
+        updateSortDropdownActiveOption();
 
         const tbody = document.getElementById('checkInsReservationTableBody');
         if (!tbody) return;
@@ -8713,6 +8795,10 @@ window.AppPage['staff_check_ins'] = function () {
             const ciB = parseFloat(b.getAttribute('data-checkin-timestamp') || '0');
             const nameA = (a.getAttribute('data-primary-name') || '').trim();
             const nameB = (b.getAttribute('data-primary-name') || '').trim();
+            const amenityA = (a.getAttribute('data-amenities-name') || '').trim();
+            const amenityB = (b.getAttribute('data-amenities-name') || '').trim();
+            const amtA = parseFloat(a.getAttribute('data-amount-total') || '0');
+            const amtB = parseFloat(b.getAttribute('data-amount-total') || '0');
             const guestsA = parseInt(a.getAttribute('data-guest-count') || '0', 10);
             const guestsB = parseInt(b.getAttribute('data-guest-count') || '0', 10);
 
@@ -8736,7 +8822,7 @@ window.AppPage['staff_check_ins'] = function () {
                 case 'id_asc':
                     return idA - idB;
                 case 'guest_name':
-                    return nameA.localeCompare(nameB);
+                    return nameA.localeCompare(nameB) || (idB - idA);
                 case 'guest_count':
                     if (guestsA !== guestsB) return guestsB - guestsA;
                     return idB - idA;
