@@ -5867,6 +5867,7 @@ window.AppPage['staff_reservations'] = function () {
     // Live clock + session badge (park settings come from data-park-settings)
     // ------------------------------------------------------------
     const resvMetricsEl = document.querySelector('.resv-metrics');
+    const resvDateEl = document.getElementById('resvDate');
     const resvTimeEl = document.getElementById('resvTime');
     const resvSessionEl = document.getElementById('resvSession');
     let resvParkSettings = {};
@@ -5876,6 +5877,9 @@ window.AppPage['staff_reservations'] = function () {
 
     const updateResvClock = () => {
         const now = new Date();
+        if (resvDateEl) {
+            resvDateEl.textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        }
         if (resvTimeEl) {
             resvTimeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         }

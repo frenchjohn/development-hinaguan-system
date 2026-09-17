@@ -1377,8 +1377,8 @@ window.AppPage['staff_records'] = function () {
         }
     };
 
-    // Which reservation type tab is active ('walk_in' or 'online')
-    let currentTypeTab = 'online';
+    // Which reservation type tab is active ('all', 'walk_in', or 'online')
+    let currentTypeTab = 'all';
 
     // Hide static section-header rows — not needed with tab switching
     document.querySelectorAll('.reservation-section-header').forEach(r => r.style.display = 'none');
@@ -1400,10 +1400,13 @@ window.AppPage['staff_records'] = function () {
             currentTypeTab = btn.getAttribute('data-resv-type');
             document.querySelectorAll('.resv-type-tab').forEach(b => {
                 const active = b.getAttribute('data-resv-type') === currentTypeTab;
+                const badge = b.querySelector('span');
                 if (active) {
                     b.className = 'resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all';
+                    if (badge) badge.className = 'rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold';
                 } else {
                     b.className = 'resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]';
+                    if (badge) badge.className = 'rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]';
                 }
             });
             syncEmptyPlaceholders();
@@ -1442,7 +1445,7 @@ window.AppPage['staff_records'] = function () {
             const matchesCheckOutFrom = !checkOutFromValue || !checkOutDateOnly || checkOutDateOnly >= checkOutFromValue;
             const matchesCheckOutTo = !checkOutToValue || !checkOutDateOnly || checkOutDateOnly <= checkOutToValue;
             const rowType = row.getAttribute('data-reservation-type') ?? '';
-            const matchesType = rowType === currentTypeTab;
+            const matchesType = currentTypeTab === 'all' || rowType === currentTypeTab;
             return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo && matchesType;
         });
 
@@ -1613,15 +1616,19 @@ window.AppPage['staff_records'] = function () {
     // PRINT AS PDF (MINIMAL, CLEAN, MONOCHROME, STRICT TO FILTERS)
     // ============================================================
     const printRecordsAsPdf = () => {
-        // Strictly print what is currently visible on screen (respects active tab, search, status, dates, and pagination)
-        const visibleRows = Array.from(reservationTableBodyEl ? reservationTableBodyEl.querySelectorAll('tr.reservation-row:not(.hidden)') : []);
+        // Strictly print what matches the active tab & filters (respects active tab, search, status, dates)
+        const visibleRows = (reservationFilteredRows && reservationFilteredRows.length > 0)
+            ? reservationFilteredRows
+            : Array.from(reservationTableBodyEl ? reservationTableBodyEl.querySelectorAll('tr.reservation-row:not(.hidden)') : []);
 
         if (visibleRows.length === 0) {
             showNoRecordsModal('There are no records currently visible to print. Please adjust your filters or search query.', 'No Records to Print');
             return;
         }
 
-        const typeLabel = currentTypeTab === 'walk_in' ? 'Walk-in Reservations' : 'Online Reservations';
+        const typeLabel = currentTypeTab === 'walk_in'
+            ? 'Walk-in Reservations'
+            : (currentTypeTab === 'online' ? 'Online Reservations' : 'All Reservations (Online & Walk-in)');
         const statusSelected = reservationStatusFilter ? reservationStatusFilter.options[reservationStatusFilter.selectedIndex]?.text : 'All Statuses';
         const dateFromVal = reservationCheckOutFrom?.value || '';
         const dateToVal = reservationCheckOutTo?.value || '';
@@ -1649,6 +1656,11 @@ window.AppPage['staff_records'] = function () {
         let rowsHtml = '';
         visibleRows.forEach((row, index) => {
             const resId = row.getAttribute('data-reservation-id') || '';
+            const rawType = row.getAttribute('data-reservation-type') || '';
+            const typeText = rawType === 'walk_in' ? 'Walk-in' : 'Online';
+            const typeBadgeStyle = rawType === 'walk_in'
+                ? 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;'
+                : 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;';
 
             // Booker & Contact
             const bookerEl = row.querySelector('td:nth-child(2) .font-bold');
@@ -1691,7 +1703,10 @@ window.AppPage['staff_records'] = function () {
             rowsHtml += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding: 8px 6px; text-align: center; font-size: 8pt; color: #94a3b8; vertical-align: middle;">${index + 1}</td>
-                    <td style="padding: 8px 8px; font-family: monospace; font-size: 8.5pt; color: #334155; vertical-align: middle;">#${escapeHtml(resId)}</td>
+                    <td style="padding: 8px 8px; font-family: monospace; font-size: 8.5pt; color: #334155; vertical-align: middle;">
+                        <div style="font-weight: 600;">#${escapeHtml(resId)}</div>
+                        <div style="margin-top: 2px;"><span style="display: inline-block; font-size: 6.8pt; font-weight: 600; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, sans-serif; ${typeBadgeStyle}">${escapeHtml(typeText)}</span></div>
+                    </td>
                     <td style="padding: 8px 8px; vertical-align: middle;">
                         <div style="font-size: 8.5pt; font-weight: 500; color: #0f172a;">${escapeHtml(bookerName)}</div>
                         ${contactInfo ? `<div style="font-size: 7.5pt; color: #64748b; margin-top: 1.5px;">${escapeHtml(contactInfo)}</div>` : ''}
@@ -1884,7 +1899,7 @@ window.AppPage['staff_records'] = function () {
         <thead>
             <tr>
                 <th style="width: 32px; text-align: center;">#</th>
-                <th style="width: 75px;">RES ID</th>
+                <th style="width: 85px;">RES ID &amp; TYPE</th>
                 <th>MAIN BOOKER & CONTACT</th>
                 <th style="width: 55px; text-align: center;">GUESTS</th>
                 <th style="width: 90px; text-align: center;">STATUS</th>

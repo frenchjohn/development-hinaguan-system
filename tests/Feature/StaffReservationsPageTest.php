@@ -735,9 +735,10 @@ class StaffReservationsPageTest extends TestCase
         $response->assertViewHas('expectedGuests', 5);
 
         // Verify HTML elements
-        $response->assertSee('Scheduled / Past Schedule');
-        $response->assertSee('Expected Guests');
-        $response->assertSee("Today's scheduled visitors", false);
+        $response->assertSee('Today &amp; Past Reservations', false);
+        $response->assertSee('Pending Reservations');
+        $response->assertSee('DATE &amp; TIME', false);
+        $response->assertSee('SESSION');
     }
 }
 

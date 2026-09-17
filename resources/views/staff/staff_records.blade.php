@@ -180,18 +180,25 @@
 
                     <!-- RESERVATION RECORDS -->
                     @php
+                        $totalResvCount = $checkedOutReservations->count();
                         $walkInCount  = $checkedOutReservations->where('reservation_type', 'walk_in')->count();
                         $onlineCount  = $checkedOutReservations->where('reservation_type', '!=', 'walk_in')->count();
                     @endphp
                     <section data-tab-content="reservations">
                         <div class="guest-panel my-4 rounded-2xl border border-[#dbe3de] dark:border-[#282c29] bg-white/95 dark:bg-[#181b19]/95 shadow-sm overflow-hidden transition-all">
-                            {{-- Online / Walk-in tab switcher --}}
+                            {{-- All / Online / Walk-in tab switcher --}}
                             <div class="flex items-center gap-2 border-b border-[#e8eee9] dark:border-[#282c29] px-5 sm:px-6 py-3 bg-[#f8faf9] dark:bg-[#141715]">
-                                <button type="button" id="tabOnline" data-resv-type="online"
+                                <button type="button" id="tabAll" data-resv-type="all"
                                     class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                                    All
+                                    <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $totalResvCount }}</span>
+                                </button>
+                                <button type="button" id="tabOnline" data-resv-type="online"
+                                    class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
                                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     Online
-                                    <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $onlineCount }}</span>
+                                    <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $onlineCount }}</span>
                                 </button>
                                 <button type="button" id="tabWalkIn" data-resv-type="walk_in"
                                     class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
