@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Staff Reports — Hinaguan Nature Park</title>
+    <title>Staff Shift & Activity Report — Hinaguan Nature Park</title>
     <script>
         // Prevent flash of wrong theme by setting theme immediately
         (function() {
@@ -15,7 +15,6 @@
     <link rel="icon" type="image/jpeg" href="{{ asset('storage/design_images/main_logo.jpeg') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -88,50 +87,131 @@
             position: relative !important;
             z-index: 1 !important;
         }
-        body.staff-portal [class*="backdrop-blur"] {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
+
+        /* Preset filter chips */
+        .report-chip {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .report-tab-btn {
-            color: var(--hp-text-muted, #64748b);
-            background: transparent;
-        }
-        .report-tab-btn:hover {
-            color: var(--hp-text, #111827);
-            background: rgba(255, 255, 255, 0.45);
-        }
-        [data-theme="dark"] .report-tab-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .report-tab-btn.is-active {
+        .report-chip.is-active {
+            background-color: #1c5c3c !important;
             color: #ffffff !important;
-            background: #1c5c3c !important;
-            box-shadow: 0 4px 14px rgba(28, 92, 60, 0.3);
+            border-color: #1c5c3c !important;
+            box-shadow: 0 2px 8px rgba(28, 92, 60, 0.25);
         }
-        [data-theme="dark"] .report-tab-btn.is-active {
-            background: #1c5c3c !important;
-            color: #ffffff !important;
+
+        /* Action Badges */
+        .badge-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            line-height: 1;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
         }
-        .ai-glass-hero {
-            background: linear-gradient(135deg, rgba(28, 92, 60, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%), var(--glass-bg, rgba(255, 255, 255, 0.7));
+        .badge-checked_in {
+            background: rgba(22, 163, 74, 0.14);
+            color: #15803d;
+            border: 1px solid rgba(22, 163, 74, 0.28);
         }
-        [data-theme="dark"] .ai-glass-hero {
-            background: linear-gradient(135deg, rgba(28, 92, 60, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%), var(--glass-bg, rgba(20, 23, 21, 0.8));
+        [data-theme="dark"] .badge-checked_in {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.35);
         }
-        .ai-preset-card {
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        .badge-checked_out, .badge-check_out {
+            background: rgba(2, 132, 199, 0.14);
+            color: #0369a1;
+            border: 1px solid rgba(2, 132, 199, 0.28);
         }
-        .ai-preset-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(28, 92, 60, 0.15);
-            border-color: rgba(28, 92, 60, 0.4);
+        [data-theme="dark"] .badge-checked_out, [data-theme="dark"] .badge-check_out {
+            background: rgba(56, 189, 248, 0.2);
+            color: #7dd3fc;
+            border-color: rgba(56, 189, 248, 0.35);
         }
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.03); }
+        .badge-additional_charge_paid {
+            background: rgba(217, 119, 6, 0.14);
+            color: #b45309;
+            border: 1px solid rgba(217, 119, 6, 0.28);
         }
-        .animate-pulse-glow {
-            animation: pulse-glow 3s infinite ease-in-out;
+        [data-theme="dark"] .badge-additional_charge_paid {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+        .badge-added_amenity {
+            background: rgba(147, 51, 234, 0.14);
+            color: #7e22ce;
+            border: 1px solid rgba(147, 51, 234, 0.28);
+        }
+        [data-theme="dark"] .badge-added_amenity {
+            background: rgba(168, 85, 247, 0.2);
+            color: #d8b4fe;
+            border-color: rgba(168, 85, 247, 0.35);
+        }
+        .badge-companion_added {
+            background: rgba(13, 148, 136, 0.14);
+            color: #0f766e;
+            border: 1px solid rgba(13, 148, 136, 0.28);
+        }
+        [data-theme="dark"] .badge-companion_added {
+            background: rgba(20, 184, 166, 0.2);
+            color: #5eead4;
+            border-color: rgba(20, 184, 166, 0.35);
+        }
+        .badge-reservation_extended {
+            background: rgba(79, 70, 229, 0.14);
+            color: #4338ca;
+            border: 1px solid rgba(79, 70, 229, 0.28);
+        }
+        [data-theme="dark"] .badge-reservation_extended {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+        .badge-cancelled, .badge-no_show {
+            background: rgba(220, 38, 38, 0.14);
+            color: #b91c1c;
+            border: 1px solid rgba(220, 38, 38, 0.28);
+        }
+        [data-theme="dark"] .badge-cancelled, [data-theme="dark"] .badge-no_show {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.35);
+        }
+
+        /* Print formatting */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .dash-sidebar, x-staff_sidemenu, .dash-header, #filterPanel, #printBtn, .report-chip, .no-print {
+                display: none !important;
+            }
+            .dash-main::before {
+                display: none !important;
+            }
+            .dash-main {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+            .dash-content {
+                padding: 0 !important;
+            }
+            .print-only-slip {
+                display: block !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        .print-only-slip {
+            display: none;
         }
     </style>
 </head>
@@ -141,447 +221,543 @@
 
         <div class="dash-main">
             <x-header
-                title="Staff Reports"
-                subtitle="Customer, reservation, and amenity insights"
+                title="Staff Shift & Activity Report"
+                subtitle="Personal shift performance, cash collections, and guest transaction ledger"
             />
 
-            <main class="dash-content p-6">
+            <main class="dash-content p-4 sm:p-6 space-y-6">
 
-                {{-- Segmented Mode Switcher (Standard vs AI) --}}
-                <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-                    <div class="inline-flex rounded-2xl border border-glass-border bg-glass p-1.5 shadow-sm">
-                        <button type="button" id="tabStandardReports" class="report-tab-btn is-active inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                            Standard Reports
-                        </button>
-                        <button type="button" id="tabAiReports" class="report-tab-btn inline-flex cursor-pointer items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-200">
-                            <svg class="h-4 w-4 text-emerald-500 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            AI Report Studio
-                            <span class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[0.65rem] font-bold tracking-wider text-emerald-700 dark:text-emerald-300 uppercase">AI Intelligence</span>
-                        </button>
-                    </div>
-
-                    <div class="text-xs text-hp-text-muted">
-                        Switch between operational ledger reports and AI-powered custom analysis
-                    </div>
-                </div>
-
-                {{-- SECTION 1: Standard Reports --}}
-                <div id="standardReportsSection" class="flex flex-col">
-                    <section class="group is-open mb-6 overflow-hidden rounded-2xl border border-glass-border bg-glass p-6 shadow-glass transition-all duration-300 is-open:border-t is-open:pt-6" id="reportsFilters">
-                        <div class="flex cursor-pointer items-center justify-between" id="filterToggleBtn">
-                            <div class="flex items-center gap-4">
-                                <div class="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                                    <svg class="h-[22px] w-[22px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                                </div>
-                                <div>
-                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Filter Report</h3>
-                                    <p class="m-0 text-sm text-hp-text-muted">Narrow reservations by customer, amenity, status or check-in range</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-4 py-2 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover" id="resetFiltersBtn">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                    Reset
-                                </button>
-                                <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] bg-hp-green-mid px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:bg-hp-green-dark" id="applyFiltersBtn">
-                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                                    Apply Filters
-                                </button>
-                                <svg class="ml-2 h-5 w-5 text-hp-text-muted transition-transform duration-300 group-[.is-open]:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                            </div>
-                        </div>
-                        <div class="invisible max-h-0 opacity-0 transition-all duration-300 group-[.is-open]:visible group-[.is-open]:mt-6 group-[.is-open]:max-h-[500px] group-[.is-open]:border-t group-[.is-open]:border-glass-border group-[.is-open]:pt-6 group-[.is-open]:opacity-100">
-                            <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-                                <label class="flex flex-col gap-2">
-                                    <span class="flex items-center gap-2 text-sm font-semibold text-hp-text">
-                                        <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
-                                        Customer
-                                    </span>
-                                    <select id="customerFilter" class="w-full rounded-[10px] border border-glass-border bg-transparent px-3 py-2.5 font-ui text-sm text-hp-text transition-colors duration-200 focus:border-hp-green-mid focus:outline-none">
-                                        <option value="all">All customers</option>
-                                        @foreach($customerOptions as $customerOption)
-                                            <option value="{{ $customerOption }}">{{ $customerOption }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="flex flex-col gap-2">
-                                    <span class="flex items-center gap-2 text-sm font-semibold text-hp-text">
-                                        <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 01-1.125-1.125v-3.75zM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-8.25zM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 01-1.125-1.125v-2.25z"/></svg>
-                                        Amenity
-                                    </span>
-                                    <select id="amenityFilter" class="w-full rounded-[10px] border border-glass-border bg-transparent px-3 py-2.5 font-ui text-sm text-hp-text transition-colors duration-200 focus:border-hp-green-mid focus:outline-none">
-                                        <option value="all">All amenities</option>
-                                        @foreach($amenityOptions as $amenityOption)
-                                            <option value="{{ $amenityOption }}">{{ $amenityOption }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="flex flex-col gap-2">
-                                    <span class="flex items-center gap-2 text-sm font-semibold text-hp-text">
-                                        <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        Reservation Status
-                                    </span>
-                                    <select id="statusFilter" class="w-full rounded-[10px] border border-glass-border bg-transparent px-3 py-2.5 font-ui text-sm text-hp-text transition-colors duration-200 focus:border-hp-green-mid focus:outline-none">
-                                        <option value="all">All statuses</option>
-                                        @foreach($statusOptions as $statusOption)
-                                            <option value="{{ $statusOption }}">{{ $statusOption }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="flex flex-col gap-2">
-                                    <span class="flex items-center gap-2 text-sm font-semibold text-hp-text">
-                                        <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
-                                        Check-in Range
-                                    </span>
-                                    <div class="flex items-center gap-2">
-                                        <input id="dateFrom" type="date" value="{{ $firstCheckInDate }}" aria-label="Check-in from" class="w-full rounded-[10px] border border-glass-border bg-transparent px-3 py-2.5 font-ui text-sm text-hp-text transition-colors duration-200 focus:border-hp-green-mid focus:outline-none">
-                                        <span class="text-hp-text-muted">→</span>
-                                        <input id="dateTo" type="date" value="{{ $lastCheckInDate }}" aria-label="Check-in to" class="w-full rounded-[10px] border border-glass-border bg-transparent px-3 py-2.5 font-ui text-sm text-hp-text transition-colors duration-200 focus:border-hp-green-mid focus:outline-none">
-                                    </div>
-                                </label>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <span class="text-sm font-semibold text-hp-text-muted">Quick Range:</span>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="today">Today</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="7d">Last 7 days</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="30d">Last 30 days</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="month">This month</button>
-                                <button type="button" class="preset-chip is-active cursor-pointer rounded-full border border-glass-border px-3.5 py-1.5 text-[0.8rem] font-medium text-hp-text transition-all duration-200 hover:border-transparent hover:bg-[#e7f3ec] hover:text-[#1c5c3c] dark:hover:bg-[#1e2220] dark:hover:text-[#6ab88c] is-active:border-hp-green-mid is-active:bg-hp-green-mid is-active:text-white" data-preset="all">All time</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text" id="kpiReservations">{{ $totalReservations }}</h4>
-                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Reservations</p>
-                                <span class="text-xs text-hp-text-muted opacity-70">• From all selected filters</span>
-                            </div>
-                        </article>
-
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">{{ $totalGuests }}</h4>
-                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Guests</p>
-                                <span class="text-xs text-hp-text-muted opacity-70">• From all selected filters</span>
-                            </div>
-                        </article>
-
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text" id="kpiRevenue">₱{{ number_format($totalRevenue, 2) }}</h4>
-                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Revenue</p>
-                                <span class="text-xs text-hp-text-muted opacity-70">• From all selected filters</span>
-                            </div>
-                        </article>
-
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0e9f4] text-[#6d4b8e] dark:bg-[#2b1f33] dark:text-[#a889c4]">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">₱{{ number_format($averageSpend, 2) }}</h4>
-                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Avg per Reservation</p>
-                                <span class="text-xs text-hp-text-muted opacity-70">• From all selected filters</span>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div class="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
-                        <!-- Revenue Area Chart -->
-                        <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                            <div class="mb-6 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                                        <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                    </div>
-                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue — Last 6 Months</h3>
-                                </div>
-                                <div>
-                                    <select class="rounded-[10px] border border-glass-border bg-transparent px-3 py-1.5 text-[0.8rem] text-hp-text outline-none">
-                                        <option>Total amount per month</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="relative min-h-[280px] w-full flex-1">
-                                <canvas id="revenueChart"></canvas>
-                            </div>
-                        </section>
-
-                        <!-- Status Donut Chart -->
-                        <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                            <div class="mb-6 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
-                                        <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    </div>
-                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Reservation Status</h3>
-                                </div>
-                            </div>
-                            <div class="flex flex-1 flex-col items-center gap-6">
-                                <div class="relative h-[200px] w-[200px]">
-                                    <canvas id="statusDonutChart"></canvas>
-                                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                                        <span class="block text-[1.8rem] font-bold leading-none text-hp-text" id="donutTotalCount">0</span>
-                                        <span class="text-xs uppercase tracking-[0.5px] text-hp-text-muted">Total</span>
-                                    </div>
-                                </div>
-                                <div class="flex w-full flex-col gap-2.5" id="donutLegendContainer">
-                                    <!-- Populated by JS -->
-                                </div>
-                            </div>
-                            <div class="mt-6 border-t border-glass-border pt-4 text-center">
-                                <a href="#" class="text-sm font-semibold text-hp-green-mid no-underline transition-colors duration-200 hover:text-hp-green-dark">View full breakdown →</a>
-                            </div>
-                        </section>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                        <!-- Top Amenities -->
-                        <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                            <div class="mb-6 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                                        <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="m-0 text-lg font-semibold text-hp-text">Top Amenities</h3>
-                                        <p class="m-0 text-[0.8rem] text-hp-text-muted">Most reserved amenities</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-4 flex justify-between border-b border-glass-border pb-2 text-xs font-semibold uppercase tracking-[0.5px] text-hp-text-muted">
-                                <span>AMENITY</span>
-                                <span>RESERVATIONS</span>
-                            </div>
-                            <div class="flex flex-col gap-4" id="topAmenitiesContainer">
-                                <!-- Populated by JS -->
-                            </div>
-                        </section>
-
-                        <!-- Peak Days -->
-                        <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                            <div class="mb-6 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
-                                        <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="m-0 text-lg font-semibold text-hp-text">Peak Days</h3>
-                                        <p class="m-0 text-[0.8rem] text-hp-text-muted">Busiest days based on reservations</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <select class="rounded-[10px] border border-glass-border bg-transparent px-3 py-1.5 text-[0.8rem] text-hp-text outline-none">
-                                        <option>By Reservations</option>
-                                        <option>By Guests</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex flex-col gap-4" id="peakDaysContainer">
-                                <!-- Populated by JS -->
-                            </div>
-                        </section>
-                    </div>
-
-                    <!-- Recent Reservations Table -->
-                    <section class="mt-6 flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                        <div class="mb-6 flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
-                                    <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                                </div>
-                                <div>
-                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Recent Reservations</h3>
-                                    <p class="m-0 text-[0.8rem] text-hp-text-muted">Detailed view of reservations with guests</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="guest-table-wrap overflow-x-auto" id="reportsReservationTableWrap">
-                            <table class="guest-table w-full border-collapse text-left">
-                                <thead>
-                                    <tr>
-                                        <th>Reservation</th>
-                                        <th>Main Guest</th>
-                                        <th>Check-in & Date</th>
-                                        <th>Amenities</th>
-                                        <th>Guests</th>
-                                        <th>Status & Payment</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reportsReservationTableBody">
-                                    <!-- Populated by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-                </div>
-
-                {{-- SECTION 2: AI Report Studio --}}
-                <div id="aiReportsSection" class="hidden flex flex-col">
-                    {{-- AI Studio Hero Banner --}}
-                    <div class="ai-glass-hero mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 rounded-3xl border border-glass-border p-6 shadow-glass">
+                {{-- STAFF SHIFT IDENTITY & HANDOVER HEADER BANNER --}}
+                <div class="rounded-3xl border border-glass-border bg-glass p-6 shadow-glass relative overflow-hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                         <div class="flex items-start gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#1c5c3c] text-white shadow-md">
+                                <svg class="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
                             </div>
                             <div>
-                                <div class="flex items-center gap-2">
-                                    <h2 class="m-0 text-xl font-display font-bold text-hp-text">AI Staff Analytics Studio</h2>
-                                    <span class="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-300">Live AI</span>
+                                <div class="flex flex-wrap items-center gap-2.5">
+                                    <h1 class="m-0 text-xl md:text-2xl font-display font-bold text-hp-text">{{ $staffName }}</h1>
+                                    <span class="rounded-full bg-[#1c5c3c]/15 px-3 py-0.5 text-xs font-bold text-[#1c5c3c] dark:text-[#6ab88c]">
+                                        Staff ID #{{ $staffId }}
+                                    </span>
+                                    <span class="rounded-full {{ $currentSession === 'Daytime' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400' }} px-3 py-0.5 text-xs font-bold flex items-center gap-1">
+                                        @if($currentSession === 'Daytime')
+                                            <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                            Daytime Session (08:00 AM – 05:00 PM)
+                                        @else
+                                            <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                                            Nighttime Session (05:00 PM – 08:00 AM)
+                                        @endif
+                                    </span>
                                 </div>
-                                <p class="m-0 mt-1 text-xs text-hp-text-muted leading-relaxed">
-                                    Ask for operational summaries, guest traffic breakdowns, amenity demand, or custom reports.
+                                <p class="m-0 mt-1.5 text-xs sm:text-sm text-hp-text-muted flex flex-wrap items-center gap-2">
+                                    <span>Today: <strong>{{ now()->format('l, F j, Y') }}</strong></span>
+                                    <span>•</span>
+                                    <span>Filtering: <strong>{{ ucwords(str_replace('_', ' ', $preset)) }}</strong> ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</span>
+                                    <span>•</span>
+                                    <span>Session: <strong>{{ ucfirst($sessionFilter) }}</strong></span>
                                 </p>
                             </div>
                         </div>
 
-                        <div class="flex shrink-0 items-center gap-2 rounded-2xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text">
-                            <span class="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
-                            Real-time DB Connection
-                        </div>
-                    </div>
-
-                    {{-- AI Presets Grid --}}
-                    <div class="mb-6">
-                        <div class="mb-3 flex items-center justify-between">
-                            <h3 class="m-0 text-sm font-bold uppercase tracking-wider text-hp-text-muted">Quick Analytical Audits</h3>
-                            <span class="text-xs text-hp-text-muted">Click any preset to generate instantly</span>
-                        </div>
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                            <button type="button" class="ai-preset-card group flex flex-col items-start rounded-2xl border border-glass-border bg-glass p-4 text-left shadow-sm cursor-pointer transition-all hover:border-emerald-500/40 hover:bg-glass-hover" data-ai-prompt="Analyze our total revenue performance, collected sales, outstanding balances, and average spend per reservation.">
-                                <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                </div>
-                                <h4 class="m-0 mb-1 text-sm font-bold text-hp-text">Revenue &amp; Financials</h4>
-                                <p class="m-0 text-xs text-hp-text-muted leading-tight">Sales, unpaid dues & spending patterns</p>
-                            </button>
-
-                            <button type="button" class="ai-preset-card group flex flex-col items-start rounded-2xl border border-glass-border bg-glass p-4 text-left shadow-sm cursor-pointer transition-all hover:border-emerald-500/40 hover:bg-glass-hover" data-ai-prompt="What are our peak booking days, highest traffic months, and weekly visitor distribution trends?">
-                                <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                </div>
-                                <h4 class="m-0 mb-1 text-sm font-bold text-hp-text">Peak Days & Forecast</h4>
-                                <p class="m-0 text-xs text-hp-text-muted leading-tight">Weekend surges & seasonal demand</p>
-                            </button>
-
-                            <button type="button" class="ai-preset-card group flex flex-col items-start rounded-2xl border border-glass-border bg-glass p-4 text-left shadow-sm cursor-pointer transition-all hover:border-emerald-500/40 hover:bg-glass-hover" data-ai-prompt="List down all amenities and show a breakdown table of their bookings, revenue, and utilization.">
-                                <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                                </div>
-                                <h4 class="m-0 mb-1 text-sm font-bold text-hp-text">Amenity Utilization</h4>
-                                <p class="m-0 text-xs text-hp-text-muted leading-tight">Catalog breakdown & demand</p>
-                            </button>
-
-                            <button type="button" class="ai-preset-card group flex flex-col items-start rounded-2xl border border-glass-border bg-glass p-4 text-left shadow-sm cursor-pointer transition-all hover:border-emerald-500/40 hover:bg-glass-hover" data-ai-prompt="Break down guest volumes, average party sizes, and online booking vs on-site walk-in distribution.">
-                                <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                </div>
-                                <h4 class="m-0 mb-1 text-sm font-bold text-hp-text">Guests & Channels</h4>
-                                <p class="m-0 text-xs text-hp-text-muted leading-tight">Party sizes, online vs walk-in splits</p>
-                            </button>
-
-                            <button type="button" class="ai-preset-card group flex flex-col items-start rounded-2xl border border-glass-border bg-glass p-4 text-left shadow-sm cursor-pointer transition-all hover:border-emerald-500/40 hover:bg-glass-hover" data-ai-prompt="Provide strategic recommendations to improve front desk check-in efficiency and boost weekday visitor volume.">
-                                <div class="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 group-hover:scale-110 transition-transform">
-                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-                                </div>
-                                <h4 class="m-0 mb-1 text-sm font-bold text-hp-text">Operations Advice</h4>
-                                <p class="m-0 text-xs text-hp-text-muted leading-tight">Actionable tips for staff operations</p>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="printBtn" onclick="window.print()" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#14402b] hover:shadow">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                <span>Print Handover Slip</span>
                             </button>
                         </div>
-                    </div>
-
-                    {{-- AI Custom Natural-Language Query Box --}}
-                    <section class="mb-6 rounded-3xl border border-glass-border bg-glass p-6 shadow-glass">
-                        <form id="aiReportForm" class="flex flex-col gap-4">
-                            <div class="flex items-center justify-between">
-                                <label for="aiQueryInput" class="text-sm font-bold text-hp-text flex items-center gap-2">
-                                    <svg class="h-4 w-4 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-                                    Custom Report Query
-                                </label>
-                                <span class="text-xs text-hp-text-muted">Type any question or scenario you want analyzed</span>
-                            </div>
-
-                            <div class="relative">
-                                <textarea id="aiQueryInput" rows="3" class="w-full rounded-2xl border border-glass-border bg-glass-hover/60 p-4 text-sm text-hp-text placeholder-hp-text-muted/60 outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 resize-none" placeholder="e.g. 'Compare revenue between online and walk-in bookings', 'List down all amenities and their total bookings', 'What is our check-in and cancellation rate?'"></textarea>
-                            </div>
-
-                            <div class="flex flex-wrap items-center justify-between gap-3">
-                                <div class="flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
-                                    <span class="font-semibold">Quick Suggestions:</span>
-                                    <button type="button" class="ai-suggest-btn rounded-full border border-glass-border bg-glass px-2.5 py-1 transition-all hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 cursor-pointer" data-fill="Compare online booking revenue vs on-site walk-in revenue and show key metrics.">Online vs Walk-in</button>
-                                    <button type="button" class="ai-suggest-btn rounded-full border border-glass-border bg-glass px-2.5 py-1 transition-all hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 cursor-pointer" data-fill="List down all amenities and show a breakdown table.">All Amenities List</button>
-                                    <button type="button" class="ai-suggest-btn rounded-full border border-glass-border bg-glass px-2.5 py-1 transition-all hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 cursor-pointer" data-fill="Give me an operational summary of our cancellations and pending balances.">Cancellations & Balances</button>
-                                </div>
-
-                                <div class="flex items-center gap-3">
-                                    <button type="button" id="aiClearBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border px-4 py-2.5 text-xs font-semibold text-hp-text-muted transition-all hover:bg-glass-hover">
-                                        Clear
-                                    </button>
-                                    <button type="submit" id="aiSubmitBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <svg id="aiSubmitIcon" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        <span id="aiSubmitText">Generate AI Analysis</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </section>
-
-                    {{-- AI Report Output Container --}}
-                    <div id="aiReportOutputContainer">
-                        {{-- Initial Placeholder State --}}
-                        <div id="aiEmptyState" class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-glass-border bg-glass/40 py-16 px-6 text-center shadow-sm">
-                            <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 animate-pulse-glow">
-                                <svg class="h-8 w-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
-                            <h3 class="m-0 mb-2 font-display text-xl font-bold text-hp-text">Ready to Generate Your Custom AI Report</h3>
-                            <p class="m-0 max-w-md text-sm text-hp-text-muted">
-                                Select one of the quick analytical audit presets above or type a specific question about park revenue, amenities, or guest bookings.
-                            </p>
-                        </div>
-
-                        {{-- Loading State --}}
-                        <div id="aiLoadingState" class="hidden flex flex-col items-center justify-center rounded-3xl border border-glass-border bg-glass py-20 px-6 text-center shadow-glass">
-                            <div class="relative mb-6">
-                                <div class="h-16 w-16 rounded-full border-4 border-emerald-500/20 border-t-emerald-600 animate-spin"></div>
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <svg class="h-6 w-6 text-emerald-600 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                </div>
-                            </div>
-                            <h3 class="m-0 mb-2 font-display text-lg font-bold text-hp-text" id="aiLoadingText">Analyzing Real-time Park Database...</h3>
-                            <p class="m-0 text-xs text-hp-text-muted">Mining reservations, computing KPIs, and structuring findings</p>
-                        </div>
-
-                        {{-- Generated Report Container (Populated dynamically via JS) --}}
-                        <div id="aiReportResults" class="hidden flex flex-col gap-6"></div>
                     </div>
                 </div>
 
-                <script>
-                    window.reportData = {
-                        monthlyLabels: @json($monthlyLabels),
-                        monthlyRevenue: @json($monthlyRevenue),
-                        statusCounts: @json($reportStatusCounts),
-                        rawRows: @json($reportRows)
-                    };
-                </script>
+                {{-- FILTER PANEL --}}
+                <div id="filterPanel" class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass space-y-4">
+                    <form method="GET" action="{{ route('staff.reports') }}" id="reportFilterForm" class="space-y-4">
+                        {{-- Quick Presets --}}
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-glass-border pb-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted mr-1">Period:</span>
+                                <a href="{{ route('staff.reports', ['preset' => 'today', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'today' ? 'is-active' : 'hover:bg-glass-hover' }}">Today</a>
+                                <a href="{{ route('staff.reports', ['preset' => 'yesterday', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'yesterday' ? 'is-active' : 'hover:bg-glass-hover' }}">Yesterday</a>
+                                <a href="{{ route('staff.reports', ['preset' => 'this_week', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_week' ? 'is-active' : 'hover:bg-glass-hover' }}">This Week</a>
+                                <a href="{{ route('staff.reports', ['preset' => 'this_month', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_month' ? 'is-active' : 'hover:bg-glass-hover' }}">This Month</a>
+                                <a href="{{ route('staff.reports', ['preset' => 'all', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'all' ? 'is-active' : 'hover:bg-glass-hover' }}">All Time</a>
+                            </div>
+
+                            <input type="hidden" name="preset" id="presetInput" value="{{ $preset }}">
+                        </div>
+
+                        {{-- Granular Controls --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label for="dateFromInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date From</label>
+                                <input type="date" name="date_from" id="dateFromInput" value="{{ $filterFrom }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                            </div>
+
+                            <div>
+                                <label for="dateToInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date To</label>
+                                <input type="date" name="date_to" id="dateToInput" value="{{ $filterTo }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                            </div>
+
+                            <div>
+                                <label for="sessionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Shift / Session</label>
+                                <select name="session" id="sessionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                    <option value="all" {{ $sessionFilter === 'all' ? 'selected' : '' }}>All Shift Sessions</option>
+                                    <option value="daytime" {{ $sessionFilter === 'daytime' ? 'selected' : '' }}>Daytime Shift (08:00 AM - 05:00 PM)</option>
+                                    <option value="nighttime" {{ $sessionFilter === 'nighttime' ? 'selected' : '' }}>Nighttime Shift (05:00 PM - 08:00 AM)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label for="actionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Action Filter</label>
+                                <select name="action" id="actionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                    <option value="all" {{ $actionFilter === 'all' ? 'selected' : '' }}>All Logged Actions</option>
+                                    <option value="checked_in" {{ $actionFilter === 'checked_in' ? 'selected' : '' }}>Check-Ins Only</option>
+                                    <option value="checked_out" {{ $actionFilter === 'checked_out' ? 'selected' : '' }}>Check-Outs Only</option>
+                                    <option value="additional_charge_paid" {{ $actionFilter === 'additional_charge_paid' ? 'selected' : '' }}>Damage / Incident Charges</option>
+                                    <option value="added_amenity" {{ $actionFilter === 'added_amenity' ? 'selected' : '' }}>Amenities Added</option>
+                                    <option value="companion_added" {{ $actionFilter === 'companion_added' ? 'selected' : '' }}>Companions Added</option>
+                                    <option value="reservation_extended" {{ $actionFilter === 'reservation_extended' ? 'selected' : '' }}>Extensions</option>
+                                    <option value="cancelled" {{ $actionFilter === 'cancelled' ? 'selected' : '' }}>Cancellations</option>
+                                    <option value="no_show" {{ $actionFilter === 'no_show' ? 'selected' : '' }}>No-Shows</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-2">
+                            <a href="{{ route('staff.reports', ['preset' => 'today']) }}" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover">
+                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                Reset to Today
+                            </a>
+                            <button type="submit" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1c5c3c] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#14402b]">
+                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                                Apply Filters
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- KPI METRICS CARDS (6 METRICS) --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    {{-- 1. Total Collections --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Total Collections</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
+                                ₱{{ number_format($totalCollections, 2) }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Personally handled & collected</p>
+                        </div>
+                    </article>
+
+                    {{-- 2. Check-Ins --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Check-Ins</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 text-green-700 dark:text-green-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-hp-text leading-tight">
+                                {{ $checkInsCount }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">₱{{ number_format($checkInCollections, 2) }} entrance/room fees</p>
+                        </div>
+                    </article>
+
+                    {{-- 3. Check-Outs --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Check-Outs</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/15 text-sky-700 dark:text-sky-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-hp-text leading-tight">
+                                {{ $checkOutsCount }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Completed departures</p>
+                        </div>
+                    </article>
+
+                    {{-- 4. Guests Handled --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Guests Handled</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-hp-text leading-tight">
+                                {{ $totalGuestsHandled }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Across {{ $totalReservationsHandled }} reservations</p>
+                        </div>
+                    </article>
+
+                    {{-- 5. Damage Charges --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Damage Fees</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-amber-700 dark:text-amber-400 leading-tight">
+                                ₱{{ number_format($damageChargesCollected, 2) }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $damageChargesCount }} incident charges</p>
+                        </div>
+                    </article>
+
+                    {{-- 6. Added Amenities & Extras --}}
+                    <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted">Amenities & Extras</span>
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-purple-700 dark:text-purple-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-display font-bold text-purple-700 dark:text-purple-400 leading-tight">
+                                ₱{{ number_format($amenitiesCollected + $companionsCollected + $extensionsCollected, 2) }}
+                            </div>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $amenitiesAddedCount }} amenities, {{ $companionsCount }} companions</p>
+                        </div>
+                    </article>
+                </div>
+
+                {{-- SHIFT RECONCILIATION & CASH DRAWER BREAKDOWN --}}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {{-- Cash Handover Breakdown Card --}}
+                    <div class="lg:col-span-1 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between border-b border-glass-border pb-3 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c]">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <h2 class="m-0 text-base font-display font-bold text-hp-text">Shift Cash Breakdown</h2>
+                                </div>
+                                <span class="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300">Reconciled</span>
+                            </div>
+
+                            <div class="space-y-3 text-sm">
+                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
+                                    <span class="text-hp-text-muted flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-green-500"></span>
+                                        Entrance & Check-In Collections
+                                    </span>
+                                    <span class="font-semibold text-hp-text">₱{{ number_format($checkInCollections, 2) }}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
+                                    <span class="text-hp-text-muted flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                                        Damage & Incident Payments
+                                    </span>
+                                    <span class="font-semibold text-hp-text">₱{{ number_format($damageChargesCollected, 2) }}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
+                                    <span class="text-hp-text-muted flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-purple-500"></span>
+                                        Extra Amenity Payments
+                                    </span>
+                                    <span class="font-semibold text-hp-text">₱{{ number_format($amenitiesCollected, 2) }}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
+                                    <span class="text-hp-text-muted flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+                                        Companions / Extra Guests
+                                    </span>
+                                    <span class="font-semibold text-hp-text">₱{{ number_format($companionsCollected, 2) }}</span>
+                                </div>
+
+                                <div class="flex items-center justify-between py-1 border-b border-glass-border/60">
+                                    <span class="text-hp-text-muted flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                                        Reservation Extensions
+                                    </span>
+                                    <span class="font-semibold text-hp-text">₱{{ number_format($extensionsCollected, 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 pt-3 border-t-2 border-[#1c5c3c]/30">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs uppercase font-bold text-hp-text-muted">Total Handover Cash</span>
+                                    <p class="text-[0.68rem] text-hp-text-muted">Net cash verified for drawer turnover</p>
+                                </div>
+                                <div class="text-xl font-display font-bold text-[#1c5c3c] dark:text-[#6ab88c]">
+                                    ₱{{ number_format($totalCollections, 2) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Shift Activity Distribution Card --}}
+                    <div class="lg:col-span-2 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between border-b border-glass-border pb-3 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <h2 class="m-0 text-base font-display font-bold text-hp-text">Shift Operations Summary</h2>
+                                </div>
+                                <span class="text-xs text-hp-text-muted">{{ $ledgerRows->count() }} total logged actions</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                                <div class="rounded-xl border border-glass-border p-3 text-center bg-white/40 dark:bg-black/20">
+                                    <span class="block text-xl font-display font-bold text-green-600">{{ $checkInsCount }}</span>
+                                    <span class="text-xs text-hp-text-muted">Check-Ins</span>
+                                </div>
+                                <div class="rounded-xl border border-glass-border p-3 text-center bg-white/40 dark:bg-black/20">
+                                    <span class="block text-xl font-display font-bold text-sky-600">{{ $checkOutsCount }}</span>
+                                    <span class="text-xs text-hp-text-muted">Check-Outs</span>
+                                </div>
+                                <div class="rounded-xl border border-glass-border p-3 text-center bg-white/40 dark:bg-black/20">
+                                    <span class="block text-xl font-display font-bold text-amber-600">{{ $damageChargesCount }}</span>
+                                    <span class="text-xs text-hp-text-muted">Damages/Extra</span>
+                                </div>
+                                <div class="rounded-xl border border-glass-border p-3 text-center bg-white/40 dark:bg-black/20">
+                                    <span class="block text-xl font-display font-bold text-purple-600">{{ $amenitiesAddedCount + $companionsCount }}</span>
+                                    <span class="text-xs text-hp-text-muted">Amenities/Extras</span>
+                                </div>
+                            </div>
+
+                            {{-- Operational notes --}}
+                            <div class="rounded-xl border border-glass-border/70 bg-surface-2/60 p-3.5 text-xs text-hp-text space-y-1.5">
+                                <div class="flex items-center gap-2 text-hp-text font-semibold">
+                                    <svg class="h-4 w-4 text-[#1c5c3c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Shift Handover Checklist
+                                </div>
+                                <p class="text-hp-text-muted leading-relaxed">
+                                    Ensure that all cash collections (₱{{ number_format($totalCollections, 2) }}) match your physical cash drawer tally before printing the handover slip and turning over keys to the incoming staff member.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex items-center justify-between text-xs text-hp-text-muted">
+                            <span>Logged In: <strong>{{ $staffName }}</strong> ({{ $staffEmail }})</span>
+                            <span class="text-emerald-600 font-semibold">Status: Operational & Ready</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- DETAILED ACTIVITY & PAYMENT LEDGER TABLE --}}
+                <div class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="m-0 text-lg font-display font-bold text-hp-text">Shift Activity & Payment Ledger</h2>
+                                <p class="m-0 text-xs text-hp-text-muted">Chronological log of transactions processed by you during this session</p>
+                            </div>
+                        </div>
+
+                        {{-- Search Input --}}
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" id="ledgerSearchInput" placeholder="Search guest, action, or ID..." class="w-full rounded-xl border border-glass-border bg-transparent pl-9 pr-3 py-2 text-xs text-hp-text outline-none focus:border-[#1c5c3c]">
+                            <svg class="absolute left-3 top-2.5 h-3.5 w-3.5 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                    </div>
+
+                    {{-- Table --}}
+                    <div class="overflow-x-auto rounded-xl border border-glass-border">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-glass-border bg-surface-2/70 font-semibold text-hp-text-muted uppercase tracking-wider text-[0.7rem]">
+                                    <th class="py-3 px-4">Time & Date</th>
+                                    <th class="py-3 px-3">Shift</th>
+                                    <th class="py-3 px-3">Action</th>
+                                    <th class="py-3 px-4">Reservation & Guest</th>
+                                    <th class="py-3 px-4">Transaction Details</th>
+                                    <th class="py-3 px-4 text-right">Collected Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ledgerTableBody" class="divide-y divide-glass-border/50 text-hp-text">
+                                @forelse($ledgerRows as $row)
+                                    <tr class="ledger-row hover:bg-glass-hover/50 transition-colors duration-150"
+                                        data-search="{{ strtolower($row['guest_name'] . ' ' . $row['action'] . ' ' . $row['title'] . ' ' . $row['description'] . ' res#' . $row['reservation_id']) }}">
+                                        {{-- Timestamp --}}
+                                        <td class="py-3 px-4 whitespace-nowrap">
+                                            <div class="font-semibold text-hp-text">{{ $row['time_raw'] }}</div>
+                                            <div class="text-[0.68rem] text-hp-text-muted">{{ $row['date_raw'] }}</div>
+                                        </td>
+
+                                        {{-- Shift session pill --}}
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="rounded-md px-2 py-0.5 text-[0.68rem] font-medium {{ $row['session_tag'] === 'Daytime' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' }}">
+                                                {{ $row['session_tag'] }}
+                                            </span>
+                                        </td>
+
+                                        {{-- Action Badge --}}
+                                        <td class="py-3 px-3 whitespace-nowrap">
+                                            <span class="badge-action badge-{{ $row['action'] }}">
+                                                {{ str_replace('_', ' ', $row['action']) }}
+                                            </span>
+                                        </td>
+
+                                        {{-- Reservation & Guest --}}
+                                        <td class="py-3 px-4 whitespace-nowrap">
+                                            @if($row['reservation_id'])
+                                                <div class="font-semibold text-hp-text flex items-center gap-1.5">
+                                                    <span>{{ $row['guest_name'] }}</span>
+                                                    <span class="text-[0.68rem] font-bold text-[#1c5c3c] dark:text-[#6ab88c]">#{{ $row['reservation_id'] }}</span>
+                                                </div>
+                                                <div class="text-[0.68rem] text-hp-text-muted">{{ $row['guests_count'] }} guest(s)</div>
+                                            @else
+                                                <span class="text-hp-text-muted">General Operational Log</span>
+                                            @endif
+                                        </td>
+
+                                        {{-- Details --}}
+                                        <td class="py-3 px-4">
+                                            <div class="font-medium text-hp-text">{{ $row['title'] }}</div>
+                                            <div class="text-[0.68rem] text-hp-text-muted leading-tight line-clamp-2">{{ $row['description'] }}</div>
+                                        </td>
+
+                                        {{-- Amount --}}
+                                        <td class="py-3 px-4 text-right whitespace-nowrap font-display font-bold">
+                                            @if($row['payment_amount'] > 0)
+                                                <span class="text-emerald-600 dark:text-emerald-400 text-sm">+ ₱{{ $row['formatted_amount'] }}</span>
+                                            @else
+                                                <span class="text-hp-text-muted text-xs">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr id="ledgerEmptyRow">
+                                        <td colspan="6" class="py-8 text-center text-hp-text-muted text-sm">
+                                            <div class="flex flex-col items-center justify-center gap-2">
+                                                <svg class="h-8 w-8 text-hp-text-muted/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                <span>No activity or payment logs found for the selected period and session.</span>
+                                                <a href="{{ route('staff.reports', ['preset' => 'all']) }}" class="text-xs text-[#1c5c3c] font-semibold underline">View All Time Logs</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex items-center justify-between text-xs text-hp-text-muted pt-2">
+                        <span id="ledgerCountDisplay">Showing {{ $ledgerRows->count() }} transaction(s)</span>
+                        <span>Hinaguan Nature Park • Front Desk Operational System</span>
+                    </div>
+                </div>
+
+                {{-- ============================================================ --}}
+                {{-- PRINTABLE END-OF-SHIFT HANDOVER SLIP (Shown during window.print()) --}}
+                {{-- ============================================================ --}}
+                <div class="print-only-slip p-8 bg-white text-black font-sans">
+                    <div class="text-center border-b-2 border-black pb-4 mb-6">
+                        <h1 class="text-2xl font-bold tracking-wide uppercase">Hinaguan Nature Park</h1>
+                        <h2 class="text-base font-semibold text-gray-700">Official Staff Shift Handover & Reconciliation Slip</h2>
+                        <p class="text-xs text-gray-500 mt-1">Generated: {{ now()->format('F d, Y • h:i A') }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 border border-gray-300 p-4 rounded-lg mb-6 text-sm">
+                        <div>
+                            <p><strong>Duty Staff Name:</strong> {{ $staffName }}</p>
+                            <p><strong>Staff Account ID:</strong> #{{ $staffId }}</p>
+                            <p><strong>Shift Session:</strong> {{ ucfirst($sessionFilter) }} Session</p>
+                        </div>
+                        <div>
+                            <p><strong>Report Date / Period:</strong> {{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }}</p>
+                            <p><strong>Total Guests Handled:</strong> {{ $totalGuestsHandled }}</p>
+                            <p><strong>Total Handled Reservations:</strong> {{ $totalReservationsHandled }}</p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-base font-bold uppercase mb-2 border-b border-gray-300 pb-1">Operational Activity Summary</h3>
+                    <table class="w-full text-left text-sm border border-gray-300 mb-6">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="p-2 border border-gray-300">Operational Metric</th>
+                                <th class="p-2 border border-gray-300 text-center">Count</th>
+                                <th class="p-2 border border-gray-300 text-right">Collected Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Guest Check-Ins Processed</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkInsCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱{{ number_format($checkInCollections, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Guest Check-Outs Processed</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkOutsCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱0.00</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Damage / Incident Fees Collected</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $damageChargesCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱{{ number_format($damageChargesCollected, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Extra Amenities Added</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $amenitiesAddedCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱{{ number_format($amenitiesCollected, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Extra Companions / Walk-In Guests</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $companionsCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱{{ number_format($companionsCollected, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 border border-gray-300">Reservation Extensions Processed</td>
+                                <td class="p-2 border border-gray-300 text-center font-bold">{{ $extensionsCount }}</td>
+                                <td class="p-2 border border-gray-300 text-right">₱{{ number_format($extensionsCollected, 2) }}</td>
+                            </tr>
+                            <tr class="bg-gray-100 font-bold">
+                                <td class="p-2 border border-gray-300 text-base" colspan="2">TOTAL NET CASH DRAWER TURNOVER</td>
+                                <td class="p-2 border border-gray-300 text-right text-base">₱{{ number_format($totalCollections, 2) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="mt-12 pt-8 border-t border-gray-400 grid grid-cols-3 gap-8 text-center text-xs">
+                        <div>
+                            <div class="border-b border-black mb-1 h-12"></div>
+                            <p class="font-bold uppercase">{{ $staffName }}</p>
+                            <p class="text-gray-500">Outgoing Staff Signature</p>
+                        </div>
+                        <div>
+                            <div class="border-b border-black mb-1 h-12"></div>
+                            <p class="font-bold uppercase">_________________________</p>
+                            <p class="text-gray-500">Incoming Staff Signature</p>
+                        </div>
+                        <div>
+                            <div class="border-b border-black mb-1 h-12"></div>
+                            <p class="font-bold uppercase">_________________________</p>
+                            <p class="text-gray-500">Duty Supervisor Signature</p>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>
-
-    <x-staff_chatbot />
 </body>
 </html>

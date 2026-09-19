@@ -4424,105 +4424,183 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return redirect()->route('login');
         }
 
-        $reservations = Reservation::query()
-            ->with(['reservationAmenities.amenity', 'reservationGuests.customer'])
-            ->orderByDesc('reservation_date')
-            ->get();
+        $staffId = $user['id'];
+        $staffAccount = \App\Models\StaffAccount::find($staffId);
+        $staffName = $staffAccount ? $staffAccount->name : ($user['name'] ?? 'Staff User');
+        $staffEmail = $staffAccount ? $staffAccount->email : ($user['email'] ?? '');
 
-        $reportRows = $reservations->map(function ($reservation) {
-            $customer = $reservation->reservationGuests->first()?->customer;
-            $customerName = $customer ? trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')) : $reservation->booker_name;
-            $amenityNames = $reservation->reservationAmenities->pluck('amenity.amenities_name')->filter()->values();
+        // Determine current real-time session
+        $currentHour = (int) now()->format('H');
+        $currentSession = ($currentHour >= 8 && $currentHour < 17) ? 'Daytime' : 'Nighttime';
+
+        // Filter parameters
+        $preset = $request->get('preset', 'today');
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $sessionFilter = $request->get('session', 'all'); // 'all', 'daytime', 'nighttime'
+        $actionFilter = $request->get('action', 'all');
+
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $thisWeekStart = now()->startOfWeek()->toDateString();
+        $thisWeekEnd = now()->endOfWeek()->toDateString();
+        $thisMonthStart = now()->startOfMonth()->toDateString();
+        $thisMonthEnd = now()->endOfMonth()->toDateString();
+
+        if ($preset === 'today') {
+            $filterFrom = $today;
+            $filterTo = $today;
+        } elseif ($preset === 'yesterday') {
+            $filterFrom = $yesterday;
+            $filterTo = $yesterday;
+        } elseif ($preset === 'this_week') {
+            $filterFrom = $thisWeekStart;
+            $filterTo = $thisWeekEnd;
+        } elseif ($preset === 'this_month') {
+            $filterFrom = $thisMonthStart;
+            $filterTo = $thisMonthEnd;
+        } elseif ($preset === 'custom' && ($dateFrom || $dateTo)) {
+            $filterFrom = $dateFrom;
+            $filterTo = $dateTo;
+        } else {
+            // 'all' or unrestricted
+            $preset = ($preset === 'custom') ? 'custom' : 'all';
+            $filterFrom = $dateFrom ?: null;
+            $filterTo = $dateTo ?: null;
+        }
+
+        // Base query for authenticated staff member's logs
+        $query = \App\Models\ActivityLog::with([
+            'reservation.reservationGuests.customer',
+            'reservation.reservationAmenities.amenity',
+            'reservation.entranceFee'
+        ])
+        ->where('staff_id', $staffId);
+
+        if ($filterFrom && $filterTo) {
+            $query->whereDate('created_at', '>=', $filterFrom)
+                  ->whereDate('created_at', '<=', $filterTo);
+        } elseif ($filterFrom) {
+            $query->whereDate('created_at', '>=', $filterFrom);
+        } elseif ($filterTo) {
+            $query->whereDate('created_at', '<=', $filterTo);
+        }
+
+        if ($actionFilter && $actionFilter !== 'all') {
+            if ($actionFilter === 'checked_out') {
+                $query->whereIn('action', ['checked_out', 'check_out']);
+            } else {
+                $query->where('action', $actionFilter);
+            }
+        }
+
+        $allLogs = $query->orderByDesc('id')->get();
+
+        // Filter by shift / session (Daytime 08:00 - 16:59:59, Nighttime 17:00 - 07:59:59)
+        if ($sessionFilter === 'daytime') {
+            $logs = $allLogs->filter(function ($log) {
+                $t = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
+                return $t >= '08:00:00' && $t < '17:00:00';
+            })->values();
+        } elseif ($sessionFilter === 'nighttime') {
+            $logs = $allLogs->filter(function ($log) {
+                $t = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
+                return $t >= '17:00:00' || $t < '08:00:00';
+            })->values();
+        } else {
+            $logs = $allLogs;
+        }
+
+        // Metrics calculations
+        $totalCollections = (float) $logs->sum('payment_amount');
+        $checkInsCount = $logs->where('action', 'checked_in')->count();
+        $checkOutsCount = $logs->filter(fn($l) => in_array($l->action, ['checked_out', 'check_out']))->count();
+
+        // Unique reservations handled and guest headcount
+        $handledReservations = $logs->pluck('reservation')->filter()->unique('id');
+        $totalReservationsHandled = $handledReservations->count();
+        $totalGuestsHandled = $handledReservations->sum('number_of_guests');
+
+        // Revenue breakdown by category
+        $checkInCollections = (float) $logs->where('action', 'checked_in')->sum('payment_amount');
+
+        $damageLogs = $logs->where('action', 'additional_charge_paid');
+        $damageChargesCount = $damageLogs->count();
+        $damageChargesCollected = (float) $damageLogs->sum('payment_amount');
+
+        $amenityLogs = $logs->where('action', 'added_amenity');
+        $amenitiesAddedCount = $amenityLogs->count();
+        $amenitiesCollected = (float) $amenityLogs->sum('payment_amount');
+
+        $companionLogs = $logs->where('action', 'companion_added');
+        $companionsCount = $companionLogs->count();
+        $companionsCollected = (float) $companionLogs->sum('payment_amount');
+
+        $extensionLogs = $logs->where('action', 'reservation_extended');
+        $extensionsCount = $extensionLogs->count();
+        $extensionsCollected = (float) $extensionLogs->sum('payment_amount');
+
+        $cancelledCount = $logs->where('action', 'cancelled')->count();
+        $noShowCount = $logs->where('action', 'no_show')->count();
+
+        // Prepare ledger rows
+        $ledgerRows = $logs->map(function ($log) {
+            $res = $log->reservation;
+            $guest = $res?->reservationGuests?->first()?->customer;
+            $guestName = $guest ? trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) : ($res?->booker_name ?? 'N/A');
+            $guestsCount = $res?->number_of_guests ?? 0;
+
+            $timeStr = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
+            $sessionTag = ($timeStr >= '08:00:00' && $timeStr < '17:00:00') ? 'Daytime' : 'Nighttime';
 
             return [
-                'id' => $reservation->id,
-                'customer_name' => $customerName ?: $reservation->booker_name,
-                'reservation_date' => $reservation->reservation_date,
-                'check_in' => $reservation->check_in,
-                'amenities' => $amenityNames->isEmpty() ? 'None' : $amenityNames->join(', '),
-                'status' => $reservation->status,
-                'payment_status' => $reservation->payment_status,
-                'total_amount' => $reservation->total_amount,
-                'number_of_guests' => $reservation->number_of_guests,
-                'reservation_guests' => $reservation->reservationGuests->map(function ($guest) {
-                    $c = $guest->customer;
-                    return [
-                        'id' => $guest->id,
-                        'is_primary_guest' => (bool)$guest->is_primary_guest,
-                        'checked_out_at' => $guest->checked_out_at,
-                        'customer' => [
-                            'first_name' => $c?->first_name,
-                            'middle_name' => $c?->middle_name,
-                            'last_name' => $c?->last_name,
-                            'gender' => $c?->gender,
-                            'is_foreigner' => $c?->is_foreigner,
-                            'age' => $c?->age,
-                            'customer_type' => $c?->customer_type
-                        ]
-                    ];
-                })
+                'id' => $log->id,
+                'timestamp' => $log->created_at ? $log->created_at->format('M d, Y h:i A') : 'N/A',
+                'date_raw' => $log->created_at ? $log->created_at->format('Y-m-d') : '',
+                'time_raw' => $log->created_at ? $log->created_at->format('h:i A') : '',
+                'session_tag' => $sessionTag,
+                'action' => $log->action,
+                'title' => $log->title ?: ucwords(str_replace('_', ' ', $log->action)),
+                'description' => $log->description,
+                'reservation_id' => $log->reservation_id,
+                'guest_name' => $guestName,
+                'guests_count' => $guestsCount,
+                'payment_amount' => (float) $log->payment_amount,
+                'formatted_amount' => number_format($log->payment_amount, 2),
+                'metadata' => $log->metadata,
             ];
         });
 
-        $customerOptions = $reportRows->pluck('customer_name')->unique()->sort()->values();
-        $amenityOptions = $reportRows->flatMap(function ($row) {
-            return $row['amenities'] === 'None' ? [] : explode(', ', $row['amenities']);
-        })->unique()->sort()->values();
-        $statusOptions = $reportRows->pluck('status')->unique()->sort()->values();
-
-        $reservationDates = $reportRows->pluck('reservation_date')->filter();
-        $firstCheckInDate = $reservationDates->min() ?? now()->toDateString();
-        $lastCheckInDate = $reservationDates->max() ?? now()->toDateString();
-
-        $totalReservations = $reportRows->count();
-        $customerCount = $reportRows->pluck('customer_name')->unique()->count();
-        $amenityCount = $reportRows->flatMap(function ($row) {
-            return $row['amenities'] === 'None' ? [] : explode(', ', $row['amenities']);
-        })->unique()->count();
-
-        $totalRevenue = $reportRows->sum('total_amount');
-        $totalGuests = $reservations->sum('number_of_guests');
-        $averageSpend = $totalReservations > 0 ? $totalRevenue / $totalReservations : 0;
-
-        // Revenue + booking counts for the last 6 months (oldest first).
-        $monthlyLabels = [];
-        $monthlyRevenue = [];
-        $monthlyCounts = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $monthStart = now()->startOfMonth()->subMonths($i);
-            $monthEnd = $monthStart->copy()->endOfMonth();
-            $monthlyLabels[] = $monthStart->format('M');
-            $inMonth = $reservations->filter(function ($r) use ($monthStart, $monthEnd) {
-                $d = $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date) : null;
-                return $d && $d >= $monthStart && $d <= $monthEnd;
-            });
-            $monthlyRevenue[] = (float) $inMonth->sum('total_amount');
-            $monthlyCounts[] = $inMonth->count();
-        }
-
-        $reportStatusCounts = $reportRows->groupBy('status')->map->count();
-        $reportPaymentCounts = $reportRows->groupBy('payment_status')->map->count();
-
         return view('staff.staff_reports', compact(
-            'reportRows',
-            'customerOptions',
-            'amenityOptions',
-            'statusOptions',
-            'firstCheckInDate',
-            'lastCheckInDate',
-            'totalReservations',
-            'customerCount',
-            'amenityCount',
-            'totalRevenue',
-            'totalGuests',
-            'averageSpend',
-            'monthlyLabels',
-            'monthlyRevenue',
-            'monthlyCounts',
-            'reportStatusCounts',
-            'reportPaymentCounts'
+            'staffName',
+            'staffId',
+            'staffEmail',
+            'currentSession',
+            'preset',
+            'filterFrom',
+            'filterTo',
+            'sessionFilter',
+            'actionFilter',
+            'totalCollections',
+            'checkInsCount',
+            'checkOutsCount',
+            'totalReservationsHandled',
+            'totalGuestsHandled',
+            'checkInCollections',
+            'damageChargesCount',
+            'damageChargesCollected',
+            'amenitiesAddedCount',
+            'amenitiesCollected',
+            'companionsCount',
+            'companionsCollected',
+            'extensionsCount',
+            'extensionsCollected',
+            'cancelledCount',
+            'noShowCount',
+            'ledgerRows'
         ));
     })->name('reports');
+
 
     Route::post('/api/reports/ai-analyze', [\App\Http\Controllers\AdminReportAiController::class, 'analyze'])->name('reports.ai_analyze');
 
