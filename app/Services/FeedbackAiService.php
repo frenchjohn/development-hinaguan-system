@@ -918,4 +918,218 @@ class FeedbackAiService
 
         return null;
     }
+
+    /**
+     * Generate an intelligent, varied AI auto-reply on behalf of Hinaguan Nature Park Management.
+     * Appreciates positive feedback, apologizes and reassures on negative feedback, and varies dynamically.
+     */
+    public function generateAutoReply(Feedback $feedback): string
+    {
+        // 1. Try OpenRouter AI LLM first for maximum contextual depth and variety
+        $llmReply = $this->attemptLlmAutoReply($feedback);
+        if ($llmReply) {
+            return trim($llmReply);
+        }
+
+        // 2. High-grade rule-based generative fallback ensuring tailored variation
+        return $this->generateFallbackAutoReply($feedback);
+    }
+
+    /**
+     * OpenRouter LLM Auto-Reply Generation.
+     */
+    /**
+     * OpenRouter LLM Auto-Reply Generation with deep Bisaya, Tagalog, and English comprehension.
+     */
+    protected function attemptLlmAutoReply(Feedback $feedback): ?string
+    {
+        $apiKey = env('OPENROUTER_API_KEY');
+        if (!$apiKey) {
+            return null;
+        }
+
+        $isAnonymous = $feedback->is_anonymous || strcasecmp($feedback->full_name, Feedback::ANONYMOUS_NAME) === 0;
+        $guestName = $isAnonymous
+            ? 'Anonymous'
+            : trim(explode(' ', (string) $feedback->full_name)[0] ?? 'Guest');
+
+        $stars = (int) $feedback->stars;
+        $description = trim($feedback->description);
+
+        $nameInstruction = $isAnonymous
+            ? "Guest: Anonymous Guest (Address them as 'Hello!' or 'Dear guest,'. Never say 'Dear our guest')."
+            : "Guest: {$guestName} (Address them as 'Hello {$guestName}!' or 'Dear {$guestName},').";
+
+        $prompt = "You are the Park Management of Hinaguan Nature Park in Jasaan, Misamis Oriental, Philippines.\n"
+            . "Write a friendly, polite, and caring management reply in simple, basic English to this guest review.\n"
+            . "{$nameInstruction}\n"
+            . "Rating: {$stars} out of 5 stars\n"
+            . "Guest Review: \"{$description}\"\n\n"
+            . "CRITICAL RULES:\n"
+            . "1. UNDERSTAND BISAYA / CEBUANO AND TAGALOG:\n"
+            . "   - 'chada' / 'tsada' / 'nindot' = nice, great, beautiful\n"
+            . "   - 'hugaw' / 'dumi' / 'marumi' = dirty\n"
+            . "   - 'limpyohan' / 'linisin' = clean it / to be cleaned\n"
+            . "   - 'didto sa cottage nga among na avail' = there in the cottage that we availed / rented\n"
+            . "   - 'kasilyas' / 'cr' / 'banyo' = comfort room / restroom\n"
+            . "   - 'bugnaw' / 'malamig' = cold (referring to cold spring water pool)\n"
+            . "   - 'buotan' / 'mabait' = kind, friendly staff\n"
+            . "   - 'sungit' / 'bastos' / 'dugay' = rude, slow service\n"
+            . "   - 'mahal' = expensive, high entrance or cottage fee\n"
+            . "   - 'lami' / 'masarap' = delicious food\n"
+            . "2. DIRECTLY CONNECT TO THE EXACT POINTS MENTIONED:\n"
+            . "   - If the guest mentioned dirty cottages, apologize directly for the dirty cottage and state that the cleaning team has been ordered to wash, clean, and inspect all cottages.\n"
+            . "   - If they mentioned comfort rooms / CR, specifically address the comfort rooms.\n"
+            . "   - If they praised the cold pools or scenic nature, specifically acknowledge that.\n"
+            . "3. STRICT NEGATIVE CONSTRAINTS:\n"
+            . "   - NEVER use generic filler phrases like 'the things you mentioned', 'what you mentioned', or 'as you mentioned'.\n"
+            . "   - NEVER mention unnecessary or unrelated things. Do NOT mention pools, staff, or food if the guest only talked about cottages.\n"
+            . "   - Do NOT output chain of thought or reasoning (e.g. do not say 'We need to write...', 'Thought:'). Only output the final reply.\n"
+            . "4. TONE & VOCABULARY:\n"
+            . "   - Use simple, everyday basic English that any Filipino can easily understand.\n"
+            . "   - Keep the reply between 2 and 3 complete sentences. Ensure the final sentence ends with a period (.) or exclamation mark (!). Do not use quotes around the response.";
+
+        try {
+            $response = Http::timeout(15)->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => request()->getHttpHost() ?: 'http://localhost',
+                'X-Title' => 'Hinaguan Nature Park Management',
+            ])->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model' => 'openrouter/free',
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => 0.6,
+                'max_tokens' => 350,
+            ]);
+
+            if ($response->successful()) {
+                $text = (string) $response->json('choices.0.message.content');
+                if (!empty($text)) {
+                    // Remove reasoning tags if model output <think>...</think>
+                    $text = preg_replace('/<think>.*?<\/think>/is', '', $text);
+                    $clean = trim($text, " \"'\n\r");
+
+                    // Normalize any accidental "Dear our guest"
+                    $clean = preg_replace('/^Dear our guest,?\s*/i', 'Dear guest, ', $clean);
+
+                    // Filter out unwanted chain of thought leaks or generic filler phrases
+                    $isReasoningLeak = preg_match('/^(We need to|The user|I should|Review analysis|Thought:|Here is)/i', $clean);
+                    $hasGenericMention = stripos($clean, 'things you mentioned') !== false || stripos($clean, 'what you mentioned') !== false;
+                    $endsCompleteSentence = preg_match('/[.!?]$/', $clean);
+
+                    if (!$isReasoningLeak && !$hasGenericMention && $endsCompleteSentence && strlen($clean) > 25) {
+                        return $clean;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::info('[FeedbackAiService] LLM auto-reply fallback engaged: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Dynamic Rule-Based Generative Fallback for Auto-Replies in Basic English
+     * with deep comprehension of Bisaya (Cebuano), Tagalog, and English.
+     * Guaranteed to connect specifically to the review with zero generic filler phrases.
+     */
+    protected function generateFallbackAutoReply(Feedback $feedback): string
+    {
+        $guestName = $feedback->is_anonymous || strcasecmp($feedback->full_name, Feedback::ANONYMOUS_NAME) === 0
+            ? ''
+            : trim(explode(' ', (string) $feedback->full_name)[0] ?? '');
+
+        $prefix = $guestName !== '' ? "Hello {$guestName}! " : "Hello! ";
+        $stars = (int) $feedback->stars;
+        $lower = strtolower($feedback->description);
+
+        // Bisaya & Tagalog Specific Keyword Mapping
+        $mentionsCottage = str_contains($lower, 'cottage') || str_contains($lower, 'kubo') || str_contains($lower, 'payag') || str_contains($lower, 'table') || str_contains($lower, 'lingkoranan') || str_contains($lower, 'bangko');
+        $mentionsDirt = str_contains($lower, 'hugaw') || str_contains($lower, 'marumi') || str_contains($lower, 'dumi') || str_contains($lower, 'madumi') || str_contains($lower, 'dirty') || str_contains($lower, 'filthy') || str_contains($lower, 'limpyohan') || str_contains($lower, 'linisin') || str_contains($lower, 'basura') || str_contains($lower, 'trash') || str_contains($lower, 'kalat');
+        $mentionsRestroom = str_contains($lower, 'cr') || str_contains($lower, 'comfort room') || str_contains($lower, 'kasilyas') || str_contains($lower, 'banyo') || str_contains($lower, 'toilet') || str_contains($lower, 'ihian');
+        $mentionsPool = str_contains($lower, 'pool') || str_contains($lower, 'tubig') || str_contains($lower, 'bugnaw') || str_contains($lower, 'malamig') || str_contains($lower, 'langoy') || str_contains($lower, 'swimming') || str_contains($lower, 'slide') || str_contains($lower, 'spring');
+        $mentionsNice = str_contains($lower, 'chada') || str_contains($lower, 'tsada') || str_contains($lower, 'nindot') || str_contains($lower, 'maganda') || str_contains($lower, 'nice') || str_contains($lower, 'beautiful') || str_contains($lower, 'presko') || str_contains($lower, 'fresh') || str_contains($lower, 'relax') || str_contains($lower, 'peaceful') || str_contains($lower, 'tahimik') || str_contains($lower, 'chill') || str_contains($lower, 'lingaw') || str_contains($lower, 'masaya');
+        $mentionsStaffGood = (str_contains($lower, 'staff') || str_contains($lower, 'crew') || str_contains($lower, 'guard')) && (str_contains($lower, 'buotan') || str_contains($lower, 'mabait') || str_contains($lower, 'friendly') || str_contains($lower, 'accommodating'));
+        $mentionsStaffBad = (str_contains($lower, 'staff') || str_contains($lower, 'crew') || str_contains($lower, 'guard') || str_contains($lower, 'service')) && (str_contains($lower, 'sungit') || str_contains($lower, 'masungit') || str_contains($lower, 'bastos') || str_contains($lower, 'rude') || str_contains($lower, 'taray') || str_contains($lower, 'dugay') || str_contains($lower, 'matagal') || str_contains($lower, 'slow'));
+        $mentionsPrice = str_contains($lower, 'mahal') || str_contains($lower, 'expensive') || str_contains($lower, 'overpriced') || str_contains($lower, 'presyo') || str_contains($lower, 'entrance') || str_contains($lower, 'rate');
+        $mentionsFood = str_contains($lower, 'pagkaon') || str_contains($lower, 'kaon') || str_contains($lower, 'food') || str_contains($lower, 'lami') || str_contains($lower, 'masarap') || str_contains($lower, 'canteen');
+        $mentionsNoise = str_contains($lower, 'samok') || str_contains($lower, 'saba') || str_contains($lower, 'ingay') || str_contains($lower, 'maingay') || str_contains($lower, 'crowded') || str_contains($lower, 'daghang tawo');
+
+        // 1. Specific Match: Cottage + Dirt / Cleanliness Concern (Direct match for user review)
+        if ($mentionsCottage && $mentionsDirt) {
+            if ($mentionsNice || $stars >= 3) {
+                return "{$prefix}Thank you for your review. We are glad you found the park nice, but we are very sorry that the cottage you availed had dirt. We already told our cleaning team to thoroughly clean, wash, and inspect all cottages so every guest has a clean place to stay. Thank you for telling us so we can improve!";
+            }
+            return "{$prefix}We sincerely apologize that the cottage you availed was dirty. We already told our cleaning staff to wash, clean, and inspect all cottages before guests arrive. Thank you for letting us know so we can fix this right away!";
+        }
+
+        // 2. Specific Match: Restroom / Comfort Room issues
+        if ($mentionsRestroom && ($mentionsDirt || str_contains($lower, 'baho') || str_contains($lower, 'walay tubig') || $stars <= 3)) {
+            if ($mentionsNice) {
+                return "{$prefix}We are happy you enjoyed the park, but we are very sorry about the comfort room condition. We already instructed our cleaning staff to wash, sanitize, and check the comfort rooms regularly. Thank you for informing us!";
+            }
+            return "{$prefix}We sincerely apologize for the comfort room issue during your visit. Our cleaning team has been instructed to clean, wash, and restock the restrooms more frequently. Thank you for telling us!";
+        }
+
+        // 3. Specific Match: Restroom clean praise
+        if ($mentionsRestroom && (str_contains($lower, 'limpyo') || str_contains($lower, 'malinis') || str_contains($lower, 'clean'))) {
+            return "{$prefix}Thank you so much! We are very glad you appreciated our clean and well-kept comfort rooms. We hope to welcome you back soon!";
+        }
+
+        // 4. Specific Match: Pool Experience
+        if ($mentionsPool && !$mentionsCottage && !$mentionsRestroom && !$mentionsStaffBad) {
+            if ($stars >= 4) {
+                return "{$prefix}Thank you so much for your review! We are very glad you enjoyed swimming in our cold spring water pools. We hope to see you and your family again soon!";
+            }
+            if ($mentionsDirt || str_contains($lower, 'lapok') || str_contains($lower, 'murky')) {
+                return "{$prefix}We are very sorry that the pool was not clean during your visit. We already instructed our maintenance team to clean and refresh the spring water pools regularly so they stay fresh and clear. Thank you for telling us!";
+            }
+        }
+
+        // 5. Specific Match: Staff Service Complaint
+        if ($mentionsStaffBad) {
+            return "{$prefix}We sincerely apologize for the bad experience with our staff. We are talking directly to our team to make sure every guest is treated with polite, respectful, and fast service. Thank you for letting us know!";
+        }
+
+        // 6. Specific Match: Staff Service Praise
+        if ($mentionsStaffGood && !$mentionsDirt && !$mentionsStaffBad) {
+            return "{$prefix}Thank you so much! We are very happy that our staff was polite and helpful to you. We will share your kind words with our team, and we hope to see you again soon!";
+        }
+
+        // 7. Specific Match: Food & Drinks
+        if ($mentionsFood && !$mentionsDirt && !$mentionsStaffBad) {
+            return "{$prefix}Thank you for your review! We are very glad you enjoyed the delicious food during your stay. We hope to welcome you back again soon!";
+        }
+
+        // 8. Specific Match: Scenery, Atmosphere & Relaxation
+        if ($mentionsNice && !$mentionsDirt && !$mentionsStaffBad && !$mentionsPrice) {
+            return "{$prefix}Thank you so much for visiting Hinaguan Nature Park! We are very glad you enjoyed the fresh mountain air, beautiful views, and peaceful nature. We hope to see you again soon!";
+        }
+
+        // 9. Specific Match: Pricing / Rates
+        if ($mentionsPrice) {
+            return "{$prefix}Thank you for your feedback. We understand your concern regarding our rates, and our management is reviewing our prices to make sure all our guests get the best value for their stay.";
+        }
+
+        // 10. Specific Match: Noise / Crowds
+        if ($mentionsNoise) {
+            return "{$prefix}Thank you for sharing your feedback. We are actively managing crowd flow and noise levels around the park so everyone can enjoy a tranquil and peaceful retreat.";
+        }
+
+        // 11. General Neutral (3 Stars) - No generic filler
+        if ($stars === 3) {
+            return "{$prefix}Thank you for visiting Hinaguan Nature Park and sharing your honest review. We are glad you spent time with us, and our management team is working hard to continuously improve our facilities and service so your next visit will be a full 5-star experience!";
+        }
+
+        // 12. General Positive (4-5 Stars)
+        if ($stars >= 4) {
+            return "{$prefix}Thank you so much for visiting Hinaguan Nature Park and giving us a great rating! We are very glad you enjoyed your visit and we hope to welcome you back soon!";
+        }
+
+        // 13. General Negative (1-2 Stars)
+        return "{$prefix}Thank you for visiting Hinaguan Nature Park and sharing your honest review. We sincerely apologize that your visit did not meet expectations, and our management team is working hard to improve our facilities and service. Thank you for helping us improve!";
+    }
 }

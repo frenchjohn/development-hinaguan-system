@@ -13,6 +13,7 @@ class Feedback extends Model
         'full_name',
         'is_anonymous',
         'description',
+        'replied',
         'stars',
         'is_shown',
     ];
@@ -22,6 +23,26 @@ class Feedback extends Model
         'is_shown' => 'boolean',
         'stars' => 'integer',
     ];
+
+    public function getMaskedNameAttribute(): string
+    {
+        if ($this->is_anonymous || strcasecmp($this->full_name, self::ANONYMOUS_NAME) === 0) {
+            return self::ANONYMOUS_NAME;
+        }
+
+        $parts = explode(' ', trim($this->full_name));
+        $maskedParts = [];
+        foreach ($parts as $part) {
+            $len = mb_strlen($part);
+            if ($len <= 2) {
+                $maskedParts[] = $part;
+            } else {
+                $maskedParts[] = mb_substr($part, 0, 1) . str_repeat('*', min(4, $len - 2)) . mb_substr($part, -1);
+            }
+        }
+
+        return implode(' ', $maskedParts);
+    }
 
     public const ANONYMOUS_NAME = 'Anonymous Guest';
 

@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
             date: card.dataset.date || card.querySelector('.fb-review-card__date')?.textContent?.trim() || '',
             stars: parseInt(card.dataset.stars || '5', 10),
             description: card.dataset.description || card.querySelector('.fb-review-card__text')?.textContent?.trim() || '',
+            replied: card.dataset.replied || card.querySelector('.fb-shopee-reply__text')?.textContent?.trim() || '',
             images: images,
         };
     };
@@ -157,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const stars = parseInt(data.stars || '5', 10);
         const description = data.description || '';
         const images = data.images || [];
+        const replied = data.replied || '';
 
         if (detailAvatar) detailAvatar.textContent = initials;
         if (detailName) detailName.textContent = fullName;
@@ -172,6 +174,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (detailDescription) {
             detailDescription.textContent = description;
+        }
+
+        // Show / hide Shopee management reply in modal
+        const detailReplySection = document.getElementById('reviewDetailReplySection');
+        const detailReplyText = document.getElementById('reviewDetailReplyText');
+        if (detailReplySection && detailReplyText) {
+            if (replied) {
+                detailReplyText.textContent = replied;
+                detailReplySection.classList.remove('hidden');
+                detailReplySection.style.display = 'block';
+            } else {
+                detailReplySection.classList.add('hidden');
+                detailReplySection.style.display = 'none';
+                detailReplyText.textContent = '';
+            }
         }
 
         if (detailGallerySection && detailGalleryGrid) {
@@ -517,21 +534,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* ── List filters ── */
+    /* ── Shopee filter pills & search ── */
+
+    const shopeePills = Array.from(document.querySelectorAll('.shopee-pill'));
+    let currentShopeeFilter = 'all';
+
+    shopeePills.forEach((pill) => {
+        pill.addEventListener('click', () => {
+            shopeePills.forEach((p) => p.classList.remove('is-active'));
+            pill.classList.add('is-active');
+            currentShopeeFilter = pill.dataset.shopeeFilter || 'all';
+            filterReviews();
+        });
+    });
 
     const filterReviews = () => {
         const query = searchInput?.value.trim().toLowerCase() || '';
-        const starValue = starFilter?.value || 'all';
         let visibleCount = 0;
 
         reviewCards = Array.from(document.querySelectorAll('.fb-review-card'));
 
         reviewCards.forEach((card) => {
-            const name = card.dataset.guestName || '';
+            const guestName = card.dataset.guestName || '';
+            const text = card.querySelector('.fb-review-card__text')?.textContent?.toLowerCase() || '';
+            const replyText = card.querySelector('.fb-shopee-reply__text')?.textContent?.toLowerCase() || '';
+            const matchesSearch = !query || guestName.includes(query) || text.includes(query) || replyText.includes(query);
+
             const stars = card.dataset.stars || '';
-            const matchesName = !query || name.includes(query);
-            const matchesStars = starValue === 'all' || stars === starValue;
-            const show = matchesName && matchesStars;
+            const hasMedia = card.dataset.hasMedia === '1';
+            const hasComment = card.dataset.hasComment === '1';
+
+            let matchesFilter = true;
+            if (currentShopeeFilter === 'all') {
+                matchesFilter = true;
+            } else if (['1', '2', '3', '4', '5'].includes(currentShopeeFilter)) {
+                matchesFilter = stars === currentShopeeFilter;
+            } else if (currentShopeeFilter === 'media') {
+                matchesFilter = hasMedia;
+            } else if (currentShopeeFilter === 'comments') {
+                matchesFilter = hasComment;
+            }
+
+            const show = matchesSearch && matchesFilter;
             card.classList.toggle('hidden', !show);
             if (show) visibleCount += 1;
         });
@@ -548,11 +592,45 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ── Live summary counters ── */
 
     const updateSummaryCount = () => {
-        if (!summaryCountEl) return;
         reviewCards = Array.from(document.querySelectorAll('.fb-review-card'));
-        summaryCountEl.textContent = String(reviewCards.length);
-        summaryCountEl.parentElement?.querySelector('.fb-summary__label')
-            ?.replaceChildren(`Review${reviewCards.length === 1 ? '' : 's'} shared`);
+        const total = reviewCards.length;
+        let starSum = 0;
+        let count5 = 0, count4 = 0, count3 = 0, count2 = 0, count1 = 0;
+        let countMedia = 0, countComments = 0;
+
+        reviewCards.forEach((card) => {
+            const s = parseInt(card.dataset.stars || '5', 10);
+            starSum += s;
+            if (s === 5) count5++;
+            else if (s === 4) count4++;
+            else if (s === 3) count3++;
+            else if (s === 2) count2++;
+            else if (s === 1) count1++;
+            if (card.dataset.hasMedia === '1') countMedia++;
+            if (card.dataset.hasComment === '1') countComments++;
+        });
+
+        const avg = total > 0 ? (starSum / total).toFixed(1) : '5.0';
+        const summaryAvgEl = document.getElementById('fbSummaryAvg');
+        if (summaryAvgEl) summaryAvgEl.textContent = avg;
+        if (summaryCountEl) summaryCountEl.textContent = String(total);
+
+        const pillAll = document.getElementById('countPillAll');
+        if (pillAll) pillAll.textContent = String(total);
+        const pill5 = document.getElementById('countPill5');
+        if (pill5) pill5.textContent = String(count5);
+        const pill4 = document.getElementById('countPill4');
+        if (pill4) pill4.textContent = String(count4);
+        const pill3 = document.getElementById('countPill3');
+        if (pill3) pill3.textContent = String(count3);
+        const pill2 = document.getElementById('countPill2');
+        if (pill2) pill2.textContent = String(count2);
+        const pill1 = document.getElementById('countPill1');
+        if (pill1) pill1.textContent = String(count1);
+        const pillMedia = document.getElementById('countPillMedia');
+        if (pillMedia) pillMedia.textContent = String(countMedia);
+        const pillComments = document.getElementById('countPillComments');
+        if (pillComments) pillComments.textContent = String(countComments);
     };
 
     /* ── Prepend newly submitted review ── */
@@ -571,18 +649,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const images = feedback.images || [];
         const imagesCount = images.length;
         const imagesJson = JSON.stringify(images);
+        const hasComment = Boolean(feedback.description && feedback.description.trim());
 
         const article = document.createElement('article');
-        article.className = 'fb-review-card';
+        article.className = 'fb-review-card shopee-review-card';
         article.tabIndex = 0;
         article.setAttribute('role', 'button');
         article.setAttribute('aria-label', `View full review by ${feedback.full_name}`);
-        article.dataset.guestName = (feedback.full_name || '').toLowerCase();
+        article.dataset.guestName = ((feedback.full_name || '') + ' ' + (feedback.raw_name || '')).toLowerCase();
         article.dataset.fullName = feedback.full_name || 'Guest';
         article.dataset.initials = feedback.initials || 'G';
         article.dataset.date = feedback.created_at || 'Just now';
         article.dataset.stars = String(feedback.stars);
+        article.dataset.hasMedia = imagesCount > 0 ? '1' : '0';
+        article.dataset.hasComment = hasComment ? '1' : '0';
         article.dataset.description = feedback.description || '';
+        article.dataset.replied = feedback.replied || '';
         article.dataset.images = imagesJson;
 
         const starsHtml = Array.from({ length: 5 }, (_, i) => {
@@ -628,12 +710,26 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }
 
+        const replyHtml = feedback.replied ? `
+            <div class="fb-shopee-reply" aria-label="Park Management Response">
+                <div class="fb-shopee-reply__header">
+                    <svg class="fb-shopee-reply__badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="fb-shopee-reply__title">Park Management Response:</span>
+                </div>
+                <p class="fb-shopee-reply__text">${escapeHtml(feedback.replied)}</p>
+            </div>
+        ` : '';
+
         article.innerHTML = `
             <div class="fb-review-card__top">
                 <span class="fb-review-card__avatar" aria-hidden="true">${escapeHtml(feedback.initials || 'G')}</span>
                 <div class="fb-review-card__meta">
-                    <h3 class="fb-review-card__name">${escapeHtml(feedback.full_name)}</h3>
-                    <time class="fb-review-card__date">${escapeHtml(feedback.created_at || 'Just now')}</time>
+                    <div class="shopee-review-card__user-row">
+                        <h3 class="fb-review-card__name">${escapeHtml(feedback.full_name)}</h3>
+                    </div>
+                    <time class="fb-review-card__date">${escapeHtml(feedback.created_at || 'Just now')} | Hinaguan Nature Park Experience</time>
                 </div>
                 <div class="fb-review-card__badge" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -643,6 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="fb-review-card__stars" aria-label="${Number(feedback.stars)} out of 5 stars">${starsHtml}</div>
             <p class="fb-review-card__text"></p>
             ${galleryHtml}
+            ${replyHtml}
             <div class="fb-review-card__footer">
                 <span class="fb-review-card__readmore">Click to read full review &rarr;</span>
             </div>
@@ -653,10 +750,12 @@ document.addEventListener('DOMContentLoaded', () => {
         dataScript.className = 'fb-card-data';
         dataScript.textContent = JSON.stringify({
             fullName: feedback.full_name || 'Guest',
+            rawName: feedback.raw_name || feedback.full_name || 'Guest',
             initials: feedback.initials || 'G',
             date: feedback.created_at || 'Just now',
             stars: feedback.stars,
             description: feedback.description || '',
+            replied: feedback.replied || '',
             images: images.map((img, i) => ({
                 id: img.id || (i + 1),
                 url: img.image_url || img.url,

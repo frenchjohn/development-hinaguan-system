@@ -985,16 +985,26 @@ Route::post('/feedback', function (Request $request) {
 
     $feedback->load('images');
 
+    // Generate AI-powered auto-reply and persist to replied column
+    try {
+        $autoReply = app(\App\Services\FeedbackAiService::class)->generateAutoReply($feedback);
+        $feedback->replied = $autoReply;
+        $feedback->save();
+    } catch (\Throwable $e) {
+        \Log::warning('Failed to generate feedback AI auto-reply: ' . $e->getMessage());
+    }
+
     if ($request->expectsJson()) {
         return response()->json([
             'success' => true,
             'message' => 'Thank you for your feedback!',
             'feedback' => [
                 'id' => $feedback->id,
-                'full_name' => $feedback->display_name,
+                'full_name' => $feedback->full_name,
                 'initials' => $feedback->initials,
                 'description' => $feedback->description,
                 'stars' => $feedback->stars,
+                'replied' => $feedback->replied,
                 'created_at' => $feedback->created_at->format('M j, Y'),
                 'images' => $feedback->images->map(fn ($img) => [
                     'id' => $img->id,
@@ -1423,6 +1433,35 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
             } catch (\Throwable $ex) {
                 \Illuminate\Support\Facades\Log::error("Failed to dispatch ReservationQrMail for reservation #{$reservation->id} to {$reservation->email}: " . $ex->getMessage(), ['exception' => $ex]);
                 report($ex);
+            }
+        }
+
+        // ── PhilSMS SMS Notification ──
+        $smsResult = [
+            'success' => false,
+            'message' => 'No mobile phone number specified.',
+        ];
+        if (!empty($reservation->phone)) {
+            $sentKey = "reservation_sms_sent_{$reservation->id}";
+            if (Cache::has($sentKey)) {
+                $smsResult = Cache::get("reservation_sms_status_{$reservation->id}", [
+                    'success' => true,
+                    'message' => 'SMS confirmation already dispatched.',
+                ]);
+            } else {
+                Cache::put($sentKey, true, now()->addDays(7));
+                try {
+                    $philSms = app(\App\Services\PhilSmsService::class);
+                    $smsResult = $philSms->sendReservationConfirmation($reservation);
+                } catch (\Throwable $smsEx) {
+                    \Illuminate\Support\Facades\Log::error("Failed to dispatch PhilSMS confirmation for reservation #{$reservation->id}: " . $smsEx->getMessage(), ['exception' => $smsEx]);
+                    report($smsEx);
+                    $smsResult = [
+                        'success' => false,
+                        'message' => 'Failed to dispatch SMS: ' . $smsEx->getMessage(),
+                    ];
+                }
+                Cache::put("reservation_sms_status_{$reservation->id}", $smsResult, now()->addHours(2));
             }
         }
 
@@ -1895,8 +1934,17 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
         $status = $attached['status'] ?? 'unknown';
 
         // If payment completed immediately (e.g. test cards)
+        $reservation = null;
         if ($status === 'succeeded') {
-            $createReservationFromPayment($data['payment_intent_id'], $data['payment_method_type'], $attached);
+            $reservation = $createReservationFromPayment($data['payment_intent_id'], $data['payment_method_type'], $attached);
+        }
+
+        $smsStatus = null;
+        if ($reservation) {
+            $cachedSms = Cache::get("reservation_sms_status_{$reservation->id}");
+            if ($cachedSms) {
+                $smsStatus = $cachedSms;
+            }
         }
 
         return response()->json([
@@ -1904,6 +1952,9 @@ Route::post('/reservation/process-payment', function (Request $request, \App\Ser
             'status' => $status,
             'next_action' => $attached['next_action'] ?? null,
             'payment_intent_id' => $data['payment_intent_id'],
+            'reservation_id' => $reservation?->id,
+            'sms_status' => $smsStatus ? ($smsStatus['success'] ?? false) : null,
+            'sms_message' => $smsStatus ? ($smsStatus['message'] ?? '') : null,
         ]);
     } catch (\Throwable $e) {
         report($e);
@@ -1928,11 +1979,21 @@ Route::post('/reservation/check-payment-status', function (Request $request, \Ap
             $reservation = $createReservationFromPayment($data['payment_intent_id'], null, $intent);
         }
 
+        $smsStatus = null;
+        if ($reservation) {
+            $cachedSms = Cache::get("reservation_sms_status_{$reservation->id}");
+            if ($cachedSms) {
+                $smsStatus = $cachedSms;
+            }
+        }
+
         return response()->json([
             'success' => true,
             'status' => $status,
             'payment_status' => $reservation ? $reservation->payment_status : ($status === 'succeeded' ? 'Partially Paid' : 'Unpaid'),
             'reservation_id' => $reservation?->id,
+            'sms_status' => $smsStatus ? ($smsStatus['success'] ?? false) : null,
+            'sms_message' => $smsStatus ? ($smsStatus['message'] ?? '') : null,
         ]);
     } catch (\Throwable $e) {
         return response()->json([
@@ -2059,6 +2120,35 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
         }
     }
 
+    // ── PhilSMS SMS Notification (Prototype) ──
+    $smsResult = [
+        'success' => false,
+        'message' => 'No mobile phone number specified.',
+    ];
+    if (!empty($reservation->phone)) {
+        $sentKey = "reservation_sms_sent_{$reservation->id}";
+        if (Cache::has($sentKey)) {
+            $smsResult = Cache::get("reservation_sms_status_{$reservation->id}", [
+                'success' => true,
+                'message' => 'SMS confirmation already dispatched.',
+            ]);
+        } else {
+            Cache::put($sentKey, true, now()->addDays(7));
+            try {
+                $philSms = app(\App\Services\PhilSmsService::class);
+                $smsResult = $philSms->sendReservationConfirmation($reservation);
+            } catch (\Throwable $smsEx) {
+                \Illuminate\Support\Facades\Log::error("Failed to dispatch prototype PhilSMS confirmation for reservation #{$reservation->id}: " . $smsEx->getMessage(), ['exception' => $smsEx]);
+                report($smsEx);
+                $smsResult = [
+                    'success' => false,
+                    'message' => 'Failed to dispatch SMS: ' . $smsEx->getMessage(),
+                ];
+            }
+            Cache::put("reservation_sms_status_{$reservation->id}", $smsResult, now()->addHours(2));
+        }
+    }
+
     ActivityLog::log(
         activityType: 'online_reservation_created',
         title: 'New Online Reservation',
@@ -2079,8 +2169,32 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
         'success' => true,
         'reservation_id' => $reservation->id,
         'message' => 'Prototype reservation recorded and marked partially paid.',
+        'sms_status' => $smsResult['success'] ?? false,
+        'sms_message' => $smsResult['message'] ?? '',
     ]);
 })->name('reservation.prototype')->withoutMiddleware([VerifyCsrfToken::class]);
+
+Route::get('/reservation/{id}/sms-status', function ($id) {
+    $reservation = Reservation::find($id);
+    if (!$reservation) {
+        return response()->json(['success' => false, 'message' => 'Reservation not found'], 404);
+    }
+    $cached = Cache::get("reservation_sms_status_{$id}");
+    if ($cached) {
+        return response()->json([
+            'success' => true,
+            'sms_status' => $cached['success'] ?? false,
+            'sms_message' => $cached['message'] ?? '',
+            'phone' => $reservation->phone,
+        ]);
+    }
+    return response()->json([
+        'success' => true,
+        'sms_status' => null,
+        'sms_message' => 'SMS status not yet available.',
+        'phone' => $reservation->phone,
+    ]);
+})->name('reservation.sms-status');
 
 Route::get('/reservation/{id}/download-pass', function ($id) {
     $reservation = Reservation::findOrFail($id);

@@ -1787,9 +1787,14 @@
                 </div>
 
                 <div class="rp-terms-modal__footer">
-                    <span class="rp-confirmation-status-text">
-                        <i class="bi bi-check-circle-fill"></i> Confirmation email dispatched
-                    </span>
+                    <div class="rp-confirmation-status-group">
+                        <span class="rp-confirmation-status-text">
+                            <i class="bi bi-check-circle-fill"></i> Confirmation email dispatched
+                        </span>
+                        <span class="rp-confirmation-status-text rp-sms-status-pill" id="successModalSmsStatus">
+                            <i class="bi bi-chat-dots-fill" id="successModalSmsIcon"></i> <span id="successModalSmsText">SMS confirmation dispatched</span>
+                        </span>
+                    </div>
 
                     <div class="rp-confirmation-modal__actions">
                         <button type="button" id="successConfirmBtn" class="rp-terms-modal__proceed-btn">
@@ -2155,6 +2160,9 @@
         </div>
 
     </footer>
+
+    {{-- ── Toast Notification Container ── --}}
+    <div class="rp-toast-container" id="rpToastContainer" aria-live="polite" aria-atomic="true"></div>
 
     <x-guest_chatbot />
 

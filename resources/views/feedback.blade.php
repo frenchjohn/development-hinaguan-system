@@ -55,6 +55,18 @@
 
     <main class="fb-main">
         <div class="fb-container">
+            @php
+                $totalFeedbacks = $feedbacks->count();
+                $avgRating = $totalFeedbacks > 0 ? number_format($feedbacks->avg('stars'), 1) : '5.0';
+                $count5 = $feedbacks->where('stars', 5)->count();
+                $count4 = $feedbacks->where('stars', 4)->count();
+                $count3 = $feedbacks->where('stars', 3)->count();
+                $count2 = $feedbacks->where('stars', 2)->count();
+                $count1 = $feedbacks->where('stars', 1)->count();
+                $countMedia = $feedbacks->filter(fn($f) => $f->images && $f->images->count() > 0)->count();
+                $countComments = $feedbacks->filter(fn($f) => !empty(trim($f->description)))->count();
+            @endphp
+
             <header class="fb-hero">
                 <span class="fb-hero__label">Guest Reviews</span>
                 <h1 class="fb-hero__title">Stories From Our Guests</h1>
@@ -65,61 +77,76 @@
                 @endif
             </header>
 
-            <section class="fb-summary" aria-label="Review summary">
-                <div class="fb-summary__score">
-                    <span class="fb-summary__avg" id="fbSummaryAvg">{{ $feedbacks->count() ? number_format($feedbacks->avg('stars'), 1) : '–' }}</span>
-                    <span class="fb-summary__stars" aria-hidden="true">
+            {{-- Shopee-style Rating Summary & Filter Box --}}
+            <section class="shopee-rating-card" aria-label="Review summary and filters">
+                <div class="shopee-rating-card__left">
+                    <div class="shopee-rating-card__score-wrap">
+                        <span class="shopee-rating-card__score" id="fbSummaryAvg">{{ $avgRating }}</span>
+                        <span class="shopee-rating-card__score-sub">out of 5</span>
+                    </div>
+                    <div class="shopee-rating-card__stars" aria-hidden="true">
                         @for ($s = 1; $s <= 5; $s++)
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $feedbacks->count() && $s <= ceil($feedbacks->avg('stars')) ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $totalFeedbacks && $s <= ceil($feedbacks->avg('stars')) ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                         @endfor
+                    </div>
+                    <span class="shopee-rating-card__total-text">
+                        <span id="fbSummaryCount">{{ $totalFeedbacks }}</span> Total Review{{ $totalFeedbacks === 1 ? '' : 's' }}
                     </span>
-                    <span class="fb-summary__label">Average rating</span>
                 </div>
-                <div class="fb-summary__divider"></div>
-                <div class="fb-summary__count">
-                    <span class="fb-summary__number" id="fbSummaryCount">{{ $feedbacks->count() }}</span>
-                    <span class="fb-summary__label">Review{{ $feedbacks->count() === 1 ? '' : 's' }} shared</span>
-                </div>
-                <button type="button" class="fb-btn fb-btn--gold fb-summary__cta" data-open-review-modal>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
-                    Write a Review
-                </button>
-            </section>
 
-            <div class="fb-toolbar">
-                <input type="search" id="feedbackListSearch" placeholder="Search by name..." class="fb-filter-input" autocomplete="off">
-                <select id="feedbackListStarFilter" class="fb-filter-select" aria-label="Filter by star rating">
-                    <option value="all">All stars</option>
-                    @for ($i = 5; $i >= 1; $i--)
-                        <option value="{{ $i }}">{{ $i }} star{{ $i > 1 ? 's' : '' }}</option>
-                    @endfor
-                </select>
-            </div>
+                <div class="shopee-rating-card__right">
+                    <div class="shopee-filter-pills" role="tablist" aria-label="Filter reviews">
+                        <button type="button" class="shopee-pill is-active" data-shopee-filter="all">All (<span class="shopee-pill__count" id="countPillAll">{{ $totalFeedbacks }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="5">5 Star (<span class="shopee-pill__count" id="countPill5">{{ $count5 }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="4">4 Star (<span class="shopee-pill__count" id="countPill4">{{ $count4 }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="3">3 Star (<span class="shopee-pill__count" id="countPill3">{{ $count3 }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="2">2 Star (<span class="shopee-pill__count" id="countPill2">{{ $count2 }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="1">1 Star (<span class="shopee-pill__count" id="countPill1">{{ $count1 }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="media">With Media (<span class="shopee-pill__count" id="countPillMedia">{{ $countMedia }}</span>)</button>
+                        <button type="button" class="shopee-pill" data-shopee-filter="comments">With Comments (<span class="shopee-pill__count" id="countPillComments">{{ $countComments }}</span>)</button>
+                    </div>
+
+                    <div class="shopee-rating-card__actions">
+                        <div class="shopee-search-wrap">
+                            <svg class="shopee-search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input type="search" id="feedbackListSearch" placeholder="Search guest reviews..." class="shopee-search-input" autocomplete="off">
+                        </div>
+                        <button type="button" class="fb-btn fb-btn--gold shopee-write-btn" data-open-review-modal>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                            Write a Review
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             <section class="fb-review-grid" id="feedbackReviewList" aria-live="polite">
                 @forelse ($feedbacks as $feedback)
                     @php
                         $imagesCount = $feedback->images ? $feedback->images->count() : 0;
-                        $imagesJson = $imagesCount > 0 ? $feedback->images->map(fn($img) => [
-                            'id' => $img->id,
-                            'url' => $img->image_url,
-                        ])->values()->toJson() : '[]';
+                        $hasComment = !empty(trim($feedback->description));
+                        $reviewerName = $feedback->full_name ?: 'Anonymous Guest';
                     @endphp
                     <article
-                        class="fb-review-card"
-                        data-guest-name="{{ strtolower($feedback->full_name) }}"
+                        class="fb-review-card shopee-review-card"
+                        data-guest-name="{{ strtolower($reviewerName) }}"
                         data-stars="{{ $feedback->stars }}"
+                        data-has-media="{{ $imagesCount > 0 ? '1' : '0' }}"
+                        data-has-comment="{{ $hasComment ? '1' : '0' }}"
                         tabindex="0"
                         role="button"
-                        aria-label="View full review by {{ $feedback->full_name }}"
+                        aria-label="View full review by {{ $reviewerName }}"
                     >
                         <script type="application/json" class="fb-card-data">
                             {!! json_encode([
-                                'fullName' => $feedback->full_name,
+                                'fullName' => $reviewerName,
+                                'rawName' => $feedback->full_name,
                                 'initials' => $feedback->initials,
                                 'date' => $feedback->created_at->format('M j, Y'),
                                 'stars' => $feedback->stars,
                                 'description' => $feedback->description,
+                                'replied' => $feedback->replied,
                                 'images' => $feedback->images ? $feedback->images->map(fn($img) => [
                                     'id' => $img->id,
                                     'url' => $img->image_url,
@@ -130,47 +157,66 @@
                         <div class="fb-review-card__top">
                             <span class="fb-review-card__avatar" aria-hidden="true">{{ $feedback->initials }}</span>
                             <div class="fb-review-card__meta">
-                                <h3 class="fb-review-card__name">{{ $feedback->full_name }}</h3>
-                                <time class="fb-review-card__date" datetime="{{ $feedback->created_at->toDateString() }}">{{ $feedback->created_at->format('M j, Y') }}</time>
+                                <div class="shopee-review-card__user-row">
+                                    <h3 class="fb-review-card__name">{{ $reviewerName }}</h3>
+                                </div>
+                                <time class="fb-review-card__date" datetime="{{ $feedback->created_at->toDateString() }}">
+                                    {{ $feedback->created_at->format('Y-m-d H:i') }} | Hinaguan Nature Park Experience
+                                </time>
                             </div>
                             <div class="fb-review-card__badge" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                                 <span>{{ $feedback->stars }}.0</span>
                             </div>
                         </div>
+
                         <div class="fb-review-card__stars" aria-label="{{ $feedback->stars }} out of 5 stars">
                             @for ($s = 1; $s <= 5; $s++)
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="{{ $s <= $feedback->stars ? 'is-filled' : '' }}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                             @endfor
                         </div>
+
                         <p class="fb-review-card__text">{{ $feedback->description }}</p>
 
                         @if ($imagesCount > 0)
                             <div class="fb-review-card__gallery" aria-label="Attached review photos">
                                 @if ($imagesCount === 1)
-                                    <button type="button" class="fb-gallery-thumb fb-gallery-thumb--single" data-img-index="0" aria-label="View photo by {{ $feedback->full_name }}">
-                                        <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo by {{ $feedback->full_name }}" loading="lazy">
+                                    <button type="button" class="fb-gallery-thumb fb-gallery-thumb--single" data-img-index="0" aria-label="View photo by {{ $reviewerName }}">
+                                        <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo by {{ $reviewerName }}" loading="lazy">
                                     </button>
                                 @elseif ($imagesCount === 2)
                                     <div class="fb-gallery-grid fb-gallery-grid--2">
-                                        <button type="button" class="fb-gallery-thumb" data-img-index="0" aria-label="View photo 1 by {{ $feedback->full_name }}">
-                                            <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo 1 by {{ $feedback->full_name }}" loading="lazy">
+                                        <button type="button" class="fb-gallery-thumb" data-img-index="0" aria-label="View photo 1 by {{ $reviewerName }}">
+                                            <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo 1 by {{ $reviewerName }}" loading="lazy">
                                         </button>
-                                        <button type="button" class="fb-gallery-thumb" data-img-index="1" aria-label="View photo 2 by {{ $feedback->full_name }}">
-                                            <img src="{{ $feedback->images[1]->image_url }}" alt="Review photo 2 by {{ $feedback->full_name }}" loading="lazy">
+                                        <button type="button" class="fb-gallery-thumb" data-img-index="1" aria-label="View photo 2 by {{ $reviewerName }}">
+                                            <img src="{{ $feedback->images[1]->image_url }}" alt="Review photo 2 by {{ $reviewerName }}" loading="lazy">
                                         </button>
                                     </div>
                                 @else
                                     <div class="fb-gallery-grid fb-gallery-grid--multiple">
-                                        <button type="button" class="fb-gallery-thumb" data-img-index="0" aria-label="View photo 1 by {{ $feedback->full_name }}">
-                                            <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo 1 by {{ $feedback->full_name }}" loading="lazy">
+                                        <button type="button" class="fb-gallery-thumb" data-img-index="0" aria-label="View photo 1 by {{ $reviewerName }}">
+                                            <img src="{{ $feedback->images[0]->image_url }}" alt="Review photo 1 by {{ $reviewerName }}" loading="lazy">
                                         </button>
                                         <button type="button" class="fb-gallery-thumb fb-gallery-thumb--overlay" data-img-index="1" aria-label="View {{ $imagesCount - 1 }} more photos">
-                                            <img src="{{ $feedback->images[1]->image_url }}" alt="Review photo 2 by {{ $feedback->full_name }}" loading="lazy">
+                                            <img src="{{ $feedback->images[1]->image_url }}" alt="Review photo 2 by {{ $reviewerName }}" loading="lazy">
                                             <span class="fb-gallery-thumb__badge">+{{ $imagesCount - 1 }}</span>
                                         </button>
                                     </div>
                                 @endif
+                            </div>
+                        @endif
+
+                        {{-- Shopee-style Management / Seller Response Box --}}
+                        @if ($feedback->replied)
+                            <div class="fb-shopee-reply" aria-label="Park Management Response">
+                                <div class="fb-shopee-reply__header">
+                                    <svg class="fb-shopee-reply__badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="fb-shopee-reply__title">Park Management Response:</span>
+                                </div>
+                                <p class="fb-shopee-reply__text">{{ $feedback->replied }}</p>
                             </div>
                         @endif
 
@@ -219,6 +265,17 @@
                         <span class="fb-detail-gallery__count" id="reviewDetailGalleryCount"></span>
                     </div>
                     <div class="fb-detail-gallery__grid" id="reviewDetailGalleryGrid"></div>
+                </div>
+
+                {{-- Shopee Management Response in Modal --}}
+                <div class="fb-shopee-reply fb-detail-reply hidden" id="reviewDetailReplySection" aria-label="Park Management Response">
+                    <div class="fb-shopee-reply__header">
+                        <svg class="fb-shopee-reply__badge-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="fb-shopee-reply__title">Park Management Response:</span>
+                    </div>
+                    <p class="fb-shopee-reply__text" id="reviewDetailReplyText"></p>
                 </div>
             </div>
         </div>

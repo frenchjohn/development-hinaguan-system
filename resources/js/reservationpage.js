@@ -3766,8 +3766,147 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentReservationId = null;
     let currentPaymentIntentId = null;
     let currentClientKey = null;
+    let currentBookerPhone = null;
     let paymentPollInterval = null;
     let paymentCountdownInterval = null;
+    let hasHandledPaymentSuccess = false;
+    let hasShownSmsNotification = false;
+
+    // ── Floating Toast Notifications Helper ──────────────────────────────────
+    const showToast = ({ type = 'success', title, message, duration = 6500 }) => {
+        const toastContainer = document.getElementById('rpToastContainer');
+        if (!toastContainer) return;
+
+        // Clear existing toasts so only 1 toast ever displays
+        toastContainer.innerHTML = '';
+
+        const toast = document.createElement('div');
+        toast.className = `rp-toast rp-toast--${type}`;
+        toast.setAttribute('role', 'alert');
+
+        const iconHtml = type === 'success'
+            ? '<i class="bi bi-chat-check-fill"></i>'
+            : (type === 'error' ? '<i class="bi bi-chat-left-dots-fill"></i>' : '<i class="bi bi-info-circle-fill"></i>');
+
+        toast.innerHTML = `
+            <div class="rp-toast__icon-badge">
+                ${iconHtml}
+            </div>
+            <div class="rp-toast__content">
+                <h4 class="rp-toast__title">${title}</h4>
+                <p class="rp-toast__message">${message}</p>
+            </div>
+            <button type="button" class="rp-toast__close" aria-label="Dismiss">&times;</button>
+            <div class="rp-toast__progress"></div>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.classList.add('is-visible');
+        });
+
+        let isDismissed = false;
+        const dismiss = () => {
+            if (isDismissed) return;
+            isDismissed = true;
+            toast.classList.remove('is-visible');
+            toast.classList.add('is-hiding');
+            setTimeout(() => {
+                toast.remove();
+            }, 400);
+        };
+
+        const closeBtn = toast.querySelector('.rp-toast__close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', dismiss);
+        }
+
+        setTimeout(dismiss, duration);
+    };
+
+    // ── SMS Confirmation Status Notification Handler ────────────────────────
+    const updateModalSmsStatus = (isSuccess, text) => {
+        const smsStatusPill = document.getElementById('successModalSmsStatus');
+        const smsIcon = document.getElementById('successModalSmsIcon');
+        const smsText = document.getElementById('successModalSmsText');
+
+        if (!smsStatusPill) return;
+
+        smsStatusPill.classList.remove('rp-sms-status-pill--success', 'rp-sms-status-pill--failed', 'rp-sms-status-pill--pending');
+
+        if (isSuccess) {
+            smsStatusPill.classList.add('rp-sms-status-pill--success');
+            if (smsIcon) smsIcon.className = 'bi bi-check-circle-fill';
+            if (smsText) smsText.textContent = text || 'SMS confirmation dispatched';
+        } else {
+            smsStatusPill.classList.add('rp-sms-status-pill--failed');
+            if (smsIcon) smsIcon.className = 'bi bi-exclamation-triangle-fill';
+            if (smsText) smsText.textContent = text || 'SMS delivery failed (check email)';
+        }
+    };
+
+    const handleReservationSmsNotification = async (smsStatus, smsMessage, phone, reservationId) => {
+        if (hasShownSmsNotification) return;
+        hasShownSmsNotification = true;
+
+        const targetPhone = phone || currentBookerPhone || '';
+
+        // If sms_status is already determined
+        if (smsStatus === true) {
+            updateModalSmsStatus(true, `SMS confirmation sent${targetPhone ? ' to ' + targetPhone : ''}`);
+            showToast({
+                type: 'success',
+                title: 'SMS Confirmation Sent!',
+                message: smsMessage || `A confirmation text message has been sent to ${targetPhone || 'your mobile number'}.`,
+            });
+            return;
+        }
+
+        if (smsStatus === false) {
+            updateModalSmsStatus(false, 'SMS delivery failed (check email)');
+            showToast({
+                type: 'error',
+                title: 'SMS Notification Failed',
+                message: smsMessage || `Could not deliver text to ${targetPhone || 'your mobile number'}. Don't worry, your reservation is confirmed and details were sent to your email!`,
+            });
+            return;
+        }
+
+        // If smsStatus is unknown, query the sms-status endpoint once
+        if (reservationId) {
+            try {
+                const res = await fetch(`/reservation/${reservationId}/sms-status`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.sms_status === true) {
+                        updateModalSmsStatus(true, `SMS confirmation sent${(data.phone || targetPhone) ? ' to ' + (data.phone || targetPhone) : ''}`);
+                        showToast({
+                            type: 'success',
+                            title: 'SMS Confirmation Sent!',
+                            message: data.sms_message || `A confirmation text message was sent to ${data.phone || targetPhone}.`,
+                        });
+                        return;
+                    } else if (data.sms_status === false) {
+                        updateModalSmsStatus(false, 'SMS delivery failed (check email)');
+                        showToast({
+                            type: 'error',
+                            title: 'SMS Notification Failed',
+                            message: data.sms_message || `Could not deliver text to ${data.phone || targetPhone}. Your reservation is confirmed and details were emailed to you.`,
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not check SMS status:', e);
+            }
+        }
+
+        updateModalSmsStatus(false, 'SMS delivery unavailable');
+    };
 
     const stopPaymentTimer = () => {
         if (paymentCountdownInterval) {
@@ -3979,11 +4118,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start polling payment intent status
     const startPaymentPolling = (paymentIntentId) => {
+        if (hasHandledPaymentSuccess) return;
+
         const intentId = paymentIntentId || currentPaymentIntentId;
         if (!intentId) return;
 
         if (paymentPollInterval) {
             clearInterval(paymentPollInterval);
+            paymentPollInterval = null;
         }
 
         if (pmStatusBox) pmStatusBox.hidden = false;
@@ -3992,6 +4134,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         paymentPollInterval = setInterval(async () => {
             try {
+                if (hasHandledPaymentSuccess) {
+                    stopPaymentTimer();
+                    clearInterval(paymentPollInterval);
+                    paymentPollInterval = null;
+                    return;
+                }
+
                 const res = await fetch('/reservation/check-payment-status', {
                     method: 'POST',
                     headers: {
@@ -4013,6 +4162,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (data.success) {
                     if (data.status === 'succeeded' || data.payment_status === 'Partially Paid') {
+                        if (hasHandledPaymentSuccess) {
+                            stopPaymentTimer();
+                            clearInterval(paymentPollInterval);
+                            paymentPollInterval = null;
+                            return;
+                        }
+                        hasHandledPaymentSuccess = true;
+
                         stopPaymentTimer();
                         clearInterval(paymentPollInterval);
                         paymentPollInterval = null;
@@ -4026,6 +4183,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             successModal.setAttribute('aria-hidden', 'false');
                             updateOverlayScrollLock();
                         }
+
+                        handleReservationSmsNotification(data.sms_status, data.sms_message, currentBookerPhone, data.reservation_id);
+                        return;
                     } else if (['failed', 'cancelled', 'expired'].includes(data.status)) {
                         showPaymentFailedModal(
                             data.status === 'expired' ? 'Payment Session Expired' : 'Payment Failed or Cancelled',
@@ -4086,6 +4246,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (result.status === 'succeeded') {
+                if (hasHandledPaymentSuccess) return;
+                hasHandledPaymentSuccess = true;
+
+                stopPaymentTimer();
+                if (paymentPollInterval) {
+                    clearInterval(paymentPollInterval);
+                    paymentPollInterval = null;
+                }
+
                 closePaymentModal();
                 if (bookingForm) bookingForm.reset();
 
@@ -4095,6 +4264,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     successModal.setAttribute('aria-hidden', 'false');
                     updateOverlayScrollLock();
                 }
+
+                handleReservationSmsNotification(result.sms_status, result.sms_message, currentBookerPhone, result.reservation_id);
                 return;
             }
 
@@ -4653,6 +4824,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 night_slots_count: nightCount,
             }];
         }
+
+        currentBookerPhone = fullPhoneNumber;
+        hasHandledPaymentSuccess = false;
+        hasShownSmsNotification = false;
 
         const payload = {
             booker_name: rawBookerName,
