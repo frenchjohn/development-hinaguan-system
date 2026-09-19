@@ -4462,11 +4462,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         } elseif ($preset === 'custom' && ($dateFrom || $dateTo)) {
             $filterFrom = $dateFrom;
             $filterTo = $dateTo;
+        } elseif ($preset === 'all') {
+            $filterFrom = null;
+            $filterTo = null;
         } else {
-            // 'all' or unrestricted
             $preset = ($preset === 'custom') ? 'custom' : 'all';
-            $filterFrom = $dateFrom ?: null;
-            $filterTo = $dateTo ?: null;
+            $filterFrom = ($preset === 'custom') ? ($dateFrom ?: null) : null;
+            $filterTo = ($preset === 'custom') ? ($dateTo ?: null) : null;
         }
 
         // Base query for authenticated staff member's logs
