@@ -75,30 +75,6 @@
     {{-- Site header --}}
     <div class="rp-site-header" id="rpSiteHeader">
 
-        <div class="rp-topbar">
-
-            <div class="rp-topbar__inner">
-
-                <p class="rp-topbar__text">
-
-                    <strong>Now Open!</strong>
-
-                    Daytime: Adult &#8369;{{ $parkSettings->daytime_adult_entrance_fee ?? 70 }} &middot; Child &#8369;{{ $parkSettings->daytime_child_entrance_fee ?? 50 }} &nbsp;|&nbsp;
-
-                    Overnight: Adult &#8369;{{ $parkSettings->nighttime_adult_entrance_fee ?? 100 }} &nbsp;|&nbsp;
-
-                    <a href="{{ route('reservation') }}">Reserve Now</a>
-
-                    &nbsp;&middot;&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
-
-                </p>
-
-            </div>
-
-        </div>
-
-
-
         <header class="rp-header is-scrolled" id="rpHeader">
 
             <div class="rp-header__inner">
@@ -106,14 +82,7 @@
                 <a href="{{ route('home') }}" class="rp-logo">
 
                     <span class="rp-logo__icon">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
-
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
-
-                        </svg>
+                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park logo">
 
                     </span>
 
@@ -129,39 +98,12 @@
 
 
 
-                <nav class="rp-nav">
-
-                    <ul class="rp-nav__links">
-
-                        <li><a href="{{ route('home') }}#about">About</a></li>
-
-                        <li><a href="{{ route('home') }}#amenities">Amenities</a></li>
-
-                        <li><a href="{{ route('home') }}#activities">Activities</a></li>
-
-                        <li><a href="{{ route('home') }}#rates">Rates</a></li>
-
-                        <li><a href="{{ route('home') }}#gallery">Gallery</a></li>
-
-                        <li><a href="{{ route('home') }}#directions">Directions</a></li>
-
-                    </ul>
-
-                    <a href="{{ route('reservation') }}" class="rp-btn rp-btn--book is-active">Book Now</a>
-
-                </nav>
-
-
-
-                <button class="rp-menu-toggle" aria-label="Open menu" aria-expanded="false">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-
-                        <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/>
-
+                <a href="{{ route('home') }}" class="rp-header-back">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
-
-                </button>
+                    <span>Back to Homepage</span>
+                </a>
 
             </div>
 
@@ -171,37 +113,10 @@
 
 
 
-    <nav class="rp-mobile-nav" aria-hidden="true">
-
-        <a href="{{ route('home') }}#about">About</a>
-
-        <a href="{{ route('home') }}#amenities">Amenities</a>
-
-        <a href="{{ route('home') }}#activities">Activities</a>
-
-        <a href="{{ route('home') }}#rates">Rates</a>
-
-        <a href="{{ route('home') }}#gallery">Gallery</a>
-
-        <a href="{{ route('home') }}#directions">Directions</a>
-
-        <a href="{{ route('reservation') }}" class="rp-btn rp-btn--book">Book Now</a>
-
-    </nav>
-
-
-
     <main class="rp-main">
 
         {{-- ── Sticky Top-Left Navigation Bar ── --}}
         <div class="rp-sticky-top-bar">
-            <a href="{{ route('home') }}" class="rp-back-button" title="Back to Homepage">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                <span>Back to Homepage</span>
-            </a>
-
             <button type="button" class="rp-terms-trigger-btn" id="openTermsPolicyBtn" data-open-terms-modal title="View Park Terms &amp; Conditions">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

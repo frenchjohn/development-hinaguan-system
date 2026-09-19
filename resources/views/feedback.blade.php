@@ -19,23 +19,11 @@
 <body class="antialiased fb-page">
 
     <div class="fb-site-header" id="fbSiteHeader">
-        <div class="fb-topbar {{ ($parkSettings->park_status ?? 'open') === 'closed' ? 'fb-topbar--closed' : '' }}">
-            <div class="fb-topbar__inner">
-                @if (($parkSettings->park_status ?? 'open') === 'closed')
-                    <p class="fb-topbar__text">Park Closed — {{ $parkSettings->close_description ?: 'Temporarily closed' }}</p>
-                @else
-                    <p class="fb-topbar__text">
-                        <strong>Now Open!</strong>
-                        &nbsp;|&nbsp; Call: {{ $parkSettings->contact_number ?? '0917 861 8383' }}
-                    </p>
-                @endif
-            </div>
-        </div>
         <header class="fb-header">
             <div class="fb-header__inner">
                 <a href="{{ route('home') }}" class="fb-logo">
                     <span class="fb-logo__icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/></svg>
+                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park logo">
                     </span>
                     <span class="fb-logo__text">
                         <span class="fb-logo__name">Hinaguan Nature Park</span>
@@ -47,7 +35,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
                         Back to Home
                     </a>
-                    <button type="button" id="fbOpenReviewModalTop" class="fb-btn fb-btn--book">Write a Review</button>
                 </nav>
             </div>
         </header>

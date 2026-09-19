@@ -3880,6 +3880,271 @@ html {
     color: #dc2626 !important;
 }
 
+/* Homepage-aligned reservation surfaces */
+.rp-page {
+    background-color: #06190f;
+}
+
+.rp-page::after {
+    content: '';
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: rgba(6, 25, 15, 0.68);
+    pointer-events: none;
+}
+
+.rp-topbar {
+    background: #0a2718;
+    border-bottom: 1px solid rgba(163, 230, 53, 0.22);
+}
+
+.rp-topbar__text,
+.rp-topbar__text a {
+    color: #d9f99d;
+}
+
+.rp-header {
+    background: rgba(6, 25, 15, 0.96);
+    border-bottom: 1px solid rgba(163, 230, 53, 0.18);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.rp-logo__icon {
+    background: #a3e635;
+    box-shadow: none;
+}
+
+.rp-logo__name {
+    color: #ffffff;
+}
+
+.rp-logo__location {
+    color: #34d399;
+}
+
+.rp-nav__links a {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.rp-nav__links a:hover,
+.rp-nav__links a.is-active {
+    color: #a3e635;
+}
+
+.rp-btn--book,
+.rp-starter__btn--amenity,
+.rp-starter__btn--date {
+    background: #a3e635;
+    color: #082214;
+    border: none;
+    box-shadow: 0 3px 14px rgba(163, 230, 53, 0.22);
+}
+
+.rp-btn--book:hover,
+.rp-starter__btn--amenity:hover,
+.rp-starter__btn--date:hover {
+    background: #bef264;
+    color: #082214;
+    box-shadow: 0 5px 16px rgba(163, 230, 53, 0.25);
+}
+
+.rp-main {
+    gap: 1.25rem;
+}
+
+.rp-back-button,
+.rp-terms-trigger-btn,
+.rp-steps-toggle-btn,
+.rp-flow-nav,
+.rp-filterbar,
+.rp-date-card,
+.rp-bp-card {
+    background: rgba(16, 45, 32, 0.92);
+    border-color: rgba(163, 230, 53, 0.2);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.rp-back-button,
+.rp-terms-trigger-btn {
+    color: #d1fae5;
+}
+
+.rp-back-button:hover,
+.rp-terms-trigger-btn:hover,
+.rp-steps-toggle-btn:hover {
+    background: #163b29;
+    border-color: rgba(163, 230, 53, 0.45);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.rp-bp-card,
+.rp-filterbar {
+    border-radius: 0.75rem;
+}
+
+.rp-grid__title,
+.rp-category-title {
+    color: #ffffff;
+}
+
+.rp-grid__sub,
+.rp-category-line {
+    color: rgba(209, 250, 229, 0.72);
+}
+
+.rp-category-icon,
+.rp-category-pill.is-active {
+    background: #1b5e3a;
+    border-color: #1b5e3a;
+}
+
+.rp-category-pill {
+    background: rgba(16, 45, 32, 0.9);
+    border-color: rgba(163, 230, 53, 0.2);
+    color: #d1fae5;
+    box-shadow: none;
+}
+
+.rp-category-pill:hover {
+    background: #163b29;
+    border-color: rgba(163, 230, 53, 0.45);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.rp-card {
+    border-radius: 0.75rem;
+    border-color: rgba(163, 230, 53, 0.2);
+    background: rgba(16, 45, 32, 0.94);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.rp-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(163, 230, 53, 0.45);
+    background: #163b29;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.rp-card__bottom {
+    background: transparent;
+}
+
+.rp-card__title,
+.rp-price-val {
+    color: #ffffff;
+}
+
+.rp-card:hover .rp-card__title {
+    color: #d9f99d;
+}
+
+.rp-price-unit,
+.rp-grid__sub {
+    color: rgba(209, 250, 229, 0.68);
+}
+
+.rp-card__pricing {
+    border-top-color: rgba(209, 250, 229, 0.14);
+}
+
+.rp-booking-form {
+    background: rgba(16, 45, 32, 0.94);
+    border-color: rgba(163, 230, 53, 0.2);
+}
+
+.rp-booking-form h3,
+.rp-booking-form label {
+    color: #ffffff;
+}
+
+.rp-booking-form input,
+.rp-phone-input-group {
+    background: rgba(6, 25, 15, 0.7);
+    border-color: rgba(209, 250, 229, 0.25);
+    color: #ffffff;
+}
+
+.rp-booking-form input::placeholder {
+    color: rgba(209, 250, 229, 0.55);
+}
+
+/* Contrast and amenity detail accents on the softened background. */
+.rp-grid__title,
+.rp-category-title {
+    color: #26352c;
+}
+
+.rp-grid__sub {
+    color: #68776d;
+}
+
+.rp-category-line {
+    background: linear-gradient(90deg, rgba(53, 103, 72, 0.28), rgba(53, 103, 72, 0.06) 70%, transparent);
+}
+
+.rp-feature-pill--aircon {
+    background: #dfeaf2;
+    border-color: #c3d8e4;
+    color: #355a6f;
+}
+
+.rp-feature-pill--pool {
+    background: #deeee5;
+    border-color: #c1dbc9;
+    color: #356348;
+}
+
+.rp-feature-pill--entrance {
+    background: #f1ead7;
+    border-color: #e1d3ad;
+    color: #75613a;
+}
+
+.rp-perk {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: #d8e2da;
+    box-shadow: 0 3px 14px rgba(35, 57, 42, 0.08);
+}
+
+.rp-perk:hover {
+    box-shadow: 0 5px 16px rgba(35, 57, 42, 0.12);
+}
+
+.rp-perk svg {
+    color: #4d7c59;
+}
+
+.rp-perk strong {
+    color: #26352c;
+}
+
+.rp-perk span {
+    color: #68776d;
+}
+
+.rp-booking-form input:focus,
+.rp-phone-input-group:focus-within {
+    border-color: #a3e635;
+    box-shadow: 0 0 0 3px rgba(163, 230, 53, 0.14);
+}
+
+.rp-booking-form__button {
+    background: #a3e635;
+    border: none;
+    color: #082214;
+    box-shadow: 0 3px 14px rgba(163, 230, 53, 0.22);
+}
+
+.rp-booking-form__button:hover {
+    background: #bef264;
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(163, 230, 53, 0.25);
+}
+
 .rp-modal__text {
     margin: 0;
     color: #4b5563;
@@ -8219,4 +8484,469 @@ body:has(.rp-modal.is-open) .rp-footer {
         left: 1rem;
         max-width: none;
     }
-}
+}
+
+.rp-bp-card,
+.rp-bp-subcard,
+.rp-date-card,
+.rp-filterbar {
+    background: rgba(16, 45, 32, 0.92);
+    border-color: rgba(163, 230, 53, 0.2);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.rp-bp-label,
+.rp-bp-col__title,
+.rp-stay-label {
+    color: #a3e635;
+}
+
+.rp-bp-date-trigger {
+    background: rgba(6, 25, 15, 0.7);
+    border-color: rgba(209, 250, 229, 0.25);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.rp-bp-date-trigger:hover {
+    border-color: #a3e635;
+    background: #163b29;
+    box-shadow: none;
+}
+
+.rp-bp-date-trigger__cal-icon,
+.rp-bp-date-trigger__chevron,
+.rp-bp-header__icon,
+.rp-stay-icon {
+    color: #a3e635;
+}
+
+.rp-bp-anchor-btn {
+    background: #1b5e3a;
+    border-color: #a3e635;
+    color: #a3e635;
+    box-shadow: none;
+}
+
+/* Minimal light reservation theme */
+.rp-page {
+    background-color: #f4f6f3;
+    color: #26352c;
+}
+
+.rp-page::after {
+    background: rgba(248, 250, 248, 0.82);
+}
+
+.rp-topbar {
+    background: #f1f4f1;
+    border-bottom: 1px solid #dfe7e1;
+}
+
+.rp-topbar__text,
+.rp-topbar__text a {
+    color: #315840;
+}
+
+.rp-header {
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid #e2e9e3;
+    box-shadow: 0 2px 12px rgba(35, 57, 42, 0.08);
+}
+
+.rp-logo__icon {
+    background: #edf4ee;
+    border: 1px solid #cbdacc;
+}
+
+.rp-logo__icon svg {
+    color: #356748;
+}
+
+.rp-logo__name {
+    color: #20352a;
+}
+
+.rp-logo__location {
+    color: #4f7a5d;
+}
+
+.rp-nav__links a,
+.rp-nav__links a:hover,
+.rp-nav__links a.is-active {
+    color: #4b5c50;
+}
+
+.rp-btn--book,
+.rp-starter__btn--amenity,
+.rp-starter__btn--date,
+.rp-booking-form__button {
+    background: #356748;
+    color: #ffffff;
+    border: 1px solid #356748;
+    box-shadow: 0 2px 8px rgba(35, 57, 42, 0.14);
+}
+
+.rp-btn--book:hover,
+.rp-starter__btn--amenity:hover,
+.rp-starter__btn--date:hover,
+.rp-booking-form__button:hover {
+    background: #2b563b;
+    color: #ffffff;
+    box-shadow: 0 3px 10px rgba(35, 57, 42, 0.18);
+}
+
+.rp-back-button,
+.rp-terms-trigger-btn,
+.rp-steps-toggle-btn,
+.rp-flow-nav,
+.rp-filterbar,
+.rp-date-card,
+.rp-bp-card,
+.rp-bp-subcard {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: #d9e3db;
+    color: #33463a;
+    box-shadow: 0 3px 14px rgba(35, 57, 42, 0.08);
+}
+
+.rp-back-button,
+.rp-terms-trigger-btn,
+.rp-steps-toggle-btn {
+    color: #3e6048;
+}
+
+.rp-back-button:hover,
+.rp-terms-trigger-btn:hover,
+.rp-steps-toggle-btn:hover {
+    background: #f5f8f5;
+    border-color: #a9c2ad;
+    color: #2b563b;
+    box-shadow: none;
+}
+
+.rp-grid__title,
+.rp-category-title,
+.rp-bp-label,
+.rp-bp-col__title,
+.rp-stay-label {
+    color: #26352c;
+}
+
+.rp-grid__sub,
+.rp-category-line,
+.rp-price-unit {
+    color: #68776d;
+}
+
+.rp-category-icon,
+.rp-category-pill.is-active {
+    background: #356748;
+    border-color: #356748;
+    color: #ffffff;
+}
+
+.rp-category-pill {
+    background: #ffffff;
+    border-color: #d2ded5;
+    color: #405448;
+    box-shadow: none;
+}
+
+.rp-category-pill:hover {
+    background: #f5f8f5;
+    border-color: #9fbaa4;
+    color: #2b563b;
+    box-shadow: none;
+}
+
+.rp-card {
+    border-radius: 0.65rem;
+    border-color: #d8e2da;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 3px 14px rgba(35, 57, 42, 0.08);
+}
+
+.rp-card:hover {
+    transform: translateY(-1px);
+    border-color: #a9c2ad;
+    background: #ffffff;
+    box-shadow: 0 5px 16px rgba(35, 57, 42, 0.12);
+}
+
+.rp-card__bottom {
+    background: #ffffff;
+}
+
+.rp-card__title,
+.rp-price-val {
+    color: #26352c;
+}
+
+.rp-card:hover .rp-card__title {
+    color: #356748;
+}
+
+.rp-card__pricing {
+    border-top-color: #e4ebe5;
+}
+
+.rp-feature-pill--aircon,
+.rp-feature-pill--pool,
+.rp-feature-pill--entrance {
+    background: #f1f5f2;
+    border-color: #d8e3da;
+    color: #496450;
+}
+
+.rp-booking-form {
+    background: #ffffff;
+    border-color: #d9e3db;
+}
+
+.rp-booking-form h3,
+.rp-booking-form label {
+    color: #26352c;
+}
+
+.rp-booking-form input,
+.rp-phone-input-group,
+.rp-bp-date-trigger {
+    background: #ffffff;
+    border-color: #cbd8ce;
+    color: #26352c;
+}
+
+.rp-booking-form input::placeholder {
+    color: #819087;
+}
+
+.rp-booking-form input:focus,
+.rp-phone-input-group:focus-within,
+.rp-bp-date-trigger:hover {
+    border-color: #6d9a78;
+    box-shadow: 0 0 0 3px rgba(109, 154, 120, 0.14);
+}
+
+.rp-bp-date-trigger__cal-icon,
+.rp-bp-date-trigger__chevron,
+.rp-bp-header__icon,
+.rp-stay-icon {
+    color: #4d7c59;
+}
+
+.rp-bp-anchor-btn {
+    background: #ffffff;
+    border-color: #9fbaa4;
+    color: #356748;
+    box-shadow: 0 2px 8px rgba(35, 57, 42, 0.12);
+}
+
+/* Keep the page content on the homepage's dark green surfaces. */
+.rp-header {
+    background: rgba(6, 25, 15, 0.97);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.rp-logo__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0.12rem;
+    background: #ffffff;
+    border: 2px solid #4ade80;
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+}
+
+.rp-logo__icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.rp-logo__name {
+    color: #ffffff;
+}
+
+.rp-logo__location {
+    color: #34d399;
+}
+
+.rp-header-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid rgba(163, 230, 53, 0.35);
+    border-radius: 0.5rem;
+    color: #d1fae5;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.rp-header-back:hover {
+    background: #163b29;
+    border-color: rgba(163, 230, 53, 0.6);
+    color: #ffffff;
+}
+
+.rp-topbar {
+    background: #06190f;
+    border-bottom-color: rgba(74, 222, 128, 0.2);
+}
+
+.rp-topbar__text,
+.rp-topbar__text a {
+    color: #d1fae5;
+}
+
+.rp-back-button,
+.rp-terms-trigger-btn,
+.rp-steps-toggle-btn,
+.rp-flow-nav,
+.rp-filterbar,
+.rp-date-card,
+.rp-bp-card,
+.rp-bp-subcard {
+    background: rgba(16, 45, 32, 0.94);
+    border-color: rgba(163, 230, 53, 0.2);
+    color: #d1fae5;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.rp-grid__title,
+.rp-category-title,
+.rp-bp-label,
+.rp-bp-col__title,
+.rp-stay-label {
+    color: #ffffff;
+}
+
+.rp-grid__sub,
+.rp-category-line,
+.rp-price-unit {
+    color: rgba(209, 250, 229, 0.7);
+}
+
+.rp-category-pill {
+    background: rgba(16, 45, 32, 0.9);
+    border-color: rgba(163, 230, 53, 0.2);
+    color: #d1fae5;
+}
+
+.rp-category-pill:hover {
+    background: #163b29;
+    border-color: rgba(163, 230, 53, 0.45);
+    color: #ffffff;
+}
+
+.rp-card {
+    border-color: rgba(163, 230, 53, 0.2);
+    background: rgba(16, 45, 32, 0.96);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.rp-card:hover {
+    border-color: rgba(163, 230, 53, 0.45);
+    background: #163b29;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.rp-card__bottom {
+    background: transparent;
+}
+
+.rp-card__title,
+.rp-price-val {
+    color: #ffffff;
+}
+
+.rp-card__pricing {
+    border-top-color: rgba(209, 250, 229, 0.14);
+}
+
+.rp-feature-pill--aircon,
+.rp-feature-pill--pool,
+.rp-feature-pill--entrance {
+    background: rgba(209, 250, 229, 0.12);
+    border-color: rgba(209, 250, 229, 0.2);
+    color: #d1fae5;
+}
+
+.rp-bp-date-trigger,
+.rp-booking-form input,
+.rp-phone-input-group {
+    background: rgba(6, 25, 15, 0.72);
+    border-color: rgba(209, 250, 229, 0.25);
+    color: #ffffff;
+}
+
+.rp-booking-form {
+    background: rgba(16, 45, 32, 0.96);
+    border-color: rgba(163, 230, 53, 0.2);
+}
+
+.rp-booking-form h3,
+.rp-booking-form label {
+    color: #ffffff;
+}
+
+.rp-booking-form input::placeholder {
+    color: rgba(209, 250, 229, 0.55);
+}
+
+.rp-booking-form__button {
+    background: #a3e635;
+    border-color: #a3e635;
+    color: #082214;
+}
+
+/* Final restrained presentation: keep the image clear and interaction quiet. */
+.rp-page::after {
+    display: none;
+}
+
+.rp-grid__title,
+.rp-category-title {
+    color: #1f3026;
+}
+
+.rp-grid__sub {
+    color: #46564b;
+}
+
+.rp-category-pill:hover {
+    background: #f3f6f3;
+    border-color: #aebcaf;
+    color: #304b39;
+    transform: none;
+    box-shadow: none;
+}
+
+.rp-card {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rp-card:hover {
+    transform: none;
+    border-color: #9caf9e;
+    background: rgba(16, 45, 32, 0.96);
+    box-shadow: 0 5px 14px rgba(35, 57, 42, 0.16);
+}
+
+.rp-card__button:hover .rp-card__image {
+    transform: none;
+}
+
+.rp-card__button:hover .rp-card__cta {
+    background: rgba(16, 45, 32, 0.94);
+    border-color: #b8c9bb;
+    color: #e6efe8;
+    box-shadow: none;
+}
+
+.rp-card:hover .rp-card__title {
+    color: #ffffff;
+}

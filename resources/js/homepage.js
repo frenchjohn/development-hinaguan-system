@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileLinks = mobileNav?.querySelectorAll('a');
     const guestCountEl = document.getElementById('activeGuestCount');
     const scrollToTopBtn = document.getElementById('scrollToTop');
-    const navLinks = document.querySelectorAll('[data-nav-link]');
+    const navLinks = document.querySelectorAll('#hpDesktopNav [data-nav-link], #hpMobileNav [data-nav-link]');
     const sections = document.querySelectorAll('[data-section]');
     const animatedElements = document.querySelectorAll('[data-animate]');
 
@@ -38,15 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncResponsiveZoom();
     window.addEventListener('resize', syncResponsiveZoom, { passive: true });
 
-    // Sticky header background on scroll
-    const onScroll = () => {
-        const scrolled = window.scrollY > 40;
-        header?.classList.toggle('is-scrolled', scrolled);
-        scrollToTopBtn?.classList.toggle('is-visible', window.scrollY > 500);
-    };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
 
     // Mobile menu
     const mobileNavClose = document.getElementById('hpMobileNavClose');
@@ -108,35 +100,87 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const top = target.getBoundingClientRect().top + window.scrollY - getScrollOffset();
 
+            setActiveNav(targetId.replace('#', ''));
             window.scrollTo({ top, behavior: 'smooth' });
             closeMobileNav();
         });
     });
 
-    // Scroll spy — active nav link
+    // Section IDs corresponding to the nav links in exact page order
+    const navSectionIds = ['about', 'activities', 'gallery', 'rates', 'amenities', 'events', 'reviews', 'directions'];
+    const navSections = navSectionIds
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+
+    // Scroll spy — active nav link (clean, fixed directly to each link)
     const setActiveNav = (sectionId) => {
         navLinks.forEach((link) => {
             const href = link.getAttribute('href');
-            const isActive = href === `#${sectionId}` || (sectionId === 'home' && href === '#home');
+            const isActive = href === `#${sectionId}`;
             link.classList.toggle('is-active', isActive);
         });
     };
 
-    const sectionObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    setActiveNav(entry.target.id);
-                }
-            });
-        },
-        {
-            rootMargin: `-${getScrollOffset()}px 0px -55% 0px`,
-            threshold: 0,
-        }
-    );
+    const updateActiveNav = () => {
+        const scrollPos = window.scrollY;
+        const triggerOffset = getScrollOffset() + 60;
 
-    sections.forEach((section) => sectionObserver.observe(section));
+        // If above the first section (Hero), clear active nav
+        if (navSections.length > 0 && scrollPos < (navSections[0].offsetTop - triggerOffset)) {
+            setActiveNav('');
+            return;
+        }
+
+        // If scrolled to the bottom of the page, highlight the last section
+        if ((window.innerHeight + scrollPos) >= (document.documentElement.scrollHeight - 60)) {
+            const lastSection = navSections[navSections.length - 1];
+            if (lastSection) {
+                setActiveNav(lastSection.id);
+                return;
+            }
+        }
+
+        // Find the section currently in view
+        let activeId = '';
+        for (let i = 0; i < navSections.length; i++) {
+            const section = navSections[i];
+            const top = section.offsetTop - triggerOffset;
+            const nextSection = navSections[i + 1];
+            const bottom = nextSection ? (nextSection.offsetTop - triggerOffset) : (top + section.offsetHeight);
+
+            if (scrollPos >= top && scrollPos < bottom) {
+                activeId = section.id;
+                break;
+            }
+        }
+
+        if (activeId) {
+            setActiveNav(activeId);
+        }
+    };
+
+    // Sticky header background & active nav on scroll
+    let isScrollTicking = false;
+    const handleScroll = () => {
+        const scrolled = window.scrollY > 40;
+        siteHeader?.classList.toggle('is-scrolled', scrolled);
+        header?.classList.toggle('is-scrolled', scrolled);
+        scrollToTopBtn?.classList.toggle('is-visible', window.scrollY > 500);
+
+        updateActiveNav();
+    };
+
+    window.addEventListener('scroll', () => {
+        if (!isScrollTicking) {
+            window.requestAnimationFrame(() => {
+                handleScroll();
+                isScrollTicking = false;
+            });
+            isScrollTicking = true;
+        }
+    }, { passive: true });
+
+    handleScroll();
 
     // Entrance animations on scroll
     const animateObserver = new IntersectionObserver(
@@ -265,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEventsNav();
     }
 
-    // Activities carousel: four cards per view, with detail modal for each record.
+    // Activities carousel: native horizontal scrolling with button controls.
     const activitiesTrack = document.getElementById('hpActivitiesTrack');
     const activitiesPrevBtn = document.getElementById('hpActivitiesPrev');
     const activitiesNextBtn = document.getElementById('hpActivitiesNext');
@@ -273,15 +317,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const activityCards = activitiesTrack?.querySelectorAll('[data-activity-card]') ?? [];
 
     if (activitiesTrack && activityCards.length) {
-        let activityPage = 0;
         const getActivityPageSize = () => window.innerWidth < 700 ? 1 : window.innerWidth < 1024 ? 2 : 4;
         const getActivityPageCount = () => Math.ceil(activityCards.length / getActivityPageSize());
 
-        const updateActivities = () => {
+        const updateActivityControls = () => {
             const pageSize = getActivityPageSize();
             const pageCount = getActivityPageCount();
-            activityPage = Math.min(activityPage, Math.max(0, pageCount - 1));
-            activitiesTrack.style.transform = `translateX(-${activityPage * 100}%)`;
+            const activityPage = Math.min(
+                Math.round(activitiesTrack.scrollLeft / Math.max(1, activitiesTrack.clientWidth)),
+                Math.max(0, pageCount - 1)
+            );
+
             if (activitiesCount) activitiesCount.textContent = `${activityPage + 1} / ${pageCount}`;
             if (activitiesPrevBtn) activitiesPrevBtn.disabled = activityPage === 0;
             if (activitiesNextBtn) activitiesNextBtn.disabled = activityPage >= pageCount - 1;
@@ -291,15 +337,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         activitiesPrevBtn?.addEventListener('click', () => {
-            activityPage -= 1;
-            updateActivities();
+            activitiesTrack.scrollBy({ left: -activitiesTrack.clientWidth, behavior: 'smooth' });
         });
         activitiesNextBtn?.addEventListener('click', () => {
-            activityPage += 1;
-            updateActivities();
+            activitiesTrack.scrollBy({ left: activitiesTrack.clientWidth, behavior: 'smooth' });
         });
-        window.addEventListener('resize', updateActivities, { passive: true });
-        updateActivities();
+        activitiesTrack.addEventListener('scroll', updateActivityControls, { passive: true });
+        window.addEventListener('resize', updateActivityControls, { passive: true });
+        updateActivityControls();
     }
 
     const activityModal = document.getElementById('hpActivityModal');
@@ -317,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     activityCards.forEach((card) => {
-        card.addEventListener('click', () => {
+        const openActivityModal = () => {
             activityModalTrigger = card;
             if (activityModalTitle) activityModalTitle.textContent = card.dataset.activityTitle ?? '';
             if (activityModalDescription) activityModalDescription.textContent = card.dataset.activityDescription ?? '';
@@ -329,6 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
             activityModal?.classList.add('is-open');
             activityModal?.setAttribute('aria-hidden', 'false');
             document.body.classList.add('hp-modal-open');
+        };
+
+        card.addEventListener('click', openActivityModal);
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openActivityModal();
+            }
         });
     });
 
