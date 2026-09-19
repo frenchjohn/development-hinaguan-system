@@ -183,35 +183,172 @@
             border-color: rgba(239, 68, 68, 0.35);
         }
 
-        /* Print formatting */
+        /* ------------------------------------------------------------
+           SOLID MODAL STYLING (High Z-Index & Zero Transparency Bleed)
+           ------------------------------------------------------------ */
+        .staff-modal-overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 999999 !important;
+            background-color: rgba(10, 16, 12, 0.82) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 1.25rem !important;
+        }
+        .staff-modal-overlay.hidden {
+            display: none !important;
+        }
+        .staff-modal-dialog {
+            position: relative !important;
+            background-color: #ffffff !important;
+            color: #1c2b22 !important;
+            border: 1px solid #d8ded9 !important;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.45) !important;
+            border-radius: 1.5rem !important;
+            width: 100% !important;
+            max-height: 90vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        [data-theme="dark"] .staff-modal-dialog {
+            background-color: #161a17 !important;
+            color: #e2e8e4 !important;
+            border-color: #2d382f !important;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.85) !important;
+        }
+        .staff-modal-header {
+            padding: 1.25rem 1.5rem !important;
+            border-bottom: 1px solid #e5eae6 !important;
+            background-color: #f8faf8 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+        [data-theme="dark"] .staff-modal-header {
+            border-color: #273029 !important;
+            background-color: #1b211d !important;
+        }
+        .staff-modal-body {
+            padding: 1.25rem 1.5rem !important;
+            overflow-y: auto !important;
+            flex: 1 1 auto !important;
+            background-color: #ffffff !important;
+        }
+        [data-theme="dark"] .staff-modal-body {
+            background-color: #161a17 !important;
+        }
+        .staff-modal-footer {
+            padding: 1rem 1.5rem !important;
+            border-top: 1px solid #e5eae6 !important;
+            background-color: #f8faf8 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+        [data-theme="dark"] .staff-modal-footer {
+            border-color: #273029 !important;
+            background-color: #1b211d !important;
+        }
+        .staff-modal-table-wrap {
+            border: 1px solid #e2e7e3 !important;
+            border-radius: 0.875rem !important;
+            overflow: auto !important;
+            background-color: #ffffff !important;
+        }
+        [data-theme="dark"] .staff-modal-table-wrap {
+            border-color: #2b352e !important;
+            background-color: #141715 !important;
+        }
+        .staff-modal-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            text-align: left !important;
+        }
+        .staff-modal-table thead th {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+            background-color: #eef3ef !important;
+            color: #3b4e42 !important;
+            padding: 0.85rem 1rem !important;
+            font-size: 0.72rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            border-bottom: 1px solid #dce2dd !important;
+        }
+        [data-theme="dark"] .staff-modal-table thead th {
+            background-color: #222923 !important;
+            color: #a3b2a8 !important;
+            border-color: #333d36 !important;
+        }
+        .staff-modal-table tbody td {
+            padding: 0.85rem 1rem !important;
+            background-color: #ffffff !important;
+            color: #1c2b22 !important;
+            border-bottom: 1px solid #edf0ed !important;
+        }
+        [data-theme="dark"] .staff-modal-table tbody td {
+            background-color: #161a17 !important;
+            color: #e2e8e4 !important;
+            border-color: #242c26 !important;
+        }
+        .staff-modal-table tbody tr:hover td {
+            background-color: #f2f7f3 !important;
+        }
+        [data-theme="dark"] .staff-modal-table tbody tr:hover td {
+            background-color: #212822 !important;
+        }
+        .staff-modal-search {
+            background-color: #ffffff !important;
+            border: 1px solid #ced5cf !important;
+            color: #1c2b22 !important;
+            border-radius: 0.75rem !important;
+            padding: 0.55rem 0.75rem 0.55rem 2.25rem !important;
+            font-size: 0.82rem !important;
+            outline: none !important;
+            transition: all 0.2s ease !important;
+        }
+        .staff-modal-search:focus {
+            border-color: #1c5c3c !important;
+            box-shadow: 0 0 0 3px rgba(28, 92, 60, 0.15) !important;
+        }
+        [data-theme="dark"] .staff-modal-search {
+            background-color: #1e2420 !important;
+            border-color: #38453c !important;
+            color: #f1f5f2 !important;
+        }
+
+        /* STRICT PRINT FORMATTING: Only print the Official Handover Slip */
         @media print {
             body {
                 background: #ffffff !important;
                 color: #000000 !important;
-            }
-            .dash-sidebar, x-staff_sidemenu, .dash-header, #filterPanel, #printBtn, .report-chip, .no-print {
-                display: none !important;
-            }
-            .dash-main::before {
-                display: none !important;
-            }
-            .dash-main {
                 margin: 0 !important;
                 padding: 0 !important;
+            }
+            body * {
+                visibility: hidden !important;
+            }
+            #printableHandoverSlip,
+            #printableHandoverSlip * {
+                visibility: visible !important;
+            }
+            #printableHandoverSlip {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
                 width: 100% !important;
-            }
-            .dash-content {
-                padding: 0 !important;
-            }
-            .print-only-slip {
                 display: block !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 24px !important;
+                margin: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
             }
-            .page-break {
-                page-break-before: always;
-            }
-        }
-        .print-only-slip {
-            display: none;
         }
     </style>
 </head>
@@ -227,7 +364,7 @@
 
             <main class="dash-content p-4 sm:p-6 space-y-6">
 
-                {{-- STAFF SHIFT IDENTITY & HANDOVER HEADER BANNER --}}
+                {{-- STAFF SHIFT IDENTITY & ACTIONS BANNER --}}
                 <div class="rounded-3xl border border-glass-border bg-glass p-6 shadow-glass relative overflow-hidden">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                         <div class="flex items-start gap-4">
@@ -257,13 +394,23 @@
                                     <span>•</span>
                                     <span>Filtering: <strong>{{ ucwords(str_replace('_', ' ', $preset)) }}</strong> ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</span>
                                     <span>•</span>
-                                    <span>Session: <strong>{{ ucfirst($sessionFilter) }}</strong></span>
+                                    <span>Shift Filter: <strong>{{ ucfirst($sessionFilter) }}</strong></span>
                                 </p>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3">
-                            <button type="button" id="printBtn" onclick="window.print()" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#14402b] hover:shadow">
+                        <div class="flex flex-wrap items-center gap-3">
+                            {{-- BUTTON 1: Open Activity Ledger Modal --}}
+                            <button type="button" id="openLedgerBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-glass-border px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover shadow-sm">
+                                <svg class="h-4 w-4 text-[#1c5c3c] dark:text-[#6ab88c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                </svg>
+                                <span>Shift Activity Ledger</span>
+                                <span class="rounded-full bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c] px-2 py-0.5 text-xs font-bold">{{ $ledgerRows->count() }}</span>
+                            </button>
+
+                            {{-- BUTTON 2: Preview & Print Handover Slip Modal --}}
+                            <button type="button" id="openHandoverModalBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#14402b] hover:shadow">
                                 <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                 </svg>
@@ -273,71 +420,98 @@
                     </div>
                 </div>
 
-                {{-- FILTER PANEL --}}
-                <div id="filterPanel" class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass space-y-4">
-                    <form method="GET" action="{{ route('staff.reports') }}" id="reportFilterForm" class="space-y-4">
-                        {{-- Quick Presets --}}
-                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-glass-border pb-3">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted mr-1">Period:</span>
-                                <a href="{{ route('staff.reports', ['preset' => 'today', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'today' ? 'is-active' : 'hover:bg-glass-hover' }}">Today</a>
-                                <a href="{{ route('staff.reports', ['preset' => 'yesterday', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'yesterday' ? 'is-active' : 'hover:bg-glass-hover' }}">Yesterday</a>
-                                <a href="{{ route('staff.reports', ['preset' => 'this_week', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_week' ? 'is-active' : 'hover:bg-glass-hover' }}">This Week</a>
-                                <a href="{{ route('staff.reports', ['preset' => 'this_month', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_month' ? 'is-active' : 'hover:bg-glass-hover' }}">This Month</a>
-                                <a href="{{ route('staff.reports', ['preset' => 'all', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'all' ? 'is-active' : 'hover:bg-glass-hover' }}">All Time</a>
+                {{-- COLLAPSIBLE FILTER PANEL (Default is closed) --}}
+                <div class="rounded-2xl border border-glass-border bg-glass shadow-glass overflow-hidden transition-all duration-200" id="filterAccordion">
+                    {{-- Accordion Toggle Header --}}
+                    <button type="button" id="filterToggleBtn" class="w-full flex items-center justify-between p-4 sm:p-5 text-left cursor-pointer hover:bg-glass-hover/50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c]">
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                                </svg>
                             </div>
-
-                            <input type="hidden" name="preset" id="presetInput" value="{{ $preset }}">
-                        </div>
-
-                        {{-- Granular Controls --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div>
-                                <label for="dateFromInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date From</label>
-                                <input type="date" name="date_from" id="dateFromInput" value="{{ $filterFrom }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
-                            </div>
-
-                            <div>
-                                <label for="dateToInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date To</label>
-                                <input type="date" name="date_to" id="dateToInput" value="{{ $filterTo }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
-                            </div>
-
-                            <div>
-                                <label for="sessionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Shift / Session</label>
-                                <select name="session" id="sessionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
-                                    <option value="all" {{ $sessionFilter === 'all' ? 'selected' : '' }}>All Shift Sessions</option>
-                                    <option value="daytime" {{ $sessionFilter === 'daytime' ? 'selected' : '' }}>Daytime Shift (08:00 AM - 05:00 PM)</option>
-                                    <option value="nighttime" {{ $sessionFilter === 'nighttime' ? 'selected' : '' }}>Nighttime Shift (05:00 PM - 08:00 AM)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label for="actionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Action Filter</label>
-                                <select name="action" id="actionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
-                                    <option value="all" {{ $actionFilter === 'all' ? 'selected' : '' }}>All Logged Actions</option>
-                                    <option value="checked_in" {{ $actionFilter === 'checked_in' ? 'selected' : '' }}>Check-Ins Only</option>
-                                    <option value="checked_out" {{ $actionFilter === 'checked_out' ? 'selected' : '' }}>Check-Outs Only</option>
-                                    <option value="additional_charge_paid" {{ $actionFilter === 'additional_charge_paid' ? 'selected' : '' }}>Damage / Incident Charges</option>
-                                    <option value="added_amenity" {{ $actionFilter === 'added_amenity' ? 'selected' : '' }}>Amenities Added</option>
-                                    <option value="companion_added" {{ $actionFilter === 'companion_added' ? 'selected' : '' }}>Companions Added</option>
-                                    <option value="reservation_extended" {{ $actionFilter === 'reservation_extended' ? 'selected' : '' }}>Extensions</option>
-                                    <option value="cancelled" {{ $actionFilter === 'cancelled' ? 'selected' : '' }}>Cancellations</option>
-                                    <option value="no_show" {{ $actionFilter === 'no_show' ? 'selected' : '' }}>No-Shows</option>
-                                </select>
+                                <h3 class="m-0 text-sm sm:text-base font-display font-bold text-hp-text">Filter Shift Report</h3>
+                                <p class="m-0 text-xs text-hp-text-muted">Customize date range, shift session (Daytime/Nighttime), or action types</p>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end gap-3 pt-2">
-                            <a href="{{ route('staff.reports', ['preset' => 'today']) }}" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover">
-                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                Reset to Today
-                            </a>
-                            <button type="submit" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1c5c3c] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#14402b]">
-                                <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-                                Apply Filters
-                            </button>
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                Active: {{ ucwords(str_replace('_', ' ', $preset)) }} • {{ ucfirst($sessionFilter) }}
+                            </span>
+                            <svg id="filterChevron" class="h-5 w-5 text-hp-text-muted transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                            </svg>
                         </div>
-                    </form>
+                    </button>
+
+                    {{-- Collapsible Filter Content (hidden by default) --}}
+                    <div id="filterContent" class="hidden border-t border-glass-border p-5 space-y-4">
+                        <form method="GET" action="{{ route('staff.reports') }}" id="reportFilterForm" class="space-y-4">
+                            {{-- Quick Presets --}}
+                            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-glass-border pb-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-hp-text-muted mr-1">Period:</span>
+                                    <a href="{{ route('staff.reports', ['preset' => 'today', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'today' ? 'is-active' : 'hover:bg-glass-hover' }}">Today</a>
+                                    <a href="{{ route('staff.reports', ['preset' => 'yesterday', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'yesterday' ? 'is-active' : 'hover:bg-glass-hover' }}">Yesterday</a>
+                                    <a href="{{ route('staff.reports', ['preset' => 'this_week', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_week' ? 'is-active' : 'hover:bg-glass-hover' }}">This Week</a>
+                                    <a href="{{ route('staff.reports', ['preset' => 'this_month', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'this_month' ? 'is-active' : 'hover:bg-glass-hover' }}">This Month</a>
+                                    <a href="{{ route('staff.reports', ['preset' => 'all', 'session' => $sessionFilter]) }}" class="report-chip rounded-full border border-glass-border px-3.5 py-1.5 text-xs font-semibold text-hp-text {{ $preset === 'all' ? 'is-active' : 'hover:bg-glass-hover' }}">All Time</a>
+                                </div>
+
+                                <input type="hidden" name="preset" id="presetInput" value="{{ $preset }}">
+                            </div>
+
+                            {{-- Granular Controls --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                                <div>
+                                    <label for="dateFromInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date From</label>
+                                    <input type="date" name="date_from" id="dateFromInput" value="{{ $filterFrom }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                </div>
+
+                                <div>
+                                    <label for="dateToInput" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Date To</label>
+                                    <input type="date" name="date_to" id="dateToInput" value="{{ $filterTo }}" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                </div>
+
+                                <div>
+                                    <label for="sessionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Shift / Session</label>
+                                    <select name="session" id="sessionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                        <option value="all" {{ $sessionFilter === 'all' ? 'selected' : '' }}>All Shift Sessions</option>
+                                        <option value="daytime" {{ $sessionFilter === 'daytime' ? 'selected' : '' }}>Daytime Shift (08:00 AM - 05:00 PM)</option>
+                                        <option value="nighttime" {{ $sessionFilter === 'nighttime' ? 'selected' : '' }}>Nighttime Shift (05:00 PM - 08:00 AM)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="actionSelect" class="block text-xs font-semibold text-hp-text-muted mb-1.5">Action Filter</label>
+                                    <select name="action" id="actionSelect" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-[#1c5c3c]">
+                                        <option value="all" {{ $actionFilter === 'all' ? 'selected' : '' }}>All Logged Actions</option>
+                                        <option value="checked_in" {{ $actionFilter === 'checked_in' ? 'selected' : '' }}>Check-Ins Only</option>
+                                        <option value="checked_out" {{ $actionFilter === 'checked_out' ? 'selected' : '' }}>Check-Outs Only</option>
+                                        <option value="additional_charge_paid" {{ $actionFilter === 'additional_charge_paid' ? 'selected' : '' }}>Damage / Incident Charges</option>
+                                        <option value="added_amenity" {{ $actionFilter === 'added_amenity' ? 'selected' : '' }}>Amenities Added</option>
+                                        <option value="companion_added" {{ $actionFilter === 'companion_added' ? 'selected' : '' }}>Companions Added</option>
+                                        <option value="reservation_extended" {{ $actionFilter === 'reservation_extended' ? 'selected' : '' }}>Extensions</option>
+                                        <option value="cancelled" {{ $actionFilter === 'cancelled' ? 'selected' : '' }}>Cancellations</option>
+                                        <option value="no_show" {{ $actionFilter === 'no_show' ? 'selected' : '' }}>No-Shows</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 pt-2">
+                                <a href="{{ route('staff.reports', ['preset' => 'today']) }}" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover">
+                                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    Reset to Today
+                                </a>
+                                <button type="submit" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1c5c3c] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#14402b]">
+                                    <svg class="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                                    Apply Filters
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 {{-- KPI METRICS CARDS (6 METRICS) --}}
@@ -354,7 +528,7 @@
                             <div class="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
                                 ₱{{ number_format($totalCollections, 2) }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Personally handled & collected</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">Personally collected on this shift</p>
                         </div>
                     </article>
 
@@ -418,7 +592,7 @@
                             <div class="text-2xl font-display font-bold text-amber-700 dark:text-amber-400 leading-tight">
                                 ₱{{ number_format($damageChargesCollected, 2) }}
                             </div>
-                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $damageChargesCount }} incident charges</p>
+                            <p class="text-[0.7rem] text-hp-text-muted mt-1 font-medium">{{ $damageChargesCount }} incident collections</p>
                         </div>
                     </article>
 
@@ -520,7 +694,12 @@
                                     </div>
                                     <h2 class="m-0 text-base font-display font-bold text-hp-text">Shift Operations Summary</h2>
                                 </div>
-                                <span class="text-xs text-hp-text-muted">{{ $ledgerRows->count() }} total logged actions</span>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="open-ledger-trigger text-xs font-semibold text-[#1c5c3c] dark:text-[#6ab88c] hover:underline flex items-center gap-1 cursor-pointer">
+                                        <span>Open Full Ledger ({{ $ledgerRows->count() }})</span>
+                                        <span>→</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -546,172 +725,220 @@
                             <div class="rounded-xl border border-glass-border/70 bg-surface-2/60 p-3.5 text-xs text-hp-text space-y-1.5">
                                 <div class="flex items-center gap-2 text-hp-text font-semibold">
                                     <svg class="h-4 w-4 text-[#1c5c3c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Shift Handover Checklist
+                                    Shift Handover Verification
                                 </div>
                                 <p class="text-hp-text-muted leading-relaxed">
-                                    Ensure that all cash collections (₱{{ number_format($totalCollections, 2) }}) match your physical cash drawer tally before printing the handover slip and turning over keys to the incoming staff member.
+                                    Ensure that all cash collections (<strong>₱{{ number_format($totalCollections, 2) }}</strong>) match your physical drawer turnover. Click "Print Handover Slip" to inspect the official handover slip and print physical turnover signatures.
                                 </p>
                             </div>
                         </div>
 
-                        <div class="mt-4 flex items-center justify-between text-xs text-hp-text-muted">
+                        <div class="mt-4 flex flex-wrap items-center justify-between text-xs text-hp-text-muted gap-2">
                             <span>Logged In: <strong>{{ $staffName }}</strong> ({{ $staffEmail }})</span>
-                            <span class="text-emerald-600 font-semibold">Status: Operational & Ready</span>
+                            <button type="button" class="open-ledger-trigger inline-flex items-center gap-1.5 rounded-lg border border-glass-border px-3 py-1.5 text-xs font-semibold text-hp-text hover:bg-glass-hover cursor-pointer transition-colors">
+                                <svg class="h-3.5 w-3.5 text-[#1c5c3c]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                                View Detailed Ledger Table
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                {{-- DETAILED ACTIVITY & PAYMENT LEDGER TABLE --}}
-                <div class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                            </div>
-                            <div>
-                                <h2 class="m-0 text-lg font-display font-bold text-hp-text">Shift Activity & Payment Ledger</h2>
-                                <p class="m-0 text-xs text-hp-text-muted">Chronological log of transactions processed by you during this session</p>
-                            </div>
-                        </div>
+            </main>
+        </div>
+    </div>
 
-                        {{-- Search Input --}}
-                        <div class="relative w-full sm:w-64">
-                            <input type="text" id="ledgerSearchInput" placeholder="Search guest, action, or ID..." class="w-full rounded-xl border border-glass-border bg-transparent pl-9 pr-3 py-2 text-xs text-hp-text outline-none focus:border-[#1c5c3c]">
-                            <svg class="absolute left-3 top-2.5 h-3.5 w-3.5 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        </div>
+    {{-- ============================================================ --}}
+    {{-- 1. SHIFT ACTIVITY & PAYMENT LEDGER MODAL (Root Level, Z-Index 999999) --}}
+    {{-- ============================================================ --}}
+    <div id="ledgerModal" class="staff-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ledgerModalTitle">
+        <div class="staff-modal-dialog max-w-5xl">
+            {{-- Modal Header --}}
+            <div class="staff-modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                        </svg>
                     </div>
+                    <div>
+                        <h2 id="ledgerModalTitle" class="m-0 text-base sm:text-lg font-display font-bold text-hp-text">Shift Activity & Payment Ledger</h2>
+                        <p class="m-0 text-xs text-hp-text-muted">Transactions handled by {{ $staffName }} • {{ ucfirst($sessionFilter) }} Session ({{ ucwords(str_replace('_', ' ', $preset)) }})</p>
+                    </div>
+                </div>
+                <button type="button" id="closeLedgerModalBtn" class="rounded-xl p-2 text-hp-text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-hp-text transition-colors cursor-pointer">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
 
-                    {{-- Table --}}
-                    <div class="overflow-x-auto rounded-xl border border-glass-border">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr class="border-b border-glass-border bg-surface-2/70 font-semibold text-hp-text-muted uppercase tracking-wider text-[0.7rem]">
-                                    <th class="py-3 px-4">Time & Date</th>
-                                    <th class="py-3 px-3">Shift</th>
-                                    <th class="py-3 px-3">Action</th>
-                                    <th class="py-3 px-4">Reservation & Guest</th>
-                                    <th class="py-3 px-4">Transaction Details</th>
-                                    <th class="py-3 px-4 text-right">Collected Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ledgerTableBody" class="divide-y divide-glass-border/50 text-hp-text">
-                                @forelse($ledgerRows as $row)
-                                    <tr class="ledger-row hover:bg-glass-hover/50 transition-colors duration-150"
-                                        data-search="{{ strtolower($row['guest_name'] . ' ' . $row['action'] . ' ' . $row['title'] . ' ' . $row['description'] . ' res#' . $row['reservation_id']) }}">
-                                        {{-- Timestamp --}}
-                                        <td class="py-3 px-4 whitespace-nowrap">
-                                            <div class="font-semibold text-hp-text">{{ $row['time_raw'] }}</div>
-                                            <div class="text-[0.68rem] text-hp-text-muted">{{ $row['date_raw'] }}</div>
-                                        </td>
+            {{-- Search & Controls --}}
+            <div class="px-6 pt-4 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#161a17]">
+                <div class="relative w-full sm:w-80">
+                    <input type="text" id="ledgerSearchInput" placeholder="Search guest, action, or ID..." class="staff-modal-search w-full">
+                    <svg class="absolute left-3 top-3 h-3.5 w-3.5 text-hp-text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <span id="ledgerCountDisplay" class="text-xs font-semibold text-hp-text-muted">Showing {{ $ledgerRows->count() }} transaction(s)</span>
+            </div>
 
-                                        {{-- Shift session pill --}}
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="rounded-md px-2 py-0.5 text-[0.68rem] font-medium {{ $row['session_tag'] === 'Daytime' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' }}">
-                                                {{ $row['session_tag'] }}
-                                            </span>
-                                        </td>
+            {{-- Modal Body: Scrollable Table --}}
+            <div class="staff-modal-body">
+                <div class="staff-modal-table-wrap">
+                    <table class="staff-modal-table">
+                        <thead>
+                            <tr>
+                                <th>Time & Date</th>
+                                <th>Shift</th>
+                                <th>Action</th>
+                                <th>Reservation & Guest</th>
+                                <th>Transaction Details</th>
+                                <th style="text-align: right;">Collected Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ledgerTableBody">
+                            @forelse($ledgerRows as $row)
+                                <tr class="ledger-row"
+                                    data-search="{{ strtolower($row['guest_name'] . ' ' . $row['action'] . ' ' . $row['title'] . ' ' . $row['description'] . ' res#' . $row['reservation_id']) }}">
+                                    {{-- Timestamp --}}
+                                    <td class="whitespace-nowrap">
+                                        <div class="font-bold text-hp-text">{{ $row['time_raw'] }}</div>
+                                        <div class="text-[0.68rem] text-hp-text-muted">{{ $row['date_raw'] }}</div>
+                                    </td>
 
-                                        {{-- Action Badge --}}
-                                        <td class="py-3 px-3 whitespace-nowrap">
-                                            <span class="badge-action badge-{{ $row['action'] }}">
-                                                {{ str_replace('_', ' ', $row['action']) }}
-                                            </span>
-                                        </td>
+                                    {{-- Shift pill --}}
+                                    <td class="whitespace-nowrap">
+                                        <span class="rounded-md px-2 py-0.5 text-[0.68rem] font-semibold {{ $row['session_tag'] === 'Daytime' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' }}">
+                                            {{ $row['session_tag'] }}
+                                        </span>
+                                    </td>
 
-                                        {{-- Reservation & Guest --}}
-                                        <td class="py-3 px-4 whitespace-nowrap">
-                                            @if($row['reservation_id'])
-                                                <div class="font-semibold text-hp-text flex items-center gap-1.5">
-                                                    <span>{{ $row['guest_name'] }}</span>
-                                                    <span class="text-[0.68rem] font-bold text-[#1c5c3c] dark:text-[#6ab88c]">#{{ $row['reservation_id'] }}</span>
-                                                </div>
-                                                <div class="text-[0.68rem] text-hp-text-muted">{{ $row['guests_count'] }} guest(s)</div>
-                                            @else
-                                                <span class="text-hp-text-muted">General Operational Log</span>
-                                            @endif
-                                        </td>
+                                    {{-- Action Badge --}}
+                                    <td class="whitespace-nowrap">
+                                        <span class="badge-action badge-{{ $row['action'] }}">
+                                            {{ str_replace('_', ' ', $row['action']) }}
+                                        </span>
+                                    </td>
 
-                                        {{-- Details --}}
-                                        <td class="py-3 px-4">
-                                            <div class="font-medium text-hp-text">{{ $row['title'] }}</div>
-                                            <div class="text-[0.68rem] text-hp-text-muted leading-tight line-clamp-2">{{ $row['description'] }}</div>
-                                        </td>
-
-                                        {{-- Amount --}}
-                                        <td class="py-3 px-4 text-right whitespace-nowrap font-display font-bold">
-                                            @if($row['payment_amount'] > 0)
-                                                <span class="text-emerald-600 dark:text-emerald-400 text-sm">+ ₱{{ $row['formatted_amount'] }}</span>
-                                            @else
-                                                <span class="text-hp-text-muted text-xs">—</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr id="ledgerEmptyRow">
-                                        <td colspan="6" class="py-8 text-center text-hp-text-muted text-sm">
-                                            <div class="flex flex-col items-center justify-center gap-2">
-                                                <svg class="h-8 w-8 text-hp-text-muted/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                                <span>No activity or payment logs found for the selected period and session.</span>
-                                                <a href="{{ route('staff.reports', ['preset' => 'all']) }}" class="text-xs text-[#1c5c3c] font-semibold underline">View All Time Logs</a>
+                                    {{-- Reservation & Guest --}}
+                                    <td class="whitespace-nowrap">
+                                        @if($row['reservation_id'])
+                                            <div class="font-semibold text-hp-text flex items-center gap-1.5">
+                                                <span>{{ $row['guest_name'] }}</span>
+                                                <span class="text-[0.68rem] font-bold text-[#1c5c3c] dark:text-[#6ab88c]">#{{ $row['reservation_id'] }}</span>
                                             </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                                            <div class="text-[0.68rem] text-hp-text-muted">{{ $row['guests_count'] }} guest(s)</div>
+                                        @else
+                                            <span class="text-hp-text-muted">General Log</span>
+                                        @endif
+                                    </td>
 
-                    <div class="flex items-center justify-between text-xs text-hp-text-muted pt-2">
-                        <span id="ledgerCountDisplay">Showing {{ $ledgerRows->count() }} transaction(s)</span>
-                        <span>Hinaguan Nature Park • Front Desk Operational System</span>
+                                    {{-- Details --}}
+                                    <td>
+                                        <div class="font-semibold text-hp-text">{{ $row['title'] }}</div>
+                                        <div class="text-[0.68rem] text-hp-text-muted leading-tight line-clamp-2">{{ $row['description'] }}</div>
+                                    </td>
+
+                                    {{-- Amount --}}
+                                    <td style="text-align: right;" class="whitespace-nowrap font-display font-bold">
+                                        @if($row['payment_amount'] > 0)
+                                            <span class="text-emerald-600 dark:text-emerald-400 text-sm font-bold">+ ₱{{ $row['formatted_amount'] }}</span>
+                                        @else
+                                            <span class="text-hp-text-muted text-xs">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr id="ledgerEmptyRow">
+                                    <td colspan="6" class="py-12 text-center text-hp-text-muted text-sm">
+                                        <div class="flex flex-col items-center justify-center gap-2">
+                                            <svg class="h-8 w-8 text-hp-text-muted/60" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                            <span>No activity or payment logs found for the selected period and session.</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="staff-modal-footer">
+                <div class="text-xs text-hp-text-muted">
+                    Total Collections: <strong class="text-emerald-600 dark:text-emerald-400 font-display text-sm font-bold">₱{{ number_format($totalCollections, 2) }}</strong>
+                </div>
+                <button type="button" id="closeLedgerModalBtnFooter" class="rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    Close Ledger
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- 2. HANDOVER SLIP PREVIEW & PRINT MODAL (Root Level, Z-Index 999999) --}}
+    {{-- ============================================================ --}}
+    <div id="handoverModal" class="staff-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="handoverModalTitle">
+        <div class="staff-modal-dialog max-w-3xl">
+            {{-- Modal Header --}}
+            <div class="staff-modal-header">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c]">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 id="handoverModalTitle" class="m-0 text-base sm:text-lg font-display font-bold text-hp-text">Shift Handover Slip Preview</h2>
+                        <p class="m-0 text-xs text-hp-text-muted">Review the official reconciliation slip below before printing</p>
                     </div>
                 </div>
+                <button type="button" id="closeHandoverModalBtn" class="rounded-xl p-2 text-hp-text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-hp-text transition-colors cursor-pointer">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
 
-                {{-- ============================================================ --}}
-                {{-- PRINTABLE END-OF-SHIFT HANDOVER SLIP (Shown during window.print()) --}}
-                {{-- ============================================================ --}}
-                <div class="print-only-slip p-8 bg-white text-black font-sans">
-                    <div class="text-center border-b-2 border-black pb-4 mb-6">
-                        <h1 class="text-2xl font-bold tracking-wide uppercase">Hinaguan Nature Park</h1>
-                        <h2 class="text-base font-semibold text-gray-700">Official Staff Shift Handover & Reconciliation Slip</h2>
-                        <p class="text-xs text-gray-500 mt-1">Generated: {{ now()->format('F d, Y • h:i A') }}</p>
+            {{-- Preview Content (The actual slip) --}}
+            <div class="staff-modal-body bg-gray-50 dark:bg-[#121513]">
+                <div class="p-6 bg-white text-black rounded-2xl border border-gray-300 shadow-sm text-sm font-sans" id="handoverSlipPreviewContent">
+                    <div class="text-center border-b-2 border-black pb-4 mb-4">
+                        <h1 class="text-xl font-bold tracking-wide uppercase">Hinaguan Nature Park</h1>
+                        <h2 class="text-sm font-semibold text-gray-700">Official Staff Shift Handover & Reconciliation Slip</h2>
+                        <p class="text-[0.7rem] text-gray-500 mt-1">Generated: {{ now()->format('F d, Y • h:i A') }}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 border border-gray-300 p-4 rounded-lg mb-6 text-sm">
+                    <div class="grid grid-cols-2 gap-4 border border-gray-300 p-3 rounded-lg mb-4 text-xs">
                         <div>
                             <p><strong>Duty Staff Name:</strong> {{ $staffName }}</p>
                             <p><strong>Staff Account ID:</strong> #{{ $staffId }}</p>
                             <p><strong>Shift Session:</strong> {{ ucfirst($sessionFilter) }} Session</p>
                         </div>
                         <div>
-                            <p><strong>Report Date / Period:</strong> {{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }}</p>
+                            <p><strong>Report Period:</strong> {{ ucwords(str_replace('_', ' ', $preset)) }} ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</p>
                             <p><strong>Total Guests Handled:</strong> {{ $totalGuestsHandled }}</p>
                             <p><strong>Total Handled Reservations:</strong> {{ $totalReservationsHandled }}</p>
                         </div>
                     </div>
 
-                    <h3 class="text-base font-bold uppercase mb-2 border-b border-gray-300 pb-1">Operational Activity Summary</h3>
-                    <table class="w-full text-left text-sm border border-gray-300 mb-6">
+                    <h3 class="text-xs font-bold uppercase mb-2 border-b border-gray-300 pb-1">Shift Collections & Operations Summary</h3>
+                    <table class="w-full text-left text-xs border border-gray-300 mb-4">
                         <thead class="bg-gray-100">
                             <tr>
-                                <th class="p-2 border border-gray-300">Operational Metric</th>
+                                <th class="p-2 border border-gray-300">Operational Category</th>
                                 <th class="p-2 border border-gray-300 text-center">Count</th>
                                 <th class="p-2 border border-gray-300 text-right">Collected Amount</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td class="p-2 border border-gray-300">Guest Check-Ins Processed</td>
+                                <td class="p-2 border border-gray-300">Guest Check-Ins Handled</td>
                                 <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkInsCount }}</td>
                                 <td class="p-2 border border-gray-300 text-right">₱{{ number_format($checkInCollections, 2) }}</td>
                             </tr>
                             <tr>
-                                <td class="p-2 border border-gray-300">Guest Check-Outs Processed</td>
+                                <td class="p-2 border border-gray-300">Guest Check-Outs Handled</td>
                                 <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkOutsCount }}</td>
                                 <td class="p-2 border border-gray-300 text-right">₱0.00</td>
                             </tr>
                             <tr>
-                                <td class="p-2 border border-gray-300">Damage / Incident Fees Collected</td>
+                                <td class="p-2 border border-gray-300">Damage & Incident Fees</td>
                                 <td class="p-2 border border-gray-300 text-center font-bold">{{ $damageChargesCount }}</td>
                                 <td class="p-2 border border-gray-300 text-right">₱{{ number_format($damageChargesCollected, 2) }}</td>
                             </tr>
@@ -721,7 +948,7 @@
                                 <td class="p-2 border border-gray-300 text-right">₱{{ number_format($amenitiesCollected, 2) }}</td>
                             </tr>
                             <tr>
-                                <td class="p-2 border border-gray-300">Extra Companions / Walk-In Guests</td>
+                                <td class="p-2 border border-gray-300">Companions / Extra Guests Added</td>
                                 <td class="p-2 border border-gray-300 text-center font-bold">{{ $companionsCount }}</td>
                                 <td class="p-2 border border-gray-300 text-right">₱{{ number_format($companionsCollected, 2) }}</td>
                             </tr>
@@ -731,33 +958,137 @@
                                 <td class="p-2 border border-gray-300 text-right">₱{{ number_format($extensionsCollected, 2) }}</td>
                             </tr>
                             <tr class="bg-gray-100 font-bold">
-                                <td class="p-2 border border-gray-300 text-base" colspan="2">TOTAL NET CASH DRAWER TURNOVER</td>
-                                <td class="p-2 border border-gray-300 text-right text-base">₱{{ number_format($totalCollections, 2) }}</td>
+                                <td class="p-2 border border-gray-300 text-sm" colspan="2">TOTAL NET CASH DRAWER TURNOVER</td>
+                                <td class="p-2 border border-gray-300 text-right text-sm">₱{{ number_format($totalCollections, 2) }}</td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <div class="mt-12 pt-8 border-t border-gray-400 grid grid-cols-3 gap-8 text-center text-xs">
+                    <div class="mt-8 pt-4 border-t border-gray-400 grid grid-cols-3 gap-6 text-center text-[0.7rem]">
                         <div>
-                            <div class="border-b border-black mb-1 h-12"></div>
+                            <div class="border-b border-black mb-1 h-10"></div>
                             <p class="font-bold uppercase">{{ $staffName }}</p>
-                            <p class="text-gray-500">Outgoing Staff Signature</p>
+                            <p class="text-gray-500">Outgoing Staff</p>
                         </div>
                         <div>
-                            <div class="border-b border-black mb-1 h-12"></div>
+                            <div class="border-b border-black mb-1 h-10"></div>
                             <p class="font-bold uppercase">_________________________</p>
-                            <p class="text-gray-500">Incoming Staff Signature</p>
+                            <p class="text-gray-500">Incoming Staff</p>
                         </div>
                         <div>
-                            <div class="border-b border-black mb-1 h-12"></div>
+                            <div class="border-b border-black mb-1 h-10"></div>
                             <p class="font-bold uppercase">_________________________</p>
-                            <p class="text-gray-500">Duty Supervisor Signature</p>
+                            <p class="text-gray-500">Duty Supervisor</p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-            </main>
+            {{-- Modal Footer --}}
+            <div class="staff-modal-footer">
+                <button type="button" id="closeHandoverModalBtnFooter" class="rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    Close
+                </button>
+                <button type="button" id="printHandoverSlipBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#14402b] transition-all">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    <span>Print Official Slip Now</span>
+                </button>
+            </div>
         </div>
     </div>
+
+    {{-- ============================================================ --}}
+    {{-- 3. HIDDEN PRINTABLE CONTAINER FOR BROWSER PRINT ENGINE --}}
+    {{-- ============================================================ --}}
+    <div id="printableHandoverSlip" class="hidden print:block p-8 bg-white text-black font-sans">
+        <div class="text-center border-b-2 border-black pb-4 mb-6">
+            <h1 class="text-2xl font-bold tracking-wide uppercase">Hinaguan Nature Park</h1>
+            <h2 class="text-base font-semibold text-gray-700">Official Staff Shift Handover & Reconciliation Slip</h2>
+            <p class="text-xs text-gray-500 mt-1">Generated: {{ now()->format('F d, Y • h:i A') }}</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 border border-gray-300 p-4 rounded-lg mb-6 text-sm">
+            <div>
+                <p><strong>Duty Staff Name:</strong> {{ $staffName }}</p>
+                <p><strong>Staff Account ID:</strong> #{{ $staffId }}</p>
+                <p><strong>Shift Session:</strong> {{ ucfirst($sessionFilter) }} Session</p>
+            </div>
+            <div>
+                <p><strong>Report Period:</strong> {{ ucwords(str_replace('_', ' ', $preset)) }} ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</p>
+                <p><strong>Total Guests Handled:</strong> {{ $totalGuestsHandled }}</p>
+                <p><strong>Total Handled Reservations:</strong> {{ $totalReservationsHandled }}</p>
+            </div>
+        </div>
+
+        <h3 class="text-base font-bold uppercase mb-2 border-b border-gray-300 pb-1">Operational Activity Summary</h3>
+        <table class="w-full text-left text-sm border border-gray-300 mb-6">
+            <thead class="bg-gray-100">
+                <tr>
+                    <th class="p-2 border border-gray-300">Operational Category</th>
+                    <th class="p-2 border border-gray-300 text-center">Count</th>
+                    <th class="p-2 border border-gray-300 text-right">Collected Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="p-2 border border-gray-300">Guest Check-Ins Processed</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkInsCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱{{ number_format($checkInCollections, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="p-2 border border-gray-300">Guest Check-Outs Processed</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $checkOutsCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱0.00</td>
+                </tr>
+                <tr>
+                    <td class="p-2 border border-gray-300">Damage / Incident Fees Collected</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $damageChargesCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱{{ number_format($damageChargesCollected, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="p-2 border border-gray-300">Extra Amenities Added</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $amenitiesAddedCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱{{ number_format($amenitiesCollected, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="p-2 border border-gray-300">Extra Companions / Walk-In Guests</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $companionsCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱{{ number_format($companionsCollected, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="p-2 border border-gray-300">Reservation Extensions Processed</td>
+                    <td class="p-2 border border-gray-300 text-center font-bold">{{ $extensionsCount }}</td>
+                    <td class="p-2 border border-gray-300 text-right">₱{{ number_format($extensionsCollected, 2) }}</td>
+                </tr>
+                <tr class="bg-gray-100 font-bold">
+                    <td class="p-2 border border-gray-300 text-base" colspan="2">TOTAL NET CASH DRAWER TURNOVER</td>
+                    <td class="p-2 border border-gray-300 text-right text-base">₱{{ number_format($totalCollections, 2) }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="mt-12 pt-8 border-t border-gray-400 grid grid-cols-3 gap-8 text-center text-xs">
+            <div>
+                <div class="border-b border-black mb-1 h-12"></div>
+                <p class="font-bold uppercase">{{ $staffName }}</p>
+                <p class="text-gray-500">Outgoing Staff Signature</p>
+            </div>
+            <div>
+                <div class="border-b border-black mb-1 h-12"></div>
+                <p class="font-bold uppercase">_________________________</p>
+                <p class="text-gray-500">Incoming Staff Signature</p>
+            </div>
+            <div>
+                <div class="border-b border-black mb-1 h-12"></div>
+                <p class="font-bold uppercase">_________________________</p>
+                <p class="text-gray-500">Duty Supervisor Signature</p>
+            </div>
+        </div>
+    </div>
+
+    <x-staff_chatbot />
 </body>
 </html>
+
