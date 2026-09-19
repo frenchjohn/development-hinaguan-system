@@ -13,11 +13,13 @@ return new class extends Migration
     {
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('activity_type', 64)->index();
+            $table->foreignId('staff_id')->nullable()->constrained('staff_accounts')->nullOnDelete();
+            $table->foreignId('reservation_id')->nullable()->constrained('reservations')->nullOnDelete();
+            $table->string('action', 64)->index();
+            $table->string('activity_type', 64)->nullable()->index();
+            $table->decimal('payment_amount', 10, 2)->default(0.00);
             $table->string('title', 128);
             $table->text('description');
-            $table->unsignedBigInteger('reservation_id')->nullable()->index();
-            $table->string('staff_id', 64)->nullable()->index();
             $table->string('actor_name', 128)->default('System');
             $table->string('actor_role', 32)->default('system'); // staff, admin, guest, system
             $table->json('metadata')->nullable();

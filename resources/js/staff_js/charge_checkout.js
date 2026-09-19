@@ -66,7 +66,7 @@ const showConfirmModal = (title, message) => {
     });
 };
 
-export const openChargeCheckout = async (reservationId, onPaid) => {
+export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
     const modalId = 'reservationChargesModal';
     let modal = document.getElementById(modalId);
     
@@ -170,7 +170,9 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
     modal.querySelectorAll('[data-charge-close]').forEach((button) => button.onclick = close);
 
     const render = () => {
+        const formAmount = parseFloat(form.querySelector('[name="amount"]')?.value || 0);
         const unpaidTotal = tempCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+        const combinedTotal = unpaidTotal + (formAmount > 0 ? formAmount : 0);
         
         list.innerHTML = tempCharges.length ? tempCharges.map((charge, idx) => `
             <div class="flex items-start justify-between gap-3 rounded-lg border border-glass-border bg-white/70 dark:bg-white/5 p-2.5 text-xs shadow-2xs">
@@ -199,8 +201,8 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
         });
         
         // Update button text based on charges
-        if (unpaidTotal > 0) {
-            proceedBtn.textContent = 'Pay & Checkout';
+        if (combinedTotal > 0) {
+            proceedBtn.textContent = `Pay & Checkout (₱${combinedTotal.toFixed(2)})`;
             proceedBtn.dataset.hasCharges = 'true';
         } else {
             proceedBtn.textContent = 'Checkout';
@@ -217,6 +219,12 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
     // Initialize amenity dropdown
     amenity.innerHTML = '<option value="">No amenity</option>' + tempAmenities.map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
     render();
+
+    // Listen to form input changes to update Pay & Checkout button live
+    const amountInput = form.querySelector('[name="amount"]');
+    amountInput?.addEventListener('input', () => {
+        render();
+    });
     
     // Open modal with top stacking
     document.body.appendChild(modal); // Ensure last in DOM
@@ -229,18 +237,21 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
     modal.style.visibility = 'visible';
     modal.style.pointerEvents = 'auto';
     modal.style.zIndex = '2500';
+    onReady?.();
 
     form.onsubmit = async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
         const amenityId = formData.get('amenity_id');
+        const parsedAmount = parseFloat(formData.get('amount') || 0);
+        if (!parsedAmount || parsedAmount <= 0) return;
         
         tempCharges.push({
-            amenity_id: amenityId || null,
+            amenity_id: amenityId && amenityId !== '' ? amenityId : null,
             amenity_name: amenityId ? tempAmenities.find(a => a.id == amenityId)?.name : null,
-            charge_type: formData.get('charge_type'),
-            description: formData.get('description'),
-            amount: formData.get('amount'),
+            charge_type: formData.get('charge_type') || 'damage',
+            description: formData.get('description') || '',
+            amount: parsedAmount,
         });
         
         form.reset();
@@ -248,14 +259,30 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
     };
 
     proceedBtn.onclick = async () => {
-        const hasCharges = proceedBtn.dataset.hasCharges === 'true';
+        // Automatically add any charge that the user typed into the form but didn't click "Add Charge"
+        const formAmount = parseFloat(form.querySelector('[name="amount"]')?.value || 0);
+        if (formAmount > 0) {
+            const formData = new FormData(form);
+            const amenityId = formData.get('amenity_id');
+            tempCharges.push({
+                amenity_id: amenityId && amenityId !== '' ? amenityId : null,
+                amenity_name: amenityId ? tempAmenities.find(a => a.id == amenityId)?.name : null,
+                charge_type: formData.get('charge_type') || 'damage',
+                description: formData.get('description') || '',
+                amount: formAmount,
+            });
+            form.reset();
+            render();
+        }
+
         const unpaidTotal = tempCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+        const hasCharges = unpaidTotal > 0;
         const message = hasCharges 
             ? `Total charges: <strong>₱${unpaidTotal.toFixed(2)}</strong><br><br>Has this been paid already?`
             : `No additional charges?`;
         
         const confirmed = await showConfirmModal(
-            hasCharges ? 'Confirm Payment' : 'Confirm Checkout',
+            hasCharges ? 'Confirm Payment & Checkout' : 'Confirm Checkout',
             message
         );
         
@@ -265,9 +292,17 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
         showLoadingScreen('Processing checkout...');
         
         try {
+            const savedCharges = [...tempCharges];
+
             // Save all charges to database only after confirmation
-            for (const charge of tempCharges) {
-                await fetch(`/staff/reservations/${reservationId}/charges`, {
+            for (const charge of savedCharges) {
+                const chargePayload = {
+                    amenity_id: charge.amenity_id || null,
+                    charge_type: charge.charge_type,
+                    description: charge.description,
+                    amount: charge.amount,
+                };
+                const chargeResponse = await fetch(`/staff/reservations/${reservationId}/charges`, {
                     method: 'POST',
                     headers: { 
                         Accept: 'application/json', 
@@ -275,13 +310,17 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(charge)
+                    body: JSON.stringify(chargePayload)
                 });
+                const chargeResult = await chargeResponse.json().catch(() => ({}));
+                if (!chargeResponse.ok) {
+                    throw new Error(chargeResult.message || 'Failed to save charge to database.');
+                }
             }
             
             // Mark all charges as paid if there are any
             if (hasCharges && unpaidTotal > 0) {
-                await fetch(`/staff/reservations/${reservationId}/charges/pay`, {
+                const payResponse = await fetch(`/staff/reservations/${reservationId}/charges/pay`, {
                     method: 'POST',
                     headers: { 
                         Accept: 'application/json', 
@@ -289,12 +328,19 @@ export const openChargeCheckout = async (reservationId, onPaid) => {
                         'X-Requested-With': 'XMLHttpRequest' 
                     }
                 });
+                const payResult = await payResponse.json().catch(() => ({}));
+                if (!payResponse.ok) {
+                    throw new Error(payResult.message || 'Failed to process charge payment.');
+                }
             }
             
             // Clear temp charges for next time modal opens
             tempCharges = [];
             
             await onPaid?.();
+        } catch (error) {
+            console.error('Error during checkout charges:', error);
+            window.alert(error.message || 'An error occurred while saving charges.');
         } finally {
             hideLoadingScreen();
         }

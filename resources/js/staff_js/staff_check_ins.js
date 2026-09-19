@@ -931,6 +931,17 @@ window.AppPage['staff_check_ins'] = function () {
 
     const openCheckOutConfirmModal = () => {
         if (checkOutConfirmModal) {
+            if (confirmCheckOutBtn) {
+                confirmCheckOutBtn.disabled = false;
+                confirmCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                confirmCheckOutBtn.style.pointerEvents = 'auto';
+                confirmCheckOutBtn.innerHTML = 'Yes, Check Out';
+            }
+            checkOutConfirmCloseButtons.forEach((btn) => {
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
+            });
+            checkOutConfirmModal.style.pointerEvents = 'auto';
             checkOutConfirmModal.classList.add('is-open');
             checkOutConfirmModal.setAttribute('aria-hidden', 'false');
         }
@@ -1020,18 +1031,36 @@ window.AppPage['staff_check_ins'] = function () {
     confirmCheckOutBtn?.addEventListener('click', async () => {
         if (!pendingCheckOutReservationId) return;
 
-        try {
-            const resId = pendingCheckOutReservationId;
-            closeCheckOutConfirmModal();
+        const resId = pendingCheckOutReservationId;
 
-            // Open charge modal DIRECTLY (skip confirmation modal)
+        // Show loading spinner on button and lock the confirmation modal from interference
+        confirmCheckOutBtn.disabled = true;
+        confirmCheckOutBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        confirmCheckOutBtn.style.pointerEvents = 'none';
+        confirmCheckOutBtn.innerHTML = `
+            <svg class="mr-2 h-4 w-4 inline animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+            Checking out...
+        `;
+        checkOutConfirmCloseButtons.forEach((btn) => {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+        });
+        checkOutConfirmModal.style.pointerEvents = 'none';
+
+        try {
+            // Open charge modal and ONLY close the confirmation modal when charges modal is ready and displayed
             await openChargeCheckout(resId, async () => {
                 // After charges are handled, NOW do the actual checkout
                 const response = await fetch(`/staff/reservations/${resId}/check-out`, {
                     method: 'POST',
                     headers: {
+                        'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: JSON.stringify({}),
                 });
@@ -1073,10 +1102,28 @@ window.AppPage['staff_check_ins'] = function () {
 
                 refreshCheckoutCountdowns();
                 showToast(`Reservation #${resId} checked out successfully.`);
+            }, () => {
+                // onReady: charges modal has appeared, now close confirmation modal
+                closeCheckOutConfirmModal();
             });
         } catch (error) {
             console.error('Check out error:', error);
+            closeCheckOutConfirmModal();
             alert('Error checking out reservation: ' + error.message);
+        } finally {
+            if (confirmCheckOutBtn) {
+                confirmCheckOutBtn.disabled = false;
+                confirmCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                confirmCheckOutBtn.style.pointerEvents = 'auto';
+                confirmCheckOutBtn.innerHTML = 'Yes, Check Out';
+            }
+            checkOutConfirmCloseButtons.forEach((btn) => {
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
+            });
+            if (checkOutConfirmModal) {
+                checkOutConfirmModal.style.pointerEvents = 'auto';
+            }
         }
     });
 
@@ -3160,11 +3207,17 @@ window.AppPage['staff_check_ins'] = function () {
                     submitBtn.textContent = poolAccessType === 'with_pool' ? 'Check Out Pool' : 'Check Out Standard';
                 }
                 // Open charge modal DIRECTLY (skip checkout first)
-                await openChargeCheckout(currentBulkResId, async () => {
+                await openChargeCheckout(currentBulkResId, async (charges) => {
                     // After charges, NOW do the final checkout
                     const finalResponse = await fetch(`/staff/reservations/${currentBulkResId}/check-out`, {
                         method: 'POST',
-                        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                        headers: { 
+                            Accept: 'application/json', 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken, 
+                            'X-Requested-With': 'XMLHttpRequest' 
+                        },
+                        body: JSON.stringify({}),
                     });
                     const finalPayload = await finalResponse.json().catch(() => ({}));
                     if (!finalResponse.ok) throw new Error(finalPayload.message || 'Unable to complete checkout.');
@@ -3946,14 +3999,16 @@ window.AppPage['staff_check_ins'] = function () {
             });
 
             if (isFinalGuestCheckout && currentCompanionCheckoutResId) {
-                await openChargeCheckout(currentCompanionCheckoutResId, async () => {
+                await openChargeCheckout(currentCompanionCheckoutResId, async (charges) => {
                     const finalResponse = await fetch(`/staff/reservations/${currentCompanionCheckoutResId}/check-out`, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
+                            'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': csrfToken,
                             'X-Requested-With': 'XMLHttpRequest',
                         },
+                        body: JSON.stringify({}),
                     });
                     const finalPayload = await finalResponse.json().catch(() => ({}));
                     if (!finalResponse.ok || !finalPayload.success) {
@@ -5398,6 +5453,24 @@ window.AppPage['staff_check_ins'] = function () {
     const openPaymentConfirmModal = () => {
         if (!paymentConfirmModal) return;
 
+        isPaymentConfirmed = false;
+        if (confirmPaymentBtn) {
+            confirmPaymentBtn.disabled = false;
+            confirmPaymentBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            confirmPaymentBtn.style.pointerEvents = 'auto';
+            confirmPaymentBtn.innerHTML = 'Confirm Payment & Check In';
+        }
+        if (cancelPaymentBtn) {
+            cancelPaymentBtn.disabled = false;
+            cancelPaymentBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            cancelPaymentBtn.style.pointerEvents = 'auto';
+        }
+        paymentCloseButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.style.pointerEvents = 'auto';
+        });
+        paymentConfirmModal.style.pointerEvents = 'auto';
+
         const primaryFirstName = document.getElementById('primary_first_name')?.value?.trim() || 'Walk-In';
         const primaryMiddleName = document.getElementById('primary_middle_name')?.value?.trim() || '';
         const primaryLastName = document.getElementById('primary_last_name')?.value?.trim() || 'Guest';
@@ -5571,7 +5644,7 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     const closePaymentConfirmModal = () => {
-        if (!paymentConfirmModal) return;
+        if (!paymentConfirmModal || isPaymentConfirmed) return;
         paymentConfirmModal.classList.remove('is-open');
         paymentConfirmModal.setAttribute('aria-hidden', 'true');
     };
@@ -5580,8 +5653,13 @@ window.AppPage['staff_check_ins'] = function () {
     cancelPaymentBtn?.addEventListener('click', closePaymentConfirmModal);
 
     confirmPaymentBtn?.addEventListener('click', () => {
+        if (isPaymentConfirmed) return;
         isPaymentConfirmed = true;
+
+        // Disable confirm button and show loading spinner
         confirmPaymentBtn.disabled = true;
+        confirmPaymentBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        confirmPaymentBtn.style.pointerEvents = 'none';
         confirmPaymentBtn.innerHTML = `
             <svg class="mr-2 h-4 w-4 inline animate-spin text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -5589,6 +5667,21 @@ window.AppPage['staff_check_ins'] = function () {
             </svg>
             Processing Check-In...
         `;
+
+        // Disable Back / Edit button and close buttons
+        if (cancelPaymentBtn) {
+            cancelPaymentBtn.disabled = true;
+            cancelPaymentBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            cancelPaymentBtn.style.pointerEvents = 'none';
+        }
+        paymentCloseButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.style.pointerEvents = 'none';
+        });
+
+        // Lock the payment confirm modal so it cannot be interfered with
+        paymentConfirmModal.style.pointerEvents = 'none';
+
         addGuestForm?.submit();
     });
 

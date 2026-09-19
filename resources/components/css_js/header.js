@@ -147,6 +147,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 badgeBg: 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300',
                 svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>'
             };
+        } else if (t.includes('charge')) {
+            return {
+                label: 'Charge Paid',
+                bg: 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+                badgeBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+            };
+        } else if (t.includes('no_show') || t.includes('no-show')) {
+            return {
+                label: 'No Show',
+                bg: 'bg-purple-500/15 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400',
+                badgeBg: 'bg-purple-500/15 text-purple-700 dark:text-purple-300',
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>'
+            };
+        } else if (t.includes('reopen')) {
+            return {
+                label: 'Reopened',
+                bg: 'bg-sky-500/15 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400',
+                badgeBg: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
+            };
         } else if (t.includes('cancel')) {
             return {
                 label: 'Cancellation',
@@ -260,6 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
         item.setAttribute('data-activity-title', act.title || '');
         item.setAttribute('data-activity-desc', act.description || '');
         item.setAttribute('data-activity-type', act.type || '');
+        item.setAttribute('data-activity-action', act.action || act.type || '');
+        item.setAttribute('data-payment-amount', act.payment_amount || '0');
+        item.setAttribute('data-formatted-amount', act.formatted_amount || '');
         item.setAttribute('data-actor-name', act.actor_name || '');
         item.setAttribute('data-actor-role', act.actor_role || '');
         item.setAttribute('data-reservation-id', act.reservation_id || '');
@@ -270,11 +294,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="notif-new-badge text-[0.6rem] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-red-600 text-white tracking-wide shadow-sm">NEW</span>`
             : `<span class="notif-new-badge hidden text-[0.6rem] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-red-600 text-white tracking-wide shadow-sm">NEW</span>`;
 
-        const actorHtml = act.actor_name
-            ? `<div class="mt-1 flex items-center gap-1.5 text-[0.66rem] text-[var(--hp-green)] dark:text-[var(--hp-gold)] font-medium">
-                 <span>By: ${escapeHtml(act.actor_name)} (${escapeHtml(act.actor_role ? act.actor_role.charAt(0).toUpperCase() + act.actor_role.slice(1) : 'Staff')})</span>
-               </div>`
+        const amountBadge = (parseFloat(act.payment_amount || 0) > 0 || act.formatted_amount)
+            ? `<span class="text-[0.68rem] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 tabular-nums">${escapeHtml(act.formatted_amount || '₱' + Number(act.payment_amount).toFixed(2))}</span>`
             : '';
+
+        const actorHtml = act.actor_name
+            ? `<div class="mt-1 flex items-center justify-between text-[0.66rem] font-medium">
+                 <span class="text-[var(--hp-green)] dark:text-[var(--hp-gold)]">By: ${escapeHtml(act.actor_name)} (${escapeHtml(act.actor_role ? act.actor_role.charAt(0).toUpperCase() + act.actor_role.slice(1) : 'Staff')})</span>
+                 ${amountBadge}
+               </div>`
+            : (amountBadge ? `<div class="mt-1 flex justify-end">${amountBadge}</div>` : '');
 
         item.innerHTML = `
             <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}">
@@ -358,6 +387,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resEl) resEl.textContent = `#RES-${act.reservation_id}`;
         } else {
             if (resWrapEl) resWrapEl.classList.add('hidden');
+        }
+
+        const paymentWrapEl = document.getElementById('notifDetailPaymentWrap');
+        const paymentEl = document.getElementById('notifDetailPayment');
+        if (paymentWrapEl && paymentEl) {
+            const amt = parseFloat(act.payment_amount || 0);
+            if (amt > 0 || act.formatted_amount) {
+                paymentWrapEl.classList.remove('hidden');
+                paymentEl.textContent = act.formatted_amount || `₱${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            } else {
+                paymentWrapEl.classList.add('hidden');
+            }
         }
 
         modal.classList.remove('hidden');
@@ -543,6 +584,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-[#178a52] dark:text-[#8fd0ab]">#RES-${act.reservation_id}</span>`
                     : '';
 
+                const paymentBadgeHtml = (parseFloat(act.payment_amount || 0) > 0 || act.formatted_amount)
+                    ? `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 tabular-nums">+ ${escapeHtml(act.formatted_amount || '₱' + Number(act.payment_amount).toFixed(2))}</span>`
+                    : '';
+
                 card.innerHTML = `
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}">
                         ${meta.svg}
@@ -559,7 +604,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed line-clamp-2">${escapeHtml(act.description)}</p>
                         <div class="mt-2 flex items-center justify-between gap-2">
                             <span class="text-[0.68rem] text-[var(--hp-green)] dark:text-[var(--hp-gold)] font-medium">By: ${escapeHtml(act.actor_name || 'Staff')} (${escapeHtml(act.actor_role ? act.actor_role.charAt(0).toUpperCase() + act.actor_role.slice(1) : 'Staff')})</span>
-                            ${resBadgeHtml}
+                            <div class="flex items-center gap-1.5">
+                                ${paymentBadgeHtml}
+                                ${resBadgeHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -755,6 +803,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: notifItem.getAttribute('data-activity-title'),
                 description: notifItem.getAttribute('data-activity-desc'),
                 type: notifItem.getAttribute('data-activity-type'),
+                action: notifItem.getAttribute('data-activity-action'),
+                payment_amount: notifItem.getAttribute('data-payment-amount'),
+                formatted_amount: notifItem.getAttribute('data-formatted-amount'),
                 actor_name: notifItem.getAttribute('data-actor-name'),
                 actor_role: notifItem.getAttribute('data-actor-role'),
                 reservation_id: notifItem.getAttribute('data-reservation-id'),

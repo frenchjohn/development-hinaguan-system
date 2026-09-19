@@ -5514,7 +5514,7 @@ window.AppPage['staff_reservations'] = function () {
     const checkOutReservation = async (reservationId) => {
         try {
             // Open charge modal DIRECTLY (skip confirmation modal)
-            await openChargeCheckout(reservationId, async () => {
+            await openChargeCheckout(reservationId, async (charges) => {
                 // After charges are handled, NOW do the actual checkout
                 const response = await fetch(`/staff/reservations/${reservationId}/check-out`, {
                     method: 'POST',
@@ -5524,6 +5524,7 @@ window.AppPage['staff_reservations'] = function () {
                         'X-CSRF-TOKEN': csrfToken,
                         'X-Requested-With': 'XMLHttpRequest',
                     },
+                    body: JSON.stringify({}),
                 });
                 const payload = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(payload.message || 'Unable to check out this reservation.');

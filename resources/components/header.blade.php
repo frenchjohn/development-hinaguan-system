@@ -296,6 +296,10 @@
                     <span class="block text-[0.7rem] font-semibold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-0.5">Reservation Reference</span>
                     <span id="notifDetailRes" class="inline-flex items-center gap-1 font-bold text-[#178a52] dark:text-[#8fd0ab]">-</span>
                 </div>
+                <div id="notifDetailPaymentWrap" class="col-span-2 hidden">
+                    <span class="block text-[0.7rem] font-semibold text-[#6e7c73] dark:text-[#7f9486] uppercase tracking-wider mb-0.5">Payment Amount Collected</span>
+                    <span id="notifDetailPayment" class="inline-flex items-center gap-1 font-extrabold text-emerald-600 dark:text-emerald-400 text-sm tabular-nums">-</span>
+                </div>
             </div>
 
             <!-- Description -->
@@ -356,7 +360,9 @@
                     <option value="all">All Activity Types</option>
                     <option value="check_in">Check-Ins</option>
                     <option value="check_out">Check-Outs</option>
+                    <option value="charges">Charges & Payments</option>
                     <option value="amenities">Amenities & Extensions</option>
+                    <option value="cancelled">Cancellations & No-Shows</option>
                     <option value="staff">Staff Actions</option>
                     <option value="rules">Rules & System</option>
                 </select>

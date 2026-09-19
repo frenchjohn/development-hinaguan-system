@@ -3558,9 +3558,13 @@ Route::get('/api/activity-notifications', function (Request $request) {
         'unread_count' => $unreadCount,
         'last_seen_id' => $effectiveLastSeenId,
         'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
+            $paymentAmount = (float) ($act->payment_amount ?? 0);
             return [
                 'id' => $act->id,
                 'type' => $act->activity_type,
+                'action' => $act->action ?: $act->activity_type,
+                'payment_amount' => $paymentAmount,
+                'formatted_amount' => $paymentAmount > 0 ? '₱' . number_format($paymentAmount, 2) : null,
                 'title' => $act->title,
                 'description' => $act->description,
                 'reservation_id' => $act->reservation_id,
@@ -3602,6 +3606,7 @@ Route::get('/api/activity-notifications/all', function (Request $request) {
             $q->where('title', 'like', "%{$search}%")
               ->orWhere('description', 'like', "%{$search}%")
               ->orWhere('actor_name', 'like', "%{$search}%")
+              ->orWhere('action', 'like', "%{$search}%")
               ->orWhere('activity_type', 'like', "%{$search}%");
             if (is_numeric($search)) {
                 $q->orWhere('reservation_id', (int) $search);
@@ -3611,20 +3616,35 @@ Route::get('/api/activity-notifications/all', function (Request $request) {
 
     if (! empty($type) && $type !== 'all') {
         if ($type === 'check_in') {
-            $query->whereIn('activity_type', ['check_in', 'checked_in']);
+            $query->where(function ($q) {
+                $q->whereIn('action', ['check_in', 'checked_in'])
+                  ->orWhereIn('activity_type', ['check_in', 'checked_in']);
+            });
         } elseif ($type === 'check_out') {
-            $query->whereIn('activity_type', ['check_out', 'amenity_checked_out']);
+            $query->where(function ($q) {
+                $q->whereIn('action', ['check_out', 'checked_out', 'amenity_checked_out'])
+                  ->orWhereIn('activity_type', ['check_out', 'amenity_checked_out']);
+            });
         } elseif ($type === 'amenities') {
             $query->where(function ($q) {
-                $q->where('activity_type', 'like', '%amenity%')
+                $q->where('action', 'like', '%amenity%')
+                  ->orWhere('action', 'like', '%extend%')
+                  ->orWhere('activity_type', 'like', '%amenity%')
                   ->orWhere('activity_type', 'stay_extended');
+            });
+        } elseif ($type === 'charges') {
+            $query->where(function ($q) {
+                $q->where('action', 'like', '%charge%')
+                  ->orWhere('activity_type', 'like', '%charge%');
             });
         } elseif ($type === 'rules') {
             $query->where('activity_type', 'like', 'rule_%');
         } elseif ($type === 'staff') {
             $query->where('activity_type', 'like', 'staff_%');
         } else {
-            $query->where('activity_type', $type);
+            $query->where(function ($q) use ($type) {
+                $q->where('action', $type)->orWhere('activity_type', $type);
+            });
         }
     }
 
@@ -3640,9 +3660,13 @@ Route::get('/api/activity-notifications/all', function (Request $request) {
     return response()->json([
         'total' => $activities->count(),
         'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
+            $paymentAmount = (float) ($act->payment_amount ?? 0);
             return [
                 'id' => $act->id,
                 'type' => $act->activity_type,
+                'action' => $act->action ?: $act->activity_type,
+                'payment_amount' => $paymentAmount,
+                'formatted_amount' => $paymentAmount > 0 ? '₱' . number_format($paymentAmount, 2) : null,
                 'title' => $act->title,
                 'description' => $act->description,
                 'reservation_id' => $act->reservation_id,
@@ -3676,10 +3700,15 @@ Route::get('/api/activity-notifications/{id}', function (Request $request, $id) 
         return response()->json(['message' => 'Activity not found'], 404);
     }
 
+    $paymentAmount = (float) ($act->payment_amount ?? 0);
+
     return response()->json([
         'activity' => [
             'id' => $act->id,
             'type' => $act->activity_type,
+            'action' => $act->action ?: $act->activity_type,
+            'payment_amount' => $paymentAmount,
+            'formatted_amount' => $paymentAmount > 0 ? '₱' . number_format($paymentAmount, 2) : null,
             'title' => $act->title,
             'description' => $act->description,
             'reservation_id' => $act->reservation_id,
@@ -5667,13 +5696,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffUser = $request->session()->get('auth_user') ?? [];
         $staffName = $staffUser['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'checked_in',
             activityType: 'walkin_created',
+            paymentAmount: (float) $reservation->total_amount,
             title: 'Walk-In Created & Checked In',
             description: "Walk-in reservation #{$reservation->id} ({$reservation->booker_name}, {$reservation->number_of_guests} guests) created and checked in by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $staffUser['role'] ?? 'staff',
-            staffId: (string) ($staffUser['id'] ?? ''),
+            staffId: isset($staffUser['id']) && is_numeric($staffUser['id']) ? (int) $staffUser['id'] : null,
             metadata: [
                 'total_amount' => $reservation->total_amount,
                 'number_of_guests' => $reservation->number_of_guests,
@@ -5829,13 +5860,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'checked_in',
             activityType: 'check_in',
+            paymentAmount: (float) $entranceTotal,
             title: 'Visit-Only Guest Checked In',
             description: "Visit-only reservation #{$reservation->id} ({$reservation->number_of_guests} guests) checked in by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'total_amount' => $entranceTotal,
                 'number_of_guests' => $reservation->number_of_guests,
@@ -6131,13 +6164,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'checked_in',
             activityType: 'check_in',
+            paymentAmount: (float) $grandTotal,
             title: 'Guest Checked In',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}, {$reservation->number_of_guests} guests) checked in by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'booker_name' => $reservation->booker_name,
                 'number_of_guests' => $reservation->number_of_guests,
@@ -6366,13 +6401,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $user['name'] ?? 'Staff User';
         $addedCount = count($data['companions'] ?? []);
         ActivityLog::log(
+            action: 'companion_added',
             activityType: 'companion_added',
+            paymentAmount: (float) $newCompanionTotal,
             title: 'Companion(s) Added',
             description: "{$addedCount} companion(s) added to Reservation #{$reservation->id} ({$reservation->booker_name}) by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'added_count' => $addedCount,
                 'new_number_of_guests' => $actualGuestCount,
@@ -6465,13 +6502,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'reservation_extended',
             activityType: 'stay_extended',
+            paymentAmount: 0.00,
             title: 'Stay Extended',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) extended stay from {$origStartDate} ({$origStartSlot}) to {$newEndDate} ({$newEndSlot}) by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'orig_start_date' => $origStartDate,
                 'orig_start_slot' => $origStartSlot,
@@ -6612,13 +6651,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $user['name'] ?? 'Staff User';
         $amenityName = $amenity?->amenities_name ?? 'Amenity';
         ActivityLog::log(
+            action: 'reservation_extended',
             activityType: 'amenity_extended',
+            paymentAmount: (float) $addedCost,
             title: 'Amenity Extended',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) extended {$amenityName} to {$newAmenityEndDate} ({$newAmenityEndSlot}) by {$staffName} (₱" . number_format($addedCost, 2) . " added)",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'amenity_id' => $reservationAmenity->amenity_id,
                 'amenity_name' => $amenityName,
@@ -6776,13 +6817,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'added_amenity',
             activityType: 'amenity_added',
+            paymentAmount: (float) $totalAmenityCost,
             title: 'Amenity Added Mid-Stay',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) added {$amenity->amenities_name} ({$startDate} [{$startSlot}] to {$endDate} [{$endSlot}]) by {$staffName} (₱" . number_format($totalAmenityCost, 2) . ")",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'amenity_id' => $amenity->id,
                 'amenity_name' => $amenity->amenities_name,
@@ -6846,17 +6889,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $validated = $request->validate([
-            'amenity_id' => ['nullable', 'string', 'exists:amenities,id'],
+            'amenity_id' => ['nullable'],
             'description' => ['nullable', 'string', 'max:2000'],
             'charge_type' => ['required', 'in:damage,cleaning,lost,others'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
         ]);
 
-        if (! empty($validated['amenity_id'])) {
-            $belongsToReservation = $reservation->reservationAmenities()->where('amenity_id', $validated['amenity_id'])->exists();
-            if (! $belongsToReservation) {
-                return response()->json(['message' => 'The selected amenity was not used in this reservation.'], 422);
-            }
+        if (empty($validated['amenity_id']) || $validated['amenity_id'] === 'null') {
+            $validated['amenity_id'] = null;
+        } elseif (! \App\Models\Amenity::where('id', $validated['amenity_id'])->exists()) {
+            $validated['amenity_id'] = null;
         }
 
         $charge = $reservation->reservationCharges()->create($validated + ['status' => 'unpaid']);
@@ -6888,6 +6930,35 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $paidTotal = (float) $unpaid->sum('amount');
         $reservation->reservationCharges()->where('status', 'unpaid')->update(['status' => 'paid']);
+        $reservation->increment('total_amount', $paidTotal);
+        $reservation->increment('amount_paid', $paidTotal);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $hasDamage = $unpaid->contains('charge_type', 'damage');
+        $chargeTitle = $hasDamage ? 'Damage Charge Paid' : 'Additional Charge Paid';
+
+        ActivityLog::log(
+            action: 'additional_charge_paid',
+            activityType: 'additional_charge_paid',
+            paymentAmount: $paidTotal,
+            title: $chargeTitle,
+            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) paid ₱" . number_format($paidTotal, 2) . " in charges ({$unpaid->pluck('charge_type')->unique()->implode(', ')}) with {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
+            metadata: [
+                'paid_total' => $paidTotal,
+                'charge_count' => $unpaid->count(),
+                'charges' => $unpaid->map(fn ($c) => [
+                    'id' => $c->id,
+                    'type' => $c->charge_type,
+                    'amount' => (float) $c->amount,
+                    'description' => $c->description,
+                ])->toArray(),
+                'staff_name' => $staffName,
+            ]
+        );
 
         return response()->json(['success' => true, 'paid_total' => $paidTotal]);
     })->name('reservations.charges.pay');
@@ -6896,6 +6967,44 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $staffId = isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null;
+
+        // Settle any remaining unpaid charges (e.g. damages or additional fees) upon checkout if not yet paid
+        $unpaidCharges = $reservation->reservationCharges()->where('status', 'unpaid')->get();
+        if ($unpaidCharges->isNotEmpty()) {
+            $unpaidTotal = (float) $unpaidCharges->sum('amount');
+            $reservation->reservationCharges()->where('status', 'unpaid')->update(['status' => 'paid']);
+            $reservation->increment('total_amount', $unpaidTotal);
+            $reservation->increment('amount_paid', $unpaidTotal);
+
+            $hasDamage = $unpaidCharges->contains('charge_type', 'damage');
+            $chargeTitle = $hasDamage ? 'Damage Charge Paid' : 'Additional Charge Paid';
+
+            ActivityLog::log(
+                action: 'additional_charge_paid',
+                activityType: 'additional_charge_paid',
+                paymentAmount: $unpaidTotal,
+                title: $chargeTitle,
+                description: "Reservation #{$reservation->id} ({$reservation->booker_name}) paid ₱" . number_format($unpaidTotal, 2) . " in charges ({$unpaidCharges->pluck('charge_type')->unique()->implode(', ')}) during checkout with {$staffName}",
+                reservationId: $reservation->id,
+                actorName: $staffName,
+                actorRole: $user['role'] ?? 'staff',
+                staffId: $staffId,
+                metadata: [
+                    'paid_total' => $unpaidTotal,
+                    'charge_count' => $unpaidCharges->count(),
+                    'charges' => $unpaidCharges->map(fn ($c) => [
+                        'id' => $c->id,
+                        'type' => $c->charge_type,
+                        'amount' => (float) $c->amount,
+                        'description' => $c->description,
+                    ])->toArray(),
+                    'staff_name' => $staffName,
+                ]
+            );
         }
 
         // Only check out guests who haven't been checked out yet
@@ -6916,15 +7025,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->where('status', 'Active')
             ->update(['status' => 'Completed']);
 
-        $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
+            action: 'checked_out',
             activityType: 'check_out',
+            paymentAmount: 0.00,
             title: 'Guest Checked Out',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) completed check out with {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: $staffId,
             metadata: [
                 'checked_out_at' => now()->toDateTimeString(),
                 'staff_name' => $staffName,
@@ -7032,13 +7142,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $user['name'] ?? 'Staff User';
         $amenityName = $reservationAmenity->amenity?->amenities_name ?? 'Amenity';
         ActivityLog::log(
+            action: 'amenity_checked_out',
             activityType: 'amenity_checked_out',
+            paymentAmount: 0.00,
             title: 'Amenity Checked Out',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) checked out {$amenityName} with {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'amenity_id' => $reservationAmenity->amenity_id,
                 'amenity_name' => $amenityName,
@@ -7739,15 +7851,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'No Show' => 'reservation_no_show',
             default => 'reservation_update',
         };
+        $action = match ($newStatus) {
+            'Cancelled' => 'cancelled',
+            'No Show' => 'no_show',
+            'Pending' => 'reservation_reopened',
+            default => 'reservation_update',
+        };
 
         ActivityLog::log(
+            action: $action,
             activityType: $activityType,
+            paymentAmount: 0.00,
             title: $title,
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}) status changed from {$oldStatus} to {$newStatus} by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'previous_status' => $oldStatus,
                 'new_status' => $newStatus,
