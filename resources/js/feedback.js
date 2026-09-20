@@ -101,6 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('click', closeModal);
     });
 
+    // Auto-open review modal if navigated from "Write a Review" button
+    const feedbackUrlParams = new URLSearchParams(window.location.search);
+    if (feedbackUrlParams.get('write') === 'true' || feedbackUrlParams.get('write') === '1' || window.location.hash === '#write' || window.location.hash === '#write-review') {
+        window.setTimeout(() => openModal(), 200);
+    }
+
     /* ── Card Data Extractor ── */
 
     const getCardData = (card) => {

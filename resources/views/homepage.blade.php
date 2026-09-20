@@ -130,7 +130,7 @@
                 </h1>
 
                 <p class="text-emerald-100/85 text-base sm:text-lg max-w-xl leading-relaxed mb-7 font-light">
-                    Where the river sings and the forest breathes — an enchanting riverside escape owned by celebrity Brenda Mage.
+                    Come for the scenery. Stay for the experience. Leave with memories. — Owned by Celebrity Brenda Mage
                 </p>
 
                 {{-- Currently In The Park Pill (Matches Design 1 screenshot) --}}
@@ -337,43 +337,19 @@
                     Where Nature Feels Like Home
                 </h2>
 
-                <p class="text-gray-600 text-base sm:text-lg leading-relaxed mb-10">
-                    Nestled beside the beautiful river of Jasaan, Misamis Oriental, Hinaguan Nature Park is a peaceful escape where nature, adventure, and unforgettable moments come together.
-                </p>
-
-                {{-- 4 Feature Badges as shown in Design 2 --}}
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 w-full pt-4 border-t border-emerald-900/10">
-                    {{-- 1. Riverside Escape --}}
-                    <div class="flex flex-col items-center text-center group">
-                        <div class="w-12 h-12 rounded-full bg-[#e8f3ec] text-[#1b5e3a] group-hover:bg-[#1b5e3a] group-hover:text-white transition-colors duration-300 flex items-center justify-center text-xl mb-2.5">
-                            <i class="bi bi-flower1"></i>
-                        </div>
-                        <span class="text-xs font-bold text-[#0f2d1e]">Riverside Escape</span>
-                    </div>
-
-                    {{-- 2. Nature Views --}}
-                    <div class="flex flex-col items-center text-center group">
-                        <div class="w-12 h-12 rounded-full bg-[#e8f3ec] text-[#1b5e3a] group-hover:bg-[#1b5e3a] group-hover:text-white transition-colors duration-300 flex items-center justify-center text-xl mb-2.5">
-                            <i class="bi bi-triangle-half"></i>
-                        </div>
-                        <span class="text-xs font-bold text-[#0f2d1e]">Nature Views</span>
-                    </div>
-
-                    {{-- 3. Family Friendly --}}
-                    <div class="flex flex-col items-center text-center group">
-                        <div class="w-12 h-12 rounded-full bg-[#e8f3ec] text-[#1b5e3a] group-hover:bg-[#1b5e3a] group-hover:text-white transition-colors duration-300 flex items-center justify-center text-xl mb-2.5">
-                            <i class="bi bi-people-fill"></i>
-                        </div>
-                        <span class="text-xs font-bold text-[#0f2d1e]">Family Friendly</span>
-                    </div>
-
-                    {{-- 4. Great Memories --}}
-                    <div class="flex flex-col items-center text-center group">
-                        <div class="w-12 h-12 rounded-full bg-[#e8f3ec] text-[#1b5e3a] group-hover:bg-[#1b5e3a] group-hover:text-white transition-colors duration-300 flex items-center justify-center text-xl mb-2.5">
-                            <i class="bi bi-heart-fill"></i>
-                        </div>
-                        <span class="text-xs font-bold text-[#0f2d1e]">Great Memories</span>
-                    </div>
+                <div class="space-y-3.5 text-gray-600 text-sm sm:text-[15px] leading-relaxed">
+                    <p>
+                        Welcome to Hinaguan Nature Park—a peaceful riverside getaway in Zone 2, Solana, Jasaan, Misamis Oriental, where the beauty of nature meets unforgettable experiences.
+                    </p>
+                    <p>
+                        What began as a vision by Brenda Mage became a reality. In 2023, Hinaguan opened its doors and began welcoming guests looking for something beyond the usual getaway.
+                    </p>
+                    <p>
+                        Here, you can breathe in the fresh air, listen to the river, enjoy the greenery, gather with loved ones, and simply slow down.
+                    </p>
+                    <p>
+                        Whether you&#39;re planning a family day, a weekend with friends, a camping adventure, or just need a break from the busy world— Hinaguan has a place for you.
+                    </p>
                 </div>
             </div>
         </div>
@@ -812,17 +788,24 @@
                 </div>
             </div>
 
-            <div class="text-center mt-10 relative z-10">
-                <a href="{{ route('feedback') }}" class="inline-flex items-center gap-2 border-2 border-[#a3e635] text-[#a3e635] hover:bg-[#a3e635] hover:text-[#082214] px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm no-underline">
-                    <span>See Other Reviews</span>
-                    <i class="bi bi-arrow-right"></i>
+            <div class="text-center mt-10 relative z-10 flex flex-col items-center justify-center gap-3">
+                <a href="{{ route('feedback', ['write' => 'true']) }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
+                    <i class="bi bi-pencil-square text-sm"></i>
+                    <span>Write a Review</span>
+                </a>
+                <a href="{{ route('feedback') }}" class="text-xs text-emerald-200/80 hover:text-[#a3e635] transition-colors underline underline-offset-4 decoration-emerald-500/50 hover:decoration-[#a3e635] font-medium">
+                    View other reviews
                 </a>
             </div>
         @else
-            <div class="text-center py-12 max-w-md mx-auto relative z-10">
-                <p class="text-emerald-100/70 mb-4">No guest reviews yet. Be the first to share your Hinaguan experience!</p>
-                <a href="{{ route('feedback') }}" class="inline-block bg-[#a3e635] hover:bg-[#bef264] text-[#082214] px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors no-underline">
-                    Write a Review
+            <div class="text-center py-12 max-w-md mx-auto relative z-10 flex flex-col items-center justify-center gap-3">
+                <p class="text-emerald-100/70 mb-2">No guest reviews yet. Be the first to share your Hinaguan experience!</p>
+                <a href="{{ route('feedback', ['write' => 'true']) }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
+                    <i class="bi bi-pencil-square text-sm"></i>
+                    <span>Write a Review</span>
+                </a>
+                <a href="{{ route('feedback') }}" class="text-xs text-emerald-200/80 hover:text-[#a3e635] transition-colors underline underline-offset-4 decoration-emerald-500/50 hover:decoration-[#a3e635] font-medium">
+                    View other reviews
                 </a>
             </div>
         @endif

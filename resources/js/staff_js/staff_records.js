@@ -532,10 +532,45 @@ window.AppPage['staff_records'] = function () {
 
     const reservationSearchInput = document.getElementById('reservationSearchInput');
     const reservationStatusFilter = document.getElementById('reservationStatusFilter');
+    const reservationCheckInStaffFilter = document.getElementById('reservationCheckInStaffFilter');
+    const reservationCheckOutStaffFilter = document.getElementById('reservationCheckOutStaffFilter');
     const reservationSortSelect = document.getElementById('reservationSortSelect');
     const reservationCheckOutFrom = document.getElementById('reservationCheckOutFrom');
     const reservationCheckOutTo = document.getElementById('reservationCheckOutTo');
     const reservationClearButton = document.getElementById('reservationFiltersClear');
+
+    const syncStaffFilterDropdowns = () => {
+        if (!window.staffReservationData) return;
+        const checkInStaffs = new Set();
+        const checkOutStaffs = new Set();
+        Object.values(window.staffReservationData).forEach((res) => {
+            if (res.checked_in_staff && res.checked_in_staff.trim()) {
+                checkInStaffs.add(res.checked_in_staff.trim());
+            }
+            if (res.checked_out_staff && res.checked_out_staff.trim()) {
+                checkOutStaffs.add(res.checked_out_staff.trim());
+            }
+        });
+
+        const populate = (selectEl, staffSet) => {
+            if (!selectEl) return;
+            const existingValues = new Set(Array.from(selectEl.options).map(o => o.value.toLowerCase()));
+            Array.from(staffSet).sort((a, b) => a.localeCompare(b)).forEach(name => {
+                const lower = name.toLowerCase();
+                if (!existingValues.has(lower)) {
+                    const opt = document.createElement('option');
+                    opt.value = lower;
+                    opt.textContent = name;
+                    selectEl.appendChild(opt);
+                    existingValues.add(lower);
+                }
+            });
+        };
+
+        populate(reservationCheckInStaffFilter, checkInStaffs);
+        populate(reservationCheckOutStaffFilter, checkOutStaffs);
+    };
+    syncStaffFilterDropdowns();
     const reservationResultsCount = document.getElementById('reservationResultsCount');
     const reservationFilterToggle = document.getElementById('reservationFilterToggle');
     const reservationFilterPanel = document.getElementById('reservationFilterPanel');
@@ -685,548 +720,259 @@ window.AppPage['staff_records'] = function () {
             return !nameLower.startsWith('bulk') && !nameLower.includes('companion');
         });
 
+        const normStatus = (reservation.status || '').trim().toLowerCase();
+        const row = document.querySelector(`tr.reservation-row[data-reservation-id="${reservation.id}"]`);
+        const rowStatus = row ? (row.getAttribute('data-status') || '').trim().toLowerCase() : '';
+
+        const isCancelled = normStatus.includes('cancel') || rowStatus.includes('cancel');
+        const isNoShow = normStatus.includes('no show') || normStatus.includes('noshow') || rowStatus.includes('no show') || rowStatus.includes('noshow');
+        const isCheckedOut = normStatus.includes('checked out') || normStatus.includes('checked_out') || rowStatus.includes('checked out') || rowStatus.includes('checked_out') || Boolean(reservation.check_out);
+
+        const checkedInStaff = reservation.checked_in_staff || (reservation.check_in ? 'Staff User' : null);
+        const checkedInAt = reservation.checked_in_at || (reservation.check_in ? formatDateTime(reservation.check_in) : null);
+
+        const checkedOutStaff = reservation.checked_out_staff || ((reservation.check_out || isCheckedOut) ? 'Staff User' : null);
+        const checkedOutAt = reservation.checked_out_at || (reservation.check_out ? formatDateTime(reservation.check_out) : null);
+
+        const modalSubtitle = document.getElementById('reservationModalSubtitle');
+        if (modalSubtitle) {
+            modalSubtitle.textContent = `${reservation.reservation_type === 'walk_in' ? 'Walk-In Booking' : 'Online Booking'} · ${allGuests.length || reservation.number_of_guests || 1} Guests`;
+        }
+
         let html = `
-            <!-- Section Switcher Tabs -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full shrink-0 border-b border-[#e8eee9] dark:border-[#282c29] pb-3.5">
-                <button type="button" class="resv-modal-tab active inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-xl bg-[#178a52] text-white shadow-sm py-2 px-2.5 text-xs font-bold transition-all border border-transparent" data-target-pane="paneOverview">
-                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>
-                    <span>Overview</span>
-                </button>
-                <button type="button" class="resv-modal-tab inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] hover:bg-[#eef4f0] dark:hover:bg-[#1f2621] text-[#5a6b5c] dark:text-[#a8b8a8] hover:text-[#0d2c1d] dark:hover:text-white py-2 px-2.5 text-xs font-bold transition-all" data-target-pane="paneGuests">
-                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                    <span>Guests (${allGuests.length})</span>
-                </button>
-                <button type="button" class="resv-modal-tab inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] hover:bg-[#eef4f0] dark:hover:bg-[#1f2621] text-[#5a6b5c] dark:text-[#a8b8a8] hover:text-[#0d2c1d] dark:hover:text-white py-2 px-2.5 text-xs font-bold transition-all" data-target-pane="paneAmenities">
-                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
-                    <span>Amenities (${amenities.length})</span>
-                </button>
-                <button type="button" class="resv-modal-tab inline-flex items-center justify-center gap-1.5 cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] hover:bg-[#eef4f0] dark:hover:bg-[#1f2621] text-[#5a6b5c] dark:text-[#a8b8a8] hover:text-[#0d2c1d] dark:hover:text-white py-2 px-2.5 text-xs font-bold transition-all" data-target-pane="paneBilling">
-                    <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>
-                    <span>Billing & Charges</span>
-                    ${hasCharges ? '<span class="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-pulse" title="Has post-checkout charges"></span>' : ''}
-                </button>
+            <!-- Staff Handled Activity -->
+            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-[#fafbfa] dark:bg-[#151816] p-4">
+                <div class="flex items-center justify-between pb-2 mb-3 border-b border-[#e8eee9] dark:border-[#282c29]">
+                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8] flex items-center gap-1.5">
+                        <svg class="h-3.5 w-3.5 text-[#178a52] dark:text-[#8fd0ab]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 01-7.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                        Staff Handled Activity
+                    </span>
+                    <span class="text-[0.68rem] font-medium text-[#718774] dark:text-[#889b8a]">${escapeHtml(reservation.reservation_type === 'walk_in' ? 'Walk-In Desk' : 'Online Booking')}</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Check-in staff -->
+                    <div class="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#e8eee9] dark:border-[#282c29]">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[0.68rem] font-semibold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Checked In By Staff</div>
+                            <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] truncate mt-0.5">
+                                ${escapeHtml(isNoShow ? 'N/A (No Show)' : (checkedInStaff || (reservation.check_in ? 'Staff User' : 'Not recorded')))}
+                            </div>
+                            <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${escapeHtml(isNoShow ? 'Guest did not arrive' : (checkedInAt || (reservation.check_in ? formatDateTime(reservation.check_in) : 'No check-in timestamp')))}</div>
+                        </div>
+                    </div>
+
+                    <!-- Check-out staff -->
+                    <div class="flex items-start gap-3 p-3 rounded-lg bg-white dark:bg-[#181b19] border border-[#e8eee9] dark:border-[#282c29]">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[0.68rem] font-semibold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Checked Out By Staff</div>
+                            <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] truncate mt-0.5">
+                                ${escapeHtml(isCancelled ? 'N/A (Cancelled)' : (isNoShow ? 'N/A (No Show)' : (checkedOutStaff || (reservation.check_out || isCheckedOut ? 'Staff User' : 'Not recorded'))))}
+                            </div>
+                            <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${escapeHtml(isCancelled ? 'Reservation cancelled' : (isNoShow ? 'Reservation marked no show' : (checkedOutAt || (reservation.check_out ? formatDateTime(reservation.check_out) : 'No check-out timestamp'))))}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Tab Panes Container -->
-            <div class="resv-modal-panes space-y-4">
-                <!-- ════════════════════════════════════════════════════════ -->
-                <!-- PANE 1: OVERVIEW & STAY                                 -->
-                <!-- ════════════════════════════════════════════════════════ -->
-                <div id="paneOverview" class="resv-modal-pane space-y-4">
-                    <!-- Key Information 2-Card Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <!-- Booker Card -->
-                        <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-2.5">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[0.7rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Booker Details</span>
-                                <span class="px-2 py-0.5 rounded-md text-[0.68rem] font-bold capitalize bg-[#e8eee9] dark:bg-[#202722] text-[#2c5f3e] dark:text-[#8fd0ab]">${escapeHtml(reservation.reservation_type || 'online')} Booking</span>
-                            </div>
-                            <div>
-                                <div class="text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(reservation.booker_name || 'N/A')}</div>
-                                <div class="text-xs text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">${escapeHtml(reservation.phone || 'No phone')} · ${escapeHtml(reservation.email || 'No email')}</div>
-                            </div>
-                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Total Party Size:</span>
-                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${reservation.number_of_guests || allGuests.length || 1} Guests</span>
-                            </div>
-                        </div>
-
-                        <!-- Schedule Card -->
-                        <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-2.5">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[0.7rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Stay Timestamps</span>
-                                <span class="px-2 py-0.5 rounded-md text-[0.68rem] font-bold bg-[#e8eee9] dark:bg-[#202722] text-[#5a6b5c] dark:text-[#a8b8a8]">${escapeHtml(reservation.start_slot || 'Daytime')}</span>
-                            </div>
-                            <div class="space-y-1.5">
-                                <div class="flex items-start gap-2">
-                                    <svg class="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                                    <div>
-                                        <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-In Date & Time</span>
-                                        <span class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(checkInDisplay)}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-2">
-                                    <svg class="h-4 w-4 text-rose-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                                    <div>
-                                        <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Check-Out Date & Time</span>
-                                        <span class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(checkOutDisplay)}</span>
-                                    </div>
-                                </div>
-                                ${companionsCheckoutSummary ? `
-                                    <div class="flex items-start gap-2 pt-1.5 border-t border-[#e8eee9] dark:border-[#282c29]">
-                                        <svg class="h-4 w-4 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                        <div>
-                                            <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Companions Check-Out</span>
-                                            <span class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(companionsCheckoutSummary)}</span>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
+            <!-- Stay Schedule & Booker Information -->
+            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
+                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Stay & Booker Details</span>
+                    <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]">${reservation.total_days || 1} Day Stay</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div>
+                        <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] block">Check-In</span>
+                        <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] block mt-0.5">${escapeHtml(checkInDisplay)}</span>
+                        <span class="text-[0.68rem] text-[#889b8a]">${escapeHtml(reservation.start_slot || 'Daytime')}</span>
                     </div>
-
-                    <!-- Access & Admission Summary Banner -->
-                    <div class="p-4 rounded-xl ${hasPoolAccess ? 'bg-[#f0f9ff] dark:bg-[#082f49]/30 border border-[#bae6fd] dark:border-[#0369a1]/40' : 'bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]'} flex items-center justify-between gap-3 flex-wrap">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${hasPoolAccess ? 'bg-[#0284c7] text-white' : 'bg-[#178a52] text-white'}">
-                                ${hasPoolAccess ? `
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                ` : `
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                `}
-                            </div>
-                            <div>
-                                <div class="font-bold text-xs ${hasPoolAccess ? 'text-[#0369a1] dark:text-[#38bdf8]' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">
-                                    ${hasPoolAccess ? `Pool Access Included (${poolAccessCount} passes)` : 'Standard Park Entrance (No Pool Access)'}
-                                </div>
-                                <div class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">
-                                    Admission Type: ${escapeHtml(reservation.entrance_fee?.pricing_type || 'Standard')} · ${hasPoolAccess ? `₱${formatMoney(poolFee)} total pool charge` : 'Eco-park entrance privilege'}
-                                </div>
-                            </div>
-                        </div>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold ${hasPoolAccess ? 'bg-[#0284c7]/10 text-[#0284c7] dark:bg-[#38bdf8]/15 dark:text-[#38bdf8]' : 'bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab]'}">
-                            ${hasPoolAccess ? 'Pool Access Valid' : 'Park Admission Valid'}
-                        </span>
+                    <div>
+                        <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] block">Check-Out</span>
+                        <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] block mt-0.5">${escapeHtml(checkOutDisplay)}</span>
+                        <span class="text-[0.68rem] text-[#889b8a]">${escapeHtml(reservation.end_slot || reservation.start_slot || 'Daytime')}</span>
                     </div>
-
-                    <!-- Quick Ledger 4-Column Grid -->
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
-                        <div>
-                            <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Base Booking</span>
-                            <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(totalAmount)}</span>
-                        </div>
-                        <div>
-                            <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Total Paid</span>
-                            <span class="font-bold text-sm tabular-nums text-emerald-700 dark:text-emerald-400">₱${formatMoney(totalSettledPaid)}</span>
-                        </div>
-                        <div>
-                            <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Post-Checkout Fees</span>
-                            <span class="font-bold text-sm tabular-nums ${chargesTotal > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-[#889b8a]'}">₱${formatMoney(chargesTotal)}</span>
-                        </div>
-                        <div>
-                            <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Remaining Balance</span>
-                            <span class="font-bold text-sm tabular-nums ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">₱${formatMoney(remainingBal)}</span>
-                        </div>
+                    <div>
+                        <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] block">Party Size</span>
+                        <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] block mt-0.5">${reservation.number_of_guests || allGuests.length || 1} Guests</span>
+                        <span class="text-[0.68rem] ${hasPoolAccess ? 'text-[#0284c7] dark:text-[#38bdf8] font-medium' : 'text-[#889b8a]'}">${hasPoolAccess ? `Pool (${poolAccessCount} passes)` : 'Entrance only'}</span>
+                    </div>
+                    <div>
+                        <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] block">Contact</span>
+                        <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] block mt-0.5 truncate" title="${escapeHtml(reservation.phone || 'No phone')}">${escapeHtml(reservation.phone || 'No phone')}</span>
+                        <span class="text-[0.68rem] text-[#889b8a] truncate block" title="${escapeHtml(reservation.email || 'No email')}">${escapeHtml(reservation.email || 'No email')}</span>
                     </div>
                 </div>
+            </div>
 
-                <!-- ════════════════════════════════════════════════════════ -->
-                <!-- PANE 2: GUESTS & CHECK-IN / CHECK-OUT                   -->
-                <!-- ════════════════════════════════════════════════════════ -->
-                <div id="paneGuests" class="resv-modal-pane space-y-3 hidden">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Guest List & Visit Timeline (${allGuests.length})</span>
-                        <span class="text-[0.72rem] text-[#718774] dark:text-[#889b8a]">Individual check-in & check-out records</span>
+            <!-- Guests List -->
+            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
+                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Guests (${allGuests.length})</span>
+                    ${companionsCheckoutSummary ? `<span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]">Group check-out: ${escapeHtml(companionsCheckoutSummary)}</span>` : ''}
+                </div>
+                <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    ${allGuests.length === 0 ? `
+                        <div class="text-center py-4 text-[#889b8a]">No individual guest details recorded.</div>
+                    ` : `
+                        <!-- Primary Booker -->
+                        ${leadGuests.map(g => {
+                            const gCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
+                            const gCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
+                            return `
+                                <div class="p-2.5 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex items-center justify-between gap-3 text-xs">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(g.name || reservation.booker_name || 'Primary Booker')}</span>
+                                            <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-[#e8eee9] text-[#2c5f3e] dark:bg-[#202722] dark:text-[#8fd0ab]">Primary</span>
+                                            ${g.has_pool_access ? '<span class="px-1.5 py-0.5 rounded text-[0.65rem] font-medium bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">Pool</span>' : ''}
+                                        </div>
+                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] mt-0.5">
+                                            Age: ${escapeHtml(g.age || 'N/A')} · Gender: ${escapeHtml(g.gender || 'N/A')} · ${g.is_foreigner ? 'Foreigner' : 'Filipino'}
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[0.68rem] shrink-0 text-[#889b8a]">
+                                        <div>In: <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(gCheckIn)}</span></div>
+                                        <div>Out: <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(gCheckOut)}</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+
+                        <!-- Bulk Groups -->
+                        ${bulkGroups.map(bg => {
+                            const bgCheckOut = bg.formatted_checkout || formatGroupCheckOut(bg.members, reservation.check_out);
+                            return `
+                                <div class="p-2.5 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex items-center justify-between gap-3 text-xs">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(bg.name || 'Bulk Companions')}</span>
+                                            <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-semibold bg-[#f0f4f1] text-[#5a6b5c] dark:bg-[#202722] dark:text-[#a8b8a8]">${bg.count} guests</span>
+                                            ${bg.has_pool_access ? `<span class="px-1.5 py-0.5 rounded text-[0.65rem] font-medium bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">Pool (${bg.pool_access_count || bg.count}x)</span>` : ''}
+                                        </div>
+                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] mt-0.5">
+                                            Age Group: ${escapeHtml(bg.age_group || 'N/A')} · Gender: ${escapeHtml(bg.gender || 'N/A')} · ${escapeHtml(bg.nationality || 'Filipino')}
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[0.68rem] shrink-0 text-[#889b8a]">
+                                        <div>Out: <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(bgCheckOut)}</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+
+                        <!-- Regular Companions -->
+                        ${regularCompanions.map(g => {
+                            const gCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
+                            const gCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
+                            return `
+                                <div class="p-2.5 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex items-center justify-between gap-3 text-xs">
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(g.name || 'Companion')}</span>
+                                            <span class="px-1.5 py-0.5 rounded text-[0.65rem] bg-gray-100 dark:bg-neutral-800 text-[#5a6b5c] dark:text-[#a8b8a8]">Companion</span>
+                                            ${g.has_pool_access ? '<span class="px-1.5 py-0.5 rounded text-[0.65rem] font-medium bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">Pool</span>' : ''}
+                                        </div>
+                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] mt-0.5">
+                                            Age: ${escapeHtml(g.age || 'N/A')} · Gender: ${escapeHtml(g.gender || 'N/A')} · ${g.is_foreigner ? 'Foreigner' : 'Filipino'}
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[0.68rem] shrink-0 text-[#889b8a]">
+                                        <div>Out: <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(gCheckOut)}</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    `}
+                </div>
+            </div>
+
+            <!-- Reserved Amenities (if any) -->
+            ${amenities.length > 0 ? `
+                <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Reserved Amenities (${amenities.length})</span>
+                        <span class="text-[0.68rem] font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(amenitiesTotal)}</span>
                     </div>
+                    <div class="space-y-1.5 text-xs">
+                        ${amenities.map(a => {
+                            const price = parseFloat(a.price || a.price_at_booking || 0);
+                            const qty = parseInt(a.quantity || 1, 10);
+                            const subtotal = parseFloat(a.subtotal || (price * qty));
+                            return `
+                                <div class="flex items-center justify-between p-2 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29]">
+                                    <div>
+                                        <div class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')}</div>
+                                        ${a.time_slot ? `<div class="text-[0.68rem] text-[#889b8a]">${escapeHtml(a.time_slot)}</div>` : ''}
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(subtotal)}</div>
+                                        <div class="text-[0.65rem] text-[#889b8a]">₱${formatMoney(price)} × ${qty}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : ''}
 
-                    ${(companionsCheckoutSummary && companionGuestsList.length > 1) ? `
-                        <div class="p-3 rounded-xl bg-[#f0f7f3] dark:bg-[#142319] border border-emerald-200/70 dark:border-emerald-800/40 flex items-center justify-between gap-2 flex-wrap text-xs">
-                            <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
-                                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-                                <span class="font-bold text-[0.72rem] uppercase tracking-wider">Companion Group Check-Out</span>
-                            </div>
-                            <span class="font-bold text-xs text-emerald-900 dark:text-emerald-200">${escapeHtml(companionsCheckoutSummary)}</span>
+            <!-- Billing & Payment Summary -->
+            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
+                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Billing & Settlement</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border ${paymentBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
+                </div>
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
+                        <span>Entrance Admission:</span>
+                        <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(entranceFeeTotal)}</span>
+                    </div>
+                    ${poolFee > 0 ? `
+                        <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
+                            <span>Pool Access Passes (${poolAccessCount}x):</span>
+                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(poolFee)}</span>
                         </div>
                     ` : ''}
-
-                    <div class="space-y-2.5 max-h-[440px] overflow-y-auto pr-1">
-                        ${allGuests.length === 0 ? `
-                            <div class="p-6 text-center text-xs text-[#889b8a] rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
-                                No guest entries recorded for this reservation.
-                            </div>
-                        ` : `
-                            <!-- Lead Guests / Primary Booker -->
-                            ${leadGuests.map((g, index) => {
-            const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
-            const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
-            const guestHasPool = Boolean(g.has_pool_access);
-
-            return `
-                                    <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-emerald-600/40 dark:border-emerald-600/30 space-y-2.5">
-                                        <div class="flex items-start justify-between gap-2 flex-wrap">
-                                            <div class="flex items-center gap-2.5">
-                                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#178a52] text-white font-bold text-xs">
-                                                    ★
-                                                </span>
-                                                <div>
-                                                    <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-2 flex-wrap">
-                                                        <span>${escapeHtml(g.name || 'Primary Booker')}</span>
-                                                        <span class="px-2 py-0.5 rounded-md text-[0.65rem] font-bold bg-[#178a52]/15 text-[#178a52] dark:bg-[#8fd0ab]/20 dark:text-[#8fd0ab]">Primary Booker</span>
-                                                    </div>
-                                                    <div class="text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">
-                                                        Age: ${escapeHtml(g.age || 'N/A')} · Gender: ${escapeHtml(g.gender || 'N/A')} · ${g.is_foreigner ? 'Foreigner' : 'Filipino'}
-                                                        ${(g.phone || g.email) ? ` · ${escapeHtml(g.phone || g.email)}` : ''}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                ${guestHasPool ? `
-                                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40">
-                                                        <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                                        Pool Access
-                                                    </span>
-                                                ` : `
-                                                    <span class="inline-flex items-center rounded-md bg-[#f0f4f1] dark:bg-[#202722] px-2 py-0.5 text-[0.65rem] font-medium text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                        Entrance Only
-                                                    </span>
-                                                `}
-                                            </div>
-                                        </div>
-
-                                        <!-- Guest Specific Check-in & Check-out Timestamps -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#e8eee9] dark:border-[#282c29] text-[0.72rem]">
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                                                <span class="font-medium">Check-In:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(guestCheckIn)}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                                                <span class="font-medium">Check-Out:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(guestCheckOut)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-        }).join('')}
-
-                            <!-- Bulk Companion Groups -->
-                            ${bulkGroups.map((bg, bgIdx) => {
-            const bgCheckIn = formatStayDate(bg.members?.[0]?.check_in || reservation.check_in);
-            const bgCheckOut = bg.formatted_checkout || formatGroupCheckOut(bg.members, reservation.check_out);
-
-            return `
-                                    <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-emerald-600/30 dark:border-emerald-700/30 space-y-2.5">
-                                        <div class="flex items-start justify-between gap-2 flex-wrap">
-                                            <div class="flex items-center gap-2.5">
-                                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold text-xs" title="Bulk Companion Group">
-                                                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM15.75 9.75a3 3 0 116 0 3 3 0 01-6 0zM2.25 9.75a3 3 0 116 0 3 3 0 01-6 0zM6.31 15.117A6.745 6.745 0 0112 12a6.745 6.745 0 016.709 7.498.75.75 0 01-.372.568A12.696 12.696 0 0112 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 01-.372-.568 6.787 6.787 0 011.019-4.38z" clip-rule="evenodd" /></svg>
-                                                </span>
-                                                <div>
-                                                    <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-2 flex-wrap">
-                                                        <span>${escapeHtml(bg.name || 'Bulk Companions')}</span>
-                                                        <span class="px-2 py-0.5 rounded-full text-[0.65rem] font-bold bg-[#e0eae2] text-[#2c5f3e] dark:bg-[#1a3324] dark:text-[#8fd0ab]">${bg.count}x</span>
-                                                    </div>
-                                                    <div class="text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">
-                                                        Age: ${escapeHtml(bg.age_group || 'N/A')} · Gender: ${escapeHtml(bg.gender || 'N/A')} · ${escapeHtml(bg.nationality || 'Filipino')}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                ${bg.has_pool_access ? `
-                                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40">
-                                                        <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                                        Pool Access (${bg.pool_access_count || bg.count}x)
-                                                    </span>
-                                                ` : `
-                                                    <span class="inline-flex items-center rounded-md bg-[#f0f4f1] dark:bg-[#202722] px-2 py-0.5 text-[0.65rem] font-medium text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                        Entrance Only
-                                                    </span>
-                                                `}
-                                            </div>
-                                        </div>
-
-                                        <!-- Group Check-in & Aggregated Check-out -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#e8eee9] dark:border-[#282c29] text-[0.72rem]">
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                                                <span class="font-medium">Check-In:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(bgCheckIn)}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                                                <span class="font-medium">Check-Out:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-snug">${escapeHtml(bgCheckOut)}</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- Member breakdown list -->
-                                        ${(bg.members && bg.members.length > 0) ? `
-                                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] space-y-1.5">
-                                                <div class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Group Members (${bg.members.length}):</div>
-                                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
-                                                    ${bg.members.map((m, mIdx) => `
-                                                        <div class="p-1.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29] flex items-center justify-between text-[0.68rem]">
-                                                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Member #${mIdx + 1} (Customer #${escapeHtml(m.customer_id)})</span>
-                                                            <span class="text-[#5a6b5c] dark:text-[#a8b8a8]">${m.checked_out_at ? formatDateTime(m.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout')}</span>
-                                                        </div>
-                                                    `).join('')}
-                                                </div>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                `;
-        }).join('')}
-
-                            <!-- Regular Individual Companions -->
-                            ${regularCompanions.map((g, index) => {
-            const guestCheckIn = formatStayDate(g.check_in || reservation.check_in || reservation.reservation_date);
-            const guestCheckOut = g.checked_out_at ? formatDateTime(g.checked_out_at) : (reservation.check_out ? formatDateTime(reservation.check_out) : 'Completed at checkout');
-            const guestHasPool = Boolean(g.has_pool_access);
-
-            return `
-                                    <div class="p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-2.5">
-                                        <div class="flex items-start justify-between gap-2 flex-wrap">
-                                            <div class="flex items-center gap-2.5">
-                                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e8eee9] dark:bg-[#202722] text-[#5a6b5c] dark:text-[#a8b8a8] font-bold text-xs">
-                                                    ${leadGuests.length + index + 1}
-                                                </span>
-                                                <div>
-                                                    <div class="font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-2 flex-wrap">
-                                                        <span>${escapeHtml(g.name || 'Companion')}</span>
-                                                        <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-medium bg-[#f0f4f1] text-[#5a6b5c] dark:bg-[#202722] dark:text-[#a8b8a8]">Companion</span>
-                                                    </div>
-                                                    <div class="text-[0.7rem] text-[#5a6b5c] dark:text-[#a8b8a8] mt-0.5">
-                                                        Age: ${escapeHtml(g.age || 'N/A')} · Gender: ${escapeHtml(g.gender || 'N/A')} · ${g.is_foreigner ? 'Foreigner' : 'Filipino'}
-                                                        ${(g.phone || g.email) ? ` · ${escapeHtml(g.phone || g.email)}` : ''}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                ${guestHasPool ? `
-                                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#e0f2fe] dark:bg-[#082f49] px-2 py-0.5 text-[0.65rem] font-bold text-[#0284c7] dark:text-[#38bdf8] border border-[#bae6fd] dark:border-[#0369a1]/40">
-                                                        <svg class="h-2.5 w-2.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 20.25c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0" /></svg>
-                                                        Pool Access
-                                                    </span>
-                                                ` : `
-                                                    <span class="inline-flex items-center rounded-md bg-[#f0f4f1] dark:bg-[#202722] px-2 py-0.5 text-[0.65rem] font-medium text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                        Entrance Only
-                                                    </span>
-                                                `}
-                                            </div>
-                                        </div>
-
-                                        <!-- Guest Specific Check-in & Check-out Timestamps -->
-                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[#e8eee9] dark:border-[#282c29] text-[0.72rem]">
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                                                <span class="font-medium">Check-In:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(guestCheckIn)}</span>
-                                            </div>
-                                            <div class="flex items-center gap-1.5 text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                                <svg class="h-3.5 w-3.5 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                                                <span class="font-medium">Check-Out:</span>
-                                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(guestCheckOut)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-        }).join('')}
-                        `}
+                    ${amenitiesTotal > 0 ? `
+                        <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
+                            <span>Amenities Subtotal:</span>
+                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(amenitiesTotal)}</span>
+                        </div>
+                    ` : ''}
+                    ${chargesTotal > 0 ? `
+                        <div class="flex items-center justify-between text-amber-700 dark:text-amber-400">
+                            <span>Additional / Damage Charges:</span>
+                            <span class="font-medium tabular-nums">+ ₱${formatMoney(chargesTotal)}</span>
+                        </div>
+                    ` : ''}
+                    <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between font-bold">
+                        <span class="text-[#0d2c1d] dark:text-[#f5f5f0]">Total Billed:</span>
+                        <span class="text-sm text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
                     </div>
-                </div>
-
-                <!-- ════════════════════════════════════════════════════════ -->
-                <!-- PANE 3: AMENITIES & ACCESS                              -->
-                <!-- ════════════════════════════════════════════════════════ -->
-                <div id="paneAmenities" class="resv-modal-pane space-y-4 hidden">
-                    <!-- Reserved Amenities List -->
-                    <div class="space-y-2.5">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Reserved Amenities & Facilities (${amenities.length})</span>
-                            <span class="text-[0.72rem] text-emerald-700 dark:text-emerald-400 font-bold">Subtotal: ₱${amenitiesTotal.toFixed(2)}</span>
-                        </div>
-
-                        ${amenities.length === 0 ? `
-                            <div class="p-6 text-center text-xs text-[#889b8a] rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
-                                No separate amenities (cottages, gazebos, tables) were booked for this reservation.
-                            </div>
-                        ` : `
-                            <div class="space-y-2">
-                                ${amenities.map(a => {
-            const price = parseFloat(a.price || a.price_at_booking || 0);
-            const qty = parseInt(a.quantity || 1, 10);
-            const subtotal = parseFloat(a.subtotal || (price * qty));
-            return `
-                                        <div class="flex items-center justify-between p-3 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] text-xs">
-                                            <div class="space-y-0.5">
-                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-2">
-                                                    <span>${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')}</span>
-                                                    <span class="px-2 py-0.5 rounded text-[0.65rem] font-medium bg-[#e8eee9] dark:bg-[#202722] text-[#5a6b5c] dark:text-[#a8b8a8]">${escapeHtml(a.pricing_type || 'Per Slot')}</span>
-                                                </div>
-                                                ${a.time_slot ? `<div class="text-[0.7rem] text-[#718774] dark:text-[#889b8a]">Slot / Time: ${escapeHtml(a.time_slot)}</div>` : ''}
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-sm text-emerald-700 dark:text-emerald-400">₱${subtotal.toFixed(2)}</div>
-                                                <div class="text-[0.68rem] text-[#889b8a]">₱${price.toFixed(2)} × ${qty}</div>
-                                            </div>
-                                        </div>
-                                    `;
-        }).join('')}
-                            </div>
-                        `}
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-[#718774] dark:text-[#889b8a]">Total Paid (${escapeHtml(reservation.payment_method || 'Cash')}):</span>
+                        <span class="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">₱${formatMoney(totalSettledPaid)}</span>
                     </div>
-
-                    <!-- Admission & Pool Access Passes Breakdown -->
-                    <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Admission & Pool Access Breakdown</span>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                            <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
-                                <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Base Entrance</span>
-                                <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(baseEntranceFee)}</span>
-                                <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${reservation.entrance_fee?.adult_count || 0} Adults, ${reservation.entrance_fee?.child_count || 0} Children</div>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
-                                <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Additional Headcount</span>
-                                <span class="font-bold text-sm tabular-nums text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(addHeadFee)}</span>
-                                <div class="text-[0.68rem] text-[#889b8a] mt-0.5">Extra guest fees</div>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29]">
-                                <span class="block text-[0.68rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Pool Access Passes</span>
-                                <span class="font-bold text-sm tabular-nums text-[#0284c7] dark:text-[#38bdf8]">₱${formatMoney(poolFee)}</span>
-                                <div class="text-[0.68rem] text-[#889b8a] mt-0.5">${poolAccessCount} swimmers pass</div>
-                            </div>
-                        </div>
+                    <div class="flex items-center justify-between text-xs pt-1">
+                        <span class="text-[#718774] dark:text-[#889b8a]">Remaining Balance:</span>
+                        <span class="font-bold tabular-nums ${remainingBal > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
+                            ₱${formatMoney(remainingBal)} ${remainingBal <= 0 ? '(Fully Settled)' : '(Pending)'}
+                        </span>
                     </div>
-                </div>
-
-                <!-- ════════════════════════════════════════════════════════ -->
-                <!-- PANE 4: BILLING & CHARGES (POST-CHECKOUT FEES)          -->
-                <!-- ════════════════════════════════════════════════════════ -->
-                <div id="paneBilling" class="resv-modal-pane space-y-4 hidden">
-                    <!-- Base Booking Breakdown -->
-                    <div class="p-4 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
-                        <div class="flex items-center justify-between pb-2 border-b border-[#e8eee9] dark:border-[#282c29]">
-                            <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Base Booking Charges</span>
-                            <span class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] font-medium">Initial reservation breakdown</span>
-                        </div>
-                        <div class="space-y-2 text-xs">
-                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Total Entrance Admission:</span>
-                                <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(entranceFeeTotal)}</span>
-                            </div>
-                            ${poolFee > 0 ? `
-                                <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                    <span>Pool Access Passes (${poolAccessCount}x):</span>
-                                    <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(poolFee)}</span>
-                                </div>
-                            ` : ''}
-                            ${amenitiesTotal > 0 ? `
-                                <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                    <span>Reserved Amenities Subtotal:</span>
-                                    <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(amenitiesTotal)}</span>
-                                </div>
-                            ` : ''}
-                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between font-bold text-xs text-[#0d2c1d] dark:text-[#f5f5f0]">
-                                <span>Base Booking Total:</span>
-                                <span class="tabular-nums text-right text-sm">₱${formatMoney(totalAmount)}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Post-Checkout / Additional Charges Section -->
-                    <div class="p-4 rounded-xl ${hasCharges ? 'bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/30 dark:border-amber-500/25' : 'bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]'} space-y-3">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${hasCharges ? 'bg-amber-500 text-white' : 'bg-[#178a52] text-white'}">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                </span>
-                                <div class="min-w-0">
-                                    <span class="text-xs font-bold uppercase tracking-wider block ${hasCharges ? 'text-amber-800 dark:text-amber-300' : 'text-[#0d2c1d] dark:text-[#f5f5f0]'}">Additional Fees / Charges After Checkout</span>
-                                    <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a] truncate">Damages, extra hours, or fees incurred during/after stay</div>
-                                </div>
-                            </div>
-                            <span class="shrink-0 font-bold text-xs tabular-nums text-right ${hasCharges ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}">
-                                ${hasCharges ? `+ ₱${formatMoney(chargesTotal)}` : '₱0.00'}
-                            </span>
-                        </div>
-
-                        ${!hasCharges ? `
-                            <div class="p-3 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-                                <svg class="h-4 w-4 shrink-0 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span>No additional fees, penalties, or damage charges were recorded for this reservation.</span>
-                            </div>
-                        ` : `
-                            <div class="space-y-2">
-                                ${charges.map(c => {
-            const amt = parseFloat(c.amount || 0);
-            return `
-                                        <div class="p-3 rounded-lg bg-white dark:bg-[#181b19] border border-amber-500/20 dark:border-amber-500/20 text-xs flex items-center justify-between gap-3">
-                                            <div class="min-w-0">
-                                                <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0] flex items-center gap-1.5 flex-wrap">
-                                                    <span>${escapeHtml(c.description || 'Additional charge')}</span>
-                                                    <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">${escapeHtml(c.charge_type || 'Fee')}</span>
-                                                    <span class="px-1.5 py-0.5 rounded text-[0.65rem] font-bold ${c.status === 'Paid' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}">${escapeHtml(c.status || 'Paid')}</span>
-                                                </div>
-                                                ${c.created_at ? `<div class="text-[0.68rem] text-[#889b8a] mt-0.5">Assessed: ${escapeHtml(c.created_at)}</div>` : ''}
-                                            </div>
-                                            <span class="shrink-0 font-bold text-sm tabular-nums text-right text-amber-700 dark:text-amber-400">+ ₱${formatMoney(amt)}</span>
-                                        </div>
-                                    `;
-        }).join('')}
-                            </div>
-                        `}
-                    </div>
-
-                    <!-- Final Settlement Card -->
-                    <div class="p-4 rounded-xl bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3">
-                        <div class="flex items-center justify-between pb-2 border-b border-[#e8eee9] dark:border-[#282c29]">
-                            <span class="text-xs font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Settlement & Balance</span>
-                            <span class="px-2.5 py-0.5 rounded-full text-[0.68rem] font-bold tracking-wide border ${paymentBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
-                        </div>
-                        <div class="space-y-2 text-xs">
-                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Final Total Billed (Base + Additional):</span>
-                                <span class="font-semibold tabular-nums text-right text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(totalAmount + chargesTotal)}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-[#5a6b5c] dark:text-[#a8b8a8]">
-                                <span>Total Amount Paid:</span>
-                                <span class="font-semibold tabular-nums text-right text-emerald-700 dark:text-emerald-400">₱${formatMoney(totalSettledPaid)}</span>
-                            </div>
-                            <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between text-xs">
-                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Remaining Balance:</span>
-                                <span class="font-bold text-sm tabular-nums text-right ${remainingBal > 0 ? 'text-rose-700 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
-                                    ₱${formatMoney(remainingBal)} <span class="font-medium text-xs">${remainingBal <= 0 ? '· Fully Settled' : '· Pending'}</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         `;
 
         reservationModalBody.innerHTML = html;
 
-        // Bind Tab Switching Click Handlers
-        const tabBtns = reservationModalBody.querySelectorAll('.resv-modal-tab');
-        const tabPanes = reservationModalBody.querySelectorAll('.resv-modal-pane');
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetId = btn.getAttribute('data-target-pane');
-                tabBtns.forEach(b => {
-                    const isActive = (b === btn);
-                    b.classList.toggle('active', isActive);
-                    b.classList.toggle('bg-[#178a52]', isActive);
-                    b.classList.toggle('text-white', isActive);
-                    b.classList.toggle('shadow-sm', isActive);
-                    b.classList.toggle('border-transparent', isActive);
-                    b.classList.toggle('bg-[#f8faf9]', !isActive);
-                    b.classList.toggle('dark:bg-[#141715]', !isActive);
-                    b.classList.toggle('text-[#5a6b5c]', !isActive);
-                    b.classList.toggle('dark:text-[#a8b8a8]', !isActive);
-                    b.classList.toggle('border-[#dbe3de]', !isActive);
-                    b.classList.toggle('dark:border-[#282c29]', !isActive);
-                });
-                tabPanes.forEach(pane => {
-                    pane.classList.toggle('hidden', pane.id !== targetId);
-                });
-            });
-        });
-
         // Wire Single Reopen Button Inside Reservation Modal Footer
         // STRICT RULE: ONLY Cancelled or No Show reservations are eligible to reopen. NEVER Checked Out!
         const modalFooterInfo = document.getElementById('reservationModalFooterInfo');
-
-        const row = document.querySelector(`tr.reservation-row[data-reservation-id="${reservation.id}"]`);
-        const rowStatus = row ? (row.getAttribute('data-status') || '').trim().toLowerCase() : '';
-        const normStatus = (reservation.status || '').trim().toLowerCase();
-
-        const isCancelled = normStatus.includes('cancel') || rowStatus.includes('cancel');
-        const isNoShow = normStatus.includes('no show') || normStatus.includes('noshow') || rowStatus.includes('no show') || rowStatus.includes('noshow');
-        const isCheckedOut = normStatus.includes('checked out') || normStatus.includes('checked_out') || rowStatus.includes('checked out') || rowStatus.includes('checked_out') || Boolean(reservation.check_out);
-
         const isReopenable = (isCancelled || isNoShow) && !isCheckedOut;
 
         if (modalReopenBtn) {
@@ -1442,6 +1188,8 @@ window.AppPage['staff_records'] = function () {
     const applyReservationFilters = () => {
         const query = reservationSearchInput?.value.trim().toLowerCase() ?? '';
         const statusFilterValue = (reservationStatusFilter?.value ?? 'all').toLowerCase();
+        const checkInStaffValue = (reservationCheckInStaffFilter?.value ?? 'all').toLowerCase();
+        const checkOutStaffValue = (reservationCheckOutStaffFilter?.value ?? 'all').toLowerCase();
         const sortValue = reservationSortSelect?.value ?? 'date-desc';
         const checkOutFromValue = reservationCheckOutFrom?.value ?? '';
         const checkOutToValue = reservationCheckOutTo?.value ?? '';
@@ -1464,13 +1212,29 @@ window.AppPage['staff_records'] = function () {
                 }
             }
 
+            const resId = row.getAttribute('data-reservation-id') || '';
+            const resDetail = (window.staffReservationData && resId) ? window.staffReservationData[resId] : null;
+
+            const rowCheckInStaff = (row.getAttribute('data-checked-in-by') || resDetail?.checked_in_staff || '').toLowerCase();
+            const rowCheckOutStaff = (row.getAttribute('data-checked-out-by') || resDetail?.checked_out_staff || '').toLowerCase();
+
+            let matchesCheckInStaff = true;
+            if (checkInStaffValue !== 'all') {
+                matchesCheckInStaff = rowCheckInStaff.includes(checkInStaffValue) || checkInStaffValue.includes(rowCheckInStaff);
+            }
+
+            let matchesCheckOutStaff = true;
+            if (checkOutStaffValue !== 'all') {
+                matchesCheckOutStaff = rowCheckOutStaff.includes(checkOutStaffValue) || checkOutStaffValue.includes(rowCheckOutStaff);
+            }
+
             const checkOutDate = row.getAttribute('data-check-out') || '';
             const checkOutDateOnly = checkOutDate.split(' ')[0];
             const matchesCheckOutFrom = !checkOutFromValue || !checkOutDateOnly || checkOutDateOnly >= checkOutFromValue;
             const matchesCheckOutTo = !checkOutToValue || !checkOutDateOnly || checkOutDateOnly <= checkOutToValue;
             const rowType = row.getAttribute('data-reservation-type') ?? '';
             const matchesType = currentTypeTab === 'all' || rowType === currentTypeTab;
-            return matchesSearch && matchesStatus && matchesCheckOutFrom && matchesCheckOutTo && matchesType;
+            return matchesSearch && matchesStatus && matchesCheckInStaff && matchesCheckOutStaff && matchesCheckOutFrom && matchesCheckOutTo && matchesType;
         });
 
         filteredRows.sort((left, right) => {
@@ -1531,7 +1295,7 @@ window.AppPage['staff_records'] = function () {
         }
     });
 
-    [reservationSearchInput, reservationStatusFilter, reservationSortSelect, reservationCheckOutFrom, reservationCheckOutTo].forEach((element) => {
+    [reservationSearchInput, reservationStatusFilter, reservationCheckInStaffFilter, reservationCheckOutStaffFilter, reservationSortSelect, reservationCheckOutFrom, reservationCheckOutTo].forEach((element) => {
         element?.addEventListener('input', applyReservationFilters);
         element?.addEventListener('change', applyReservationFilters);
     });
@@ -1539,6 +1303,8 @@ window.AppPage['staff_records'] = function () {
     reservationClearButton?.addEventListener('click', () => {
         if (reservationSearchInput) reservationSearchInput.value = '';
         if (reservationStatusFilter) reservationStatusFilter.value = 'all';
+        if (reservationCheckInStaffFilter) reservationCheckInStaffFilter.value = 'all';
+        if (reservationCheckOutStaffFilter) reservationCheckOutStaffFilter.value = 'all';
         if (reservationSortSelect) reservationSortSelect.value = 'date-desc';
         if (reservationCheckOutFrom) reservationCheckOutFrom.value = '';
         if (reservationCheckOutTo) reservationCheckOutTo.value = '';
@@ -1654,6 +1420,8 @@ window.AppPage['staff_records'] = function () {
             ? 'Walk-in Reservations'
             : (currentTypeTab === 'online' ? 'Online Reservations' : 'All Reservations (Online & Walk-in)');
         const statusSelected = reservationStatusFilter ? reservationStatusFilter.options[reservationStatusFilter.selectedIndex]?.text : 'All Statuses';
+        const checkInStaffSelected = reservationCheckInStaffFilter ? (reservationCheckInStaffFilter.options[reservationCheckInStaffFilter.selectedIndex]?.text || 'All Staff') : 'All Staff';
+        const checkOutStaffSelected = reservationCheckOutStaffFilter ? (reservationCheckOutStaffFilter.options[reservationCheckOutStaffFilter.selectedIndex]?.text || 'All Staff') : 'All Staff';
         const dateFromVal = reservationCheckOutFrom?.value || '';
         const dateToVal = reservationCheckOutTo?.value || '';
         let dateRangeStr = 'All Dates';
@@ -1675,16 +1443,12 @@ window.AppPage['staff_records'] = function () {
 
         let totalGuests = 0;
         let totalPaid = 0;
-        let totalAmountSum = 0;
 
         let rowsHtml = '';
         visibleRows.forEach((row, index) => {
             const resId = row.getAttribute('data-reservation-id') || '';
             const rawType = row.getAttribute('data-reservation-type') || '';
             const typeText = rawType === 'walk_in' ? 'Walk-in' : 'Online';
-            const typeBadgeStyle = rawType === 'walk_in'
-                ? 'background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;'
-                : 'background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;';
 
             // Booker & Contact
             const bookerEl = row.querySelector('td:nth-child(2) .font-bold');
@@ -1712,24 +1476,19 @@ window.AppPage['staff_records'] = function () {
             const checkOutSlot = checkOutCell?.querySelector('div:nth-child(2)')?.textContent.trim() || '';
             const checkOutCombined = checkOutDate ? (checkOutSlot ? `${checkOutDate} · ${checkOutSlot}` : checkOutDate) : (checkOutCell?.textContent.trim() || 'N/A');
 
-            // Paid & Total
+            // Paid
             const paidCell = row.querySelector('td:nth-child(7)');
             const paidText = paidCell?.querySelector('div:nth-child(1)')?.textContent.trim() || '₱0.00';
-            const totalText = paidCell?.querySelector('div:nth-child(2)')?.textContent.trim() || paidText;
 
             const rawPaid = parseFloat(row.getAttribute('data-amount') || '0');
             totalPaid += isNaN(rawPaid) ? 0 : rawPaid;
 
-            const totalMatch = totalText.match(/[\d,]+(?:\.\d+)?/);
-            const rawTotal = totalMatch ? parseFloat(totalMatch[0].replace(/,/g, '')) : rawPaid;
-            totalAmountSum += isNaN(rawTotal) ? 0 : rawTotal;
-
             rowsHtml += `
                 <tr style="border-bottom: 1px solid #f1f5f9;">
                     <td style="padding: 8px 6px; text-align: center; font-size: 8pt; color: #94a3b8; vertical-align: middle;">${index + 1}</td>
-                    <td style="padding: 8px 8px; font-family: monospace; font-size: 8.5pt; color: #334155; vertical-align: middle;">
-                        <div style="font-weight: 600;">#${escapeHtml(resId)}</div>
-                        <div style="margin-top: 2px;"><span style="display: inline-block; font-size: 6.8pt; font-weight: 600; padding: 1px 4px; border-radius: 3px; text-transform: uppercase; font-family: -apple-system, BlinkMacSystemFont, sans-serif; ${typeBadgeStyle}">${escapeHtml(typeText)}</span></div>
+                    <td style="padding: 8px 8px; vertical-align: middle;">
+                        <div style="font-family: monospace; font-size: 8.5pt; font-weight: 600; color: #0f172a;">#${escapeHtml(resId)}</div>
+                        <div style="font-size: 6.8pt; font-weight: 500; color: #64748b; margin-top: 1.5px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-transform: capitalize;">${escapeHtml(typeText)}</div>
                     </td>
                     <td style="padding: 8px 8px; vertical-align: middle;">
                         <div style="font-size: 8.5pt; font-weight: 500; color: #0f172a;">${escapeHtml(bookerName)}</div>
@@ -1740,7 +1499,6 @@ window.AppPage['staff_records'] = function () {
                     <td style="padding: 8px 8px; font-size: 8pt; color: #334155; vertical-align: middle;">${escapeHtml(checkInCombined)}</td>
                     <td style="padding: 8px 8px; font-size: 8pt; color: #334155; vertical-align: middle;">${escapeHtml(checkOutCombined)}</td>
                     <td style="padding: 8px 8px; text-align: right; font-size: 8.5pt; font-weight: 500; color: #0f172a; vertical-align: middle;">${escapeHtml(paidText)}</td>
-                    <td style="padding: 8px 8px; text-align: right; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(totalText.replace(/^of\s*/i, ''))}</td>
                 </tr>
             `;
 
@@ -1769,7 +1527,7 @@ window.AppPage['staff_records'] = function () {
                             <td style="padding: 6px 6px; text-align: center; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cAge)}</td>
                             <td style="padding: 6px 8px; text-align: center; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cNation)}</td>
                             <td colspan="2" style="padding: 6px 8px; font-size: 8pt; color: #64748b; vertical-align: middle;">${escapeHtml(cCheck)}</td>
-                            <td colspan="2" style="padding: 6px 8px; text-align: right; font-size: 7.5pt; color: #94a3b8; vertical-align: middle;">(included)</td>
+                            <td style="padding: 6px 8px; text-align: right; font-size: 7.5pt; color: #94a3b8; vertical-align: middle;">(included)</td>
                         </tr>
                     `;
                 });
@@ -1913,7 +1671,10 @@ window.AppPage['staff_records'] = function () {
     </div>
 
     <div class="filter-summary">
+        <div class="filter-summary-item"><span class="label">Section:</span> <span class="val">${escapeHtml(typeLabel)}</span></div>
         <div class="filter-summary-item"><span class="label">Status:</span> <span class="val">${escapeHtml(statusSelected)}</span></div>
+        <div class="filter-summary-item"><span class="label">Check-in By:</span> <span class="val">${escapeHtml(checkInStaffSelected)}</span></div>
+        <div class="filter-summary-item"><span class="label">Check-out By:</span> <span class="val">${escapeHtml(checkOutStaffSelected)}</span></div>
         <div class="filter-summary-item"><span class="label">Date Range:</span> <span class="val">${escapeHtml(dateRangeStr)}</span></div>
         ${searchVal ? `<div class="filter-summary-item"><span class="label">Search:</span> <span class="val">"${escapeHtml(searchVal)}"</span></div>` : ''}
         <div class="filter-summary-item"><span class="label">Showing:</span> <span class="val">${visibleRows.length} of ${totalFiltered} records</span></div>
@@ -1929,8 +1690,7 @@ window.AppPage['staff_records'] = function () {
                 <th style="width: 90px; text-align: center;">STATUS</th>
                 <th style="width: 145px;">SCHEDULE / CHECK-IN</th>
                 <th style="width: 145px;">CHECK-OUT / ACTIVITY</th>
-                <th style="width: 85px; text-align: right;">PAID</th>
-                <th style="width: 85px; text-align: right;">TOTAL</th>
+                <th style="width: 95px; text-align: right;">PAID</th>
             </tr>
         </thead>
         <tbody>
@@ -1942,7 +1702,6 @@ window.AppPage['staff_records'] = function () {
                 <td style="text-align: center;">${totalGuests}</td>
                 <td colspan="3"></td>
                 <td style="text-align: right;">₱${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td style="text-align: right;">₱${totalAmountSum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
             </tr>
         </tfoot>
     </table>

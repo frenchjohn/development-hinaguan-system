@@ -407,5 +407,80 @@ class StaffRecordsPageTest extends TestCase
         $this->assertEquals($expectedDiffSummary, $resData[$resDiff->id]['companions_checkout_summary']);
         $this->assertStringContainsString($expectedDiffSummary, $content);
     }
+
+    public function test_reservation_data_includes_staff_who_checked_in_and_checked_out()
+    {
+        $this->makeStaffSession();
+
+        $staff1 = StaffAccount::create([
+            'name' => 'Alice Checker',
+            'email' => 'alice@example.com',
+            'password' => bcrypt('secret'),
+        ]);
+
+        $staff2 = StaffAccount::create([
+            'name' => 'Bob Departure',
+            'email' => 'bob@example.com',
+            'password' => bcrypt('secret'),
+        ]);
+
+        $res = Reservation::create([
+            'booker_name' => 'Tracked Stay',
+            'email' => 'tracked@example.com',
+            'phone' => '09120000000',
+            'reservation_date' => now()->subDay()->toDateString(),
+            'check_in' => now()->subDay()->setTime(9, 0)->toDateTimeString(),
+            'check_out' => now()->subDay()->setTime(17, 0)->toDateTimeString(),
+            'status' => 'Checked Out',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 1,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+        ]);
+
+        \App\Models\ActivityLog::create([
+            'staff_id' => $staff1->id,
+            'reservation_id' => $res->id,
+            'action' => 'checked_in',
+            'activity_type' => 'check_in',
+            'title' => 'Guest Checked In',
+            'description' => 'Checked in by Alice',
+            'actor_name' => 'Alice Checker',
+            'actor_role' => 'staff',
+        ]);
+
+        \App\Models\ActivityLog::create([
+            'staff_id' => $staff2->id,
+            'reservation_id' => $res->id,
+            'action' => 'checked_out',
+            'activity_type' => 'check_out',
+            'title' => 'Guest Checked Out',
+            'description' => 'Checked out by Bob',
+            'actor_name' => 'Bob Departure',
+            'actor_role' => 'staff',
+        ]);
+
+        $response = $this->get('/staff/records');
+        $response->assertOk();
+
+        $resData = $response->viewData('reservationData');
+        $this->assertArrayHasKey($res->id, $resData);
+        $this->assertEquals('Alice Checker', $resData[$res->id]['checked_in_staff']);
+        $this->assertEquals('Bob Departure', $resData[$res->id]['checked_out_staff']);
+        $this->assertNotNull($resData[$res->id]['checked_in_at']);
+        $this->assertNotNull($resData[$res->id]['checked_out_at']);
+
+        $staffList = $response->viewData('staffMembersList');
+        $this->assertContains('Alice Checker', $staffList);
+        $this->assertContains('Bob Departure', $staffList);
+
+        $content = $response->getContent();
+        $this->assertStringContainsString('id="reservationCheckInStaffFilter"', $content);
+        $this->assertStringContainsString('id="reservationCheckOutStaffFilter"', $content);
+        $this->assertStringContainsString('data-checked-in-by="alice checker"', $content);
+        $this->assertStringContainsString('data-checked-out-by="bob departure"', $content);
+    }
 }
 

@@ -5198,7 +5198,18 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return implode(', ', $parts);
         };
 
-        $reservationData = $checkedOutReservations->mapWithKeys(function ($reservation) use ($formatGroupCheckout) {
+        $resIds = $checkedOutReservations->pluck('id')->filter()->all();
+        $activityLogs = \App\Models\ActivityLog::with('staff')
+            ->whereIn('reservation_id', $resIds)
+            ->where(function ($q) {
+                $q->whereIn('action', ['checked_in', 'check_in', 'checked_out', 'check_out', 'walkin_created'])
+                  ->orWhereIn('activity_type', ['check_in', 'check_out', 'walkin_created']);
+            })
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->groupBy('reservation_id');
+
+        $reservationData = $checkedOutReservations->mapWithKeys(function ($reservation) use ($formatGroupCheckout, $activityLogs) {
             $poolFee = (float) ($reservation->entranceFee?->pool_fee ?? 0);
             $poolOption = $reservation->entranceFee?->pool_option ?? 'no_pool';
             $poolAccessCount = (int) ($reservation->entranceFee?->pool_access_count ?? $reservation->reservationGuests->filter(fn($g) => (bool)$g->has_pool_access)->count());
@@ -5258,11 +5269,41 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ])->all();
             $companionsCheckoutSummary = count($allCompMembers) > 0 ? $formatGroupCheckout($allCompMembers, $reservation->check_out) : null;
 
+            $logsForRes = $activityLogs->get($reservation->id, collect());
+
+            $checkInLog = $logsForRes->first(function ($l) {
+                return in_array($l->action, ['checked_in', 'check_in'], true) || in_array($l->activity_type, ['check_in', 'walkin_created'], true);
+            });
+
+            $checkOutLog = $logsForRes->reverse()->first(function ($l) {
+                return in_array($l->action, ['checked_out', 'check_out'], true) || $l->activity_type === 'check_out';
+            });
+
+            $checkedInStaff = $checkInLog ? ($checkInLog->staff?->name ?: $checkInLog->actor_name ?: ($checkInLog->metadata['staff_name'] ?? null)) : null;
+            $checkedInAt = $checkInLog?->created_at ? $checkInLog->created_at->format('M d, Y · h:i A') : null;
+
+            $checkedOutStaff = $checkOutLog ? ($checkOutLog->staff?->name ?: $checkOutLog->actor_name ?: ($checkOutLog->metadata['staff_name'] ?? null)) : null;
+            $checkedOutAt = $checkOutLog?->created_at ? $checkOutLog->created_at->format('M d, Y · h:i A') : null;
+
+            if (!$checkedInStaff && $reservation->check_in) {
+                $checkedInStaff = 'Staff User';
+                $checkedInAt = \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y · h:i A');
+            }
+
+            if (!$checkedOutStaff && ($reservation->check_out || $reservation->status === 'Checked Out')) {
+                $checkedOutStaff = 'Staff User';
+                $checkedOutAt = $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y · h:i A') : null;
+            }
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
                 'email' => $reservation->email,
                 'phone' => $reservation->phone,
+                'checked_in_staff' => $checkedInStaff,
+                'checked_in_at' => $checkedInAt,
+                'checked_out_staff' => $checkedOutStaff,
+                'checked_out_at' => $checkedOutAt,
                 'reservation_date' => $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->toDateTimeString() : null,
                 'end_date' => $reservation->end_date ? \Carbon\Carbon::parse($reservation->end_date)->toDateTimeString() : null,
                 'start_slot' => $reservation->start_slot ?? 'Daytime',
@@ -5349,6 +5390,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $reservationAmounts = $checkedOutReservations->pluck('amount_paid', 'id')->toArray();
 
+        $staffAccounts = \App\Models\StaffAccount::orderBy('name')->pluck('name')->filter()->all();
+        $logStaffNames = $reservationData->pluck('checked_in_staff')->merge($reservationData->pluck('checked_out_staff'))->filter()->all();
+        $staffMembersList = collect(array_merge($staffAccounts, $logStaffNames))
+            ->map(fn($n) => trim((string)$n))
+            ->filter(fn($n) => !empty($n) && !in_array(strtolower($n), ['n/a', 'none', 'unknown']))
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
         return view('staff.staff_records', compact(
             'checkedOutGuests',
             'guestRows',
@@ -5357,6 +5408,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'guestData',
             'reservationData',
             'reservationAmounts',
+            'staffMembersList',
             'amenities',
             'guestRecordsCount',
             'completedReservationsCount',

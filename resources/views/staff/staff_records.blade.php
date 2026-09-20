@@ -186,38 +186,28 @@
                     @endphp
                     <section data-tab-content="reservations">
                         <div class="guest-panel my-4 rounded-2xl border border-[#dbe3de] dark:border-[#282c29] bg-white/95 dark:bg-[#181b19]/95 shadow-sm overflow-hidden transition-all">
-                            {{-- All / Online / Walk-in tab switcher --}}
-                            <div class="flex items-center gap-2 border-b border-[#e8eee9] dark:border-[#282c29] px-5 sm:px-6 py-3 bg-[#f8faf9] dark:bg-[#141715]">
-                                <button type="button" id="tabAll" data-resv-type="all"
-                                    class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
-                                    All
-                                    <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $totalResvCount }}</span>
-                                </button>
-                                <button type="button" id="tabOnline" data-resv-type="online"
-                                    class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                    Online
-                                    <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $onlineCount }}</span>
-                                </button>
-                                <button type="button" id="tabWalkIn" data-resv-type="walk_in"
-                                    class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-4 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                                    Walk-in
-                                    <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $walkInCount }}</span>
-                                </button>
-                            </div>
-
-                            <div class="p-5 sm:p-6 border-b border-[#e8eee9] dark:border-[#282c29]">
+                            <div class="p-4 sm:p-5 border-b border-[#e8eee9] dark:border-[#282c29]">
                                 <div class="flex flex-wrap items-center justify-between gap-4">
-                                    <div class="flex items-center gap-3.5 min-w-0">
-                                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0d2c1d] to-[#1c4d35] text-white shadow-sm ring-4 ring-emerald-900/10">
-                                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <h3 class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] leading-tight">Reservation Archive Records</h3>
-                                            <p class="m-0 text-xs text-[#5a6b5c] dark:text-[#a8b8a8]">Complete archive of checked-out, no show, and cancelled bookings</p>
-                                        </div>
+                                    {{-- All / Online / Walk-in section buttons --}}
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <button type="button" id="tabAll" data-resv-type="all"
+                                            class="resv-type-tab resv-type-tab--active inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#178a52] px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+                                            All
+                                            <span class="rounded-full bg-white/25 px-1.5 py-0.5 text-[0.65rem] font-bold">{{ $totalResvCount }}</span>
+                                        </button>
+                                        <button type="button" id="tabOnline" data-resv-type="online"
+                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-3.5 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                            Online
+                                            <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $onlineCount }}</span>
+                                        </button>
+                                        <button type="button" id="tabWalkIn" data-resv-type="walk_in"
+                                            class="resv-type-tab inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#dbe3de] bg-white px-3.5 py-2 text-xs font-bold text-[#0d2c1d] shadow-sm transition-all hover:bg-[#f4f7f5] dark:border-[#282c29] dark:bg-[#181b19] dark:text-[#f5f5f0] dark:hover:bg-[#141715]">
+                                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+                                            Walk-in
+                                            <span class="rounded-full bg-gray-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-[#5a6b5c] dark:bg-white/10 dark:text-[#a8b8a8]">{{ $walkInCount }}</span>
+                                        </button>
                                     </div>
 
                                     <div class="flex flex-wrap items-center gap-3">
@@ -242,7 +232,7 @@
                                 </div>
 
                                 <div class="guest-filter-shell mt-4 grid gap-3" id="reservationFilterPanel" hidden>
-                                    <div class="guest-toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 items-end gap-3 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] p-4 transition-all shadow-inner">
+                                    <div class="guest-toolbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 items-end gap-3 rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] p-4 transition-all shadow-inner">
                                         <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
                                             <span>Status</span>
                                             <select id="reservationStatusFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
@@ -250,6 +240,24 @@
                                                 <option value="checked out">Checked Out</option>
                                                 <option value="no show">No Show</option>
                                                 <option value="cancelled">Cancelled</option>
+                                            </select>
+                                        </label>
+                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
+                                            <span>Checked In By</span>
+                                            <select id="reservationCheckInStaffFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
+                                                <option value="all">All Staff</option>
+                                                @foreach($staffMembersList ?? [] as $staffMember)
+                                                    <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
+                                                @endforeach
+                                            </select>
+                                        </label>
+                                        <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
+                                            <span>Checked Out By</span>
+                                            <select id="reservationCheckOutStaffFilter" class="w-full rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-3 py-2 text-xs text-[#0d2c1d] dark:text-[#f5f5f0] focus:border-[#178a52] focus:outline-none shadow-xs cursor-pointer">
+                                                <option value="all">All Staff</option>
+                                                @foreach($staffMembersList ?? [] as $staffMember)
+                                                    <option value="{{ strtolower($staffMember) }}">{{ $staffMember }}</option>
+                                                @endforeach
                                             </select>
                                         </label>
                                         <label class="grid gap-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">
@@ -333,6 +341,9 @@
                                                 $lastGuestCheckout = $reservation->reservationGuests->pluck('checked_out_at')->filter()->max();
                                                 $displayCheckout = $reservation->check_out ?: $lastGuestCheckout;
                                                 $effectiveDate = $displayCheckout ?: ($reservation->reservation_date ?: $reservation->created_at);
+                                                $resDetail = $reservationData[$reservation->id] ?? null;
+                                                $checkInStaff = $resDetail['checked_in_staff'] ?? '';
+                                                $checkOutStaff = $resDetail['checked_out_staff'] ?? '';
                                             @endphp
                                             <tr
                                                 class="reservation-row group cursor-pointer select-none transition-all hover:bg-[#f2f7f4] dark:hover:bg-[#1e2621]"
@@ -342,6 +353,8 @@
                                                 data-booker-name="{{ strtolower($reservation->booker_name ?? '') }}"
                                                 data-email="{{ strtolower($reservation->email ?? '') }}"
                                                 data-status="{{ strtolower($displayStatus) }}"
+                                                data-checked-in-by="{{ strtolower($checkInStaff) }}"
+                                                data-checked-out-by="{{ strtolower($checkOutStaff) }}"
                                                 data-check-out="{{ $effectiveDate ?? '' }}"
                                                 data-amount="{{ (float) ($reservation->amount_paid ?? 0) }}"
                                                 data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
@@ -641,6 +654,9 @@
                                                 $lastGuestCheckout = $reservation->reservationGuests->pluck('checked_out_at')->filter()->max();
                                                 $displayCheckout = $reservation->check_out ?: $lastGuestCheckout;
                                                 $effectiveDate = $displayCheckout ?: ($reservation->reservation_date ?: $reservation->created_at);
+                                                $resDetail = $reservationData[$reservation->id] ?? null;
+                                                $checkInStaff = $resDetail['checked_in_staff'] ?? '';
+                                                $checkOutStaff = $resDetail['checked_out_staff'] ?? '';
                                             @endphp
                                             <tr
                                                 class="reservation-row group cursor-pointer select-none transition-all hover:bg-[#f2f7f4] dark:hover:bg-[#1e2621]"
@@ -650,6 +666,8 @@
                                                 data-booker-name="{{ strtolower($reservation->booker_name ?? '') }}"
                                                 data-email="{{ strtolower($reservation->email ?? '') }}"
                                                 data-status="{{ strtolower($displayStatus) }}"
+                                                data-checked-in-by="{{ strtolower($checkInStaff) }}"
+                                                data-checked-out-by="{{ strtolower($checkOutStaff) }}"
                                                 data-check-out="{{ $effectiveDate ?? '' }}"
                                                 data-amount="{{ (float) ($reservation->amount_paid ?? 0) }}"
                                                 data-search="{{ strtolower(trim(($reservation->booker_name ?? '') . ' ' . ($reservation->email ?? '') . ' ' . ($reservation->phone ?? '') . ' ' . $reservation->id . ' res #' . $reservation->id . ' ' . $displayStatus)) }}"
@@ -958,25 +976,30 @@
                 </div>
 
                 <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" data-close-reservation-modal="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-[800px] max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-0 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-                        <div class="p-4 sm:px-6 border-b border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
-                            <div class="flex items-center gap-2.5 flex-wrap min-w-0">
-                                <span id="reservationModalIdBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#178a52]/10 text-[#178a52] dark:bg-[#8fd0ab]/15 dark:text-[#8fd0ab] border border-[#178a52]/20 dark:border-[#8fd0ab]/30 font-mono shadow-2xs">#12</span>
-                                <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-base sm:text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">Reservation Details</h3>
-                                <span id="reservationModalStatusBadge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border"></span>
+                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-xs" data-close-reservation-modal="true"></div>
+                    <div class="guest-modal__content relative z-[1] w-full max-w-2xl max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-0 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+                        <div class="px-5 py-4 border-b border-[#e8eee9] dark:border-[#282c29] bg-white dark:bg-[#181b19] flex items-center justify-between gap-3 shrink-0">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span id="reservationModalIdBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#f0f4f1] text-[#2c5f3e] dark:bg-[#202722] dark:text-[#8fd0ab] border border-[#dbe3de] dark:border-[#282c29] font-mono">#0</span>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">Reservation Record</h3>
+                                        <span id="reservationModalStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border"></span>
+                                    </div>
+                                    <p id="reservationModalSubtitle" class="m-0 text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Archive Details & Activity Summary</p>
+                                </div>
                             </div>
-                            <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
+                            <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#f4f7f5] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
                         </div>
-                        <div id="reservationModalBody" class="guest-modal__body p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
-                        <div id="reservationModalFooter" class="p-3.5 sm:px-6 border-t border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
+                        <div id="reservationModalBody" class="guest-modal__body p-5 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
+                        <div id="reservationModalFooter" class="px-5 py-3 border-t border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
                             <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]" id="reservationModalFooterInfo"></span>
                             <div class="flex items-center gap-2">
-                                <button type="button" id="modalReopenBtn" style="display: none;" class="hidden inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs cursor-pointer active:scale-95 transition-all">
+                                <button type="button" id="modalReopenBtn" style="display: none;" class="hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition-all">
                                     <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
                                     <span>Reopen Reservation</span>
                                 </button>
-                                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715]" data-close-reservation-modal="true">Close</button>
+                                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715]" data-close-reservation-modal="true">Close</button>
                             </div>
                         </div>
                     </div>
