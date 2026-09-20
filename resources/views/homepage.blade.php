@@ -162,7 +162,7 @@
             {{-- Right Column: Weather Card & Brenda Celebrity Card (Matches Design 1 screenshot) --}}
             <div class="lg:col-span-5 flex flex-col items-center lg:items-end w-full">
                 {{-- Weather Card --}}
-                <div class="w-full max-w-sm bg-[#0c2618]/90 backdrop-blur-md border border-emerald-500/30 rounded-3xl p-5 sm:p-6 shadow-2xl text-white relative overflow-hidden">
+                <div class="w-full max-w-sm sm:max-w-md bg-[#0c2618]/90 backdrop-blur-md border border-emerald-500/30 rounded-3xl p-5 sm:p-6 shadow-2xl text-white relative overflow-hidden">
                     <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
                     {{-- Top row: Weather condition & location --}}
@@ -241,24 +241,64 @@
                 </div>
 
                 {{-- Celebrity In The Park Card (Brenda Mage) --}}
-                <div class="w-full max-w-sm bg-[#0c2618]/90 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-xl mt-4 relative group">
-                    <div class="relative shrink-0">
-                        <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="w-13 h-13 rounded-full object-cover border-2 border-emerald-400 shadow-md">
-                        <span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-[#0c2618]"></span>
+                <div class="w-full max-w-sm sm:max-w-md bg-[#092215]/95 backdrop-blur-md border border-emerald-500/20 rounded-2xl sm:rounded-3xl flex items-stretch shadow-xl mt-3.5 relative overflow-hidden group h-[110px] sm:h-[118px]">
+                    {{-- Left: Brenda's Photo with smooth right fade --}}
+                    <div class="relative w-24 sm:w-28 shrink-0 self-stretch overflow-hidden">
+                        <img src="{{ asset('images/brendamageishere.jpeg') }}" alt="Brenda Mage in the park" class="w-full h-full object-cover object-[center_18%] group-hover:scale-105 transition-transform duration-500 [mask-image:linear-gradient(to_right,black_45%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_45%,transparent_100%)]">
+                        <div class="absolute inset-y-0 right-0 w-8 sm:w-10 bg-gradient-to-r from-transparent to-[#092215] pointer-events-none"></div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <span class="block text-[10px] font-bold text-emerald-300 uppercase tracking-wide">Celebrity in the park!</span>
-                        <h4 class="text-xs sm:text-sm font-bold text-white truncate">Brenda is in the park!</h4>
-                        <p class="text-[11px] text-emerald-100/70 truncate">Damngo</p>
-                    </div>
-                    <div class="text-emerald-400 text-sm pl-1">
-                        <i class="bi bi-stars"></i>
-                    </div>
-                </div>
 
-                {{-- Cursive signature flourish (Hinaguan Farm) as seen in Design 1 --}}
-                <div class="w-full max-w-sm text-right mt-2 pr-3">
-                    <span class="font-['Dancing_Script',cursive] text-2xl sm:text-3xl text-[#d4b06a] italic tracking-wide">Hinaguan Farm</span>
+                    {{-- Right: Content Area (Slightly Reduced Height) --}}
+                    <div class="flex-1 min-w-0 py-2 px-3 sm:py-2.5 sm:px-3.5 flex flex-col justify-between">
+                        {{-- Top row: Pill badge + Stars --}}
+                        <div class="flex items-center justify-between gap-1.5 leading-none">
+                            {{-- Celebrity in park pill --}}
+                            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-[#4d6645] bg-[#163422] shadow-sm">
+                                <span class="w-2.5 h-2.5 rounded-full bg-[#2ecc71] flex items-center justify-center shrink-0 shadow-[0_0_6px_rgba(46,204,113,0.6)]">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#48ea88]"></span>
+                                </span>
+                                <span class="text-[8px] sm:text-[9px] font-extrabold tracking-wider text-[#efe9dc] uppercase font-sans whitespace-nowrap">CELEBRITY IN PARK</span>
+                            </div>
+
+                            {{-- Double sparkle stars --}}
+                            <div class="relative w-4 h-4 text-[#deb669] shrink-0" aria-hidden="true">
+                                <svg class="w-2 h-2 absolute top-0 left-0 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 0 Q12 12 0 12 Q12 12 12 24 Q12 12 24 12 Q12 12 12 0 Z"/>
+                                </svg>
+                                <svg class="w-3 h-3 absolute bottom-0 right-0 fill-current" viewBox="0 0 24 24">
+                                    <path d="M12 0 Q12 12 0 12 Q12 12 12 24 Q12 12 24 12 Q12 12 12 0 Z"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        {{-- Title & Description --}}
+                        <div class="my-0.5 leading-tight">
+                            <h4 class="font-['Playfair_Display',serif] font-bold text-[13px] sm:text-[15px] text-white tracking-tight leading-tight truncate">
+                                Brenda is in the park!
+                            </h4>
+                            <p class="text-[#c1d0c5] text-[10px] sm:text-[11px] leading-tight font-sans mt-0.5 truncate">
+                                Celebrity owner Brenda Mage is on-site today
+                            </p>
+                        </div>
+
+                        {{-- Thin Divider --}}
+                        <div class="border-t border-[#1e3f2c] my-1 sm:my-1.5"></div>
+
+                        {{-- Bottom info row --}}
+                        <div class="flex items-center justify-between gap-1 leading-none">
+                            {{-- Location --}}
+                            <div class="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-[#dde3df] font-medium truncate">
+                                <i class="bi bi-geo-alt-fill text-[#deb669] shrink-0 text-xs"></i>
+                                <span class="truncate">Hinaguan Park</span>
+                            </div>
+
+                            {{-- Meet & Greet Badge --}}
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:py-1 rounded-full bg-[#183928] border border-[#2d563d] text-white shadow-sm shrink-0">
+                                <i class="bi bi-camera-fill text-[#f3dfa2] text-[9.5px] sm:text-[10px]"></i>
+                                <span class="text-[9.5px] sm:text-[10.5px] font-semibold text-[#f8faf9] whitespace-nowrap">Meet & Greet</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -364,126 +404,64 @@
                 </p>
             </div>
 
-            {{-- Activity cards become a carousel when more than four records exist. --}}
-            <div class="hp-activities-carousel overflow-hidden">
-            <div class="hp-activities-track" id="hpActivitiesTrack">
-                @foreach ($activities as $activity)
-                    @php
-                        $activityImage = $activity->image
-                            ? (str_starts_with($activity->image, 'images/')
-                                ? asset($activity->image)
-                                : asset('storage/' . $activity->image))
-                            : '';
-                    @endphp
-                    <div class="hp-activity-card cursor-pointer bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group" data-activity-card data-activity-title="{{ $activity->activity }}" data-activity-description="{{ $activity->description }}" data-activity-image="{{ $activityImage }}" role="button" aria-label="View details for {{ $activity->activity }}">
-                        <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                            @if ($activity->image)
-                                <img src="{{ $activityImage }}" alt="{{ $activity->activity }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                            @else
-                                <div class="w-full h-full bg-[#163b29]"></div>
-                            @endif
-                        </div>
-                        <div class="flex flex-col flex-grow text-center px-2">
-                            <h3 class="text-lg font-bold text-white font-serif mb-2">{{ $activity->activity }}</h3>
-                            <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">{{ $activity->description }}</p>
-                            <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors">
+            {{-- Activity cards carousel with side arrow indicators --}}
+            <div class="hp-activities-carousel relative">
+                {{-- Left Arrow Indicator (indicates scroll/swipe left) --}}
+                <button type="button"
+                        id="hpActivitiesSidePrev"
+                        class="hp-activities-side-indicator hp-activities-side-indicator--prev opacity-0 pointer-events-none"
+                        aria-label="Scroll left to see previous activities"
+                        title="Scroll or swipe left">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+
+                <div class="hp-activities-track" id="hpActivitiesTrack">
+                    @foreach ($activities as $activity)
+                        @php
+                            $activityImage = $activity->image
+                                ? (str_starts_with($activity->image, 'images/')
+                                    ? asset($activity->image)
+                                    : asset('storage/' . $activity->image))
+                                : '';
+                        @endphp
+                        <div class="hp-activity-card cursor-pointer bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col justify-between group select-none" data-activity-card data-activity-title="{{ $activity->activity }}" data-activity-description="{{ $activity->description }}" data-activity-image="{{ $activityImage }}" role="button" aria-label="View details for {{ $activity->activity }}">
+                            <div>
+                                <div class="rounded-2xl overflow-hidden h-40 sm:h-44 w-full relative mb-3.5 bg-emerald-950/5 shrink-0">
+                                    @if ($activity->image)
+                                        <img src="{{ $activityImage }}" alt="{{ $activity->activity }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none" draggable="false">
+                                    @else
+                                        <div class="w-full h-full bg-[#163b29]"></div>
+                                    @endif
+                                </div>
+                                <div class="text-center px-1">
+                                    <h3 class="text-base sm:text-lg font-bold text-white font-serif mb-1.5 truncate" title="{{ $activity->activity }}">{{ $activity->activity }}</h3>
+                                    <p class="text-xs text-emerald-100/75 leading-relaxed hp-activity-card__desc">{{ $activity->description }}</p>
+                                </div>
+                            </div>
+                            <div class="text-[11px] font-bold tracking-wider text-emerald-300 group-hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2.5 mt-2 border-t border-emerald-200/15 transition-colors shrink-0">
                                 <span>VIEW DETAILS</span>
                                 <i class="bi bi-arrow-right"></i>
-                            </button>
+                            </div>
                         </div>
-                    </div>
-                @endforeach
-                @if (false)
-                {{-- Card 1: River Trekking --}}
-                <div class="hp-activity-card bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group">
-                    <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                        <img src="{{ asset('images/River_Trecking.jpg') }}" alt="River Trekking" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    </div>
-                    <div class="flex flex-col flex-grow text-center px-2">
-                        <h3 class="text-lg font-bold text-white font-serif mb-2">River Trekking</h3>
-                        <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">Explore the river trails and discover hidden spots.</p>
-                        <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors" data-activity-card data-activity-title="River Trekking" data-activity-description="Explore the pristine river trails along the clear waters of Jasaan. Discover natural boulder paths, hidden rapids, and peaceful riverside viewpoints." data-activity-image="{{ asset('images/River_Trecking.jpg') }}">
-                            <span>VIEW DETAILS</span>
-                            <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
+                    @endforeach
                 </div>
 
-                {{-- Card 2: Swimming & Wading --}}
-                <div class="hp-activity-card bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group">
-                    <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                        <img src="{{ asset('images/swimming_and_wading.jpg') }}" alt="Swimming & Wading" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    </div>
-                    <div class="flex flex-col flex-grow text-center px-2">
-                        <h3 class="text-lg font-bold text-white font-serif mb-2">Swimming &amp; Wading</h3>
-                        <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">Cool off in the natural pool or wade in the shallow river.</p>
-                        <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors" data-activity-card data-activity-title="Swimming &amp; Wading" data-activity-description="Enjoy natural spring waters and clean river swimming pools. Perfect for refreshing swims on sunny days, family wading, and relaxing in calm currents." data-activity-image="{{ asset('images/swimming_and_wading.jpg') }}">
-                            <span>VIEW DETAILS</span>
-                            <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Card 3: Picnic & Bonding --}}
-                <div class="hp-activity-card bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group">
-                    <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                        <img src="{{ asset('images/picnic_and_bonding.jpg') }}" alt="Picnic & Bonding" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    </div>
-                    <div class="flex flex-col flex-grow text-center px-2">
-                        <h3 class="text-lg font-bold text-white font-serif mb-2">Picnic &amp; Bonding</h3>
-                        <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">Enjoy meals with loved ones in the fresh air.</p>
-                        <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors" data-activity-card data-activity-title="Picnic &amp; Bonding" data-activity-description="Gather with friends and family over delicious food. Choose from our comfortable native huts and tables with sweeping views of the lush trees and flowing waters." data-activity-image="{{ asset('images/picnic_and_bonding.jpg') }}">
-                            <span>VIEW DETAILS</span>
-                            <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Card 4: Photography --}}
-                <div class="hp-activity-card bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group">
-                    <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                        <img src="{{ asset('images/photography.jpg') }}" alt="Photography" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    </div>
-                    <div class="flex flex-col flex-grow text-center px-2">
-                        <h3 class="text-lg font-bold text-white font-serif mb-2">Photography</h3>
-                        <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">Capture stunning shots of the riverside and nature.</p>
-                        <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors" data-activity-card data-activity-title="Photography" data-activity-description="Every corner of Hinaguan Nature Park is picture-perfect. From the A-frame cabins to the lush canopy and cascading river stones, create unforgettable memories." data-activity-image="{{ asset('images/photography.jpg') }}">
-                            <span>VIEW DETAILS</span>
-                            <i class="bi bi-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                @foreach ($activities->slice(4) as $activity)
-                    <div class="hp-activity-card bg-[#102d20]/90 rounded-xl p-4 shadow-lg hover:bg-[#163b29] transition-colors duration-300 border border-emerald-200/20 flex flex-col group">
-                        <div class="rounded-2xl overflow-hidden h-44 sm:h-48 w-full relative mb-6 bg-emerald-950/5">
-                            @if ($activity->image)
-                                <img src="{{ asset($activity->image) }}" alt="{{ $activity->activity }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                            @else
-                                <div class="w-full h-full bg-[#163b29]"></div>
-                            @endif
-                        </div>
-                        <div class="flex flex-col flex-grow text-center px-2">
-                            <h3 class="text-lg font-bold text-white font-serif mb-2">{{ $activity->activity }}</h3>
-                            <p class="text-xs text-emerald-100/75 leading-relaxed mb-4 flex-grow">{{ $activity->description }}</p>
-                            <button type="button" class="text-[11px] font-bold tracking-wider text-emerald-300 hover:text-white uppercase flex items-center justify-center gap-1.5 pt-2 border-t border-emerald-200/15 transition-colors" data-activity-card data-activity-title="{{ $activity->activity }}" data-activity-description="{{ $activity->description }}" data-activity-image="{{ $activity->image ? asset($activity->image) : '' }}">
-                                <span>VIEW DETAILS</span>
-                                <i class="bi bi-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-                @endforeach
+                {{-- Right Arrow Indicator (indicates scroll/swipe right) --}}
+                @if ($activities->count() > 1)
+                    <button type="button"
+                            id="hpActivitiesSideNext"
+                            class="hp-activities-side-indicator hp-activities-side-indicator--next"
+                            aria-label="Scroll right to see more activities"
+                            title="Scroll or swipe right">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
                 @endif
             </div>
-            @if ($activities->count() > 4)
-                <div class="hp-activities-carousel__controls" aria-label="Activity navigation">
-                    <button type="button" class="hp-carousel-btn" id="hpActivitiesPrev" aria-label="Previous activities" disabled>
-                        <i class="bi bi-arrow-left"></i>
-                    </button>
-                    <span class="hp-activities-carousel__count" id="hpActivitiesCount" aria-live="polite">1 / 2</span>
-                    <button type="button" class="hp-carousel-btn" id="hpActivitiesNext" aria-label="Next activities">
-                        <i class="bi bi-arrow-right"></i>
-                    </button>
+
+            @if ($activities->count() > 1)
+                <div class="flex items-center justify-center gap-2 text-xs text-emerald-300/70 mt-4 select-none sm:hidden">
+                    <i class="bi bi-arrow-left-right text-sm animate-pulse text-[#a3e635]"></i>
+                    <span>Swipe or scroll to explore more</span>
                 </div>
             @endif
         </div>
@@ -517,31 +495,45 @@
                 </p>
             </div>
 
-            {{-- 4x2 Photos Grid as seen in Design 4 --}}
+            {{-- Featured Photos Grid (7 feature images + 8th button to see more photos) --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                @foreach (range(1, 7) as $i)
-                    <div class="rounded-2xl overflow-hidden h-40 sm:h-48 w-full shadow-md group cursor-pointer relative bg-emerald-950/10">
-                        <img src="{{ asset('images/image_' . $i . '.jpg') }}" alt="Moments at Hinaguan {{ $i }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <span class="w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm text-emerald-900 flex items-center justify-center shadow-lg">
-                                <i class="bi bi-zoom-in text-lg"></i>
+                @foreach ($featuredGalleryImages as $idx => $img)
+                    <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-emerald-950/10 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hp-gallery-item"
+                         data-gallery-src="{{ $img['url'] }}"
+                         data-gallery-index="{{ $idx }}"
+                         data-gallery-context="featured"
+                         role="button"
+                         tabindex="0"
+                         aria-label="View photo {{ $idx + 1 }}">
+                        <img src="{{ $img['url'] }}" alt="Hinaguan Nature Park Photo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3.5 sm:p-4">
+                            <span class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-emerald-950 flex items-center justify-center shadow-md transform group-hover:scale-110 transition-transform">
+                                <i class="bi bi-arrows-fullscreen text-sm"></i>
                             </span>
                         </div>
                     </div>
                 @endforeach
 
-                {{-- 8th Item: View More Photos Card as seen in Design 4 --}}
-                <div class="rounded-2xl border-2 border-dashed border-[#1b5e3a]/30 bg-white/70 hover:bg-white hover:border-[#1b5e3a] h-40 sm:h-48 w-full flex items-center justify-center p-6 transition duration-300 group cursor-pointer shadow-sm">
-                    <a href="#about" class="text-center flex flex-col items-center gap-2 text-[#1b5e3a] group-hover:text-[#0f2d1e] no-underline">
-                        <span class="w-10 h-10 rounded-full bg-[#e8f3ec] group-hover:bg-[#1b5e3a] group-hover:text-white transition-colors flex items-center justify-center text-lg">
-                            <i class="bi bi-images"></i>
-                        </span>
-                        <span class="text-sm font-bold flex items-center gap-1.5">
-                            View More Photos <i class="bi bi-arrow-right"></i>
-                        </span>
-                    </a>
+                {{-- 8th Item: Button Card to See More Photos --}}
+                <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-gradient-to-br from-[#0c2f1f] via-[#103825] to-[#194c33] border-2 border-emerald-400/30 hover:border-[#a3e635] flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:bg-[#133e29]"
+                     id="hpOpenAllGalleryGridBtn"
+                     role="button"
+                     tabindex="0"
+                     onclick="window.hpOpenAllGallery && window.hpOpenAllGallery()"
+                     aria-label="See more photos">
+                    <div class="w-12 h-12 rounded-full bg-[#a3e635]/15 border border-[#a3e635]/40 text-[#a3e635] flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 group-hover:bg-[#a3e635] group-hover:text-[#06190f] transition-all duration-300 shadow-md">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                    </div>
+                    <span class="text-white font-bold text-sm sm:text-base font-serif group-hover:text-[#a3e635] transition-colors leading-tight">See More Photos</span>
+                    <span class="text-emerald-200/75 text-xs mt-1">{{ count($galleryImages) }} Photos in Gallery</span>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#a3e635] uppercase tracking-wider mt-2.5 py-1 px-3 rounded-full bg-white/10 group-hover:bg-[#a3e635]/25 transition-all">
+                        <span>View All</span>
+                        <i class="bi bi-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
+                    </span>
                 </div>
             </div>
+
+
         </div>
     </section>
 
@@ -1042,6 +1034,94 @@
             </div>
         </div>
     </div>
+
+    {{-- View All Gallery Photos Modal --}}
+    <div class="fixed inset-0 z-[1050] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 hp-gallery-modal" id="hpAllPhotosModal" aria-hidden="true" role="dialog" style="display: none;">
+        <div class="fixed inset-0" id="hpAllPhotosBackdrop" onclick="window.hpCloseAllPhotos && window.hpCloseAllPhotos()"></div>
+        <div class="bg-[#081f14] border border-emerald-500/25 rounded-3xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl relative z-10 overflow-hidden transform transition-transform duration-300 scale-95" role="document">
+            {{-- Modal Header --}}
+            <div class="px-5 sm:px-7 py-4 border-b border-emerald-500/20 flex items-center justify-between shrink-0 bg-[#05170f]/90">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-[#a3e635]/15 border border-[#a3e635]/30 text-[#a3e635] flex items-center justify-center text-lg shadow-sm">
+                        <i class="bi bi-images"></i>
+                    </span>
+                    <div>
+                        <h3 class="font-serif text-lg sm:text-2xl font-bold text-white leading-tight">All Moments at Hinaguan</h3>
+                        <p class="text-xs sm:text-sm text-emerald-200/75 mt-0.5">{{ count($galleryImages) }} photos from our nature park</p>
+                    </div>
+                </div>
+                <button type="button" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer" id="hpCloseAllPhotosBtn" onclick="window.hpCloseAllPhotos && window.hpCloseAllPhotos()" aria-label="Close photos modal">
+                    <i class="bi bi-x-lg text-sm sm:text-base"></i>
+                </button>
+            </div>
+
+            {{-- Modal Body: Grid of all 15 images --}}
+            <div class="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4.5">
+                    @foreach ($galleryImages as $idx => $gImg)
+                        <div class="rounded-xl overflow-hidden h-36 sm:h-44 w-full shadow-md group cursor-pointer relative bg-emerald-950/40 border border-emerald-500/20 transform transition-all duration-200 hover:-translate-y-1 hover:border-[#a3e635]/60 hover:shadow-lg hp-all-photos-item"
+                             data-gallery-src="{{ $gImg['url'] }}"
+                             data-gallery-index="{{ $idx }}"
+                             data-gallery-context="all"
+                             role="button"
+                             tabindex="0"
+                             aria-label="View photo {{ $idx + 1 }}">
+                            <img src="{{ $gImg['url'] }}" alt="Hinaguan Nature Park Photo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none" loading="lazy">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end justify-end p-2.5 sm:p-3">
+                                <span class="w-8 h-8 rounded-full bg-white/90 text-emerald-950 flex items-center justify-center shadow-md">
+                                    <i class="bi bi-arrows-fullscreen text-xs"></i>
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="px-6 py-3 border-t border-emerald-500/20 bg-[#05170f]/90 flex items-center justify-between text-xs text-emerald-200/70 shrink-0">
+                <span>Click any photo to open full view</span>
+                <button type="button" class="text-[#a3e635] hover:text-white font-bold uppercase text-[11px] tracking-wider transition-colors cursor-pointer" onclick="window.hpCloseAllPhotos && window.hpCloseAllPhotos()">
+                    Close Gallery
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Full Image Lightbox Preview Modal --}}
+    <div class="fixed inset-0 z-[1100] flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 hp-lightbox-modal" id="hpImageLightboxModal" aria-hidden="true" role="dialog" style="display: none;">
+        <div class="fixed inset-0" id="hpLightboxBackdrop" onclick="window.hpCloseLightbox && window.hpCloseLightbox()"></div>
+
+        {{-- Top Bar --}}
+        <div class="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4 sm:px-8 py-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+            <div class="flex items-center gap-3">
+                <span id="hpLightboxCounter" class="text-xs sm:text-sm font-semibold text-white/90 bg-white/15 px-3 py-1 rounded-full backdrop-blur-sm shadow-sm">1 / 15</span>
+            </div>
+            <button type="button" id="hpCloseLightboxBtn" onclick="window.hpCloseLightbox && window.hpCloseLightbox()" class="w-10 h-10 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer backdrop-blur-sm" aria-label="Close full view image">
+                <i class="bi bi-x-lg text-base"></i>
+            </button>
+        </div>
+
+        {{-- Left / Right Prev / Next Navigation Arrows --}}
+        <button type="button" id="hpLightboxPrevBtn" class="absolute left-3 sm:left-6 z-20 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md disabled:opacity-20 disabled:cursor-not-allowed" aria-label="Previous image">
+            <i class="bi bi-chevron-left text-xl"></i>
+        </button>
+        <button type="button" id="hpLightboxNextBtn" class="absolute right-3 sm:right-6 z-20 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md disabled:opacity-20 disabled:cursor-not-allowed" aria-label="Next image">
+            <i class="bi bi-chevron-right text-xl"></i>
+        </button>
+
+        {{-- Image Display Area --}}
+        <div class="relative z-10 max-w-[94vw] max-h-[86vh] flex items-center justify-center p-2">
+            <img id="hpLightboxImage" src="" alt="Full view preview" class="max-h-[82vh] max-w-[92vw] w-auto h-auto object-contain rounded-xl sm:rounded-2xl shadow-2xl transition-all duration-300 pointer-events-auto">
+        </div>
+    </div>
+
+    {{-- Gallery JSON Data for JS Lightbox and Gallery Controls --}}
+    <script id="hpGalleryData" type="application/json">
+        {!! json_encode([
+            'featured' => $featuredGalleryImages,
+            'all' => $galleryImages,
+        ]) !!}
+    </script>
 
     @if (($parkSettings->park_status ?? 'open') === 'closed')
         {{-- Notice: Park is Closed Today Modal --}}

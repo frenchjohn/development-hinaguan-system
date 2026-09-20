@@ -82,6 +82,25 @@
         display: flex !important;
         opacity: 1 !important;
     }
+    .hp-gallery-modal.is-open {
+        display: flex !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
+    }
+    .hp-gallery-modal.is-open > div:last-child {
+        transform: scale(1) !important;
+    }
+    .hp-lightbox-modal.is-open {
+        display: flex !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
+    }
+    .hp-lightbox-modal.is-open #hpLightboxImage {
+        transform: scale(1);
+        opacity: 1;
+    }
 
     /* Sticky Header on Scroll */
     #hpSiteHeader {
@@ -171,10 +190,24 @@
     flex-wrap: nowrap;
     gap: 1.5rem;
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     scrollbar-width: none;
-    touch-action: pan-x;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y pinch-zoom;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    padding-top: 0.25rem;
+    padding-bottom: 0.75rem;
+}
+
+.hp-activities-track.is-dragging {
+    cursor: grabbing;
+    scroll-behavior: auto;
+    scroll-snap-type: none;
 }
 
 .hp-activities-track::-webkit-scrollbar {
@@ -184,51 +217,128 @@
 .hp-activity-card {
     flex: 0 0 calc((100% - 4.5rem) / 4);
     min-width: 0;
+    height: 385px;
     scroll-snap-align: start;
+    scroll-snap-stop: normal;
 }
 
-.hp-activities-carousel__controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+.hp-activity-card__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 3.375rem;
+    max-height: 3.375rem;
+    line-height: 1.125rem;
 }
 
-.hp-carousel-btn {
-    width: 2.5rem;
-    height: 2.5rem;
+.hp-activities-side-indicator {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    color: #a3e635;
+    filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 16px rgba(163, 230, 53, 0.6));
+    cursor: pointer;
+    font-size: 2.25rem;
+    line-height: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid rgba(163, 230, 53, 0.35);
-    border-radius: 0.5rem;
-    background: #102d20;
-    color: #d1fae5;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition: opacity 0.3s ease, transform 0.25s ease, color 0.2s ease, filter 0.2s ease;
 }
 
-.hp-carousel-btn:hover:not(:disabled),
-.hp-carousel-btn:focus-visible:not(:disabled) {
-    background: #163b29;
-    border-color: rgba(163, 230, 53, 0.6);
+.hp-activities-side-indicator:hover {
+    color: #ffffff;
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 1)) drop-shadow(0 0 24px rgba(163, 230, 53, 0.9));
 }
 
-.hp-carousel-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+.hp-activities-side-indicator--prev {
+    left: -0.75rem;
+    animation: hpArrowNudgeLeft 2s ease-in-out infinite;
+}
+
+.hp-activities-side-indicator--next {
+    right: -0.75rem;
+    animation: hpArrowNudgeRight 2s ease-in-out infinite;
+}
+
+@media (min-width: 640px) {
+    .hp-activities-side-indicator {
+        font-size: 3rem;
+    }
+    .hp-activities-side-indicator--prev {
+        left: -2rem;
+    }
+    .hp-activities-side-indicator--next {
+        right: -2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .hp-activities-side-indicator {
+        font-size: 3.5rem;
+    }
+    .hp-activities-side-indicator--prev {
+        left: -3.5rem;
+    }
+    .hp-activities-side-indicator--next {
+        right: -3.5rem;
+    }
+}
+
+@media (min-width: 1280px) {
+    .hp-activities-side-indicator--prev {
+        left: -4.5rem;
+    }
+    .hp-activities-side-indicator--next {
+        right: -4.5rem;
+    }
+}
+
+@keyframes hpArrowNudgeRight {
+    0%, 100% {
+        transform: translateY(-50%) translateX(0);
+    }
+    50% {
+        transform: translateY(-50%) translateX(7px);
+    }
+}
+
+@keyframes hpArrowNudgeLeft {
+    0%, 100% {
+        transform: translateY(-50%) translateX(0);
+    }
+    50% {
+        transform: translateY(-50%) translateX(-7px);
+    }
+}
+
+.hp-activities-side-indicator--next:hover,
+.hp-activities-side-indicator--prev:hover {
+    animation: none;
+    transform: translateY(-50%) scale(1.15);
 }
 
 @media (max-width: 1023px) {
     .hp-activity-card {
-        flex-basis: calc((100% - 1.5rem) / 2);
+        flex: 0 0 calc((100% - 1.5rem) / 2);
+        height: 385px;
     }
 }
 
 @media (max-width: 699px) {
     .hp-activity-card {
-        flex-basis: 100%;
+        flex: 0 0 84%;
+        height: 375px;
+        scroll-snap-align: center;
     }
 }
 
@@ -239,4 +349,10 @@
     100% {
         transform: translateX(-50%);
     }
+}
+
+#hpLightboxImage {
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.25s ease-out, opacity 0.25s ease-out;
 }

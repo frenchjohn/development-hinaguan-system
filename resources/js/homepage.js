@@ -309,43 +309,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEventsNav();
     }
 
-    // Activities carousel: native horizontal scrolling with button controls.
+    // Activities carousel: native horizontal scrolling with side arrow indicators, touch swipe, mouse drag and wheel
     const activitiesTrack = document.getElementById('hpActivitiesTrack');
-    const activitiesPrevBtn = document.getElementById('hpActivitiesPrev');
-    const activitiesNextBtn = document.getElementById('hpActivitiesNext');
-    const activitiesCount = document.getElementById('hpActivitiesCount');
+    const sidePrevBtn = document.getElementById('hpActivitiesSidePrev');
+    const sideNextBtn = document.getElementById('hpActivitiesSideNext');
     const activityCards = activitiesTrack?.querySelectorAll('[data-activity-card]') ?? [];
-
-    if (activitiesTrack && activityCards.length) {
-        const getActivityPageSize = () => window.innerWidth < 700 ? 1 : window.innerWidth < 1024 ? 2 : 4;
-        const getActivityPageCount = () => Math.ceil(activityCards.length / getActivityPageSize());
-
-        const updateActivityControls = () => {
-            const pageSize = getActivityPageSize();
-            const pageCount = getActivityPageCount();
-            const activityPage = Math.min(
-                Math.round(activitiesTrack.scrollLeft / Math.max(1, activitiesTrack.clientWidth)),
-                Math.max(0, pageCount - 1)
-            );
-
-            if (activitiesCount) activitiesCount.textContent = `${activityPage + 1} / ${pageCount}`;
-            if (activitiesPrevBtn) activitiesPrevBtn.disabled = activityPage === 0;
-            if (activitiesNextBtn) activitiesNextBtn.disabled = activityPage >= pageCount - 1;
-            activityCards.forEach((card, index) => {
-                card.setAttribute('tabindex', index >= activityPage * pageSize && index < (activityPage + 1) * pageSize ? '0' : '-1');
-            });
-        };
-
-        activitiesPrevBtn?.addEventListener('click', () => {
-            activitiesTrack.scrollBy({ left: -activitiesTrack.clientWidth, behavior: 'smooth' });
-        });
-        activitiesNextBtn?.addEventListener('click', () => {
-            activitiesTrack.scrollBy({ left: activitiesTrack.clientWidth, behavior: 'smooth' });
-        });
-        activitiesTrack.addEventListener('scroll', updateActivityControls, { passive: true });
-        window.addEventListener('resize', updateActivityControls, { passive: true });
-        updateActivityControls();
-    }
 
     const activityModal = document.getElementById('hpActivityModal');
     const activityModalImage = document.getElementById('hpActivityModalImage');
@@ -361,29 +329,170 @@ document.addEventListener('DOMContentLoaded', () => {
         activityModalTrigger?.focus();
     };
 
-    activityCards.forEach((card) => {
-        const openActivityModal = () => {
-            activityModalTrigger = card;
-            if (activityModalTitle) activityModalTitle.textContent = card.dataset.activityTitle ?? '';
-            if (activityModalDescription) activityModalDescription.textContent = card.dataset.activityDescription ?? '';
-            if (activityModalImage) {
-                activityModalImage.src = card.dataset.activityImage ?? '';
-                activityModalImage.alt = card.dataset.activityTitle ?? '';
-                activityModalImage.hidden = !card.dataset.activityImage;
+    const openActivityModal = (card) => {
+        activityModalTrigger = card;
+        if (activityModalTitle) activityModalTitle.textContent = card.dataset.activityTitle ?? '';
+        if (activityModalDescription) activityModalDescription.textContent = card.dataset.activityDescription ?? '';
+        if (activityModalImage) {
+            activityModalImage.src = card.dataset.activityImage ?? '';
+            activityModalImage.alt = card.dataset.activityTitle ?? '';
+            activityModalImage.hidden = !card.dataset.activityImage;
+        }
+        activityModal?.classList.add('is-open');
+        activityModal?.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('hp-modal-open');
+    };
+
+    if (activitiesTrack && activityCards.length) {
+        const getScrollStep = () => {
+            const firstCard = activityCards[0];
+            if (!firstCard) return activitiesTrack.clientWidth;
+            const cardWidth = firstCard.offsetWidth;
+            const trackStyle = window.getComputedStyle(activitiesTrack);
+            const gap = parseFloat(trackStyle.gap || trackStyle.columnGap || '24') || 24;
+            
+            if (window.innerWidth < 700) {
+                return cardWidth + gap;
+            } else if (window.innerWidth < 1024) {
+                return (cardWidth + gap) * 2;
+            } else {
+                return (cardWidth + gap) * 3;
             }
-            activityModal?.classList.add('is-open');
-            activityModal?.setAttribute('aria-hidden', 'false');
-            document.body.classList.add('hp-modal-open');
         };
 
-        card.addEventListener('click', openActivityModal);
-        card.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                openActivityModal();
+        const updateActivityControls = () => {
+            const maxScroll = Math.max(0, activitiesTrack.scrollWidth - activitiesTrack.clientWidth);
+            const currentScroll = activitiesTrack.scrollLeft;
+
+            if (sidePrevBtn) {
+                const canScrollLeft = currentScroll > 10;
+                sidePrevBtn.classList.toggle('opacity-0', !canScrollLeft);
+                sidePrevBtn.classList.toggle('pointer-events-none', !canScrollLeft);
+                sidePrevBtn.disabled = !canScrollLeft;
+            }
+            if (sideNextBtn) {
+                const canScrollRight = currentScroll < maxScroll - 10;
+                sideNextBtn.classList.toggle('opacity-0', !canScrollRight);
+                sideNextBtn.classList.toggle('pointer-events-none', !canScrollRight);
+                sideNextBtn.disabled = !canScrollRight;
+            }
+        };
+
+        sidePrevBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            activitiesTrack.scrollBy({ left: -getScrollStep(), behavior: 'smooth' });
+        });
+        sideNextBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            activitiesTrack.scrollBy({ left: getScrollStep(), behavior: 'smooth' });
+        });
+
+        // ── Touch swipe handling (prevents modal popup when swiping on phone) ──
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isTouching = false;
+        let hasSwiped = false;
+
+        activitiesTrack.addEventListener('touchstart', (e) => {
+            if (!e.touches.length) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isTouching = true;
+            hasSwiped = false;
+        }, { passive: true });
+
+        activitiesTrack.addEventListener('touchmove', (e) => {
+            if (!isTouching || !e.touches.length) return;
+            const diffX = Math.abs(e.touches[0].clientX - touchStartX);
+            const diffY = Math.abs(e.touches[0].clientY - touchStartY);
+            if (diffX > 8) {
+                hasSwiped = true;
+            }
+        }, { passive: true });
+
+        const onTouchEnd = () => {
+            isTouching = false;
+            setTimeout(() => {
+                hasSwiped = false;
+            }, 150);
+        };
+        activitiesTrack.addEventListener('touchend', onTouchEnd, { passive: true });
+        activitiesTrack.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+        // ── Mouse drag-to-scroll on desktop ──
+        let isMouseDown = false;
+        let mouseStartX = 0;
+        let scrollStartLeft = 0;
+        let hasMouseDragged = false;
+
+        activitiesTrack.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isMouseDown = true;
+            hasMouseDragged = false;
+            mouseStartX = e.pageX - activitiesTrack.offsetLeft;
+            scrollStartLeft = activitiesTrack.scrollLeft;
+            activitiesTrack.classList.add('is-dragging');
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isMouseDown) return;
+            const x = e.pageX - activitiesTrack.offsetLeft;
+            const walk = (x - mouseStartX);
+            if (Math.abs(walk) > 6) {
+                hasMouseDragged = true;
+            }
+            activitiesTrack.scrollLeft = scrollStartLeft - walk;
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isMouseDown) {
+                isMouseDown = false;
+                activitiesTrack.classList.remove('is-dragging');
+                setTimeout(() => {
+                    hasMouseDragged = false;
+                }, 120);
             }
         });
-    });
+
+        // ── Mouse wheel horizontal scroll ──
+        activitiesTrack.addEventListener('wheel', (e) => {
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && Math.abs(e.deltaY) > 5) {
+                const maxScroll = activitiesTrack.scrollWidth - activitiesTrack.clientWidth;
+                const canScrollLeft = activitiesTrack.scrollLeft > 0 && e.deltaY < 0;
+                const canScrollRight = activitiesTrack.scrollLeft < maxScroll - 1 && e.deltaY > 0;
+                
+                if (canScrollLeft || canScrollRight) {
+                    e.preventDefault();
+                    activitiesTrack.scrollBy({
+                        left: e.deltaY * 1.3,
+                        behavior: 'auto'
+                    });
+                }
+            }
+        }, { passive: false });
+
+        activitiesTrack.addEventListener('scroll', updateActivityControls, { passive: true });
+        window.addEventListener('resize', updateActivityControls, { passive: true });
+        updateActivityControls();
+
+        // ── Attach card click with drag/swipe guard ──
+        activityCards.forEach((card) => {
+            card.addEventListener('click', (e) => {
+                if (hasSwiped || hasMouseDragged) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                openActivityModal(card);
+            });
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openActivityModal(card);
+                }
+            });
+        });
+    }
 
     activityModal?.querySelectorAll('[data-activity-modal-close]').forEach((element) => {
         element.addEventListener('click', closeActivityModal);
@@ -490,4 +599,242 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // ── Gallery & Lightbox Modals Controller ──
+    const allPhotosModal = document.getElementById('hpAllPhotosModal');
+    const closeAllPhotosBtn = document.getElementById('hpCloseAllPhotosBtn');
+    const allPhotosBackdrop = document.getElementById('hpAllPhotosBackdrop');
+
+    const imageLightboxModal = document.getElementById('hpImageLightboxModal');
+    const closeLightboxBtn = document.getElementById('hpCloseLightboxBtn');
+    const lightboxBackdrop = document.getElementById('hpLightboxBackdrop');
+    const lightboxPrevBtn = document.getElementById('hpLightboxPrevBtn');
+    const lightboxNextBtn = document.getElementById('hpLightboxNextBtn');
+    const lightboxImage = document.getElementById('hpLightboxImage');
+    const lightboxCounter = document.getElementById('hpLightboxCounter');
+
+    let galleryData = { featured: [], all: [] };
+    try {
+        const raw = document.getElementById('hpGalleryData')?.textContent;
+        if (raw) {
+            galleryData = JSON.parse(raw);
+        }
+    } catch (e) {
+        console.warn('Failed to parse gallery data:', e);
+    }
+
+    let currentLightboxList = [];
+    let currentLightboxIndex = 0;
+
+    // Open All Photos Modal
+    const openAllPhotosModal = () => {
+        if (!allPhotosModal) return;
+        allPhotosModal.style.display = 'flex';
+        void allPhotosModal.offsetHeight; // trigger reflow
+        allPhotosModal.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
+        allPhotosModal.classList.add('opacity-100', 'pointer-events-auto', 'is-open');
+        allPhotosModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('hp-modal-open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeAllPhotosModal = () => {
+        if (!allPhotosModal) return;
+        allPhotosModal.classList.remove('opacity-100', 'pointer-events-auto', 'is-open');
+        allPhotosModal.classList.add('opacity-0', 'pointer-events-none');
+        allPhotosModal.setAttribute('aria-hidden', 'true');
+        setTimeout(() => {
+            if (!allPhotosModal.classList.contains('is-open')) {
+                allPhotosModal.style.display = 'none';
+            }
+        }, 280);
+        if (!imageLightboxModal?.classList.contains('is-open')) {
+            document.body.classList.remove('hp-modal-open');
+            document.body.style.overflow = '';
+        }
+    };
+
+    // Global hooks for inline onclick calls
+    window.hpOpenAllGallery = openAllPhotosModal;
+    window.hpCloseAllPhotos = closeAllPhotosModal;
+
+    // Wire all "See More Photos" / "View More Photos" buttons
+    document.querySelectorAll('#hpOpenAllGalleryBtn, #hpOpenAllGalleryGridBtn, [data-open-gallery-all]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            openAllPhotosModal();
+        });
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openAllPhotosModal();
+            }
+        });
+    });
+
+    closeAllPhotosBtn?.addEventListener('click', closeAllPhotosModal);
+    allPhotosBackdrop?.addEventListener('click', closeAllPhotosModal);
+
+    // Lightbox Controls (No names displayed)
+    const updateLightbox = () => {
+        if (!currentLightboxList.length || !lightboxImage) return;
+        const item = currentLightboxList[currentLightboxIndex];
+        if (!item) return;
+
+        lightboxImage.style.opacity = '0';
+        lightboxImage.style.transform = 'scale(0.96)';
+
+        setTimeout(() => {
+            lightboxImage.src = item.url;
+            lightboxImage.alt = 'Hinaguan Nature Park Full Image';
+            if (lightboxCounter) {
+                lightboxCounter.textContent = `${currentLightboxIndex + 1} / ${currentLightboxList.length}`;
+            }
+
+            if (lightboxPrevBtn) lightboxPrevBtn.disabled = currentLightboxIndex <= 0;
+            if (lightboxNextBtn) lightboxNextBtn.disabled = currentLightboxIndex >= currentLightboxList.length - 1;
+
+            lightboxImage.onload = () => {
+                lightboxImage.style.opacity = '1';
+                lightboxImage.style.transform = 'scale(1)';
+            };
+            lightboxImage.style.opacity = '1';
+            lightboxImage.style.transform = 'scale(1)';
+        }, 80);
+    };
+
+    const openLightbox = (list, index) => {
+        if (!imageLightboxModal || !list || !list.length) return;
+        currentLightboxList = list;
+        currentLightboxIndex = Math.max(0, Math.min(index, list.length - 1));
+        
+        imageLightboxModal.style.display = 'flex';
+        void imageLightboxModal.offsetHeight;
+        imageLightboxModal.classList.remove('opacity-0', 'pointer-events-none', 'hidden');
+        imageLightboxModal.classList.add('opacity-100', 'pointer-events-auto', 'is-open');
+        imageLightboxModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('hp-modal-open');
+        document.body.style.overflow = 'hidden';
+
+        updateLightbox();
+    };
+
+    const closeLightbox = () => {
+        if (!imageLightboxModal) return;
+        imageLightboxModal.classList.remove('opacity-100', 'pointer-events-auto', 'is-open');
+        imageLightboxModal.classList.add('opacity-0', 'pointer-events-none');
+        imageLightboxModal.setAttribute('aria-hidden', 'true');
+        setTimeout(() => {
+            if (!imageLightboxModal.classList.contains('is-open')) {
+                imageLightboxModal.style.display = 'none';
+            }
+        }, 280);
+
+        if (!allPhotosModal?.classList.contains('is-open')) {
+            document.body.classList.remove('hp-modal-open');
+            document.body.style.overflow = '';
+        }
+    };
+
+    window.hpOpenLightbox = openLightbox;
+    window.hpCloseLightbox = closeLightbox;
+
+    closeLightboxBtn?.addEventListener('click', closeLightbox);
+    lightboxBackdrop?.addEventListener('click', closeLightbox);
+
+    lightboxPrevBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentLightboxIndex > 0) {
+            currentLightboxIndex--;
+            updateLightbox();
+        }
+    });
+
+    lightboxNextBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentLightboxIndex < currentLightboxList.length - 1) {
+            currentLightboxIndex++;
+            updateLightbox();
+        }
+    });
+
+    // Touch swipe support on Lightbox for phones
+    let lbTouchStartX = 0;
+    let lbTouchStartY = 0;
+    imageLightboxModal?.addEventListener('touchstart', (e) => {
+        if (!e.touches.length) return;
+        lbTouchStartX = e.touches[0].clientX;
+        lbTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    imageLightboxModal?.addEventListener('touchend', (e) => {
+        if (!e.changedTouches.length) return;
+        const diffX = e.changedTouches[0].clientX - lbTouchStartX;
+        const diffY = Math.abs(e.changedTouches[0].clientY - lbTouchStartY);
+        if (Math.abs(diffX) > 40 && diffY < 60) {
+            if (diffX < 0 && currentLightboxIndex < currentLightboxList.length - 1) {
+                currentLightboxIndex++;
+                updateLightbox();
+            } else if (diffX > 0 && currentLightboxIndex > 0) {
+                currentLightboxIndex--;
+                updateLightbox();
+            }
+        }
+    }, { passive: true });
+
+    // Keyboard navigation (Escape, Left, Right)
+    document.addEventListener('keydown', (e) => {
+        if (imageLightboxModal?.classList.contains('is-open')) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowLeft' && currentLightboxIndex > 0) {
+                currentLightboxIndex--;
+                updateLightbox();
+            } else if (e.key === 'ArrowRight' && currentLightboxIndex < currentLightboxList.length - 1) {
+                currentLightboxIndex++;
+                updateLightbox();
+            }
+        } else if (allPhotosModal?.classList.contains('is-open')) {
+            if (e.key === 'Escape') {
+                closeAllPhotosModal();
+            }
+        }
+    });
+
+    // Attach click handlers to Featured Gallery items on homepage (maps to all for seamless full browsing)
+    document.querySelectorAll('.hp-gallery-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            const index = parseInt(item.dataset.galleryIndex || '0', 10);
+            const src = item.dataset.gallerySrc;
+            let targetList = galleryData.all && galleryData.all.length ? galleryData.all : galleryData.featured;
+            let targetIndex = index;
+            if (galleryData.all && galleryData.all.length && src) {
+                const found = galleryData.all.findIndex((img) => img.url === src || img.filename === src);
+                if (found !== -1) {
+                    targetIndex = found;
+                }
+            }
+            openLightbox(targetList, targetIndex);
+        });
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                item.click();
+            }
+        });
+    });
+
+    // Attach click handlers to All Photos Modal items
+    document.querySelectorAll('.hp-all-photos-item').forEach((item) => {
+        item.addEventListener('click', () => {
+            const index = parseInt(item.dataset.galleryIndex || '0', 10);
+            openLightbox(galleryData.all, index);
+        });
+        item.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                item.click();
+            }
+        });
+    });
 });
