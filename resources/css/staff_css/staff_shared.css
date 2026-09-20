@@ -4345,6 +4345,7 @@ tr.row-checkout-near:hover td {
 .guest-modal--confirm,
 #confirmModal,
 #checkOutConfirmModal,
+#qrCheckOutConfirmModal,
 #reopenConfirmModal {
     z-index: 1400 !important;
 }

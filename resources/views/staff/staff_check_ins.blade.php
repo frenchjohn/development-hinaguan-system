@@ -2694,17 +2694,40 @@
 					</div>
 				</div>
 
-				{{-- Check Out Confirmation Modal --}}
+				{{-- Check Out Confirmation Modal (Manual Click) --}}
 				<div class="guest-modal" id="checkOutConfirmModal" aria-hidden="true" style="z-index: 1400;">
-					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-check-out-confirm="true"></div>
-					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[500px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-glass p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
-						<button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
-						<h3 id="checkOutConfirmTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Confirm Check Out</h3>
-						<p class="mb-6 text-[#666]">Are you sure you want to check out this reservation? This action cannot be undone.</p>
-						<div id="checkOutConfirmGuestPreview" class="mb-6 grid max-h-48 gap-2 overflow-y-auto rounded-xl border border-glass-border bg-glass/60 p-3"></div>
-						<div class="guest-form__actions flex flex-wrap justify-end gap-3">
-							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-check-out-confirm="true">Cancel</button>
-							<button type="button" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="confirmCheckOutBtn">Yes, Check Out</button>
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-check-out-confirm="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[440px] rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#181818] border border-neutral-200 dark:border-neutral-800" role="dialog" aria-modal="true" aria-labelledby="checkOutConfirmTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white" data-close-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
+						<div class="mb-4 flex items-center gap-3">
+							<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
+								<i class="bi bi-box-arrow-right text-xl"></i>
+							</div>
+							<div>
+								<h3 id="checkOutConfirmTitle" class="guest-modal__title m-0 text-base font-bold text-neutral-900 dark:text-white">Confirm Check Out</h3>
+								<p id="checkOutConfirmSubtitle" class="m-0 text-xs text-neutral-500 dark:text-neutral-400">Reservation Checkout</p>
+							</div>
+						</div>
+						<p id="checkOutConfirmMessage" class="mb-4 text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-medium">Would you like to check out this reservation?</p>
+						<div id="checkOutConfirmGuestPreview" class="mb-4 hidden"></div>
+						<div class="guest-form__actions flex flex-wrap justify-end gap-2.5 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+							<button type="button" class="cursor-pointer rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent px-4 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-all duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-800" data-close-check-out-confirm="true">Cancel</button>
+							<button type="button" class="cursor-pointer rounded-xl border-0 bg-neutral-900 dark:bg-white px-5 py-2 text-xs font-semibold text-white dark:text-neutral-900 transition-colors duration-150 hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-sm" id="confirmCheckOutBtn">Yes, Check Out</button>
+						</div>
+					</div>
+				</div>
+
+				{{-- QR Check Out Confirmation Modal (Table Style for QR Scanner) --}}
+				<div class="guest-modal" id="qrCheckOutConfirmModal" aria-hidden="true" style="z-index: 1400;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-qr-check-out-confirm="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[520px] max-h-[min(90vh,820px)] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#181818] border border-neutral-200 dark:border-neutral-800" role="dialog" aria-modal="true" aria-labelledby="qrCheckOutConfirmTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white" data-close-qr-check-out-confirm="true" aria-label="Close confirmation">&times;</button>
+						<h3 id="qrCheckOutConfirmTitle" class="guest-modal__title m-0 text-lg font-bold text-neutral-900 dark:text-white mb-1">Confirm Check Out</h3>
+						<p id="qrCheckOutConfirmMessage" class="mb-4 text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed">Review the reservation summary below before proceeding to checkout &amp; charges:</p>
+						<div id="qrCheckOutConfirmPreview" class="mb-5"></div>
+						<div class="guest-form__actions flex flex-wrap justify-end gap-2.5 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+							<button type="button" class="cursor-pointer rounded-xl border border-neutral-300 dark:border-neutral-700 bg-transparent px-4 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition-all duration-150 hover:bg-neutral-100 dark:hover:bg-neutral-800" data-close-qr-check-out-confirm="true">Cancel</button>
+							<button type="button" class="cursor-pointer rounded-xl border-0 bg-neutral-900 dark:bg-white px-5 py-2 text-xs font-semibold text-white dark:text-neutral-900 transition-colors duration-150 hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-sm" id="confirmQrCheckOutBtn">Yes, Check Out</button>
 						</div>
 					</div>
 				</div>

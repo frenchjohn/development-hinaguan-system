@@ -76,6 +76,9 @@ window.AppPage['staff_check_ins'] = function () {
     const checkOutConfirmModal = document.getElementById('checkOutConfirmModal');
     const confirmCheckOutBtn = document.getElementById('confirmCheckOutBtn');
     const checkOutConfirmCloseButtons = document.querySelectorAll('[data-close-check-out-confirm="true"]');
+    const qrCheckOutConfirmModal = document.getElementById('qrCheckOutConfirmModal');
+    const confirmQrCheckOutBtn = document.getElementById('confirmQrCheckOutBtn');
+    const qrCheckOutConfirmCloseButtons = document.querySelectorAll('[data-close-qr-check-out-confirm="true"]');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     const reservationData = window.staffReservationData || {};
     const guestData = window.staffGuestData || {};
@@ -98,6 +101,20 @@ window.AppPage['staff_check_ins'] = function () {
         return '60+';
     };
 
+    const getMainGuestName = (reservation) => {
+        if (!reservation) return 'Guest';
+        const guestsList = reservation.reservation_guests || [];
+        const primaryGuest = guestsList.find(g => g.is_primary_guest) || guestsList[0];
+        if (primaryGuest && primaryGuest.customer) {
+            const fullName = `${primaryGuest.customer.first_name || ''} ${primaryGuest.customer.last_name || ''}`.trim();
+            if (fullName) return fullName;
+        }
+        if (reservation.booker_name && String(reservation.booker_name).trim()) {
+            return String(reservation.booker_name).trim();
+        }
+        return 'Guest';
+    };
+
     let currentReservationId = null;
     let companionCount = 0;
 
@@ -105,6 +122,8 @@ window.AppPage['staff_check_ins'] = function () {
     // modal. Confirming must still work even if the details modal was closed in
     // the meantime (closing it clears currentReservationId).
     let pendingCheckOutReservationId = null;
+    let checkOutConfirmTimer = null;
+    let qrCheckOutConfirmTimer = null;
 
     // Initialize: show reservation table by default
     const dashboardSection = document.getElementById('dashboardSection');
@@ -886,8 +905,7 @@ window.AppPage['staff_check_ins'] = function () {
                 });
 
                 quickCheckoutAllBtn?.addEventListener('click', () => {
-                    pendingCheckOutReservationId = reservation.id;
-                    openCheckOutConfirmModal();
+                    openCheckOutConfirmModal(reservation);
                 });
             } else {
                 stickyButtonsContainer.innerHTML = '';
@@ -929,28 +947,251 @@ window.AppPage['staff_check_ins'] = function () {
         reservationModal.setAttribute('aria-hidden', 'true');
     };
 
-    const openCheckOutConfirmModal = () => {
-        if (checkOutConfirmModal) {
-            if (confirmCheckOutBtn) {
-                confirmCheckOutBtn.disabled = false;
-                confirmCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                confirmCheckOutBtn.style.pointerEvents = 'auto';
-                confirmCheckOutBtn.innerHTML = 'Yes, Check Out';
+    const openCheckOutConfirmModal = (reservationOrId = null) => {
+        if (!checkOutConfirmModal) return;
+
+        if (reservationOrId) {
+            let resId = null;
+            if (typeof reservationOrId === 'object') {
+                resId = reservationOrId.id;
+            } else {
+                resId = reservationOrId;
             }
-            checkOutConfirmCloseButtons.forEach((btn) => {
-                btn.disabled = false;
-                btn.style.pointerEvents = 'auto';
-            });
-            checkOutConfirmModal.style.pointerEvents = 'auto';
-            checkOutConfirmModal.classList.add('is-open');
-            checkOutConfirmModal.setAttribute('aria-hidden', 'false');
+
+            pendingCheckOutReservationId = resId;
+
+            const titleEl = checkOutConfirmModal.querySelector('#checkOutConfirmTitle');
+            const messageEl = checkOutConfirmModal.querySelector('#checkOutConfirmMessage') || checkOutConfirmModal.querySelector('p');
+            const previewEl = checkOutConfirmModal.querySelector('#checkOutConfirmGuestPreview');
+
+            if (titleEl) titleEl.textContent = 'Confirm Check Out';
+            if (messageEl) messageEl.textContent = `Would you like to check out Reservation #${resId}?`;
+            if (previewEl) {
+                previewEl.innerHTML = '';
+                previewEl.classList.add('hidden');
+            }
         }
+
+        if (confirmCheckOutBtn) {
+            confirmCheckOutBtn.disabled = false;
+            confirmCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            confirmCheckOutBtn.style.pointerEvents = 'auto';
+            confirmCheckOutBtn.innerHTML = 'Yes, Check Out';
+        }
+        checkOutConfirmCloseButtons.forEach((btn) => {
+            btn.disabled = false;
+            btn.style.pointerEvents = 'auto';
+        });
+        checkOutConfirmModal.style.pointerEvents = 'auto';
+        checkOutConfirmModal.classList.add('is-open');
+        checkOutConfirmModal.setAttribute('aria-hidden', 'false');
     };
 
     const closeCheckOutConfirmModal = () => {
         if (checkOutConfirmModal) {
             checkOutConfirmModal.classList.remove('is-open');
             checkOutConfirmModal.setAttribute('aria-hidden', 'true');
+        }
+    };
+
+    const openQrCheckOutConfirmModal = (reservationOrId = null) => {
+        if (!qrCheckOutConfirmModal) return;
+
+        if (qrCheckOutConfirmTimer) {
+            clearInterval(qrCheckOutConfirmTimer);
+            qrCheckOutConfirmTimer = null;
+        }
+
+        if (reservationOrId) {
+            let resObj = null;
+            let resId = null;
+
+            if (typeof reservationOrId === 'object') {
+                resObj = reservationOrId;
+                resId = resObj.id;
+            } else {
+                resId = reservationOrId;
+                resObj = (window.staffReservationData && window.staffReservationData[resId]) || reservationData[resId];
+            }
+
+            pendingCheckOutReservationId = resId;
+
+            const mainGuestName = getMainGuestName(resObj);
+
+            // 1. Companions count
+            const guestsList = resObj?.reservation_guests || [];
+            const companions = guestsList.filter(g => !g.is_primary_guest);
+            const companionCount = companions.length || Math.max(0, parseInt(resObj?.number_of_guests || 1, 10) - 1);
+            const activeCompanionsCount = companions.length > 0 ? companions.filter(c => !c.checked_out_at).length : companionCount;
+
+            // 2. Amenities availed
+            const rawAmenities = resObj?.reservation_amenities || [];
+            const validAmenities = rawAmenities.filter(a => a.price > 0 || a.price_at_booking > 0 || a.amenity_name || a.amenity || a.name);
+            const amenityCount = validAmenities.length;
+            const amenityNames = validAmenities.map(a => a.amenity_name || a.amenity?.amenities_name || a.name || 'Amenity');
+            const amenitySummary = amenityCount > 0 
+                ? (amenityNames.slice(0, 2).join(', ') + (amenityNames.length > 2 ? ` +${amenityNames.length - 2} more` : '')) 
+                : 'No amenities availed';
+
+            // 3. Supposed checkout date & time
+            const expectedCheckout = formatExpectedCheckout(resObj);
+
+            // 4. Remaining time until checkout
+            let checkoutAtIso = resObj?.checkout_at;
+            if (!checkoutAtIso) {
+                const rawDate = resObj?.end_date || resObj?.reservation_date;
+                if (rawDate) {
+                    const session = (resObj?.end_slot || resObj?.start_slot || 'Daytime').toLowerCase();
+                    const isNight = session.includes('night');
+                    const [y, m, d] = String(rawDate).split('T')[0].split(' ')[0].split('-').map(Number);
+                    if (y && m && d) {
+                        const dt = new Date(y, m - 1, d);
+                        if (isNight) {
+                            dt.setDate(dt.getDate() + 1);
+                            dt.setHours(8, 0, 0, 0); // 8:00 AM next morning
+                        } else {
+                            dt.setHours(17, 0, 0, 0); // 5:00 PM daytime
+                        }
+                        checkoutAtIso = dt.toISOString();
+                    }
+                }
+            }
+
+            const updateCountdownUI = () => {
+                const cdEl = document.getElementById('qrCheckOutConfirmCountdownText');
+                if (!cdEl) return;
+
+                const st = getCountdownState(null, checkoutAtIso);
+                if (st.tone === 'due') {
+                    cdEl.textContent = 'Checkout Due / Overdue';
+                    cdEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-black text-white dark:bg-white dark:text-black animate-pulse';
+                } else if (st.tone === 'warn') {
+                    cdEl.textContent = st.text || 'Under 15m remaining';
+                    cdEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold border border-black dark:border-white text-black dark:text-white bg-neutral-100 dark:bg-neutral-800';
+                } else {
+                    cdEl.textContent = st.text || 'Scheduled';
+                    cdEl.className = 'inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-neutral-800/60';
+                }
+            };
+
+            const titleEl = qrCheckOutConfirmModal.querySelector('#qrCheckOutConfirmTitle');
+            const messageEl = qrCheckOutConfirmModal.querySelector('#qrCheckOutConfirmMessage') || qrCheckOutConfirmModal.querySelector('p');
+            const previewEl = qrCheckOutConfirmModal.querySelector('#qrCheckOutConfirmPreview');
+
+            if (titleEl) titleEl.textContent = 'Confirm Check Out';
+            if (messageEl) messageEl.textContent = `Review the reservation summary below before proceeding to checkout & charges:`;
+            if (previewEl) {
+                previewEl.innerHTML = `
+                    <!-- Black & White Table Style -->
+                    <div class="rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden bg-white dark:bg-[#151515] shadow-sm">
+                        <!-- Highlight Header: Main Guest & Reservation ID -->
+                        <div class="bg-neutral-900 text-white dark:bg-neutral-800 px-4 py-3 flex items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-700">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Main Guest</div>
+                                <div class="text-base font-bold text-white tracking-tight truncate leading-tight">${escapeHtml(mainGuestName)}</div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="inline-block bg-white text-neutral-900 dark:bg-white dark:text-black text-xs font-bold px-2.5 py-1 rounded-md shadow-xs">
+                                    Reservation #${escapeHtml(resId)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Data Table -->
+                        <table class="w-full text-xs border-collapse">
+                            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800">
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 w-[38%] align-top">
+                                        Reservation ID
+                                    </td>
+                                    <td class="py-2.5 px-4 font-bold text-neutral-900 dark:text-neutral-100 align-top">
+                                        #${escapeHtml(resId)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 align-top">
+                                        Main Guest
+                                    </td>
+                                    <td class="py-2.5 px-4 font-bold text-neutral-900 dark:text-neutral-100 align-top">
+                                        ${escapeHtml(mainGuestName)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 align-top">
+                                        Companions
+                                    </td>
+                                    <td class="py-2.5 px-4 text-neutral-900 dark:text-neutral-100 align-top">
+                                        <div class="font-bold">${companionCount} ${companionCount === 1 ? 'Guest' : 'Guests'}</div>
+                                        ${companionCount > 0 ? `<div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">(${activeCompanionsCount} active with stay)</div>` : '<div class="text-[11px] text-neutral-400 mt-0.5">No companions</div>'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 align-top">
+                                        Amenities Availed
+                                    </td>
+                                    <td class="py-2.5 px-4 text-neutral-900 dark:text-neutral-100 align-top">
+                                        <div class="font-bold">${amenityCount} ${amenityCount === 1 ? 'Amenity' : 'Amenities'}</div>
+                                        ${amenityCount > 0 ? `<div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">${escapeHtml(amenitySummary)}</div>` : '<div class="text-[11px] text-neutral-400 mt-0.5">None availed</div>'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 align-top">
+                                        Scheduled Checkout
+                                    </td>
+                                    <td class="py-2.5 px-4 text-neutral-900 dark:text-neutral-100 align-top">
+                                        <div class="font-bold">${escapeHtml(expectedCheckout.date)}</div>
+                                        <div class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                            ${escapeHtml(expectedCheckout.time || expectedCheckout.session)} (${escapeHtml(expectedCheckout.session)})
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-4 font-semibold text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-900/50 align-top">
+                                        Time Remaining
+                                    </td>
+                                    <td class="py-2.5 px-4 align-top">
+                                        <span id="qrCheckOutConfirmCountdownText" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 bg-neutral-50 dark:bg-neutral-800/60">
+                                            Calculating...
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                previewEl.classList.remove('hidden');
+
+                // Initial countdown paint
+                updateCountdownUI();
+
+                // Live timer ticker while modal is open
+                qrCheckOutConfirmTimer = setInterval(updateCountdownUI, 1000);
+            }
+        }
+
+        if (confirmQrCheckOutBtn) {
+            confirmQrCheckOutBtn.disabled = false;
+            confirmQrCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            confirmQrCheckOutBtn.style.pointerEvents = 'auto';
+            confirmQrCheckOutBtn.innerHTML = 'Yes, Check Out';
+        }
+        qrCheckOutConfirmCloseButtons.forEach((btn) => {
+            btn.disabled = false;
+            btn.style.pointerEvents = 'auto';
+        });
+        qrCheckOutConfirmModal.style.pointerEvents = 'auto';
+        qrCheckOutConfirmModal.classList.add('is-open');
+        qrCheckOutConfirmModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeQrCheckOutConfirmModal = () => {
+        if (qrCheckOutConfirmTimer) {
+            clearInterval(qrCheckOutConfirmTimer);
+            qrCheckOutConfirmTimer = null;
+        }
+        if (qrCheckOutConfirmModal) {
+            qrCheckOutConfirmModal.classList.remove('is-open');
+            qrCheckOutConfirmModal.setAttribute('aria-hidden', 'true');
         }
     };
 
@@ -1011,7 +1252,17 @@ window.AppPage['staff_check_ins'] = function () {
     });
 
     checkOutConfirmCloseButtons.forEach(button => {
-        button.addEventListener('click', closeCheckOutConfirmModal);
+        button.addEventListener('click', () => {
+            pendingCheckOutReservationId = null;
+            closeCheckOutConfirmModal();
+        });
+    });
+
+    qrCheckOutConfirmCloseButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            pendingCheckOutReservationId = null;
+            closeQrCheckOutConfirmModal();
+        });
     });
 
     // Companion checkout button in reservation modal header
@@ -1023,32 +1274,31 @@ window.AppPage['staff_check_ins'] = function () {
     // Reservation checkout - open confirmation modal
     reservationCheckOutBtn?.addEventListener('click', () => {
         if (!currentReservationId) return;
-        pendingCheckOutReservationId = currentReservationId;
-        openCheckOutConfirmModal();
+        const res = (window.staffReservationData && window.staffReservationData[currentReservationId]) || reservationData[currentReservationId];
+        openCheckOutConfirmModal(res || currentReservationId);
     });
 
-    // Confirm checkout - actually perform the action
-    confirmCheckOutBtn?.addEventListener('click', async () => {
-        if (!pendingCheckOutReservationId) return;
-
-        const resId = pendingCheckOutReservationId;
+    const executeReservationCheckout = async (resId, triggerBtn, modalEl, closeButtons, closeModalFn) => {
+        if (!resId) return;
 
         // Show loading spinner on button and lock the confirmation modal from interference
-        confirmCheckOutBtn.disabled = true;
-        confirmCheckOutBtn.classList.add('opacity-75', 'cursor-not-allowed');
-        confirmCheckOutBtn.style.pointerEvents = 'none';
-        confirmCheckOutBtn.innerHTML = `
-            <svg class="mr-2 h-4 w-4 inline animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-            </svg>
-            Checking out...
-        `;
-        checkOutConfirmCloseButtons.forEach((btn) => {
+        if (triggerBtn) {
+            triggerBtn.disabled = true;
+            triggerBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            triggerBtn.style.pointerEvents = 'none';
+            triggerBtn.innerHTML = `
+                <svg class="mr-2 h-4 w-4 inline animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                </svg>
+                Checking out...
+            `;
+        }
+        closeButtons.forEach((btn) => {
             btn.disabled = true;
             btn.style.pointerEvents = 'none';
         });
-        checkOutConfirmModal.style.pointerEvents = 'none';
+        if (modalEl) modalEl.style.pointerEvents = 'none';
 
         try {
             // Open charge modal and ONLY close the confirmation modal when charges modal is ready and displayed
@@ -1104,27 +1354,51 @@ window.AppPage['staff_check_ins'] = function () {
                 showToast(`Reservation #${resId} checked out successfully.`);
             }, () => {
                 // onReady: charges modal has appeared, now close confirmation modal
-                closeCheckOutConfirmModal();
+                closeModalFn();
             });
         } catch (error) {
             console.error('Check out error:', error);
-            closeCheckOutConfirmModal();
+            closeModalFn();
             alert('Error checking out reservation: ' + error.message);
         } finally {
-            if (confirmCheckOutBtn) {
-                confirmCheckOutBtn.disabled = false;
-                confirmCheckOutBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                confirmCheckOutBtn.style.pointerEvents = 'auto';
-                confirmCheckOutBtn.innerHTML = 'Yes, Check Out';
+            if (triggerBtn) {
+                triggerBtn.disabled = false;
+                triggerBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                triggerBtn.style.pointerEvents = 'auto';
+                triggerBtn.innerHTML = 'Yes, Check Out';
             }
-            checkOutConfirmCloseButtons.forEach((btn) => {
+            closeButtons.forEach((btn) => {
                 btn.disabled = false;
                 btn.style.pointerEvents = 'auto';
             });
-            if (checkOutConfirmModal) {
-                checkOutConfirmModal.style.pointerEvents = 'auto';
+            if (modalEl) {
+                modalEl.style.pointerEvents = 'auto';
             }
         }
+    };
+
+    // Confirm checkout (manual) - actually perform the action
+    confirmCheckOutBtn?.addEventListener('click', async () => {
+        if (!pendingCheckOutReservationId) return;
+        await executeReservationCheckout(
+            pendingCheckOutReservationId,
+            confirmCheckOutBtn,
+            checkOutConfirmModal,
+            checkOutConfirmCloseButtons,
+            closeCheckOutConfirmModal
+        );
+    });
+
+    // Confirm checkout (QR Scanner) - actually perform the action
+    confirmQrCheckOutBtn?.addEventListener('click', async () => {
+        if (!pendingCheckOutReservationId) return;
+        await executeReservationCheckout(
+            pendingCheckOutReservationId,
+            confirmQrCheckOutBtn,
+            qrCheckOutConfirmModal,
+            qrCheckOutConfirmCloseButtons,
+            closeQrCheckOutConfirmModal
+        );
     });
 
     // Per-amenity check out handler
@@ -9107,39 +9381,7 @@ window.AppPage['staff_check_ins'] = function () {
 
                         // Check if reservation is already checked in
                         if (body.reservation.status === 'Checked In') {
-                            const checkOutConfirm = confirm(
-                                `Reservation #${reservationId} is already checked in.\n\nDo you want to check it out now?`
-                            );
-                            if (checkOutConfirm) {
-                                try {
-                                    const checkoutResponse = await fetch(`/staff/reservations/${reservationId}/check-out`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Accept': 'application/json',
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': csrfToken,
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                        },
-                                    });
-
-                                    const checkoutPayload = await checkoutResponse.json().catch(() => ({}));
-                                    if (!checkoutResponse.ok) {
-                                        window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
-                                    } else {
-                                        const resRow = document.querySelector(`tr.reservation-row[data-reservation-id="${reservationId}"]`);
-                                        if (resRow) resRow.remove();
-                                        if (window.staffReservationData && window.staffReservationData[reservationId]) {
-                                            window.staffReservationData[reservationId].status = 'Checked Out';
-                                        }
-                                        refreshCheckoutCountdowns();
-                                        showToast(`Reservation #${reservationId} checked out successfully.`);
-                                    }
-                                } catch (checkoutError) {
-                                    window.alert('Unable to check out this reservation. Please try again.');
-                                }
-                            } else {
-                                openReservationModal(reservationId);
-                            }
+                            openQrCheckOutConfirmModal(body.reservation);
                         } else {
                             openReservationModal(reservationId);
                         }
