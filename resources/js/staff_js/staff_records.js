@@ -1422,6 +1422,11 @@ window.AppPage['staff_records'] = function () {
         const statusSelected = reservationStatusFilter ? reservationStatusFilter.options[reservationStatusFilter.selectedIndex]?.text : 'All Statuses';
         const checkInStaffSelected = reservationCheckInStaffFilter ? (reservationCheckInStaffFilter.options[reservationCheckInStaffFilter.selectedIndex]?.text || 'All Staff') : 'All Staff';
         const checkOutStaffSelected = reservationCheckOutStaffFilter ? (reservationCheckOutStaffFilter.options[reservationCheckOutStaffFilter.selectedIndex]?.text || 'All Staff') : 'All Staff';
+        const isSameStaffFilter = checkInStaffSelected.trim().toLowerCase() === checkOutStaffSelected.trim().toLowerCase();
+        const staffFilterSummaryHtml = isSameStaffFilter
+            ? `<div class="filter-summary-item"><span class="label">Record By:</span> <span class="val">${escapeHtml(checkInStaffSelected)}</span></div>`
+            : `<div class="filter-summary-item"><span class="label">Check-in By:</span> <span class="val">${escapeHtml(checkInStaffSelected)}</span></div>
+        <div class="filter-summary-item"><span class="label">Check-out By:</span> <span class="val">${escapeHtml(checkOutStaffSelected)}</span></div>`;
         const dateFromVal = reservationCheckOutFrom?.value || '';
         const dateToVal = reservationCheckOutTo?.value || '';
         let dateRangeStr = 'All Dates';
@@ -1673,8 +1678,7 @@ window.AppPage['staff_records'] = function () {
     <div class="filter-summary">
         <div class="filter-summary-item"><span class="label">Section:</span> <span class="val">${escapeHtml(typeLabel)}</span></div>
         <div class="filter-summary-item"><span class="label">Status:</span> <span class="val">${escapeHtml(statusSelected)}</span></div>
-        <div class="filter-summary-item"><span class="label">Check-in By:</span> <span class="val">${escapeHtml(checkInStaffSelected)}</span></div>
-        <div class="filter-summary-item"><span class="label">Check-out By:</span> <span class="val">${escapeHtml(checkOutStaffSelected)}</span></div>
+        ${staffFilterSummaryHtml}
         <div class="filter-summary-item"><span class="label">Date Range:</span> <span class="val">${escapeHtml(dateRangeStr)}</span></div>
         ${searchVal ? `<div class="filter-summary-item"><span class="label">Search:</span> <span class="val">"${escapeHtml(searchVal)}"</span></div>` : ''}
         <div class="filter-summary-item"><span class="label">Showing:</span> <span class="val">${visibleRows.length} of ${totalFiltered} records</span></div>
