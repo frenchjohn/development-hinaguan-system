@@ -388,7 +388,7 @@
                                                     @else
                                                         <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
                                                             <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
-                                                            {{ $slot }}
+                                                            {{ str_ireplace('nighttime', 'Overnight', $slot) }}
                                                         </span>
                                                     @endif
                                                 @endforeach
@@ -406,7 +406,7 @@
                                             @else
                                                 <span class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 whitespace-nowrap">
                                                     <i class="bi bi-sun-fill text-[0.7rem] text-amber-500 dark:text-amber-400"></i>
-                                                    {{ $startSlot }}
+                                                    {{ str_ireplace('nighttime', 'Overnight', $startSlot) }}
                                                 </span>
                                             @endif
                                         @endif

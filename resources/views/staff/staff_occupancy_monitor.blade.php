@@ -211,7 +211,7 @@
                                 <select id="timeSlotFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
                                     <option value="all">All Time Slots</option>
                                     <option value="daytime">Daytime</option>
-                                    <option value="nighttime">Nighttime</option>
+                                    <option value="nighttime">Overnight</option>
                                 </select>
                             </div>
                             <div class="flex flex-col gap-1.5">
@@ -467,7 +467,7 @@
                                                     <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasDay ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Daytime
                                                 </span>
                                                 <span class="slot-chip slot-chip--nighttime inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.68rem] font-bold tracking-[0.02em] shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] {{ $hasNight ? 'is-free border-[rgba(23,138,82,0.28)] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]' : 'is-taken border-[rgba(207,75,71,0.25)] bg-[#fde8e8] text-[#b91c1c] dark:bg-[#3a1f1c] dark:text-[#f3a0a0]' }}">
-                                                    <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasNight ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Nighttime
+                                                    <i class="slot-chip__dot h-[0.42rem] w-[0.42rem] rounded-full {{ $hasNight ? 'bg-hp-green' : 'bg-[#dc2626]' }}"></i>Overnight
                                                 </span>
                                             </div>
                                             <div class="flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-2.5 text-[0.72rem] text-hp-text-muted">
@@ -475,7 +475,7 @@
                                                     <svg class="h-3.5 w-3.5 text-hp-text-muted/70" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
                                                     {{ $amenity->minimum_capacity }}–{{ $amenity->maximum_capacity }} pax
                                                 </span>
-                                                <span class="font-semibold text-hp-text-muted/70">Night ₱{{ number_format($amenity->nighttime_price, 2) }}</span>
+                                                <span class="font-semibold text-hp-text-muted/70">Overnight ₱{{ number_format($amenity->nighttime_price, 2) }}</span>
                                             </div>
                                             <div class="flex items-center justify-between gap-2 text-[0.72rem] font-bold text-hp-green opacity-60 transition-opacity duration-200 group-hover:opacity-100">
                                                 <span>View details</span>
@@ -522,7 +522,7 @@
                             <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalDaytimePrice"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
-                            <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Nighttime Price</span>
+                            <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Overnight Price</span>
                             <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalNighttimePrice"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
@@ -530,7 +530,7 @@
                             <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalDayAircon"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">
-                            <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Night Aircon</span>
+                            <span class="detail-label text-xs font-semibold uppercase tracking-[0.05em] text-hp-text-muted">Overnight Aircon</span>
                             <span class="detail-val text-base font-bold text-hp-green-dark dark:text-[#9ca3af]" id="modalNightAircon"></span>
                         </div>
                         <div class="detail-item flex flex-col gap-1">

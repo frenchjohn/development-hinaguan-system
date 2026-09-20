@@ -2682,7 +2682,7 @@ window.AppPage['staff_reservations'] = function () {
                             <span>•</span>
                             <span>Day: ₱${dayP.toFixed(2)}</span>
                             <span>•</span>
-                            <span>Night: ₱${nightP.toFixed(2)}</span>
+                            <span>Overnight: ₱${nightP.toFixed(2)}</span>
                         </div>
                         ${isAvailable ? `
                             <div class="mt-1 text-xs font-semibold text-hp-green dark:text-emerald-400">
@@ -2853,13 +2853,14 @@ window.AppPage['staff_reservations'] = function () {
         if (compactTextEl) {
             compactTextEl.textContent = sDisplay === eDisplay ? `${sDisplay} • ${days} Day${days > 1 ? 's' : ''}` : `${sDisplay} – ${eDisplay} • ${days} Days`;
         }
+        const slotDisplay = (slot || '').toLowerCase().includes('night') ? 'Overnight' : slot;
         const sessionBadgeEl = document.getElementById('checkInStaySessionBadge');
         if (sessionBadgeEl) {
-            sessionBadgeEl.textContent = slot;
+            sessionBadgeEl.textContent = slotDisplay;
         }
         const schedSummaryEl = document.getElementById('checkInScheduleSummaryText');
         if (schedSummaryEl) {
-            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slot} Session)`;
+            schedSummaryEl.textContent = `${days} Day${days > 1 ? 's' : ''} (${slotDisplay} Session)`;
         }
         const schedDatesEl = document.getElementById('checkInScheduleDatesText');
         if (schedDatesEl) {
@@ -3389,7 +3390,7 @@ window.AppPage['staff_reservations'] = function () {
                             <div><div class="label">Status</div><div class="val">${escapeHtml(res.status)}</div></div>
                             <div><div class="label">Contact Phone</div><div class="val">${escapeHtml(res.phone || 'N/A')}</div></div>
                             <div><div class="label">Contact Email</div><div class="val">${escapeHtml(res.email || 'N/A')}</div></div>
-                            <div><div class="label">Check-In Date</div><div class="val">${escapeHtml(formatDate(res.reservation_date))} (${escapeHtml(res.start_slot || 'Daytime')})</div></div>
+                            <div><div class="label">Check-In Date</div><div class="val">${escapeHtml(formatDate(res.reservation_date))} (${escapeHtml((res.start_slot || 'Daytime').toLowerCase().includes('night') ? 'Overnight' : (res.start_slot || 'Daytime'))})</div></div>
                             <div><div class="label">Number of Guests</div><div class="val">${escapeHtml(res.number_of_guests || 1)} Guests</div></div>
                         </div>
                         <table class="table-wrap">
@@ -3497,7 +3498,10 @@ window.AppPage['staff_reservations'] = function () {
             const aSSlot = amenity.start_slot || reservation.start_slot || 'Daytime';
             const aESlot = amenity.end_slot || reservation.end_slot || aSSlot;
             const aHasRange = aSDate && aEDate && aSDate !== aEDate;
-            const pricingType = amenity.pricing_type || (aHasRange ? `Continuous Stay (${reservation.total_days || 1}D)` : aSSlot);
+            let pricingType = amenity.pricing_type || (aHasRange ? `Continuous Stay (${reservation.total_days || 1}D)` : aSSlot);
+            if (typeof pricingType === 'string' && pricingType.toLowerCase().includes('nighttime')) {
+                pricingType = pricingType.replace(/nighttime/gi, 'Overnight');
+            }
 
             return `
                 <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 text-xs">
@@ -4572,9 +4576,11 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         if (editCalTriggerSessions) {
+            const sSlotName = sSlot === 'Nighttime' ? 'Overnight' : sSlot;
+            const eSlotName = eSlot === 'Nighttime' ? 'Overnight' : eSlot;
             editCalTriggerSessions.textContent = isSingleDay
-                ? (sSlot === eSlot ? `${sSlot} Session` : `${sSlot} to ${eSlot}`)
-                : `${sSlot} check-in → ${eSlot} check-out (${pricing.dayCount}D ${pricing.nightCount}N)`;
+                ? (sSlotName === eSlotName ? `${sSlotName} Session` : `${sSlotName} to ${eSlotName}`)
+                : `${sSlotName} check-in → ${eSlotName} check-out (${pricing.dayCount}D ${pricing.nightCount}N)`;
         }
 
         if (editStayDurationBadge) {

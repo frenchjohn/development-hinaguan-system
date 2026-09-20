@@ -772,13 +772,13 @@ Route::get('/amenities', function (Request $request) use ($getReservationAmenity
 
                     if ($hasDay && $hasNight) {
                         $timeSlot = 'DayToNight';
-                        $timeSlotLabel = 'Day & Night';
+                        $timeSlotLabel = 'Day & Overnight';
                     } elseif ($hasDay) {
                         $timeSlot = 'Daytime';
                         $timeSlotLabel = 'Daytime';
                     } else {
                         $timeSlot = 'Nighttime';
-                        $timeSlotLabel = 'Nighttime';
+                        $timeSlotLabel = 'Overnight';
                     }
 
                     if (str_contains((string) $ra->pricing_type, 'Continuous Stay')) {
@@ -4339,13 +4339,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
                         if ($hasDay && $hasNight) {
                             $timeSlot = 'DayToNight';
-                            $timeSlotLabel = 'Day & Night';
+                            $timeSlotLabel = 'Day & Overnight';
                         } elseif ($hasDay) {
                             $timeSlot = 'Daytime';
                             $timeSlotLabel = 'Daytime';
                         } else {
                             $timeSlot = 'Nighttime';
-                            $timeSlotLabel = 'Nighttime';
+                            $timeSlotLabel = 'Overnight';
                         }
 
                         if (str_contains((string) $ra->pricing_type, 'Continuous Stay')) {
@@ -4431,7 +4431,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         // Determine current real-time session
         $currentHour = (int) now()->format('H');
-        $currentSession = ($currentHour >= 8 && $currentHour < 17) ? 'Daytime' : 'Nighttime';
+        $currentSession = ($currentHour >= 8 && $currentHour < 17) ? 'Daytime' : 'Overnight';
 
         // Filter parameters
         $preset = $request->get('preset', 'today');
@@ -4553,7 +4553,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $guestsCount = $res?->number_of_guests ?? 0;
 
             $timeStr = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
-            $sessionTag = ($timeStr >= '08:00:00' && $timeStr < '17:00:00') ? 'Daytime' : 'Nighttime';
+            $sessionTag = ($timeStr >= '08:00:00' && $timeStr < '17:00:00') ? 'Daytime' : 'Overnight';
 
             return [
                 'id' => $log->id,

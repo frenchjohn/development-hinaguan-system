@@ -300,6 +300,11 @@ window.AppPage['staff_occupancy_monitor'] = function () {
 
         if (modalStatusList) {
             modalStatusList.innerHTML = '';
+            const formatSlotDisplay = (val) => {
+                if (!val) return '';
+                return String(val).replace(/nighttime/gi, 'Overnight');
+            };
+
             if (occupied.length === 0 && reserved.length === 0) {
                 modalStatusList.innerHTML = '<p class="status-empty">Available for booking today.</p>';
             } else {
@@ -308,7 +313,8 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     div.className = 'status-badge status-badge--occupied';
                     const guestCount = Number(item.guest_count ?? 0);
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
-                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${item.time_slot_label || item.time_slot})${sharedTag} &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
+                    const slotLabel = formatSlotDisplay(item.time_slot_label || item.time_slot);
+                    div.innerHTML = `<strong>Occupied</strong> (Reservation #${item.reservation_id} - ${slotLabel})${sharedTag} &middot; ${guestCount} guest${guestCount === 1 ? '' : 's'} inside`;
                     modalStatusList.appendChild(div);
                 });
                 reserved.forEach(item => {
@@ -316,7 +322,8 @@ window.AppPage['staff_occupancy_monitor'] = function () {
                     div.className = 'status-badge status-badge--reserved';
                     const sharedTag = item.is_shared_group ? ` &middot; <span class="rounded-full bg-amber-500/90 text-white px-2 py-0.5 text-xs font-bold shadow-sm">Shared Group (${item.total_amenities_count || 2} Amenities)</span>` : '';
                     const reservationDate = item.reservation_date || item.date || 'Today';
-                    div.innerHTML = `<strong>Reserved</strong> (${reservationDate}) (Reservation #${item.reservation_id} - ${item.time_slot_label || item.time_slot})${sharedTag}`;
+                    const slotLabel = formatSlotDisplay(item.time_slot_label || item.time_slot);
+                    div.innerHTML = `<strong>Reserved</strong> (${reservationDate}) (Reservation #${item.reservation_id} - ${slotLabel})${sharedTag}`;
                     modalStatusList.appendChild(div);
                 });
             }

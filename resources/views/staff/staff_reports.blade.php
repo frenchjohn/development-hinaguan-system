@@ -152,7 +152,7 @@
                                         @if($currentSession === 'Daytime')
                                             <i class="bi bi-sun-fill text-amber-500"></i> Daytime Session (08:00 AM – 05:00 PM)
                                         @else
-                                            <i class="bi bi-moon-stars-fill text-indigo-400"></i> Nighttime Session (05:00 PM – 08:00 AM)
+                                            <i class="bi bi-moon-stars-fill text-indigo-400"></i> Overnight Session (05:00 PM – 08:00 AM)
                                         @endif
                                     </span>
                                 </div>
@@ -219,7 +219,7 @@
                                     <select name="session" id="sessionSelect" class="rounded-xl border border-glass-border bg-white/70 dark:bg-[#161a17]/80 pl-8 pr-7 py-1.5 text-xs font-medium text-hp-text outline-none focus:border-[#1c5c3c] cursor-pointer appearance-none shadow-sm">
                                         <option value="all" {{ $sessionFilter === 'all' ? 'selected' : '' }}>All Shifts</option>
                                         <option value="daytime" {{ $sessionFilter === 'daytime' ? 'selected' : '' }}>Daytime Shift (8AM - 5PM)</option>
-                                        <option value="nighttime" {{ $sessionFilter === 'nighttime' ? 'selected' : '' }}>Nighttime Shift (5PM - 8AM)</option>
+                                        <option value="nighttime" {{ $sessionFilter === 'nighttime' ? 'selected' : '' }}>Overnight Shift (5PM - 8AM)</option>
                                     </select>
                                     <i class="bi bi-chevron-down absolute right-2.5 text-[0.6rem] text-hp-text-muted pointer-events-none"></i>
                                 </div>
@@ -706,7 +706,7 @@
                         <div>
                             <p><strong>Duty Staff Name:</strong> {{ $staffName }}</p>
                             <p><strong>Staff Account ID:</strong> #{{ $staffId }}</p>
-                            <p><strong>Shift Session:</strong> {{ ucfirst($sessionFilter) }} Session</p>
+                            <p><strong>Shift Session:</strong> {{ $sessionFilter === 'nighttime' ? 'Overnight' : ucfirst($sessionFilter) }} Session</p>
                         </div>
                         <div>
                             <p><strong>Report Period:</strong> {{ ucwords(str_replace('_', ' ', $preset)) }} ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</p>
