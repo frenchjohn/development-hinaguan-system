@@ -83,12 +83,12 @@ class ReservationQrMailTest extends TestCase
         // Check amenity details
         $this->assertStringContainsString('Riverside Cabana Deluxe', $html);
         $this->assertStringContainsString('1,200.00', $html);
-        $this->assertStringContainsString('Entrance Fee (4 Adults, 2 Kids)', $html);
+        $this->assertStringContainsString('Entrance Fee (4 Adults, 2 Children)', $html);
 
         // Check arrival window & schedule
         $this->assertStringContainsString('Daytime Stay (8:00 AM - 6:00 PM)', $html);
         $this->assertStringContainsString('Arrive at Sep 15, 2026 at 8:00 AM', $html);
-        $this->assertStringContainsString('better to be early', $html);
+        $this->assertStringContainsString('recommended between', $html);
         $this->assertStringContainsString('September 15, 2026', $html);
 
         // Check billing
@@ -97,9 +97,15 @@ class ReservationQrMailTest extends TestCase
         $this->assertStringContainsString('GCash Online', $html);
 
         // Check notices & requirements
-        $this->assertStringContainsString('Bring Your Entry QR Code (Required)', $html);
+        $this->assertStringContainsString('Present Your Entry QR Pass', $html);
         $this->assertStringContainsString('Valid ID Verification', $html);
-        $this->assertStringContainsString('Know Your Reservation ID', $html);
+        $this->assertStringContainsString('Reservation Reference', $html);
+        $this->assertStringContainsString('Strictly No Refund', $html);
+
+        // Check park rules
+        $this->assertStringContainsString('Park Rules &amp; Guidelines', $html);
+        $this->assertStringContainsString('Proper Swimming Pool Attire', $html);
+        $this->assertStringContainsString('Clean As You Go (CLAYGO)', $html);
 
         // Check location & contact details
         $this->assertStringContainsString('Jasaan, Misamis Oriental, Philippines', $html);
@@ -142,8 +148,6 @@ class ReservationQrMailTest extends TestCase
 
         $this->assertStringContainsString('Continuous Stay (5 Days / Daytime to Daytime)', $html);
         $this->assertStringContainsString('Arrive at Sep 01, 2026 at 8:00 AM', $html);
-        $this->assertStringContainsString("Please arrive on Sep 01, 2026 at 8:00 AM", $html);
-        $this->assertStringContainsString("We can still check you in even if you arrive late", $html);
-        $this->assertStringContainsString("better to be early", $html);
+        $this->assertStringContainsString("Check-in remains open for late arrivals throughout your reserved date.", $html);
     }
 }

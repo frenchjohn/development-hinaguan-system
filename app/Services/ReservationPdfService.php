@@ -48,6 +48,14 @@ class ReservationPdfService
             // DB fallback
         }
 
+        // Park rules
+        $parkRules = collect();
+        try {
+            $parkRules = \App\Models\ParkRule::orderBy('id')->get();
+        } catch (\Throwable $e) {
+            // DB fallback
+        }
+
         $formatTime = function (?string $raw, string $default): string {
             if (!$raw) return $default;
             try {
@@ -213,6 +221,7 @@ class ReservationPdfService
             'parkEmail' => $parkSetting?->email ?: 'parkhinaguan@gmail.com',
             'parkFacebook' => $parkSetting?->facebook_link,
             'downloadPdfUrl' => $downloadPdfUrl,
+            'parkRules' => $parkRules,
         ];
     }
 

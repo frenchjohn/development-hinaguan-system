@@ -414,6 +414,7 @@
             <li><strong>ID Verification:</strong> If the QR pass is not readily accessible, please present a valid Government or Student ID matching <strong>{{ $bookerName }}</strong>.</li>
             <li><strong>Remaining Balance:</strong> Any outstanding balance of PHP {{ number_format($remainingBalance, 2) }} can be settled at the front desk upon check-in via Cash or GCash.</li>
             <li><strong>Park Rules:</strong> Help keep our park pristine (Leave No Trace). Proper swimming attire is strictly enforced in pool areas.</li>
+            <li><strong>Strictly No Refund:</strong> All booking deposits and reservation payments are strictly final and non-refundable.</li>
         </ol>
     </div>
 

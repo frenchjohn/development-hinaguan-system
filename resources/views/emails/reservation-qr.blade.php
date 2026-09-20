@@ -368,6 +368,10 @@
                                                 <strong>Note:</strong> Outstanding balance of <strong>PHP {{ number_format($remainingBalance, 2) }}</strong> can be settled at the park reception desk upon arrival via Cash or GCash.
                                             </div>
                                         @endif
+
+                                        <div style="margin-top:10px; padding:9px 12px; background:#fff1f2; border:1px solid #fecdd3; border-left:3px solid #e11d48; border-radius:6px; font-size:11.5px; color:#9f1239; line-height:1.45;">
+                                            <strong>Strictly No Refund:</strong> All deposits, downpayments, and reservation fees are final and strictly non-refundable under normal booking conditions.
+                                        </div>
                                     </td>
                                 </tr>
                             </table>
@@ -377,7 +381,7 @@
                                 <tr>
                                     <td style="background:#fef3c7; padding:10px 18px; border-bottom:1px solid #fcd34d;">
                                         <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#92400e;">
-                                            Important Check-In Guidelines
+                                            Important Check-In Guidelines &amp; Policies
                                         </div>
                                     </td>
                                 </tr>
@@ -397,11 +401,100 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td width="20" valign="top" style="font-size:12px; font-weight:bold; color:#9a3412;">3.</td>
-                                                <td style="font-size:12.5px; color:#451a03; line-height:1.5;">
+                                                <td width="20" valign="top" style="padding-bottom:10px; font-size:12px; font-weight:bold; color:#9a3412;">3.</td>
+                                                <td style="padding-bottom:10px; font-size:12.5px; color:#451a03; line-height:1.5;">
                                                     <strong>Reservation Reference:</strong> Keep note of your <strong>Reservation ID #{{ $reservation->id }}</strong> for any front-desk inquiries.
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td width="20" valign="top" style="font-size:12px; font-weight:bold; color:#9a3412;">4.</td>
+                                                <td style="font-size:12.5px; color:#451a03; line-height:1.5;">
+                                                    <strong>Strictly No Refund Policy:</strong> All downpayments, fees, and booking payments are strictly non-refundable under normal booking conditions.
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- PARK RULES & GUIDELINES -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff; border:1px solid #d1fae5; border-radius:12px; margin-bottom:22px; overflow:hidden;">
+                                <tr>
+                                    <td style="background:#f0fdf4; padding:11px 18px; border-bottom:1px solid #bbf7d0;">
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#166534;">
+                                                    Park Rules &amp; Guidelines
+                                                </td>
+                                                <td align="right" style="font-size:11px; font-weight:600; color:#15803d;">
+                                                    Enjoy Responsibly
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:16px 20px;">
+                                        <p style="margin:0 0 14px; font-size:12.5px; color:#475569; line-height:1.5;">
+                                            To ensure a safe, peaceful, and enjoyable experience for all guests and nature, please take note of our park policies:
+                                        </p>
+                                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                            @if(isset($parkRules) && count($parkRules) > 0)
+                                                @foreach($parkRules as $index => $rule)
+                                                    <tr>
+                                                        <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">
+                                                            {{ $index + 1 }}.
+                                                        </td>
+                                                        <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                            <strong style="color:#0f172a;">{{ $rule->rule_name }}:</strong>
+                                                            <span style="color:#475569;">{{ $rule->rule_descriptions }}</span>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">1.</td>
+                                                    <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Proper Swimming Pool Attire:</strong>
+                                                        <span style="color:#475569;">Proper swimwear (rash guards, swim trunks, bathing suits) is required when entering swimming pools. Cotton t-shirts, denim pants, and undergarments are strictly prohibited in the water.</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">2.</td>
+                                                    <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Outside Food &amp; Corkage Policy:</strong>
+                                                        <span style="color:#475569;">Guests may bring outside food and non-alcoholic drinks with zero corkage fee. Free outdoor grilling stations are available (please bring your own charcoal and utensils).</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">3.</td>
+                                                    <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Quiet Hours &amp; Respect:</strong>
+                                                        <span style="color:#475569;">Quiet hours are strictly observed from 10:00 PM to 6:00 AM for the comfort of overnight guests and nature. High-volume sound systems must be turned down.</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">4.</td>
+                                                    <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Clean As You Go (CLAYGO):</strong>
+                                                        <span style="color:#475569;">Help maintain the pristine beauty of our park by disposing of all garbage into labeled waste segregation bins.</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="22" valign="top" style="padding-bottom:11px; font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">5.</td>
+                                                    <td style="padding-bottom:11px; font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Pet Policy:</strong>
+                                                        <span style="color:#475569;">Pets are welcome inside park grounds but must be kept on a leash at all times. Pet owners are responsible for waste cleanup.</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td width="22" valign="top" style="font-size:12px; font-weight:700; color:#15803d; line-height:1.4;">6.</td>
+                                                    <td style="font-size:12.5px; color:#1e293b; line-height:1.55;">
+                                                        <strong style="color:#0f172a;">Designated Smoking Areas:</strong>
+                                                        <span style="color:#475569;">Smoking and vaping are only permitted in designated outdoor smoking zones away from cottages and children's swimming areas.</span>
+                                                    </td>
+                                                </tr>
+                                            @endif
                                         </table>
                                     </td>
                                 </tr>
