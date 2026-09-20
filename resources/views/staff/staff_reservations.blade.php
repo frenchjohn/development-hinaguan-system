@@ -218,6 +218,11 @@
                         </div>
                     </div>
                     <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
+                        <button type="button" class="inline-flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-sm font-semibold text-amber-900 transition-all duration-150 hover:bg-amber-500 hover:text-white active:scale-95 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-600 dark:hover:text-white shadow-xs" id="reschedRequestsBtn" title="View Reschedule Requests">
+                            <i class="bi bi-calendar2-range text-sm"></i>
+                            <span>Resched Requests</span>
+                            <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-amber-600 rounded-full">0</span>
+                        </button>
                         <button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR" aria-label="Scan reservation QR">
                             <i class="bi bi-qr-code-scan text-base"></i>
                         </button>
@@ -629,6 +634,183 @@
             <p id="successModalMessage" class="guest-modal__message mb-8 text-[0.95rem] leading-relaxed text-hp-text-muted">Operation completed successfully!</p>
             <div class="guest-modal__actions flex justify-center gap-3">
                 <button type="button" class="guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark" id="successModalClose">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESCHEDULE REQUESTS LIST MODAL -->
+    <div class="guest-modal fixed inset-0 z-[1300] hidden items-center justify-center is-open:flex" style="z-index: 1300 !important;" id="reschedRequestsModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-resched-requests-modal="true"></div>
+        <div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl mx-3 sm:mx-6 my-auto" role="dialog" aria-modal="true" aria-labelledby="reschedRequestsModalTitle">
+            <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/50 dark:bg-white/[0.02]">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <i class="bi bi-calendar2-range text-lg text-emerald-800 dark:text-emerald-400"></i>
+                        <h3 id="reschedRequestsModalTitle" class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Reschedule Requests</h3>
+                    </div>
+                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Manage guest date change requests dispatched via single-use SMS links</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="refreshReschedRequestsBtn" class="cursor-pointer h-8 px-3 rounded-xl border border-gray-300/80 bg-white/80 hover:bg-gray-100 text-gray-700 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-colors">
+                        <i class="bi bi-arrow-clockwise text-xs"></i>
+                        <span>Refresh</span>
+                    </button>
+                    <button type="button" class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-resched-requests-modal="true" aria-label="Close modal">
+                        <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Filter Tabs -->
+            <div class="shrink-0 px-6 py-2.5 border-b border-[rgba(13,44,29,0.08)] dark:border-white/5 bg-white/30 dark:bg-white/[0.01] flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                <button type="button" class="resched-tab-btn is-active cursor-pointer px-3 py-1 rounded-xl text-xs font-bold transition-all bg-hp-green text-white shadow-xs shrink-0" data-resched-tab="all">
+                    All (<span id="reschedCountAll">0</span>)
+                </button>
+                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="submitted">
+                    Awaiting Action (<span id="reschedCountSubmitted">0</span>)
+                </button>
+                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="pending">
+                    Link Sent / Pending (<span id="reschedCountPending">0</span>)
+                </button>
+                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="approved">
+                    Approved (<span id="reschedCountApproved">0</span>)
+                </button>
+                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="declined">
+                    Declined (<span id="reschedCountDeclined">0</span>)
+                </button>
+            </div>
+
+            <!-- Table / Request list -->
+            <div class="flex-1 min-h-[280px] overflow-y-auto custom-scrollbar p-5 sm:p-6">
+                <div id="reschedRequestsList" class="space-y-3">
+                    <div class="py-12 text-center text-hp-text-muted text-xs">
+                        <i class="bi bi-arrow-repeat animate-spin text-xl text-hp-green block mb-2"></i>
+                        Loading reschedule requests...
+                    </div>
+                </div>
+            </div>
+
+            <div class="shrink-0 flex items-center justify-between px-6 py-3 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/50 dark:bg-white/[0.02]">
+                <div class="text-xs text-hp-text-muted">
+                    Showing <span id="reschedRequestsTotalShowing" class="font-bold text-hp-text">0</span> request(s)
+                </div>
+                <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2 text-xs font-semibold text-hp-text hover:bg-white dark:hover:bg-white/15" data-close-resched-requests-modal="true">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEND RESCHEDULE REQUEST SMS MODAL (TRIGGERED FROM RESERVATION DETAIL) -->
+    <div class="guest-modal fixed inset-0 z-[1350] hidden items-center justify-center is-open:flex" style="z-index: 1350 !important;" id="requestReschedModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-request-resched-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[540px] max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-[#1a1e1c] border border-glass-border shadow-2xl mx-3 sm:mx-4 my-auto" role="dialog" aria-modal="true" aria-labelledby="requestReschedModalTitle">
+            <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream dark:bg-white/[0.02]">
+                <div>
+                    <h3 id="requestReschedModalTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Send Reschedule Link (SMS)</h3>
+                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Send a temporary 24-hour single-use link for guest to choose a new date</p>
+                </div>
+                <button type="button" class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-request-resched-modal="true" aria-label="Close modal">
+                    <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+                </button>
+            </div>
+
+            <form id="sendReschedSmsForm" class="flex flex-col flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 space-y-4">
+                <input type="hidden" id="sendReschedReservationId" value="">
+
+                <!-- Booker & Reservation Card -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+                    <div>
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-slate-400 block">Guest / Booker</span>
+                        <div class="font-bold text-slate-900 dark:text-white text-sm" id="sendReschedBookerName">—</div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 font-mono font-bold text-xs" id="sendReschedIdBadge">#—</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                        <span class="text-slate-400 block text-[0.68rem] font-medium uppercase">Current Date</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 text-xs" id="sendReschedCurrentDate">—</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                        <span class="text-slate-400 block text-[0.68rem] font-medium uppercase">Session</span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 text-xs" id="sendReschedSession">—</span>
+                    </div>
+                </div>
+
+                <!-- Recipient Mobile -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="sendReschedPhone" class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                            Recipient Mobile Number:
+                        </label>
+                        <span class="text-[0.68rem] text-slate-400 font-medium">Philippine Mobile (starts with 09)</span>
+                    </div>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-3 flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400 select-none">
+                            <i class="bi bi-phone"></i>
+                        </span>
+                        <input type="text" id="sendReschedPhone" maxlength="13" class="w-full pl-8 pr-3.5 py-2 text-xs font-mono font-medium rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none" placeholder="09XXXXXXXXX">
+                    </div>
+                    <p class="text-[0.68rem] text-slate-400 mt-1">
+                        Must be an 11-digit Philippine mobile number starting with <strong class="text-emerald-700 dark:text-emerald-400">09</strong> (e.g. 09123456789).
+                    </p>
+                </div>
+
+                <!-- Message Textarea -->
+                <div>
+                    <label for="sendReschedMessage" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Rescheduling Explanation / Message:
+                    </label>
+                    <textarea id="sendReschedMessage" rows="3" class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none leading-relaxed" placeholder="Enter message for guest..."></textarea>
+                    <p class="text-[0.68rem] text-slate-400 mt-1">
+                        The secure link placeholder <code class="bg-slate-100 dark:bg-white/10 px-1 py-0.5 rounded text-emerald-700 dark:text-emerald-400">{link}</code> will be replaced automatically.
+                    </p>
+                </div>
+
+                <!-- Prefix notification callout -->
+                <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
+                    <i class="bi bi-info-circle-fill text-amber-600 text-sm shrink-0 mt-0.5"></i>
+                    <div>
+                        <strong>Automatic SMS Prefix:</strong><br>
+                        The message will start with: <span class="font-mono font-bold text-slate-800 dark:text-white bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded" id="sendReschedPrefixPreview">hi Booker of reservation_#,</span> followed by your message containing the 24-hour single-use link.
+                    </div>
+                </div>
+
+                <div id="sendReschedErrorAlert" class="hidden p-3 rounded-xl bg-red-50 text-red-700 text-xs border border-red-200"></div>
+            </form>
+
+            <div class="shrink-0 flex items-center justify-end gap-3 px-6 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-slate-50 dark:bg-white/[0.02]">
+                <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-white dark:hover:bg-white/15" data-close-request-resched-modal="true">
+                    Cancel
+                </button>
+                <button type="button" id="submitSendReschedBtn" class="cursor-pointer rounded-xl border-0 bg-hp-green hover:bg-hp-green-dark px-5 py-2 text-xs font-bold text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-[0.98]">
+                    <i class="bi bi-send-fill text-xs"></i>
+                    <span>Send Reschedule SMS</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DECLINE RESCHEDULE REASON MODAL -->
+    <div class="guest-modal fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="declineReschedModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-decline-resched-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[420px] rounded-3xl bg-white dark:bg-[#1a1e1c] border border-glass-border shadow-2xl p-6 text-center mx-3 my-auto" role="dialog" aria-modal="true" aria-labelledby="declineReschedTitle">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="bi bi-x-octagon"></i>
+            </div>
+            <h4 id="declineReschedTitle" class="font-display font-bold text-lg text-slate-900 dark:text-white mb-1">Decline Reschedule Request</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                Are you sure you want to decline this reschedule request? An SMS notification will be sent to the guest.
+            </p>
+            <div class="text-left mb-4">
+                <label for="declineReschedReason" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Optional Reason / Note:</label>
+                <textarea id="declineReschedReason" rows="2" class="w-full p-2.5 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-rose-500 focus:outline-none" placeholder="e.g. Park fully booked on chosen date"></textarea>
+            </div>
+            <input type="hidden" id="declineReschedRequestId" value="">
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" class="cursor-pointer px-4 py-2 rounded-xl border border-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10" data-close-decline-resched-modal="true">Cancel</button>
+                <button type="button" id="confirmDeclineReschedBtn" class="cursor-pointer px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm">Yes, Decline</button>
             </div>
         </div>
     </div>

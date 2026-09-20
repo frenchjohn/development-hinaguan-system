@@ -64,4 +64,9 @@ class Reservation extends Model
     {
         return $this->hasMany(ReservationCharge::class, 'reservation_id');
     }
+
+    public function rescheduleRequests()
+    {
+        return $this->hasMany(RescheduleRequest::class, 'reservation_id')->orderByDesc('id');
+    }
 }

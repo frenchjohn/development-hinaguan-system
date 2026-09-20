@@ -85,4 +85,79 @@ class PhilSmsServiceTest extends TestCase
                 && str_contains($data['message'], 'CONFIRMED');
         });
     }
+
+    public function test_it_formats_reschedule_approval_with_checkin_and_checkout_datetimes(): void
+    {
+        Http::fake([
+            'https://dashboard.philsms.com/api/v3/sms/send' => Http::response(['status' => 'success'], 200),
+        ]);
+
+        $reservation = Reservation::create([
+            'booker_name' => 'John Doe',
+            'phone' => '09930457138',
+            'email' => 'john@example.com',
+            'reservation_date' => '2026-10-07',
+            'end_date' => '2026-10-09',
+            'start_slot' => 'Nighttime',
+            'end_slot' => 'Nighttime',
+            'total_days' => 3,
+            'number_of_guests' => 2,
+            'total_amount' => 1500,
+            'amount_paid' => 1500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+            'status' => 'Pending',
+        ]);
+
+        $service = new PhilSmsService(apiToken: 'valid_token');
+        $result = $service->sendRescheduleApproval($reservation, 'Oct 07, 2026 at 6:00 PM', 'Oct 10, 2026 at 6:00 AM');
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            $data = $request->data();
+            return $data['recipient'] === '639930457138'
+                && str_contains($data['message'], 'APPROVED')
+                && str_contains($data['message'], 'Check-in: Oct 07, 2026 at 6:00 PM')
+                && str_contains($data['message'], 'Check-out: Oct 10, 2026 at 6:00 AM');
+        });
+    }
+
+    public function test_it_formats_reschedule_declined_message(): void
+    {
+        Http::fake([
+            'https://dashboard.philsms.com/api/v3/sms/send' => Http::response(['status' => 'success'], 200),
+        ]);
+
+        $reservation = Reservation::create([
+            'booker_name' => 'Jane Smith',
+            'phone' => '09930457138',
+            'email' => 'jane@example.com',
+            'reservation_date' => '2026-10-07',
+            'end_date' => '2026-10-07',
+            'start_slot' => 'Daytime',
+            'end_slot' => 'Daytime',
+            'total_days' => 1,
+            'number_of_guests' => 2,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+            'status' => 'Pending',
+        ]);
+
+        $service = new PhilSmsService(apiToken: 'valid_token');
+        $result = $service->sendRescheduleDeclined($reservation, 'Park fully booked');
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            $data = $request->data();
+            return $data['recipient'] === '639930457138'
+                && str_contains($data['message'], 'unfortunately your reschedule request')
+                && str_contains($data['message'], 'declined')
+                && str_contains($data['message'], 'wait for an update')
+                && str_contains($data['message'], 'Park fully booked');
+        });
+    }
 }

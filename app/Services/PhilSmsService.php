@@ -18,12 +18,42 @@ class PhilSmsService
     public function __construct(?string $apiToken = null, ?string $apiEndpoint = null, ?string $senderId = null)
     {
         $this->apiEndpoint = $apiEndpoint ?? (string) config('philsms.api_endpoint', 'https://dashboard.philsms.com/api/v3/');
-        $this->apiToken = $apiToken ?? (string) config('philsms.api_token', '');
+        $rawToken = $apiToken ?? (string) config('philsms.api_token', '');
+        $this->apiToken = rtrim(trim($rawToken, "\"' \t\n\r"), "_");
         $this->senderId = $senderId ?? (string) config('philsms.sender_id', 'PhilSMS');
     }
 
     /**
-     * Normalize Philippine phone numbers to 12-digit 639XXXXXXXXX format required by PhilSMS.
+     * Format a Philippine phone number for user-facing display (e.g. 09XXXXXXXXX).
+     */
+    public static function formatDisplayPhone(?string $phone): string
+    {
+        if (empty($phone)) {
+            return '—';
+        }
+
+        $digits = preg_replace('/\D/', '', $phone);
+
+        // If it starts with 639 and is 12 digits, convert to 09XXXXXXXXX
+        if (str_starts_with($digits, '639') && strlen($digits) === 12) {
+            return '09' . substr($digits, 3);
+        }
+
+        // If it starts with 9 and is 10 digits, convert to 09XXXXXXXXX
+        if (str_starts_with($digits, '9') && strlen($digits) === 10) {
+            return '0' . $digits;
+        }
+
+        // If it starts with 09 and is 11 digits, keep as is
+        if (str_starts_with($digits, '09') && strlen($digits) === 11) {
+            return $digits;
+        }
+
+        return $phone;
+    }
+
+    /**
+     * Normalize Philippine phone numbers to 12-digit 639XXXXXXXXX format required by PhilSMS API.
      */
     public static function formatRecipient(string $phone): string
     {
@@ -191,6 +221,98 @@ class PhilSmsService
                 $message = mb_substr($message, 0, 157) . '...';
             }
         }
+
+        return $this->sendSms($phone, $message);
+    }
+
+    /**
+     * Send reschedule request link SMS to the booker.
+     * Automatically prefixes message with: "hi bookername of reservation_id" then actual message.
+     *
+     * @param  Reservation  $reservation
+     * @param  string       $messageBody
+     * @param  string|null  $recipientPhone
+     * @return array{success: bool, message: string, error: ?string, data: ?array}
+     */
+    public function sendRescheduleLink(Reservation $reservation, string $messageBody, ?string $recipientPhone = null): array
+    {
+        $phone = $recipientPhone ?: ($reservation->phone ?? '');
+        if (empty(trim($phone))) {
+            return [
+                'success' => false,
+                'message' => 'No phone number provided for this reservation.',
+                'error' => 'NO_PHONE_NUMBER',
+                'data' => null,
+            ];
+        }
+
+        $bookerName = trim((string) $reservation->booker_name) ?: 'Guest';
+        $prefix = "hi {$bookerName} of reservation_{$reservation->id}, ";
+        $fullMessage = $prefix . trim($messageBody);
+
+        return $this->sendSms($phone, $fullMessage);
+    }
+
+    /**
+     * Send reschedule approval SMS to the booker.
+     *
+     * @param  Reservation  $reservation
+     * @param  string       $checkInText   Formatted check-in date & time (or full schedule text)
+     * @param  string|null  $checkOutText  Formatted check-out date & time
+     * @return array{success: bool, message: string, error: ?string, data: ?array}
+     */
+    public function sendRescheduleApproval(Reservation $reservation, string $checkInText, ?string $checkOutText = null): array
+    {
+        $phone = $reservation->phone ?? '';
+        if (empty(trim($phone))) {
+            return [
+                'success' => false,
+                'message' => 'No phone number provided for this reservation.',
+                'error' => 'NO_PHONE_NUMBER',
+                'data' => null,
+            ];
+        }
+
+        $parkSettings = ParkSetting::first();
+        $parkContact = $parkSettings->contact_number ?? '0917 861 8383';
+        $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
+
+        if (!empty($checkOutText)) {
+            $scheduleText = "Check-in: {$checkInText}, Check-out: {$checkOutText}";
+        } else {
+            $scheduleText = $checkInText;
+        }
+
+        $message = "Hinaguan Nature Park: Hi {$firstName}! Your reschedule request for Reservation #{$reservation->id} has been APPROVED. Your new schedule is: {$scheduleText}. See you there! Inquiries: {$parkContact}.";
+
+        return $this->sendSms($phone, $message);
+    }
+
+    /**
+     * Send reschedule declined SMS to the booker.
+     *
+     * @param  Reservation  $reservation
+     * @param  string|null  $reason
+     * @return array{success: bool, message: string, error: ?string, data: ?array}
+     */
+    public function sendRescheduleDeclined(Reservation $reservation, ?string $reason = null): array
+    {
+        $phone = $reservation->phone ?? '';
+        if (empty(trim($phone))) {
+            return [
+                'success' => false,
+                'message' => 'No phone number provided for this reservation.',
+                'error' => 'NO_PHONE_NUMBER',
+                'data' => null,
+            ];
+        }
+
+        $parkSettings = ParkSetting::first();
+        $parkContact = $parkSettings->contact_number ?? '0917 861 8383';
+        $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
+
+        $reasonText = !empty($reason) ? " Reason: {$reason}." : '';
+        $message = "Hinaguan Nature Park: Hi {$firstName}, unfortunately your reschedule request for Reservation #{$reservation->id} has been declined.{$reasonText} Please wait for an update or contact us at {$parkContact}.";
 
         return $this->sendSms($phone, $message);
     }

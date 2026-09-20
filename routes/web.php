@@ -1233,6 +1233,244 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
       ->header('Pragma', 'no-cache');
 })->name('reservation.availability.calendar');
 
+// ── Guest Temporary Rescheduling Portal ──────────────────────────────────────
+Route::get('/reservation/reschedule/{token}', function (string $token) use ($formatLocalDate) {
+    $parkSettings = \App\Models\ParkSetting::first();
+    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+
+    $requestRecord = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity'])
+        ->where('token', $token)
+        ->first();
+
+    if (! $requestRecord) {
+        return response()->view('guest.reschedule', [
+            'state' => 'invalid',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => null,
+            'reservation' => null,
+        ], 404);
+    }
+
+    if ($requestRecord->isUsed() || in_array($requestRecord->status, ['submitted', 'approved', 'declined'], true)) {
+        return response()->view('guest.reschedule', [
+            'state' => 'used',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    if ($requestRecord->isExpired()) {
+        if ($requestRecord->status === 'pending') {
+            $requestRecord->update(['status' => 'expired']);
+        }
+        return response()->view('guest.reschedule', [
+            'state' => 'expired',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    $reservation = $requestRecord->reservation;
+    if (! $reservation || in_array(strtolower((string) $reservation->status), ['cancelled', 'checked out'], true)) {
+        return response()->view('guest.reschedule', [
+            'state' => 'invalid',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $reservation,
+        ]);
+    }
+
+    return response()->view('guest.reschedule', [
+        'state' => 'active',
+        'parkContact' => $parkContact,
+        'rescheduleRequest' => $requestRecord,
+        'reservation' => $reservation,
+    ]);
+})->name('reservation.reschedule.guest');
+
+Route::get('/reservation/reschedule/{token}/availability', function (Request $request, string $token) use ($isAmenityRangeTaken, $formatLocalDate) {
+    $requestRecord = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity'])
+        ->where('token', $token)
+        ->first();
+
+    if (! $requestRecord || $requestRecord->isUsed() || $requestRecord->isExpired()) {
+        return response()->json(['success' => false, 'message' => 'Invalid or expired token.'], 403);
+    }
+
+    $reservation = $requestRecord->reservation;
+    if (! $reservation) {
+        return response()->json(['success' => false, 'message' => 'Reservation not found.'], 404);
+    }
+
+    $month = $request->query('month');
+    $year = $request->query('year');
+
+    if ($month !== null && $year !== null) {
+        $startDate = \Carbon\Carbon::createFromDate((int) $year, (int) $month + 1, 1)->startOfDay();
+        $numDays = $startDate->daysInMonth;
+    } else {
+        $startDate = \Carbon\Carbon::today()->startOfDay();
+        $numDays = 31;
+    }
+
+    $tomorrow = now()->addDay()->startOfDay();
+    $amenities = $reservation->reservationAmenities;
+    $stayDays = (int) ($reservation->total_days ?? 1);
+    if ($stayDays < 1) $stayDays = 1;
+
+    $origStartSlot = $reservation->start_slot ?? 'Daytime';
+    $origEndSlot = $reservation->end_slot ?? $origStartSlot;
+
+    $origStartDate = $requestRecord->original_date 
+        ? \Carbon\Carbon::parse($requestRecord->original_date)->toDateString() 
+        : ($formatLocalDate($reservation, 'reservation_date') ?: null);
+    $origEndDate = $origStartDate ? \Carbon\Carbon::parse($origStartDate)->addDays($stayDays - 1)->toDateString() : null;
+
+    $availability = [];
+
+    for ($i = 0; $i < $numDays; $i++) {
+        $currentDateObj = $startDate->copy()->addDays($i);
+        $dateStr = $currentDateObj->toDateString();
+
+        if ($currentDateObj->lessThan($tomorrow)) {
+            $availability[$dateStr] = false;
+            continue;
+        }
+
+        // Disable original scheduled dates so they cannot be picked again
+        if ($origStartDate && ($dateStr === $origStartDate || ($origEndDate && $dateStr >= $origStartDate && $dateStr <= $origEndDate))) {
+            $availability[$dateStr] = false;
+            continue;
+        }
+
+        $targetEndDate = $currentDateObj->copy()->addDays($stayDays - 1)->toDateString();
+        $isAvailable = true;
+
+        foreach ($amenities as $ra) {
+            $amenityId = (string) $ra->amenity_id;
+            if (empty($amenityId)) continue;
+
+            $sSlot = $ra->start_slot ?: $origStartSlot;
+            $eSlot = $ra->end_slot ?: $origEndSlot;
+
+            if ($isAmenityRangeTaken($amenityId, $dateStr, $targetEndDate, $sSlot, $eSlot, $reservation->id)) {
+                $isAvailable = false;
+                break;
+            }
+        }
+
+        $availability[$dateStr] = $isAvailable;
+    }
+
+    return response()->json([
+        'success' => true,
+        'availability' => $availability,
+    ]);
+})->name('reservation.reschedule.guest.availability');
+
+Route::post('/reservation/reschedule/{token}', function (Request $request, string $token) use ($isAmenityRangeTaken, $formatLocalDate) {
+    $requestRecord = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity'])
+        ->where('token', $token)
+        ->first();
+
+    $parkSettings = \App\Models\ParkSetting::first();
+    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+
+    if (! $requestRecord) {
+        return response()->view('guest.reschedule', [
+            'state' => 'invalid',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => null,
+            'reservation' => null,
+        ], 404);
+    }
+
+    if ($requestRecord->isUsed() || in_array($requestRecord->status, ['submitted', 'approved', 'declined'], true)) {
+        return response()->view('guest.reschedule', [
+            'state' => 'used',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    if ($requestRecord->isExpired()) {
+        $requestRecord->update(['status' => 'expired']);
+        return response()->view('guest.reschedule', [
+            'state' => 'expired',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    $validated = $request->validate([
+        'requested_date' => 'required|date|after:today',
+    ]);
+
+    $reservation = $requestRecord->reservation;
+    $newStartDate = \Carbon\Carbon::parse($validated['requested_date'])->toDateString();
+    $stayDays = (int) ($reservation->total_days ?? 1);
+    if ($stayDays < 1) $stayDays = 1;
+    $newEndDate = \Carbon\Carbon::parse($newStartDate)->addDays($stayDays - 1)->toDateString();
+
+    $origStartSlot = $reservation->start_slot ?? 'Daytime';
+    $origEndSlot = $reservation->end_slot ?? $origStartSlot;
+
+    $origStartDate = $requestRecord->original_date 
+        ? \Carbon\Carbon::parse($requestRecord->original_date)->toDateString() 
+        : ($formatLocalDate($reservation, 'reservation_date') ?: null);
+    $origEndDate = $origStartDate ? \Carbon\Carbon::parse($origStartDate)->addDays($stayDays - 1)->toDateString() : null;
+
+    if ($origStartDate && ($newStartDate === $origStartDate || ($origEndDate && $newStartDate >= $origStartDate && $newStartDate <= $origEndDate))) {
+        return back()->withErrors(['requested_date' => 'You cannot select your current original scheduled date. Please choose a different date.']);
+    }
+
+    // Server-side availability validation
+    foreach ($reservation->reservationAmenities as $ra) {
+        $amenityId = (string) $ra->amenity_id;
+        if (empty($amenityId)) continue;
+
+        $sSlot = $ra->start_slot ?: $origStartSlot;
+        $eSlot = $ra->end_slot ?: $origEndSlot;
+
+        if ($isAmenityRangeTaken($amenityId, $newStartDate, $newEndDate, $sSlot, $eSlot, $reservation->id)) {
+            return back()->withErrors(['requested_date' => 'Selected date is no longer available. Please choose a different date.']);
+        }
+    }
+
+    // Invalidate token immediately and mark submitted
+    $requestRecord->update([
+        'requested_date' => $newStartDate,
+        'status' => 'submitted',
+        'used_at' => now(),
+    ]);
+
+    // Record activity log
+    \App\Models\ActivityLog::log(
+        activityType: 'reservation_reschedule_submitted',
+        title: 'Reschedule Date Submitted by Guest',
+        description: "Guest {$reservation->booker_name} requested new date: {$newStartDate} (original: {$requestRecord->original_date})",
+        reservationId: $reservation->id,
+        actorName: $reservation->booker_name ?? 'Guest',
+        actorRole: 'guest',
+        metadata: [
+            'reschedule_request_id' => $requestRecord->id,
+            'original_date' => $requestRecord->original_date,
+            'requested_date' => $newStartDate,
+        ]
+    );
+
+    return response()->view('guest.reschedule', [
+        'state' => 'submitted_success',
+        'parkContact' => $parkContact,
+        'rescheduleRequest' => $requestRecord,
+        'reservation' => $reservation,
+    ]);
+})->name('reservation.reschedule.guest.submit');
+
 Route::get('/reservation', function (WeatherService $weather) {
     $amenities = Amenity::with('benefits')
         ->where('status', true)
@@ -8094,6 +8332,378 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ],
         ]);
     })->name('reservations.update-status');
+
+    // ── Staff Reschedule Requests Management ─────────────────────────────────
+    Route::post('/reservations/{reservation}/send-reschedule-request', function (Request $request, Reservation $reservation) use ($formatLocalDate) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'message' => 'nullable|string|max:500',
+            'phone' => 'nullable|string|max:30',
+        ]);
+
+        $statusRaw = strtolower(trim((string) $reservation->status));
+        if (in_array($statusRaw, ['cancelled', 'checked out', 'no show'], true) || ! empty($reservation->check_in)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot reschedule a reservation that is already cancelled, no-show, or checked in.',
+            ], 422);
+        }
+
+        $recipientPhone = trim((string) ($request->input('phone') ?: $reservation->phone));
+        if (empty($recipientPhone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booker does not have a phone number on file. Please specify a phone number.',
+            ], 422);
+        }
+
+        // Expire any existing pending requests for this reservation
+        \App\Models\RescheduleRequest::where('reservation_id', $reservation->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'expired']);
+
+        $token = \Illuminate\Support\Str::random(48);
+        $rescheduleUrl = url('/reservation/reschedule/' . $token);
+        $expiresAt = now()->addHours(24);
+
+        $inputMsg = trim((string) $request->input('message'));
+        if (empty($inputMsg)) {
+            $actualMessage = "Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
+        } else {
+            if (str_contains($inputMsg, '{link}')) {
+                $actualMessage = str_replace('{link}', $rescheduleUrl, $inputMsg);
+            } elseif (! str_contains($inputMsg, $rescheduleUrl)) {
+                $actualMessage = $inputMsg . " Reschedule link: " . $rescheduleUrl . " (valid for 24 hours).";
+            } else {
+                $actualMessage = $inputMsg;
+            }
+        }
+
+        $origDate = $formatLocalDate($reservation, 'reservation_date')
+            ?: ($reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->toDateString() : now()->toDateString());
+
+        $reschedReq = \App\Models\RescheduleRequest::create([
+            'reservation_id' => $reservation->id,
+            'token' => $token,
+            'original_date' => $origDate,
+            'status' => 'pending',
+            'expires_at' => $expiresAt,
+            'reason' => $actualMessage,
+        ]);
+
+        $philSms = app(\App\Services\PhilSmsService::class);
+        $smsResult = $philSms->sendRescheduleLink($reservation, $actualMessage, $recipientPhone);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $displayPhone = \App\Services\PhilSmsService::formatDisplayPhone($recipientPhone);
+
+        ActivityLog::log(
+            activityType: 'reservation_reschedule_link_sent',
+            title: 'Reschedule Link Sent via SMS',
+            description: "Rescheduling link sent to {$reservation->booker_name} ({$displayPhone}) for Res #{$reservation->id} by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'reschedule_request_id' => $reschedReq->id,
+                'recipient_phone' => $recipientPhone,
+                'recipient_phone_display' => $displayPhone,
+                'sms_success' => $smsResult['success'] ?? false,
+                'sms_error' => $smsResult['error'] ?? null,
+            ]
+        );
+
+        if (! ($smsResult['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reschedule link was generated, but PhilSMS failed to deliver SMS: ' . ($smsResult['message'] ?? 'Unknown error'),
+                'token' => $token,
+                'reschedule_url' => $rescheduleUrl,
+                'sms_result' => $smsResult,
+                'request_id' => $reschedReq->id,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Temporary rescheduling link generated and SMS sent to {$displayPhone}!",
+            'token' => $token,
+            'reschedule_url' => $rescheduleUrl,
+            'sms_result' => $smsResult,
+            'request_id' => $reschedReq->id,
+        ]);
+    })->name('reservations.send-reschedule-request');
+
+    Route::get('/reschedule-requests', function (Request $request) use ($formatLocalDate) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Auto-expire overdue pending requests
+        \App\Models\RescheduleRequest::where('status', 'pending')
+            ->where('expires_at', '<', now())
+            ->update(['status' => 'expired']);
+
+        $status = $request->query('status');
+        $query = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity', 'approver'])
+            ->orderByDesc('created_at');
+
+        if (! empty($status) && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $allRequests = $query->get();
+        $counts = [
+            'all' => \App\Models\RescheduleRequest::count(),
+            'submitted' => \App\Models\RescheduleRequest::where('status', 'submitted')->count(),
+            'pending' => \App\Models\RescheduleRequest::where('status', 'pending')->where('expires_at', '>=', now())->count(),
+            'approved' => \App\Models\RescheduleRequest::where('status', 'approved')->count(),
+            'declined' => \App\Models\RescheduleRequest::where('status', 'declined')->count(),
+        ];
+
+        $items = $allRequests->map(function ($req) use ($formatLocalDate) {
+            $res = $req->reservation;
+            $stayDays = (int) ($res?->total_days ?? 1);
+            if ($stayDays < 1) $stayDays = 1;
+
+            $slot = $res?->start_slot ?? 'Daytime';
+
+            $origStart = $req->original_date ? \Carbon\Carbon::parse($req->original_date)->toDateString() : null;
+            $origEnd = $origStart && $stayDays > 1 ? \Carbon\Carbon::parse($origStart)->addDays($stayDays - 1)->toDateString() : $origStart;
+
+            $reqStart = $req->requested_date ? \Carbon\Carbon::parse($req->requested_date)->toDateString() : null;
+            $reqEnd = $reqStart && $stayDays > 1 ? \Carbon\Carbon::parse($reqStart)->addDays($stayDays - 1)->toDateString() : $reqStart;
+
+            $origFormatted = $origStart ? \Carbon\Carbon::parse($origStart)->format('M d, Y') : '—';
+            if ($origStart && $stayDays > 1) {
+                $origFormatted .= ' – ' . \Carbon\Carbon::parse($origEnd)->format('M d, Y') . " ({$stayDays}D, {$slot})";
+            } elseif ($origStart) {
+                $origFormatted .= " ({$slot})";
+            }
+
+            $reqFormatted = $reqStart ? \Carbon\Carbon::parse($reqStart)->format('M d, Y') : '—';
+            if ($reqStart && $stayDays > 1) {
+                $reqFormatted .= ' – ' . \Carbon\Carbon::parse($reqEnd)->format('M d, Y') . " ({$stayDays}D, {$slot})";
+            } elseif ($reqStart) {
+                $reqFormatted .= " ({$slot})";
+            }
+
+            return [
+                'id' => $req->id,
+                'reservation_id' => $req->reservation_id,
+                'booker_name' => $res?->booker_name ?? 'Guest',
+                'phone' => \App\Services\PhilSmsService::formatDisplayPhone($res?->phone),
+                'phone_raw' => $res?->phone ?? '',
+                'total_days' => $stayDays,
+                'start_slot' => $slot,
+                'original_date' => $origFormatted,
+                'original_date_raw' => $origStart,
+                'requested_date' => $reqFormatted,
+                'requested_date_raw' => $reqStart,
+                'requested_end_date_raw' => $reqEnd,
+                'status' => $req->status,
+                'reason' => $req->reason,
+                'decline_reason' => $req->decline_reason,
+                'expires_at' => $req->expires_at ? $req->expires_at->format('M d, Y g:i A') : '—',
+                'is_expired' => $req->isExpired(),
+                'used_at' => $req->used_at ? $req->used_at->format('M d, Y g:i A') : null,
+                'created_at' => $req->created_at ? $req->created_at->format('M d, Y g:i A') : '—',
+                'created_at_human' => $req->created_at ? $req->created_at->diffForHumans() : '',
+                'submitted_at_human' => $req->used_at ? $req->used_at->diffForHumans() : null,
+                'approved_at' => $req->approved_at ? $req->approved_at->format('M d, Y g:i A') : null,
+                'approver_name' => $req->approver?->name ?? 'Staff',
+                'amenities' => $res?->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->values()->all() ?? [],
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'requests' => $items,
+            'counts' => $counts,
+            'submitted_count' => $counts['submitted'],
+            'total_count' => $counts['all'],
+        ]);
+    })->name('reschedule-requests.index');
+
+    Route::post('/reschedule-requests/{rescheduleRequest}/approve', function (Request $request, \App\Models\RescheduleRequest $rescheduleRequest) use ($isAmenityRangeTaken, $formatLocalDate, $computeReservationCheckoutAt) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($rescheduleRequest->status !== 'submitted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only submitted reschedule requests can be approved.',
+            ], 422);
+        }
+
+        $reservation = $rescheduleRequest->reservation()->with(['reservationAmenities.amenity'])->first();
+        if (! $reservation) {
+            return response()->json(['success' => false, 'message' => 'Reservation not found.'], 404);
+        }
+
+        $newStartDate = $rescheduleRequest->requested_date;
+        if (empty($newStartDate)) {
+            return response()->json(['success' => false, 'message' => 'No requested date found on this request.'], 422);
+        }
+
+        $origStartDate = $rescheduleRequest->original_date ?: $formatLocalDate($reservation, 'reservation_date');
+        $daysDiff = 0;
+        if ($origStartDate && $newStartDate) {
+            $daysDiff = (int) round(\Carbon\Carbon::parse($origStartDate)->diffInDays(\Carbon\Carbon::parse($newStartDate), false));
+        }
+
+        $stayDays = (int) ($reservation->total_days ?? 1);
+        if ($stayDays < 1) $stayDays = 1;
+        $newEndDate = \Carbon\Carbon::parse($newStartDate)->addDays($stayDays - 1)->toDateString();
+
+        $sSlot = $reservation->start_slot ?? 'Daytime';
+        $eSlot = $reservation->end_slot ?? $sSlot;
+
+        // Final availability validation
+        foreach ($reservation->reservationAmenities as $ra) {
+            $amenityId = (string) $ra->amenity_id;
+            if (empty($amenityId)) continue;
+
+            $raStart = $ra->start_date ? \Carbon\Carbon::parse($ra->start_date)->addDays($daysDiff)->toDateString() : $newStartDate;
+            $raEnd = $ra->end_date ? \Carbon\Carbon::parse($ra->end_date)->addDays($daysDiff)->toDateString() : $newEndDate;
+            $raSSlot = $ra->start_slot ?: $sSlot;
+            $raESlot = $ra->end_slot ?: $eSlot;
+
+            if ($isAmenityRangeTaken($amenityId, $raStart, $raEnd, $raSSlot, $raESlot, $reservation->id)) {
+                $name = $ra->amenity?->amenities_name ?? 'An amenity';
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot approve reschedule: {$name} is no longer available on {$raStart} to {$raEnd}.",
+                ], 409);
+            }
+        }
+
+        // Update reservation dates
+        $reservation->reservation_date = $newStartDate;
+        $reservation->end_date = $newEndDate;
+        $reservation->save();
+
+        // Update reservation amenities
+        foreach ($reservation->reservationAmenities as $ra) {
+            $raStart = $ra->start_date ? \Carbon\Carbon::parse($ra->start_date)->addDays($daysDiff)->toDateString() : $newStartDate;
+            $raEnd = $ra->end_date ? \Carbon\Carbon::parse($ra->end_date)->addDays($daysDiff)->toDateString() : $newEndDate;
+            $ra->start_date = $raStart;
+            $ra->end_date = $raEnd;
+            $ra->remarks = "Rescheduled: {$raStart} ({$ra->start_slot}) to {$raEnd} ({$ra->end_slot})";
+            $ra->save();
+        }
+
+        // Update reschedule request
+        $rescheduleRequest->update([
+            'status' => 'approved',
+            'approved_by' => $user['id'],
+            'approved_at' => now(),
+        ]);
+
+        // Send approval SMS confirmation via PhilSMS
+        $parkSettings = \App\Models\ParkSetting::first();
+        $daytimeStart = $parkSettings?->daytime_start ?? '08:00';
+        $daytimeEnd = $parkSettings?->daytime_end ?? '18:00';
+        $nighttimeStart = $parkSettings?->nighttime_start ?? '18:00';
+        $nighttimeEnd = $parkSettings?->nighttime_end ?? '06:00';
+
+        $cleanStartSlot = str_contains($sSlot, 'Night') ? 'Nighttime' : 'Daytime';
+        $cleanEndSlot = str_contains($eSlot, 'Night') ? 'Nighttime' : 'Daytime';
+
+        $checkInTime = \Carbon\Carbon::parse($cleanStartSlot === 'Nighttime' ? $nighttimeStart : $daytimeStart)->format('g:i A');
+        $checkOutTime = \Carbon\Carbon::parse($cleanEndSlot === 'Nighttime' ? $nighttimeEnd : $daytimeEnd)->format('g:i A');
+
+        $checkInDate = \Carbon\Carbon::parse($newStartDate)->format('M d, Y');
+        if ($cleanEndSlot === 'Nighttime') {
+            $checkOutDate = \Carbon\Carbon::parse($newEndDate)->addDay()->format('M d, Y');
+        } else {
+            $checkOutDate = \Carbon\Carbon::parse($newEndDate)->format('M d, Y');
+        }
+
+        $checkInText = "{$checkInDate} at {$checkInTime}";
+        $checkOutText = "{$checkOutDate} at {$checkOutTime}";
+
+        $philSms = app(\App\Services\PhilSmsService::class);
+        $smsResult = $philSms->sendRescheduleApproval($reservation, $checkInText, $checkOutText);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'reservation_reschedule_approved',
+            title: 'Reschedule Request Approved',
+            description: "Reschedule request for Res #{$reservation->id} ({$reservation->booker_name}) approved to {$newStartDate} by {$staffName}",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'reschedule_request_id' => $rescheduleRequest->id,
+                'old_date' => $origStartDate,
+                'new_date' => $newStartDate,
+                'check_in' => $checkInText,
+                'check_out' => $checkOutText,
+                'sms_success' => $smsResult['success'] ?? false,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "Reservation #{$reservation->id} successfully rescheduled! Check-in: {$checkInText}, Check-out: {$checkOutText}.",
+            'new_date' => $newStartDate,
+            'check_in' => $checkInText,
+            'check_out' => $checkOutText,
+            'reservation_id' => $reservation->id,
+        ]);
+    })->name('reschedule-requests.approve');
+
+    Route::post('/reschedule-requests/{rescheduleRequest}/decline', function (Request $request, \App\Models\RescheduleRequest $rescheduleRequest) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $declineReason = trim((string) $request->input('decline_reason', ''));
+
+        $rescheduleRequest->update([
+            'status' => 'declined',
+            'approved_by' => $user['id'],
+            'approved_at' => now(),
+            'decline_reason' => $declineReason ?: null,
+        ]);
+
+        $reservation = $rescheduleRequest->reservation;
+        if ($reservation) {
+            $philSms = app(\App\Services\PhilSmsService::class);
+            $philSms->sendRescheduleDeclined($reservation, $declineReason ?: null);
+        }
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            activityType: 'reservation_reschedule_declined',
+            title: 'Reschedule Request Declined',
+            description: "Reschedule request #{$rescheduleRequest->id} for Res #{$rescheduleRequest->reservation_id} declined by {$staffName}",
+            reservationId: $rescheduleRequest->reservation_id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: (string) ($user['id'] ?? ''),
+            metadata: [
+                'reschedule_request_id' => $rescheduleRequest->id,
+                'decline_reason' => $declineReason,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reschedule request has been declined and notification SMS sent to the guest.',
+        ]);
+    })->name('reschedule-requests.decline');
 
     Route::get('/reservations/refresh', function (Request $request) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
