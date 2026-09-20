@@ -136,48 +136,43 @@
                 {{-- UNIFIED EXECUTIVE SHIFT TOOLBAR & FILTER CONSOLE --}}
                 <div class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-md">
                     {{-- Row 1: Staff Identity & Primary Shift Actions --}}
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-5 border-b border-glass-border">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-glass-border">
                         {{-- Staff Identity Left Column --}}
-                        <div class="flex items-center gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1c5c3c] text-white shadow-md">
-                                <i class="bi bi-person-badge text-2xl"></i>
+                        <div class="min-w-0 space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h1 class="m-0 text-xl font-bold text-hp-text tracking-tight">{{ $staffName }}</h1>
+                                <span class="inline-flex items-center rounded-md bg-black/5 dark:bg-white/10 px-2 py-0.5 text-xs font-semibold text-hp-text-muted">
+                                    Staff ID #{{ $staffId }}
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 rounded-md {{ $currentSession === 'Daytime' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' }} px-2.5 py-0.5 text-xs font-semibold">
+                                    @if($currentSession === 'Daytime')
+                                        <i class="bi bi-sun-fill text-[0.7rem] text-amber-500"></i> Daytime Session (08:00 AM – 05:00 PM)
+                                    @else
+                                        <i class="bi bi-moon-stars-fill text-[0.7rem] text-indigo-400"></i> Overnight Session (05:00 PM – 08:00 AM)
+                                    @endif
+                                </span>
                             </div>
-                            <div class="space-y-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h1 class="m-0 text-xl md:text-2xl font-display font-bold text-hp-text tracking-tight">{{ $staffName }}</h1>
-                                    <span class="inline-flex items-center gap-1 rounded-md bg-[#1c5c3c]/15 px-2.5 py-0.5 text-xs font-semibold text-[#1c5c3c] dark:text-[#6ab88c]">
-                                        <i class="bi bi-shield-check"></i> Staff ID #{{ $staffId }}
-                                    </span>
-                                    <span class="inline-flex items-center gap-1.5 rounded-md {{ $currentSession === 'Daytime' ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300' }} px-2.5 py-0.5 text-xs font-semibold">
-                                        @if($currentSession === 'Daytime')
-                                            <i class="bi bi-sun-fill text-amber-500"></i> Daytime Session (08:00 AM – 05:00 PM)
-                                        @else
-                                            <i class="bi bi-moon-stars-fill text-indigo-400"></i> Overnight Session (05:00 PM – 08:00 AM)
-                                        @endif
-                                    </span>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
-                                    <span class="inline-flex items-center gap-1">
-                                        <i class="bi bi-calendar3"></i> {{ now()->format('l, F j, Y') }}
-                                    </span>
-                                    <span>•</span>
-                                    <span id="filterViewingText">Viewing: <strong class="text-hp-text">{{ ucwords(str_replace('_', ' ', $preset)) }}</strong> ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} → {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</span>
-                                </div>
+                            <div class="flex flex-wrap items-center gap-2 text-xs text-hp-text-muted">
+                                <span class="inline-flex items-center gap-1">
+                                    <i class="bi bi-calendar3"></i> {{ now()->format('l, F j, Y') }}
+                                </span>
+                                <span>&bull;</span>
+                                <span id="filterViewingText">Viewing: <strong class="text-hp-text font-semibold">{{ ucwords(str_replace('_', ' ', $preset)) }}</strong> ({{ $filterFrom ? \Carbon\Carbon::parse($filterFrom)->format('M d, Y') : 'Start' }} &rarr; {{ $filterTo ? \Carbon\Carbon::parse($filterTo)->format('M d, Y') : 'End' }})</span>
                             </div>
                         </div>
 
                         {{-- Action Buttons Right Column --}}
-                        <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
                             {{-- Shift Activity Ledger Modal Trigger --}}
-                            <button type="button" id="openLedgerBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-glass-border bg-white/70 dark:bg-black/20 hover:bg-glass-hover px-4 py-2.5 text-sm font-semibold text-hp-text shadow-sm transition-all duration-200">
-                                <i class="bi bi-journal-text text-base text-[#1c5c3c] dark:text-[#6ab88c]"></i>
+                            <button type="button" id="openLedgerBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-black/20 hover:bg-glass-hover px-3.5 py-2 text-xs font-bold text-hp-text shadow-xs transition-colors">
+                                <i class="bi bi-journal-text text-sm text-[#1c5c3c] dark:text-[#6ab88c]"></i>
                                 <span>Shift Activity Ledger</span>
-                                <span id="ledgerCountBadge" class="rounded-full bg-[#1c5c3c]/15 text-[#1c5c3c] dark:text-[#6ab88c] px-2.5 py-0.5 text-xs font-bold">{{ $ledgerRows->count() }}</span>
+                                <span id="ledgerCountBadge" class="rounded-full bg-[#1c5c3c]/10 dark:bg-emerald-500/20 text-[#1c5c3c] dark:text-[#6ab88c] px-2 py-0.5 text-[0.7rem] font-bold">{{ $ledgerRows->count() }}</span>
                             </button>
 
                             {{-- Handover Slip Modal Trigger --}}
-                            <button type="button" id="openHandoverModalBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] hover:bg-[#14402b] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200">
-                                <i class="bi bi-printer-fill text-base"></i>
+                            <button type="button" id="openHandoverModalBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1c5c3c] hover:bg-[#15462e] px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors">
+                                <i class="bi bi-printer text-sm"></i>
                                 <span>Print Handover Slip</span>
                             </button>
                         </div>

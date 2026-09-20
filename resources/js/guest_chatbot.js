@@ -145,6 +145,57 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState(isOpen, messages, selectedModel);
     });
 
+    // ---------------------------------------------------------
+    // AI Proactive Speech Bubble Pop-up (Homepage Greeting)
+    // ---------------------------------------------------------
+    const chatbotProactiveBubble = document.getElementById('chatbotProactiveBubble');
+    const proactiveCloseIcon = document.getElementById('proactiveCloseIcon');
+    const proactiveBubbleCard = document.getElementById('proactiveBubbleCard');
+    const storageKeyProactive = 'guest_chatbot_proactive_shown';
+    let proactiveTimer = null;
+
+    // Dismiss Proactive Speech Bubble with smooth exit animation
+    const dismissProactiveBubble = () => {
+        if (!chatbotProactiveBubble || chatbotProactiveBubble.hidden) return;
+        chatbotProactiveBubble.classList.add('is-hiding');
+        setTimeout(() => {
+            chatbotProactiveBubble.hidden = true;
+            chatbotProactiveBubble.classList.remove('is-hiding');
+        }, 280);
+    };
+
+    // Show Proactive Speech Bubble
+    const showProactiveBubble = () => {
+        if (!chatbotProactiveBubble || isOpen) return;
+        chatbotProactiveBubble.hidden = false;
+    };
+
+    proactiveCloseIcon?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dismissProactiveBubble();
+    });
+
+    proactiveBubbleCard?.addEventListener('click', (e) => {
+        if (e.target.closest('#proactiveCloseIcon')) return;
+        dismissProactiveBubble();
+        if (!isOpen) toggleChatbot();
+    });
+
+    // Only talk first once per session when arriving on the homepage after a 5s delay
+    const isHomepage = window.location.pathname === '/' || window.location.pathname === '' || !!document.getElementById('hpSiteHeader');
+    if (isHomepage && !sessionStorage.getItem(storageKeyProactive)) {
+        if (!isOpen) {
+            proactiveTimer = setTimeout(() => {
+                if (!isOpen && !sessionStorage.getItem(storageKeyProactive)) {
+                    sessionStorage.setItem(storageKeyProactive, 'true');
+                    showProactiveBubble();
+                }
+            }, 5000);
+        } else {
+            sessionStorage.setItem(storageKeyProactive, 'true');
+        }
+    }
+
     // Toggle chatbot window
     const toggleChatbot = () => {
         isOpen = !isOpen;
@@ -153,6 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
         chatbotToggle.setAttribute('aria-label', isOpen ? 'Close chatbot' : 'Open chatbot');
         
         if (isOpen) {
+            if (proactiveTimer) {
+                clearTimeout(proactiveTimer);
+                proactiveTimer = null;
+            }
+            sessionStorage.setItem(storageKeyProactive, 'true');
+            dismissProactiveBubble();
             chatbotInput.focus();
             // Scroll to bottom when opening
             setTimeout(() => {
@@ -228,8 +285,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close on escape key
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isOpen) {
-            toggleChatbot();
+        if (e.key === 'Escape') {
+            if (chatbotProactiveBubble && !chatbotProactiveBubble.hidden) {
+                dismissProactiveBubble();
+            }
+            if (isOpen) {
+                toggleChatbot();
+            }
         }
     });
 

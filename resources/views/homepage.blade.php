@@ -513,6 +513,14 @@
                     <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">On-site refreshment points and grill areas so you can stay energized throughout your adventure.</p>
                 </div>
             </div>
+
+            {{-- View Amenities Button (leads to guest amenities page) --}}
+            <div class="mt-12 text-center">
+                <a href="{{ route('amenities') }}" class="inline-flex items-center justify-center gap-2.5 bg-[#1b5e3a] hover:bg-[#14492c] text-white font-extrabold text-xs sm:text-sm tracking-wider uppercase px-8 py-3.5 rounded-full shadow-[0_4px_16px_rgba(27,94,58,0.25)] hover:shadow-[0_6px_20px_rgba(27,94,58,0.35)] transition-all transform hover:scale-105 active:scale-95 no-underline group">
+                    <span>View Amenities</span>
+                    <i class="bi bi-arrow-right text-base text-[#a3e635] transition-transform duration-300 group-hover:translate-x-1"></i>
+                </a>
+            </div>
         </div>
     </section>
 

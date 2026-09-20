@@ -1,7 +1,7 @@
 // Store per-amenity pricing type choices
 const amenityPricingTypes = {};
 
-document.addEventListener('DOMContentLoaded', () => {
+function initReservationPage() {
 
     const siteHeader = document.getElementById('rpSiteHeader');
 
@@ -165,7 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const hasAcceptedTerms = () => {
         try {
-            return localStorage.getItem(TERMS_STORAGE_KEY) === '1' || sessionStorage.getItem(TERMS_STORAGE_KEY) === '1';
+            // Remove legacy permanent localStorage flag so terms appear for first-time session visits
+            localStorage.removeItem(TERMS_STORAGE_KEY);
+            return sessionStorage.getItem(TERMS_STORAGE_KEY) === '1';
         } catch (e) {
             return false;
         }
@@ -173,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const markTermsAccepted = () => {
         try {
-            localStorage.setItem(TERMS_STORAGE_KEY, '1');
             sessionStorage.setItem(TERMS_STORAGE_KEY, '1');
         } catch (e) {}
     };
@@ -186,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (accepted) {
             if (agreeTermsCheckbox) agreeTermsCheckbox.checked = true;
             if (proceedTermsBtn) proceedTermsBtn.disabled = false;
+        } else {
+            if (agreeTermsCheckbox) agreeTermsCheckbox.checked = false;
+            if (proceedTermsBtn) proceedTermsBtn.disabled = true;
         }
     };
 
@@ -205,9 +209,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (termsPolicyModal) {
-        // Only open modal automatically if the guest has not yet agreed to the terms
+        // Automatically display terms modal on arrival if not yet accepted in this session
         if (!hasAcceptedTerms()) {
-            openTermsModal();
+            setTimeout(() => {
+                if (!hasAcceptedTerms()) {
+                    openTermsModal();
+                }
+            }, 80);
         } else {
             updateTermsModalUI();
         }
@@ -5205,11 +5213,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    if (successConfirmBtn) {
-        successConfirmBtn.addEventListener('click', handleSuccessConfirm);
-    }
+}
 
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initReservationPage);
+} else {
+    initReservationPage();
+}
 
 
 

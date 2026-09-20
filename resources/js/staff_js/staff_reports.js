@@ -3,7 +3,9 @@
  * Hinaguan Nature Park - Staff Portal
  */
 
-function initStaffReports() {
+window.AppPage = window.AppPage || {};
+
+window.AppPage['staff_reports'] = function () {
     // ------------------------------------------------------------
     // 1. COLLAPSIBLE CUSTOM DATE RANGE TOGGLE
     // ------------------------------------------------------------
@@ -183,17 +185,20 @@ function initStaffReports() {
             }
 
             // 12. Update dropdown selections and inputs from response doc
-            const newSessionSelect = doc.getElementById('sessionSelect');
-            if (newSessionSelect && sessionSelect) {
-                sessionSelect.value = newSessionSelect.value;
+            const curSession = document.getElementById('sessionSelect');
+            const newSession = doc.getElementById('sessionSelect');
+            if (newSession && curSession) {
+                curSession.value = newSession.value;
             }
-            const newActionSelect = doc.getElementById('actionSelect');
-            if (newActionSelect && actionSelect) {
-                actionSelect.value = newActionSelect.value;
+            const curAction = document.getElementById('actionSelect');
+            const newAction = doc.getElementById('actionSelect');
+            if (newAction && curAction) {
+                curAction.value = newAction.value;
             }
-            const newPresetInput = doc.getElementById('presetInput');
-            if (newPresetInput && presetInput) {
-                presetInput.value = newPresetInput.value;
+            const curPreset = document.getElementById('presetInput');
+            const newPreset = doc.getElementById('presetInput');
+            if (newPreset && curPreset) {
+                curPreset.value = newPreset.value;
             }
 
             // Refresh search rows in ledger modal
@@ -231,49 +236,6 @@ function initStaffReports() {
         applyFilters();
     });
 
-    // Delegated click handling for period pills and reset buttons
-    document.addEventListener('click', function (e) {
-        // Period pill click
-        const pill = e.target.closest('[data-preset]');
-        if (pill) {
-            e.preventDefault();
-            const targetPreset = pill.getAttribute('data-preset');
-            applyFilters(targetPreset);
-            return;
-        }
-
-        // Reset filters click
-        const resetBtn = e.target.closest('[data-reset-filter]');
-        if (resetBtn) {
-            e.preventDefault();
-            if (sessionSelect) sessionSelect.value = 'all';
-            if (actionSelect) actionSelect.value = 'all';
-            if (dateFrom) dateFrom.value = '';
-            if (dateTo) dateTo.value = '';
-            applyFilters('today');
-            return;
-        }
-
-        // Ledger Modal triggers (delegated to support dynamically swapped elements)
-        if (e.target.closest('#openLedgerBtn') || e.target.closest('.open-ledger-trigger')) {
-            e.preventDefault();
-            openLedgerModal();
-            return;
-        }
-
-        // Handover Modal triggers
-        if (e.target.closest('#openHandoverModalBtn') || e.target.closest('.open-handover-trigger')) {
-            e.preventDefault();
-            openHandoverModal();
-            return;
-        }
-    });
-
-    // Handle browser back/forward navigation
-    window.addEventListener('popstate', function () {
-        fetchAndSwapReports(window.location.href, false);
-    });
-
     // ------------------------------------------------------------
     // 3. SHIFT ACTIVITY & PAYMENT LEDGER MODAL
     // ------------------------------------------------------------
@@ -282,10 +244,11 @@ function initStaffReports() {
     const closeLedgerModalBtnFooter = document.getElementById('closeLedgerModalBtnFooter');
 
     const openLedgerModal = function () {
-        if (!ledgerModal) return;
-        ledgerModal.classList.remove('hidden');
-        ledgerModal.classList.add('flex');
-        ledgerModal.setAttribute('aria-hidden', 'false');
+        const m = document.getElementById('ledgerModal');
+        if (!m) return;
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        m.setAttribute('aria-hidden', 'false');
         const searchInput = document.getElementById('ledgerSearchInput');
         if (searchInput) {
             setTimeout(() => {
@@ -295,10 +258,11 @@ function initStaffReports() {
     };
 
     const closeLedgerModal = function () {
-        if (!ledgerModal) return;
-        ledgerModal.classList.add('hidden');
-        ledgerModal.classList.remove('flex');
-        ledgerModal.setAttribute('aria-hidden', 'true');
+        const m = document.getElementById('ledgerModal');
+        if (!m) return;
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.setAttribute('aria-hidden', 'true');
     };
 
     closeLedgerModalBtn?.addEventListener('click', closeLedgerModal);
@@ -382,17 +346,19 @@ function initStaffReports() {
     const printHandoverSlipBtn = document.getElementById('printHandoverSlipBtn');
 
     const openHandoverModal = function () {
-        if (!handoverModal) return;
-        handoverModal.classList.remove('hidden');
-        handoverModal.classList.add('flex');
-        handoverModal.setAttribute('aria-hidden', 'false');
+        const m = document.getElementById('handoverModal');
+        if (!m) return;
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        m.setAttribute('aria-hidden', 'false');
     };
 
     const closeHandoverModal = function () {
-        if (!handoverModal) return;
-        handoverModal.classList.add('hidden');
-        handoverModal.classList.remove('flex');
-        handoverModal.setAttribute('aria-hidden', 'true');
+        const m = document.getElementById('handoverModal');
+        if (!m) return;
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.setAttribute('aria-hidden', 'true');
     };
 
     closeHandoverModalBtn?.addEventListener('click', closeHandoverModal);
@@ -410,29 +376,99 @@ function initStaffReports() {
         window.print();
     });
 
-    // ------------------------------------------------------------
-    // 5. GLOBAL KEYBOARD SHORTCUTS
-    // ------------------------------------------------------------
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            if (ledgerModal && !ledgerModal.classList.contains('hidden')) {
-                closeLedgerModal();
-            }
-            if (handoverModal && !handoverModal.classList.contains('hidden')) {
-                closeHandoverModal();
-            }
-        }
-    });
-
     function escapeHtml(str) {
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     }
-}
+
+    // Expose controller methods for delegated global listeners
+    window.__staffReportsController = {
+        applyFilters,
+        openLedgerModal,
+        closeLedgerModal,
+        openHandoverModal,
+        closeHandoverModal,
+        fetchAndSwapReports,
+    };
+
+    // Attach document/window level listeners only once
+    if (!window.__staffReportsGlobalListenersAttached) {
+        window.__staffReportsGlobalListenersAttached = true;
+
+        // Delegated click handling for period pills, reset, and modal triggers
+        document.addEventListener('click', function (e) {
+            // Period pill click
+            const pill = e.target.closest('[data-preset]');
+            if (pill) {
+                e.preventDefault();
+                const targetPreset = pill.getAttribute('data-preset');
+                window.__staffReportsController?.applyFilters(targetPreset);
+                return;
+            }
+
+            // Reset filters click
+            const resetBtn = e.target.closest('[data-reset-filter]');
+            if (resetBtn) {
+                e.preventDefault();
+                const sSelect = document.getElementById('sessionSelect');
+                const aSelect = document.getElementById('actionSelect');
+                const dFrom = document.getElementById('dateFromInput');
+                const dTo = document.getElementById('dateToInput');
+                if (sSelect) sSelect.value = 'all';
+                if (aSelect) aSelect.value = 'all';
+                if (dFrom) dFrom.value = '';
+                if (dTo) dTo.value = '';
+                window.__staffReportsController?.applyFilters('today');
+                return;
+            }
+
+            // Ledger Modal triggers
+            if (e.target.closest('#openLedgerBtn') || e.target.closest('.open-ledger-trigger')) {
+                e.preventDefault();
+                window.__staffReportsController?.openLedgerModal();
+                return;
+            }
+
+            // Handover Modal triggers
+            if (e.target.closest('#openHandoverModalBtn') || e.target.closest('.open-handover-trigger')) {
+                e.preventDefault();
+                window.__staffReportsController?.openHandoverModal();
+                return;
+            }
+        });
+
+        // Browser back/forward navigation within reports page
+        window.addEventListener('popstate', function () {
+            if (window.location.pathname === '/staff/reports') {
+                window.__staffReportsController?.fetchAndSwapReports(window.location.href, false);
+            }
+        });
+
+        // Global Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const lm = document.getElementById('ledgerModal');
+                if (lm && !lm.classList.contains('hidden')) {
+                    window.__staffReportsController?.closeLedgerModal();
+                }
+                const hm = document.getElementById('handoverModal');
+                if (hm && !hm.classList.contains('hidden')) {
+                    window.__staffReportsController?.closeHandoverModal();
+                }
+            }
+        });
+    }
+};
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initStaffReports);
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof window.AppPage['staff_reports'] === 'function') {
+            window.AppPage['staff_reports']();
+        }
+    });
 } else {
-    initStaffReports();
+    if (typeof window.AppPage['staff_reports'] === 'function') {
+        window.AppPage['staff_reports']();
+    }
 }

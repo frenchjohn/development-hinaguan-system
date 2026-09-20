@@ -1,6 +1,19 @@
 <!-- Guest Chatbot Widget -->
 <div class="chatbot-widget" id="chatbotWidget">
 
+    <!-- Minimal AI Text Bubble Pop-up -->
+    <aside class="chatbot-proactive-bubble chatbot-proactive-bubble--simple" id="chatbotProactiveBubble" hidden aria-live="polite" role="dialog" aria-label="Chatbot Greeting">
+        <div class="chatbot-proactive-bubble__card chatbot-proactive-bubble__card--simple" id="proactiveBubbleCard" role="button" tabindex="0" title="Click to chat">
+            <span class="chatbot-proactive-bubble__simple-text">If you need help, just ask me! &#127807;</span>
+            <button type="button" class="chatbot-proactive-bubble__close-icon" id="proactiveCloseIcon" aria-label="Dismiss message" title="Dismiss">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="chatbot-proactive-bubble__tail" aria-hidden="true"></div>
+    </aside>
+
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open chatbot" aria-expanded="false">
         <span class="chatbot-toggle__label">Ask HinaguanBot</span>
         <svg class="chatbot-toggle__icon chatbot-toggle__icon--chat" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">

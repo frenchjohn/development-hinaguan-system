@@ -1262,6 +1262,51 @@
     border-bottom-color: rgba(245, 158, 11, 0.45);
 }
 
+/* ─────────────────────────── Simple Proactive Bubble (Guest Homepage) ─────────────────────────── */
+.chatbot-proactive-bubble--simple {
+    width: max-content;
+    max-width: min(20rem, calc(100vw - 3rem));
+    bottom: calc(100% + 0.85rem);
+}
+
+.chatbot-proactive-bubble__card--simple {
+    padding: 0.65rem 0.85rem 0.65rem 1.1rem;
+    border-radius: 9999px;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    background: linear-gradient(145deg, rgba(13, 44, 29, 0.98) 0%, rgba(6, 24, 16, 0.99) 100%);
+    border: 1.5px solid rgba(74, 222, 128, 0.4);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.chatbot-proactive-bubble__card--simple:hover {
+    transform: translateY(-2px);
+    border-color: rgba(74, 222, 128, 0.75);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(74, 222, 128, 0.25);
+}
+
+.chatbot-proactive-bubble__simple-text {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    user-select: none;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .chatbot-proactive-bubble__card--simple {
+        border-radius: 1.25rem;
+    }
+    .chatbot-proactive-bubble__simple-text {
+        white-space: normal;
+    }
+}
+
 /* ─────────────────────────── Delete Conversation Confirmation Modal ─────────────────────────── */
 .chatbot-modal-overlay {
     position: absolute;
