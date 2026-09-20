@@ -45,11 +45,11 @@
             <nav class="hidden lg:flex items-center gap-6 xl:gap-7 relative py-1" aria-label="Main Navigation" id="hpDesktopNav">
                 <a href="#about" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">About</a>
                 <a href="#activities" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Activities</a>
-                <a href="#gallery" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Gallery</a>
-                <a href="#rates" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Rates</a>
                 <a href="#amenities" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Amenities</a>
                 <a href="#events" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Events</a>
+                <a href="#rates" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Rates</a>
                 <a href="#reviews" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Reviews</a>
+                <a href="#gallery" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Gallery</a>
                 <a href="#directions" data-nav-link class="text-xs font-semibold uppercase tracking-wider text-white/80 hover:text-[#a3e635] transition-colors duration-200 py-1 relative">Directions</a>
             </nav>
 
@@ -83,11 +83,11 @@
             <div class="flex flex-col gap-4">
                 <a href="#about" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">About</a>
                 <a href="#activities" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Activities</a>
-                <a href="#gallery" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Gallery</a>
-                <a href="#rates" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Rates</a>
                 <a href="#amenities" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Amenities</a>
                 <a href="#events" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Events</a>
+                <a href="#rates" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Rates</a>
                 <a href="#reviews" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Reviews</a>
+                <a href="#gallery" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Gallery</a>
                 <a href="#directions" data-nav-link class="text-sm font-semibold uppercase tracking-wider text-white/90 hover:text-[#a3e635] py-2 border-b border-white/5 transition-all duration-300">Directions</a>
             </div>
         </div>
@@ -467,196 +467,7 @@
         </div>
     </section>
 
-    {{-- SECTION 4: GALLERY (Design 4: Gallery Page) --}}
-    <section class="bg-[#f7faf7] py-20 lg:py-28 relative overflow-hidden" id="gallery" data-section>
-        {{-- Botanical leaves corner graphics as seen in Design 4 --}}
-        <div class="absolute top-4 left-4 w-40 h-40 opacity-20 pointer-events-none text-emerald-800">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M10,90 Q40,40 90,10 M40,40 Q60,30 75,15 M30,55 Q50,45 65,35 M20,70 Q40,65 50,50"/>
-            </svg>
-        </div>
-        <div class="absolute top-4 right-4 w-40 h-40 opacity-20 pointer-events-none text-emerald-800 transform scale-x-[-1]">
-            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M10,90 Q40,40 90,10 M40,40 Q60,30 75,15 M30,55 Q50,45 65,35 M20,70 Q40,65 50,50"/>
-            </svg>
-        </div>
-
-        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-            {{-- Header (Our Gallery / Moments at Hinaguan) --}}
-            <div class="text-center max-w-2xl mx-auto mb-12">
-                <span class="text-xs font-bold tracking-[0.22em] text-[#1b5e3a] uppercase block mb-2">
-                    OUR GALLERY
-                </span>
-                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-[#0f2d1e] tracking-tight mb-3">
-                    Moments at Hinaguan
-                </h2>
-                <p class="text-gray-600 text-base sm:text-lg">
-                    Beautiful places, happy faces, and unforgettable memories.
-                </p>
-            </div>
-
-            {{-- Featured Photos Grid (7 feature images + 8th button to see more photos) --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-                @foreach ($featuredGalleryImages as $idx => $img)
-                    <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-emerald-950/10 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hp-gallery-item"
-                         data-gallery-src="{{ $img['url'] }}"
-                         data-gallery-index="{{ $idx }}"
-                         data-gallery-context="featured"
-                         role="button"
-                         tabindex="0"
-                         aria-label="View photo {{ $idx + 1 }}">
-                        <img src="{{ $img['url'] }}" alt="Hinaguan Nature Park Photo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none" loading="lazy">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3.5 sm:p-4">
-                            <span class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-emerald-950 flex items-center justify-center shadow-md transform group-hover:scale-110 transition-transform">
-                                <i class="bi bi-arrows-fullscreen text-sm"></i>
-                            </span>
-                        </div>
-                    </div>
-                @endforeach
-
-                {{-- 8th Item: Button Card to See More Photos --}}
-                <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-gradient-to-br from-[#0c2f1f] via-[#103825] to-[#194c33] border-2 border-emerald-400/30 hover:border-[#a3e635] flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:bg-[#133e29]"
-                     id="hpOpenAllGalleryGridBtn"
-                     role="button"
-                     tabindex="0"
-                     onclick="window.hpOpenAllGallery && window.hpOpenAllGallery()"
-                     aria-label="See more photos">
-                    <div class="w-12 h-12 rounded-full bg-[#a3e635]/15 border border-[#a3e635]/40 text-[#a3e635] flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 group-hover:bg-[#a3e635] group-hover:text-[#06190f] transition-all duration-300 shadow-md">
-                        <i class="bi bi-grid-3x3-gap-fill"></i>
-                    </div>
-                    <span class="text-white font-bold text-sm sm:text-base font-serif group-hover:text-[#a3e635] transition-colors leading-tight">See More Photos</span>
-                    <span class="text-emerald-200/75 text-xs mt-1">{{ count($galleryImages) }} Photos in Gallery</span>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#a3e635] uppercase tracking-wider mt-2.5 py-1 px-3 rounded-full bg-white/10 group-hover:bg-[#a3e635]/25 transition-all">
-                        <span>View All</span>
-                        <i class="bi bi-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
-                    </span>
-                </div>
-            </div>
-
-
-        </div>
-    </section>
-
-    {{-- SECTION 5: PRICING (Design 6: Pricing Page) --}}
-    <section class="py-20 lg:py-28 relative overflow-hidden bg-[#06190f] text-white" id="rates" data-section>
-        {{-- Background Image with Same Dark Green Overlays as Section 1 --}}
-        <div class="absolute inset-0 z-0">
-            <img src="{{ asset('storage/design_images/background_image2.png') }}" alt="Hinaguan Nature Park Rates Background" class="w-full h-full object-cover object-center scale-105 transform">
-            {{-- Dark Nature Gradient Overlays (Matching Section 1 Hero) --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-[#061a10]/95 via-[#061a10]/80 to-[#061a10]/55"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-[#061a10] via-transparent to-[#061a10]/70"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(16,185,129,0.14),transparent_70%)]"></div>
-        </div>
-
-        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-            {{-- Header (Pricing / Affordable Rates for Everyone) --}}
-            <div class="text-center max-w-2xl mx-auto mb-14">
-                <span class="text-xs font-bold tracking-[0.22em] text-[#a3e635] uppercase inline-block mb-2">
-                    PRICING
-                </span>
-                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight mb-3 drop-shadow-sm">
-                    Affordable Rates for Everyone
-                </h2>
-                <p class="text-emerald-100/80 text-base sm:text-lg">
-                    Transparent pricing with no hidden fees. Choose the visit type that suits your adventure.
-                </p>
-            </div>
-
-            {{-- 2 Side-by-Side Comparison Cards as seen in Design 6 --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-10">
-                {{-- Card 1: Daytime Visit (Light Card) --}}
-                <div class="bg-[#102d20]/90 rounded-xl p-8 sm:p-10 border border-emerald-200/20 shadow-lg relative text-white flex flex-col justify-between hover:bg-[#163b29] transition-colors duration-300">
-                    <div>
-                        <div class="flex items-center gap-3.5 mb-2">
-                            <span class="text-3xl text-emerald-300">
-                                <i class="bi bi-sun-fill"></i>
-                            </span>
-                            <h3 class="text-2xl sm:text-3xl font-serif font-bold text-white">Daytime Visit</h3>
-                        </div>
-                        <p class="text-[10px] font-extrabold tracking-[0.15em] text-emerald-300 uppercase mb-8">
-                            ENTRANCE FEE &bull; FULL PARK ACCESS DURING THE DAY
-                        </p>
-
-                        <div class="space-y-4">
-                            {{-- Adult Rate --}}
-                            <div class="flex items-center justify-between py-2 border-b border-emerald-200/15">
-                                <span class="bg-emerald-100/15 text-emerald-100 font-bold text-xs tracking-wider px-5 py-2 rounded-md uppercase">
-                                    ADULT
-                                </span>
-                                <div class="text-right">
-                                    <span class="font-bold text-lg sm:text-xl text-white">&#8369;{{ number_format((float) ($parkSettings->daytime_adult_entrance_fee ?? 20), 2) }}</span>
-                                    <span class="text-xs text-emerald-100/60 font-normal">per person</span>
-                                </div>
-                            </div>
-
-                            {{-- Child Rate --}}
-                            <div class="flex items-center justify-between py-2">
-                                <span class="bg-emerald-100/15 text-emerald-100 font-bold text-xs tracking-wider px-5 py-2 rounded-md uppercase">
-                                    CHILD
-                                </span>
-                                <div class="text-right">
-                                    <span class="font-bold text-lg sm:text-xl text-white">&#8369;{{ number_format((float) ($parkSettings->daytime_child_entrance_fee ?? 0), 2) }}</span>
-                                    <span class="text-xs text-emerald-100/60 font-normal">per person</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Card 2: Overnight Stay (Deep Forest Green Card) --}}
-                <div class="bg-[#102d20]/90 rounded-xl p-8 sm:p-10 border border-emerald-300/30 shadow-lg relative text-white flex flex-col justify-between hover:bg-[#163b29] transition-colors duration-300">
-                    <div>
-                        <div class="flex items-center gap-3.5 mb-2">
-                            <span class="text-3xl text-[#a3e635]">
-                                <i class="bi bi-moon-stars-fill"></i>
-                            </span>
-                            <h3 class="text-2xl sm:text-3xl font-serif font-bold text-white">Overnight Stay</h3>
-                        </div>
-                        <p class="text-[10px] font-extrabold tracking-[0.15em] text-emerald-300 uppercase mb-8">
-                            ENTRANCE FEE &bull; CHECK-IN 6:00 PM &bull; CHECK-OUT 8:00 AM
-                        </p>
-
-                        <div class="space-y-4">
-                            {{-- Adult Rate --}}
-                            <div class="flex items-center justify-between py-2 border-b border-emerald-800/60">
-                                <span class="bg-emerald-100/15 text-emerald-100 font-bold text-xs tracking-wider px-5 py-2 rounded-md uppercase">
-                                    ADULT
-                                </span>
-                                <div class="text-right">
-                                    <span class="font-bold text-lg sm:text-xl text-white">&#8369;{{ number_format((float) ($parkSettings->nighttime_adult_entrance_fee ?? 50), 2) }}</span>
-                                    <span class="text-xs text-emerald-200/80 font-normal">per person</span>
-                                </div>
-                            </div>
-
-                            {{-- Child Rate --}}
-                            <div class="flex items-center justify-between py-2">
-                                <span class="bg-emerald-100/15 text-emerald-100 font-bold text-xs tracking-wider px-5 py-2 rounded-md uppercase">
-                                    CHILD
-                                </span>
-                                <div class="text-right">
-                                    <span class="font-bold text-lg sm:text-xl text-white">&#8369;{{ number_format((float) ($parkSettings->nighttime_child_entrance_fee ?? 0), 2) }}</span>
-                                    <span class="text-xs text-emerald-200/80 font-normal">per person</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Bottom Disclaimer as seen in Design 6 --}}
-            <div class="text-center max-w-xl mx-auto bg-[#102d20]/90 border border-emerald-200/20 rounded-xl p-6 shadow-lg">
-                <p class="text-xs sm:text-sm text-emerald-100/85 font-medium mb-5">
-                    Entrance fee of &#8369;{{ number_format((float) ($parkSettings->daytime_adult_entrance_fee ?? 20), 2) }} applies to all visitors. Cottage and amenity rentals are priced separately.
-                </p>
-                <a href="{{ route('reservation') }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold text-xs tracking-wider uppercase px-8 py-3.5 rounded-full transition-all shadow-[0_4px_20px_rgba(163,230,53,0.35)] no-underline">
-                    <span>BOOK YOUR VISIT</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    {{-- SECTION 6: AMENITIES --}}
+    {{-- SECTION 4: AMENITIES --}}
     <section class="bg-white py-20 lg:py-28 relative overflow-hidden" id="amenities" data-section>
         <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
             <div class="text-center max-w-2xl mx-auto mb-14">
@@ -671,72 +482,65 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
                 {{-- Amenity 1 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-house-door-fill"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Cottages &amp; Huts</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">Rustic cottages and open huts perfect for day visits or overnight stays with family and friends.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Cottages &amp; Huts</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">Rustic cottages and open huts perfect for day visits or overnight stays with family and friends.</p>
                 </div>
 
                 {{-- Amenity 2 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-water"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Natural Pool</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">Refresh in our clean, spring-fed swimming pool surrounded by towering trees and tropical foliage.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Natural Pool</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">Refresh in our clean, spring-fed swimming pool surrounded by towering trees and tropical foliage.</p>
                 </div>
 
                 {{-- Amenity 3 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-image"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Scenic Views</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">Panoramic river views, lush natural landscapes, and photo-worthy spots at every turn of the park.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Scenic Views</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">Panoramic river views, lush natural landscapes, and photo-worthy spots at every turn of the park.</p>
                 </div>
 
                 {{-- Amenity 4 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-tsunami"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Natural River</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">Relax by crystal-clear river waters with gentle currents and shallow wading zones.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Natural River</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">Relax by crystal-clear river waters with gentle currents and shallow wading zones.</p>
                 </div>
 
                 {{-- Amenity 5 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-tag-fill"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Affordable Rates</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">Enjoy nature, fun, and relaxation without breaking the bank — exceptional value for everyone.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Affordable Rates</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">Enjoy nature, fun, and relaxation without breaking the bank — exceptional value for everyone.</p>
                 </div>
 
                 {{-- Amenity 6 --}}
-                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300 group">
-                    <div class="w-12 h-12 rounded-xl bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-2xl mb-4 transition-colors duration-300 shadow-sm">
+                <div class="bg-[#f8faf8] hover:bg-white border border-emerald-950/10 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#1b5e3a]/40 transition-all duration-300 group">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100/70 group-hover:bg-[#1b5e3a] group-hover:text-white text-[#1b5e3a] flex items-center justify-center text-lg mb-3 transition-colors duration-300 shadow-sm">
                         <i class="bi bi-cup-hot-fill"></i>
                     </div>
-                    <h3 class="font-serif text-xl font-bold text-[#0f2d1e] mb-2">Food &amp; Refreshments</h3>
-                    <p class="text-sm text-gray-600 leading-relaxed">On-site refreshment points and grill areas so you can stay energized throughout your adventure.</p>
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-[#0f2d1e] mb-1.5">Food &amp; Refreshments</h3>
+                    <p class="text-xs sm:text-[13px] text-gray-600 leading-relaxed">On-site refreshment points and grill areas so you can stay energized throughout your adventure.</p>
                 </div>
-            </div>
-
-            <div class="text-center">
-                <a href="{{ route('amenities') }}" class="inline-flex items-center gap-2 rounded-full border-2 border-[#1b5e3a] text-[#1b5e3a] hover:bg-[#1b5e3a] hover:text-white px-8 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm no-underline">
-                    <span>View All Amenities</span>
-                    <i class="bi bi-arrow-right text-xs"></i>
-                </a>
             </div>
         </div>
     </section>
 
-    {{-- SECTION 7: EVENTS --}}
+    {{-- SECTION 5: EVENTS --}}
     <section class="py-20 lg:py-28 relative overflow-hidden bg-[#06190f] text-white border-t border-white/5" id="events" data-section>
         {{-- Background Image with Same Dark Green Overlays as Section 1 --}}
         <div class="absolute inset-0 z-0">
@@ -831,17 +635,127 @@
         </div>
     </section>
 
-    {{-- SECTION 8: REVIEWS (Running Carousel of Reviews) --}}
-    <section class="bg-[#f7faf7] py-20 lg:py-28 relative overflow-hidden" id="reviews" data-section>
-        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10 mb-12">
-            <div class="text-center max-w-2xl mx-auto">
-                <span class="text-xs font-bold tracking-[0.22em] text-[#1b5e3a] uppercase block mb-2">
-                    GUEST REVIEWS
+    {{-- SECTION 6: PRICING (Design 6: Pricing Page) --}}
+    <section class="py-16 lg:py-24 relative overflow-hidden bg-white text-gray-800 border-t border-gray-100" id="rates" data-section>
+        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+            {{-- Header (Pricing / Affordable Rates for Everyone) --}}
+            <div class="text-center max-w-2xl mx-auto mb-14">
+                <span class="text-xs font-bold tracking-[0.22em] text-[#1b5e3a] uppercase inline-block mb-2">
+                    PRICING
                 </span>
-                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-[#0f2d1e] tracking-tight mb-4">
-                    What Visitors Say
+                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-[#0f2d1e] tracking-tight mb-3">
+                    Affordable Rates for Everyone
                 </h2>
                 <p class="text-gray-600 text-base sm:text-lg">
+                    Transparent pricing with no hidden fees. Choose the visit type that suits your adventure.
+                </p>
+            </div>
+
+            {{-- 2 Side-by-Side Comparison Cards --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {{-- Card 1: Daytime Visit --}}
+                <div class="bg-[#f8faf8] rounded-xl p-6 sm:p-7 border border-emerald-950/10 shadow-sm relative text-gray-800 flex flex-col justify-between hover:shadow-md hover:bg-white hover:border-[#1b5e3a]/30 transition-all duration-300">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="text-2xl text-amber-500">
+                                <i class="bi bi-sun-fill"></i>
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-serif font-bold text-[#0f2d1e]">Daytime Visit</h3>
+                        </div>
+                        <p class="text-[10px] font-extrabold tracking-[0.14em] text-[#1b5e3a] uppercase mb-5">
+                            ENTRANCE FEE &bull; FULL PARK ACCESS DURING THE DAY
+                        </p>
+
+                        <div class="space-y-3">
+                            {{-- Adult Rate --}}
+                            <div class="flex items-center justify-between py-1.5 border-b border-gray-200/80">
+                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                    ADULT
+                                </span>
+                                <div class="text-right">
+                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->daytime_adult_entrance_fee ?? 20), 2) }}</span>
+                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                </div>
+                            </div>
+
+                            {{-- Child Rate --}}
+                            <div class="flex items-center justify-between py-1.5">
+                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                    CHILD
+                                </span>
+                                <div class="text-right">
+                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->daytime_child_entrance_fee ?? 0), 2) }}</span>
+                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-gray-200/80 flex items-center justify-center sm:justify-start">
+                        <span class="text-xs text-gray-500 font-medium"><i class="bi bi-clock mr-1.5 text-[#1b5e3a]"></i>Visiting Hours: 8:00 AM &ndash; 5:00 PM</span>
+                    </div>
+                </div>
+
+                {{-- Card 2: Nighttime / Overnight Visit --}}
+                <div class="bg-[#f8faf8] rounded-xl p-6 sm:p-7 border border-emerald-950/10 shadow-sm relative text-gray-800 flex flex-col justify-between hover:shadow-md hover:bg-white hover:border-[#1b5e3a]/30 transition-all duration-300">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1.5">
+                            <span class="text-2xl text-emerald-700">
+                                <i class="bi bi-moon-stars-fill"></i>
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-serif font-bold text-[#0f2d1e]">Nighttime Visit</h3>
+                        </div>
+                        <p class="text-[10px] font-extrabold tracking-[0.14em] text-[#1b5e3a] uppercase mb-5">
+                            ENTRANCE FEE &bull; EVENING ACCESS UNDER THE CANOPY
+                        </p>
+
+                        <div class="space-y-3">
+                            {{-- Adult Rate --}}
+                            <div class="flex items-center justify-between py-1.5 border-b border-gray-200/80">
+                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                    ADULT
+                                </span>
+                                <div class="text-right">
+                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->nighttime_adult_entrance_fee ?? 50), 2) }}</span>
+                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                </div>
+                            </div>
+
+                            {{-- Child Rate --}}
+                            <div class="flex items-center justify-between py-1.5">
+                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                    CHILD
+                                </span>
+                                <div class="text-right">
+                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->nighttime_child_entrance_fee ?? 0), 2) }}</span>
+                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-gray-200/80 flex items-center justify-center sm:justify-start">
+                        <span class="text-xs text-gray-500 font-medium"><i class="bi bi-clock mr-1.5 text-[#1b5e3a]"></i>Visiting Hours: 5:00 PM &ndash; 10:00 PM</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 7: REVIEWS (Running Carousel of Reviews) --}}
+    <section class="bg-[#06190f] py-20 lg:py-28 relative overflow-hidden text-white border-t border-white/10" id="reviews" data-section>
+        {{-- Subtle Ambient Glow --}}
+        <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_20%,rgba(16,185,129,0.12),transparent_70%)]"></div>
+
+        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10 mb-12">
+            <div class="text-center max-w-2xl mx-auto">
+                <span class="text-xs font-bold tracking-[0.22em] text-[#a3e635] uppercase block mb-2">
+                    GUEST REVIEWS
+                </span>
+                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight mb-4">
+                    What Visitors Say
+                </h2>
+                <p class="text-emerald-100/80 text-base sm:text-lg">
                     Real experiences from guests who explored Hinaguan Nature Park.
                 </p>
             </div>
@@ -860,15 +774,15 @@
                         <div class="hp-reviews-running__group" {{ $loop->last ? 'aria-hidden=true' : '' }}>
                             @for ($rep = 0; $rep < $repeatMultiplier; $rep++)
                                 @foreach ($featuredFeedbacks as $feedback)
-                                    <article class="w-80 sm:w-96 shrink-0 bg-white rounded-2xl p-6 shadow-sm border border-emerald-950/10 flex flex-col justify-between hover:shadow-xl hover:border-[#1b5e3a]/40 transition-all duration-300">
+                                    <article class="w-80 sm:w-96 shrink-0 bg-[#0c2b1c]/90 rounded-2xl p-6 shadow-md border border-emerald-500/20 flex flex-col justify-between hover:bg-[#113824] hover:border-[#a3e635]/50 transition-all duration-300 text-white">
                                         <div>
                                             <div class="flex items-center gap-3.5 mb-4">
-                                                <div class="w-10 h-10 rounded-full bg-[#1b5e3a] text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                                                <div class="w-10 h-10 rounded-full bg-[#1b5e3a] text-white border border-emerald-400/30 flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
                                                     {{ $feedback->initials }}
                                                 </div>
                                                 <div class="min-w-0">
-                                                    <h4 class="font-bold text-sm text-[#0f2d1e] truncate">{{ $feedback->full_name }}</h4>
-                                                    <time class="text-xs text-gray-400 block">{{ $feedback->created_at->format('M j, Y') }}</time>
+                                                    <h4 class="font-bold text-sm text-white truncate">{{ $feedback->full_name }}</h4>
+                                                    <time class="text-xs text-emerald-200/60 block">{{ $feedback->created_at->format('M j, Y') }}</time>
                                                 </div>
                                             </div>
 
@@ -878,7 +792,7 @@
                                                 @endfor
                                             </div>
 
-                                            <p class="text-sm text-gray-600 leading-relaxed italic line-clamp-4">
+                                            <p class="text-sm text-emerald-100/85 leading-relaxed italic line-clamp-4">
                                                 &ldquo;{{ $feedback->description }}&rdquo;
                                             </p>
                                         </div>
@@ -891,19 +805,87 @@
             </div>
 
             <div class="text-center mt-10 relative z-10">
-                <a href="{{ route('feedback') }}" class="inline-flex items-center gap-2 border-2 border-[#1b5e3a] text-[#1b5e3a] hover:bg-[#1b5e3a] hover:text-white px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm no-underline">
+                <a href="{{ route('feedback') }}" class="inline-flex items-center gap-2 border-2 border-[#a3e635] text-[#a3e635] hover:bg-[#a3e635] hover:text-[#082214] px-8 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-sm no-underline">
                     <span>See Other Reviews</span>
                     <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
         @else
-            <div class="text-center py-12 max-w-md mx-auto">
-                <p class="text-gray-500 mb-4">No guest reviews yet. Be the first to share your Hinaguan experience!</p>
-                <a href="{{ route('feedback') }}" class="inline-block bg-[#1b5e3a] text-white px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider">
+            <div class="text-center py-12 max-w-md mx-auto relative z-10">
+                <p class="text-emerald-100/70 mb-4">No guest reviews yet. Be the first to share your Hinaguan experience!</p>
+                <a href="{{ route('feedback') }}" class="inline-block bg-[#a3e635] hover:bg-[#bef264] text-[#082214] px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors no-underline">
                     Write a Review
                 </a>
             </div>
         @endif
+    </section>
+
+    {{-- SECTION 8: GALLERY (Design 4: Gallery Page) --}}
+    <section class="bg-white py-20 lg:py-28 relative overflow-hidden border-t border-gray-150" id="gallery" data-section>
+        {{-- Botanical leaves corner graphics as seen in Design 4 --}}
+        <div class="absolute top-4 left-4 w-40 h-40 opacity-20 pointer-events-none text-emerald-800">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10,90 Q40,40 90,10 M40,40 Q60,30 75,15 M30,55 Q50,45 65,35 M20,70 Q40,65 50,50"/>
+            </svg>
+        </div>
+        <div class="absolute top-4 right-4 w-40 h-40 opacity-20 pointer-events-none text-emerald-800 transform scale-x-[-1]">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10,90 Q40,40 90,10 M40,40 Q60,30 75,15 M30,55 Q50,45 65,35 M20,70 Q40,65 50,50"/>
+            </svg>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+            {{-- Header (Our Gallery / Moments at Hinaguan) --}}
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <span class="text-xs font-bold tracking-[0.22em] text-[#1b5e3a] uppercase block mb-2">
+                    OUR GALLERY
+                </span>
+                <h2 class="text-4xl sm:text-5xl font-serif font-bold text-[#0f2d1e] tracking-tight mb-3">
+                    Moments at Hinaguan
+                </h2>
+                <p class="text-gray-600 text-base sm:text-lg">
+                    Beautiful places, happy faces, and unforgettable memories.
+                </p>
+            </div>
+
+            {{-- Featured Photos Grid (7 feature images + 8th button to see more photos) --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                @foreach ($featuredGalleryImages as $idx => $img)
+                    <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-emerald-950/10 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hp-gallery-item"
+                         data-gallery-src="{{ $img['url'] }}"
+                         data-gallery-index="{{ $idx }}"
+                         data-gallery-context="featured"
+                         role="button"
+                         tabindex="0"
+                         aria-label="View photo {{ $idx + 1 }}">
+                        <img src="{{ $img['url'] }}" alt="Hinaguan Nature Park Photo" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none select-none" loading="lazy">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-end p-3.5 sm:p-4">
+                            <span class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm text-emerald-950 flex items-center justify-center shadow-md transform group-hover:scale-110 transition-transform">
+                                <i class="bi bi-arrows-fullscreen text-sm"></i>
+                            </span>
+                        </div>
+                    </div>
+                @endforeach
+
+                {{-- 8th Item: Button Card to See More Photos --}}
+                <div class="rounded-2xl overflow-hidden h-44 sm:h-52 w-full shadow-md group cursor-pointer relative bg-gradient-to-br from-[#0c2f1f] via-[#103825] to-[#194c33] border-2 border-emerald-400/30 hover:border-[#a3e635] flex flex-col items-center justify-center p-4 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:bg-[#133e29]"
+                     id="hpOpenAllGalleryGridBtn"
+                     role="button"
+                     tabindex="0"
+                     onclick="window.hpOpenAllGallery && window.hpOpenAllGallery()"
+                     aria-label="See more photos">
+                    <div class="w-12 h-12 rounded-full bg-[#a3e635]/15 border border-[#a3e635]/40 text-[#a3e635] flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 group-hover:bg-[#a3e635] group-hover:text-[#06190f] transition-all duration-300 shadow-md">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                    </div>
+                    <span class="text-white font-bold text-sm sm:text-base font-serif group-hover:text-[#a3e635] transition-colors leading-tight">See More Photos</span>
+                    <span class="text-emerald-200/75 text-xs mt-1">{{ count($galleryImages) }} Photos in Gallery</span>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#a3e635] uppercase tracking-wider mt-2.5 py-1 px-3 rounded-full bg-white/10 group-hover:bg-[#a3e635]/25 transition-all">
+                        <span>View All</span>
+                        <i class="bi bi-arrow-right text-xs transition-transform group-hover:translate-x-0.5"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
     </section>
 
     {{-- SECTION 9: DIRECTIONS & CONTACT --}}

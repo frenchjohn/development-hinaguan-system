@@ -88,6 +88,25 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleMobileWidgets(false);
     });
 
+    // Section IDs corresponding to the nav links in exact document order
+    const navSectionIds = ['about', 'activities', 'amenities', 'events', 'rates', 'reviews', 'gallery', 'directions'];
+
+    const getNavSections = () => {
+        return navSectionIds
+            .map((id) => document.getElementById(id))
+            .filter(Boolean)
+            .sort((a, b) => a.offsetTop - b.offsetTop);
+    };
+
+    // Scroll spy — active nav link (clean, fixed directly to each link)
+    const setActiveNav = (sectionId) => {
+        navLinks.forEach((link) => {
+            const href = link.getAttribute('href');
+            const isActive = Boolean(sectionId) && href === `#${sectionId}`;
+            link.classList.toggle('is-active', isActive);
+        });
+    };
+
     // Smooth scroll for anchor links
     navLinks.forEach((anchor) => {
         anchor.addEventListener('click', (e) => {
@@ -106,27 +125,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Section IDs corresponding to the nav links in exact page order
-    const navSectionIds = ['about', 'activities', 'gallery', 'rates', 'amenities', 'events', 'reviews', 'directions'];
-    const navSections = navSectionIds
-        .map((id) => document.getElementById(id))
-        .filter(Boolean);
-
-    // Scroll spy — active nav link (clean, fixed directly to each link)
-    const setActiveNav = (sectionId) => {
-        navLinks.forEach((link) => {
-            const href = link.getAttribute('href');
-            const isActive = href === `#${sectionId}`;
-            link.classList.toggle('is-active', isActive);
-        });
-    };
+    // Home logo click scrolls to top and clears active nav
+    const homeAnchor = document.querySelector('a[href="#home"]');
+    homeAnchor?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setActiveNav('');
+        closeMobileNav();
+    });
 
     const updateActiveNav = () => {
         const scrollPos = window.scrollY;
         const triggerOffset = getScrollOffset() + 60;
+        const navSections = getNavSections();
+
+        if (navSections.length === 0) return;
 
         // If above the first section (Hero), clear active nav
-        if (navSections.length > 0 && scrollPos < (navSections[0].offsetTop - triggerOffset)) {
+        if (scrollPos < (navSections[0].offsetTop - triggerOffset)) {
             setActiveNav('');
             return;
         }
@@ -140,23 +156,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Find the section currently in view
+        // Find the section currently in view by scanning from bottom up
         let activeId = '';
-        for (let i = 0; i < navSections.length; i++) {
+        for (let i = navSections.length - 1; i >= 0; i--) {
             const section = navSections[i];
             const top = section.offsetTop - triggerOffset;
-            const nextSection = navSections[i + 1];
-            const bottom = nextSection ? (nextSection.offsetTop - triggerOffset) : (top + section.offsetHeight);
-
-            if (scrollPos >= top && scrollPos < bottom) {
+            if (scrollPos >= top) {
                 activeId = section.id;
                 break;
             }
         }
 
-        if (activeId) {
-            setActiveNav(activeId);
-        }
+        setActiveNav(activeId);
     };
 
     // Sticky header background & active nav on scroll
