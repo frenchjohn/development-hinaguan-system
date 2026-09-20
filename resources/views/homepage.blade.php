@@ -647,13 +647,13 @@
                     Affordable Rates for Everyone
                 </h2>
                 <p class="text-gray-600 text-base sm:text-lg">
-                    Transparent pricing with no hidden fees. Choose the visit type that suits your adventure.
+                    Transparent pricing with no hidden fees. Choose the visit type that suits your adventure. Activities and amenities are priced separately.
                 </p>
             </div>
 
             {{-- 2 Side-by-Side Comparison Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-                {{-- Card 1: Daytime Visit --}}
+                {{-- Card 1: Daytime Visit (Light Card with Theme Green Labels) --}}
                 <div class="bg-[#f8faf8] rounded-xl p-6 sm:p-7 border border-emerald-950/10 shadow-sm relative text-gray-800 flex flex-col justify-between hover:shadow-md hover:bg-white hover:border-[#1b5e3a]/30 transition-all duration-300">
                     <div>
                         <div class="flex items-center gap-3 mb-1.5">
@@ -669,7 +669,7 @@
                         <div class="space-y-3">
                             {{-- Adult Rate --}}
                             <div class="flex items-center justify-between py-1.5 border-b border-gray-200/80">
-                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                <span class="bg-[#1b5e3a] text-white font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase shadow-sm">
                                     ADULT
                                 </span>
                                 <div class="text-right">
@@ -680,7 +680,7 @@
 
                             {{-- Child Rate --}}
                             <div class="flex items-center justify-between py-1.5">
-                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                <span class="bg-[#1b5e3a] text-white font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase shadow-sm">
                                     CHILD
                                 </span>
                                 <div class="text-right">
@@ -696,48 +696,56 @@
                     </div>
                 </div>
 
-                {{-- Card 2: Nighttime / Overnight Visit --}}
-                <div class="bg-[#f8faf8] rounded-xl p-6 sm:p-7 border border-emerald-950/10 shadow-sm relative text-gray-800 flex flex-col justify-between hover:shadow-md hover:bg-white hover:border-[#1b5e3a]/30 transition-all duration-300">
+                {{-- Card 2: Nighttime / Overnight Visit (Theme Green Card with White Labels) --}}
+                <div class="bg-[#082214] rounded-xl p-6 sm:p-7 border border-emerald-500/25 shadow-md relative text-white flex flex-col justify-between hover:bg-[#0b2b1a] hover:border-[#a3e635]/40 transition-all duration-300">
                     <div>
                         <div class="flex items-center gap-3 mb-1.5">
-                            <span class="text-2xl text-emerald-700">
+                            <span class="text-2xl text-emerald-300">
                                 <i class="bi bi-moon-stars-fill"></i>
                             </span>
-                            <h3 class="text-xl sm:text-2xl font-serif font-bold text-[#0f2d1e]">Nighttime Visit</h3>
+                            <h3 class="text-xl sm:text-2xl font-serif font-bold text-white">Nighttime Visit</h3>
                         </div>
-                        <p class="text-[10px] font-extrabold tracking-[0.14em] text-[#1b5e3a] uppercase mb-5">
+                        <p class="text-[10px] font-extrabold tracking-[0.14em] text-[#a3e635] uppercase mb-5">
                             ENTRANCE FEE &bull; EVENING ACCESS UNDER THE CANOPY
                         </p>
 
                         <div class="space-y-3">
                             {{-- Adult Rate --}}
-                            <div class="flex items-center justify-between py-1.5 border-b border-gray-200/80">
-                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                            <div class="flex items-center justify-between py-1.5 border-b border-emerald-200/15">
+                                <span class="bg-white text-[#082214] font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase shadow-sm">
                                     ADULT
                                 </span>
                                 <div class="text-right">
-                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->nighttime_adult_entrance_fee ?? 50), 2) }}</span>
-                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                    <span class="font-bold text-base sm:text-lg text-white">&#8369;{{ number_format((float) ($parkSettings->nighttime_adult_entrance_fee ?? 50), 2) }}</span>
+                                    <span class="text-xs text-emerald-200/70 font-normal">per person</span>
                                 </div>
                             </div>
 
                             {{-- Child Rate --}}
                             <div class="flex items-center justify-between py-1.5">
-                                <span class="bg-emerald-50 text-[#1b5e3a] border border-emerald-200/60 font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase">
+                                <span class="bg-white text-[#082214] font-bold text-xs tracking-wider px-3.5 py-1.5 rounded-md uppercase shadow-sm">
                                     CHILD
                                 </span>
                                 <div class="text-right">
-                                    <span class="font-bold text-base sm:text-lg text-[#0f2d1e]">&#8369;{{ number_format((float) ($parkSettings->nighttime_child_entrance_fee ?? 0), 2) }}</span>
-                                    <span class="text-xs text-gray-500 font-normal">per person</span>
+                                    <span class="font-bold text-base sm:text-lg text-white">&#8369;{{ number_format((float) ($parkSettings->nighttime_child_entrance_fee ?? 0), 2) }}</span>
+                                    <span class="text-xs text-emerald-200/70 font-normal">per person</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-6 pt-4 border-t border-gray-200/80 flex items-center justify-center sm:justify-start">
-                        <span class="text-xs text-gray-500 font-medium"><i class="bi bi-clock mr-1.5 text-[#1b5e3a]"></i>Visiting Hours: 5:00 PM &ndash; 10:00 PM</span>
+                    <div class="mt-6 pt-4 border-t border-emerald-200/15 flex items-center justify-center sm:justify-start">
+                        <span class="text-xs text-emerald-200/80 font-medium"><i class="bi bi-clock mr-1.5 text-[#a3e635]"></i>Visiting Hours: 5:00 PM &ndash; 10:00 PM</span>
                     </div>
                 </div>
+            </div>
+
+            {{-- Informational Note --}}
+            <div class="mt-8 text-center">
+                <p class="inline-flex items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#f8faf8] border border-emerald-950/10 rounded-full px-4 py-1.5 shadow-sm">
+                    <i class="bi bi-info-circle-fill text-[#1b5e3a]"></i>
+                    <span>Entrance fees cover park admission only. <strong>Activities and amenities are priced separately.</strong></span>
+                </p>
             </div>
         </div>
     </section>

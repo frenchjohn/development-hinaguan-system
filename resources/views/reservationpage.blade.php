@@ -76,37 +76,12 @@
     <div class="rp-site-header" id="rpSiteHeader">
 
         <header class="rp-header is-scrolled" id="rpHeader">
-
             <div class="rp-header__inner">
-
-                <a href="{{ route('home') }}" class="rp-logo">
-
-                    <span class="rp-logo__icon">
-                        <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park logo">
-
-                    </span>
-
-                    <span class="rp-logo__text">
-
-                        <span class="rp-logo__name">Hinaguan Nature Park</span>
-
-                        <span class="rp-logo__location">Jasaan, Misamis Oriental</span>
-
-                    </span>
-
-                </a>
-
-
-
                 <a href="{{ route('home') }}" class="rp-header-back">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    <span>Back to Homepage</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                    <span>Back to Home</span>
                 </a>
-
             </div>
-
         </header>
 
     </div>

@@ -139,16 +139,23 @@ body.fb-page {
 .fb-nav__back {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    font-size: 0.8rem;
+    gap: 0.5rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.78);
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
     text-decoration: none;
-    transition: color 0.2s;
+    transition: all 0.2s ease;
 }
 
 .fb-nav__back:hover {
     color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: translateX(-2px);
 }
 
 .fb-btn {

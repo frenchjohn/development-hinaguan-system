@@ -31,28 +31,11 @@
             </div>
         @endif
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-20 flex items-center justify-between">
-            {{-- Logo --}}
-            <a href="{{ route('home') }}" class="flex items-center gap-3 group no-underline">
-                <div class="w-11 h-11 rounded-full overflow-hidden border-2 border-emerald-400/50 shadow-[0_0_12px_rgba(74,222,128,0.25)] shrink-0 group-hover:border-emerald-300 transition-colors">
-                    <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park Logo" class="w-full h-full object-cover">
-                </div>
-                <div class="flex flex-col">
-                    <span class="font-serif text-lg sm:text-xl font-bold text-white tracking-wide leading-tight group-hover:text-emerald-200 transition-colors">Hinaguan Nature Park</span>
-                    <span class="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] text-emerald-400 uppercase">JASAAN, MISAMIS ORIENTAL</span>
-                </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 sm:h-20 flex items-center">
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-white/90 hover:text-white bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/30 px-4 py-2 rounded-full transition-all no-underline shadow-sm hover:-translate-x-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                <span>Back to Home</span>
             </a>
-
-            {{-- Action Buttons: Only Back and Book button --}}
-            <div class="flex items-center gap-3 sm:gap-4">
-                <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 border border-emerald-400/30 hover:border-emerald-400/60 bg-white/10 hover:bg-white/15 text-white font-semibold text-xs tracking-wider uppercase px-4 sm:px-5 py-2.5 rounded-full transition-all no-underline shadow-sm">
-                    <i class="bi bi-arrow-left text-sm"></i>
-                    <span>Back</span>
-                </a>
-                <a href="{{ route('reservation') }}" class="inline-flex items-center justify-center bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold text-xs tracking-wider uppercase px-5 sm:px-6 py-2.5 rounded-full shadow-[0_2px_15px_rgba(163,230,53,0.35)] transition-all transform hover:scale-105 active:scale-95 no-underline">
-                    BOOK NOW
-                </a>
-            </div>
         </div>
     </header>
 
