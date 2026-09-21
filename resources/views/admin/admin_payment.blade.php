@@ -229,6 +229,21 @@
                             </select>
                         </div>
 
+                        {{-- Staff filter --}}
+                        <div class="relative">
+                            <i class="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
+                            <select
+                                id="staffFilterSelect"
+                                class="h-9 appearance-none rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-7 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors"
+                            >
+                                <option value="">All Staff</option>
+                                <option value="__online__">Online / Guest</option>
+                                @foreach($staffList as $staffName)
+                                    <option value="{{ $staffName }}">{{ $staffName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         {{-- Date From --}}
                         <div class="relative">
                             <i class="bi bi-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
@@ -284,6 +299,7 @@
                                         class="payment-row hover:bg-black/5 dark:hover:bg-white/5"
                                         data-type="{{ $tx['activity_type'] }}"
                                         data-date="{{ $tx['datetime_iso'] }}"
+                                        data-actor="{{ $tx['is_online'] ? '__online__' : $tx['actor_name'] }}"
                                         data-search="{{ strtolower($tx['title'] . ' ' . $tx['actor_name'] . ' ' . ($tx['reservation_id'] ?? '')) }}"
                                     >
                                         {{-- Date & Time --}}

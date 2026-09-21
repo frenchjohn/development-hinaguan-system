@@ -3510,8 +3510,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $totalStaffHandled = $totalCollected - $totalOnline;
         $transactionCount  = $rawLogs->count();
 
+        // All staff accounts — always show every staff in the filter dropdown
+        $staffList = \App\Models\StaffAccount::orderBy('name')->pluck('name')->all();
+
         return view('admin.admin_payment', compact(
-            'transactions', 'totalCollected', 'totalOnline', 'totalStaffHandled', 'transactionCount'
+            'transactions', 'totalCollected', 'totalOnline', 'totalStaffHandled', 'transactionCount', 'staffList'
         ));
     })->name('payment');
 

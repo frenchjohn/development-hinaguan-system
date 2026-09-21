@@ -4,7 +4,7 @@
     $links = [
         ['key' => 'dashboard',     'label' => 'Dashboard',       'url' => route('admin.dashboard'),     'icon' => 'grid'],
         ['key' => 'amenities',     'label' => 'Amenities',       'url' => route('admin.amenities'),     'icon' => 'map'],
-        ['key' => 'users',         'label' => 'Users',           'url' => route('admin.users'),         'icon' => 'users'],
+        ['key' => 'users',         'label' => 'Staff',           'url' => route('admin.users'),         'icon' => 'users'],
         ['key' => 'payment',       'label' => 'Payments',        'url' => route('admin.payment'),       'icon' => 'payment'],
         ['key' => 'announcements', 'label' => 'SMS Notif',       'url' => route('admin.announcements'), 'icon' => 'announcement'],
         ['key' => 'reports',       'label' => 'Reports',         'url' => route('admin.reports'),       'icon' => 'chart'],

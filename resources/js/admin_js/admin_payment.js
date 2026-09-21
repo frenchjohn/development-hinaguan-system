@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Element refs ────────────────────────────────────────────────────────
     const searchInput      = document.getElementById('paymentSearchInput');
     const typeSelect       = document.getElementById('typeFilterSelect');
+    const staffSelect      = document.getElementById('staffFilterSelect');
     const dateFromInput    = document.getElementById('dateFromInput');
     const dateToInput      = document.getElementById('dateToInput');
     const clearBtn         = document.getElementById('clearFiltersBtn');
@@ -20,16 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * and updates the visible-count badge.
      */
     function applyFilters() {
-        const query    = (searchInput?.value ?? '').trim().toLowerCase();
-        const typeVal  = typeSelect?.value ?? '';
-        const dateFrom = dateFromInput?.value ?? '';   // "YYYY-MM-DD" or ""
-        const dateTo   = dateToInput?.value ?? '';     // "YYYY-MM-DD" or ""
+        const query     = (searchInput?.value ?? '').trim().toLowerCase();
+        const typeVal   = typeSelect?.value ?? '';
+        const staffVal  = staffSelect?.value ?? '';
+        const dateFrom  = dateFromInput?.value ?? '';   // "YYYY-MM-DD" or ""
+        const dateTo    = dateToInput?.value ?? '';     // "YYYY-MM-DD" or ""
 
         let visibleCount = 0;
 
         allRows.forEach(row => {
             const rowSearch = (row.dataset.search ?? '').toLowerCase();
             const rowType   = row.dataset.type ?? '';
+            const rowActor  = row.dataset.actor ?? '';
             const rowDate   = row.dataset.date ?? '';  // "YYYY-MM-DD"
 
             // 1. Search match
@@ -38,11 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // 2. Type match
             const matchesType = typeVal === '' || rowType === typeVal;
 
-            // 3. Date range — ISO string comparison works correctly for YYYY-MM-DD
+            // 3. Staff match
+            const matchesStaff = staffVal === '' || rowActor === staffVal;
+
+            // 4. Date range — ISO string comparison works correctly for YYYY-MM-DD
             const matchesFrom = dateFrom === '' || rowDate >= dateFrom;
             const matchesTo   = dateTo   === '' || rowDate <= dateTo;
 
-            const visible = matchesSearch && matchesType && matchesFrom && matchesTo;
+            const visible = matchesSearch && matchesType && matchesStaff && matchesFrom && matchesTo;
 
             row.style.display = visible ? '' : 'none';
 
@@ -65,12 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchInput?.addEventListener('input', applyFilters);
     typeSelect?.addEventListener('change', applyFilters);
+    staffSelect?.addEventListener('change', applyFilters);
     dateFromInput?.addEventListener('change', applyFilters);
     dateToInput?.addEventListener('change', applyFilters);
 
     function clearAllFilters() {
         if (searchInput)   searchInput.value   = '';
         if (typeSelect)    typeSelect.value     = '';
+        if (staffSelect)   staffSelect.value    = '';
         if (dateFromInput) dateFromInput.value  = '';
         if (dateToInput)   dateToInput.value    = '';
         applyFilters();
