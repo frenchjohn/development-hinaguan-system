@@ -470,6 +470,30 @@
                         </div>
                     </div>
 
+                    {{-- Contextual Date Range Filter --}}
+                    <div id="audienceDateFilter" class="hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="bi bi-calendar-range text-sm text-emerald-600"></i>
+                            <span class="text-xs font-bold text-[var(--ink)]" id="dateFilterLabel">Filter by Date Range</span>
+                            <button type="button" id="clearDateFilterBtn" class="ml-auto flex items-center gap-1 text-[11px] font-semibold text-rose-500 hover:underline cursor-pointer">
+                                <i class="bi bi-x-circle"></i> Clear Filter
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-[var(--ink-muted)] mb-1">From</label>
+                                <input type="date" id="dateFilterFrom" class="h-8 w-full rounded-lg border border-[var(--border)] bg-white dark:bg-neutral-900/60 px-2 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-[var(--ink-muted)] mb-1">To</label>
+                                <input type="date" id="dateFilterTo" class="h-8 w-full rounded-lg border border-[var(--border)] bg-white dark:bg-neutral-900/60 px-2 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer">
+                            </div>
+                        </div>
+                        <p class="mt-2 m-0 text-[11px] text-[var(--ink-muted)]">
+                            <i class="bi bi-info-circle"></i> Only reservations within this date range will be included in the recipient pool.
+                        </p>
+                    </div>
+
                     {{-- Target Selection Summary Card --}}
                     <div class="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-white via-emerald-50/20 to-teal-50/30 dark:from-neutral-900/60 dark:via-emerald-950/20 dark:to-neutral-900/40 p-5 shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -575,6 +599,24 @@
                                 <p class="mt-1 text-[11px] text-[var(--ink-muted)]">
                                     Messages will be transmitted directly via PhilSMS gateway. Standard SMS is 160 characters per SMS credit.
                                 </p>
+                            </div>
+
+                            {{-- Deduplication toggle --}}
+                            <div class="flex items-start gap-2.5 p-3 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/50">
+                                <input
+                                    type="checkbox"
+                                    id="deduplicateNumbers"
+                                    checked
+                                    class="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-emerald-600"
+                                >
+                                <div>
+                                    <label for="deduplicateNumbers" class="text-xs font-semibold text-[var(--ink)] cursor-pointer leading-tight">
+                                        <i class="bi bi-funnel-fill text-emerald-600 mr-1"></i>One SMS per phone number
+                                    </label>
+                                    <p class="m-0 mt-0.5 text-[11px] text-[var(--ink-muted)] leading-relaxed">
+                                        When enabled, guests sharing the same contact number only receive one message — no duplicate sends.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -755,6 +797,9 @@
                                     data-display-phone="{{ $res['display_phone'] }}"
                                     data-companions-count="{{ $res['companion_count'] }}"
                                     data-companions-json="{{ htmlspecialchars(json_encode($res['companions']), ENT_QUOTES, 'UTF-8') }}"
+                                    data-check-in-iso="{{ $res['check_in_iso'] ?? '' }}"
+                                    data-check-out-iso="{{ $res['check_out_iso'] ?? '' }}"
+                                    data-reservation-date-iso="{{ $res['reservation_date_iso'] ?? '' }}"
                                 >
                                     <td class="py-2 px-3 text-center align-middle">
                                         <input
@@ -884,6 +929,57 @@
                 <span class="text-[11px] text-[var(--ink-muted)]">Hinaguan Nature Park Guest Roster</span>
                 <button type="button" class="close-companions-modal px-4 py-1.5 text-xs font-semibold rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-800 text-[var(--ink)] hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors cursor-pointer">
                     Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ========================================================================= --}}
+    {{-- CUSTOM ALERT MODAL (replaces native browser alert)                       --}}
+    {{-- ========================================================================= --}}
+    <div id="smsAlertModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#111e16] border border-gray-200 dark:border-[#22392b] shadow-2xl overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-start gap-3.5">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base" id="smsAlertIconWrap">
+                        <i id="smsAlertIcon" class="bi bi-exclamation-triangle-fill"></i>
+                    </span>
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <h4 class="m-0 text-sm font-bold text-[var(--ink)]" id="smsAlertTitle">Notice</h4>
+                        <p class="m-0 mt-1.5 text-xs text-[var(--ink-muted)] leading-relaxed" id="smsAlertMessage"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-5 flex justify-end">
+                <button type="button" id="smsAlertOkBtn" class="px-6 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-sm hover:from-emerald-700 hover:to-teal-800 active:scale-[0.97] transition-all cursor-pointer">
+                    Got it
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ========================================================================= --}}
+    {{-- CUSTOM CONFIRM MODAL (replaces native browser confirm)                   --}}
+    {{-- ========================================================================= --}}
+    <div id="smsConfirmModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div class="relative w-full max-w-sm rounded-2xl bg-white dark:bg-[#111e16] border border-gray-200 dark:border-[#22392b] shadow-2xl overflow-hidden">
+            <div class="p-6">
+                <div class="flex items-start gap-3.5">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base" id="smsConfirmIconWrap">
+                        <i id="smsConfirmIcon" class="bi bi-question-circle-fill"></i>
+                    </span>
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <h4 class="m-0 text-sm font-bold text-[var(--ink)]" id="smsConfirmTitle">Confirm Action</h4>
+                        <p class="m-0 mt-1.5 text-xs text-[var(--ink-muted)] leading-relaxed" id="smsConfirmMessage"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-5 flex justify-end gap-2">
+                <button type="button" id="smsConfirmCancelBtn" class="px-5 py-2 text-xs font-bold rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-800 text-[var(--ink)] hover:bg-gray-100 dark:hover:bg-neutral-700 active:scale-[0.97] transition-all cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" id="smsConfirmOkBtn" class="px-5 py-2 text-xs font-bold rounded-xl text-white shadow-sm active:scale-[0.97] transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800">
+                    Confirm
                 </button>
             </div>
         </div>

@@ -9,6 +9,105 @@ document.addEventListener('DOMContentLoaded', () => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     // =========================================================================
+    // CUSTOM ALERT MODAL (replaces native browser alert)
+    // =========================================================================
+    const smsAlertModal    = document.getElementById('smsAlertModal');
+    const smsAlertIconWrap = document.getElementById('smsAlertIconWrap');
+    const smsAlertIcon     = document.getElementById('smsAlertIcon');
+    const smsAlertTitle    = document.getElementById('smsAlertTitle');
+    const smsAlertMessage  = document.getElementById('smsAlertMessage');
+    const smsAlertOkBtn    = document.getElementById('smsAlertOkBtn');
+    let _smsAlertCallback  = null;
+
+    function showSmsAlert(message, type = 'warning', callback = null) {
+        const cfg = {
+            warning: { icon: 'bi-exclamation-triangle-fill', bg: 'bg-amber-100 dark:bg-amber-950',  text: 'text-amber-600 dark:text-amber-300',  title: 'Notice' },
+            error:   { icon: 'bi-x-circle-fill',             bg: 'bg-rose-100 dark:bg-rose-950',    text: 'text-rose-600 dark:text-rose-300',    title: 'Something went wrong' },
+            info:    { icon: 'bi-info-circle-fill',           bg: 'bg-blue-100 dark:bg-blue-950',    text: 'text-blue-600 dark:text-blue-300',    title: 'Info' },
+        };
+        const c = cfg[type] || cfg.warning;
+        if (smsAlertIconWrap) smsAlertIconWrap.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base ${c.bg} ${c.text}`;
+        if (smsAlertIcon)     smsAlertIcon.className     = `bi ${c.icon}`;
+        if (smsAlertTitle)    smsAlertTitle.textContent   = c.title;
+        if (smsAlertMessage)  smsAlertMessage.textContent = message;
+        _smsAlertCallback = callback || null;
+        if (smsAlertModal) {
+            smsAlertModal.classList.remove('hidden');
+        }
+    }
+
+    smsAlertOkBtn?.addEventListener('click', () => {
+        if (smsAlertModal) smsAlertModal.classList.add('hidden');
+        if (typeof _smsAlertCallback === 'function') { _smsAlertCallback(); _smsAlertCallback = null; }
+    });
+
+    // Close on backdrop click
+    smsAlertModal?.addEventListener('click', (e) => {
+        if (e.target === smsAlertModal) {
+            smsAlertModal.classList.add('hidden');
+            if (typeof _smsAlertCallback === 'function') { _smsAlertCallback(); _smsAlertCallback = null; }
+        }
+    });
+
+    // =========================================================================
+    // CUSTOM CONFIRM MODAL (replaces native browser confirm)
+    // =========================================================================
+    const smsConfirmModal     = document.getElementById('smsConfirmModal');
+    const smsConfirmIconWrap  = document.getElementById('smsConfirmIconWrap');
+    const smsConfirmIcon      = document.getElementById('smsConfirmIcon');
+    const smsConfirmTitle     = document.getElementById('smsConfirmTitle');
+    const smsConfirmMessage   = document.getElementById('smsConfirmMessage');
+    const smsConfirmOkBtn     = document.getElementById('smsConfirmOkBtn');
+    const smsConfirmCancelBtn = document.getElementById('smsConfirmCancelBtn');
+    let _smsConfirmCallback   = null;
+
+    function showSmsConfirm(message, onConfirm, options = {}) {
+        const {
+            title       = 'Confirm Action',
+            type        = 'primary',   // 'primary' | 'danger'
+            confirmText = 'Confirm',
+            icon        = 'bi-question-circle-fill',
+        } = options;
+
+        if (smsConfirmMessage) smsConfirmMessage.textContent = message;
+        if (smsConfirmTitle)   smsConfirmTitle.textContent   = title;
+        if (smsConfirmIcon)    smsConfirmIcon.className      = `bi ${icon}`;
+
+        const iconCls = type === 'danger'
+            ? 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300'
+            : 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-300';
+        if (smsConfirmIconWrap) smsConfirmIconWrap.className = iconCls;
+
+        const btnCls = type === 'danger'
+            ? 'px-5 py-2 text-xs font-bold rounded-xl text-white shadow-sm active:scale-[0.97] transition-all cursor-pointer bg-gradient-to-r from-rose-600 to-red-700 hover:from-rose-700 hover:to-red-800'
+            : 'px-5 py-2 text-xs font-bold rounded-xl text-white shadow-sm active:scale-[0.97] transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800';
+        if (smsConfirmOkBtn) {
+            smsConfirmOkBtn.textContent = confirmText;
+            smsConfirmOkBtn.className   = btnCls;
+        }
+
+        _smsConfirmCallback = onConfirm;
+        if (smsConfirmModal) smsConfirmModal.classList.remove('hidden');
+    }
+
+    smsConfirmOkBtn?.addEventListener('click', () => {
+        if (smsConfirmModal) smsConfirmModal.classList.add('hidden');
+        if (typeof _smsConfirmCallback === 'function') { _smsConfirmCallback(); _smsConfirmCallback = null; }
+    });
+
+    smsConfirmCancelBtn?.addEventListener('click', () => {
+        if (smsConfirmModal) smsConfirmModal.classList.add('hidden');
+        _smsConfirmCallback = null;
+    });
+
+    smsConfirmModal?.addEventListener('click', (e) => {
+        if (e.target === smsConfirmModal) {
+            smsConfirmModal.classList.add('hidden');
+            _smsConfirmCallback = null;
+        }
+    });
+
+    // =========================================================================
     // 1. WIZARD MODAL CONTROLS & STEPPER (Next/Back only — no tab clicking)
     // =========================================================================
     const broadcastWizardModal = document.getElementById('broadcastWizardModal');
@@ -61,13 +160,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate before advancing forward
         if (step > currentStep) {
             if (currentStep === 1 && selectedReservations.size === 0) {
-                alert('Please select at least one reservation / guest recipient before proceeding.');
+                showSmsAlert('Please select at least one reservation / guest recipient before proceeding.');
                 return;
             }
             if (currentStep === 2) {
                 const msg = (smsMessageTextarea?.value || '').trim();
                 if (msg.length < 3) {
-                    alert('Please compose an SMS message of at least 3 characters before proceeding.');
+                    showSmsAlert('Please compose an SMS message of at least 3 characters before proceeding.');
                     smsMessageTextarea?.focus();
                     return;
                 }
@@ -159,9 +258,68 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedRatioDisplay = document.getElementById('selectedRatioDisplay');
     const selectedTargetGroupLabel = document.getElementById('selectedTargetGroupLabel');
     const selectionStatusBadge = document.getElementById('selectionStatusBadge');
+    const audienceDateFilter = document.getElementById('audienceDateFilter');
+    const dateFilterLabel = document.getElementById('dateFilterLabel');
+    const dateFilterFrom = document.getElementById('dateFilterFrom');
+    const dateFilterTo = document.getElementById('dateFilterTo');
+    const clearDateFilterBtn = document.getElementById('clearDateFilterBtn');
+
+    // Which data attribute each audience uses for date filtering
+    const AUDIENCE_DATE_FIELD = {
+        active:      'check-in-iso',
+        confirmed:   'reservation-date-iso',
+        pending:     'reservation-date-iso',
+        checked_out: 'check-out-iso',
+    };
+    const AUDIENCE_DATE_LABEL = {
+        active:      'Filter by stay date (check-in)',
+        confirmed:   'Filter by scheduled visit date',
+        pending:     'Filter by scheduled visit date',
+        checked_out: 'Filter by checkout date',
+    };
 
     let currentAudience = 'active';
     let selectedReservations = new Map(); // id -> { id, guest, phone, displayPhone }
+
+    // Returns true if the row's relevant date falls within the active date filter
+    function rowMatchesDateFilter(row) {
+        const field = AUDIENCE_DATE_FIELD[currentAudience];
+        if (!field) return true; // 'all' / 'custom' — no date filter
+        const from = dateFilterFrom?.value || '';
+        const to   = dateFilterTo?.value   || '';
+        if (!from && !to) return true; // filter not set
+        const rowDate = row.getAttribute(`data-${field}`) || '';
+        if (!rowDate) return false; // row has no date for this field — exclude when filter is active
+        if (from && rowDate < from) return false;
+        if (to   && rowDate > to)   return false;
+        return true;
+    }
+
+    // Show/hide and label the date filter panel based on the current audience
+    function updateAudienceDateFilter() {
+        const hasFilter = AUDIENCE_DATE_FIELD[currentAudience] !== undefined;
+        if (audienceDateFilter) {
+            audienceDateFilter.classList.toggle('hidden', !hasFilter);
+        }
+        if (dateFilterLabel && AUDIENCE_DATE_LABEL[currentAudience]) {
+            dateFilterLabel.textContent = AUDIENCE_DATE_LABEL[currentAudience];
+        }
+    }
+
+    // Rebuild selectedReservations from current audience + date filter
+    function reapplySelection() {
+        selectedReservations.clear();
+        const rows = modalTableBody?.querySelectorAll('.reservation-row') || [];
+        rows.forEach(row => {
+            const id          = row.getAttribute('data-id');
+            const guest       = row.getAttribute('data-guest-name');
+            const phone       = row.getAttribute('data-phone');
+            const displayPhone = row.getAttribute('data-display-phone');
+            if (id && rowMatchesAudience(row, currentAudience) && rowMatchesDateFilter(row)) {
+                selectedReservations.set(id, { id, guest, phone, displayPhone });
+            }
+        });
+    }
 
     // Check if a row matches the given audience key
     function rowMatchesAudience(row, audienceKey) {
@@ -197,6 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function selectAudience(audienceKey) {
         currentAudience = audienceKey;
 
+        // Reset date filter when switching audience
+        if (dateFilterFrom) dateFilterFrom.value = '';
+        if (dateFilterTo)   dateFilterTo.value   = '';
+        updateAudienceDateFilter();
+
         // Highlight card
         audienceCards.forEach(card => {
             const key = card.getAttribute('data-audience');
@@ -213,20 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Collect matching rows from the customizer table
-        selectedReservations.clear();
-        const rows = modalTableBody?.querySelectorAll('.reservation-row') || [];
-
-        rows.forEach(row => {
-            const id = row.getAttribute('data-id');
-            const guest = row.getAttribute('data-guest-name');
-            const phone = row.getAttribute('data-phone');
-            const displayPhone = row.getAttribute('data-display-phone');
-
-            if (rowMatchesAudience(row, audienceKey) && id) {
-                selectedReservations.set(id, { id, guest, phone, displayPhone });
-            }
-        });
+        reapplySelection();
 
         // Reset pagination and sync UI
         currentPage = 1;
@@ -261,6 +411,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const key = card.getAttribute('data-audience');
             if (key) selectAudience(key);
         });
+    });
+
+    // Date filter: re-apply selection whenever From/To changes
+    function onDateFilterChange() {
+        reapplySelection();
+        updateRowCheckboxesAndHighlights();
+        updateCustomizerCounts();
+        // Show "Date Filter Active" badge when either date is set
+        const isFiltering = !!(dateFilterFrom?.value || dateFilterTo?.value);
+        if (selectionStatusBadge) {
+            if (isFiltering) {
+                selectionStatusBadge.textContent = 'Date Filter Active';
+                selectionStatusBadge.className = 'text-[11px] font-bold text-emerald-600 dark:text-emerald-300';
+            } else {
+                selectionStatusBadge.textContent = 'Group Preset Active';
+                selectionStatusBadge.className = 'text-[11px] font-bold text-emerald-700 dark:text-emerald-400';
+            }
+        }
+        updateStep1SummaryCard();
+    }
+
+    dateFilterFrom?.addEventListener('change', onDateFilterChange);
+    dateFilterTo?.addEventListener('change', onDateFilterChange);
+
+    clearDateFilterBtn?.addEventListener('click', () => {
+        if (dateFilterFrom) dateFilterFrom.value = '';
+        if (dateFilterTo)   dateFilterTo.value   = '';
+        onDateFilterChange();
     });
 
     // =========================================================================
@@ -539,6 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const smsCharCounter = document.getElementById('smsCharCounter');
     const liveSmsPreviewBubble = document.getElementById('liveSmsPreviewBubble');
     const liveSmsPreviewTime = document.getElementById('liveSmsPreviewTime');
+    const deduplicateCheckbox = document.getElementById('deduplicateNumbers');
 
     const templates = {
         welcome: "Hinaguan Nature Park: Welcome! Please be reminded of our park guidelines and quiet hours from 10 PM. Enjoy your stay!",
@@ -598,14 +777,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const metricSmsSentCount = document.getElementById('metricSmsSentCount');
 
     function populateReviewStep() {
-        let validCount = 0;
+        const deduplicate = deduplicateCheckbox?.checked ?? true;
+        const allValidPhones = [];
         selectedReservations.forEach(item => {
-            if (item.phone && item.phone.trim().length > 5) validCount++;
+            if (item.phone && item.phone.trim().length > 5) allValidPhones.push(item.phone.trim());
         });
+        const uniquePhones = [...new Set(allValidPhones)];
+        const effectiveCount = deduplicate ? uniquePhones.length : allValidPhones.length;
+        const duplicatesSkipped = allValidPhones.length - uniquePhones.length;
 
         if (reviewAudienceName) reviewAudienceName.textContent = getAudienceLabel(currentAudience);
         if (reviewReservationsCount) reviewReservationsCount.textContent = `${selectedReservations.size} Selected`;
-        if (reviewValidPhoneCount) reviewValidPhoneCount.textContent = `${validCount} Numbers`;
+        if (reviewValidPhoneCount) {
+            reviewValidPhoneCount.textContent = deduplicate && duplicatesSkipped > 0
+                ? `${effectiveCount} Numbers (${duplicatesSkipped} duplicate${duplicatesSkipped > 1 ? 's' : ''} skipped)`
+                : `${effectiveCount} Numbers`;
+        }
         if (reviewMessageText) reviewMessageText.textContent = smsMessageTextarea?.value || '—';
     }
 
@@ -614,20 +801,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const titleText = (smsAnnouncementTitle?.value || '').trim();
 
         if (messageText.length < 3) {
-            alert('Please enter an SMS announcement message of at least 3 characters.');
+            showSmsAlert('Please enter an SMS announcement message of at least 3 characters.');
             goToStep(2);
             return;
         }
 
+        const deduplicate = deduplicateCheckbox?.checked ?? true;
         const reservationIds = Array.from(selectedReservations.keys()).map(id => parseInt(id, 10));
         if (reservationIds.length === 0) {
-            alert('No reservations selected. Please pick recipients in Step 1.');
+            showSmsAlert('No reservations selected. Please pick recipients in Step 1.');
             goToStep(1);
             return;
         }
 
-        if (!confirm(`Dispatch this SMS message to ${reservationIds.length} reservation(s)?`)) return;
+        // Compute effective recipient count for the confirm prompt
+        const allValidPhones = Array.from(selectedReservations.values())
+            .map(r => r.phone?.trim()).filter(p => p && p.length > 5);
+        const effectiveRecipients = deduplicate ? new Set(allValidPhones).size : allValidPhones.length;
+        const duplicatesNote = deduplicate && (allValidPhones.length - new Set(allValidPhones).size) > 0
+            ? ` (${allValidPhones.length - new Set(allValidPhones).size} duplicate number${allValidPhones.length - new Set(allValidPhones).size > 1 ? 's' : ''} will be skipped)`
+            : '';
 
+        // Show custom confirm modal — actual sending runs in the callback
+        showSmsConfirm(
+            `Dispatch this SMS to ${effectiveRecipients} unique recipient(s) across ${reservationIds.length} reservation(s)?${duplicatesNote}`,
+            () => _executeBroadcast(messageText, titleText, reservationIds, deduplicate),
+            { title: 'Broadcast SMS', confirmText: 'Send Now', icon: 'bi-send-fill' }
+        );
+    }
+
+    async function _executeBroadcast(messageText, titleText, reservationIds, deduplicate) {
         if (wizardNextBtn) {
             wizardNextBtn.disabled = true;
             wizardNextBtn.innerHTML = '<span class="inline-block animate-spin mr-2"><i class="bi bi-arrow-repeat"></i></span> <span>Broadcasting SMS...</span>';
@@ -645,7 +848,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     reservation_ids: reservationIds,
                     message: messageText,
                     title: titleText || 'Guest SMS Announcement',
-                    category: 'sms_broadcast'
+                    category: 'sms_broadcast',
+                    deduplicate: deduplicate
                 })
             });
 
@@ -668,11 +872,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateCharCounterAndPreview();
                 goToStep(1);
             } else {
-                alert(data.message || 'Failed to broadcast SMS announcement.');
+                showSmsAlert(data.message || 'Failed to broadcast SMS announcement.', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('A network error occurred while broadcasting SMS.');
+            showSmsAlert('A network error occurred while broadcasting SMS.', 'error');
         } finally {
             if (wizardNextBtn) {
                 wizardNextBtn.disabled = false;
@@ -759,21 +963,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const delBtn = e.target.closest('.delete-history-btn');
         if (delBtn) {
             const id = delBtn.getAttribute('data-id');
-            if (!confirm('Are you sure you want to delete this SMS broadcast log entry?')) return;
-            try {
-                const res = await fetch(`/admin/announcements/${id}`, {
-                    method: 'DELETE',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.querySelector(`tr[data-announcement-id="${id}"]`)?.remove();
-                    showNotification('Announcement record deleted.', 'success');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('Failed to delete announcement record.');
-            }
+            showSmsConfirm(
+                'Are you sure you want to delete this SMS broadcast log entry? This action cannot be undone.',
+                async () => {
+                    try {
+                        const res = await fetch(`/admin/announcements/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            document.querySelector(`tr[data-announcement-id="${id}"]`)?.remove();
+                            showNotification('Announcement record deleted.', 'success');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showSmsAlert('Failed to delete announcement record.', 'error');
+                    }
+                },
+                { title: 'Delete Log Entry', type: 'danger', confirmText: 'Delete', icon: 'bi-trash-fill' }
+            );
         }
     });
 

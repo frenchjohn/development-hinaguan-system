@@ -3039,8 +3039,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'number_of_guests' => (int) ($r->number_of_guests ?: ($companionCount + 1)),
                 'amenities' => $amenitiesSummary,
                 'reservation_date' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('M d, Y') : '—',
+                'reservation_date_iso' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null,
                 'check_in' => $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->format('M d, Y h:i A') : '—',
+                'check_in_iso' => $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->format('Y-m-d') : null,
                 'check_out' => $r->check_out ? \Illuminate\Support\Carbon::parse($r->check_out)->format('M d, Y h:i A') : null,
+                'check_out_iso' => $r->check_out ? \Illuminate\Support\Carbon::parse($r->check_out)->format('Y-m-d') : null,
                 'start_slot' => $r->start_slot ?? 'Daytime',
                 'end_slot' => $r->end_slot ?? 'Daytime',
                 'status' => $r->status,
@@ -3090,12 +3093,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'message' => ['required', 'string', 'min:3', 'max:1000'],
             'category' => ['nullable', 'string', 'max:50'],
             'title' => ['nullable', 'string', 'max:100'],
+            'deduplicate' => ['nullable', 'boolean'],
         ]);
 
         $reservationIds = $validated['reservation_ids'];
         $messageText = trim($validated['message']);
         $category = $validated['category'] ?? 'sms_broadcast';
         $title = !empty($validated['title']) ? trim($validated['title']) : 'SMS Announcement';
+        $deduplicate = (bool) ($validated['deduplicate'] ?? true);
 
         $reservations = Reservation::with(['reservationGuests.customer'])
             ->whereIn('id', $reservationIds)
@@ -3113,6 +3118,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $failedCount = 0;
         $deliveryDetails = [];
         $recipientPhones = [];
+        $seenPhones = [];
 
         foreach ($reservations as $reservation) {
             $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
@@ -3133,7 +3139,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 continue;
             }
 
+            // Skip duplicate phone numbers when deduplication is enabled
+            if ($deduplicate && in_array($phone, $seenPhones)) {
+                $deliveryDetails[] = [
+                    'reservation_id' => $reservation->id,
+                    'guest_name' => $guestName,
+                    'phone' => $phone,
+                    'status' => 'skipped',
+                    'reason' => 'Duplicate phone number — one SMS per number is enabled',
+                ];
+                continue;
+            }
+
             $recipientPhones[] = $phone;
+            if ($deduplicate) $seenPhones[] = $phone;
 
             try {
                 $result = $philSms->sendSms($phone, $messageText);
