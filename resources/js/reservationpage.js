@@ -1504,7 +1504,7 @@ function initReservationPage() {
                 String(date.getMonth() + 1).padStart(2, '0') + '-' +
                 String(date.getDate()).padStart(2, '0');
 
-            let isAvailable = false;
+            let isAvailable = true;
             const entry = calendarAvailability.find((e) => e.date === isoDate);
 
             if (entry) {

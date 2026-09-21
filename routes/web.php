@@ -205,24 +205,6 @@ $getReservationAmenityTimeline = function ($ra, $res = null) use ($continuousSlo
 
 // Returns true when an amenity is already booked across any portion of a continuous range
 $isAmenityRangeTaken = function (string $amenityId, string $startDate, ?string $endDate = null, string $startSlot = 'Daytime', string $endSlot = 'Daytime', ?int $excludeReservationId = null) use ($continuousSlotTimeline, $getReservationAmenityTimeline): bool {
-    // 1. Any amenity availed by a currently active reservation (Checked In without checkout) is taken/occupied!
-    $isActiveOccupied = ReservationAmenity::query()
-        ->where('amenity_id', $amenityId)
-        ->where(function ($q) {
-            $q->whereNull('status')
-              ->orWhere('status', '!=', 'Completed');
-        })
-        ->whereHas('reservation', function ($rq) use ($excludeReservationId) {
-            $rq->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active'])
-               ->whereNull('check_out')
-               ->when($excludeReservationId !== null, fn ($q) => $q->whereKeyNot($excludeReservationId));
-        })
-        ->exists();
-
-    if ($isActiveOccupied) {
-        return true;
-    }
-
     $requestedTimeline = $continuousSlotTimeline($startDate, $endDate, $startSlot, $endSlot);
     if (empty($requestedTimeline)) {
         return false;
@@ -1166,12 +1148,15 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
                 }
                 $daytimeAvailable = $anyFree;
             } else {
+                // For specific amenity: only mark unavailable if THIS specific amenity is taken on THIS date
+                $anyTaken = false;
                 foreach ($amenityIds as $aId) {
                     if ($isAmenityRangeTaken($aId, $date, $date, 'Daytime', 'Daytime')) {
-                        $daytimeAvailable = false;
+                        $anyTaken = true;
                         break;
                     }
                 }
+                $daytimeAvailable = !$anyTaken;
             }
         }
 
@@ -1186,12 +1171,15 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
                 }
                 $nighttimeAvailable = $anyFree;
             } else {
+                // For specific amenity: only mark unavailable if THIS specific amenity is taken on THIS date
+                $anyTaken = false;
                 foreach ($amenityIds as $aId) {
                     if ($isAmenityRangeTaken($aId, $date, $date, 'Nighttime', 'Nighttime')) {
-                        $nighttimeAvailable = false;
+                        $anyTaken = true;
                         break;
                     }
                 }
+                $nighttimeAvailable = !$anyTaken;
             }
         }
 
@@ -1206,12 +1194,15 @@ Route::get('/reservation/availability/calendar', function (Request $request) use
                 }
                 $nextDaytimeAvailable = $anyFree;
             } else {
+                // For specific amenity: only mark unavailable if THIS specific amenity is taken on THIS date
+                $anyTaken = false;
                 foreach ($amenityIds as $aId) {
                     if ($isAmenityRangeTaken($aId, $nextDate, $nextDate, 'Daytime', 'Daytime')) {
-                        $nextDaytimeAvailable = false;
+                        $anyTaken = true;
                         break;
                     }
                 }
+                $nextDaytimeAvailable = !$anyTaken;
             }
         }
 
@@ -6932,14 +6923,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $oldTotal = (float) $reservation->total_amount;
         $oldPaid = (float) $reservation->amount_paid;
-        $newTotal = round($oldTotal + $grandTotal, 2);
+        $oldRemainingBalance = (float) $reservation->remaining_balance;
+        
+        // For online reservations, collect the remaining balance at check-in
+        $remainingBalanceCollected = $oldRemainingBalance;
+        
+        // Entrance fee is collected at check-in but NOT added to total_amount
+        // total_amount should remain as the original amenity booking amount
+        $newTotal = $oldTotal;
+        $newPaid = round($oldPaid + $grandTotal + $remainingBalanceCollected, 2);
+        $newRemainingBalance = round($newTotal - $newPaid, 2);
+        
         $reservation->update([
             'check_in' => now()->toDateTimeString(),
             'status' => 'Checked In',
             'total_amount' => $newTotal,
-            'amount_paid' => $newTotal,
-            'remaining_balance' => 0,
-            'payment_status' => 'Paid',
+            'amount_paid' => $newPaid,
+            'remaining_balance' => $newRemainingBalance,
+            'payment_status' => $newRemainingBalance <= 0 ? 'Paid' : 'Partial Payment',
         ]);
 
         $actualGuestCount = $reservation->reservationGuests()->count();
@@ -6948,10 +6949,14 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $staffName = $user['name'] ?? 'Staff User';
+        
+        // Log the amount actually collected at counter: remaining balance + entrance fee + extras
+        $amountCollectedAtCounter = round($remainingBalanceCollected + $grandTotal, 2);
+        
         ActivityLog::log(
             action: 'checked_in',
             activityType: 'check_in',
-            paymentAmount: (float) $grandTotal,
+            paymentAmount: $amountCollectedAtCounter,
             title: 'Guest Checked In',
             description: "Reservation #{$reservation->id} ({$reservation->booker_name}, {$reservation->number_of_guests} guests) checked in by {$staffName}",
             reservationId: $reservation->id,
@@ -6961,7 +6966,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             metadata: [
                 'booker_name' => $reservation->booker_name,
                 'number_of_guests' => $reservation->number_of_guests,
+                'remaining_balance_collected' => $remainingBalanceCollected,
                 'entrance_fee' => $grandTotal,
+                'total_collected_at_counter' => $amountCollectedAtCounter,
                 'staff_name' => $staffName,
             ]
         );
