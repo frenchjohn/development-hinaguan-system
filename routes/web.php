@@ -3468,6 +3468,53 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::post('/api/reports/ai-analyze', [\App\Http\Controllers\AdminReportAiController::class, 'analyze'])->name('reports.ai_analyze');
 
+    // ── Payment Transactions ──────────────────────────────────────────────────
+    Route::get('/payment', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $paymentTypes = [
+            'walkin_created', 'check_in', 'online_reservation_created',
+            'companion_added', 'amenity_added', 'additional_charge_paid',
+            'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+        ];
+
+        $rawLogs = \App\Models\ActivityLog::with('reservation')
+            ->whereIn('activity_type', $paymentTypes)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $transactions = $rawLogs->map(function ($log) {
+            $isOnline = ($log->actor_role === 'guest') || is_null($log->staff_id);
+            return [
+                'id'              => $log->id,
+                'date'            => $log->created_at->format('M d, Y'),
+                'time'            => $log->created_at->format('h:i A'),
+                'datetime_iso'    => $log->created_at->format('Y-m-d'),
+                'reservation_id'  => $log->reservation_id,
+                'activity_type'   => $log->activity_type,
+                'title'           => $log->title,
+                'description'     => $log->description,
+                'payment_amount'  => (float) ($log->payment_amount ?? 0),
+                'actor_name'      => $log->actor_name,
+                'actor_role'      => $log->actor_role,
+                'staff_id'        => $log->staff_id,
+                'is_online'       => $isOnline,
+            ];
+        });
+
+        $totalCollected    = (float) $rawLogs->sum('payment_amount');
+        $totalOnline       = (float) $rawLogs->where('actor_role', 'guest')->sum('payment_amount');
+        $totalStaffHandled = $totalCollected - $totalOnline;
+        $transactionCount  = $rawLogs->count();
+
+        return view('admin.admin_payment', compact(
+            'transactions', 'totalCollected', 'totalOnline', 'totalStaffHandled', 'transactionCount'
+        ));
+    })->name('payment');
+
     Route::get('/settings', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'admin') {

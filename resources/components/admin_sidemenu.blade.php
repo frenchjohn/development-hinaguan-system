@@ -2,42 +2,44 @@
 
 @php
     $links = [
-        ['key' => 'dashboard', 'label' => 'Dashboard', 'url' => route('admin.dashboard'), 'icon' => 'grid'],
-        ['key' => 'amenities', 'label' => 'Amenities', 'url' => route('admin.amenities'), 'icon' => 'map'],
-        ['key' => 'users', 'label' => 'Users', 'url' => route('admin.users'), 'icon' => 'users'],
-        ['key' => 'announcements', 'label' => 'SMS Notification', 'url' => route('admin.announcements'), 'icon' => 'announcement'],
-        ['key' => 'reports', 'label' => 'Reports', 'url' => route('admin.reports'), 'icon' => 'chart'],
-        ['key' => 'feedback', 'label' => 'Feedback', 'url' => route('admin.feedback'), 'icon' => 'message'],
+        ['key' => 'dashboard',     'label' => 'Dashboard',       'url' => route('admin.dashboard'),     'icon' => 'grid'],
+        ['key' => 'amenities',     'label' => 'Amenities',       'url' => route('admin.amenities'),     'icon' => 'map'],
+        ['key' => 'users',         'label' => 'Users',           'url' => route('admin.users'),         'icon' => 'users'],
+        ['key' => 'payment',       'label' => 'Payments',        'url' => route('admin.payment'),       'icon' => 'payment'],
+        ['key' => 'announcements', 'label' => 'SMS Notif',       'url' => route('admin.announcements'), 'icon' => 'announcement'],
+        ['key' => 'reports',       'label' => 'Reports',         'url' => route('admin.reports'),       'icon' => 'chart'],
+        ['key' => 'feedback',      'label' => 'Feedback',        'url' => route('admin.feedback'),      'icon' => 'message'],
+        ['key' => 'settings',      'label' => 'Settings',        'url' => route('admin.settings'),      'icon' => 'cog'],
     ];
 @endphp
 
 <aside class="fixed top-0 left-0 z-50 flex flex-col w-[10rem] h-screen bg-[#1a3a25] dark:bg-[#09140e] border-r border-white/12 dark:border-[#14281c] text-white shadow-[0_4px_20px_rgba(0,0,0,0.25)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] overflow-visible transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] -translate-x-full lg:translate-x-0 group/sidebar" id="dashSidebar">
     <!-- Logo Section -->
-    <div class="relative z-10 flex justify-center px-4 pt-4 pb-2">
-        <div class="w-[60px] h-[60px] rounded-full bg-white/12 border border-white/20 dark:border-[#1b3525] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] overflow-hidden">
+    <div class="relative z-10 flex justify-center px-4 pt-2.5 pb-1.5">
+        <div class="w-[46px] h-[46px] rounded-full bg-white/12 border border-white/20 dark:border-[#1b3525] flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] overflow-hidden">
             <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" onerror="console.error('Logo failed to load'); this.style.display='none';" alt="Hinaguan Nature Park Logo" class="w-full h-full object-cover">
         </div>
     </div>
 
     <!-- Separator Line -->
-    <div class="relative z-10 h-px mx-4 mb-3 bg-gradient-to-r from-transparent via-white/15 dark:via-white/5 to-transparent"></div>
+    <div class="relative z-10 h-px mx-4 mb-1.5 bg-gradient-to-r from-transparent via-white/15 dark:via-white/5 to-transparent"></div>
 
     <!-- Navigation -->
-    <nav class="relative z-10 flex-1 flex flex-col px-3 py-1.5 min-h-0 overflow-y-auto" aria-label="Admin navigation">
-        <ul class="list-none m-0 p-0 flex flex-col gap-[3px] h-full justify-between">
+    <nav class="relative z-10 flex-1 flex flex-col px-3 py-1 min-h-0 overflow-y-hidden" aria-label="Admin navigation">
+        <ul class="list-none m-0 p-0 flex flex-col gap-[2px] h-full justify-between">
             @foreach ($links as $link)
                 <li>
                     <a
                         href="{{ $link['url'] }}"
-                        class="nav-link relative flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-white min-h-0 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer overflow-hidden group/link hover:bg-white/10 dark:hover:bg-white/5 hover:scale-105 {{ $active === $link['key'] ? 'is-active' : '' }}"
+                        class="nav-link relative flex flex-col items-center justify-center py-1.5 px-2 rounded-xl text-white min-h-0 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer overflow-hidden group/link hover:bg-white/10 dark:hover:bg-white/5 hover:scale-105 {{ $active === $link['key'] ? 'is-active' : '' }}"
                         data-page-transition
                     >
-                        <span class="nav-icon w-7 h-7 flex items-center justify-center mb-1 shrink-0 rounded-lg bg-transparent transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-85 group-hover/link:opacity-100 group-hover/link:scale-110">
-                            <span class="[&>svg]:w-5 [&>svg]:h-5 [&>svg]:fill-none [&>svg]:transition-all [&>svg]:duration-300 [&>svg]:ease-[cubic-bezier(0.34,1.56,0.64,1)] [&>svg]:stroke-white [&>svg]:stroke-[1.5]">
+                        <span class="nav-icon w-6 h-6 flex items-center justify-center mb-0.5 shrink-0 rounded-lg bg-transparent transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-85 group-hover/link:opacity-100 group-hover/link:scale-110">
+                            <span class="[&>svg]:w-4 [&>svg]:h-4 [&>svg]:fill-none [&>svg]:transition-all [&>svg]:duration-300 [&>svg]:ease-[cubic-bezier(0.34,1.56,0.64,1)] [&>svg]:stroke-white [&>svg]:stroke-[1.5]">
                                 @include('components.partials.sidemenu-icon', ['icon' => $link['icon']])
                             </span>
                         </span>
-                        <span class="nav-label font-['Poppins','Inter',sans-serif] text-[10px] text-center leading-[1.2] shrink-0 tracking-[0.2px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-100 text-white/75 font-medium group-hover/link:text-white group-hover/link:font-semibold">{{ $link['label'] }}</span>
+                        <span class="nav-label font-['Poppins','Inter',sans-serif] text-[9px] text-center leading-[1.2] shrink-0 tracking-[0.2px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-100 text-white/75 font-medium group-hover/link:text-white group-hover/link:font-semibold">{{ $link['label'] }}</span>
                     </a>
                 </li>
             @endforeach
@@ -45,19 +47,18 @@
     </nav>
 
     <!-- Separator Line -->
-    <div class="relative z-10 h-px mx-4 mb-3 bg-gradient-to-r from-transparent via-white/15 dark:via-white/5 to-transparent"></div>
+    <div class="relative z-10 h-px mx-4 mb-1.5 bg-gradient-to-r from-transparent via-white/15 dark:via-white/5 to-transparent"></div>
 
     <!-- Profile Section -->
-    <!-- Profile Section -->
-    <div class="relative z-[5] py-2.5 px-1.5 shrink-0 dash-sidebar__profile" data-dash-profile-section>
-        <button type="button" class="w-full flex items-center gap-2.5 py-2.5 px-3 rounded-[14px] bg-transparent border border-transparent cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] relative z-[5] group/profile hover:bg-white/10 dark:hover:bg-white/5 hover:border-white/12 dark:hover:border-[#14281c]" data-dash-user-toggle aria-label="User menu" aria-expanded="false" aria-haspopup="true">
-            <span class="relative w-[34px] h-[34px] rounded-xl bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-white flex items-center justify-center shrink-0 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(0,0,0,0.2)] border border-white/15 group-hover/profile:scale-110 group-hover/profile:-rotate-6 group-hover/profile:shadow-[0_6px_16px_rgba(110,159,84,0.4)] group-hover/profile:border-white/30 after:content-[''] after:absolute after:-bottom-0.5 after:-right-0.5 after:w-2.5 after:h-2.5 after:bg-[#4ade80] after:border-2 after:border-[#1a3a25] dark:after:border-[#09140e] group-hover/profile:after:border-white/10 after:rounded-full after:transition-all after:duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="w-4 h-4 text-white">
+    <div class="relative z-[5] py-2 px-1.5 shrink-0 dash-sidebar__profile" data-dash-profile-section>
+        <button type="button" class="w-full flex items-center gap-2 py-2 px-3 rounded-[14px] bg-transparent border border-transparent cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] relative z-[5] group/profile hover:bg-white/10 dark:hover:bg-white/5 hover:border-white/12 dark:hover:border-[#14281c]" data-dash-user-toggle aria-label="User menu" aria-expanded="false" aria-haspopup="true">
+            <span class="relative w-[30px] h-[30px] rounded-xl bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-white flex items-center justify-center shrink-0 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(0,0,0,0.2)] border border-white/15 group-hover/profile:scale-110 group-hover/profile:-rotate-6 group-hover/profile:shadow-[0_6px_16px_rgba(110,159,84,0.4)] group-hover/profile:border-white/30 after:content-[''] after:absolute after:-bottom-0.5 after:-right-0.5 after:w-2 after:h-2 after:bg-[#4ade80] after:border-2 after:border-[#1a3a25] dark:after:border-[#09140e] group-hover/profile:after:border-white/10 after:rounded-full after:transition-all after:duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="w-3.5 h-3.5 text-white">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                 </svg>
             </span>
             <span class="flex-1 text-left min-w-0">
-                <span class="block text-[12px] font-bold text-white/85 leading-[1.2] overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">{{ $userName }}</span>
+                <span class="block text-[11px] font-bold text-white/85 leading-[1.2] overflow-hidden text-ellipsis whitespace-nowrap transition-colors duration-300 group-hover/profile:text-white">{{ $userName }}</span>
                 <span class="hidden">{{ $userRole }}</span>
             </span>
             <span class="w-1.5 h-1.5 border-r-2 border-b-2 border-white/40 transform rotate-45 transition-all duration-300 mr-1 group-hover/profile:border-white/80 group-hover/profile:rotate-45 group-hover/profile:translate-x-0.5 group-hover/profile:translate-y-0.5"></span>
@@ -72,14 +73,6 @@
                 </svg>
                 <span class="ml-7 dash-sidebar__theme-text" data-theme-text>Light Mode</span>
             </button>
-            <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 w-full py-3 px-3.5 text-white/85 no-underline rounded-[10px] text-[12px] font-semibold text-left transition-all duration-300 border border-transparent bg-transparent cursor-pointer mb-1 relative overflow-hidden group/item hover:border-white/15 hover:translate-x-1 hover:scale-105 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-                <span class="absolute inset-0 bg-white/5 opacity-0 transition-opacity duration-300 rounded-[10px] group-hover/item:opacity-100"></span>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="w-4 h-4 shrink-0 stroke-white/75 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/item:scale-110 group-hover/item:rotate-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span class="relative z-10">Settings</span>
-            </a>
             <a href="{{ route('home') }}" class="flex items-center gap-3 w-full py-3 px-3.5 text-white/85 no-underline rounded-[10px] text-[12px] font-semibold text-left transition-all duration-300 border border-transparent bg-transparent cursor-pointer mb-1 relative overflow-hidden group/item hover:border-white/15 hover:translate-x-1 hover:scale-105 hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
                 <span class="absolute inset-0 bg-white/5 opacity-0 transition-opacity duration-300 rounded-[10px] group-hover/item:opacity-100"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" class="w-4 h-4 shrink-0 stroke-white/75 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/item:scale-110 group-hover/item:rotate-6">
