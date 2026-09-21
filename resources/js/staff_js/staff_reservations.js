@@ -6200,9 +6200,21 @@ window.AppPage['staff_reservations'] = function () {
         if (!container) return;
 
         container.innerHTML = `
-            <div class="py-12 text-center text-hp-text-muted text-xs">
-                <i class="bi bi-arrow-repeat animate-spin text-xl text-hp-green block mb-2"></i>
-                Loading reschedule requests...
+            <div class="space-y-3">
+                ${[1,2,3].map(() => `
+                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 animate-pulse">
+                        <div class="flex items-center gap-2.5 mb-3">
+                            <div class="h-5 w-14 rounded-md bg-slate-200 dark:bg-white/10"></div>
+                            <div class="h-4 w-36 rounded-md bg-slate-200 dark:bg-white/10"></div>
+                            <div class="h-5 w-20 rounded-lg bg-slate-200 dark:bg-white/10 ml-auto"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
+                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
+                        </div>
+                        <div class="h-3 w-2/3 rounded bg-slate-100 dark:bg-white/5"></div>
+                    </div>
+                `).join('')}
             </div>
         `;
 
@@ -6315,7 +6327,7 @@ window.AppPage['staff_reservations'] = function () {
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
+                        <!-- Action Buttons + 3-dot menu -->
                         <div class="shrink-0 flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
                             ${isSub ? `
                                 <button type="button" class="btn-resched-approve cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}" data-res-id="${req.reservation_id}" data-req-date="${escapeHtml(req.requested_date)}">
@@ -6326,11 +6338,24 @@ window.AppPage['staff_reservations'] = function () {
                                     <i class="bi bi-x-lg"></i>
                                     <span>Decline</span>
                                 </button>
-                            ` : `
-                                <button type="button" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-300" data-open-res-id="${req.reservation_id}">
-                                    <i class="bi bi-eye"></i> View Res
+                            ` : ''}
+                            <!-- 3-dot dropdown -->
+                            <div class="relative">
+                                <button type="button" class="btn-resched-dots w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-all cursor-pointer" data-req-id="${req.id}" aria-label="More actions">
+                                    <i class="bi bi-three-dots-vertical text-sm"></i>
                                 </button>
-                            `}
+                                <div class="resched-dots-menu hidden absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c211e] shadow-xl z-20 overflow-hidden py-1" data-req-id="${req.id}">
+                                    <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer" data-dots-action="view" data-res-id="${req.reservation_id}">
+                                        <i class="bi bi-eye text-slate-400 dark:text-slate-500"></i>
+                                        View Reservation
+                                    </button>
+                                    <div class="h-px mx-3 bg-slate-100 dark:bg-white/10"></div>
+                                    <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" data-dots-action="delete" data-req-id="${req.id}">
+                                        <i class="bi bi-trash text-rose-400"></i>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -6363,6 +6388,70 @@ window.AppPage['staff_reservations'] = function () {
                     openModal(rId);
                 });
             });
+
+            // ── 3-dot dropdown wiring ──────────────────────────────────────
+            const closeAllDotMenus = () => {
+                container.querySelectorAll('.resched-dots-menu').forEach(m => m.classList.add('hidden'));
+            };
+
+            container.querySelectorAll('.btn-resched-dots').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const reqId = btn.dataset.reqId;
+                    const menu = container.querySelector(`.resched-dots-menu[data-req-id="${reqId}"]`);
+                    const isOpen = menu && !menu.classList.contains('hidden');
+                    closeAllDotMenus();
+                    if (!isOpen && menu) menu.classList.remove('hidden');
+                });
+            });
+
+            // View Reservation action
+            container.querySelectorAll('[data-dots-action="view"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeAllDotMenus();
+                    const rId = btn.dataset.resId;
+                    closeReschedRequestsModal();
+                    openModal(rId);
+                });
+            });
+
+            // Delete action
+            container.querySelectorAll('[data-dots-action="delete"]').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    closeAllDotMenus();
+                    const reqId = btn.dataset.reqId;
+                    showConfirmModal(
+                        'Delete Reschedule Request',
+                        'Are you sure you want to delete this reschedule request? This cannot be undone.',
+                        async () => {
+                            try {
+                                const res = await fetch(`/staff/reschedule-requests/${reqId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '' },
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    loadRescheduleRequests(currentReschedFilter);
+                                } else {
+                                    alert(data.message || 'Failed to delete.');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                alert('Network error. Could not delete the request.');
+                            }
+                        },
+                        {
+                            confirmText: 'Yes, Delete',
+                            confirmClass: 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-red-700 shadow-sm',
+                        }
+                    );
+                });
+            });
+
+            // Close menus on outside click
+            document.addEventListener('click', closeAllDotMenus, { once: false });
 
         } catch (err) {
             console.error('Error loading reschedule requests:', err);

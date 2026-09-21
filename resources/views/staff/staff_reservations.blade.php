@@ -683,10 +683,21 @@
             <!-- Table / Request list -->
             <div class="flex-1 min-h-[280px] overflow-y-auto custom-scrollbar p-5 sm:p-6">
                 <div id="reschedRequestsList" class="space-y-3">
-                    <div class="py-12 text-center text-hp-text-muted text-xs">
-                        <i class="bi bi-arrow-repeat animate-spin text-xl text-hp-green block mb-2"></i>
-                        Loading reschedule requests...
+                    {{-- Skeleton loader (replaced by JS on load) --}}
+                    @foreach(range(1,3) as $_)
+                    <div class="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 animate-pulse">
+                        <div class="flex items-center gap-2.5 mb-3">
+                            <div class="h-5 w-14 rounded-md bg-slate-200 dark:bg-white/10"></div>
+                            <div class="h-4 w-36 rounded-md bg-slate-200 dark:bg-white/10"></div>
+                            <div class="h-5 w-20 rounded-lg bg-slate-200 dark:bg-white/10 ml-auto"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
+                            <div class="h-9 rounded-xl bg-slate-100 dark:bg-white/5"></div>
+                        </div>
+                        <div class="h-3 w-2/3 rounded bg-slate-100 dark:bg-white/5"></div>
                     </div>
+                    @endforeach
                 </div>
             </div>
 

@@ -9027,6 +9027,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reschedule-requests.decline');
 
+    Route::delete('/reschedule-requests/{rescheduleRequest}', function (Request $request, \App\Models\RescheduleRequest $rescheduleRequest) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $rescheduleRequest->delete();
+        return response()->json(['success' => true, 'message' => 'Reschedule request deleted.']);
+    })->name('reschedule-requests.destroy');
+
     Route::get('/reservations/refresh', function (Request $request) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
