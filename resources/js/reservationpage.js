@@ -3759,7 +3759,7 @@ function initReservationPage() {
 
 
 
-    // ── PayMongo Payment Gateway State & Methods ─────────────────────────────
+    // ── Xendit Payment Gateway State & Methods ─────────────────────────────
     const paymongoPaymentModal = document.getElementById('paymongoPaymentModal');
     const pmSummaryTotal = document.getElementById('pmSummaryTotal');
     const pmSummaryDeposit = document.getElementById('pmSummaryDeposit');
@@ -4074,7 +4074,7 @@ function initReservationPage() {
             if (pmStatusBox) pmStatusBox.hidden = true;
             stopPaymentTimer();
         } else {
-            processPayMongoPayment(selectedMethod);
+            processPayment(selectedMethod);
         }
     };
 
@@ -4207,17 +4207,17 @@ function initReservationPage() {
         }, 3000);
     };
 
-    // Listen for postMessage from payment return page iframe/popup
+    // Listen for postMessage from Xendit payment return popup
     window.addEventListener('message', (event) => {
-        if (event.data && event.data.source === 'hinaguan-paymongo') {
+        if (event.data && event.data.source === 'hinaguan-xendit') {
             if (event.data.status === 'success' && currentPaymentIntentId) {
                 startPaymentPolling(currentPaymentIntentId);
             }
         }
     });
 
-    // Process Payment Method Attachment (GCash, Maya, Card, QR Ph)
-    const processPayMongoPayment = async (methodType, extraData = {}) => {
+    // Process payment via Xendit (GCash, Maya, QR Ph)
+    const processPayment = async (methodType, extraData = {}) => {
         if (!currentPaymentIntentId) {
             if (pmNotice) pmNotice.textContent = 'Missing payment session. Please try again.';
             return;
@@ -4279,10 +4279,27 @@ function initReservationPage() {
 
             if (result.next_action && result.next_action.redirect && result.next_action.redirect.url) {
                 const redirectUrl = result.next_action.redirect.url;
-                if (pmIframeContainer && pmAuthIframe) {
-                    pmIframeContainer.hidden = false;
-                    pmAuthIframe.src = redirectUrl;
+
+                // Open Xendit checkout in a popup window.
+                // The return page posts a message back so we can start polling.
+                const popup = window.open(
+                    redirectUrl,
+                    'xendit_payment',
+                    'width=700,height=780,resizable=yes,scrollbars=yes,location=yes'
+                );
+
+                if (popup) {
+                    // Popup opened — wait for message from payment return page
+                    if (pmStatusText) pmStatusText.textContent = 'Complete your payment in the opened window…';
+                    if (pmIframeContainer) pmIframeContainer.hidden = true;
+                } else {
+                    // Popup was blocked — fall back to iframe
+                    if (pmIframeContainer && pmAuthIframe) {
+                        pmIframeContainer.hidden = false;
+                        pmAuthIframe.src = redirectUrl;
+                    }
                 }
+
                 startPaymentPolling(currentPaymentIntentId);
             } else {
                 startPaymentPolling(currentPaymentIntentId);
@@ -4296,17 +4313,17 @@ function initReservationPage() {
     // Payment action button listeners
     const pmPayGcashBtn = document.getElementById('pmPayGcashBtn');
     if (pmPayGcashBtn) {
-        pmPayGcashBtn.addEventListener('click', () => processPayMongoPayment('gcash'));
+        pmPayGcashBtn.addEventListener('click', () => processPayment('gcash'));
     }
 
     const pmPayMayaBtn = document.getElementById('pmPayMayaBtn');
     if (pmPayMayaBtn) {
-        pmPayMayaBtn.addEventListener('click', () => processPayMongoPayment('paymaya'));
+        pmPayMayaBtn.addEventListener('click', () => processPayment('paymaya'));
     }
 
     const pmGenerateQrBtn = document.getElementById('pmGenerateQrBtn');
     if (pmGenerateQrBtn) {
-        pmGenerateQrBtn.addEventListener('click', () => processPayMongoPayment('qrph'));
+        pmGenerateQrBtn.addEventListener('click', () => processPayment('qrph'));
     }
 
     // Card Form submit listener
@@ -4323,7 +4340,7 @@ function initReservationPage() {
             let expYear = parseInt(expYearStr, 10) || 0;
             if (expYear < 100) expYear += 2000;
 
-            processPayMongoPayment('card', {
+            processPayment('card', {
                 card_number: cardNumber,
                 exp_month: expMonth,
                 exp_year: expYear,
@@ -4410,7 +4427,7 @@ function initReservationPage() {
     const processingOverlayTitle = document.getElementById('processingOverlayTitle');
     const processingOverlayText = document.getElementById('processingOverlayText');
 
-    const showProcessingOverlay = (title = 'Securing Your Reservation', text = 'Preparing your checkout with PayMongo…') => {
+    const showProcessingOverlay = (title = 'Securing Your Reservation', text = 'Preparing your payment options…') => {
         if (!reservationProcessingOverlay) return;
         if (processingOverlayTitle) processingOverlayTitle.textContent = title;
         if (processingOverlayText) processingOverlayText.textContent = text;
@@ -4549,7 +4566,7 @@ function initReservationPage() {
     existingNoticeProceedBtn?.addEventListener('click', () => {
         existingNoticeProceedBtn.disabled = true;
         existingNoticeProceedBtn.innerHTML = '<span class="rp-btn-spinner"></span> Connecting…';
-        showProcessingOverlay('Securing Your Reservation', 'Connecting to PayMongo payment gateway…');
+        showProcessingOverlay('Securing Your Reservation', 'Connecting to payment gateway…');
         closeExistingNoticeModal();
         if (typeof onExistingProceedCallback === 'function') {
             onExistingProceedCallback();
@@ -4853,8 +4870,8 @@ function initReservationPage() {
             amenities: amenitiesArray,
         };
 
-        setSubmittingState(true, 'Connecting to PayMongo…');
-        showProcessingOverlay('Securing Your Reservation', 'Setting up your secure PayMongo payment options…');
+        setSubmittingState(true, 'Connecting to payment gateway…');
+        showProcessingOverlay('Securing Your Reservation', 'Setting up your secure payment options…');
 
         try {
             const response = await fetch('/reservation/create-intent', {
@@ -4889,7 +4906,7 @@ function initReservationPage() {
                 // Hide processing overlay right as payment modal opens
                 hideProcessingOverlay();
 
-                // Open PayMongo Payment Modal (Defaults to Step 2)
+                // Open payment modal (Defaults to Step 2)
                 if (paymongoPaymentModal) {
                     goToStep2();
                     paymongoPaymentModal.classList.add('is-open');

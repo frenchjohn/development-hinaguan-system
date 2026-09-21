@@ -1513,7 +1513,7 @@ Route::get('/reservation', function (WeatherService $weather) {
       ->header('Pragma', 'no-cache');
 })->name('reservation');
 
-// ── PayMongo Reservation & Payment Endpoints ─────────────────────────────────
+// ── Xendit Reservation & Payment Endpoints ──────────────────────────────────
 
 $createReservationFromPayment = function (string $paymentIntentId, ?string $paymentMethod = null, ?array $intentDetails = null) use ($calculateContinuousSlotsCount): ?Reservation {
     $existing = Reservation::where('payment_intent_id', $paymentIntentId)->first();
@@ -1894,7 +1894,7 @@ Route::post('/reservation/check-existing', function (Request $request) {
     ]);
 })->name('reservation.check-existing')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
-Route::post('/reservation/create-intent', function (Request $request, \App\Services\PayMongoService $payMongo) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
+Route::post('/reservation/create-intent', function (Request $request) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
     $data = $request->validate([
         'booker_name' => ['required', 'string', 'max:255', 'regex:/^[\pL\s]+$/u'],
         'phone' => ['required', 'string', 'regex:/^(\+?63\s?|0)?9[\d\s-]{8,12}$/'],
@@ -2049,7 +2049,7 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
     unset($amenity);
 
     $totalAmount = array_sum(array_column($amenities, 'price_at_booking'));
-    $depositPercentage = config('paymongo.deposit_percentage', 50);
+    $depositPercentage = config('xendit.deposit_percentage', 50);
     $depositAmount = round($totalAmount * ($depositPercentage / 100), 2);
     $remainingBalance = round($totalAmount - $depositAmount, 2);
 
@@ -2073,173 +2073,250 @@ Route::post('/reservation/create-intent', function (Request $request, \App\Servi
         'remaining_balance' => $remainingBalance,
     ];
 
-    // Create PayMongo Payment Intent for deposit
-    try {
-        $depositCentavos = \App\Services\PayMongoService::toCentavos($depositAmount);
-        if ($depositCentavos < 2000) {
-            $depositCentavos = 2000;
-        }
+    // Generate a unique reference ID for this payment session (used in place of PaymentIntent ID)
+    $referenceId = 'HNP-' . now()->format('ymdHis') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
 
-        $metadata = [
-            'booker_name' => substr($data['booker_name'], 0, 40),
-            'phone' => substr($data['phone'], 0, 20),
-            'email' => substr($data['email'], 0, 40),
-            'number_of_guests' => (string) $data['number_of_guests'],
-            'reservation_date' => (string) $reservationDate,
-            'end_date' => (string) $endDate,
-            'start_slot' => (string) $startSlot,
-            'end_slot' => (string) $endSlot,
-            'total_days' => (string) ($data['total_days'] ?? $mainCounts['days_span']),
-            'total_amount' => (string) $totalAmount,
-            'deposit_amount' => (string) $depositAmount,
-            'remaining_balance' => (string) $remainingBalance,
-            'amenities_json' => json_encode($amenities),
-        ];
+    // Enforce minimum deposit (₱20)
+    $depositAmount = max((float) $depositAmount, 20.00);
+    $pendingPayload['deposit_amount'] = $depositAmount;
 
-        $intent = $payMongo->createPaymentIntent(
-            $depositCentavos,
-            "50% Deposit for Reservation - {$data['booker_name']}",
-            ['gcash', 'paymaya', 'card', 'qrph'],
-            null,
-            $metadata
-        );
+    Cache::put("pending_reservation_{$referenceId}", $pendingPayload, now()->addHours(2));
 
-        Cache::put("pending_reservation_{$intent['id']}", $pendingPayload, now()->addHours(2));
-
-        return response()->json([
-            'success' => true,
-            'payment_intent_id' => $intent['id'],
-            'client_key' => $intent['client_key'],
-            'total_amount' => $totalAmount,
-            'deposit_amount' => $depositAmount,
-            'remaining_balance' => $remainingBalance,
-        ]);
-    } catch (\Throwable $e) {
-        report($e);
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to initialize payment gateway: ' . \App\Services\PayMongoService::readableError($e),
-        ], 500);
-    }
+    return response()->json([
+        'success'           => true,
+        'payment_intent_id' => $referenceId,   // frontend treats this as payment_intent_id
+        'client_key'        => null,            // not needed for Xendit
+        'total_amount'      => $totalAmount,
+        'deposit_amount'    => $depositAmount,
+        'remaining_balance' => $remainingBalance,
+    ]);
 })->name('reservation.create-intent')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::post('/reservation/process-payment', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
+Route::post('/reservation/process-payment', function (Request $request) use ($createReservationFromPayment) {
     $data = $request->validate([
-        'payment_intent_id' => ['required', 'string'],
-        'client_key' => ['nullable', 'string'],
-        'payment_method_type' => ['required', 'string', 'in:gcash,paymaya,card,qrph'],
-        'card_number' => ['required_if:payment_method_type,card', 'nullable', 'string'],
-        'exp_month' => ['required_if:payment_method_type,card', 'nullable', 'integer'],
-        'exp_year' => ['required_if:payment_method_type,card', 'nullable', 'integer'],
-        'cvc' => ['required_if:payment_method_type,card', 'nullable', 'string'],
+        'payment_intent_id'  => ['required', 'string'],
+        'payment_method_type' => ['required', 'string', 'in:gcash,paymaya,qrph'],
     ]);
 
-    $pending = Cache::get("pending_reservation_{$data['payment_intent_id']}");
+    $referenceId = $data['payment_intent_id'];
+    $methodType  = $data['payment_method_type'];
+
+    $pending = Cache::get("pending_reservation_{$referenceId}");
     if ($pending) {
-        $pending['payment_method'] = $data['payment_method_type'];
-        Cache::put("pending_reservation_{$data['payment_intent_id']}", $pending, now()->addHours(2));
+        $pending['payment_method'] = $methodType;
+        Cache::put("pending_reservation_{$referenceId}", $pending, now()->addHours(2));
+    }
+
+    $depositAmount = max((float) ($pending['deposit_amount'] ?? 0), 20.00);
+
+    // Xendit requires HTTPS redirect URLs even in test mode.
+    // In local development (http://localhost or http://127.0.0.1), we use a valid
+    // HTTPS placeholder — payment confirmation is handled by polling, not the redirect.
+    $appUrl     = rtrim(config('app.url', url('/')), '/');
+    $appHost    = parse_url($appUrl, PHP_URL_HOST) ?? 'localhost';
+    $isLocalDev = in_array($appHost, ['localhost', '127.0.0.1'], true)
+        || str_ends_with($appHost, '.local');
+
+    if ($isLocalDev) {
+        // Valid HTTPS placeholder — user gets redirected here after Xendit test payment,
+        // but polling (check-payment-status) is what actually confirms the reservation.
+        $successUrl = 'https://xendit.co/?xendit_return=success&ref_id=' . urlencode($referenceId);
+        $cancelUrl  = 'https://xendit.co/?xendit_return=cancelled';
+    } else {
+        $successUrl = $appUrl . '/reservation/payment-return?status=success&ref_id=' . urlencode($referenceId);
+        $cancelUrl  = $appUrl . '/reservation/payment-return?status=cancelled&ref_id=' . urlencode($referenceId);
     }
 
     try {
-        $billing = [
-            'name' => $pending['booker_name'] ?? 'Guest',
-            'email' => $pending['email'] ?? 'guest@example.com',
-            'phone' => $pending['phone'] ?? '',
-        ];
+        $xendit = app(\App\Services\XenditService::class);
 
-        $cardDetails = [];
-        if ($data['payment_method_type'] === 'card') {
-            $cardDetails = [
-                'card_number' => $data['card_number'] ?? '',
-                'exp_month' => $data['exp_month'] ?? 0,
-                'exp_year' => $data['exp_year'] ?? 0,
-                'cvc' => $data['cvc'] ?? '',
-            ];
+        if ($methodType === 'qrph') {
+            // ── QR Ph ────────────────────────────────────────────────────────
+            $qr = $xendit->createQRCode($depositAmount, $referenceId);
+            Cache::put("xendit_charge_{$referenceId}", [
+                'type'    => 'qr',
+                'id'      => $qr['id'],
+                'channel' => 'qrph',
+            ], now()->addHours(2));
+
+            return response()->json([
+                'success'            => true,
+                'status'             => 'pending',
+                'payment_intent_id'  => $referenceId,
+                'qr_string'          => $qr['qr_string'],
+                'next_action'        => null,
+                'reservation_id'     => null,
+            ]);
         }
 
-        // 1. Create PaymentMethod
-        $pm = $payMongo->createPaymentMethod($data['payment_method_type'], $cardDetails, $billing);
+        // ── GCash / Maya ──────────────────────────────────────────────────────
+        $channelMap  = ['gcash' => 'PH_GCASH', 'paymaya' => 'PH_PAYMAYA'];
+        $channelCode = $channelMap[$methodType] ?? 'PH_GCASH';
 
-        // 2. Attach PaymentMethod to PaymentIntent
-        $returnUrl = route('reservation');
-        $attached = $payMongo->attachPaymentMethod(
-            $data['payment_intent_id'],
-            $pm['id'],
-            $data['client_key'] ?? null,
-            $returnUrl
+        $charge = $xendit->createEWalletCharge(
+            $depositAmount,
+            $channelCode,
+            $referenceId,
+            [
+                'success_redirect_url' => $successUrl,
+                'failure_redirect_url' => $cancelUrl,
+                'cancel_redirect_url'  => $cancelUrl,
+            ],
+            [
+                'booker_name'  => substr($pending['booker_name'] ?? '', 0, 40),
+                'phone'        => substr($pending['phone'] ?? '', 0, 20),
+            ]
         );
 
-        $status = $attached['status'] ?? 'unknown';
+        Cache::put("xendit_charge_{$referenceId}", [
+            'type'    => 'ewallet',
+            'id'      => $charge['id'],
+            'channel' => $channelCode,
+        ], now()->addHours(2));
 
-        // If payment completed immediately (e.g. test cards)
-        $reservation = null;
-        if ($status === 'succeeded') {
-            $reservation = $createReservationFromPayment($data['payment_intent_id'], $data['payment_method_type'], $attached);
-        }
+        $normalizedStatus = \App\Services\XenditService::normalizeStatus($charge['status']);
+        $reservation      = null;
+        $smsStatus        = null;
 
-        $smsStatus = null;
-        if ($reservation) {
-            $cachedSms = Cache::get("reservation_sms_status_{$reservation->id}");
-            if ($cachedSms) {
-                $smsStatus = $cachedSms;
+        // Immediately succeeded (rare but possible in test mode)
+        if ($normalizedStatus === 'succeeded') {
+            $reservation = $createReservationFromPayment($referenceId, strtolower($channelCode), []);
+            if ($reservation) {
+                $smsStatus = Cache::get("reservation_sms_status_{$reservation->id}");
             }
         }
 
         return response()->json([
-            'success' => true,
-            'status' => $status,
-            'next_action' => $attached['next_action'] ?? null,
-            'payment_intent_id' => $data['payment_intent_id'],
-            'reservation_id' => $reservation?->id,
-            'sms_status' => $smsStatus ? ($smsStatus['success'] ?? false) : null,
-            'sms_message' => $smsStatus ? ($smsStatus['message'] ?? '') : null,
+            'success'           => true,
+            'status'            => $normalizedStatus,
+            'next_action'       => $charge['checkout_url']
+                ? ['redirect' => ['url' => $charge['checkout_url']]]
+                : null,
+            'payment_intent_id' => $referenceId,
+            'reservation_id'    => $reservation?->id,
+            'sms_status'        => $smsStatus ? ($smsStatus['success'] ?? false) : null,
+            'sms_message'       => $smsStatus ? ($smsStatus['message'] ?? '') : null,
         ]);
+
     } catch (\Throwable $e) {
         report($e);
         return response()->json([
             'success' => false,
-            'message' => \App\Services\PayMongoService::readableError($e),
+            'message' => \App\Services\XenditService::readableError($e),
         ], 400);
     }
 })->name('reservation.process-payment')->withoutMiddleware([VerifyCsrfToken::class]);
 
-Route::post('/reservation/check-payment-status', function (Request $request, \App\Services\PayMongoService $payMongo) use ($createReservationFromPayment) {
+Route::post('/reservation/check-payment-status', function (Request $request) use ($createReservationFromPayment) {
     $data = $request->validate([
         'payment_intent_id' => ['required', 'string'],
     ]);
 
-    try {
-        $intent = $payMongo->getPaymentIntent($data['payment_intent_id']);
-        $status = $intent['status'] ?? 'unknown';
-        $reservation = null;
+    $referenceId = $data['payment_intent_id'];
 
-        if ($status === 'succeeded') {
-            $reservation = $createReservationFromPayment($data['payment_intent_id'], null, $intent);
+    // Already created — return immediately
+    $existing = Reservation::where('payment_intent_id', $referenceId)->first();
+    if ($existing) {
+        $smsStatus = Cache::get("reservation_sms_status_{$existing->id}");
+        return response()->json([
+            'success'        => true,
+            'status'         => 'succeeded',
+            'payment_status' => $existing->payment_status,
+            'reservation_id' => $existing->id,
+            'sms_status'     => $smsStatus ? ($smsStatus['success'] ?? false) : null,
+            'sms_message'    => $smsStatus ? ($smsStatus['message'] ?? '') : null,
+        ]);
+    }
+
+    $chargeInfo = Cache::get("xendit_charge_{$referenceId}");
+    if (! $chargeInfo) {
+        return response()->json(['success' => true, 'status' => 'pending']);
+    }
+
+    try {
+        $xendit = app(\App\Services\XenditService::class);
+
+        if ($chargeInfo['type'] === 'ewallet') {
+            $charge = $xendit->getEWalletCharge($chargeInfo['id']);
+            $status = \App\Services\XenditService::normalizeStatus($charge['status']);
+        } else {
+            $qr     = $xendit->getQRCode($chargeInfo['id']);
+            $status = \App\Services\XenditService::normalizeStatus($qr['status']);
         }
 
-        $smsStatus = null;
-        if ($reservation) {
-            $cachedSms = Cache::get("reservation_sms_status_{$reservation->id}");
-            if ($cachedSms) {
-                $smsStatus = $cachedSms;
+        $reservation = null;
+        $smsStatus   = null;
+
+        if ($status === 'succeeded') {
+            $paymentMethod = strtolower($chargeInfo['channel'] ?? 'gcash');
+            $reservation   = $createReservationFromPayment($referenceId, $paymentMethod, []);
+            if ($reservation) {
+                $smsStatus = Cache::get("reservation_sms_status_{$reservation->id}");
             }
         }
 
         return response()->json([
-            'success' => true,
-            'status' => $status,
-            'payment_status' => $reservation ? $reservation->payment_status : ($status === 'succeeded' ? 'Partially Paid' : 'Unpaid'),
+            'success'        => true,
+            'status'         => $status,
+            'payment_status' => $reservation
+                ? $reservation->payment_status
+                : ($status === 'succeeded' ? 'Partially Paid' : 'Unpaid'),
             'reservation_id' => $reservation?->id,
-            'sms_status' => $smsStatus ? ($smsStatus['success'] ?? false) : null,
-            'sms_message' => $smsStatus ? ($smsStatus['message'] ?? '') : null,
+            'sms_status'     => $smsStatus ? ($smsStatus['success'] ?? false) : null,
+            'sms_message'    => $smsStatus ? ($smsStatus['message'] ?? '') : null,
         ]);
+
     } catch (\Throwable $e) {
         return response()->json([
             'success' => false,
-            'message' => \App\Services\PayMongoService::readableError($e),
+            'message' => \App\Services\XenditService::readableError($e),
         ], 400);
     }
 })->name('reservation.check-payment-status')->withoutMiddleware([VerifyCsrfToken::class]);
+
+// ── Xendit Payment Return (redirect back after GCash/Maya authorization) ──────
+Route::get('/reservation/payment-return', function (Request $request) use ($createReservationFromPayment) {
+    $status      = $request->query('status', 'error');   // 'success' | 'cancelled' | 'error'
+    $referenceId = (string) $request->query('ref_id', '');
+    $reservation = null;
+
+    if ($status === 'success' && $referenceId !== '') {
+        // Check if reservation was already created (idempotent)
+        $reservation = Reservation::where('payment_intent_id', $referenceId)->first();
+
+        if (! $reservation) {
+            $chargeInfo = Cache::get("xendit_charge_{$referenceId}");
+            if ($chargeInfo) {
+                try {
+                    $xendit = app(\App\Services\XenditService::class);
+                    if ($chargeInfo['type'] === 'ewallet') {
+                        $charge      = $xendit->getEWalletCharge($chargeInfo['id']);
+                        $chargeStatus = \App\Services\XenditService::normalizeStatus($charge['status']);
+                    } else {
+                        $qr           = $xendit->getQRCode($chargeInfo['id']);
+                        $chargeStatus = \App\Services\XenditService::normalizeStatus($qr['status']);
+                    }
+
+                    if ($chargeStatus === 'succeeded') {
+                        $paymentMethod = strtolower($chargeInfo['channel'] ?? 'gcash');
+                        $reservation   = $createReservationFromPayment($referenceId, $paymentMethod, []);
+                    } else {
+                        $status = 'processing';
+                    }
+                } catch (\Throwable $e) {
+                    $status = 'processing';
+                }
+            } else {
+                $status = 'processing';
+            }
+        }
+    }
+
+    return view('reservation_payment_return', [
+        'status'      => $reservation ? 'success' : $status,
+        'reservation' => $reservation,
+    ]);
+})->name('reservation.payment-return');
 
 Route::post('/reservation/prototype', function (Request $request) use ($isAmenityRangeTaken, $calculateContinuousSlotsCount) {
     $data = $request->validate([
@@ -2442,21 +2519,37 @@ Route::get('/reservation/{id}/download-pass', function ($id) {
     return $pdf->download("Hinaguan-Reservation-Pass-{$reservation->id}.pdf");
 })->name('reservation.download-pass');
 
-Route::post('/paymongo/webhook', function (Request $request) use ($createReservationFromPayment) {
-    $payload = $request->all();
-    $event = $payload['data']['attributes']['type'] ?? null;
-    $paymentData = $payload['data']['attributes']['data']['attributes'] ?? [];
+Route::post('/xendit/webhook', function (Request $request) use ($createReservationFromPayment) {
+    // Verify the callback token from Xendit dashboard
+    $token = $request->header('x-callback-token', '');
+    if (! \App\Services\XenditService::verifyWebhookToken($token)) {
+        return response()->json(['status' => 'unauthorized'], 401);
+    }
 
-    $paymentIntentId = $paymentData['payment_intent_id']
-        ?? ($paymentData['payment_intent']['id'] ?? null)
-        ?? ($payload['data']['attributes']['data']['id'] ?? null);
+    $event = $request->input('event');
+    $data  = $request->input('data', []);
 
-    if ($paymentIntentId && in_array($event, ['payment.paid', 'payment_intent.succeeded'], true)) {
-        $createReservationFromPayment($paymentIntentId, null, $paymentData);
+    // EWallet capture: data.reference_id is our reference ID
+    if (in_array($event, ['ewallet.capture', 'ewallet.void'], true)) {
+        $referenceId = $data['reference_id'] ?? null;
+        $status      = $data['status'] ?? 'PENDING';
+
+        if ($referenceId && \App\Services\XenditService::normalizeStatus($status) === 'succeeded') {
+            $channel = strtolower($data['channel_code'] ?? 'gcash');
+            $createReservationFromPayment($referenceId, $channel, []);
+        }
+    }
+
+    // QR code captured
+    if ($event === 'qr_code.payment') {
+        $referenceId = $data['reference_id'] ?? null;
+        if ($referenceId) {
+            $createReservationFromPayment($referenceId, 'qrph', []);
+        }
     }
 
     return response()->json(['status' => 'ok']);
-})->name('paymongo.webhook')->withoutMiddleware([VerifyCsrfToken::class]);
+})->name('xendit.webhook')->withoutMiddleware([VerifyCsrfToken::class]);
 
 Route::post('/reservation/check-in/{reservation}', function (Request $request, Reservation $reservation) {
     // Harden: only authenticated staff/admin may check a reservation in.

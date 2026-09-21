@@ -116,7 +116,7 @@
 
             if (window.opener && !window.opener.closed) {
                 try {
-                    window.opener.postMessage({ source: 'hinaguan-paymongo', status: outcome }, window.location.origin);
+                    window.opener.postMessage({ source: 'hinaguan-xendit', status: outcome }, window.location.origin);
                 } catch (e) { /* cross-origin opener — ignore */ }
                 setTimeout(function () { window.close(); }, 900);
             } else if (outcome === 'success') {

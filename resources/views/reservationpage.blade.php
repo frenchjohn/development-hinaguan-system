@@ -965,7 +965,7 @@
 
         </div>
 
-        {{-- ── PayMongo Payment Modal ── --}}
+        {{-- ── Xendit Payment Modal ── --}}
         <div class="rp-modal" id="paymongoPaymentModal" aria-hidden="true">
 
             <div class="rp-modal__backdrop" data-close-payment-modal></div>
@@ -1175,11 +1175,11 @@
 
                                 <span class="rp-iframe-dot"></span>
 
-                                <span>PayMongo Payment Authorization (In-Website)</span>
+                                <span>Payment Authorization</span>
 
                             </div>
 
-                            <iframe id="pmAuthIframe" src="about:blank" title="PayMongo Authorization"></iframe>
+                            <iframe id="pmAuthIframe" src="about:blank" title="Payment Authorization"></iframe>
 
                         </div>
 
@@ -1783,7 +1783,7 @@
                     </div>
                 </div>
                 <h3 class="rp-processing-overlay__title" id="processingOverlayTitle">Securing Your Reservation</h3>
-                <p class="rp-processing-overlay__text" id="processingOverlayText">Preparing your checkout with PayMongo…</p>
+                <p class="rp-processing-overlay__text" id="processingOverlayText">Preparing your payment options…</p>
                 <div class="rp-processing-overlay__dots">
                     <span class="rp-processing-dot"></span>
                     <span class="rp-processing-dot"></span>
