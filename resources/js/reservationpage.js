@@ -5206,12 +5206,33 @@ function initReservationPage() {
     }
 
     const handleSuccessConfirm = () => {
-        if (successConfirmBtn && !successConfirmBtn.disabled) {
+        if (successConfirmBtn) {
             successConfirmBtn.disabled = true;
-            successConfirmBtn.innerHTML = '<span class="rp-btn-spinner"></span> Refreshing page…';
-            window.location.reload();
+            if (successConfirmBtnText) {
+                successConfirmBtnText.textContent = 'Refreshing page…';
+            } else {
+                successConfirmBtn.innerHTML = '<span class="rp-btn-spinner"></span> Refreshing page…';
+            }
+            try {
+                window.location.href = window.location.origin + window.location.pathname;
+            } catch (e) {
+                window.location.reload();
+            }
         }
     };
+
+    if (successConfirmBtn) {
+        successConfirmBtn.addEventListener('click', handleSuccessConfirm);
+    }
+
+    // Document-level delegation fallback in case of dynamic DOM binding
+    document.addEventListener('click', (event) => {
+        const btn = event.target ? event.target.closest('#successConfirmBtn') : null;
+        if (btn) {
+            event.preventDefault();
+            handleSuccessConfirm();
+        }
+    });
 
 }
 

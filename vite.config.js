@@ -37,6 +37,7 @@ export default defineConfig({
                 'resources/js/admin_js/admin_settings.js',
                 'resources/js/admin_js/admin_usermanagement.js',
                 'resources/js/admin_js/admin_feedback.js',
+                'resources/js/admin_js/admin_announcement.js',
 
                 // Guest feedback page
                 'resources/css/feedback.css',

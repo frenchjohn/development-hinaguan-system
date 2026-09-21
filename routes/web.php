@@ -2971,6 +2971,259 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return redirect()->route('admin.users')->with('success', 'Staff account deleted successfully.');
     })->name('users.destroy');
 
+    Route::get('/announcements', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        // Fetch reservations with eager loading
+        $reservations = Reservation::with([
+            'reservationGuests.customer',
+            'reservationAmenities.amenity',
+        ])
+        ->orderByDesc('id')
+        ->get();
+
+        $mappedReservations = $reservations->map(function ($r) {
+            $primaryGuest = $r->reservationGuests->firstWhere('is_primary_guest', true);
+            $primaryCustomer = $primaryGuest?->customer;
+
+            $primaryName = $primaryCustomer
+                ? trim(($primaryCustomer->first_name ?? '') . ' ' . ($primaryCustomer->middle_name ? $primaryCustomer->middle_name . ' ' : '') . ($primaryCustomer->last_name ?? ''))
+                : ($r->booker_name ?: 'Guest #' . $r->id);
+
+            $phone = $primaryCustomer?->phone ?: $r->phone;
+            $email = $primaryCustomer?->email ?: $r->email;
+
+            // Companions: all guests that are NOT primary
+            $companionGuests = $r->reservationGuests->filter(fn ($g) => ! $g->is_primary_guest)->values();
+
+            $companionList = $companionGuests->map(function ($g) {
+                $cust = $g->customer;
+                $name = $cust ? trim(($cust->first_name ?? '') . ' ' . ($cust->middle_name ? $cust->middle_name . ' ' : '') . ($cust->last_name ?? '')) : 'Companion';
+                return [
+                    'id' => $g->id,
+                    'name' => $name ?: 'Companion',
+                    'age' => $cust?->age,
+                    'gender' => $cust?->gender ? ucfirst($cust->gender) : '—',
+                    'is_foreigner' => (bool) ($cust?->is_foreigner ?? false),
+                    'has_pool_access' => (bool) $g->has_pool_access,
+                    'checked_out_at' => $g->checked_out_at ? \Illuminate\Support\Carbon::parse($g->checked_out_at)->format('M d, Y h:i A') : null,
+                    'is_checked_out' => ! is_null($g->checked_out_at),
+                ];
+            });
+
+            $companionCount = $companionList->count();
+            if ($companionCount === 0 && (int) $r->number_of_guests > 1) {
+                $companionCount = (int) $r->number_of_guests - 1;
+            }
+
+            // Check if reservation is active (status is 'Checked In' and not checked out)
+            $isActive = ($r->status === 'Checked In' && is_null($r->check_out));
+
+            $amenitiesSummary = $r->reservationAmenities->map(function ($ra) {
+                $name = $ra->amenity?->amenities_name ?? 'Amenity';
+                return ($ra->quantity > 1) ? "{$name} (x{$ra->quantity})" : $name;
+            })->filter()->values()->all();
+
+            return [
+                'id' => $r->id,
+                'booker_name' => $r->booker_name,
+                'main_guest_name' => $primaryName,
+                'phone' => $phone ?: '',
+                'display_phone' => \App\Services\PhilSmsService::formatDisplayPhone($phone),
+                'email' => $email ?: '',
+                'companion_count' => $companionCount,
+                'companions' => $companionList,
+                'number_of_guests' => (int) ($r->number_of_guests ?: ($companionCount + 1)),
+                'amenities' => $amenitiesSummary,
+                'reservation_date' => $r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('M d, Y') : '—',
+                'check_in' => $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->format('M d, Y h:i A') : '—',
+                'check_out' => $r->check_out ? \Illuminate\Support\Carbon::parse($r->check_out)->format('M d, Y h:i A') : null,
+                'start_slot' => $r->start_slot ?? 'Daytime',
+                'end_slot' => $r->end_slot ?? 'Daytime',
+                'status' => $r->status,
+                'is_active' => $isActive,
+            ];
+        });
+
+        $activeCount = $mappedReservations->where('is_active', true)->count();
+        $totalCount = $mappedReservations->count();
+        $checkedOutCount = $mappedReservations->where('status', 'Checked Out')->count();
+        $confirmedCount = $mappedReservations->where('status', 'Confirmed')->count();
+        $pendingCount = $mappedReservations->where('status', 'Pending')->count();
+
+        // Active guests on site = sum of number_of_guests for active reservations
+        $activeGuestsOnSite = $mappedReservations->where('is_active', true)->sum('number_of_guests');
+        $activeCompanionsOnSite = $mappedReservations->where('is_active', true)->sum('companion_count');
+
+        // Recent announcements
+        $recentAnnouncements = \App\Models\Announcement::orderByDesc('created_at')->take(20)->get();
+        $totalAnnouncementsCount = \App\Models\Announcement::count();
+        $totalSmsSentCount = (int) \App\Models\Announcement::sum('recipient_count');
+
+        return view('admin.admin_announcement', [
+            'reservations' => $mappedReservations,
+            'activeCount' => $activeCount,
+            'totalCount' => $totalCount,
+            'checkedOutCount' => $checkedOutCount,
+            'confirmedCount' => $confirmedCount,
+            'pendingCount' => $pendingCount,
+            'activeGuestsOnSite' => $activeGuestsOnSite,
+            'activeCompanionsOnSite' => $activeCompanionsOnSite,
+            'recentAnnouncements' => $recentAnnouncements,
+            'totalAnnouncementsCount' => $totalAnnouncementsCount,
+            'totalSmsSentCount' => $totalSmsSentCount,
+        ]);
+    })->name('announcements');
+
+    Route::post('/announcements/send-sms', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $validated = $request->validate([
+            'reservation_ids' => ['required', 'array', 'min:1'],
+            'reservation_ids.*' => ['required', 'integer'],
+            'message' => ['required', 'string', 'min:3', 'max:1000'],
+            'category' => ['nullable', 'string', 'max:50'],
+            'title' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $reservationIds = $validated['reservation_ids'];
+        $messageText = trim($validated['message']);
+        $category = $validated['category'] ?? 'sms_broadcast';
+        $title = !empty($validated['title']) ? trim($validated['title']) : 'SMS Announcement';
+
+        $reservations = Reservation::with(['reservationGuests.customer'])
+            ->whereIn('id', $reservationIds)
+            ->get();
+
+        if ($reservations->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No matching reservations found.',
+            ], 404);
+        }
+
+        $philSms = app(\App\Services\PhilSmsService::class);
+        $sentCount = 0;
+        $failedCount = 0;
+        $deliveryDetails = [];
+        $recipientPhones = [];
+
+        foreach ($reservations as $reservation) {
+            $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true);
+            $phone = $primaryGuest?->customer?->phone ?: $reservation->phone;
+            $guestName = $primaryGuest?->customer
+                ? trim(($primaryGuest->customer->first_name ?? '') . ' ' . ($primaryGuest->customer->last_name ?? ''))
+                : ($reservation->booker_name ?: "Guest #{$reservation->id}");
+
+            if (empty($phone)) {
+                $failedCount++;
+                $deliveryDetails[] = [
+                    'reservation_id' => $reservation->id,
+                    'guest_name' => $guestName,
+                    'phone' => null,
+                    'status' => 'failed',
+                    'reason' => 'No phone number provided',
+                ];
+                continue;
+            }
+
+            $recipientPhones[] = $phone;
+
+            try {
+                $result = $philSms->sendSms($phone, $messageText);
+                $isSuccess = (bool) ($result['success'] ?? false);
+                $isTokenMissing = (($result['error'] ?? '') === 'MISSING_API_TOKEN');
+
+                $statusStr = $isSuccess ? 'sent' : ($isTokenMissing ? 'simulated' : 'failed');
+
+                if ($isSuccess || $isTokenMissing) {
+                    $sentCount++;
+                } else {
+                    $failedCount++;
+                }
+
+                $deliveryDetails[] = [
+                    'reservation_id' => $reservation->id,
+                    'guest_name' => $guestName,
+                    'phone' => $phone,
+                    'status' => $statusStr,
+                    'response' => $result['message'] ?? '',
+                ];
+            } catch (\Throwable $e) {
+                $failedCount++;
+                $deliveryDetails[] = [
+                    'reservation_id' => $reservation->id,
+                    'guest_name' => $guestName,
+                    'phone' => $phone,
+                    'status' => 'failed',
+                    'reason' => $e->getMessage(),
+                ];
+            }
+        }
+
+        $overallStatus = ($failedCount === 0) ? 'sent' : (($sentCount > 0) ? 'partial' : 'failed');
+
+        $announcement = \App\Models\Announcement::create([
+            'title' => $title,
+            'message' => $messageText,
+            'category' => $category,
+            'target_type' => 'selected_reservations',
+            'recipient_count' => $sentCount,
+            'target_reservation_ids' => $reservationIds,
+            'recipient_phones' => array_values(array_unique($recipientPhones)),
+            'delivery_status' => $overallStatus,
+            'delivery_details' => $deliveryDetails,
+            'created_by' => $user['name'] ?? 'Admin',
+        ]);
+
+        // Log to ActivityLog
+        \App\Models\ActivityLog::log(
+            activityType: 'sms_announcement',
+            title: "Dispatched SMS Announcement: {$title}",
+            description: "Sent SMS to {$sentCount} selected reservation(s). Message: " . \Illuminate\Support\Str::limit($messageText, 80),
+            actorName: $user['name'] ?? 'Admin',
+            actorRole: 'admin',
+            metadata: [
+                'announcement_id' => $announcement->id,
+                'reservations_count' => count($reservationIds),
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount,
+                'category' => $category,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "SMS announcement dispatched to {$sentCount} recipient(s)." . ($failedCount > 0 ? " ({$failedCount} failed or skipped due to missing phone number)" : ''),
+            'sent_count' => $sentCount,
+            'failed_count' => $failedCount,
+            'announcement' => $announcement,
+        ]);
+    })->name('announcements.send_sms');
+
+    Route::delete('/announcements/{id}', function (Request $request, $id) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $announcement = \App\Models\Announcement::find($id);
+        if ($announcement) {
+            $announcement->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Announcement record deleted.',
+        ]);
+    })->name('announcements.destroy');
+
     Route::get('/reports', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'admin') {

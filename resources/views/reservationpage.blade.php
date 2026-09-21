@@ -1687,7 +1687,7 @@
                     </div>
 
                     <div class="rp-confirmation-modal__actions">
-                        <button type="button" id="successConfirmBtn" class="rp-terms-modal__proceed-btn">
+                        <button type="button" id="successConfirmBtn" class="rp-terms-modal__proceed-btn" onclick="this.disabled=true; const t=document.getElementById('successConfirmBtnText'); if(t){t.textContent='Refreshing page…';} window.location.href=window.location.origin+window.location.pathname;">
                             <span id="successConfirmBtnText">Got It!</span>
                         </button>
                     </div>

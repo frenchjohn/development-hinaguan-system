@@ -2804,8 +2804,8 @@ html {
 
 .rp-floating-actions {
     position: fixed;
-    right: 1.5rem;
-    bottom: 1.5rem;
+    right: 7.25rem;
+    bottom: 1.85rem;
     z-index: 60;
     display: flex;
     align-items: center;
@@ -5149,7 +5149,7 @@ body:has(.rp-modal.is-open) .rp-footer {
     /* Floating Action Bar on Mobile */
     .rp-floating-actions {
         left: 0.75rem;
-        right: 0.75rem;
+        right: 5.25rem;
         bottom: max(0.85rem, env(safe-area-inset-bottom, 0.85rem));
         padding: 0.65rem 0.85rem 0.65rem 1rem;
         border-radius: 1rem;
