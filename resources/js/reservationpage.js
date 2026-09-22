@@ -2775,6 +2775,126 @@ function initReservationPage() {
             }
         }
 
+        // ── Availability-based slot disabling ─────────────────────────────
+        // After time-of-day check, also disable slots that are fully booked
+        // for the currently selected start date (and end date for dpEndSlot buttons).
+        if (curDate && datePickerAvailability.length > 0) {
+            const startEntry = datePickerAvailability.find(e => e.date === curDate);
+            const endEntry   = curEndDate && curEndDate !== curDate
+                ? datePickerAvailability.find(e => e.date === curEndDate)
+                : startEntry;
+
+            const dayBtn   = document.querySelector('[data-dp-start-slot="Daytime"]');
+            const nightBtn = document.querySelector('[data-dp-start-slot="Nighttime"]');
+            const wholeDayPill = document.getElementById('dpWholeDayPill');
+
+            // --- Start slot buttons ---
+            if (startEntry) {
+                const startDaytimeBooked   = startEntry.daytime   === false;
+                const startNighttimeBooked = startEntry.nighttime === false;
+
+                if (dayBtn && !dayBtn.disabled) {
+                    // Only disable if not already disabled by the time-of-day check above
+                    if (startDaytimeBooked) {
+                        dayBtn.disabled = true;
+                        dayBtn.classList.add('is-disabled-slot');
+                        dayBtn.setAttribute('title', 'Daytime is already fully booked for this date.');
+                    } else {
+                        dayBtn.removeAttribute('title');
+                    }
+                }
+
+                if (nightBtn) {
+                    if (startNighttimeBooked) {
+                        nightBtn.disabled = true;
+                        nightBtn.classList.add('is-disabled-slot');
+                        nightBtn.setAttribute('title', 'Overnight is already fully booked for this date.');
+                    } else {
+                        nightBtn.disabled = false;
+                        nightBtn.classList.remove('is-disabled-slot');
+                        nightBtn.removeAttribute('title');
+                    }
+                }
+
+                // Whole Day pill: only available if BOTH slots are free
+                if (wholeDayPill && isSingleDay) {
+                    if (startDaytimeBooked || startNighttimeBooked) {
+                        wholeDayPill.disabled = true;
+                        wholeDayPill.classList.add('is-disabled-slot');
+                        if (dpSingleDayWholeDayActive) {
+                            dpSingleDayWholeDayActive = false;
+                            dpRangeEndSlot = dpRangeStartSlot;
+                        }
+                    } else {
+                        wholeDayPill.disabled = false;
+                        wholeDayPill.classList.remove('is-disabled-slot');
+                    }
+                }
+
+                // Auto-switch active slot if the currently chosen slot is now disabled
+                if (isSingleDay) {
+                    if (dpRangeStartSlot === 'Daytime' && startDaytimeBooked && !startNighttimeBooked) {
+                        dpSingleDayWholeDayActive = false;
+                        dpRangeStartSlot = 'Nighttime';
+                        dpRangeEndSlot   = 'Nighttime';
+                        if (dayBtn)   dayBtn.classList.remove('is-active');
+                        if (nightBtn) nightBtn.classList.add('is-active');
+                    } else if (dpRangeStartSlot === 'Nighttime' && startNighttimeBooked && !startDaytimeBooked) {
+                        dpSingleDayWholeDayActive = false;
+                        dpRangeStartSlot = 'Daytime';
+                        dpRangeEndSlot   = 'Daytime';
+                        if (nightBtn) nightBtn.classList.remove('is-active');
+                        if (dayBtn && !dayBtn.disabled)   dayBtn.classList.add('is-active');
+                    }
+                } else {
+                    // Multi-day: if start slot is booked, switch to the other
+                    if (dpRangeStartSlot === 'Daytime' && startDaytimeBooked && !startNighttimeBooked) {
+                        dpRangeStartSlot = 'Nighttime';
+                        document.querySelectorAll('[data-dp-start-slot]').forEach(b => {
+                            b.classList.toggle('is-active', b.dataset.dpStartSlot === dpRangeStartSlot);
+                        });
+                    } else if (dpRangeStartSlot === 'Nighttime' && startNighttimeBooked && !startDaytimeBooked) {
+                        dpRangeStartSlot = 'Daytime';
+                        document.querySelectorAll('[data-dp-start-slot]').forEach(b => {
+                            b.classList.toggle('is-active', b.dataset.dpStartSlot === dpRangeStartSlot);
+                        });
+                    }
+                }
+            }
+
+            // --- End slot buttons (multi-day checkout session) ---
+            if (!isSingleDay && endEntry) {
+                const endDaytimeBooked   = endEntry.daytime   === false;
+                const endNighttimeBooked = endEntry.nighttime === false;
+
+                document.querySelectorAll('[data-dp-end-slot]').forEach(b => {
+                    const slot = b.dataset.dpEndSlot;
+                    const isBooked = (slot === 'Daytime' && endDaytimeBooked) ||
+                                     (slot === 'Nighttime' && endNighttimeBooked);
+                    b.disabled = isBooked;
+                    b.classList.toggle('is-disabled-slot', isBooked);
+                    if (isBooked) {
+                        b.setAttribute('title', `${slot} is already fully booked for the check-out date.`);
+                    } else {
+                        b.removeAttribute('title');
+                    }
+                });
+
+                // Auto-switch end slot if currently chosen is booked
+                if (dpRangeEndSlot === 'Daytime' && endDaytimeBooked && !endNighttimeBooked) {
+                    dpRangeEndSlot = 'Nighttime';
+                    document.querySelectorAll('[data-dp-end-slot]').forEach(b => {
+                        b.classList.toggle('is-active', b.dataset.dpEndSlot === dpRangeEndSlot);
+                    });
+                } else if (dpRangeEndSlot === 'Nighttime' && endNighttimeBooked && !endDaytimeBooked) {
+                    dpRangeEndSlot = 'Daytime';
+                    document.querySelectorAll('[data-dp-end-slot]').forEach(b => {
+                        b.classList.toggle('is-active', b.dataset.dpEndSlot === dpRangeEndSlot);
+                    });
+                }
+            }
+        }
+
         const isRange = Boolean((dpRangeStart && dpRangeEnd && dpRangeStart !== dpRangeEnd) || (dpRangeStartSlot !== dpRangeEndSlot));
         const preview = computeCheckInOutPreview(curDate, curEndDate, dpRangeStartSlot, dpRangeEndSlot, isRange);
 
