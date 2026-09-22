@@ -64,7 +64,7 @@
             z-index: -1 !important;
             pointer-events: none !important;
             background-color: #ebf3ec !important;
-            background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             background-size: 100% 100% !important;
             background-position: center center !important;
             background-repeat: no-repeat !important;
@@ -1939,6 +1939,7 @@
                                         <i class="bi bi-droplet-fill text-[9px]"></i>${alert.rain_chance}% rain
                                     </span>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.badgeColor}">${meta.label}</span>
+                                    ${alert.session_label ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-950/40 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-400"><i class="bi bi-clock text-[9px]"></i>${alert.session_label}</span>` : ''}
                                 </div>
                                 <div class="text-xs text-[#718076] dark:text-[#9baaa1] space-y-0.5">
                                     <p class="m-0"><i class="bi bi-cloud-fill mr-1"></i>${alert.condition}${tempStr ? ' · ' + tempStr : ''}</p>
@@ -1958,6 +1959,7 @@
                                         data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
                                         data-date-label="${alert.date_label}"
                                         data-condition="${alert.condition.replace(/"/g,'&quot;')}"
+                                        data-session-label="${alert.session_label || ''}"
                                         title="Send reschedule SMS to guest">
                                         <i class="bi bi-send-fill text-[10px]"></i>
                                         Send Reschedule Request via SMS
@@ -1973,6 +1975,7 @@
                                         data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
                                         data-date-label="${alert.date_label}"
                                         data-condition="${alert.condition.replace(/"/g,'&quot;')}"
+                                        data-session-label="${alert.session_label || ''}"
                                         title="Optionally send a reschedule request">
                                         <i class="bi bi-send text-[10px]"></i>
                                         Suggest Reschedule (Optional)
@@ -2013,7 +2016,8 @@
                         if (titleEl)  titleEl.textContent = `Send Reschedule Request — #${resId}`;
                         if (nameEl)   nameEl.textContent  = booker;
                         if (msgEl) {
-                            msgEl.value = `Dear guest, due to severe weather (${condition}) forecast on ${dateLbl}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
+                            const sessionNote = btn.dataset.sessionLabel ? ` (${btn.dataset.sessionLabel} session)` : '';
+                            msgEl.value = `Dear guest, due to severe weather (${condition}) forecast on ${dateLbl}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
                         }
 
                         existingModal.classList.add('is-open');

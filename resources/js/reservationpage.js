@@ -1508,15 +1508,34 @@ function initReservationPage() {
             const entry = calendarAvailability.find((e) => e.date === isoDate);
 
             if (entry) {
-                if (!calendarRangeStart) {
+                // Determine if we're in "pick end date" mode vs "pick start date" mode.
+                // Range-span checking (isRangeAvailable) should ONLY run when the user
+                // has already clicked a start date and has NOT yet picked an end date,
+                // i.e. calendarRangeStart is set AND calendarRangeEnd is null.
+                // In all other situations — including when calendarRangeStart is pre-filled
+                // from a previous selection but the user is picking a brand-new start date —
+                // we must evaluate the date individually to avoid blocking every date after
+                // any occupied day within a pre-existing range.
+                const isPickingEndDate = calendarRangeStart && !calendarRangeEnd;
+
+                const checkSingleSlot = () => {
                     if (calendarRangeStartSlot === 'Daytime' && calendarRangeEndSlot === 'Nighttime') {
-                        isAvailable = entry.daytime === true && entry.nighttime === true;
+                        return entry.daytime === true && entry.nighttime === true;
                     } else if (calendarRangeStartSlot === 'Nighttime') {
-                        isAvailable = entry.nighttime === true;
+                        return entry.nighttime === true;
                     } else {
-                        isAvailable = entry.daytime === true;
+                        return entry.daytime === true;
                     }
-                } else {
+                };
+
+                if (!calendarRangeStart || (!isPickingEndDate && isoDate !== calendarRangeStart)) {
+                    // No start selected yet, OR user is picking a fresh start date (not extending):
+                    // just check if this individual date is available for the chosen slot.
+                    isAvailable = checkSingleSlot();
+                } else if (isPickingEndDate) {
+                    // User clicked a start date and is now hovering/clicking end date:
+                    // dates BEFORE the start → individual slot check (can't go backwards)
+                    // dates AT OR AFTER the start → range-span check so the full span is free
                     if (isoDate < calendarRangeStart) {
                         if (calendarRangeStartSlot === 'Nighttime') {
                             isAvailable = entry.nighttime === true;
@@ -1526,13 +1545,19 @@ function initReservationPage() {
                     } else {
                         isAvailable = isRangeAvailable(calendarRangeStart, isoDate, calendarRangeStartSlot, calendarRangeEndSlot, calendarAvailability);
                     }
+                } else {
+                    // calendarRangeStart === isoDate (highlighting the already-selected start)
+                    isAvailable = checkSingleSlot();
                 }
             }
 
             const isPast = date < today;
             const isToday = isoDate === (window.PARK_TODAY_DATE || (new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0')));
             if (isToday && isNighttimeForToday(isoDate)) {
-                if (!calendarRangeStart && calendarRangeStartSlot === 'Daytime') {
+                // Disable today's Daytime slot if the park daytime session has already passed,
+                // UNLESS we're actively in "pick end date" mode (calendarRangeStart set, no end yet).
+                const isPickingEndDate = calendarRangeStart && !calendarRangeEnd;
+                if (!isPickingEndDate && calendarRangeStartSlot === 'Daytime') {
                     isAvailable = false;
                 }
             }

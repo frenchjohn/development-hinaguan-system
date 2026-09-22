@@ -301,8 +301,7 @@ html {
 /* ─────────────────────────── Sticky Navigation & Back Button ─────────────────────────── */
 
 .rp-sticky-top-bar {
-    position: sticky;
-    top: calc(var(--rp-header-offset) + 0.5rem);
+    position: relative;
     z-index: 95;
     display: flex;
     align-items: center;

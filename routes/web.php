@@ -4873,7 +4873,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         // ── Weather alerts for upcoming reservations ─────────────────────────
         // Build a list of reservations whose dates fall within the 3-day forecast
-        // window AND have a significant chance of rain (>= 50%) or a rainy condition.
+        // window AND have a significant chance of rain (>= 50%) or a rainy condition
+        // DURING the reservation's own session window (Daytime or Nighttime).
+        // Rain that only falls outside the session hours does NOT trigger a warning.
         $weatherAlerts = [];
         try {
             $forecast = $weather->getMultiDayForecast(3);
@@ -4885,6 +4887,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         $forecastByDate[$day['date']] = $day;
                     }
                 }
+
+                // Load park session windows for filtering hourly data
+                $parkSettingsForAlert = \App\Models\ParkSetting::first();
+                $daytimeStartHour   = (int) \Carbon\Carbon::parse($parkSettingsForAlert?->daytime_start   ?? '08:00')->format('G'); // 8
+                $daytimeEndHour     = (int) \Carbon\Carbon::parse($parkSettingsForAlert?->daytime_end     ?? '17:00')->format('G'); // 17
+                $nighttimeStartHour = (int) \Carbon\Carbon::parse($parkSettingsForAlert?->nighttime_start ?? '18:00')->format('G'); // 18
+                $nighttimeEndHour   = (int) \Carbon\Carbon::parse($parkSettingsForAlert?->nighttime_end   ?? '08:00')->format('G'); // 8
 
                 $rainyPattern = '/rain|drizzle|shower|thunder|storm|typhoon/i';
 
@@ -4899,11 +4908,70 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     }
 
                     $day = $forecastByDate[$resDateStr];
-                    $rainChance = (int) ($day['chance_of_rain'] ?? 0);
-                    $condition  = (string) ($day['condition'] ?? '');
-                    $isRainy    = $rainChance >= 50 || preg_match($rainyPattern, $condition);
 
-                    if (!$isRainy) continue;
+                    // ── Determine the hours that belong to this reservation's session ──
+                    $startSlotRaw = strtolower((string) ($res->start_slot ?? 'daytime'));
+
+                    if (str_contains($startSlotRaw, 'night') && !str_contains($startSlotRaw, 'day')) {
+                        // Pure Nighttime: 18:00 → 23:59 of reservation_date (next-morning hours are next date's issue)
+                        $sessionHours = range($nighttimeStartHour, 23);
+                        // Also include early-morning wrap-up hours (0 to nighttimeEndHour - 1) on same date data if available
+                        if ($nighttimeEndHour > 0) {
+                            $sessionHours = array_merge($sessionHours, range(0, $nighttimeEndHour - 1));
+                        }
+                        $sessionLabel = 'Nighttime';
+                    } elseif (str_contains($startSlotRaw, 'daytonight') || str_contains($startSlotRaw, 'nighttoday')) {
+                        // Multi-slot spanning both: check all hours
+                        $sessionHours = range(0, 23);
+                        $sessionLabel = 'Overnight';
+                    } else {
+                        // Daytime (default): 08:00 → 17:00
+                        // Hours: daytimeStartHour to daytimeEndHour - 1 (inclusive of end hour since it closes then)
+                        $sessionHours = range($daytimeStartHour, $daytimeEndHour);
+                        $sessionLabel = 'Daytime';
+                    }
+
+                    // ── Filter hourly forecast to session hours and compute rain risk ──
+                    $hourlyData = $day['hourly'] ?? $day['hours'] ?? [];
+                    $sessionRainChance = 0;
+                    $sessionCondition  = '';
+                    $sessionIsRainy    = false;
+
+                    if (!empty($hourlyData)) {
+                        $sessionHourEntries = array_filter(
+                            $hourlyData,
+                            fn($h) => in_array((int) ($h['hour'] ?? -1), $sessionHours, true)
+                        );
+
+                        foreach ($sessionHourEntries as $h) {
+                            $hChance = (int) ($h['chance_of_rain'] ?? 0);
+                            if ($hChance > $sessionRainChance) {
+                                $sessionRainChance = $hChance;
+                                $sessionCondition  = (string) ($h['condition'] ?? '');
+                            }
+                            if (preg_match($rainyPattern, (string) ($h['condition'] ?? ''))) {
+                                $sessionIsRainy = true;
+                            }
+                        }
+
+                        // Treat >= 50% chance-of-rain in session as rainy
+                        $sessionIsRainy = $sessionIsRainy || $sessionRainChance >= 50;
+
+                        // If no hourly data matched session (e.g. today's past hours filtered), fall back to daily
+                        if (empty($sessionHourEntries)) {
+                            $sessionRainChance = (int) ($day['chance_of_rain'] ?? 0);
+                            $sessionCondition  = (string) ($day['condition'] ?? '');
+                            $sessionIsRainy    = $sessionRainChance >= 50 || preg_match($rainyPattern, $sessionCondition);
+                        }
+                    } else {
+                        // No hourly breakdown — fall back to daily chance (less precise)
+                        $sessionRainChance = (int) ($day['chance_of_rain'] ?? 0);
+                        $sessionCondition  = (string) ($day['condition'] ?? '');
+                        $sessionIsRainy    = $sessionRainChance >= 50 || preg_match($rainyPattern, $sessionCondition);
+                    }
+
+                    // Only flag if rain actually overlaps the session
+                    if (!$sessionIsRainy) continue;
 
                     // Collect amenity names for context
                     $amenityNames = $res->reservationAmenities
@@ -4919,9 +4987,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'date'           => $resDateStr,
                         'date_label'     => \Carbon\Carbon::parse($resDateStr)->format('M j, Y'),
                         'day_name'       => $day['day_name'] ?? \Carbon\Carbon::parse($resDateStr)->format('l'),
-                        'condition'      => $condition,
+                        'session'        => $res->start_slot ?? 'Daytime',
+                        'session_label'  => $sessionLabel,
+                        'condition'      => $sessionCondition ?: ((string) ($day['condition'] ?? '')),
                         'icon'           => $day['icon'] ?? null,
-                        'rain_chance'    => $rainChance,
+                        'rain_chance'    => $sessionRainChance,
                         'amenity_names'  => $amenityNames,
                         'max_temp_c'     => $day['max_temp_c'] ?? null,
                         'min_temp_c'     => $day['min_temp_c'] ?? null,

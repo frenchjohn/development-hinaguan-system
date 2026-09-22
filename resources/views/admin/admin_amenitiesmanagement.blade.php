@@ -61,7 +61,7 @@
             z-index: -1 !important;
             pointer-events: none !important;
             background-color: #ebf3ec !important;
-            background-image: url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
             background-size: 100% 100% !important;
             background-position: center center !important;
             background-repeat: no-repeat !important;
