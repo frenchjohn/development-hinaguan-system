@@ -4716,7 +4716,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ));
     })->name('dashboard');
 
-    Route::get('/reservations', function (Request $request) use ($computeReservationCheckoutAt, $formatLocalDate) {
+    Route::get('/reservations', function (Request $request, \App\Services\WeatherService $weather) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return redirect()->route('login');
@@ -4871,6 +4871,74 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->values()
             ->all();
 
+        // ── Weather alerts for upcoming reservations ─────────────────────────
+        // Build a list of reservations whose dates fall within the 3-day forecast
+        // window AND have a significant chance of rain (>= 50%) or a rainy condition.
+        $weatherAlerts = [];
+        try {
+            $forecast = $weather->getMultiDayForecast(3);
+            if ($forecast && !empty($forecast['days'])) {
+                // Build a lookup: date => forecast day
+                $forecastByDate = [];
+                foreach ($forecast['days'] as $day) {
+                    if (!empty($day['date'])) {
+                        $forecastByDate[$day['date']] = $day;
+                    }
+                }
+
+                $rainyPattern = '/rain|drizzle|shower|thunder|storm|typhoon/i';
+
+                foreach ($reservations as $res) {
+                    $resDateStr = $formatLocalDate($res, 'reservation_date')
+                        ?? ($res->reservation_date
+                            ? \Carbon\Carbon::parse($res->reservation_date)->format('Y-m-d')
+                            : null);
+
+                    if (!$resDateStr || !isset($forecastByDate[$resDateStr])) {
+                        continue;
+                    }
+
+                    $day = $forecastByDate[$resDateStr];
+                    $rainChance = (int) ($day['chance_of_rain'] ?? 0);
+                    $condition  = (string) ($day['condition'] ?? '');
+                    $isRainy    = $rainChance >= 50 || preg_match($rainyPattern, $condition);
+
+                    if (!$isRainy) continue;
+
+                    // Collect amenity names for context
+                    $amenityNames = $res->reservationAmenities
+                        ->map(fn ($ra) => $ra->amenity?->amenities_name)
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all();
+
+                    $weatherAlerts[] = [
+                        'reservation_id' => $res->id,
+                        'booker_name'    => $res->booker_name,
+                        'date'           => $resDateStr,
+                        'date_label'     => \Carbon\Carbon::parse($resDateStr)->format('M j, Y'),
+                        'day_name'       => $day['day_name'] ?? \Carbon\Carbon::parse($resDateStr)->format('l'),
+                        'condition'      => $condition,
+                        'icon'           => $day['icon'] ?? null,
+                        'rain_chance'    => $rainChance,
+                        'amenity_names'  => $amenityNames,
+                        'max_temp_c'     => $day['max_temp_c'] ?? null,
+                        'min_temp_c'     => $day['min_temp_c'] ?? null,
+                    ];
+                }
+
+                // Sort by date then rain_chance desc
+                usort($weatherAlerts, function ($a, $b) {
+                    $dateCmp = strcmp($a['date'], $b['date']);
+                    return $dateCmp !== 0 ? $dateCmp : ($b['rain_chance'] <=> $a['rain_chance']);
+                });
+            }
+        } catch (\Throwable $e) {
+            // Weather alerts are non-critical; silently skip on failure
+            $weatherAlerts = [];
+        }
+
         return view('staff.staff_reservations', compact(
             'reservations',
             'reservationData',
@@ -4881,7 +4949,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'scheduledOrPastCount',
             'expectedGuests',
             'allAmenities',
-            'activeOccupiedAmenityIds'
+            'activeOccupiedAmenityIds',
+            'weatherAlerts'
         ));
     })->name('reservations');
 

@@ -201,9 +201,103 @@
                     </article>
                 </div>
 
+                @if (!empty($weatherAlerts) && count($weatherAlerts) > 0)
+                @php
+                    // Group alerts by date for cleaner display
+                    $alertsByDate = [];
+                    foreach ($weatherAlerts as $alert) {
+                        $alertsByDate[$alert['date']][] = $alert;
+                    }
+                @endphp
+                <div class="mb-4 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm dark:border-amber-500/20 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden" id="weatherAlertBanner">
+                    {{-- Header --}}
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-amber-200/60 dark:border-amber-500/15">
+                        <div class="flex items-center gap-2.5">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                                <i class="bi bi-cloud-rain-fill text-sm"></i>
+                            </span>
+                            <div>
+                                <p class="m-0 text-sm font-bold text-amber-900 dark:text-amber-300">
+                                    Weather Alert — {{ count($weatherAlerts) }} Reservation{{ count($weatherAlerts) > 1 ? 's' : '' }} May Face Rain
+                                </p>
+                                <p class="m-0 text-xs text-amber-700/80 dark:text-amber-400/70">Based on 3-day forecast · Consider notifying guests</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="document.getElementById('weatherAlertBanner').remove()" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors cursor-pointer" title="Dismiss">
+                            <i class="bi bi-x text-base"></i>
+                        </button>
+                    </div>
+
+                    {{-- Grouped by date --}}
+                    <div class="divide-y divide-amber-200/50 dark:divide-amber-500/10">
+                        @foreach ($alertsByDate as $date => $dateAlerts)
+                        @php
+                            $firstAlert = $dateAlerts[0];
+                            $isToday = $date === now()->toDateString();
+                            $isTomorrow = $date === now()->addDay()->toDateString();
+                            $dateLabel = $isToday ? 'Today' : ($isTomorrow ? 'Tomorrow' : $firstAlert['date_label']);
+                        @endphp
+                        <div class="px-4 py-3">
+                            {{-- Date row --}}
+                            <div class="flex items-center gap-3 mb-2.5">
+                                {{-- Weather icon --}}
+                                @if($firstAlert['icon'])
+                                    <img src="{{ $firstAlert['icon'] }}" alt="{{ $firstAlert['condition'] }}" class="h-9 w-9 shrink-0 drop-shadow-sm" loading="lazy">
+                                @else
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                                        <i class="bi bi-cloud-drizzle-fill text-amber-500 text-lg"></i>
+                                    </span>
+                                @endif
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-bold text-sm text-amber-900 dark:text-amber-300">{{ $dateLabel }}</span>
+                                        <span class="text-xs text-amber-700/70 dark:text-amber-400/60">{{ $firstAlert['date_label'] }}</span>
+                                        {{-- Rain chance pill --}}
+                                        @php
+                                            $rc = $firstAlert['rain_chance'];
+                                            $pillColor = $rc >= 80 ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' : ($rc >= 60 ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400');
+                                        @endphp
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold {{ $pillColor }}">
+                                            <i class="bi bi-droplet-fill text-[9px]"></i>
+                                            {{ $rc }}% rain
+                                        </span>
+                                        <span class="text-[11px] text-amber-700/70 dark:text-amber-400/60">{{ $firstAlert['condition'] }}</span>
+                                        @if($firstAlert['max_temp_c'])
+                                            <span class="text-[11px] text-amber-700/60 dark:text-amber-400/50">
+                                                {{ round($firstAlert['max_temp_c']) }}°/{{ round($firstAlert['min_temp_c'] ?? $firstAlert['max_temp_c']) }}°C
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <span class="shrink-0 rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                                    {{ count($dateAlerts) }} reservation{{ count($dateAlerts) > 1 ? 's' : '' }}
+                                </span>
+                            </div>
+
+                            {{-- Reservation chips --}}
+                            <div class="flex flex-wrap gap-2 pl-12">
+                                @foreach ($dateAlerts as $alert)
+                                <div class="flex items-center gap-1.5 rounded-xl border border-amber-200/80 bg-white/70 dark:border-amber-500/15 dark:bg-white/5 px-2.5 py-1.5 text-xs shadow-xs">
+                                    <span class="font-bold text-[#183d28] dark:text-[#e8f5e9]">#{{ $alert['reservation_id'] }}</span>
+                                    <span class="text-[#718076] dark:text-[#9baaa1]">·</span>
+                                    <span class="text-[#374151] dark:text-[#d1fae5] font-medium truncate max-w-[120px]">{{ $alert['booker_name'] }}</span>
+                                    @if (!empty($alert['amenity_names']))
+                                        <span class="text-[#718076] dark:text-[#9baaa1]">·</span>
+                                        <span class="text-[#718076] dark:text-[#9baaa1] truncate max-w-[140px]">{{ implode(', ', $alert['amenity_names']) }}</span>
+                                    @endif
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 @if (session('success'))
                     <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 font-medium" id="pageFlashSuccess" data-page-flash="success">{{ session('success') }}</div>
                 @endif
+
 
                 <div class="resv-toolbar mb-3.5 flex flex-wrap items-center justify-between gap-3">
                     <div class="resv-toolbar__left flex flex-wrap items-center gap-2.5">
