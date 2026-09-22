@@ -203,95 +203,45 @@
 
                 @if (!empty($weatherAlerts) && count($weatherAlerts) > 0)
                 @php
-                    // Group alerts by date for cleaner display
-                    $alertsByDate = [];
-                    foreach ($weatherAlerts as $alert) {
-                        $alertsByDate[$alert['date']][] = $alert;
+                    // Compute summary numbers for the compact strip
+                    $severeAlerts  = array_filter($weatherAlerts, fn($a) => $a['rain_chance'] >= 80 || preg_match('/typhoon|storm|hurricane/i', $a['condition']));
+                    $severeCount   = count($severeAlerts);
+                    $totalCount    = count($weatherAlerts);
+                    // Strip label
+                    if ($severeCount > 0) {
+                        $stripLabel = $severeCount . ' reservation' . ($severeCount > 1 ? 's' : '') . ' may not get across — severe weather';
+                        $stripClass = 'border-red-300/70 bg-gradient-to-r from-red-50 to-rose-50 dark:border-red-500/25 dark:from-red-950/30 dark:to-rose-950/20';
+                        $stripIconClass = 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/20';
+                        $stripIcon = 'bi-hurricane';
+                        $pillClass = 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400';
+                    } else {
+                        $stripLabel = $totalCount . ' reservation' . ($totalCount > 1 ? 's' : '') . ' ' . ($totalCount > 1 ? 'face' : 'faces') . ' rainy weather';
+                        $stripClass = 'border-amber-300/60 bg-gradient-to-r from-amber-50 to-orange-50 dark:border-amber-500/20 dark:from-amber-950/30 dark:to-orange-950/20';
+                        $stripIconClass = 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20';
+                        $stripIcon = 'bi-cloud-rain-fill';
+                        $pillClass = 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400';
                     }
                 @endphp
-                <div class="mb-4 rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm dark:border-amber-500/20 dark:from-amber-950/30 dark:to-orange-950/20 overflow-hidden" id="weatherAlertBanner">
-                    {{-- Header --}}
-                    <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-amber-200/60 dark:border-amber-500/15">
-                        <div class="flex items-center gap-2.5">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                                <i class="bi bi-cloud-rain-fill text-sm"></i>
-                            </span>
-                            <div>
-                                <p class="m-0 text-sm font-bold text-amber-900 dark:text-amber-300">
-                                    Weather Alert — {{ count($weatherAlerts) }} Reservation{{ count($weatherAlerts) > 1 ? 's' : '' }} May Face Rain
-                                </p>
-                                <p class="m-0 text-xs text-amber-700/80 dark:text-amber-400/70">Based on 3-day forecast · Consider notifying guests</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="document.getElementById('weatherAlertBanner').remove()" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors cursor-pointer" title="Dismiss">
-                            <i class="bi bi-x text-base"></i>
-                        </button>
+                {{-- ░░ COMPACT WEATHER STRIP ░░ --}}
+                <button type="button" id="weatherAlertStripBtn"
+                    class="w-full mb-4 flex items-center gap-3 rounded-2xl border {{ $stripClass }} px-4 py-3 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.005] active:scale-[0.998] cursor-pointer"
+                    aria-haspopup="dialog" aria-controls="weatherAlertModal">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm {{ $stripIconClass }}">
+                        <i class="bi {{ $stripIcon }}"></i>
+                    </span>
+                    <div class="flex-1 min-w-0 text-left">
+                        <p class="m-0 text-sm font-bold text-[#183d28] dark:text-[#e8f5e9] truncate">⚠️ {{ $stripLabel }}</p>
+                        <p class="m-0 text-xs text-[#718076] dark:text-[#9baaa1]">Based on 3-day forecast · Tap to review and notify guests</p>
                     </div>
+                    <span class="shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $pillClass }}">
+                        View details <i class="bi bi-chevron-right text-[9px]"></i>
+                    </span>
+                </button>
 
-                    {{-- Grouped by date --}}
-                    <div class="divide-y divide-amber-200/50 dark:divide-amber-500/10">
-                        @foreach ($alertsByDate as $date => $dateAlerts)
-                        @php
-                            $firstAlert = $dateAlerts[0];
-                            $isToday = $date === now()->toDateString();
-                            $isTomorrow = $date === now()->addDay()->toDateString();
-                            $dateLabel = $isToday ? 'Today' : ($isTomorrow ? 'Tomorrow' : $firstAlert['date_label']);
-                        @endphp
-                        <div class="px-4 py-3">
-                            {{-- Date row --}}
-                            <div class="flex items-center gap-3 mb-2.5">
-                                {{-- Weather icon --}}
-                                @if($firstAlert['icon'])
-                                    <img src="{{ $firstAlert['icon'] }}" alt="{{ $firstAlert['condition'] }}" class="h-9 w-9 shrink-0 drop-shadow-sm" loading="lazy">
-                                @else
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
-                                        <i class="bi bi-cloud-drizzle-fill text-amber-500 text-lg"></i>
-                                    </span>
-                                @endif
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <span class="font-bold text-sm text-amber-900 dark:text-amber-300">{{ $dateLabel }}</span>
-                                        <span class="text-xs text-amber-700/70 dark:text-amber-400/60">{{ $firstAlert['date_label'] }}</span>
-                                        {{-- Rain chance pill --}}
-                                        @php
-                                            $rc = $firstAlert['rain_chance'];
-                                            $pillColor = $rc >= 80 ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400' : ($rc >= 60 ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400');
-                                        @endphp
-                                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold {{ $pillColor }}">
-                                            <i class="bi bi-droplet-fill text-[9px]"></i>
-                                            {{ $rc }}% rain
-                                        </span>
-                                        <span class="text-[11px] text-amber-700/70 dark:text-amber-400/60">{{ $firstAlert['condition'] }}</span>
-                                        @if($firstAlert['max_temp_c'])
-                                            <span class="text-[11px] text-amber-700/60 dark:text-amber-400/50">
-                                                {{ round($firstAlert['max_temp_c']) }}°/{{ round($firstAlert['min_temp_c'] ?? $firstAlert['max_temp_c']) }}°C
-                                            </span>
-                                        @endif
-                                    </div>
-                                </div>
-                                <span class="shrink-0 rounded-full bg-amber-100 dark:bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                                    {{ count($dateAlerts) }} reservation{{ count($dateAlerts) > 1 ? 's' : '' }}
-                                </span>
-                            </div>
-
-                            {{-- Reservation chips --}}
-                            <div class="flex flex-wrap gap-2 pl-12">
-                                @foreach ($dateAlerts as $alert)
-                                <div class="flex items-center gap-1.5 rounded-xl border border-amber-200/80 bg-white/70 dark:border-amber-500/15 dark:bg-white/5 px-2.5 py-1.5 text-xs shadow-xs">
-                                    <span class="font-bold text-[#183d28] dark:text-[#e8f5e9]">#{{ $alert['reservation_id'] }}</span>
-                                    <span class="text-[#718076] dark:text-[#9baaa1]">·</span>
-                                    <span class="text-[#374151] dark:text-[#d1fae5] font-medium truncate max-w-[120px]">{{ $alert['booker_name'] }}</span>
-                                    @if (!empty($alert['amenity_names']))
-                                        <span class="text-[#718076] dark:text-[#9baaa1]">·</span>
-                                        <span class="text-[#718076] dark:text-[#9baaa1] truncate max-w-[140px]">{{ implode(', ', $alert['amenity_names']) }}</span>
-                                    @endif
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
+                {{-- ░░ WEATHER ALERT MODAL ░░ --}}
+                <script>
+                    window.weatherAlertsData = @json($weatherAlerts);
+                </script>
                 @endif
 
                 @if (session('success'))
@@ -1829,7 +1779,277 @@
         </div>
     </div>
 
-    <x-staff_chatbot />
+    {{-- ░░░ WEATHER ALERT MODAL ░░░ --}}
+    <div id="weatherAlertModal" role="dialog" aria-modal="true" aria-labelledby="weatherAlertModalTitle"
+         class="fixed inset-0 z-[900] hidden items-end sm:items-center justify-center"
+         style="display:none">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px] dark:bg-black/70" id="weatherAlertModalBackdrop"></div>
+        <div class="relative z-10 w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#161a18] shadow-2xl overflow-hidden">
+
+            {{-- Modal Header --}}
+            <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#e5e9e6] dark:border-white/10">
+                <div class="flex items-center gap-3">
+                    <span id="weatherModalHeaderIcon" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                        <i class="bi bi-cloud-rain-fill"></i>
+                    </span>
+                    <div>
+                        <h3 id="weatherAlertModalTitle" class="m-0 text-base font-bold text-[#183d28] dark:text-[#e8f5e9]">Weather Advisory</h3>
+                        <p class="m-0 text-xs text-[#718076] dark:text-[#9baaa1]">Upcoming reservations affected by forecast weather</p>
+                    </div>
+                </div>
+                <button type="button" id="closeWeatherAlertModal"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[#718076] hover:bg-[#f0f4f1] dark:hover:bg-white/10 transition-colors cursor-pointer mt-0.5"
+                    aria-label="Close">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
+            </div>
+
+            {{-- Modal Body --}}
+            <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4" id="weatherAlertModalBody">
+                {{-- Rendered by JS --}}
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="px-5 py-3 border-t border-[#e5e9e6] dark:border-white/10 flex items-center justify-between gap-3">
+                <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1]">
+                    <i class="bi bi-info-circle mr-1"></i>Forecast via WeatherAPI · 3-day window only
+                </p>
+                <button type="button" id="closeWeatherAlertModalFooterBtn"
+                    class="rounded-xl border border-[#dfe5e0] bg-white dark:border-white/15 dark:bg-[#242a26] px-4 py-2 text-sm font-semibold text-[#183d28] dark:text-[#e8f5e9] hover:bg-[#f0f4f1] dark:hover:bg-[#2e3530] transition-colors cursor-pointer">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const modal = document.getElementById('weatherAlertModal');
+        const body  = document.getElementById('weatherAlertModalBody');
+        const stripBtn = document.getElementById('weatherAlertStripBtn');
+        const backdrop = document.getElementById('weatherAlertModalBackdrop');
+        const closeBtn  = document.getElementById('closeWeatherAlertModal');
+        const closeBtnF = document.getElementById('closeWeatherAlertModalFooterBtn');
+        const headerIcon = document.getElementById('weatherModalHeaderIcon');
+
+        if (!modal || !stripBtn) return;
+
+        const alerts = window.weatherAlertsData || [];
+
+        // Severity helpers
+        const isSevere = a => a.rain_chance >= 80 || /typhoon|storm|hurricane/i.test(a.condition);
+        const isStrong = a => a.rain_chance >= 65 || /heavy rain|downpour|thunder/i.test(a.condition);
+
+        function severityMeta(alert) {
+            if (isSevere(alert)) return {
+                level: 'SEVERE',
+                label: 'Severe / Typhoon-level',
+                bg:    'bg-red-50 dark:bg-red-950/20',
+                border:'border-red-200 dark:border-red-500/20',
+                pill:  'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+                icon:  'bi-hurricane',
+                iconColor: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-500/20',
+                suggestion: true,
+                badgeColor: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+            };
+            if (isStrong(alert)) return {
+                level: 'STRONG',
+                label: 'Heavy Rain / Thunderstorm',
+                bg:    'bg-orange-50 dark:bg-orange-950/20',
+                border:'border-orange-200 dark:border-orange-500/20',
+                pill:  'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
+                icon:  'bi-cloud-lightning-rain-fill',
+                iconColor: 'text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-500/20',
+                suggestion: false,
+                badgeColor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+            };
+            return {
+                level: 'MODERATE',
+                label: 'Moderate Rain',
+                bg:    'bg-amber-50 dark:bg-amber-950/20',
+                border:'border-amber-200 dark:border-amber-500/20',
+                pill:  'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+                icon:  'bi-cloud-rain-fill',
+                iconColor: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20',
+                suggestion: false,
+                badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+            };
+        }
+
+        function buildModal() {
+            if (!body) return;
+
+            // Update header icon to red if any severe
+            if (alerts.some(isSevere)) {
+                headerIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400';
+                headerIcon.innerHTML = '<i class="bi bi-hurricane"></i>';
+            }
+
+            // Group by date
+            const byDate = {};
+            alerts.forEach(a => { (byDate[a.date] = byDate[a.date] || []).push(a); });
+
+            const today    = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+            const fragment = document.createDocumentFragment();
+
+            Object.entries(byDate).forEach(([date, dateAlerts]) => {
+                const first = dateAlerts[0];
+                const isToday    = date === today;
+                const isTomorrow = date === tomorrow;
+                const dayLabel   = isToday ? 'Today' : (isTomorrow ? 'Tomorrow' : first.day_name);
+                const hasSevere  = dateAlerts.some(isSevere);
+
+                // Date section header
+                const section = document.createElement('div');
+                section.className = 'space-y-2';
+
+                const dateRow = document.createElement('div');
+                dateRow.className = 'flex items-center gap-2 mb-1';
+                dateRow.innerHTML = `
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">${dayLabel}</span>
+                    <span class="text-xs text-[#9baaa1] dark:text-[#6b7876]">${first.date_label}</span>
+                    ${hasSevere ? '<span class="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400"><i class="bi bi-exclamation-triangle-fill text-[9px]"></i> SEVERE</span>' : ''}
+                `;
+                section.appendChild(dateRow);
+
+                dateAlerts.forEach(alert => {
+                    const meta = severityMeta(alert);
+                    const amenities = (alert.amenity_names || []).join(', ') || '—';
+                    const tempStr   = alert.max_temp_c != null
+                        ? `${Math.round(alert.max_temp_c)}°/${Math.round(alert.min_temp_c ?? alert.max_temp_c)}°C`
+                        : '';
+
+                    const card = document.createElement('div');
+                    card.className = `rounded-xl border ${meta.border} ${meta.bg} p-4`;
+                    card.innerHTML = `
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${meta.iconColor}">
+                                ${alert.icon
+                                    ? `<img src="${alert.icon}" alt="${alert.condition}" class="h-8 w-8 drop-shadow-sm" loading="lazy">`
+                                    : `<i class="bi ${meta.icon}"></i>`}
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                    <span class="font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">#${alert.reservation_id}</span>
+                                    <span class="text-[#718076] dark:text-[#9baaa1] text-xs">·</span>
+                                    <span class="font-semibold text-sm text-[#374151] dark:text-[#d1fae5] truncate max-w-[160px]">${alert.booker_name}</span>
+                                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.pill}">
+                                        <i class="bi bi-droplet-fill text-[9px]"></i>${alert.rain_chance}% rain
+                                    </span>
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.badgeColor}">${meta.label}</span>
+                                </div>
+                                <div class="text-xs text-[#718076] dark:text-[#9baaa1] space-y-0.5">
+                                    <p class="m-0"><i class="bi bi-cloud-fill mr-1"></i>${alert.condition}${tempStr ? ' · ' + tempStr : ''}</p>
+                                    <p class="m-0"><i class="bi bi-building mr-1"></i>${amenities}</p>
+                                </div>
+                                ${meta.suggestion ? `
+                                <div class="mt-2.5 rounded-lg border border-red-200/80 dark:border-red-500/15 bg-white/60 dark:bg-black/20 p-2.5">
+                                    <p class="m-0 text-xs font-semibold text-red-700 dark:text-red-400 mb-1">
+                                        <i class="bi bi-exclamation-triangle-fill mr-1"></i>Severe weather — guest may not be able to proceed
+                                    </p>
+                                    <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1] mb-2">
+                                        Consider sending a reschedule request via SMS so the guest can pick a safer date.
+                                    </p>
+                                    <button type="button"
+                                        class="weather-alert-resched-btn inline-flex items-center gap-1.5 rounded-lg border border-red-300/80 bg-red-600 hover:bg-red-700 active:bg-red-800 dark:bg-red-700 dark:hover:bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer shadow-sm"
+                                        data-reservation-id="${alert.reservation_id}"
+                                        data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
+                                        data-date-label="${alert.date_label}"
+                                        data-condition="${alert.condition.replace(/"/g,'&quot;')}"
+                                        title="Send reschedule SMS to guest">
+                                        <i class="bi bi-send-fill text-[10px]"></i>
+                                        Send Reschedule Request via SMS
+                                    </button>
+                                </div>` : `
+                                <div class="mt-2 rounded-lg border border-[#e5e9e6] dark:border-white/10 bg-white/60 dark:bg-black/20 p-2.5">
+                                    <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1]">
+                                        <i class="bi bi-info-circle mr-1"></i>Heads up — rain is forecast but the event can likely proceed. Monitor the weather closer to the date.
+                                    </p>
+                                    <button type="button"
+                                        class="weather-alert-resched-btn mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-amber-300/80 bg-white dark:bg-[#242a26] hover:bg-amber-50 dark:hover:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 transition-colors cursor-pointer"
+                                        data-reservation-id="${alert.reservation_id}"
+                                        data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
+                                        data-date-label="${alert.date_label}"
+                                        data-condition="${alert.condition.replace(/"/g,'&quot;')}"
+                                        title="Optionally send a reschedule request">
+                                        <i class="bi bi-send text-[10px]"></i>
+                                        Suggest Reschedule (Optional)
+                                    </button>
+                                </div>`}
+                            </div>
+                        </div>
+                    `;
+                    section.appendChild(card);
+                });
+
+                fragment.appendChild(section);
+            });
+
+            body.innerHTML = '';
+            body.appendChild(fragment);
+
+            // Bind reschedule buttons → open the existing send-reschedule modal
+            body.querySelectorAll('.weather-alert-resched-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const resId     = btn.dataset.reservationId;
+                    const booker    = btn.dataset.bookerName;
+                    const dateLbl   = btn.dataset.dateLabel;
+                    const condition = btn.dataset.condition;
+
+                    closeModal();
+
+                    // Pre-fill and open the existing send-reschedule-request modal
+                    // The existing modal uses #requestReschedModal, #requestReschedResId etc.
+                    const existingModal = document.getElementById('requestReschedModal');
+                    if (existingModal) {
+                        const resIdEl  = document.getElementById('requestReschedResId');
+                        const msgEl    = document.getElementById('requestReschedMessage');
+                        const titleEl  = document.getElementById('requestReschedModalTitle');
+                        const nameEl   = document.getElementById('requestReschedBookerName');
+
+                        if (resIdEl)  resIdEl.value = resId;
+                        if (titleEl)  titleEl.textContent = `Send Reschedule Request — #${resId}`;
+                        if (nameEl)   nameEl.textContent  = booker;
+                        if (msgEl) {
+                            msgEl.value = `Dear guest, due to severe weather (${condition}) forecast on ${dateLbl}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
+                        }
+
+                        existingModal.classList.add('is-open');
+                        existingModal.classList.remove('hidden');
+                        existingModal.setAttribute('aria-hidden', 'false');
+                        document.body.classList.add('overflow-hidden');
+                    } else {
+                        // Fallback: trigger the existing table row's reschedule button if visible
+                        const tableBtn = document.querySelector(`[data-reservation-id="${resId}"] #detailRequestReschedBtn, #detailRequestReschedBtn[data-reservation-id="${resId}"]`);
+                        if (tableBtn) tableBtn.click();
+                        else alert(`Open reservation #${resId} and use the Reschedule button to send an SMS request.`);
+                    }
+                });
+            });
+        }
+
+        function openModal() {
+            buildModal();
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+        }
+        function closeModal() {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        stripBtn.addEventListener('click', openModal);
+        backdrop.addEventListener('click', closeModal);
+        closeBtn.addEventListener('click', closeModal);
+        closeBtnF.addEventListener('click', closeModal);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
+    })();
+    </script>
+
 
     <script>
         window.staffReservationData = @json($reservationData ?? []);

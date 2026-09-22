@@ -68,7 +68,7 @@
     <!-- Navigation -->
     <nav class="relative z-10 flex-1 flex flex-col px-3 py-1 min-h-0 overflow-y-hidden" aria-label="Staff navigation">
         <ul class="list-none m-0 p-0 flex flex-col gap-[2px] h-full justify-between">
-            @foreach ($links as $link)
+            @foreach ($links as $index => $link)
                 <li>
                     <a
                         href="{{ $link['url'] }}"
@@ -89,6 +89,9 @@
                         <span class="nav-label font-['Poppins','Inter',sans-serif] text-[9px] text-center leading-[1.2] shrink-0 tracking-[0.2px] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] opacity-100 text-white/75 font-medium group-hover/link:text-white group-hover/link:font-semibold">{{ $link['label'] }}</span>
                     </a>
                 </li>
+                @if ($index !== array_key_last($links))
+                    <div class="h-px mx-3 bg-gradient-to-r from-transparent via-white/8 dark:via-white/3 to-transparent"></div>
+                @endif
             @endforeach
         </ul>
     </nav>
