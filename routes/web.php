@@ -6412,8 +6412,25 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $childRate = $dayChild;
         }
 
-        $entranceOption = $data['entrance_option'] ?? 'all_paid';
-        if ($entranceOption === 'all_free') {
+        // Check if any selected amenity provides free entrance or free pool benefit
+        $hasFreeEntrance = false;
+        $hasFreePool = false;
+        foreach ($processedAmenities as $pAm) {
+            $am = $pAm['amenity'];
+            if ($am) {
+                $benefit = $am->benefit ?? null;
+                if (! $benefit && method_exists($am, 'benefits')) {
+                    $benefit = $am->benefits;
+                }
+                if ($benefit) {
+                    if (! empty($benefit->free_entrance)) $hasFreeEntrance = true;
+                    if (! empty($benefit->free_pool)) $hasFreePool = true;
+                }
+            }
+        }
+
+        $entranceOption = $data['entrance_option'] ?? ($hasFreeEntrance ? 'all_free' : 'all_paid');
+        if ($entranceOption === 'all_free' || $hasFreeEntrance) {
             $payingAdultCount = 0;
             $payingChildCount = 0;
         } elseif ($entranceOption === 'all_paid') {
@@ -6424,7 +6441,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $entranceTotal = ($payingAdultCount * $adultRate) + ($payingChildCount * $childRate);
 
         // Pool option & pool access determination
-        $poolOption = $data['pool_option'] ?? (! empty($data['include_pool']) ? 'all_paid' : 'no_pool');
+        $poolOption = $data['pool_option'] ?? ($hasFreePool ? 'all_free' : (! empty($data['include_pool']) ? 'all_paid' : 'no_pool'));
+        if ($hasFreePool && $poolOption !== 'no_pool') {
+            $poolOption = 'all_free';
+        }
 
         $dayPool = (float) ($settings->day_pool_fee ?? 0);
         $nightPool = (float) ($settings->night_pool_fee ?? 0);
@@ -6463,7 +6483,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $poolFee = 0;
-        if ($poolOption === 'all_paid' || $poolOption === 'specific') {
+        if ($poolOption === 'all_free' || $hasFreePool) {
+            $poolFee = 0.0;
+        } elseif ($poolOption === 'all_paid' || $poolOption === 'specific') {
             $poolFee = round($poolCount * $poolRate, 2);
         }
 
@@ -6494,7 +6516,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        $grandTotal = round($entranceTotal + $poolFee + $amenityTotal + $extraHeadTotal, 2);
+        // If total_amount was provided from the walk-in checking in form, record that exact total directly
+        if (isset($data['total_amount']) && is_numeric($data['total_amount'])) {
+            $grandTotal = round((float) $data['total_amount'], 2);
+        } else {
+            $grandTotal = round($entranceTotal + $poolFee + $amenityTotal + $extraHeadTotal, 2);
+        }
 
         $primaryFirstName = trim((string) ($data['primary_guest']['first_name'] ?? '')) ?: 'Walk-In';
         $primaryLastName = trim((string) ($data['primary_guest']['last_name'] ?? '')) ?: 'Guest';
@@ -6525,11 +6552,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             default => 'Daytime',
         };
 
+        $entranceFeeTotal = ($entranceOption === 'all_free' || $hasFreeEntrance) ? 0.0 : round($entranceTotal + $poolFee + $extraHeadTotal, 2);
+        if ($hasFreeEntrance && $hasFreePool) {
+            $entranceFeeTotal = round($extraHeadTotal, 2);
+        }
+
         \App\Models\ReservationEntranceFee::create([
             'reservation_id' => $reservation->id,
             'pricing_type' => $entrancePricingType,
             'pool_option' => $poolOption,
-            'total_amount' => round($entranceTotal + $poolFee + $extraHeadTotal, 2),
+            'total_amount' => $entranceFeeTotal,
             'pool_fee' => round($poolFee, 2),
             'pool_access_count' => $poolCount,
             'adult_count' => $adultCount,
@@ -6705,7 +6737,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             }
         }
 
-        $entranceTotal = round($mainGuestFee + $companionEntrance + $poolFee, 2);
+        if (isset($data['total_amount']) && is_numeric($data['total_amount'])) {
+            $entranceTotal = round((float) $data['total_amount'], 2);
+        } else {
+            $entranceTotal = round($mainGuestFee + $companionEntrance + $poolFee, 2);
+        }
 
         // Create a reservation for visit-only (without amenities)
         $reservation = Reservation::create([
