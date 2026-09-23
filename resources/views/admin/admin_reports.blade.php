@@ -22,6 +22,7 @@
             document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
         }
     </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
         'resources/css/homepage.css',
@@ -720,12 +721,18 @@
                                     </select>
                                 </label>
                                 <label class="flex flex-col gap-2">
-                                    <span class="text-xs font-semibold text-hp-text-muted">Check-in Range</span>
-                                    <div class="flex items-center gap-2">
-                                        <input id="dateFrom" type="date" value="" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
-                                        <span class="text-hp-text-muted">→</span>
-                                        <input id="dateTo" type="date" value="" class="w-full rounded-xl border border-glass-border bg-transparent px-3 py-2 text-sm text-hp-text outline-none focus:border-hp-green-mid">
-                                    </div>
+                                    <span class="text-xs font-semibold text-hp-text-muted">Date &amp; Session</span>
+                                    <button
+                                        type="button"
+                                        id="openDateFilterModalBtn"
+                                        class="h-[38px] w-full flex items-center justify-between gap-2 px-3.5 rounded-xl border border-glass-border bg-glass hover:bg-glass-hover text-xs font-semibold text-hp-text transition-all cursor-pointer shadow-2xs"
+                                    >
+                                        <span class="flex items-center gap-2">
+                                            <i class="bi bi-calendar-event text-emerald-600 dark:text-emerald-400"></i>
+                                            <span id="dateFilterBtnLabel">Date &amp; Session</span>
+                                        </span>
+                                        <span id="dateFilterActiveDot" class="hidden h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    </button>
                                 </label>
                                 <label class="flex flex-col gap-2">
                                     <span class="text-xs font-semibold text-hp-text-muted">Active Filter Output</span>
@@ -733,15 +740,6 @@
                                         Showing all reservations
                                     </div>
                                 </label>
-                            </div>
-
-                            <div class="flex flex-wrap items-center gap-2.5">
-                                <span class="text-xs font-semibold text-hp-text-muted">Presets:</span>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="today">Today</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="7d">Last 7 days</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="30d">Last 30 days</button>
-                                <button type="button" class="preset-chip cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="month">This month</button>
-                                <button type="button" class="preset-chip is-active cursor-pointer rounded-full border border-glass-border px-3.5 py-1 text-xs font-medium text-hp-text transition-all hover:bg-hp-green-soft is-active:bg-hp-green-mid is-active:text-white" data-preset="all">All time</button>
                             </div>
                         </div>
                     </section>
@@ -904,11 +902,27 @@
                                             $amenitiesStr = $r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None';
                                             $effectiveCheckIn = $r->check_in ?? $r->reservation_date;
                                             $checkInStr = $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d') : '';
+
+                                            $slot = strtolower((string) ($r->start_slot ?? ''));
+                                            if (str_contains($slot, 'day') || str_contains($slot, 'morning') || str_contains($slot, 'afternoon')) {
+                                                $resSession = 'daytime';
+                                            } elseif (str_contains($slot, 'night') || str_contains($slot, 'overnight')) {
+                                                $resSession = 'overnight';
+                                            } else {
+                                                $checkInTime = $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila')) : null;
+                                                if ($checkInTime) {
+                                                    $hour = (int) $checkInTime->format('G');
+                                                    $resSession = ($hour >= 6 && $hour < 18) ? 'daytime' : 'overnight';
+                                                } else {
+                                                    $resSession = 'daytime';
+                                                }
+                                            }
                                         @endphp
                                         <tr class="border-b border-glass-border/50 hover:bg-glass-hover"
                                             data-amenity="{{ strtolower($amenitiesStr) }}"
                                             data-status="{{ strtolower($r->status) }}"
-                                            data-checkin="{{ $checkInStr }}">
+                                            data-checkin="{{ $checkInStr }}"
+                                            data-session="{{ $resSession }}">
                                             <td class="py-3 px-3 font-medium text-hp-text">{{ $r->booker_name }}</td>
                                             <td class="py-3 px-3 text-xs text-hp-text-muted">{{ $amenitiesStr }}</td>
                                             <td class="mono-cell py-3 px-3 text-xs text-hp-text-muted">{{ $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('M d, Y') : 'N/A' }}</td>
@@ -1072,6 +1086,149 @@
                     </div>
                 </div>
             </main>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- DATE & SESSION FILTER MODAL                                  --}}
+    {{-- ============================================================ --}}
+    <div
+        id="dateFilterModal"
+        class="hidden fixed inset-0 z-[2000] items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dateFilterModalTitle"
+    >
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#141715] border border-gray-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col">
+            
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-neutral-800 bg-gray-50/50 dark:bg-neutral-900/40">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-calendar-range text-sm"></i>
+                    </span>
+                    <div>
+                        <h3 id="dateFilterModalTitle" class="m-0 text-sm font-bold text-gray-900 dark:text-neutral-100">Filter by Date &amp; Session</h3>
+                        <p class="m-0 text-[11px] text-gray-500 dark:text-neutral-400">Configure date range and operating session</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    id="closeDateFilterModalBtn"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                    aria-label="Close"
+                >
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-5 space-y-4 text-xs">
+                
+                {{-- Date Section (Start & End Dates) --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-gray-900 dark:text-neutral-100">Select Date</label>
+                        <span class="text-[10px] text-gray-500 dark:text-neutral-400">Leave End empty for single date</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <span class="block text-[11px] text-gray-500 dark:text-neutral-400 mb-1 font-semibold">Start Date</span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalStartDateInput"
+                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-[11px] text-gray-500 dark:text-neutral-400 mb-1 font-semibold">End Date <span class="text-[10px] font-normal text-gray-400">(optional)</span></span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalEndDateInput"
+                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Quick Presets --}}
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span class="text-[10px] font-semibold text-gray-500 dark:text-neutral-400 mr-0.5">Quick:</span>
+                        <button type="button" id="presetTodayBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Today
+                        </button>
+                        <button type="button" id="presetYesterdayBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Yesterday
+                        </button>
+                        <button type="button" id="presetThisWeekBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Week
+                        </button>
+                        <button type="button" id="presetThisMonthBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Month
+                        </button>
+                        <button type="button" id="presetLastMonthBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Last Month
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Subtle Divider --}}
+                <div class="border-t border-gray-200 dark:border-neutral-800 pt-3">
+                    {{-- Operating Session (small compact dropdown, out of the highlight) --}}
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <label for="modalSessionSelect" class="block font-semibold text-gray-900 dark:text-neutral-100 text-[11px]">Operating Session</label>
+                            <p class="m-0 text-[10px] text-gray-500 dark:text-neutral-400">Filter reservations by operating hours</p>
+                        </div>
+                        <div class="relative min-w-[190px]">
+                            <select
+                                id="modalSessionSelect"
+                                class="h-8 w-full appearance-none rounded-lg border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-2.5 pr-7 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors"
+                            >
+                                <option value="">All Sessions (24 hrs)</option>
+                                <option value="daytime">Daytime ({{ $daytimeHoursFormatted ?? '8:00 AM – 5:00 PM' }})</option>
+                                <option value="overnight">Overnight ({{ $overnightHoursFormatted ?? '6:00 PM – 8:00 AM' }})</option>
+                            </select>
+                            <i class="bi bi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Footer --}}
+            <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-gray-200 dark:border-neutral-800 bg-gray-50/50 dark:bg-neutral-900/40">
+                <button
+                    type="button"
+                    id="modalResetFilterBtn"
+                    class="h-9 px-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-xs font-semibold text-gray-600 dark:text-neutral-400 hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-all"
+                >
+                    Reset
+                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="modalCancelFilterBtn"
+                        class="h-9 px-4 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-xs font-semibold text-gray-900 dark:text-neutral-100 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="modalApplyFilterBtn"
+                        class="h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                    >
+                        Apply Filter
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 

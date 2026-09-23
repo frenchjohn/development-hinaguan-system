@@ -9,12 +9,34 @@ window.AppPage['admin_reports'] = function () {
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const amenityFilter = document.getElementById('amenityFilter');
     const statusFilter = document.getElementById('statusFilter');
-    const dateFrom = document.getElementById('dateFrom');
-    const dateTo = document.getElementById('dateTo');
     const reservationsTable = document.getElementById('reservationsTable');
     const activeFilterText = document.getElementById('activeFilterText');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-    const presetChips = document.querySelectorAll('.preset-chip');
+
+    // Date & Session Modal Trigger & Elements
+    const openModalBtn          = document.getElementById('openDateFilterModalBtn');
+    const closeModalBtn         = document.getElementById('closeDateFilterModalBtn');
+    const cancelModalBtn        = document.getElementById('modalCancelFilterBtn');
+    const applyModalBtn         = document.getElementById('modalApplyFilterBtn');
+    const resetModalBtn         = document.getElementById('modalResetFilterBtn');
+    const dateFilterModal       = document.getElementById('dateFilterModal');
+    const dateFilterBtnLabel    = document.getElementById('dateFilterBtnLabel');
+    const dateFilterActiveDot   = document.getElementById('dateFilterActiveDot');
+
+    // Inside Modal
+    const modalStartDateInput   = document.getElementById('modalStartDateInput');
+    const modalEndDateInput     = document.getElementById('modalEndDateInput');
+    const modalSessionSelect    = document.getElementById('modalSessionSelect');
+    const presetTodayBtn        = document.getElementById('presetTodayBtn');
+    const presetYesterdayBtn    = document.getElementById('presetYesterdayBtn');
+    const presetThisWeekBtn     = document.getElementById('presetThisWeekBtn');
+    const presetThisMonthBtn    = document.getElementById('presetThisMonthBtn');
+    const presetLastMonthBtn    = document.getElementById('presetLastMonthBtn');
+
+    // Applied Date & Session State
+    let appliedStartDate = '';
+    let appliedEndDate   = '';
+    let appliedSession   = '';
 
     const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -1339,16 +1361,33 @@ window.AppPage['admin_reports'] = function () {
         const amenity = (row.amenities || row.dataset?.amenity || '').toLowerCase();
         const status = (row.status || row.dataset?.status || '').toLowerCase();
         const checkin = row.check_in || row.dataset?.checkin;
+        const rowSession = (row.session || row.dataset?.session || '').toLowerCase();
 
         const amenityMatch = !amenityFilter || amenityFilter.value === 'all' || amenity.includes(amenityFilter.value.toLowerCase());
         const statusMatch = !statusFilter || statusFilter.value === 'all' || status === statusFilter.value.toLowerCase();
 
         let dateMatch = true;
-        if (checkin) {
-            const checkinDay = String(checkin).slice(0, 10);
-            dateMatch = (!dateFrom || !dateFrom.value || checkinDay >= dateFrom.value) && (!dateTo || !dateTo.value || checkinDay <= dateTo.value);
+        if (appliedStartDate || appliedEndDate) {
+            if (checkin) {
+                const checkinDay = String(checkin).slice(0, 10);
+                if (appliedStartDate && appliedEndDate) {
+                    dateMatch = checkinDay >= appliedStartDate && checkinDay <= appliedEndDate;
+                } else if (appliedStartDate) {
+                    dateMatch = checkinDay === appliedStartDate;
+                } else if (appliedEndDate) {
+                    dateMatch = checkinDay <= appliedEndDate;
+                }
+            } else {
+                dateMatch = false;
+            }
         }
-        return amenityMatch && statusMatch && dateMatch;
+
+        let sessionMatch = true;
+        if (appliedSession) {
+            sessionMatch = rowSession === appliedSession;
+        }
+
+        return amenityMatch && statusMatch && dateMatch && sessionMatch;
     };
 
     const getFilteredRows = () => {
@@ -1566,15 +1605,21 @@ window.AppPage['admin_reports'] = function () {
             printStatusLabel.textContent = statusFilter && statusFilter.value !== 'all' ? statusFilter.value : 'All Statuses';
         }
         if (printDateRangeLabel) {
-            if (dateFrom && dateFrom.value && dateTo && dateTo.value) {
-                printDateRangeLabel.textContent = `${dateFrom.value} to ${dateTo.value}`;
-            } else if (dateFrom && dateFrom.value) {
-                printDateRangeLabel.textContent = `From ${dateFrom.value}`;
-            } else if (dateTo && dateTo.value) {
-                printDateRangeLabel.textContent = `Until ${dateTo.value}`;
-            } else {
-                printDateRangeLabel.textContent = 'All Time';
+            let label = 'All Time';
+            if (appliedStartDate && appliedEndDate) {
+                label = `${appliedStartDate} to ${appliedEndDate}`;
+            } else if (appliedStartDate) {
+                label = `From ${appliedStartDate}`;
+            } else if (appliedEndDate) {
+                label = `Until ${appliedEndDate}`;
             }
+
+            if (appliedSession === 'daytime') {
+                label += ' (Daytime)';
+            } else if (appliedSession === 'overnight') {
+                label += ' (Overnight)';
+            }
+            printDateRangeLabel.textContent = label;
         }
         if (printKpiRes) printKpiRes.textContent = filteredRows.length;
         if (printKpiRev) {
@@ -1594,7 +1639,8 @@ window.AppPage['admin_reports'] = function () {
                 const show = matchesFilter({
                     amenities: row.dataset.amenity,
                     status: row.dataset.status,
-                    check_in: row.dataset.checkin
+                    check_in: row.dataset.checkin,
+                    session: row.dataset.session
                 });
                 row.style.display = show ? '' : 'none';
                 if (show) visible += 1;
@@ -1625,52 +1671,190 @@ window.AppPage['admin_reports'] = function () {
         updateCharts(filteredRows);
     };
 
-    // Quick range presets
-    presetChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            presetChips.forEach(c => c.classList.remove('is-active'));
-            chip.classList.add('is-active');
-            const preset = chip.dataset.preset;
-            const now = new Date();
-            let from = null;
-            let to = new Date();
+    // ─── Quick Presets Helpers for Date Modal ────────────────────────────────
+    function toISODateString(d) {
+        const year  = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day   = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-            if (preset === 'today') {
-                from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            } else if (preset === '7d') {
-                from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-            } else if (preset === '30d') {
-                from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
-            } else if (preset === 'month') {
-                from = new Date(now.getFullYear(), now.getMonth(), 1);
-            } else if (preset === 'all') {
-                from = null;
-                to = null;
-            }
-
-            if (dateFrom) dateFrom.value = from ? isoDate(from) : '';
-            if (dateTo) dateTo.value = to ? isoDate(to) : '';
-            applyFilters();
-        });
+    presetTodayBtn?.addEventListener('click', () => {
+        if (modalStartDateInput) modalStartDateInput.value = toISODateString(new Date());
+        if (modalEndDateInput)   modalEndDateInput.value   = '';
     });
 
-    [amenityFilter, statusFilter, dateFrom, dateTo].forEach((input) => {
+    presetYesterdayBtn?.addEventListener('click', () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        if (modalStartDateInput) modalStartDateInput.value = toISODateString(d);
+        if (modalEndDateInput)   modalEndDateInput.value   = '';
+    });
+
+    presetThisWeekBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+        const start = new Date(now);
+        start.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+
+        if (modalStartDateInput) modalStartDateInput.value = toISODateString(start);
+        if (modalEndDateInput)   modalEndDateInput.value   = toISODateString(end);
+    });
+
+    presetThisMonthBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        if (modalStartDateInput) modalStartDateInput.value = toISODateString(start);
+        if (modalEndDateInput)   modalEndDateInput.value   = toISODateString(end);
+    });
+
+    presetLastMonthBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const end   = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        if (modalStartDateInput) modalStartDateInput.value = toISODateString(start);
+        if (modalEndDateInput)   modalEndDateInput.value   = toISODateString(end);
+    });
+
+    // ─── Date Filter Modal Open & Close ──────────────────────────────────────
+    function openModal() {
+        if (!dateFilterModal) return;
+
+        if (modalStartDateInput) modalStartDateInput.value = appliedStartDate;
+        if (modalEndDateInput)   modalEndDateInput.value   = appliedEndDate;
+        if (modalSessionSelect)  modalSessionSelect.value  = appliedSession;
+
+        dateFilterModal.classList.remove('hidden');
+        dateFilterModal.classList.add('flex');
+    }
+
+    function closeModal() {
+        if (!dateFilterModal) return;
+        dateFilterModal.classList.add('hidden');
+        dateFilterModal.classList.remove('flex');
+    }
+
+    openModalBtn?.addEventListener('click', openModal);
+    closeModalBtn?.addEventListener('click', closeModal);
+    cancelModalBtn?.addEventListener('click', closeModal);
+
+    // Close when clicking backdrop
+    dateFilterModal?.addEventListener('click', (e) => {
+        if (e.target === dateFilterModal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dateFilterModal && !dateFilterModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    // Reset inside modal
+    resetModalBtn?.addEventListener('click', () => {
+        if (modalStartDateInput) modalStartDateInput.value = '';
+        if (modalEndDateInput)   modalEndDateInput.value   = '';
+        if (modalSessionSelect)  modalSessionSelect.value  = '';
+    });
+
+    // Apply inside modal
+    applyModalBtn?.addEventListener('click', () => {
+        let startVal = (modalStartDateInput?.value ?? '').trim();
+        let endVal   = (modalEndDateInput?.value   ?? '').trim();
+
+        // If user provided both dates and swapped start/end, auto-correct
+        if (startVal && endVal && startVal > endVal) {
+            const temp = startVal;
+            startVal = endVal;
+            endVal = temp;
+        }
+
+        appliedStartDate = startVal;
+        appliedEndDate   = endVal;
+        appliedSession   = modalSessionSelect?.value ?? '';
+
+        updateTriggerButtonUI();
+        closeModal();
+        applyFilters();
+    });
+
+    // ─── Trigger Button State Sync ───────────────────────────────────────────
+    function updateTriggerButtonUI() {
+        const hasDate = appliedStartDate !== '' || appliedEndDate !== '';
+        const hasSession = appliedSession !== '';
+        const isActive = hasDate || hasSession;
+
+        if (!isActive) {
+            if (dateFilterBtnLabel)  dateFilterBtnLabel.textContent = 'Date & Session';
+            if (dateFilterActiveDot) dateFilterActiveDot.classList.add('hidden');
+            openModalBtn?.classList.remove('border-emerald-500', 'bg-emerald-50/60', 'dark:bg-emerald-950/30', 'text-emerald-700', 'dark:text-emerald-300');
+            return;
+        }
+
+        if (dateFilterActiveDot) dateFilterActiveDot.classList.remove('hidden');
+        openModalBtn?.classList.add('border-emerald-500', 'bg-emerald-50/60', 'dark:bg-emerald-950/30', 'text-emerald-700', 'dark:text-emerald-300');
+
+        const parts = [];
+        if (appliedStartDate && appliedEndDate) {
+            if (appliedStartDate === appliedEndDate) {
+                try {
+                    const [y, m, d] = appliedStartDate.split('-');
+                    const dObj = new Date(y, m - 1, d);
+                    parts.push(dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                } catch {
+                    parts.push(appliedStartDate);
+                }
+            } else {
+                parts.push(`${appliedStartDate.slice(5)} to ${appliedEndDate.slice(5)}`);
+            }
+        } else if (appliedStartDate) {
+            try {
+                const [y, m, d] = appliedStartDate.split('-');
+                const dObj = new Date(y, m - 1, d);
+                parts.push(dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            } catch {
+                parts.push(appliedStartDate);
+            }
+        } else if (appliedEndDate) {
+            parts.push(`Until ${appliedEndDate.slice(5)}`);
+        }
+
+        if (appliedSession === 'daytime') {
+            parts.push('Daytime');
+        } else if (appliedSession === 'overnight') {
+            parts.push('Overnight');
+        }
+
+        if (dateFilterBtnLabel) {
+            dateFilterBtnLabel.textContent = parts.join(' • ') || 'Filtered';
+        }
+    }
+
+    [amenityFilter, statusFilter].forEach((input) => {
         input?.addEventListener('change', () => {
-            presetChips.forEach(c => c.classList.remove('is-active'));
             applyFilters();
         });
     });
 
     if (resetFiltersBtn) {
         resetFiltersBtn.addEventListener('click', () => {
-            presetChips.forEach(c => c.classList.remove('is-active'));
-            const defaultAllChip = document.querySelector('.preset-chip[data-preset="all"]');
-            if (defaultAllChip) defaultAllChip.classList.add('is-active');
-
             if (amenityFilter) amenityFilter.value = 'all';
             if (statusFilter) statusFilter.value = 'all';
-            if (dateFrom) dateFrom.value = '';
-            if (dateTo) dateTo.value = '';
+            appliedStartDate = '';
+            appliedEndDate   = '';
+            appliedSession   = '';
+
+            if (modalStartDateInput) modalStartDateInput.value = '';
+            if (modalEndDateInput)   modalEndDateInput.value   = '';
+            if (modalSessionSelect)  modalSessionSelect.value  = '';
+
+            updateTriggerButtonUI();
             applyFilters();
         });
     }

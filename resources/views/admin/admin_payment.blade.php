@@ -88,18 +88,6 @@
             position: relative !important;
             z-index: 1 !important;
         }
-        /* Payment row hover */
-        .payment-row {
-            transition: background-color 0.15s ease;
-        }
-        /* Amount emphasis */
-        .amount-positive {
-            font-weight: 700;
-            color: #059669;
-        }
-        [data-theme="dark"] .amount-positive {
-            color: #34d399;
-        }
     </style>
 </head>
 <body class="antialiased admin-portal">
@@ -186,7 +174,8 @@
                             <div>
                                 <h3 class="m-0 text-sm font-bold text-[var(--ink)]">Payment Transaction Log</h3>
                                 <p class="m-0 text-[11px] text-[var(--ink-muted)]">
-                                    Showing <span id="visibleCount" class="font-semibold text-[var(--ink)]">{{ $transactionCount }}</span> of {{ $transactionCount }} transactions
+                                    Showing <span id="visibleRange" class="font-semibold text-[var(--ink)]">{{ $transactionCount > 0 ? '1–' . min(100, $transactionCount) : '0' }}</span> of <span id="visibleCount" class="font-semibold text-[var(--ink)]">{{ $transactionCount }}</span> transactions
+                                    <span id="pageIndicator" class="ml-1 text-[var(--ink-muted)]"></span>
                                 </p>
                             </div>
                         </div>
@@ -244,27 +233,16 @@
                             </select>
                         </div>
 
-                        {{-- Date From --}}
-                        <div class="relative">
-                            <i class="bi bi-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
-                            <input
-                                type="date"
-                                id="dateFromInput"
-                                title="Date from"
-                                class="h-9 appearance-none rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors"
-                            >
-                        </div>
-
-                        {{-- Date To --}}
-                        <div class="relative">
-                            <i class="bi bi-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
-                            <input
-                                type="date"
-                                id="dateToInput"
-                                title="Date to"
-                                class="h-9 appearance-none rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 pl-8 pr-3 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors"
-                            >
-                        </div>
+                        {{-- Open Date & Session Filter Modal Button --}}
+                        <button
+                            type="button"
+                            id="openDateFilterModalBtn"
+                            class="h-9 flex items-center gap-2 px-3.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer shadow-2xs"
+                        >
+                            <i class="bi bi-calendar-event text-emerald-600 dark:text-emerald-400"></i>
+                            <span id="dateFilterBtnLabel">Date &amp; Session</span>
+                            <span id="dateFilterActiveDot" class="hidden h-2 w-2 rounded-full bg-emerald-500"></span>
+                        </button>
 
                         {{-- Clear filters --}}
                         <button
@@ -278,38 +256,40 @@
                     </div>
 
                     {{-- ============================================================ --}}
-                    {{-- TABLE                                                         --}}
+                    {{-- TABLE (Scrollable inside, ~7 transactions visible)           --}}
                     {{-- ============================================================ --}}
-                    <div class="overflow-x-auto rounded-xl border border-[var(--border)]">
-                        <table class="w-full border-collapse text-left text-xs">
-                            <thead>
-                                <tr class="border-b border-[var(--border)] bg-gray-50 dark:bg-neutral-900/60 font-semibold text-[var(--ink-muted)]">
-                                    <th class="py-3 px-4 whitespace-nowrap">Date &amp; Time</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">Reservation</th>
-                                    <th class="py-3 px-4 min-w-[220px]">Transaction</th>
-                                    <th class="py-3 px-4 text-right whitespace-nowrap">Amount</th>
-                                    <th class="py-3 px-4 whitespace-nowrap">Handled By</th>
-                                    <th class="py-3 px-4 min-w-[200px]">Details</th>
+                    <div id="paymentTableContainer" class="overflow-x-auto overflow-y-auto max-h-[442px] rounded-xl border border-[var(--border)]" style="max-height: 442px;">
+                        <table class="w-full text-left text-xs border-separate border-spacing-0">
+                            <thead class="sticky top-0 z-10 shadow-xs">
+                                <tr class="font-semibold text-[var(--ink-muted)]">
+                                    <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Date &amp; Time</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Reservation</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 min-w-[220px] bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Transaction</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 text-right whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Amount</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 whitespace-nowrap bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Handled By</th>
+                                    <th class="sticky top-0 z-10 py-3 px-4 min-w-[200px] bg-gray-50 dark:bg-neutral-900 border-b border-[var(--border)]">Details</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-[var(--border)]" id="paymentTableBody">
+                            <tbody id="paymentTableBody">
 
                                 @forelse($transactions as $tx)
                                     <tr
-                                        class="payment-row hover:bg-black/5 dark:hover:bg-white/5"
+                                        class="payment-row transition-colors hover:bg-black/5 dark:hover:bg-white/5"
                                         data-type="{{ $tx['activity_type'] }}"
                                         data-date="{{ $tx['datetime_iso'] }}"
+                                        data-time="{{ $tx['time_24'] }}"
+                                        data-session="{{ $tx['session'] }}"
                                         data-actor="{{ $tx['is_online'] ? '__online__' : $tx['actor_name'] }}"
                                         data-search="{{ strtolower($tx['title'] . ' ' . $tx['actor_name'] . ' ' . ($tx['reservation_id'] ?? '')) }}"
                                     >
                                         {{-- Date & Time --}}
-                                        <td class="py-3 px-4 whitespace-nowrap">
+                                        <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
                                             <p class="m-0 font-medium text-[var(--ink)]">{{ $tx['date'] }}</p>
                                             <p class="m-0 mt-0.5 text-[10px] text-[var(--ink-muted)]">{{ $tx['time'] }}</p>
                                         </td>
 
                                         {{-- Reservation --}}
-                                        <td class="py-3 px-4 whitespace-nowrap">
+                                        <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
                                             @if($tx['reservation_id'])
                                                 <span class="inline-flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-neutral-800 px-2 py-0.5 text-xs font-bold text-[var(--ink)]">
                                                     <i class="bi bi-hash text-[10px] text-[var(--ink-muted)]"></i>{{ $tx['reservation_id'] }}
@@ -320,7 +300,7 @@
                                         </td>
 
                                         {{-- Transaction title + type badge --}}
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4 border-b border-[var(--border)]">
                                             <div class="flex items-start gap-2 flex-wrap">
                                                 {{-- Type badge --}}
                                                 @php
@@ -346,16 +326,16 @@
                                         </td>
 
                                         {{-- Amount --}}
-                                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                                        <td class="py-3 px-4 text-right whitespace-nowrap border-b border-[var(--border)]">
                                             @if($tx['payment_amount'] > 0)
-                                                <span class="amount-positive">₱{{ number_format($tx['payment_amount'], 2) }}</span>
+                                                <span class="font-bold text-emerald-600 dark:text-emerald-400">₱{{ number_format($tx['payment_amount'], 2) }}</span>
                                             @else
                                                 <span class="text-[var(--ink-muted)]">₱0.00</span>
                                             @endif
                                         </td>
 
                                         {{-- Handled By --}}
-                                        <td class="py-3 px-4 whitespace-nowrap">
+                                        <td class="py-3 px-4 whitespace-nowrap border-b border-[var(--border)]">
                                             @if($tx['is_online'])
                                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 px-2.5 py-1 text-[10px] font-bold">
                                                     <i class="bi bi-globe2 text-xs"></i>
@@ -370,7 +350,7 @@
                                         </td>
 
                                         {{-- Details --}}
-                                        <td class="py-3 px-4">
+                                        <td class="py-3 px-4 border-b border-[var(--border)]">
                                             <p
                                                 class="m-0 text-[var(--ink-muted)] text-[11px] leading-relaxed max-w-xs truncate"
                                                 title="{{ $tx['description'] }}"
@@ -407,9 +387,183 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- ============================================================ --}}
+                    {{-- PAGINATION CONTROLS (100 per page)                           --}}
+                    {{-- ============================================================ --}}
+                    <div id="paymentPaginationWrap" class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-[var(--border)] mt-4 text-xs">
+                        <div class="text-[var(--ink-muted)] sm:flex-1 text-center sm:text-left">
+                            Showing <span id="paymentPaginationRange" class="font-semibold text-[var(--ink)]">{{ $transactionCount > 0 ? '1–' . min(100, $transactionCount) : '0' }}</span> of <span id="paymentPaginationTotal" class="font-semibold text-[var(--ink)]">{{ $transactionCount }}</span> transactions
+                        </div>
+                        <div class="flex items-center justify-center gap-1.5" id="paymentPaginationNav">
+                            <button
+                                type="button"
+                                id="paymentPrevPageBtn"
+                                class="h-8 px-3 flex items-center gap-1 font-semibold rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[var(--ink)] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                disabled
+                            >
+                                <i class="bi bi-chevron-left text-[10px]"></i>
+                                <span>Prev</span>
+                            </button>
+                            <div id="paymentPageNumbers" class="flex items-center gap-1"></div>
+                            <button
+                                type="button"
+                                id="paymentNextPageBtn"
+                                class="h-8 px-3 flex items-center gap-1 font-semibold rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[var(--ink)] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                disabled
+                            >
+                                <span>Next</span>
+                                <i class="bi bi-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                        <div class="hidden sm:block sm:flex-1"></div>
+                    </div>
                 </section>
 
             </main>
+        </div>
+    </div>
+
+    {{-- ========================================================================= --}}
+    {{-- DATE & SESSION FILTER MODAL                                               --}}
+    {{-- ========================================================================= --}}
+    <div
+        id="dateFilterModal"
+        class="hidden fixed inset-0 z-[2000] items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dateFilterModalTitle"
+    >
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#141715] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col">
+            
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] bg-gray-50/50 dark:bg-neutral-900/40">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-calendar-range text-sm"></i>
+                    </span>
+                    <div>
+                        <h3 id="dateFilterModalTitle" class="m-0 text-sm font-bold text-[var(--ink)]">Filter by Date &amp; Session</h3>
+                        <p class="m-0 text-[11px] text-[var(--ink-muted)]">Configure date range and operating session</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    id="closeDateFilterModalBtn"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                    aria-label="Close"
+                >
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-5 space-y-4 text-xs">
+                
+                {{-- Date Section (Start & End Dates) --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-[var(--ink)]">Select Date</label>
+                        <span class="text-[10px] text-[var(--ink-muted)]">Leave End empty for single date</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <span class="block text-[11px] text-[var(--ink-muted)] mb-1 font-semibold">Start Date</span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalStartDateInput"
+                                    class="h-9 w-full appearance-none rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-[11px] text-[var(--ink-muted)] mb-1 font-semibold">End Date <span class="text-[10px] font-normal text-[var(--ink-muted)]">(optional)</span></span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[var(--ink-muted)] pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalEndDateInput"
+                                    class="h-9 w-full appearance-none rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Quick Presets --}}
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span class="text-[10px] font-semibold text-[var(--ink-muted)] mr-0.5">Quick:</span>
+                        <button type="button" id="presetTodayBtn" class="px-2 py-0.5 rounded-md border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Today
+                        </button>
+                        <button type="button" id="presetYesterdayBtn" class="px-2 py-0.5 rounded-md border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Yesterday
+                        </button>
+                        <button type="button" id="presetThisWeekBtn" class="px-2 py-0.5 rounded-md border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Week
+                        </button>
+                        <button type="button" id="presetThisMonthBtn" class="px-2 py-0.5 rounded-md border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Month
+                        </button>
+                        <button type="button" id="presetLastMonthBtn" class="px-2 py-0.5 rounded-md border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Last Month
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Subtle Divider --}}
+                <div class="border-t border-[var(--border)] pt-3">
+                    {{-- Operating Session (small compact dropdown, out of the highlight) --}}
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <label for="modalSessionSelect" class="block font-semibold text-[var(--ink)] text-[11px]">Operating Session</label>
+                            <p class="m-0 text-[10px] text-[var(--ink-muted)]">Filter transactions by operating hours</p>
+                        </div>
+                        <div class="relative min-w-[190px]">
+                            <select
+                                id="modalSessionSelect"
+                                class="h-8 w-full appearance-none rounded-lg border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/60 pl-2.5 pr-7 text-xs text-[var(--ink)] outline-none focus:border-emerald-500 cursor-pointer transition-colors"
+                            >
+                                <option value="">All Sessions (24 hrs)</option>
+                                <option value="daytime">Daytime ({{ $daytimeHoursFormatted }})</option>
+                                <option value="overnight">Overnight ({{ $overnightHoursFormatted }})</option>
+                            </select>
+                            <i class="bi bi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--ink-muted)] pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Footer --}}
+            <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-[var(--border)] bg-gray-50/50 dark:bg-neutral-900/40">
+                <button
+                    type="button"
+                    id="modalResetFilterBtn"
+                    class="h-9 px-3.5 rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-800 text-xs font-semibold text-[var(--ink-muted)] hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-all"
+                >
+                    Reset
+                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="modalCancelFilterBtn"
+                        class="h-9 px-4 rounded-xl border border-[var(--border)] bg-white dark:bg-neutral-800 text-xs font-semibold text-[var(--ink)] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="modalApplyFilterBtn"
+                        class="h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                    >
+                        Apply Filter
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 

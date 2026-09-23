@@ -3474,6 +3474,21 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d')
                     : ($r->reservation_date ? \Illuminate\Support\Carbon::parse($r->reservation_date)->format('Y-m-d') : null);
 
+                $slot = strtolower((string) ($r->start_slot ?? ''));
+                if (str_contains($slot, 'day') || str_contains($slot, 'morning') || str_contains($slot, 'afternoon')) {
+                    $session = 'daytime';
+                } elseif (str_contains($slot, 'night') || str_contains($slot, 'overnight')) {
+                    $session = 'overnight';
+                } else {
+                    $checkInTime = $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila')) : null;
+                    if ($checkInTime) {
+                        $hour = (int) $checkInTime->format('G');
+                        $session = ($hour >= 6 && $hour < 18) ? 'daytime' : 'overnight';
+                    } else {
+                        $session = 'daytime';
+                    }
+                }
+
                 return [
                     'id' => (int) $r->id,
                     'customer_name' => (string) $r->booker_name,
@@ -3483,6 +3498,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     'check_in' => $effectiveCheckIn,
                     'amount' => (float) $r->amount_paid,
                     'guests' => (int) $r->number_of_guests,
+                    'session' => $session,
                 ];
             })->values()->all(),
             'reservations' => $reservations->map(function ($r) {
@@ -3524,6 +3540,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
             })->values()->all(),
         ];
 
+        $parkSettings = \App\Models\ParkSetting::first();
+        $daytimeHoursFormatted = '8:00 AM – 5:00 PM';
+        $overnightHoursFormatted = '6:00 PM – 8:00 AM';
+        if ($parkSettings) {
+            if ($parkSettings->daytime_start && $parkSettings->daytime_end) {
+                $daytimeHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->daytime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->daytime_end)->format('g:i A');
+            }
+            if ($parkSettings->nighttime_start && $parkSettings->nighttime_end) {
+                $overnightHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->nighttime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->nighttime_end)->format('g:i A');
+            }
+        }
+
         return view('admin.admin_reports', [
             'allAmenities' => $allAmenities,
             'amenityCategories' => $amenityCategories,
@@ -3549,6 +3577,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'peakBookedMonthCount' => $peakBookedMonthCount,
             'firstCheckInDate' => $firstCheckInDate,
             'lastCheckInDate' => $lastCheckInDate,
+            'parkSettings' => $parkSettings,
+            'daytimeHoursFormatted' => $daytimeHoursFormatted,
+            'overnightHoursFormatted' => $overnightHoursFormatted,
         ]);
     })->name('reports');
 
@@ -3572,7 +3603,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->orderByDesc('created_at')
             ->get();
 
-        $transactions = $rawLogs->map(function ($log) {
+        $parkSettings = \App\Models\ParkSetting::first();
+        $dayStart   = $parkSettings->daytime_start ?? '08:00:00';
+        $dayEnd     = $parkSettings->daytime_end   ?? '17:00:00';
+        $nightStart = $parkSettings->nighttime_start ?? '18:00:00';
+        $nightEnd   = $parkSettings->nighttime_end   ?? '08:00:00';
+
+        $formatTimeStr = function ($val, $fallback) {
+            if (!$val) return $fallback;
+            try {
+                $clean = strlen($val) === 5 ? $val . ':00' : $val;
+                return \Carbon\Carbon::createFromFormat('H:i:s', $clean)->format('g:i A');
+            } catch (\Exception $e) {
+                return $val;
+            }
+        };
+
+        $daytimeHoursFormatted   = $formatTimeStr($dayStart, '8:00 AM') . ' – ' . $formatTimeStr($dayEnd, '5:00 PM');
+        $overnightHoursFormatted = $formatTimeStr($nightStart, '6:00 PM') . ' – ' . $formatTimeStr($nightEnd, '8:00 AM');
+
+        $transactions = $rawLogs->map(function ($log) use ($dayStart, $dayEnd, $nightStart, $nightEnd) {
             $isOnline = ($log->actor_role === 'guest') || is_null($log->staff_id);
             $amount = (float) ($log->payment_amount ?? 0);
             if ($amount <= 0 && $log->activity_type === 'online_reservation_created') {
@@ -3581,11 +3631,32 @@ Route::prefix('admin')->name('admin.')->group(function () {
                     $amount = round((float) $log->reservation->total_amount * 0.50, 2);
                 }
             }
+
+            $time24 = $log->created_at->format('H:i:s');
+            $resSlot = strtolower($log->reservation->start_slot ?? '');
+            $isDay = ($time24 >= $dayStart && $time24 <= $dayEnd);
+            $isNight = ($nightStart > $nightEnd)
+                ? ($time24 >= $nightStart || $time24 <= $nightEnd)
+                : ($time24 >= $nightStart && $time24 <= $nightEnd);
+
+            if ($isDay) {
+                $session = 'daytime';
+            } elseif ($isNight) {
+                $session = 'overnight';
+            } elseif (str_contains($resSlot, 'night')) {
+                $session = 'overnight';
+            } else {
+                $session = 'daytime';
+            }
+
             return [
                 'id'              => $log->id,
                 'date'            => $log->created_at->format('M d, Y'),
                 'time'            => $log->created_at->format('h:i A'),
+                'time_24'         => $time24,
+                'session'         => $session,
                 'datetime_iso'    => $log->created_at->format('Y-m-d'),
+                'timestamp'       => $log->created_at->timestamp,
                 'reservation_id'  => $log->reservation_id,
                 'activity_type'   => $log->activity_type,
                 'title'           => $log->title,
@@ -3607,7 +3678,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $staffList = \App\Models\StaffAccount::orderBy('name')->pluck('name')->all();
 
         return view('admin.admin_payment', compact(
-            'transactions', 'totalCollected', 'totalOnline', 'totalStaffHandled', 'transactionCount', 'staffList'
+            'transactions', 'totalCollected', 'totalOnline', 'totalStaffHandled', 'transactionCount', 'staffList',
+            'parkSettings', 'daytimeHoursFormatted', 'overnightHoursFormatted'
         ));
     })->name('payment');
 
@@ -5221,15 +5293,35 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $staffAccount ? $staffAccount->name : ($user['name'] ?? 'Staff User');
         $staffEmail = $staffAccount ? $staffAccount->email : ($user['email'] ?? '');
 
+        $parkSettings = \App\Models\ParkSetting::first();
+        $daytimeHoursFormatted = '8:00 AM – 5:00 PM';
+        $overnightHoursFormatted = '6:00 PM – 8:00 AM';
+        $daytimeStart = '08:00:00';
+        $daytimeEnd = '17:00:00';
+        $nighttimeStart = '18:00:00';
+        $nighttimeEnd = '08:00:00';
+        if ($parkSettings) {
+            if ($parkSettings->daytime_start && $parkSettings->daytime_end) {
+                $daytimeHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->daytime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->daytime_end)->format('g:i A');
+                $daytimeStart = \Illuminate\Support\Carbon::parse($parkSettings->daytime_start)->format('H:i:s');
+                $daytimeEnd = \Illuminate\Support\Carbon::parse($parkSettings->daytime_end)->format('H:i:s');
+            }
+            if ($parkSettings->nighttime_start && $parkSettings->nighttime_end) {
+                $overnightHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->nighttime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->nighttime_end)->format('g:i A');
+                $nighttimeStart = \Illuminate\Support\Carbon::parse($parkSettings->nighttime_start)->format('H:i:s');
+                $nighttimeEnd = \Illuminate\Support\Carbon::parse($parkSettings->nighttime_end)->format('H:i:s');
+            }
+        }
+
         // Determine current real-time session
-        $currentHour = (int) now()->format('H');
-        $currentSession = ($currentHour >= 8 && $currentHour < 17) ? 'Daytime' : 'Overnight';
+        $currentTime = now()->format('H:i:s');
+        $currentSession = ($currentTime >= $daytimeStart && $currentTime < $daytimeEnd) ? 'Daytime' : 'Overnight';
 
         // Filter parameters
         $preset = $request->get('preset', 'today');
         $dateFrom = $request->get('date_from');
         $dateTo = $request->get('date_to');
-        $sessionFilter = $request->get('session', 'all'); // 'all', 'daytime', 'nighttime'
+        $sessionFilter = $request->get('session', 'all'); // 'all', 'daytime', 'nighttime', 'overnight'
         $actionFilter = $request->get('action', 'all');
 
         $today = now()->toDateString();
@@ -5238,6 +5330,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $thisWeekEnd = now()->endOfWeek()->toDateString();
         $thisMonthStart = now()->startOfMonth()->toDateString();
         $thisMonthEnd = now()->endOfMonth()->toDateString();
+        $lastMonthStart = now()->subMonth()->startOfMonth()->toDateString();
+        $lastMonthEnd = now()->subMonth()->endOfMonth()->toDateString();
 
         if ($preset === 'today') {
             $filterFrom = $today;
@@ -5251,6 +5345,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         } elseif ($preset === 'this_month') {
             $filterFrom = $thisMonthStart;
             $filterTo = $thisMonthEnd;
+        } elseif ($preset === 'last_month') {
+            $filterFrom = $lastMonthStart;
+            $filterTo = $lastMonthEnd;
         } elseif ($preset === 'custom' && ($dateFrom || $dateTo)) {
             $filterFrom = $dateFrom;
             $filterTo = $dateTo;
@@ -5275,7 +5372,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $query->whereDate('created_at', '>=', $filterFrom)
                   ->whereDate('created_at', '<=', $filterTo);
         } elseif ($filterFrom) {
-            $query->whereDate('created_at', '>=', $filterFrom);
+            $query->whereDate('created_at', '=', $filterFrom);
         } elseif ($filterTo) {
             $query->whereDate('created_at', '<=', $filterTo);
         }
@@ -5290,16 +5387,16 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $allLogs = $query->orderByDesc('id')->get();
 
-        // Filter by shift / session (Daytime 08:00 - 16:59:59, Nighttime 17:00 - 07:59:59)
+        // Filter by shift / session
         if ($sessionFilter === 'daytime') {
-            $logs = $allLogs->filter(function ($log) {
+            $logs = $allLogs->filter(function ($log) use ($daytimeStart, $daytimeEnd) {
                 $t = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
-                return $t >= '08:00:00' && $t < '17:00:00';
+                return $t >= $daytimeStart && $t < $daytimeEnd;
             })->values();
-        } elseif ($sessionFilter === 'nighttime') {
-            $logs = $allLogs->filter(function ($log) {
+        } elseif ($sessionFilter === 'nighttime' || $sessionFilter === 'overnight') {
+            $logs = $allLogs->filter(function ($log) use ($daytimeStart, $daytimeEnd) {
                 $t = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
-                return $t >= '17:00:00' || $t < '08:00:00';
+                return $t < $daytimeStart || $t >= $daytimeEnd;
             })->values();
         } else {
             $logs = $allLogs;
@@ -5338,14 +5435,14 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $noShowCount = $logs->where('action', 'no_show')->count();
 
         // Prepare ledger rows
-        $ledgerRows = $logs->map(function ($log) {
+        $ledgerRows = $logs->map(function ($log) use ($daytimeStart, $daytimeEnd) {
             $res = $log->reservation;
             $guest = $res?->reservationGuests?->first()?->customer;
             $guestName = $guest ? trim(($guest->first_name ?? '') . ' ' . ($guest->last_name ?? '')) : ($res?->booker_name ?? 'N/A');
             $guestsCount = $res?->number_of_guests ?? 0;
 
             $timeStr = $log->created_at ? $log->created_at->format('H:i:s') : '00:00:00';
-            $sessionTag = ($timeStr >= '08:00:00' && $timeStr < '17:00:00') ? 'Daytime' : 'Overnight';
+            $sessionTag = ($timeStr >= $daytimeStart && $timeStr < $daytimeEnd) ? 'Daytime' : 'Overnight';
 
             return [
                 'id' => $log->id,
@@ -5391,7 +5488,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'extensionsCollected',
             'cancelledCount',
             'noShowCount',
-            'ledgerRows'
+            'ledgerRows',
+            'parkSettings',
+            'daytimeHoursFormatted',
+            'overnightHoursFormatted'
         ));
     })->name('reports');
 
