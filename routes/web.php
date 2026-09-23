@@ -1696,6 +1696,7 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
 
         ActivityLog::log(
             activityType: 'online_reservation_created',
+            paymentAmount: (float) $reservation->amount_paid,
             title: 'New Online Reservation',
             description: "New online reservation #{$reservation->id} from {$reservation->booker_name} ({$reservation->number_of_guests} guests) for " . ($reservation->reservation_date ? \Illuminate\Support\Carbon::parse($reservation->reservation_date)->format('M d, Y') : 'upcoming date'),
             reservationId: $reservation->id,
@@ -2457,6 +2458,7 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
 
     ActivityLog::log(
         activityType: 'online_reservation_created',
+        paymentAmount: (float) $reservation->amount_paid,
         title: 'New Online Reservation',
         description: "New online reservation #{$reservation->id} from {$reservation->booker_name} ({$reservation->number_of_guests} guests)",
         reservationId: $reservation->id,
@@ -3572,6 +3574,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         $transactions = $rawLogs->map(function ($log) {
             $isOnline = ($log->actor_role === 'guest') || is_null($log->staff_id);
+            $amount = (float) ($log->payment_amount ?? 0);
+            if ($amount <= 0 && $log->activity_type === 'online_reservation_created') {
+                $amount = (float) ($log->metadata['amount_paid'] ?? ($log->reservation->amount_paid ?? 0));
+                if ($amount <= 0 && $log->reservation && (float) $log->reservation->total_amount > 0) {
+                    $amount = round((float) $log->reservation->total_amount * 0.50, 2);
+                }
+            }
             return [
                 'id'              => $log->id,
                 'date'            => $log->created_at->format('M d, Y'),
@@ -3581,7 +3590,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'activity_type'   => $log->activity_type,
                 'title'           => $log->title,
                 'description'     => $log->description,
-                'payment_amount'  => (float) ($log->payment_amount ?? 0),
+                'payment_amount'  => $amount,
                 'actor_name'      => $log->actor_name,
                 'actor_role'      => $log->actor_role,
                 'staff_id'        => $log->staff_id,
@@ -3589,10 +3598,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ];
         });
 
-        $totalCollected    = (float) $rawLogs->sum('payment_amount');
-        $totalOnline       = (float) $rawLogs->where('actor_role', 'guest')->sum('payment_amount');
+        $totalCollected    = (float) $transactions->sum('payment_amount');
+        $totalOnline       = (float) $transactions->where('is_online', true)->sum('payment_amount');
         $totalStaffHandled = $totalCollected - $totalOnline;
-        $transactionCount  = $rawLogs->count();
+        $transactionCount  = $transactions->count();
 
         // All staff accounts — always show every staff in the filter dropdown
         $staffList = \App\Models\StaffAccount::orderBy('name')->pluck('name')->all();
