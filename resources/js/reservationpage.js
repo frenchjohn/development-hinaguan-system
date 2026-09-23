@@ -1137,9 +1137,11 @@ function initReservationPage() {
 
                 const payload = await response.json();
                 calendarAvailability = payload.availability || [];
+                updateAvRangeDisplay();
                 renderAvailabilityCalendar();
             } catch (error) {
                 calendarAvailability = [];
+                updateAvRangeDisplay();
                 renderAvailabilityCalendar();
             } finally {
                 availabilityCalendar.classList.remove('is-loading');
@@ -1273,6 +1275,7 @@ function initReservationPage() {
             if (dayBtn) {
                 dayBtn.disabled = true;
                 dayBtn.classList.add('is-disabled-slot');
+                dayBtn.setAttribute('title', 'Daytime session for today has already passed.');
             }
             if (isSingleDay) {
                 avSingleDayWholeDayActive = false;
@@ -1287,11 +1290,144 @@ function initReservationPage() {
                     b.classList.toggle('is-active', b.dataset.avStartSlot === calendarRangeStartSlot);
                 });
             }
+            const wholeDayPill = document.getElementById('avWholeDayPill');
+            if (wholeDayPill && isSingleDay) {
+                wholeDayPill.disabled = true;
+                wholeDayPill.classList.add('is-disabled-slot');
+                wholeDayPill.setAttribute('title', '24 Hours is unavailable because daytime for today has already passed.');
+            }
         } else {
             const dayBtn = document.querySelector('[data-av-start-slot="Daytime"]');
             if (dayBtn) {
                 dayBtn.disabled = false;
                 dayBtn.classList.remove('is-disabled-slot');
+                dayBtn.removeAttribute('title');
+            }
+        }
+
+        // ── Availability-based slot disabling for Availability Modal ───────
+        if (curDate && Array.isArray(calendarAvailability) && calendarAvailability.length > 0) {
+            const startEntry = calendarAvailability.find(e => e.date === curDate);
+            const endEntry = curEndDate && curEndDate !== curDate
+                ? calendarAvailability.find(e => e.date === curEndDate)
+                : startEntry;
+
+            const dayBtn = document.querySelector('[data-av-start-slot="Daytime"]');
+            const nightBtn = document.querySelector('[data-av-start-slot="Nighttime"]');
+            const wholeDayPill = document.getElementById('avWholeDayPill');
+
+            // --- Start slot buttons ---
+            if (startEntry) {
+                const startDaytimeBooked = startEntry.daytime === false;
+                const startNighttimeBooked = startEntry.nighttime === false;
+
+                if (dayBtn && !dayBtn.disabled) {
+                    if (startDaytimeBooked) {
+                        dayBtn.disabled = true;
+                        dayBtn.classList.add('is-disabled-slot');
+                        dayBtn.setAttribute('title', 'Daytime is already fully booked for this date.');
+                    } else {
+                        dayBtn.removeAttribute('title');
+                    }
+                }
+
+                if (nightBtn) {
+                    if (startNighttimeBooked) {
+                        nightBtn.disabled = true;
+                        nightBtn.classList.add('is-disabled-slot');
+                        nightBtn.setAttribute('title', 'Overnight is already fully booked for this date.');
+                    } else {
+                        nightBtn.disabled = false;
+                        nightBtn.classList.remove('is-disabled-slot');
+                        nightBtn.removeAttribute('title');
+                    }
+                }
+
+                // Whole Day pill: only available if BOTH slots are free
+                if (wholeDayPill && isSingleDay) {
+                    const isAnySlotUnavailable = startDaytimeBooked || startNighttimeBooked || (curDate && isNighttimeForToday(curDate)) || dayBtn?.disabled || nightBtn?.disabled;
+                    if (isAnySlotUnavailable) {
+                        wholeDayPill.disabled = true;
+                        wholeDayPill.classList.add('is-disabled-slot');
+                        let reason = '24 Hours is unavailable because one or both sessions are occupied.';
+                        if (startDaytimeBooked && startNighttimeBooked) {
+                            reason = '24 Hours is unavailable because both Daytime and Overnight sessions are occupied.';
+                        } else if (startDaytimeBooked || (curDate && isNighttimeForToday(curDate))) {
+                            reason = '24 Hours is unavailable because the Daytime session is occupied or has passed.';
+                        } else if (startNighttimeBooked) {
+                            reason = '24 Hours is unavailable because the Overnight session is occupied.';
+                        }
+                        wholeDayPill.setAttribute('title', reason);
+                        if (avSingleDayWholeDayActive) {
+                            avSingleDayWholeDayActive = false;
+                            calendarRangeEndSlot = calendarRangeStartSlot;
+                        }
+                    } else {
+                        wholeDayPill.disabled = false;
+                        wholeDayPill.classList.remove('is-disabled-slot');
+                        wholeDayPill.removeAttribute('title');
+                    }
+                }
+
+                // Auto-switch active slot if the currently chosen slot is now disabled
+                if (isSingleDay) {
+                    if (calendarRangeStartSlot === 'Daytime' && startDaytimeBooked && !startNighttimeBooked) {
+                        avSingleDayWholeDayActive = false;
+                        calendarRangeStartSlot = 'Nighttime';
+                        calendarRangeEndSlot = 'Nighttime';
+                        if (dayBtn) dayBtn.classList.remove('is-active');
+                        if (nightBtn) nightBtn.classList.add('is-active');
+                    } else if (calendarRangeStartSlot === 'Nighttime' && startNighttimeBooked && !startDaytimeBooked) {
+                        avSingleDayWholeDayActive = false;
+                        calendarRangeStartSlot = 'Daytime';
+                        calendarRangeEndSlot = 'Daytime';
+                        if (nightBtn) nightBtn.classList.remove('is-active');
+                        if (dayBtn && !dayBtn.disabled) dayBtn.classList.add('is-active');
+                    }
+                } else {
+                    if (calendarRangeStartSlot === 'Daytime' && startDaytimeBooked && !startNighttimeBooked) {
+                        calendarRangeStartSlot = 'Nighttime';
+                        document.querySelectorAll('[data-av-start-slot]').forEach(b => {
+                            b.classList.toggle('is-active', b.dataset.avStartSlot === calendarRangeStartSlot);
+                        });
+                    } else if (calendarRangeStartSlot === 'Nighttime' && startNighttimeBooked && !startDaytimeBooked) {
+                        calendarRangeStartSlot = 'Daytime';
+                        document.querySelectorAll('[data-av-start-slot]').forEach(b => {
+                            b.classList.toggle('is-active', b.dataset.avStartSlot === calendarRangeStartSlot);
+                        });
+                    }
+                }
+            }
+
+            // --- End slot buttons (multi-day checkout session) ---
+            if (!isSingleDay && endEntry) {
+                const endDaytimeBooked = endEntry.daytime === false;
+                const endNighttimeBooked = endEntry.nighttime === false;
+
+                document.querySelectorAll('[data-av-end-slot]').forEach(b => {
+                    const slot = b.dataset.avEndSlot;
+                    const isBooked = (slot === 'Daytime' && endDaytimeBooked) ||
+                                     (slot === 'Nighttime' && endNighttimeBooked);
+                    b.disabled = isBooked;
+                    b.classList.toggle('is-disabled-slot', isBooked);
+                    if (isBooked) {
+                        b.setAttribute('title', `${slot} is already fully booked for the check-out date.`);
+                    } else {
+                        b.removeAttribute('title');
+                    }
+                });
+
+                if (calendarRangeEndSlot === 'Daytime' && endDaytimeBooked && !endNighttimeBooked) {
+                    calendarRangeEndSlot = 'Nighttime';
+                    document.querySelectorAll('[data-av-end-slot]').forEach(b => {
+                        b.classList.toggle('is-active', b.dataset.avEndSlot === calendarRangeEndSlot);
+                    });
+                } else if (calendarRangeEndSlot === 'Nighttime' && endNighttimeBooked && !endDaytimeBooked) {
+                    calendarRangeEndSlot = 'Daytime';
+                    document.querySelectorAll('[data-av-end-slot]').forEach(b => {
+                        b.classList.toggle('is-active', b.dataset.avEndSlot === calendarRangeEndSlot);
+                    });
+                }
             }
         }
 
@@ -1321,6 +1457,9 @@ function initReservationPage() {
     const avWholeDayPill = document.getElementById('avWholeDayPill');
     if (avWholeDayPill) {
         avWholeDayPill.addEventListener('click', () => {
+            if (avWholeDayPill.disabled || avWholeDayPill.classList.contains('is-disabled-slot')) {
+                return;
+            }
             const curDate = calendarRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
             const curEndDate = calendarRangeEnd || curDate;
             const isSingleDay = Boolean(!calendarRangeEnd || calendarRangeStart === calendarRangeEnd || curDate === curEndDate);
@@ -2778,6 +2917,7 @@ function initReservationPage() {
             if (dayBtn) {
                 dayBtn.disabled = true;
                 dayBtn.classList.add('is-disabled-slot');
+                dayBtn.setAttribute('title', 'Daytime session for today has already passed.');
             }
             if (isSingleDay) {
                 dpSingleDayWholeDayActive = false;
@@ -2792,11 +2932,18 @@ function initReservationPage() {
                     b.classList.toggle('is-active', b.dataset.dpStartSlot === dpRangeStartSlot);
                 });
             }
+            const wholeDayPill = document.getElementById('dpWholeDayPill');
+            if (wholeDayPill && isSingleDay) {
+                wholeDayPill.disabled = true;
+                wholeDayPill.classList.add('is-disabled-slot');
+                wholeDayPill.setAttribute('title', '24 Hours is unavailable because daytime for today has already passed.');
+            }
         } else {
             const dayBtn = document.querySelector('[data-dp-start-slot="Daytime"]');
             if (dayBtn) {
                 dayBtn.disabled = false;
                 dayBtn.classList.remove('is-disabled-slot');
+                dayBtn.removeAttribute('title');
             }
         }
 
@@ -2843,9 +2990,19 @@ function initReservationPage() {
 
                 // Whole Day pill: only available if BOTH slots are free
                 if (wholeDayPill && isSingleDay) {
-                    if (startDaytimeBooked || startNighttimeBooked) {
+                    const isAnySlotUnavailable = startDaytimeBooked || startNighttimeBooked || (curDate && isNighttimeForToday(curDate)) || dayBtn?.disabled || nightBtn?.disabled;
+                    if (isAnySlotUnavailable) {
                         wholeDayPill.disabled = true;
                         wholeDayPill.classList.add('is-disabled-slot');
+                        let reason = '24 Hours is unavailable because one or both sessions are occupied.';
+                        if (startDaytimeBooked && startNighttimeBooked) {
+                            reason = '24 Hours is unavailable because both Daytime and Overnight sessions are occupied.';
+                        } else if (startDaytimeBooked || (curDate && isNighttimeForToday(curDate))) {
+                            reason = '24 Hours is unavailable because the Daytime session is occupied or has passed.';
+                        } else if (startNighttimeBooked) {
+                            reason = '24 Hours is unavailable because the Overnight session is occupied.';
+                        }
+                        wholeDayPill.setAttribute('title', reason);
                         if (dpSingleDayWholeDayActive) {
                             dpSingleDayWholeDayActive = false;
                             dpRangeEndSlot = dpRangeStartSlot;
@@ -2853,6 +3010,7 @@ function initReservationPage() {
                     } else {
                         wholeDayPill.disabled = false;
                         wholeDayPill.classList.remove('is-disabled-slot');
+                        wholeDayPill.removeAttribute('title');
                     }
                 }
 
@@ -2946,6 +3104,9 @@ function initReservationPage() {
     const dpWholeDayPill = document.getElementById('dpWholeDayPill');
     if (dpWholeDayPill) {
         dpWholeDayPill.addEventListener('click', () => {
+            if (dpWholeDayPill.disabled || dpWholeDayPill.classList.contains('is-disabled-slot')) {
+                return;
+            }
             const curDate = dpRangeStart || (dateInput ? dateInput.value : '') || window.PARK_TODAY_DATE;
             const curEndDate = dpRangeEnd || curDate;
             const isSingleDay = Boolean(!dpRangeEnd || dpRangeStart === dpRangeEnd || curDate === curEndDate);
@@ -3062,9 +3223,11 @@ function initReservationPage() {
 
             const payload = await response.json();
             datePickerAvailability = payload.availability || [];
+            updateDpRangeDisplay();
             renderDatePickerDays();
         } catch (error) {
             datePickerAvailability = [];
+            updateDpRangeDisplay();
             renderDatePickerDays();
         } finally {
             datePickerDays.classList.remove('is-loading');

@@ -7175,6 +7175,26 @@ body:has(.rp-modal.is-open) .rp-footer {
     box-shadow: 0 4px 10px rgba(11, 36, 24, 0.24);
 }
 
+.rp-dp-whole-day-pill:disabled,
+.rp-dp-whole-day-pill.is-disabled-slot {
+    opacity: 0.45;
+    cursor: not-allowed !important;
+    border-color: #d1d5db !important;
+    background: #f3f4f6 !important;
+    color: #9ca3af !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.rp-dp-whole-day-pill:disabled:hover,
+.rp-dp-whole-day-pill.is-disabled-slot:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: #f3f4f6 !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+}
+
 .rp-dp-whole-day-pill.is-active {
     background: linear-gradient(135deg, #14532d, #166534);
     color: #ffffff;
@@ -7191,6 +7211,11 @@ body:has(.rp-modal.is-open) .rp-footer {
 .rp-dp-whole-day-pill i {
     font-size: 0.78rem;
     color: #166534;
+}
+
+.rp-dp-whole-day-pill:disabled i,
+.rp-dp-whole-day-pill.is-disabled-slot i {
+    color: #9ca3af !important;
 }
 
 .rp-dp-whole-day-pill.is-active i {

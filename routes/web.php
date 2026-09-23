@@ -6832,6 +6832,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'entrance_option' => ['nullable', 'in:all_paid,specific,all_free'],
             'pool_option' => ['nullable', 'in:no_pool,specific,all_paid,all_free'],
             'include_pool' => ['nullable'],
+            'total_amount_to_pay' => ['nullable', 'numeric', 'min:0'],
+            'amount_collected' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         ReservationGuest::where('reservation_id', $reservation->id)->delete();
@@ -6994,7 +6996,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $childRate = (float) ($settings->daytime_child_entrance_fee ?? 0);
         }
 
-        $entranceOption = $data['entrance_option'] ?? 'all_paid';
+        // Check if any reserved amenity provides free entrance or free pool benefit
+        $resAmenities = $reservation->reservationAmenities()->with('amenity.benefit')->get();
+        $hasFreeEntrance = $resAmenities->contains(function ($ra) {
+            $am = $ra->amenity;
+            if (! $am) return false;
+            return (bool) ($am->benefit->free_entrance ?? false);
+        });
+        $hasFreePool = $resAmenities->contains(function ($ra) {
+            $am = $ra->amenity;
+            if (! $am) return false;
+            return (bool) ($am->benefit->free_pool ?? false);
+        });
+
+        $entranceOption = $data['entrance_option'] ?? ($hasFreeEntrance ? 'all_free' : 'all_paid');
         if ($entranceOption === 'all_free') {
             $entranceTotal = 0.0;
         } else {
@@ -7012,13 +7027,14 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $poolTotal = 0;
-        if ($poolOption === 'all_paid' || $poolOption === 'specific') {
+        if ($poolOption === 'all_free' || ($hasFreePool && empty($data['pool_option']))) {
+            $poolTotal = 0.0;
+        } elseif ($poolOption === 'all_paid' || $poolOption === 'specific') {
             $poolTotal = round($poolCount * $poolRate, 2);
         }
 
         // Calculate Additional Per Head Fee for amenities exceeding capacity limit
         $extraHeadTotal = 0;
-        $resAmenities = $reservation->reservationAmenities()->with('amenity')->get();
         if ($resAmenities->isNotEmpty()) {
             $defaultAmenityId = (string) $resAmenities->first()->amenity_id;
             $amenityGuestCounts = [];
@@ -7066,12 +7082,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         
         // For online reservations, collect the remaining balance at check-in
         $remainingBalanceCollected = $oldRemainingBalance;
+
+        // Use the exact total to pay shown on the reservation check-in modal if provided
+        if (isset($data['total_amount_to_pay']) && is_numeric($data['total_amount_to_pay'])) {
+            $amountCollectedAtCounter = round((float) $data['total_amount_to_pay'], 2);
+        } elseif (isset($data['amount_collected']) && is_numeric($data['amount_collected'])) {
+            $amountCollectedAtCounter = round((float) $data['amount_collected'], 2);
+        } else {
+            $amountCollectedAtCounter = round($remainingBalanceCollected + $grandTotal, 2);
+        }
         
-        // Entrance fee is collected at check-in but NOT added to total_amount
-        // total_amount should remain as the original amenity booking amount
+        // Update reservation payment state cleanly without over-charging
         $newTotal = $oldTotal;
-        $newPaid = round($oldPaid + $grandTotal + $remainingBalanceCollected, 2);
-        $newRemainingBalance = round($newTotal - $newPaid, 2);
+        $newPaid = round(min($newTotal, $oldPaid + $remainingBalanceCollected), 2);
+        $newRemainingBalance = round(max(0, $newTotal - $newPaid), 2);
         
         $reservation->update([
             'check_in' => now()->toDateTimeString(),
@@ -7088,9 +7112,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $staffName = $user['name'] ?? 'Staff User';
-        
-        // Log the amount actually collected at counter: remaining balance + entrance fee + extras
-        $amountCollectedAtCounter = round($remainingBalanceCollected + $grandTotal, 2);
         
         ActivityLog::log(
             action: 'checked_in',
@@ -7118,6 +7139,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'status' => $reservation->status,
             'payment_status' => $reservation->payment_status,
             'entrance_fee' => $grandTotal,
+            'collected_amount' => $amountCollectedAtCounter,
         ]);
     })->name('reservations.check-in');
 

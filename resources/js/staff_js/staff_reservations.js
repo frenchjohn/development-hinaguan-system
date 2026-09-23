@@ -5765,6 +5765,10 @@ window.AppPage['staff_reservations'] = function () {
             }
         }
 
+        const { entranceOpt: compEntranceOpt, total: checkInExtrasTotal } = computeCheckInEntrance();
+        const checkInRemainingBalance = Number(currentReservationData?.remaining_balance || 0);
+        const checkInGrandTotal = Number((checkInExtrasTotal + checkInRemainingBalance).toFixed(2));
+
         try {
             const response = await fetch(`/staff/reservations/${pendingReservationId}/check-in`, {
                 method: 'POST',
@@ -5779,8 +5783,11 @@ window.AppPage['staff_reservations'] = function () {
                     primary_guest: primaryGuest,
                     primary_guest_id: primaryGuestToUpdate?.customer_id || null,
                     companions: getAllCheckInCompanions(),
+                    entrance_option: compEntranceOpt,
                     pool_option: poolOpt,
                     include_pool: (poolOpt === 'all_paid' || poolOpt === 'specific' || poolOpt === 'all_free') ? '1' : '0',
+                    total_amount_to_pay: checkInGrandTotal,
+                    amount_collected: checkInGrandTotal,
                 }),
             });
 
