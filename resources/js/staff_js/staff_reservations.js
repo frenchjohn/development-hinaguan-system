@@ -5497,6 +5497,10 @@ window.AppPage['staff_reservations'] = function () {
 
     // Refresh table functionality
     refreshTableBtn?.addEventListener('click', async () => {
+        if (typeof window.refreshActivePage === 'function') {
+            await window.refreshActivePage(true);
+            return;
+        }
         try {
             const skeletonCount = Math.min(5, Object.keys(reservationData).length || 5);
             tableBody.innerHTML = '';

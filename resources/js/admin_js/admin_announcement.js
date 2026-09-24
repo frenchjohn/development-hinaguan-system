@@ -4,7 +4,8 @@
  * Hinaguan Nature Park
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+window.AppPage = window.AppPage || {};
+window.AppPage['admin_announcement'] = function () {
     // CSRF Token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -1081,4 +1082,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize: pre-select active in-park guests
     selectAudience('active');
     updateCharCounterAndPreview();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.AppPage?.['admin_announcement'] === 'function') {
+        window.AppPage['admin_announcement']();
+    }
 });

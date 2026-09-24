@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+window.AppPage = window.AppPage || {};
+window.AppPage['admin_payment'] = function () {
     // ─── Element refs ────────────────────────────────────────────────────────
     const searchInput           = document.getElementById('paymentSearchInput');
     const typeSelect            = document.getElementById('typeFilterSelect');
@@ -422,4 +423,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ─── Init ────────────────────────────────────────────────────────────────
     updateTriggerButtonUI();
     applyFilters(true);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.AppPage?.['admin_payment'] === 'function') {
+        window.AppPage['admin_payment']();
+    }
 });

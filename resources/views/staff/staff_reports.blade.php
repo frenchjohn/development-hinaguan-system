@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
-        'resources/css/homepage.css',
         'resources/components/css_js/header.css',
         'resources/components/css_js/staff_sidemenu.css',
         'resources/css/chatbot.css',
@@ -28,113 +27,21 @@
         'resources/js/staff_js/staff_reports.js',
         'resources/js/staff_chatbot.js',
     ])
-    <style>
-        body.staff-portal {
-            background-color: #ebf3ec !important;
-        }
-        [data-theme="dark"] body.staff-portal {
-            background-color: #0f1110 !important;
-        }
-        body.staff-portal .dash-layout,
-        body.staff-portal .dash-main,
-        body.staff-portal .dash-content {
-            background: transparent !important;
-            background-color: transparent !important;
-            background-image: none !important;
-        }
-        body.staff-portal .dash-main {
-            position: relative !important;
-            min-height: 100vh;
-            z-index: 0;
-        }
-        body.staff-portal .dash-main::before {
-            content: '' !important;
-            display: block !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: var(--dash-sidebar-w, 10rem) !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: auto !important;
-            height: 100vh !important;
-            z-index: -1 !important;
-            pointer-events: none !important;
-            background-color: #ebf3ec !important;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
-            background-size: 100% 100% !important;
-            background-position: center center !important;
-            background-repeat: no-repeat !important;
-            filter: none !important;
-            -webkit-filter: none !important;
-            opacity: 1 !important;
-            transition: left 0.25s ease !important;
-        }
-        .dash-layout.sidebar-collapsed .dash-main::before {
-            left: 0 !important;
-        }
-        @media (max-width: 992px) {
-            body.staff-portal .dash-main::before {
-                left: 0 !important;
-            }
-        }
-        [data-theme="dark"] body.staff-portal .dash-main::before {
-            background-color: #0f1110 !important;
-            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
-            filter: none !important;
-            -webkit-filter: none !important;
-            opacity: 1 !important;
-        }
-        body.staff-portal .dash-content {
-            position: relative !important;
-            z-index: 1 !important;
-        }
-        /* Media print formatting: only print the official slip */
-
-        /* STRICT PRINT FORMATTING: Only print the Official Handover Slip */
-        @media print {
-            body {
-                background: #ffffff !important;
-                color: #000000 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            body * {
-                visibility: hidden !important;
-            }
-            #printableHandoverSlip,
-            #printableHandoverSlip * {
-                visibility: visible !important;
-            }
-            #printableHandoverSlip {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                display: block !important;
-                background: #ffffff !important;
-                color: #000000 !important;
-                padding: 24px !important;
-                margin: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-            }
-        }
-    </style>
 </head>
-<body class="antialiased staff-portal">
-    <div class="dash-layout">
+<body class="antialiased staff-portal bg-[#ebf3ec] dark:bg-[#0f1110] text-[#1c2b22] dark:text-[#f3f4f6]">
+    <div class="dash-layout min-h-screen flex bg-transparent print:hidden">
         <x-staff_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
-        <div class="dash-main">
+        <div class="dash-main flex-1 flex flex-col min-w-0 relative min-h-screen z-0 bg-transparent">
             <x-header
                 title="Staff Shift & Activity Report"
                 subtitle="Personal shift performance, cash collections, and guest transaction ledger"
             />
 
-            <main class="dash-content p-4 sm:p-6 space-y-6">
+            <main class="dash-content w-full min-w-0 p-4 sm:p-6 space-y-6">
 
                 {{-- UNIFIED EXECUTIVE SHIFT TOOLBAR & FILTER CONSOLE --}}
-                <div class="rounded-2xl border border-glass-border bg-glass p-5 shadow-glass backdrop-blur-md">
+                <div class="mb-6 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                     {{-- Row 1: Staff Identity & Primary Shift Actions --}}
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-glass-border">
                         {{-- Staff Identity Left Column --}}
@@ -266,7 +173,7 @@
                 <div id="reportsDataContainer" class="space-y-6 transition-opacity duration-150">
 
                     {{-- KPI METRICS CARDS (6 METRICS) --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     {{-- 1. Total Collections --}}
                     <article class="rounded-2xl border border-glass-border bg-glass p-4 shadow-glass flex flex-col justify-between">
                         <div class="flex items-center justify-between mb-3">
@@ -504,7 +411,7 @@
     {{-- ============================================================ --}}
     {{-- 1. SHIFT ACTIVITY & PAYMENT LEDGER MODAL (Fixed Overlay) --}}
     {{-- ============================================================ --}}
-    <div id="ledgerModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="ledgerModalTitle">
+    <div id="ledgerModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6 print:hidden" role="dialog" aria-modal="true" aria-labelledby="ledgerModalTitle">
         {{-- Backdrop --}}
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" data-close-ledger-modal="true"></div>
 
@@ -646,7 +553,7 @@
     {{-- ============================================================ --}}
     {{-- 2. HANDOVER SLIP PREVIEW & PRINT MODAL (Fixed Overlay) --}}
     {{-- ============================================================ --}}
-    <div id="handoverModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="handoverModalTitle">
+    <div id="handoverModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6 print:hidden" role="dialog" aria-modal="true" aria-labelledby="handoverModalTitle">
         {{-- Backdrop --}}
         <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" data-close-handover-modal="true"></div>
 
@@ -773,7 +680,7 @@
     {{-- ============================================================ --}}
     {{-- 3. HIDDEN PRINTABLE CONTAINER FOR BROWSER PRINT ENGINE --}}
     {{-- ============================================================ --}}
-    <div id="printableHandoverSlip" style="display: none;" class="print:!block p-8 bg-white text-black font-sans">
+    <div id="printableHandoverSlip" class="hidden print:block p-8 bg-white text-black font-sans print:w-full print:bg-white print:text-black">
         <div class="text-center border-b-2 border-black pb-4 mb-6">
             <h1 class="text-2xl font-bold tracking-wide uppercase">Hinaguan Nature Park</h1>
             <h2 class="text-base font-semibold text-gray-700">Official Staff Shift Handover & Reconciliation Slip</h2>
@@ -864,7 +771,7 @@
     {{-- ============================================================ --}}
     <div
         id="dateFilterModal"
-        class="hidden fixed inset-0 z-[2000] items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+        class="hidden fixed inset-0 z-[2000] items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity print:hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dateFilterModalTitle"
