@@ -1016,8 +1016,8 @@ window.addEventListener('DOMContentLoaded', function () {
             if (!newMain || !currentMain) return;
 
             // Compare relevant content and body script data
-            const oldDataScripts = Array.from(document.body.querySelectorAll('script[data-spa-data]')).map(s => s.textContent).join('\n');
-            const newDataScripts = Array.from(doc.querySelectorAll('body > script:not([src])')).map(s => s.textContent).join('\n');
+            const oldDataScripts = Array.from(document.body.querySelectorAll('script[data-spa-data], body > script:not([src])')).map(s => s.textContent.trim()).join('\n');
+            const newDataScripts = Array.from(doc.querySelectorAll('script[data-spa-data], body > script:not([src])')).map(s => s.textContent.trim()).join('\n');
             const dataChanged = oldDataScripts !== newDataScripts;
 
             // Cache the fresh document for the current page at currentDataVersion

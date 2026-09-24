@@ -74,7 +74,7 @@ window.AppPage['admin_reports'] = function () {
     const matrixGuestsTableFoot = document.getElementById('matrixGuestsTableFoot');
     const matrixCurrentViewLabel = document.getElementById('matrixCurrentViewLabel');
 
-    let currentMatrixView = 'rooms'; // 'rooms' or 'guests'
+    let currentMatrixView = sessionStorage.getItem('admin_reports_matrix_subview') || 'rooms'; // 'rooms' or 'guests'
 
     // Selected amenities state (defaults to all)
     let selectedAmenityIds = new Set(allAmenities.map(a => String(a.id)));
@@ -87,8 +87,9 @@ window.AppPage['admin_reports'] = function () {
     };
 
     const now = new Date();
-    let currentMatrixStartDate = getMonthRange(now.getFullYear(), now.getMonth()).start;
-    let currentMatrixEndDate = getMonthRange(now.getFullYear(), now.getMonth()).end;
+    const defaultMonthRange = getMonthRange(now.getFullYear(), now.getMonth());
+    let currentMatrixStartDate = sessionStorage.getItem('admin_reports_matrix_start_date') || defaultMonthRange.start;
+    let currentMatrixEndDate = sessionStorage.getItem('admin_reports_matrix_end_date') || defaultMonthRange.end;
 
     if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
     if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
@@ -552,6 +553,7 @@ window.AppPage['admin_reports'] = function () {
     if (subTabRoomsMatrix) {
         subTabRoomsMatrix.addEventListener('click', () => {
             currentMatrixView = 'rooms';
+            sessionStorage.setItem('admin_reports_matrix_subview', 'rooms');
             renderMonthQuickTabs();
             renderCurrentMatrixView();
         });
@@ -560,6 +562,7 @@ window.AppPage['admin_reports'] = function () {
     if (subTabGuestsMatrix) {
         subTabGuestsMatrix.addEventListener('click', () => {
             currentMatrixView = 'guests';
+            sessionStorage.setItem('admin_reports_matrix_subview', 'guests');
             renderMonthQuickTabs();
             renderCurrentMatrixView();
         });
@@ -606,6 +609,10 @@ window.AppPage['admin_reports'] = function () {
                 currentMatrixEndDate = btn.dataset.end;
                 currentMatrixView = btn.dataset.view;
 
+                sessionStorage.setItem('admin_reports_matrix_subview', currentMatrixView);
+                sessionStorage.setItem('admin_reports_matrix_start_date', currentMatrixStartDate);
+                sessionStorage.setItem('admin_reports_matrix_end_date', currentMatrixEndDate);
+
                 if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
                 if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
                 
@@ -629,9 +636,12 @@ window.AppPage['admin_reports'] = function () {
     };
 
     // Set initial active preset style
-    const initialActivePreset = document.querySelector('.matrix-tab-item[data-matrix-preset="1m"]');
-    if (initialActivePreset) {
+    const savedPreset = sessionStorage.getItem('admin_reports_matrix_preset') || '1m';
+    const initialActivePreset = document.querySelector(`.matrix-tab-item[data-matrix-preset="${savedPreset}"]`);
+    if (initialActivePreset && (!sessionStorage.getItem('admin_reports_matrix_start_date') || sessionStorage.getItem('admin_reports_matrix_preset'))) {
         updatePresetButtonStyles(initialActivePreset);
+    } else {
+        updatePresetButtonStyles(null);
     }
 
     matrixPresetBtns.forEach(btn => {
@@ -669,6 +679,10 @@ window.AppPage['admin_reports'] = function () {
                 currentMatrixEndDate = `${today.getFullYear()}-12-31`;
             }
 
+            sessionStorage.setItem('admin_reports_matrix_start_date', currentMatrixStartDate);
+            sessionStorage.setItem('admin_reports_matrix_end_date', currentMatrixEndDate);
+            sessionStorage.setItem('admin_reports_matrix_preset', preset);
+
             if (matrixDateFromInput) matrixDateFromInput.value = currentMatrixStartDate;
             if (matrixDateToInput) matrixDateToInput.value = currentMatrixEndDate;
 
@@ -685,6 +699,10 @@ window.AppPage['admin_reports'] = function () {
             if (matrixDateToInput && matrixDateToInput.value) {
                 currentMatrixEndDate = matrixDateToInput.value;
             }
+            sessionStorage.setItem('admin_reports_matrix_start_date', currentMatrixStartDate);
+            sessionStorage.setItem('admin_reports_matrix_end_date', currentMatrixEndDate);
+            sessionStorage.removeItem('admin_reports_matrix_preset');
+
             updatePresetButtonStyles(null);
             renderMonthQuickTabs();
             renderCurrentMatrixView();

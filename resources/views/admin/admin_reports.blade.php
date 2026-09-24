@@ -1232,7 +1232,7 @@
         </div>
     </div>
 
-    <script>
+    <script data-spa-data>
         window.reportData = {!! json_encode($reportData ?? []) !!};
     </script>
     {{-- Admin AI Intelligence Chatbot --}}
