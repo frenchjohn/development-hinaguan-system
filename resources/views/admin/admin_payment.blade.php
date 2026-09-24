@@ -253,6 +253,18 @@
                             <i class="bi bi-x-circle"></i>
                             <span>Clear</span>
                         </button>
+
+                        {{-- Manual Refresh --}}
+                        <button
+                            type="button"
+                            id="refreshPaymentBtn"
+                            onclick="if(typeof window.refreshActivePage==='function'){window.refreshActivePage(true);}"
+                            title="Refresh transaction records"
+                            class="h-9 flex items-center gap-1.5 px-3.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer"
+                        >
+                            <i class="bi bi-arrow-clockwise text-xs"></i>
+                            <span>Refresh</span>
+                        </button>
                     </div>
 
                     {{-- ============================================================ --}}

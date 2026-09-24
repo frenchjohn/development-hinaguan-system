@@ -184,7 +184,18 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="amenities-table-toolbar__action">
+                        <div class="amenities-table-toolbar__action flex items-center gap-2">
+                            <button
+                                type="button"
+                                onclick="if(typeof window.refreshActivePage==='function'){window.refreshActivePage(true);}"
+                                title="Refresh amenities list"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-[var(--ink-muted)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="h-4 w-4">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                                <span>Refresh</span>
+                            </button>
                             <button type="button" class="btn btn--primary" data-open-amenity-modal>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" class="h-4 w-4">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

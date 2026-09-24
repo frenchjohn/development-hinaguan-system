@@ -622,7 +622,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     function syncBodyOverlays(doc) {
-        const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown';
+        const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown, #weatherAlertModal';
 
         document.body.querySelectorAll('body > .modal, body > [id$="odal"], #printableHandoverSlip').forEach((el) => {
             if (el.matches(keepSelector)) return;
@@ -697,8 +697,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     // Cache page at currentDataVersion for instant 0ms switching
                     setCachedPage(cacheKey, doc, currentDataVersion);
 
-                    // Load assets into browser cache so CSS and Vite JS modules are ready
-                    await loadPageAssets(doc);
+                    // Note: Do NOT call loadPageAssets(doc) here. Preloading must not mutate the current page's active <head> styles or run foreign scripts.
                     return true;
                 } catch (err) {
                     return false;
@@ -941,11 +940,41 @@ window.addEventListener('DOMContentLoaded', function () {
     let isRefreshingActivePage = false;
     let pendingRefreshAfterModal = false;
     let activeRefreshTimer = null;
+    let isUserScrolling = false;
+    let scrollDebounceTimer = null;
+
+    // Track active scrolling to prevent jarring DOM updates while user is reading/scrolling
+    window.addEventListener('scroll', () => {
+        isUserScrolling = true;
+        clearTimeout(scrollDebounceTimer);
+        scrollDebounceTimer = setTimeout(() => {
+            isUserScrolling = false;
+        }, 1200);
+    }, { passive: true });
+
+    if ('scrollRestoration' in history) {
+        try {
+            history.scrollRestoration = 'manual';
+        } catch (e) {}
+    }
+
+    // Pages that should NEVER auto-refresh in background (only manual refresh via button)
+    const NO_AUTO_REFRESH_PAGES = new Set([
+        'staff_reports',
+        'admin_settings',
+        'staff_settings',
+    ]);
 
     function isAnyModalOpen() {
-        return !!document.querySelector(
-            '.modal.is-open, .guest-modal.is-open, [id$="Modal"].is-open, [id$="modal"].is-open, dialog[open]'
+        const hasOpenClass = !!document.querySelector(
+            '.modal.is-open, .guest-modal.is-open, [id$="Modal"].is-open, [id$="modal"].is-open, dialog[open], .is-open'
         );
+        if (hasOpenClass) return true;
+        const weatherModal = document.getElementById('weatherAlertModal');
+        if (weatherModal && (weatherModal.classList.contains('is-open') || (!weatherModal.classList.contains('hidden') && weatherModal.style.display !== 'none' && weatherModal.style.display !== ''))) {
+            return true;
+        }
+        return false;
     }
 
     function isUserTyping() {
@@ -957,7 +986,7 @@ window.addEventListener('DOMContentLoaded', function () {
         );
     }
 
-    function scheduleActivePageRefresh(delay = 150, force = true) {
+    function scheduleActivePageRefresh(delay = 150, force = false) {
         clearTimeout(activeRefreshTimer);
         activeRefreshTimer = setTimeout(() => {
             refreshActivePage(force);
@@ -969,6 +998,11 @@ window.addEventListener('DOMContentLoaded', function () {
         const currentPath = window.location.pathname;
         const pageKey = getSpaPageKey(currentPath);
         if (!pageKey) return; // Not an SPA page
+
+        // Pages explicitly marked as manual-only
+        if (!force && NO_AUTO_REFRESH_PAGES.has(pageKey)) {
+            return;
+        }
 
         if (document.visibilityState !== 'visible') {
             pendingRefreshAfterModal = true;
@@ -987,16 +1021,16 @@ window.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Safety: Do not interrupt active scrolling; defer until scrolling pauses
+        if (!force && isUserScrolling) {
+            scheduleActivePageRefresh(800, false);
+            return;
+        }
+
         if (isRefreshingActivePage) return;
         isRefreshingActivePage = true;
 
         try {
-            // Specialized handling for staff_reports to preserve active filters and modals
-            if (pageKey === 'staff_reports' && window.__staffReportsController?.fetchAndSwapReports) {
-                await window.__staffReportsController.fetchAndSwapReports(window.location.href, false);
-                return;
-            }
-
             const response = await fetch(window.location.href, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 cache: 'no-cache',
@@ -1028,19 +1062,50 @@ window.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Double check modal wasn't opened while fetch was running
+            // Double check modal or typing wasn't started while fetch was running
             if (isAnyModalOpen()) {
                 pendingRefreshAfterModal = true;
                 return;
             }
+            if (isUserTyping() && !force) {
+                pendingRefreshAfterModal = true;
+                return;
+            }
 
-            // Preserve scroll position
-            const scrollX = window.scrollX;
-            const scrollY = window.scrollY;
+            // 1. Capture exact window scroll
+            const scrollX = window.scrollX || window.pageXOffset || (document.documentElement ? document.documentElement.scrollLeft : 0) || 0;
+            const scrollY = window.scrollY || window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
 
-            // Preserve search values
-            const searchInputs = Array.from(document.querySelectorAll('input[type="search"], input[id*="Search"], input[id*="search"]'));
-            const savedSearches = searchInputs.map(input => ({ id: input.id, value: input.value }));
+            // 2. Capture all internal scrollable containers (e.g. table wrappers, cards)
+            const containerScrolls = [];
+            currentMain.querySelectorAll('*').forEach(el => {
+                if (el.scrollTop > 0 || el.scrollLeft > 0) {
+                    containerScrolls.push({
+                        id: el.id || null,
+                        tag: el.tagName,
+                        className: el.className ? el.className.toString() : '',
+                        top: el.scrollTop,
+                        left: el.scrollLeft
+                    });
+                }
+            });
+
+            // 3. Capture form controls (inputs, selects, textareas)
+            const formStates = new Map();
+            currentMain.querySelectorAll('input, select, textarea').forEach(el => {
+                if (el.id) {
+                    formStates.set(el.id, {
+                        value: el.value,
+                        checked: el.checked,
+                        type: el.type
+                    });
+                }
+            });
+
+            // 4. CRITICAL: Lock minimum height of currentMain to prevent document collapse!
+            const prevHeight = currentMain.offsetHeight;
+            const requiredMinHeight = Math.max(prevHeight, scrollY + window.innerHeight + 200);
+            currentMain.style.minHeight = requiredMinHeight + 'px';
 
             // Dispatch cleanup event so previous page timers/tickers reset cleanly
             window.dispatchEvent(new CustomEvent('spa:leaving'));
@@ -1068,9 +1133,10 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Seamlessly swap main content
+            // Seamlessly swap main content while minHeight is LOCKED
             currentMain.className = newMain.className;
             currentMain.innerHTML = newMain.innerHTML;
+            currentMain.style.minHeight = requiredMinHeight + 'px';
 
             // Re-run inline scripts inside main
             rehydrateScripts(currentMain);
@@ -1081,6 +1147,18 @@ window.addEventListener('DOMContentLoaded', function () {
             // Sync body overlays/modals
             syncBodyOverlays(doc);
 
+            // Restore form control states
+            formStates.forEach((state, id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (state.type === 'checkbox' || state.type === 'radio') {
+                        el.checked = state.checked;
+                    } else if (el.value !== state.value) {
+                        el.value = state.value;
+                    }
+                }
+            });
+
             // Re-run page initializer
             if (window.AppPage && typeof window.AppPage[pageKey] === 'function') {
                 try {
@@ -1090,19 +1168,50 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Restore search input values and re-filter
-            savedSearches.forEach(({ id, value }) => {
-                if (id && value) {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.value = value;
-                        el.dispatchEvent(new Event('input', { bubbles: true }));
+            // Robust multi-frame scroll restoration so layout reflow does not clamp scroll to top
+            const restoreAllScrolls = () => {
+                if (scrollY > 0 || scrollX > 0) {
+                    window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
+                    if (document.documentElement) {
+                        document.documentElement.scrollTop = scrollY;
+                        document.documentElement.scrollLeft = scrollX;
+                    }
+                    if (document.body) {
+                        document.body.scrollTop = scrollY;
+                        document.body.scrollLeft = scrollX;
                     }
                 }
-            });
+                containerScrolls.forEach(item => {
+                    let el = item.id ? document.getElementById(item.id) : null;
+                    if (!el && item.className) {
+                        try {
+                            const selector = item.tag.toLowerCase() + '.' + item.className.trim().split(/\s+/).filter(Boolean).join('.');
+                            el = currentMain.querySelector(selector);
+                        } catch (e) {}
+                    }
+                    if (el) {
+                        if (item.top > 0) el.scrollTop = item.top;
+                        if (item.left > 0) el.scrollLeft = item.left;
+                    }
+                });
+            };
 
-            // Restore scroll position
-            window.scrollTo({ left: scrollX, top: scrollY, behavior: 'instant' });
+            restoreAllScrolls();
+            requestAnimationFrame(() => {
+                restoreAllScrolls();
+                requestAnimationFrame(() => {
+                    restoreAllScrolls();
+                    // Clean up minHeight after layout reflow has stabilized
+                    setTimeout(() => {
+                        restoreAllScrolls();
+                        currentMain.style.minHeight = '';
+                    }, 250);
+                });
+            });
+            setTimeout(restoreAllScrolls, 30);
+            setTimeout(restoreAllScrolls, 80);
+            setTimeout(restoreAllScrolls, 150);
+            setTimeout(restoreAllScrolls, 350);
 
             // Notify UI
             window.dispatchEvent(new CustomEvent('spa:page-refreshed', { detail: { path: currentPath } }));
@@ -1117,7 +1226,11 @@ window.addEventListener('DOMContentLoaded', function () {
     // Listen for incoming activity notifications from header heartbeat
     window.addEventListener('activity:new', () => {
         bumpDataVersion();
-        scheduleActivePageRefresh(200, true);
+        const pageKey = getSpaPageKey(window.location.pathname);
+        if (NO_AUTO_REFRESH_PAGES.has(pageKey)) {
+            return;
+        }
+        scheduleActivePageRefresh(300, false);
     });
 
     // Listen for explicit data mutations dispatched by page scripts
@@ -1126,24 +1239,27 @@ window.addEventListener('DOMContentLoaded', function () {
         scheduleActivePageRefresh(250, true);
     });
 
-    // Refresh when tab gains focus
+    // Refresh when tab gains focus (only for dynamic pages)
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-            scheduleActivePageRefresh(100, false);
+            const pageKey = getSpaPageKey(window.location.pathname);
+            if (!NO_AUTO_REFRESH_PAGES.has(pageKey)) {
+                scheduleActivePageRefresh(100, false);
+            }
         }
     });
 
     // Check for deferred refresh when modals close or input blurs
     function checkPendingRefresh() {
         if (!pendingRefreshAfterModal) return;
-        if (!isAnyModalOpen() && !isUserTyping()) {
+        if (!isAnyModalOpen() && !isUserTyping() && !isUserScrolling) {
             pendingRefreshAfterModal = false;
-            scheduleActivePageRefresh(100);
+            scheduleActivePageRefresh(100, false);
         }
     }
 
     document.addEventListener('click', (e) => {
-        if (e.target.closest('[data-close-reservation-modal], [data-close-check-in-modal], [data-close-scan-modal], [data-close-companion-summary], [data-close-bulk-companion-modal], [data-close-resched-requests-modal], [data-close-date-filter-modal], [data-logout-cancel], .guest-modal__backdrop, .modal-backdrop')) {
+        if (e.target.closest('[data-close-reservation-modal], [data-close-check-in-modal], [data-close-scan-modal], [data-close-companion-summary], [data-close-bulk-companion-modal], [data-close-resched-requests-modal], [data-close-date-filter-modal], [data-logout-cancel], .guest-modal__backdrop, .modal-backdrop, [data-close-weather-modal]')) {
             setTimeout(checkPendingRefresh, 200);
         }
     });
@@ -1154,8 +1270,10 @@ window.addEventListener('DOMContentLoaded', function () {
 
     // Background idle heartbeat refresh (every 12 seconds)
     setInterval(() => {
-        if (document.visibilityState === 'visible' && !isAnyModalOpen() && !isUserTyping()) {
-            scheduleActivePageRefresh(0);
+        if (document.visibilityState === 'visible' && !isAnyModalOpen() && !isUserTyping() && !isUserScrolling) {
+            const pageKey = getSpaPageKey(window.location.pathname);
+            if (!pageKey || NO_AUTO_REFRESH_PAGES.has(pageKey)) return;
+            scheduleActivePageRefresh(0, false);
         }
     }, 12000);
 

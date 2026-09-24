@@ -27,8 +27,78 @@
         'resources/js/staff_js/staff_reports.js',
         'resources/js/staff_chatbot.js',
     ])
+    <style>
+        body.staff-portal {
+            background-color: #ebf3ec !important;
+        }
+        [data-theme="dark"] body.staff-portal {
+            background-color: #0f1110 !important;
+        }
+        body.staff-portal .dash-layout,
+        body.staff-portal .dash-main,
+        body.staff-portal .dash-content {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+        }
+        body.staff-portal .dash-main {
+            position: relative !important;
+            min-height: 100vh;
+            z-index: 0;
+        }
+        body.staff-portal .dash-main::before {
+            content: '' !important;
+            display: block !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: var(--dash-sidebar-w, 10rem) !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: auto !important;
+            height: 100vh !important;
+            z-index: -1 !important;
+            pointer-events: none !important;
+            background-color: #ebf3ec !important;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.3)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            background-size: 100% 100% !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+            transition: left 0.25s ease !important;
+        }
+        .dash-layout.sidebar-collapsed .dash-main::before {
+            left: 0 !important;
+        }
+        @media (max-width: 992px) {
+            body.staff-portal .dash-main::before {
+                left: 0 !important;
+            }
+        }
+        [data-theme="dark"] body.staff-portal .dash-main::before {
+            background-color: #0f1110 !important;
+            background-image: linear-gradient(rgba(15, 17, 16, 0.94), rgba(15, 17, 16, 0.97)), url('{{ asset('storage/design_images/staff-admin-background-image.jpeg') }}') !important;
+            filter: none !important;
+            -webkit-filter: none !important;
+            opacity: 1 !important;
+        }
+        body.staff-portal .dash-content {
+            position: relative !important;
+            z-index: 1 !important;
+        }
+        body.staff-portal [class*="backdrop-blur"] {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        @media print {
+            body.staff-portal .dash-main::before {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
-<body class="antialiased staff-portal bg-[#ebf3ec] dark:bg-[#0f1110] text-[#1c2b22] dark:text-[#f3f4f6]">
+<body class="antialiased staff-portal text-[#1c2b22] dark:text-[#f3f4f6]">
     <div class="dash-layout min-h-screen flex bg-transparent print:hidden">
         <x-staff_sidemenu active="reports" userName="{{ session('auth_user.name') ?? 'Staff User' }}" userRole="Staff" />
 
@@ -81,6 +151,12 @@
                             <button type="button" id="openHandoverModalBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-[#1c5c3c] hover:bg-[#15462e] px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors">
                                 <i class="bi bi-printer text-sm"></i>
                                 <span>Print Handover Slip</span>
+                            </button>
+
+                            {{-- Manual Refresh Button --}}
+                            <button type="button" id="manualRefreshReportsBtn" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-black/20 hover:bg-glass-hover hover:border-emerald-500/40 px-3.5 py-2 text-xs font-bold text-hp-text shadow-xs transition-all active:scale-95" title="Refresh report metrics & activity">
+                                <i class="bi bi-arrow-clockwise text-sm text-[#1c5c3c] dark:text-[#6ab88c] transition-transform duration-300" id="refreshReportsIcon"></i>
+                                <span id="refreshReportsBtnText">Refresh</span>
                             </button>
                         </div>
                     </div>

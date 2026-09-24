@@ -225,15 +225,15 @@
                 {{-- ░░ COMPACT WEATHER STRIP ░░ --}}
                 <button type="button" id="weatherAlertStripBtn"
                     class="w-full mb-4 flex items-center gap-3 rounded-2xl border {{ $stripClass }} px-4 py-3 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.005] active:scale-[0.998] cursor-pointer"
-                    aria-haspopup="dialog" aria-controls="weatherAlertModal">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm {{ $stripIconClass }}">
+                    aria-haspopup="dialog" aria-controls="weatherAlertModal" data-open-weather-modal="true">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm {{ $stripIconClass }} pointer-events-none">
                         <i class="bi {{ $stripIcon }}"></i>
                     </span>
-                    <div class="flex-1 min-w-0 text-left">
+                    <div class="flex-1 min-w-0 text-left pointer-events-none">
                         <p class="m-0 text-sm font-bold text-[#183d28] dark:text-[#e8f5e9] truncate">⚠️ {{ $stripLabel }}</p>
                         <p class="m-0 text-xs text-[#718076] dark:text-[#9baaa1]">Based on 3-day forecast · Tap to review and notify guests</p>
                     </div>
-                    <span class="shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $pillClass }}">
+                    <span class="shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold {{ $pillClass }} pointer-events-none">
                         View details <i class="bi bi-chevron-right text-[9px]"></i>
                     </span>
                 </button>
@@ -256,9 +256,29 @@
                             <span>Filters</span>
                             <span class="guest-filter-toggle__icon text-xs text-[#718076] dark:text-[#9ca3af]">▾</span>
                         </button>
-                        <div class="resv-search flex items-center gap-2 rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 shadow-sm transition-all duration-150 focus-within:border-[#2d6a4f] dark:border-white/15 dark:bg-[#181b19]">
-                            <svg class="h-4 w-4 shrink-0 text-[#718076] dark:text-[#9ca3af]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/></svg>
-                            <input type="search" id="reservationSearchInput" placeholder="Search reservations..." class="w-[200px] sm:w-[260px] border-0 bg-transparent p-0 text-sm text-[#183d28] outline-none placeholder:text-[#718076] dark:text-[#f3f4f6]">
+                        <div class="relative flex items-center">
+                            <span class="pointer-events-none absolute left-3.5 flex items-center justify-center text-[#718076] dark:text-[#9ca3af]">
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+                                </svg>
+                            </span>
+                            <input 
+                                type="search" 
+                                id="reservationSearchInput" 
+                                placeholder="Search booker, ID, phone..." 
+                                autocomplete="off"
+                                spellcheck="false"
+                                class="h-10 w-[220px] sm:w-[280px] md:w-[320px] rounded-xl border border-[#dfe5e0] bg-white pl-10 pr-9 text-sm font-medium text-[#183d28] placeholder-[#718076] shadow-sm transition-all duration-150 focus:border-[#2d6a4f] focus:outline-none focus:ring-2 focus:ring-[#2d6a4f]/15 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:placeholder-[#9ca3af] dark:focus:border-emerald-500 dark:focus:ring-emerald-500/20 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                            >
+                            <button 
+                                type="button" 
+                                id="reservationSearchClearBtn" 
+                                class="hidden absolute right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-[#718076] hover:bg-gray-100 hover:text-[#183d28] dark:text-[#9ca3af] dark:hover:bg-white/10 dark:hover:text-white cursor-pointer transition-colors" 
+                                aria-label="Clear search"
+                                title="Clear"
+                            >
+                                <i class="bi bi-x text-lg leading-none"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="resv-toolbar__right flex flex-wrap items-center gap-2">
@@ -1779,15 +1799,23 @@
         </div>
     </div>
 
-    {{-- ░░░ WEATHER ALERT MODAL ░░░ --}}
+    {{-- ░░░ WEATHER ALERT MODAL (PURE TAILWIND) ░░░ --}}
     <div id="weatherAlertModal" role="dialog" aria-modal="true" aria-labelledby="weatherAlertModalTitle"
-         class="fixed inset-0 z-[900] hidden items-end sm:items-center justify-center"
-         style="display:none">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px] dark:bg-black/70" id="weatherAlertModalBackdrop"></div>
-        <div class="relative z-10 w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-2xl bg-white dark:bg-[#161a18] shadow-2xl overflow-hidden">
+         class="fixed inset-0 z-[1300] hidden items-center justify-center p-3 sm:p-4 overflow-y-auto is-open:flex"
+         style="display: none;"
+         aria-hidden="true"
+         data-close-weather-modal="true">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" 
+             id="weatherAlertModalBackdrop" 
+             data-close-weather-modal="true"></div>
+
+        {{-- Dialog Panel --}}
+        <div class="relative z-10 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-3xl sm:rounded-2xl bg-white dark:bg-[#161a18] shadow-2xl overflow-hidden border border-[#e5e9e6] dark:border-white/10 my-auto"
+             onclick="event.stopPropagation()">
 
             {{-- Modal Header --}}
-            <div class="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#e5e9e6] dark:border-white/10">
+            <div class="shrink-0 flex items-start justify-between gap-3 px-6 py-4 border-b border-[#e5e9e6] dark:border-white/10 bg-[#f7faf8] dark:bg-white/[0.02]">
                 <div class="flex items-center gap-3">
                     <span id="weatherModalHeaderIcon" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
                         <i class="bi bi-cloud-rain-fill"></i>
@@ -1798,24 +1826,26 @@
                     </div>
                 </div>
                 <button type="button" id="closeWeatherAlertModal"
-                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[#718076] hover:bg-[#f0f4f1] dark:hover:bg-white/10 transition-colors cursor-pointer mt-0.5"
-                    aria-label="Close">
-                    <i class="bi bi-x-lg text-sm"></i>
+                    class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 mt-0.5"
+                    aria-label="Close"
+                    data-close-weather-modal="true">
+                    <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90 pointer-events-none"></i>
                 </button>
             </div>
 
             {{-- Modal Body --}}
-            <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4" id="weatherAlertModalBody">
+            <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4" id="weatherAlertModalBody">
                 {{-- Rendered by JS --}}
             </div>
 
             {{-- Modal Footer --}}
-            <div class="px-5 py-3 border-t border-[#e5e9e6] dark:border-white/10 flex items-center justify-between gap-3">
+            <div class="shrink-0 px-6 py-3.5 border-t border-[#e5e9e6] dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.01] flex items-center justify-between gap-3">
                 <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1]">
                     <i class="bi bi-info-circle mr-1"></i>Forecast via WeatherAPI · 3-day window only
                 </p>
                 <button type="button" id="closeWeatherAlertModalFooterBtn"
-                    class="rounded-xl border border-[#dfe5e0] bg-white dark:border-white/15 dark:bg-[#242a26] px-4 py-2 text-sm font-semibold text-[#183d28] dark:text-[#e8f5e9] hover:bg-[#f0f4f1] dark:hover:bg-[#2e3530] transition-colors cursor-pointer">
+                    class="cursor-pointer rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold text-[#183d28] dark:text-[#f3f4f6] transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
+                    data-close-weather-modal="true">
                     Close
                 </button>
             </div>
@@ -1824,21 +1854,20 @@
 
     <script>
     (function () {
-        const modal = document.getElementById('weatherAlertModal');
-        const body  = document.getElementById('weatherAlertModalBody');
-        const stripBtn = document.getElementById('weatherAlertStripBtn');
-        const backdrop = document.getElementById('weatherAlertModalBackdrop');
-        const closeBtn  = document.getElementById('closeWeatherAlertModal');
-        const closeBtnF = document.getElementById('closeWeatherAlertModalFooterBtn');
-        const headerIcon = document.getElementById('weatherModalHeaderIcon');
+        const getModal = () => document.getElementById('weatherAlertModal');
+        const getBody  = () => document.getElementById('weatherAlertModalBody');
+        const getHeaderIcon = () => document.getElementById('weatherModalHeaderIcon');
 
-        if (!modal || !stripBtn) return;
-
-        const alerts = window.weatherAlertsData || [];
+        const getAlerts = () => {
+            const raw = window.weatherAlertsData;
+            if (Array.isArray(raw)) return raw;
+            if (raw && typeof raw === 'object') return Object.values(raw);
+            return [];
+        };
 
         // Severity helpers
-        const isSevere = a => a.rain_chance >= 80 || /typhoon|storm|hurricane/i.test(a.condition);
-        const isStrong = a => a.rain_chance >= 65 || /heavy rain|downpour|thunder/i.test(a.condition);
+        const isSevere = a => a && (Number(a.rain_chance) >= 80 || /typhoon|storm|hurricane/i.test(String(a.condition || '')));
+        const isStrong = a => a && (Number(a.rain_chance) >= 65 || /heavy rain|downpour|thunder/i.test(String(a.condition || '')));
 
         function severityMeta(alert) {
             if (isSevere(alert)) return {
@@ -1876,18 +1905,49 @@
             };
         }
 
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         function buildModal() {
+            const body = getBody();
+            const headerIcon = getHeaderIcon();
             if (!body) return;
+            const alerts = getAlerts();
 
             // Update header icon to red if any severe
-            if (alerts.some(isSevere)) {
-                headerIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400';
-                headerIcon.innerHTML = '<i class="bi bi-hurricane"></i>';
+            if (headerIcon) {
+                if (alerts.some(isSevere)) {
+                    headerIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400';
+                    headerIcon.innerHTML = '<i class="bi bi-hurricane"></i>';
+                } else {
+                    headerIcon.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400';
+                    headerIcon.innerHTML = '<i class="bi bi-cloud-rain-fill"></i>';
+                }
+            }
+
+            if (!alerts.length) {
+                body.innerHTML = `
+                    <div class="py-12 text-center text-sm text-[#718076] dark:text-[#9baaa1]">
+                        <i class="bi bi-sun text-3xl text-amber-500 block mb-2"></i>
+                        No weather alerts found for upcoming reservations.
+                    </div>
+                `;
+                return;
             }
 
             // Group by date
             const byDate = {};
-            alerts.forEach(a => { (byDate[a.date] = byDate[a.date] || []).push(a); });
+            alerts.forEach(a => {
+                if (a && a.date) {
+                    (byDate[a.date] = byDate[a.date] || []).push(a);
+                }
+            });
 
             const today    = new Date().toISOString().split('T')[0];
             const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -1895,21 +1955,21 @@
             const fragment = document.createDocumentFragment();
 
             Object.entries(byDate).forEach(([date, dateAlerts]) => {
-                const first = dateAlerts[0];
+                const first = dateAlerts[0] || {};
                 const isToday    = date === today;
                 const isTomorrow = date === tomorrow;
-                const dayLabel   = isToday ? 'Today' : (isTomorrow ? 'Tomorrow' : first.day_name);
+                const dayLabel   = isToday ? 'Today' : (isTomorrow ? 'Tomorrow' : (first.day_name || ''));
                 const hasSevere  = dateAlerts.some(isSevere);
 
                 // Date section header
                 const section = document.createElement('div');
-                section.className = 'space-y-2';
+                section.className = 'space-y-3';
 
                 const dateRow = document.createElement('div');
                 dateRow.className = 'flex items-center gap-2 mb-1';
                 dateRow.innerHTML = `
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">${dayLabel}</span>
-                    <span class="text-xs text-[#9baaa1] dark:text-[#6b7876]">${first.date_label}</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-[#718076] dark:text-[#9baaa1]">${escapeHtml(dayLabel)}</span>
+                    <span class="text-xs text-[#9baaa1] dark:text-[#6b7876]">${escapeHtml(first.date_label || date)}</span>
                     ${hasSevere ? '<span class="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-950/40 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400"><i class="bi bi-exclamation-triangle-fill text-[9px]"></i> SEVERE</span>' : ''}
                 `;
                 section.appendChild(dateRow);
@@ -1920,62 +1980,67 @@
                     const tempStr   = alert.max_temp_c != null
                         ? `${Math.round(alert.max_temp_c)}°/${Math.round(alert.min_temp_c ?? alert.max_temp_c)}°C`
                         : '';
+                    const bookerName = escapeHtml(alert.booker_name || 'Guest');
+                    const condition  = escapeHtml(alert.condition || 'Rain');
+                    const rainChance = Number(alert.rain_chance || 0);
+                    const resId      = escapeHtml(alert.reservation_id);
+                    const sessionLbl = escapeHtml(alert.session_label || '');
 
                     const card = document.createElement('div');
-                    card.className = `rounded-xl border ${meta.border} ${meta.bg} p-4`;
+                    card.className = `rounded-2xl border ${meta.border} ${meta.bg} p-4 shadow-2xs`;
                     card.innerHTML = `
                         <div class="flex items-start gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base ${meta.iconColor}">
                                 ${alert.icon
-                                    ? `<img src="${alert.icon}" alt="${alert.condition}" class="h-8 w-8 drop-shadow-sm" loading="lazy">`
+                                    ? `<img src="${alert.icon}" alt="${condition}" class="h-8 w-8 drop-shadow-sm" loading="lazy">`
                                     : `<i class="bi ${meta.icon}"></i>`}
                             </span>
                             <div class="flex-1 min-w-0">
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1">
-                                    <span class="font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">#${alert.reservation_id}</span>
+                                    <span class="font-bold text-sm text-[#183d28] dark:text-[#e8f5e9]">#${resId}</span>
                                     <span class="text-[#718076] dark:text-[#9baaa1] text-xs">·</span>
-                                    <span class="font-semibold text-sm text-[#374151] dark:text-[#d1fae5] truncate max-w-[160px]">${alert.booker_name}</span>
+                                    <span class="font-semibold text-sm text-[#374151] dark:text-[#d1fae5] truncate max-w-[160px]">${bookerName}</span>
                                     <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.pill}">
-                                        <i class="bi bi-droplet-fill text-[9px]"></i>${alert.rain_chance}% rain
+                                        <i class="bi bi-droplet-fill text-[9px]"></i>${rainChance}% rain
                                     </span>
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${meta.badgeColor}">${meta.label}</span>
-                                    ${alert.session_label ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-950/40 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-400"><i class="bi bi-clock text-[9px]"></i>${alert.session_label}</span>` : ''}
+                                    ${sessionLbl ? `<span class="inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-950/40 px-2 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-400"><i class="bi bi-clock text-[9px]"></i>${sessionLbl}</span>` : ''}
                                 </div>
                                 <div class="text-xs text-[#718076] dark:text-[#9baaa1] space-y-0.5">
-                                    <p class="m-0"><i class="bi bi-cloud-fill mr-1"></i>${alert.condition}${tempStr ? ' · ' + tempStr : ''}</p>
-                                    <p class="m-0"><i class="bi bi-building mr-1"></i>${amenities}</p>
+                                    <p class="m-0"><i class="bi bi-cloud-fill mr-1"></i>${condition}${tempStr ? ' · ' + tempStr : ''}</p>
+                                    <p class="m-0"><i class="bi bi-building mr-1"></i>${escapeHtml(amenities)}</p>
                                 </div>
                                 ${meta.suggestion ? `
-                                <div class="mt-2.5 rounded-lg border border-red-200/80 dark:border-red-500/15 bg-white/60 dark:bg-black/20 p-2.5">
+                                <div class="mt-2.5 rounded-xl border border-red-200/80 dark:border-red-500/15 bg-white/70 dark:bg-black/30 p-3">
                                     <p class="m-0 text-xs font-semibold text-red-700 dark:text-red-400 mb-1">
                                         <i class="bi bi-exclamation-triangle-fill mr-1"></i>Severe weather — guest may not be able to proceed
                                     </p>
-                                    <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1] mb-2">
+                                    <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1] mb-2.5">
                                         Consider sending a reschedule request via SMS so the guest can pick a safer date.
                                     </p>
                                     <button type="button"
-                                        class="weather-alert-resched-btn inline-flex items-center gap-1.5 rounded-lg border border-red-300/80 bg-red-600 hover:bg-red-700 active:bg-red-800 dark:bg-red-700 dark:hover:bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer shadow-sm"
-                                        data-reservation-id="${alert.reservation_id}"
-                                        data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
-                                        data-date-label="${alert.date_label}"
-                                        data-condition="${alert.condition.replace(/"/g,'&quot;')}"
-                                        data-session-label="${alert.session_label || ''}"
+                                        class="weather-alert-resched-btn inline-flex items-center gap-1.5 rounded-xl border border-red-300/80 bg-red-600 hover:bg-red-700 active:bg-red-800 dark:bg-red-700 dark:hover:bg-red-600 px-3.5 py-1.5 text-xs font-bold text-white transition-all cursor-pointer shadow-xs active:scale-95"
+                                        data-reservation-id="${resId}"
+                                        data-booker-name="${bookerName}"
+                                        data-date-label="${escapeHtml(alert.date_label || date)}"
+                                        data-condition="${condition}"
+                                        data-session-label="${sessionLbl}"
                                         title="Send reschedule SMS to guest">
                                         <i class="bi bi-send-fill text-[10px]"></i>
                                         Send Reschedule Request via SMS
                                     </button>
                                 </div>` : `
-                                <div class="mt-2 rounded-lg border border-[#e5e9e6] dark:border-white/10 bg-white/60 dark:bg-black/20 p-2.5">
+                                <div class="mt-2.5 rounded-xl border border-[#e5e9e6] dark:border-white/10 bg-white/70 dark:bg-black/30 p-2.5">
                                     <p class="m-0 text-[11px] text-[#718076] dark:text-[#9baaa1]">
                                         <i class="bi bi-info-circle mr-1"></i>Heads up — rain is forecast but the event can likely proceed. Monitor the weather closer to the date.
                                     </p>
                                     <button type="button"
-                                        class="weather-alert-resched-btn mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-amber-300/80 bg-white dark:bg-[#242a26] hover:bg-amber-50 dark:hover:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 transition-colors cursor-pointer"
-                                        data-reservation-id="${alert.reservation_id}"
-                                        data-booker-name="${alert.booker_name.replace(/"/g,'&quot;')}"
-                                        data-date-label="${alert.date_label}"
-                                        data-condition="${alert.condition.replace(/"/g,'&quot;')}"
-                                        data-session-label="${alert.session_label || ''}"
+                                        class="weather-alert-resched-btn mt-2 inline-flex items-center gap-1.5 rounded-xl border border-amber-300/80 bg-white dark:bg-[#242a26] hover:bg-amber-50 dark:hover:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                        data-reservation-id="${resId}"
+                                        data-booker-name="${bookerName}"
+                                        data-date-label="${escapeHtml(alert.date_label || date)}"
+                                        data-condition="${condition}"
+                                        data-session-label="${sessionLbl}"
                                         title="Optionally send a reschedule request">
                                         <i class="bi bi-send text-[10px]"></i>
                                         Suggest Reschedule (Optional)
@@ -1995,62 +2060,121 @@
 
             // Bind reschedule buttons → open the existing send-reschedule modal
             body.querySelectorAll('.weather-alert-resched-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const resId     = btn.dataset.reservationId;
-                    const booker    = btn.dataset.bookerName;
-                    const dateLbl   = btn.dataset.dateLabel;
-                    const condition = btn.dataset.condition;
-
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const resId = btn.dataset.reservationId;
                     closeModal();
 
-                    // Pre-fill and open the existing send-reschedule-request modal
-                    // The existing modal uses #requestReschedModal, #requestReschedResId etc.
+                    // Find reservation in window.staffReservationData (supports Array or Object map)
+                    const rawData = window.staffReservationData;
+                    const resList = Array.isArray(rawData) ? rawData : (rawData && typeof rawData === 'object' ? Object.values(rawData) : []);
+                    const foundRes = resList.find(r => String(r.id) === String(resId)) || (rawData && rawData[resId]);
+
+                    if (typeof window.openRequestReschedModal === 'function' && foundRes) {
+                        window.openRequestReschedModal(foundRes);
+                        return;
+                    }
+
                     const existingModal = document.getElementById('requestReschedModal');
                     if (existingModal) {
-                        const resIdEl  = document.getElementById('requestReschedResId');
-                        const msgEl    = document.getElementById('requestReschedMessage');
-                        const titleEl  = document.getElementById('requestReschedModalTitle');
-                        const nameEl   = document.getElementById('requestReschedBookerName');
+                        const idInput = document.getElementById('sendReschedReservationId');
+                        const bookerEl = document.getElementById('sendReschedBookerName');
+                        const badgeEl = document.getElementById('sendReschedIdBadge');
+                        const dateEl = document.getElementById('sendReschedCurrentDate');
+                        const sessionEl = document.getElementById('sendReschedSession');
+                        const messageInput = document.getElementById('sendReschedMessage');
 
-                        if (resIdEl)  resIdEl.value = resId;
-                        if (titleEl)  titleEl.textContent = `Send Reschedule Request — #${resId}`;
-                        if (nameEl)   nameEl.textContent  = booker;
-                        if (msgEl) {
+                        if (idInput) idInput.value = resId;
+                        if (bookerEl) bookerEl.textContent = btn.dataset.bookerName || 'Guest';
+                        if (badgeEl) badgeEl.textContent = `#${resId}`;
+                        if (dateEl) dateEl.textContent = btn.dataset.dateLabel || '—';
+                        if (sessionEl) sessionEl.textContent = btn.dataset.sessionLabel || 'Daytime';
+                        if (messageInput) {
                             const sessionNote = btn.dataset.sessionLabel ? ` (${btn.dataset.sessionLabel} session)` : '';
-                            msgEl.value = `Dear guest, due to severe weather (${condition}) forecast on ${dateLbl}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
+                            messageInput.value = `Dear guest, due to weather (${btn.dataset.condition}) forecast on ${btn.dataset.dateLabel}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
                         }
 
                         existingModal.classList.add('is-open');
                         existingModal.classList.remove('hidden');
+                        existingModal.style.display = 'flex';
                         existingModal.setAttribute('aria-hidden', 'false');
                         document.body.classList.add('overflow-hidden');
-                    } else {
-                        // Fallback: trigger the existing table row's reschedule button if visible
-                        const tableBtn = document.querySelector(`[data-reservation-id="${resId}"] #detailRequestReschedBtn, #detailRequestReschedBtn[data-reservation-id="${resId}"]`);
-                        if (tableBtn) tableBtn.click();
-                        else alert(`Open reservation #${resId} and use the Reschedule button to send an SMS request.`);
                     }
                 });
             });
         }
 
         function openModal() {
-            buildModal();
+            const modal = getModal();
+            if (!modal) return;
+            try {
+                buildModal();
+            } catch (err) {
+                console.error('Error building weather alert modal:', err);
+            }
+            modal.classList.add('is-open');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('overflow-hidden');
         }
+
         function closeModal() {
+            const modal = getModal();
+            if (!modal) return;
+            modal.classList.remove('is-open');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
             modal.style.display = 'none';
             modal.setAttribute('aria-hidden', 'true');
-            document.body.classList.remove('overflow-hidden');
+            const anyOpen = document.querySelectorAll('.modal.is-open, .guest-modal.is-open, [id$="Modal"].is-open').length > 0;
+            if (!anyOpen) {
+                document.body.classList.remove('overflow-hidden');
+            }
         }
 
-        stripBtn.addEventListener('click', openModal);
-        backdrop.addEventListener('click', closeModal);
-        closeBtn.addEventListener('click', closeModal);
-        closeBtnF.addEventListener('click', closeModal);
-        document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
+        // Global functions always reference current active modal
+        window.openWeatherAlertModal = openModal;
+        window.closeWeatherAlertModal = closeModal;
+
+        // Register document-level listeners ONCE
+        if (!window.__weatherAlertModalInitialized) {
+            window.__weatherAlertModalInitialized = true;
+
+            document.addEventListener('click', function (e) {
+                const openTrigger = e.target.closest('#weatherAlertStripBtn, [data-open-weather-modal="true"]');
+                if (openTrigger) {
+                    e.preventDefault();
+                    if (typeof window.openWeatherAlertModal === 'function') {
+                        window.openWeatherAlertModal();
+                    }
+                    return;
+                }
+
+                const closeTrigger = e.target.closest('[data-close-weather-modal="true"]');
+                if (closeTrigger) {
+                    const currentModal = document.getElementById('weatherAlertModal');
+                    if (currentModal && currentModal.classList.contains('is-open')) {
+                        e.preventDefault();
+                        if (typeof window.closeWeatherAlertModal === 'function') {
+                            window.closeWeatherAlertModal();
+                        }
+                    }
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    const currentModal = document.getElementById('weatherAlertModal');
+                    if (currentModal && currentModal.classList.contains('is-open')) {
+                        if (typeof window.closeWeatherAlertModal === 'function') {
+                            window.closeWeatherAlertModal();
+                        }
+                    }
+                }
+            });
+        }
     })();
     </script>
 

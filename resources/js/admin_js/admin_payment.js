@@ -46,13 +46,13 @@ window.AppPage['admin_payment'] = function () {
 
     /** Pagination & Filter state */
     const PAGE_SIZE = 100;
-    let currentPage = 1;
+    let currentPage = window.__adminPaymentCurrentPage || 1;
     let matchedRows = [];
 
     // Applied Date & Session State
-    let appliedStartDate = '';
-    let appliedEndDate   = '';
-    let appliedSession   = '';
+    let appliedStartDate = modalStartDateInput?.value?.trim() || '';
+    let appliedEndDate   = modalEndDateInput?.value?.trim() || '';
+    let appliedSession   = modalSessionSelect?.value || '';
 
     // ─── Quick Presets Helpers ───────────────────────────────────────────────
 
@@ -232,12 +232,13 @@ window.AppPage['admin_payment'] = function () {
         return [1, '...', current - 1, current, current + 1, '...', total];
     }
 
-    function goToPage(page) {
+    function goToPage(page, scrollReset = true) {
         const totalPages = Math.max(1, Math.ceil(matchedRows.length / PAGE_SIZE));
         if (page < 1 || page > totalPages) return;
         currentPage = page;
+        window.__adminPaymentCurrentPage = page;
         applyDisplay();
-        if (tableContainer) {
+        if (scrollReset && tableContainer) {
             tableContainer.scrollTop = 0;
         }
     }
@@ -366,6 +367,9 @@ window.AppPage['admin_payment'] = function () {
 
         if (resetPage) {
             currentPage = 1;
+            window.__adminPaymentCurrentPage = 1;
+        } else if (window.__adminPaymentCurrentPage) {
+            currentPage = window.__adminPaymentCurrentPage;
         }
 
         // Update header total count badge
@@ -402,6 +406,7 @@ window.AppPage['admin_payment'] = function () {
     });
 
     function clearAllFilters() {
+        window.__adminPaymentCurrentPage = 1;
         if (searchInput)   searchInput.value   = '';
         if (typeSelect)    typeSelect.value    = '';
         if (staffSelect)   staffSelect.value   = '';
@@ -422,8 +427,12 @@ window.AppPage['admin_payment'] = function () {
 
     // ─── Init ────────────────────────────────────────────────────────────────
     updateTriggerButtonUI();
-    applyFilters(true);
+    applyFilters(false);
 };
+
+window.addEventListener('spa:leaving', () => {
+    window.__adminPaymentCurrentPage = 1;
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof window.AppPage?.['admin_payment'] === 'function') {

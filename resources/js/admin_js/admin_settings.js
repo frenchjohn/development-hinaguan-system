@@ -10,6 +10,9 @@ window.AppPage['admin_settings'] = function () {
     menuCards.forEach(card => {
         card.addEventListener('click', () => {
             const targetId = card.getAttribute('data-target');
+            if (targetId) {
+                try { sessionStorage.setItem('adminSettingsActiveSection', targetId); } catch (e) {}
+            }
 
             // Hide menu
             if (settingsMenu) {
@@ -30,6 +33,8 @@ window.AppPage['admin_settings'] = function () {
     // Handle back button clicks
     backButtons.forEach(backBtn => {
         backBtn.addEventListener('click', () => {
+            try { sessionStorage.removeItem('adminSettingsActiveSection'); } catch (e) {}
+
             // Hide all content sections
             contentSections.forEach(section => {
                 section.classList.add('admin-settings__content--hidden');
@@ -41,6 +46,21 @@ window.AppPage['admin_settings'] = function () {
             }
         });
     });
+
+    // Restore previously active section if any
+    try {
+        const savedSection = sessionStorage.getItem('adminSettingsActiveSection');
+        if (savedSection) {
+            const targetContent = document.getElementById(savedSection);
+            if (targetContent && settingsMenu) {
+                settingsMenu.classList.add('admin-settings__menu--hidden');
+                contentSections.forEach(section => {
+                    section.classList.add('admin-settings__content--hidden');
+                });
+                targetContent.classList.remove('admin-settings__content--hidden');
+            }
+        }
+    } catch (e) {}
 
     // Park Activities management controls.
     const addActivityBtn = document.getElementById('addActivityBtn');

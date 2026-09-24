@@ -261,8 +261,18 @@ window.AppPage['staff_reports'] = function () {
         const { signal } = currentAbortController;
 
         const dataContainer = document.getElementById('reportsDataContainer');
-        if (dataContainer) {
-            dataContainer.classList.add('opacity-50', 'pointer-events-none');
+        const refreshIcon = document.getElementById('refreshReportsIcon');
+        const refreshBtnText = document.getElementById('refreshReportsBtnText');
+        const refreshBtn = document.getElementById('manualRefreshReportsBtn');
+
+        if (refreshIcon) {
+            refreshIcon.classList.add('animate-spin');
+        }
+        if (refreshBtnText) {
+            refreshBtnText.textContent = 'Updating...';
+        }
+        if (refreshBtn) {
+            refreshBtn.classList.add('pointer-events-none', 'opacity-75');
         }
 
         fetch(url, {
@@ -371,7 +381,20 @@ window.AppPage['staff_reports'] = function () {
             console.error('Error fetching filtered reports:', err);
         })
         .finally(() => {
-            if (dataContainer && (!currentAbortController || !currentAbortController.signal.aborted)) {
+            const refreshIcon = document.getElementById('refreshReportsIcon');
+            const refreshBtnText = document.getElementById('refreshReportsBtnText');
+            const refreshBtn = document.getElementById('manualRefreshReportsBtn');
+
+            if (refreshIcon) {
+                refreshIcon.classList.remove('animate-spin');
+            }
+            if (refreshBtnText) {
+                refreshBtnText.textContent = 'Refresh';
+            }
+            if (refreshBtn) {
+                refreshBtn.classList.remove('pointer-events-none', 'opacity-75');
+            }
+            if (dataContainer) {
                 dataContainer.classList.remove('opacity-50', 'pointer-events-none');
             }
         });
@@ -607,6 +630,13 @@ window.AppPage['staff_reports'] = function () {
             if (e.target.closest('#openHandoverModalBtn') || e.target.closest('.open-handover-trigger')) {
                 e.preventDefault();
                 window.__staffReportsController?.openHandoverModal();
+                return;
+            }
+
+            // Manual Refresh trigger
+            if (e.target.closest('#manualRefreshReportsBtn')) {
+                e.preventDefault();
+                window.__staffReportsController?.fetchAndSwapReports(window.location.href, false);
                 return;
             }
         });

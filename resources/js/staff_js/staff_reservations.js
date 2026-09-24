@@ -69,6 +69,7 @@ window.AppPage['staff_reservations'] = function () {
         rows = Array.from(tableBody?.querySelectorAll('.reservation-row') ?? []);
     };
     const searchInput = document.getElementById('reservationSearchInput');
+    const searchClearBtn = document.getElementById('reservationSearchClearBtn');
     const sortSelect = document.getElementById('reservationSortSelect');
     const statusFilter = document.getElementById('reservationStatusFilter');
     const checkInFrom = document.getElementById('reservationDateFrom');
@@ -5847,6 +5848,9 @@ window.AppPage['staff_reservations'] = function () {
 
     const applyFilters = () => {
         const query = searchInput?.value.trim().toLowerCase() || '';
+        if (searchClearBtn) {
+            searchClearBtn.classList.toggle('hidden', !query);
+        }
         const sortValue = sortSelect?.value || 'date-asc';
         const statusValue = statusFilter?.value || 'all';
         const checkInFromValue = checkInFrom?.value || '';
@@ -5911,11 +5915,30 @@ window.AppPage['staff_reservations'] = function () {
 
     clearButton?.addEventListener('click', () => {
         if (searchInput) searchInput.value = '';
+        if (searchClearBtn) searchClearBtn.classList.add('hidden');
         if (sortSelect) sortSelect.value = 'date-asc';
         if (statusFilter) statusFilter.value = 'all';
         if (checkInFrom) checkInFrom.value = '';
         if (checkInTo) checkInTo.value = '';
         applyFilters();
+    });
+
+    searchClearBtn?.addEventListener('click', () => {
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        if (searchClearBtn) searchClearBtn.classList.add('hidden');
+        applyFilters();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+        if ((isCmdOrCtrl && e.key.toLowerCase() === 'k') || (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName))) {
+            e.preventDefault();
+            searchInput?.focus();
+            searchInput?.select();
+        }
     });
 
     filterToggle?.addEventListener('click', () => {
@@ -6064,6 +6087,7 @@ window.AppPage['staff_reservations'] = function () {
             document.body.classList.add('overflow-hidden');
         }
     };
+    window.openRequestReschedModal = openRequestReschedModal;
 
     const closeRequestReschedModal = () => {
         if (requestReschedModal) {
