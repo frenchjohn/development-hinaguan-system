@@ -3,17 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\AdminAccount;
 use App\Models\Amenity;
+use App\Models\Announcement;
 use App\Models\ChatbotMessage;
 use App\Models\Customer;
+use App\Models\DailyWeatherShiftLog;
 use App\Models\Feedback;
+use App\Models\ParkActivity;
 use App\Models\ParkEvent;
 use App\Models\ParkRule;
 use App\Models\ParkSetting;
+use App\Models\RescheduleRequest;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
+use App\Models\ReservationCharge;
+use App\Models\ReservationEntranceFee;
 use App\Models\ReservationGuest;
 use App\Models\StaffAccount;
+use App\Models\UserActivityRead;
 use App\Services\WeatherService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -86,21 +94,32 @@ class AdminChatbotController extends Controller
 
         $adminContext = $this->getAdminContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, a friendly and professional executive intelligence assistant for administrators at Hinaguan Nature Park.\n\n"
+        $systemPrompt = "You are HinaguanBot, the intelligent, highly capable, and professional Executive Intelligence Assistant for administrators at Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
-            . "- OUTPUT ONLY THE DIRECT CONVERSATIONAL RESPONSE. Do NOT include reasoning steps, planning, internal monologue, notes, or analytical scratchpads.\n"
-            . "- NEVER output numbered analysis steps (e.g. '1. Analyze User Input:', '2. Check Knowledge Base:', '3. Formulate Response:').\n"
-            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your briefing to the administrator.\n"
-            . "- Speak naturally in clear, professional, executive-level sentences (1 to 3 concise sentences) blending names, numbers, and dates smoothly.\n"
-            . "- Understand English, Tagalog, Bisaya, and Taglish naturally.\n"
-            . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote fees, rates, operating hours, amenities, rules, and events EXACTLY as listed in the LIVE SYSTEM & DATABASE CONTEXT below. NEVER guess or invent prices.\n\n"
-            . "CORE KNOWLEDGE & CAPABILITIES:\n"
-            . "1. AUDIT & RECENT ACTIVITIES: Pinpoint who performed check-ins, checkouts, extensions, or account actions with exact reservation IDs, staff names, and timestamps.\n"
-            . "2. EXECUTIVE FINANCIALS: Provide gross revenue, collected sales, outstanding uncollected balances, today/weekly/monthly revenue, and online vs walk-in breakdowns.\n"
-            . "3. STAFF ROSTER: Report total staff, active/banned status, and staff member details.\n"
-            . "4. DEMOGRAPHICS MINING: Report Kids (0-12), Teens (13-17), Adults (18-59), Seniors (60+), Gender (Female/Male), and Nationality counts.\n"
-            . "5. RESERVATIONS & ON-SITE OCCUPANCY: Report checked-in reservations, departures, and look up any specific reservation by ID or name.\n"
-            . "6. LIVE PARK SETTINGS, RULES & RATES: Current entrance fees, pool rates, operating hours, active park rules, and park events directly from the database.\n\n"
+            . "- OUTPUT ONLY YOUR DIRECT CONVERSATIONAL BRIEFING to the administrator. Never output reasoning steps, thinking processes, chain-of-thought, scratchpads, or draft prefixes.\n"
+            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your briefing.\n"
+            . "- Maintain an articulate, executive, and warm tone (1 to 3 concise flowing sentences for standard questions, or structured bulleted reports when detailed breakdowns are requested).\n"
+            . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote revenue figures, staff records, guest counts, rates, and audit logs EXACTLY as provided in the LIVE SYSTEM & DATABASE CONTEXT below. Never guess or fabricate information.\n\n"
+            . "DATABASE COMPREHENSION & PARK LOGIC:\n"
+            . "You have comprehensive visibility across all park database tables (activity_logs, admin_accounts, amenities, amenities_benefits, chatbot_messages, customers, daily_weather_shift_logs, feedbacks, park_activities, park_events, park_rules, park_settings, reschedule_requests, reservations, reservation_amenities, reservation_charges, reservation_entrance_fees, reservation_guests, sms_notifications, staff_accounts, user_activity_reads):\n"
+            . "1. EXECUTIVE FINANCIALS: Real-time calculation of gross revenue, total collected revenue, unpaid balances, online vs walk-in splits, and daily/weekly/monthly trends.\n"
+            . "2. AUDIT TRAIL (activity_logs): Detailed records of who (staff/admin) performed check-ins, checkouts, walk-ins, cancellations, extensions, or account modifications with exact timestamps.\n"
+            . "3. STAFF ROSTER (staff_accounts & admin_accounts): Active vs. banned staff, employee directory, and admin management accounts (passwords and hashes are strictly safeguarded and never exposed).\n"
+            . "4. RESERVATIONS & OCCUPANCY: Status lifecycles ('pending', 'Confirmed', 'Checked In', 'Checked Out', 'Cancelled'), day/night slots, multi-day continuous stays, guest lists, and booked amenities.\n"
+            . "5. RESCHEDULE REQUESTS (reschedule_requests): Date change requests from guests with original date, requested date, status (pending/approved/declined), and reasons.\n"
+            . "6. EXTRA CHARGES & PENALTIES (reservation_charges): Additional fees added for extra mattresses, damages, corkage, late checkouts, or extra hours.\n"
+            . "7. ANNOUNCEMENTS & SMS (sms_notifications): SMS broadcasts sent to visitors via PhilSMS with recipient counts, categories, and delivery statuses.\n"
+            . "8. DEMOGRAPHICS MINING: Real-time demographic distribution (Kids 0-12, Teens 13-17, Adults 18-59, Seniors 60+, Gender, Foreigners vs Locals).\n"
+            . "9. AMENITY INCLUSIONS: Cottages & Payags do NOT include free entrance or free pool access; A-Houses include FREE entrance and pool access for 2; Function Hall includes free group entrance & pool.\n"
+            . "10. PARK SETTINGS, RULES & EVENTS: Operating hours, pool/gate fees, Brenda Mage availability, and scheduled events.\n\n"
+            . "LINGUISTIC FLUENCY (TYPOS, GRAMMAR & MULTILINGUAL):\n"
+            . "- Effortlessly interpret misspelled words, typographical errors, and phonetic spelling (e.g., 'resched', 'boking', 'cotag', 'pyag', 'chek in', 'chekout', 'balans', 'kita', 'demografic').\n"
+            . "- Forgive grammatical errors, colloquial expressions, and sentence fragments seamlessly.\n"
+            . "- Understand Bisaya/Cebuano, Tagalog, Taglish, and English naturally.\n"
+            . "- MATCH THE USER'S LANGUAGE:\n"
+            . "  * If the administrator asks in Bisaya / Cebuano (e.g., 'pila tanan gross sales', 'kinsa ang staff nga naka-ban', 'naa bay nagpa-resched', 'pila kabuok nag check out'), reply naturally and professionally in Bisaya!\n"
+            . "  * If the administrator asks in Tagalog / Taglish (e.g., 'magkano kabuuang revenue', 'sino ang mga staff', 'may mga pending ba na resched', 'paki-check audit logs'), reply naturally and professionally in Tagalog/Taglish!\n"
+            . "  * If the administrator asks in English, reply in professional executive English!\n\n"
             . "=== LIVE SYSTEM & DATABASE CONTEXT ===\n"
             . $adminContext;
 
@@ -482,6 +501,7 @@ class AdminChatbotController extends Controller
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
 
+        // BASELINE: Official Park Settings & Live Rates from park_settings table
         $settings = ParkSetting::first();
         if ($settings) {
             $isOpen = ($settings->park_status ?? 'open') === 'open';
@@ -510,227 +530,518 @@ class AdminChatbotController extends Controller
 
             $brendaStatus = $settings->brenda_available ? "YES (Brenda Mage is available / at the park)" : "NO (Brenda Mage is not available today)";
 
-            $context .= "\n[OFFICIAL PARK SETTINGS & LIVE RATES (SOURCE OF TRUTH FROM DATABASE)]:\n"
+            $context .= "\n[OFFICIAL PARK SETTINGS & LIVE RATES (park_settings)]:\n"
                 . "- Park Operational Status: {$statusStr}\n"
-                . "- General Park Gate Hours: {$openTime} to {$closeTime}\n"
-                . "- Daytime Session Hours: {$dayStart} - {$dayEnd}\n"
-                . "  * Adult Entrance Fee: ₱{$dayAdult}\n"
-                . "  * Child (12 & below) Entrance Fee: {$dayChildStr}\n"
-                . "- Nighttime Session Hours: {$nightStart} - {$nightEnd}\n"
-                . "  * Adult Entrance Fee: ₱{$nightAdult}\n"
-                . "  * Child (12 & below) Entrance Fee: {$nightChildStr}\n"
-                . "- Swimming Pool Access Fees:\n"
-                . "  * Day Swim Pool: ₱{$dayPool} per person\n"
-                . "  * Night Swim Pool: ₱{$nightPool} per person\n"
-                . "- Brenda Mage Availability: {$brendaStatus}\n"
-                . "- Official Contact Number: " . ($settings->contact_number ?: '0985-323-9532') . "\n"
-                . "- Official Email: " . ($settings->email ?: 'parkhinaguan@gmail.com') . "\n";
+                . "- Gate Hours: {$openTime} to {$closeTime}\n"
+                . "- Daytime Session Hours: {$dayStart} - {$dayEnd} | Adult: ₱{$dayAdult}, Child: {$dayChildStr}\n"
+                . "- Nighttime Session Hours: {$nightStart} - {$nightEnd} | Adult: ₱{$nightAdult}, Child: {$nightChildStr}\n"
+                . "- Pool Access Rates: Day: ₱{$dayPool}/person, Night: ₱{$nightPool}/person\n"
+                . "- Brenda Mage Presence: {$brendaStatus}\n"
+                . "- Official Contact: " . ($settings->contact_number ?: '0985-323-9532') . " | Email: " . ($settings->email ?: 'parkhinaguan@gmail.com') . "\n";
         }
 
-        // 1. RECENT ACTIVITY AUDIT TRAIL (LATEST 30)
-        $recentLogs = ActivityLog::orderByDesc('created_at')->take(30)->get();
-        $context .= "\n[AUDIT & RECENT ACTIVITIES]:\n";
-        if ($recentLogs->isNotEmpty()) {
-            $latestCheckin = $recentLogs->firstWhere('activity_type', 'check_in') ?: $recentLogs->firstWhere('activity_type', 'walkin_created');
-            $latestCheckout = $recentLogs->firstWhere('activity_type', 'check_out');
-            $latestExtension = $recentLogs->first(fn ($l) => in_array($l->activity_type, ['stay_extended', 'amenity_extended']));
+        // EXECUTIVE OPERATIONAL & FINANCIAL KPI SNAPSHOT (Always present)
+        $checkedInCount = Reservation::where('status', 'Checked In')->count();
+        $totalCheckedInGuests = (int) Reservation::where('status', 'Checked In')->sum('number_of_guests');
+        $dueCheckoutsCount = Reservation::where('status', 'Checked In')
+            ->where(function ($q) use ($todayStr) {
+                $q->whereDate('end_date', $todayStr)
+                  ->orWhere(function ($q2) use ($todayStr) {
+                      $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                  });
+            })->count();
+        $pendingCount = Reservation::where('status', 'pending')->count();
+        $totalGross = (float) Reservation::sum('total_amount');
+        $totalCollected = (float) Reservation::sum('amount_paid');
+        $totalUnpaidBalance = (float) Reservation::sum('remaining_balance');
+        $todayRevenue = (float) Reservation::whereDate('reservation_date', $todayStr)
+            ->orWhereDate('created_at', $todayStr)
+            ->sum('amount_paid');
 
-            if ($latestCheckin) {
-                $time = $latestCheckin->created_at ? $latestCheckin->created_at->format('M d, Y g:i A') : 'N/A';
-                $context .= "★ MOST RECENT CHECK-IN: Reservation #{$latestCheckin->reservation_id} on {$time} by Staff '{$latestCheckin->actor_name}' ({$latestCheckin->description})\n";
+        $context .= "\n[EXECUTIVE KPI SNAPSHOT]:\n"
+            . "- Active Checked-in Reservations: {$checkedInCount} ({$totalCheckedInGuests} guests currently on site)\n"
+            . "- Due for Departure Today: {$dueCheckoutsCount} reservations\n"
+            . "- Pending Online Bookings: {$pendingCount} awaiting confirmation\n"
+            . "- Financial Status: Collected Today: ₱" . number_format($todayRevenue, 2) . " | Total All-Time Collected: ₱" . number_format($totalCollected, 2) . " (Gross: ₱" . number_format($totalGross, 2) . ", Outstanding Balance: ₱" . number_format($totalUnpaidBalance, 2) . ")\n";
+
+        // INTELLIGENT TOPIC DETECTION FOR ADMIN
+        $topics = $this->detectAdminTopics($message);
+
+        // 1. SPECIFIC ENTITY SEARCH (Reservation, Customer, or Staff/Admin account by ID or Name)
+        if (!empty($topics['specific_entity']) || !empty($topics['search_terms'])) {
+            $matchedReservations = collect();
+
+            if (!empty($topics['specific_id'])) {
+                $foundRes = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges', 'rescheduleRequests'])
+                    ->find($topics['specific_id']);
+                if ($foundRes) {
+                    $matchedReservations->push($foundRes);
+                }
             }
-            if ($latestCheckout) {
-                $time = $latestCheckout->created_at ? $latestCheckout->created_at->format('M d, Y g:i A') : 'N/A';
-                $context .= "★ MOST RECENT CHECK-OUT: Reservation #{$latestCheckout->reservation_id} on {$time} by Staff '{$latestCheckout->actor_name}' ({$latestCheckout->description})\n";
+
+            if (!empty($topics['search_terms'])) {
+                foreach ($topics['search_terms'] as $term) {
+                    $found = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges', 'rescheduleRequests'])
+                        ->where(function ($q) use ($term) {
+                            $q->where('booker_name', 'like', "%{$term}%")
+                              ->orWhere('phone', 'like', "%{$term}%")
+                              ->orWhere('email', 'like', "%{$term}%");
+                        })
+                        ->take(5)
+                        ->get();
+                    $matchedReservations = $matchedReservations->merge($found);
+                }
             }
-            if ($latestExtension) {
-                $time = $latestExtension->created_at ? $latestExtension->created_at->format('M d, Y g:i A') : 'N/A';
-                $context .= "★ MOST RECENT EXTENSION: Reservation #{$latestExtension->reservation_id} on {$time} by Staff '{$latestExtension->actor_name}' ({$latestExtension->description})\n";
-            }
 
-            $context .= "--- Recent Log Feed ---\n";
-            foreach ($recentLogs->take(15) as $l) {
-                $t = $l->created_at ? $l->created_at->format('M d g:i A') : 'N/A';
-                $res = $l->reservation_id ? " [Res #{$l->reservation_id}]" : "";
-                $context .= "- [{$t}]{$res} {$l->description} | By: {$l->actor_name} ({$l->actor_role})\n";
-            }
-        } else {
-            $context .= "No activity logs recorded yet.\n";
-        }
+            $matchedReservations = $matchedReservations->unique('id');
 
-        // 2. CURRENTLY CHECKED-IN RESERVATIONS
-        $checkedIn = Reservation::with(['reservationAmenities.amenity'])
-            ->where('status', 'Checked In')
-            ->orderByDesc('check_in')
-            ->get();
+            if ($matchedReservations->isNotEmpty()) {
+                $context .= "\n[CONNECTED DATABASE RECORDS - MATCHED RESERVATIONS]:\n";
+                foreach ($matchedReservations as $r) {
+                    $ams = $r->reservationAmenities->map(fn ($ra) => ($ra->amenity?->amenities_name ?? 'Amenity') . " [{$ra->status}]")->implode(', ');
+                    $guests = $r->reservationGuests->map(fn ($g) => $g->customer ? "{$g->customer->first_name} {$g->customer->last_name} (Age " . ($g->customer->age ?? 'N/A') . ", {$g->customer->gender})" : 'Guest')->implode(', ');
+                    $charges = $r->reservationCharges->map(fn ($rc) => "{$rc->description}: ₱" . number_format($rc->amount, 2))->implode('; ');
+                    $rescheds = $r->rescheduleRequests->map(fn ($rq) => "Date: {$rq->requested_date} [Status: {$rq->status}]")->implode('; ');
+                    $logs = ActivityLog::where('reservation_id', $r->id)->orderBy('created_at')->get();
 
-        $context .= "\n[CURRENTLY CHECKED-IN ON SITE ({$checkedIn->count()} active reservations)]:\n";
-        if ($checkedIn->isNotEmpty()) {
-            foreach ($checkedIn as $cir) {
-                $amNames = $cir->reservationAmenities->map(fn ($ra) => $ra->amenity?->amenities_name ?? 'Amenity')->implode(', ');
-                $checkInTime = $cir->check_in ? Carbon::parse($cir->check_in)->format('M d g:i A') : 'N/A';
-                $end = ($cir->end_date ?: $cir->reservation_date) . " [" . ($cir->end_slot ?: $cir->start_slot) . "]";
-                $bal = $cir->remaining_balance > 0 ? " | ⚠️ Balance: ₱" . number_format($cir->remaining_balance, 2) : " | Paid";
-                $context .= "- Reservation #{$cir->id}: {$cir->booker_name} | Checked In: {$checkInTime} | Depart: {$end} | Guests: {$cir->number_of_guests} | Paid: ₱" . number_format($cir->amount_paid, 2) . "{$bal} | Booked: " . ($amNames ?: 'None') . "\n";
-            }
-        } else {
-            $context .= "No reservations currently checked in.\n";
-        }
-
-        // 3. RECENT 15 RESERVATIONS LEDGER
-        $recentRes = Reservation::with(['reservationAmenities.amenity'])
-            ->orderByDesc('id')
-            ->take(15)
-            ->get();
-
-        $context .= "\n[RESERVATIONS LEDGER (LATEST 15)]:\n";
-        foreach ($recentRes as $r) {
-            $amList = $r->reservationAmenities->pluck('amenity.amenities_name')->filter()->implode(', ');
-            $context .= "- Reservation #{$r->id}: {$r->booker_name} | Status: {$r->status} ({$r->reservation_type}) | Date: {$r->reservation_date} [{$r->start_slot}] | Paid: ₱" . number_format($r->amount_paid, 2) . ", Balance: ₱" . number_format($r->remaining_balance, 2) . " | Amenities: " . ($amList ?: 'None') . "\n";
-        }
-
-        // 4. STAFF ROSTER
-        $staffAccounts = StaffAccount::all();
-        $activeStaff = $staffAccounts->where('ban_status', false);
-        $bannedStaff = $staffAccounts->where('ban_status', true);
-
-        $context .= "\n[STAFF DIRECTORY]:\n"
-            . "- Total Staff Accounts: {$staffAccounts->count()} (Active: {$activeStaff->count()}, Banned: {$bannedStaff->count()})\n";
-        foreach ($staffAccounts as $sa) {
-            $status = $sa->ban_status ? 'Banned' : 'Active';
-            $context .= "  * Staff #{$sa->id}: {$sa->name} ({$sa->email}) - Status: {$status}\n";
-        }
-
-        // 5. EXECUTIVE FINANCIAL METRICS
-        $allReservations = Reservation::all();
-        $totalGross = $allReservations->sum('total_amount');
-        $totalCollected = $allReservations->sum('amount_paid');
-        $totalPendingBalance = $allReservations->sum('remaining_balance');
-
-        $todayRes = Reservation::whereDate('reservation_date', $todayStr)->orWhereDate('created_at', $todayStr)->get();
-        $thisWeekRes = Reservation::whereBetween('created_at', [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()])->get();
-        $thisMonthRes = Reservation::whereMonth('created_at', $now->month)->whereYear('created_at', $now->year)->get();
-
-        $onlineCollected = $allReservations->where('reservation_type', 'online')->sum('amount_paid');
-        $walkinCollected = $allReservations->where('reservation_type', 'walk_in')->sum('amount_paid');
-
-        $context .= "\n[EXECUTIVE FINANCIALS]:\n"
-            . "- Total All-Time Collected: ₱" . number_format($totalCollected, 2) . " (Gross Expected: ₱" . number_format($totalGross, 2) . ")\n"
-            . "- Total Pending Uncollected Balance: ₱" . number_format($totalPendingBalance, 2) . "\n"
-            . "- Today's Sales: ₱" . number_format($todayRes->sum('amount_paid'), 2) . " | This Week: ₱" . number_format($thisWeekRes->sum('amount_paid'), 2) . " | This Month: ₱" . number_format($thisMonthRes->sum('amount_paid'), 2) . "\n"
-            . "- Online Sales: ₱" . number_format($onlineCollected, 2) . " | Walk-In Sales: ₱" . number_format($walkinCollected, 2) . "\n";
-
-        // 6. DEMOGRAPHICS MINING
-        $allGuests = ReservationGuest::with('customer')->get();
-        $kids = 0; $teens = 0; $adults = 0; $seniors = 0; $females = 0; $males = 0; $locals = 0; $foreigners = 0;
-
-        foreach ($allGuests as $rg) {
-            $c = $rg->customer;
-            if (!$c) continue;
-
-            if ($c->age !== null) {
-                if ($c->age <= 12) $kids++;
-                elseif ($c->age <= 17) $teens++;
-                elseif ($c->age <= 59) $adults++;
-                else $seniors++;
-            }
-            if (strtolower((string) $c->gender) === 'female') $females++;
-            else $males++;
-
-            if ($c->is_foreigner) $foreigners++;
-            else $locals++;
-        }
-
-        $context .= "\n[DEMOGRAPHICS DATA MINING]:\n"
-            . "- Total Guests: {$allGuests->count()} | Kids (0-12): {$kids}, Teens (13-17): {$teens}, Adults (18-59): {$adults}, Seniors (60+): {$seniors}\n"
-            . "- Gender: Females: {$females}, Males: {$males} | Locals: {$locals}, Foreigners: {$foreigners}\n";
-
-        // 7. SPECIFIC DEEP SEARCH
-        if (preg_match('/(\d+)/', $message, $numMatches)) {
-            $entityId = (int) $numMatches[1];
-            $specificRes = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])->find($entityId);
-            if ($specificRes) {
-                $specGuests = $specificRes->reservationGuests->map(fn ($g) => $g->customer ? "{$g->customer->first_name} {$g->customer->last_name}" : 'Guest')->implode(', ');
-                $specLogs = ActivityLog::where('reservation_id', $entityId)->orderBy('created_at')->get();
-                $context .= "\n[AUDIT DETAILS FOR RESERVATION #{$entityId}]:\n"
-                    . "- Booker: {$specificRes->booker_name} (Phone: {$specificRes->phone}) | Status: {$specificRes->status}\n"
-                    . "- Schedule: {$specificRes->reservation_date} [{$specificRes->start_slot}] to " . ($specificRes->end_date ?: $specificRes->reservation_date) . " [" . ($specificRes->end_slot ?: $specificRes->start_slot) . "]\n"
-                    . "- Financials: Total ₱" . number_format($specificRes->total_amount, 2) . ", Paid ₱" . number_format($specificRes->amount_paid, 2) . ", Balance ₱" . number_format($specificRes->remaining_balance, 2) . "\n"
-                    . "- Guests: " . ($specGuests ?: 'None') . "\n";
-                if ($specLogs->isNotEmpty()) {
-                    $context .= "- History:\n";
-                    foreach ($specLogs as $sl) {
-                        $context .= "  * [" . ($sl->created_at ? $sl->created_at->format('M d g:i A') : 'N/A') . "] {$sl->title}: {$sl->description} (by {$sl->actor_name})\n";
+                    $context .= "- Reservation #{$r->id}: Booker {$r->booker_name} (Phone: {$r->phone}, Email: {$r->email})\n"
+                        . "  * Status: {$r->status} ({$r->reservation_type}) | Headcount: {$r->number_of_guests}\n"
+                        . "  * Stay Schedule: {$r->reservation_date} [{$r->start_slot}] to " . ($r->end_date ?: $r->reservation_date) . " [" . ($r->end_slot ?: $r->start_slot) . "]\n"
+                        . "  * Financials: Total: ₱" . number_format($r->total_amount, 2) . ", Paid: ₱" . number_format($r->amount_paid, 2) . ", Balance Due: ₱" . number_format($r->remaining_balance, 2) . " [{$r->payment_status}, {$r->payment_method}]\n"
+                        . "  * Booked Amenities: " . ($ams ?: 'None') . "\n"
+                        . "  * Registered Guests: " . ($guests ?: 'None recorded') . "\n";
+                    if ($charges) {
+                        $context .= "  * Extra Charges: {$charges}\n";
+                    }
+                    if ($rescheds) {
+                        $context .= "  * Reschedule Requests: {$rescheds}\n";
+                    }
+                    if ($logs->isNotEmpty()) {
+                        $context .= "  * Audit History: " . $logs->map(fn ($l) => "[" . ($l->created_at ? $l->created_at->format('M d g:i A') : 'N/A') . "] {$l->description} by {$l->actor_name}")->implode(' | ') . "\n";
                     }
                 }
             }
         }
 
-        // 8. OFFICIAL AMENITIES, CAPACITIES & RATES (FROM DATABASE)
-        $amenities = Amenity::with('benefits')->get();
-        if ($amenities->isNotEmpty()) {
-            $context .= "\n[OFFICIAL AMENITIES, CAPACITIES & INCLUSIONS (FROM DATABASE)]:\n";
-            foreach ($amenities as $am) {
-                $status = $am->status ? 'ACTIVE' : 'INACTIVE';
-                $benefit = $am->benefits;
-                $freeEntrance = ($benefit && $benefit->free_entrance) ? 'YES (Free entrance included)' : 'NO (Regular entrance fees apply)';
-                $freePool = ($benefit && $benefit->free_pool) ? 'YES (Free pool access included)' : 'NO (Separate pool fee required)';
-                $aircon = ($benefit && $benefit->is_aircon) ? 'YES (Air-conditioned)' : 'NO (Open-air / Non-aircon)';
-                $addHead = number_format((float) $am->additional_per_head, 2);
+        // 2. STAFF ROSTER & ADMIN ACCOUNTS (staff_accounts & admin_accounts)
+        if (!empty($topics['staff_roster'])) {
+            $staffAccounts = StaffAccount::all();
+            $adminAccounts = AdminAccount::all();
 
-                $name = $am->amenities_name;
-                $minCap = !empty($am->minimum_capacity) ? (int) $am->minimum_capacity : 1;
-                if (!empty($am->maximum_capacity)) {
-                    $maxCap = (int) $am->maximum_capacity;
-                } elseif (stripos($name, 'function hall') !== false || stripos($name, 'hall') !== false) {
-                    $minCap = 15;
-                    $maxCap = 50;
-                } elseif (stripos($name, 'cottage') !== false) {
-                    $maxCap = 10;
-                } elseif (stripos($name, 'payag') !== false) {
-                    $maxCap = 8;
-                } elseif (stripos($name, 'a-house') !== false) {
-                    $maxCap = 2;
-                } else {
-                    $maxCap = $minCap;
-                }
-                $capLabel = ($minCap === $maxCap) ? "{$minCap} persons" : "{$minCap} to {$maxCap} persons";
+            $activeStaff = $staffAccounts->where('ban_status', false);
+            $bannedStaff = $staffAccounts->where('ban_status', true);
 
-                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$capLabel}):\n"
-                    . "  * Rates: Daytime: ₱" . number_format((float) $am->daytime_price, 2) . " | Nighttime: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead}\n"
-                    . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
+            $context .= "\n[CONNECTED DATABASE RECORDS - STAFF & ADMIN ROSTER (staff_accounts, admin_accounts)]:\n"
+                . "- Staff Summary: {$staffAccounts->count()} accounts (Active: {$activeStaff->count()}, Banned: {$bannedStaff->count()})\n";
+            foreach ($staffAccounts as $sa) {
+                $status = $sa->ban_status ? 'BANNED' : 'ACTIVE';
+                $created = $sa->created_at ? $sa->created_at->format('M d, Y') : 'N/A';
+                $context .= "  * Staff #{$sa->id}: {$sa->name} ({$sa->email}) - Status: {$status} (Joined: {$created})\n";
+            }
+            $context .= "- Admin Accounts ({$adminAccounts->count()} total):\n";
+            foreach ($adminAccounts as $aa) {
+                $recovery = $aa->recovery_email ? " (Recovery: {$aa->recovery_email})" : "";
+                $context .= "  * Admin #{$aa->id}: {$aa->name} ({$aa->email}){$recovery}\n";
             }
         }
 
-        // 9. OFFICIAL PARK RULES & GUIDELINES FROM DATABASE
-        $rules = ParkRule::all();
-        if ($rules->isNotEmpty()) {
-            $context .= "\n[OFFICIAL PARK RULES & GUIDELINES (FROM DATABASE)]:\n";
+        // 3. EXECUTIVE FINANCIALS & SALES TRENDS (reservations)
+        if (!empty($topics['sales'])) {
+            $allRes = Reservation::all();
+            $todayRes = Reservation::whereDate('reservation_date', $todayStr)->orWhereDate('created_at', $todayStr)->get();
+            $thisWeekRes = Reservation::whereBetween('created_at', [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()])->get();
+            $thisMonthRes = Reservation::whereMonth('created_at', $now->month)->whereYear('created_at', $now->year)->get();
+
+            $onlineCollected = $allRes->where('reservation_type', 'online')->sum('amount_paid');
+            $walkinCollected = $allRes->where('reservation_type', 'walk_in')->sum('amount_paid');
+
+            $context .= "\n[CONNECTED DATABASE RECORDS - EXECUTIVE FINANCIALS (reservations)]:\n"
+                . "- Total Gross Revenue: ₱" . number_format($allRes->sum('total_amount'), 2) . "\n"
+                . "- Total Collected Collections: ₱" . number_format($allRes->sum('amount_paid'), 2) . "\n"
+                . "- Total Uncollected Balance: ₱" . number_format($allRes->sum('remaining_balance'), 2) . "\n"
+                . "- Sales Breakdown: Today: ₱" . number_format($todayRes->sum('amount_paid'), 2) . " | This Week: ₱" . number_format($thisWeekRes->sum('amount_paid'), 2) . " | This Month: ₱" . number_format($thisMonthRes->sum('amount_paid'), 2) . "\n"
+                . "- Channel Breakdown: Online Portal: ₱" . number_format($onlineCollected, 2) . " | Front Desk Walk-In: ₱" . number_format($walkinCollected, 2) . "\n";
+        }
+
+        // 4. ACTIVITY LOGS AUDIT TRAIL (activity_logs)
+        if (!empty($topics['activity_logs']) || empty($topics['is_specific'])) {
+            $recentLogs = ActivityLog::orderByDesc('created_at')->take(20)->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - RECENT ACTIVITY AUDIT TRAIL (activity_logs)]:\n";
+            if ($recentLogs->isNotEmpty()) {
+                $latestCheckin = $recentLogs->firstWhere('activity_type', 'check_in') ?: $recentLogs->firstWhere('activity_type', 'walkin_created');
+                $latestCheckout = $recentLogs->firstWhere('activity_type', 'check_out');
+                $latestExtension = $recentLogs->first(fn ($l) => in_array($l->activity_type, ['stay_extended', 'amenity_extended']));
+
+                if ($latestCheckin) {
+                    $context .= "★ Latest Check-in: Res #{$latestCheckin->reservation_id} on " . ($latestCheckin->created_at?->format('M d, g:i A') ?? 'N/A') . " by {$latestCheckin->actor_name}\n";
+                }
+                if ($latestCheckout) {
+                    $context .= "★ Latest Check-out: Res #{$latestCheckout->reservation_id} on " . ($latestCheckout->created_at?->format('M d, g:i A') ?? 'N/A') . " by {$latestCheckout->actor_name}\n";
+                }
+                if ($latestExtension) {
+                    $context .= "★ Latest Stay Extension: Res #{$latestExtension->reservation_id} on " . ($latestExtension->created_at?->format('M d, g:i A') ?? 'N/A') . " by {$latestExtension->actor_name}\n";
+                }
+
+                $context .= "Recent Log Feed:\n";
+                foreach ($recentLogs->take(12) as $l) {
+                    $t = $l->created_at ? $l->created_at->format('M d g:i A') : 'N/A';
+                    $res = $l->reservation_id ? " [Res #{$l->reservation_id}]" : "";
+                    $context .= "- [{$t}]{$res} {$l->description} | By: {$l->actor_name} ({$l->actor_role})\n";
+                }
+            } else {
+                $context .= "No activity logs recorded yet.\n";
+            }
+        }
+
+        // 5. RESCHEDULE REQUESTS (reschedule_requests)
+        if (!empty($topics['reschedules'])) {
+            $reschedRequests = RescheduleRequest::with(['reservation', 'approver'])->orderByDesc('id')->take(10)->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - RESCHEDULE REQUESTS (reschedule_requests)]:\n";
+            if ($reschedRequests->isNotEmpty()) {
+                foreach ($reschedRequests as $rq) {
+                    $booker = $rq->reservation?->booker_name ?? 'Guest';
+                    $approver = $rq->approver?->name ? " (Handled by: {$rq->approver->name})" : "";
+                    $context .= "- Request #{$rq->id} for Res #{$rq->reservation_id} ({$booker}): {$rq->original_date} -> {$rq->requested_date} | Status: {$rq->status}{$approver} | Reason: " . ($rq->reason ?: 'None') . "\n";
+                }
+            } else {
+                $context .= "No reschedule requests in database.\n";
+            }
+        }
+
+        // 6. EXTRA CHARGES & PENALTIES (reservation_charges)
+        if (!empty($topics['charges'])) {
+            $charges = ReservationCharge::with(['reservation', 'amenity'])->orderByDesc('id')->take(10)->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - EXTRA CHARGES (reservation_charges)]:\n";
+            if ($charges->isNotEmpty()) {
+                foreach ($charges as $c) {
+                    $booker = $c->reservation?->booker_name ?? 'Res #' . $c->reservation_id;
+                    $am = $c->amenity?->amenities_name ? " [{$c->amenity->amenities_name}]" : "";
+                    $context .= "- Charge #{$c->id}: ₱" . number_format($c->amount, 2) . " ({$c->charge_type}) for {$booker}{$am} - {$c->description} (Status: {$c->status})\n";
+                }
+            } else {
+                $context .= "No additional charges recorded.\n";
+            }
+        }
+
+        // 7. ANNOUNCEMENTS & SMS (sms_notifications)
+        if (!empty($topics['announcements'])) {
+            $announcements = Announcement::orderByDesc('id')->take(6)->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - SMS ANNOUNCEMENTS (sms_notifications)]:\n";
+            if ($announcements->isNotEmpty()) {
+                foreach ($announcements as $an) {
+                    $context .= "- [{$an->category}] {$an->title}: \"{$an->message}\" | Recipients: {$an->recipient_count} | Status: {$an->delivery_status} | Sent: " . ($an->created_at ? $an->created_at->format('M d, Y g:i A') : 'N/A') . "\n";
+                }
+            } else {
+                $context .= "No SMS announcements found in database.\n";
+            }
+        }
+
+        // 8. DEMOGRAPHICS MINING (customers & reservation_guests)
+        if (!empty($topics['demographics'])) {
+            $allGuests = ReservationGuest::with('customer')->get();
+            $kids = 0; $teens = 0; $adults = 0; $seniors = 0; $females = 0; $males = 0; $locals = 0; $foreigners = 0;
+
+            foreach ($allGuests as $rg) {
+                $c = $rg->customer;
+                if (!$c) continue;
+
+                if ($c->age !== null) {
+                    if ($c->age <= 12) $kids++;
+                    elseif ($c->age <= 17) $teens++;
+                    elseif ($c->age <= 59) $adults++;
+                    else $seniors++;
+                }
+                if (strtolower((string) $c->gender) === 'female') $females++;
+                else $males++;
+
+                if ($c->is_foreigner) $foreigners++;
+                else $locals++;
+            }
+
+            $context .= "\n[CONNECTED DATABASE RECORDS - DEMOGRAPHICS DATA MINING (customers & reservation_guests)]:\n"
+                . "- Total Guests Profiled: {$allGuests->count()}\n"
+                . "- Age Brackets: Kids (0-12): {$kids}, Teens (13-17): {$teens}, Adults (18-59): {$adults}, Seniors (60+): {$seniors}\n"
+                . "- Gender: Female: {$females}, Male: {$males} | Origin: Locals: {$locals}, Foreign Visitors: {$foreigners}\n";
+        }
+
+        // 9. CHECK-INS & ACTIVE OCCUPANCY
+        if (!empty($topics['checkins']) || empty($topics['is_specific'])) {
+            $checkedIn = Reservation::with(['reservationAmenities.amenity'])
+                ->where('status', 'Checked In')
+                ->orderByDesc('check_in')
+                ->get();
+
+            $context .= "\n[CONNECTED DATABASE RECORDS - ACTIVE CHECKED-IN GUESTS ({$checkedIn->count()} reservations)]:\n";
+            if ($checkedIn->isNotEmpty()) {
+                foreach ($checkedIn as $cir) {
+                    $amNames = $cir->reservationAmenities->map(fn ($ra) => $ra->amenity?->amenities_name ?? 'Amenity')->implode(', ');
+                    $checkInTime = $cir->check_in ? Carbon::parse($cir->check_in)->format('M d g:i A') : 'N/A';
+                    $end = ($cir->end_date ?: $cir->reservation_date) . " [" . ($cir->end_slot ?: $cir->start_slot) . "]";
+                    $bal = $cir->remaining_balance > 0 ? " | ⚠️ Balance: ₱" . number_format($cir->remaining_balance, 2) : " | Paid";
+                    $context .= "- Res #{$cir->id}: {$cir->booker_name} | Checked In: {$checkInTime} | Depart: {$end} | Headcount: {$cir->number_of_guests} | Paid: ₱" . number_format($cir->amount_paid, 2) . "{$bal} | Booked: " . ($amNames ?: 'None') . "\n";
+                }
+            } else {
+                $context .= "No reservations currently checked in.\n";
+            }
+        }
+
+        // 10. CHECKOUTS & DEPARTURES
+        if (!empty($topics['checkouts'])) {
+            $todayDepartures = Reservation::with(['reservationAmenities.amenity'])
+                ->where('status', 'Checked In')
+                ->where(function ($q) use ($todayStr) {
+                    $q->whereDate('end_date', $todayStr)
+                      ->orWhere(function ($q2) use ($todayStr) {
+                          $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                      });
+                })
+                ->get();
+
+            $context .= "\n[CONNECTED DATABASE RECORDS - TODAY'S DUE CHECKOUTS ({$todayDepartures->count()} reservations)]:\n";
+            if ($todayDepartures->isNotEmpty()) {
+                foreach ($todayDepartures as $dep) {
+                    $slot = $dep->end_slot ?: $dep->start_slot;
+                    $expectedTime = strcasecmp((string)$slot, 'Nighttime') === 0 ? '6:00 AM (Next Morning)' : '5:00 PM - 6:00 PM (Today)';
+                    $bal = $dep->remaining_balance > 0 ? " [⚠️ Balance to collect: ₱" . number_format($dep->remaining_balance, 2) . "]" : " [Paid]";
+                    $context .= "- Res #{$dep->id}: {$dep->booker_name} (Slot: {$slot} -> Checkout: {$expectedTime}){$bal}\n";
+                }
+            } else {
+                $context .= "No reservations due for departure today.\n";
+            }
+        }
+
+        // 11. AMENITIES, CAPACITIES & RATES (amenities & amenities_benefits)
+        if (!empty($topics['amenities']) || empty($topics['is_specific'])) {
+            $amenities = Amenity::with('benefits')->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - AMENITIES & RATES (amenities)]:\n";
+            foreach ($amenities as $am) {
+                $status = $am->status ? 'ACTIVE' : 'INACTIVE';
+                $b = $am->benefits;
+                $freeEnt = ($b && $b->free_entrance) ? 'YES (Free entrance included)' : 'NO (Regular entrance fees apply)';
+                $freePool = ($b && $b->free_pool) ? 'YES (Free pool included)' : 'NO (Pool fees apply)';
+                $aircon = ($b && $b->is_aircon) ? 'YES (Air-conditioned)' : 'NO (Open-air / Non-aircon)';
+                $addHead = number_format((float) $am->additional_per_head, 2);
+
+                $minCap = !empty($am->minimum_capacity) ? (int) $am->minimum_capacity : 1;
+                $maxCap = !empty($am->maximum_capacity) ? (int) $am->maximum_capacity : $minCap;
+                $cap = ($minCap === $maxCap) ? "{$minCap} pax" : "{$minCap} to {$maxCap} pax";
+
+                $context .= "- {$am->amenities_name} [{$status}] (Capacity: {$cap}): Day: ₱" . number_format((float) $am->daytime_price, 2) . " | Night: ₱" . number_format((float) $am->nighttime_price, 2) . " | Extra Head: ₱{$addHead} | Free Ent: {$freeEnt} | Free Pool: {$freePool} | Aircon: {$aircon}\n";
+            }
+        }
+
+        // 12. PARK RULES (park_rules)
+        if (!empty($topics['rules'])) {
+            $rules = ParkRule::all();
+            $context .= "\n[CONNECTED DATABASE RECORDS - OFFICIAL PARK RULES (park_rules)]:\n";
             foreach ($rules as $r) {
                 $context .= "- {$r->rule_name}: {$r->rule_descriptions}\n";
             }
         }
 
-        // 10. ACTIVE PARK EVENTS & HAPPENINGS (FROM DATABASE)
-        $events = ParkEvent::where('is_active', true)->orderBy('date')->get();
-        if ($events->isNotEmpty()) {
-            $context .= "\n[ACTIVE PARK EVENTS & HAPPENINGS (FROM DATABASE)]:\n";
-            foreach ($events as $ev) {
-                $dateStr = $ev->date ? Carbon::parse($ev->date)->format('M d, Y') : 'Date TBA';
-                $dayStr = $ev->day ? " ({$ev->day})" : "";
-                $timeStr = $ev->time ? " at {$ev->time}" : "";
-                $context .= "- {$ev->title}: {$dateStr}{$dayStr}{$timeStr} - {$ev->event}\n";
+        // 13. PARK EVENTS (park_events)
+        if (!empty($topics['events'])) {
+            $events = ParkEvent::where('is_active', true)->orderBy('date')->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - PARK EVENTS (park_events)]:\n";
+            if ($events->isNotEmpty()) {
+                foreach ($events as $ev) {
+                    $d = $ev->date ? Carbon::parse($ev->date)->format('M d, Y') : 'Date TBA';
+                    $t = $ev->time ? " at {$ev->time}" : "";
+                    $context .= "- {$ev->title}: {$d}{$t} - {$ev->event}\n";
+                }
+            } else {
+                $context .= "No active park events scheduled.\n";
             }
         }
 
-        // 11. GUEST REVIEWS & RATINGS OVERVIEW
-        $feedbackCount = Feedback::count();
-        if ($feedbackCount > 0) {
-            $avgStars = number_format((float) Feedback::avg('stars'), 1);
-            $context .= "\n[GUEST REVIEWS & RATINGS (FROM DATABASE)]:\n"
-                . "- Total Reviews: {$feedbackCount} | Average Rating: {$avgStars} / 5.0 stars\n";
+        // 14. PARK ACTIVITIES (park_activities)
+        if (!empty($topics['activities'])) {
+            $activities = ParkActivity::all();
+            $context .= "\n[CONNECTED DATABASE RECORDS - PARK ACTIVITIES (park_activities)]:\n";
+            if ($activities->isNotEmpty()) {
+                foreach ($activities as $act) {
+                    $context .= "- {$act->activity}: {$act->description}\n";
+                }
+            } else {
+                $context .= "Recreational activities include natural river swimming, pool swimming, photo shoots, and family dining.\n";
+            }
+        }
+
+        // 15. REVIEWS & FEEDBACK (feedbacks)
+        if (!empty($topics['feedback'])) {
+            $feedbacks = Feedback::latest()->take(6)->get();
+            $avgStars = Feedback::avg('stars');
+            $context .= "\n[CONNECTED DATABASE RECORDS - REVIEWS & RATINGS (feedbacks)]:\n"
+                . "- Average Rating: " . number_format((float) $avgStars, 1) . " / 5.0 stars (Total: " . Feedback::count() . " reviews)\n";
+            foreach ($feedbacks as $fb) {
+                $name = $fb->is_anonymous ? 'Anonymous Guest' : $fb->full_name;
+                $context .= "- [{$fb->stars} Stars] {$name}: \"{$fb->description}\" (Replied: " . ($fb->replied ? 'Yes' : 'No') . ")\n";
+            }
+        }
+
+        // 16. WEATHER SHIFT LOGS (daily_weather_shift_logs & WeatherService)
+        if (!empty($topics['weather'])) {
+            $weatherLogs = DailyWeatherShiftLog::orderByDesc('log_date')->take(4)->get();
+            $context .= "\n[CONNECTED DATABASE RECORDS - WEATHER SHIFT LOGS (daily_weather_shift_logs)]:\n";
+            if ($weatherLogs->isNotEmpty()) {
+                foreach ($weatherLogs as $wl) {
+                    $context .= "- {$wl->log_date} ({$wl->shift} shift): {$wl->condition}, {$wl->temperature_c}°C, {$wl->rain_chance_percentage}% rain chance. Notes: " . ($wl->notes ?: 'None') . "\n";
+                }
+            }
+            try {
+                $weatherNow = app(WeatherService::class)->getMultiDayForecast(1);
+                if (!empty($weatherNow['now'])) {
+                    $context .= "Current Live Forecast for Jasaan: {$weatherNow['now']['condition']}, {$weatherNow['now']['temp_c']}°C, {$weatherNow['now']['chance_of_rain']}% rain chance.\n";
+                }
+            } catch (\Throwable $e) {}
         }
 
         return $context;
+    }
+
+    /**
+     * Detect specific topics, IDs, and search terms from the admin query.
+     * Robustly tolerates misspellings, colloquialisms, Taglish, Tagalog, and Bisaya.
+     */
+    private function detectAdminTopics(string $message): array
+    {
+        $msgLower = mb_strtolower(trim($message));
+        $topics = [
+            'is_specific' => false,
+            'specific_id' => null,
+            'search_terms' => [],
+            'staff_roster' => false,
+            'sales' => false,
+            'activity_logs' => false,
+            'reschedules' => false,
+            'charges' => false,
+            'checkins' => false,
+            'checkouts' => false,
+            'demographics' => false,
+            'amenities' => false,
+            'rules' => false,
+            'events' => false,
+            'activities' => false,
+            'feedback' => false,
+            'weather' => false,
+            'announcements' => false,
+        ];
+
+        // 1. Extract possible ID
+        if (preg_match('/(?:#|\bres(?:ervation)?\s*#?|\bid\s*#?)\s*(\d+)/i', $msgLower, $matches)) {
+            $topics['specific_id'] = (int) $matches[1];
+            $topics['specific_entity'] = true;
+            $topics['is_specific'] = true;
+        } elseif (preg_match('/\b\d{1,6}\b/', $msgLower, $matches)) {
+            $topics['specific_id'] = (int) $matches[0];
+            $topics['specific_entity'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 2. Extract potential names or search words
+        $stopWords = ['the', 'and', 'for', 'are', 'what', 'who', 'how', 'pila', 'kinsa', 'unsa', 'naa', 'karon', 'kaha', 'ba', 'nga', 'ang', 'sa', 'og', 'ug', 'sino', 'ano', 'bakit', 'meron', 'wala', 'mga', 'bang', 'may', 'po', 'ngayon', 'today', 'check', 'show', 'give', 'list', 'park', 'hinaguan'];
+        $words = preg_split('/[\s,\.\?!;:]+/', $msgLower);
+        foreach ($words as $w) {
+            $w = trim($w);
+            if (mb_strlen($w) >= 3 && !in_array($w, $stopWords, true) && !is_numeric($w)) {
+                if (Reservation::where('booker_name', 'like', "%{$w}%")->exists() || Customer::where('first_name', 'like', "%{$w}%")->orWhere('last_name', 'like', "%{$w}%")->exists() || StaffAccount::where('name', 'like', "%{$w}%")->exists()) {
+                    $topics['search_terms'][] = $w;
+                    $topics['specific_entity'] = true;
+                    $topics['is_specific'] = true;
+                }
+            }
+        }
+
+        // 3. Staff Roster & Admin Accounts
+        if (preg_match('/staff|employee|roster|bantay|trabahador|banned|active\s*staff|admin\s*account/i', $msgLower)) {
+            $topics['staff_roster'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 4. Sales & Executive Financials
+        if (preg_match('/sale|revenue|financial|income|halin|kita|gross|koleksyon|collection|total\s*bayad|cashier|walk[\s-]?in\s*sales|online\s*sales/i', $msgLower)) {
+            $topics['sales'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 5. Activity Logs & Audit Trail
+        if (preg_match('/audit|log|history|kinsa\s*nag|sino\s*nag|who\s*did|who\s*checked|who\s*approved|recent\s*action|gi[\s-]?update|gi[\s-]?usab|record/i', $msgLower)) {
+            $topics['activity_logs'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 6. Reschedules / Date changes
+        if (preg_match('/resched|reched|rebook|balhin|ilis|lipat|palit|move\s*date|postpone|change\s*date|bag[\s-]?o.*petsa/i', $msgLower)) {
+            $topics['reschedules'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 7. Charges, Damages, Balances, Unpaid
+        if (preg_match('/charge|penalty|penalties|damage|damages|mattress|corkage|korkage|guba|bayranan|utang|unpaid|kuwang|kulang|balance|balanse|remaining|bayad/i', $msgLower)) {
+            $topics['charges'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 8. Check-ins, Headcount, Occupancy
+        if (preg_match('/check[\s-]?in|sulod|loob|pumasok|nisulod|nisud|active\s*guest|headcount|occupancy|present|on[\s-]?site/i', $msgLower)) {
+            $topics['checkins'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 9. Checkouts, Departures
+        if (preg_match('/check[\s-]?out|chekot|chckout|departure|gawas|nigawas|lumabas|alis|uwian|due|countdown/i', $msgLower)) {
+            $topics['checkouts'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 10. Demographics & Age / Gender Breakdown
+        if (preg_match('/demograph|demograf|bata|kid|child|teen|adult|senior|tigulang|gender|lalaki|lalake|babae|babaye|male|female|foreigner|dayo|local|lokal|edad|age/i', $msgLower)) {
+            $topics['demographics'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 11. Amenities, Capacities & Rates
+        if (preg_match('/amenit|cottag|cotag|payag|pyag|a[\s-]?house|ahouse|function\s*hall|hall|pool|swim|ligo|langoy|aircon|capacity|kapasidad|inclusions|libre|free|bakante|availab|presyo|rate|pila|tagpila|magkano|abang|rent/i', $msgLower)) {
+            $topics['amenities'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 12. Rules & Guidelines
+        if (preg_match('/rule|policy|policies|patakaran|balaod|bawal|pwede|allowed|prohibit|pet|iro|aso|smok|panigarilyo|inom|liquor|alcohol|curfew|attire|swimwear|grill/i', $msgLower)) {
+            $topics['rules'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 13. Events & Celebrations
+        if (preg_match('/event|happen|okasyon|pista|fiesta|celebrat|concert|party|kalendaryo|holiday/i', $msgLower)) {
+            $topics['events'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 14. Recreational Activities
+        if (preg_match('/activit|lingaw|buhaton|kayak|sakayan|hike|hiking|trail|trek|nature\s*walk|photo|pictorial|picture|attraction/i', $msgLower)) {
+            $topics['activities'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 15. Reviews & Feedbacks
+        if (preg_match('/feedback|review|rating|star|reklamo|complaint|komento|comment|ingon|satisfaction/i', $msgLower)) {
+            $topics['feedback'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 16. Weather & Forecast
+        if (preg_match('/weather|panahon|uwan|ulan|rain|init|sunny|init\s*kaayo|bagyo|storm|temp|temperature|forecast|shift\s*log/i', $msgLower)) {
+            $topics['weather'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 17. Announcements & SMS
+        if (preg_match('/announc|sms|text|blast|broadcast|pahibalo|anunsyo|notif/i', $msgLower)) {
+            $topics['announcements'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        return $topics;
     }
 }

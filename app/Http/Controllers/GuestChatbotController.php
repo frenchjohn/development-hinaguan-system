@@ -3,13 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Amenity;
+use App\Models\Customer;
 use App\Models\DailyWeatherShiftLog;
 use App\Models\Feedback;
+use App\Models\ParkActivity;
 use App\Models\ParkEvent;
 use App\Models\ParkRule;
 use App\Models\ParkSetting;
 use App\Models\Reservation;
 use App\Models\ReservationAmenity;
+use App\Models\ReservationGuest;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +34,10 @@ class GuestChatbotController extends Controller
         $userMessage = trim($request->input('message'));
         $msgLower = strtolower($userMessage);
 
-        // Security / Privacy Guardrail: Strictly block confidential sales, customer data, staff accounts
+        // Security / Privacy Guardrail: Strictly block confidential sales, company financials, staff accounts
         $sensitiveTerms = [
             'revenue', 'financial', 'sales', 'profit', 'total earned', 'total income',
             'staff account', 'staff password', 'admin password', 'admin account', 'staff list', 'employee list',
-            'customer list', 'guest list', 'customer phone', 'customer email', 'who booked', 'who is staying',
             'developer', 'coding', 'programming', 'politics', 'religion'
         ];
 
@@ -58,41 +60,59 @@ class GuestChatbotController extends Controller
 
         $guestContext = $this->getGuestContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the warm, friendly, and helpful AI concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+        $systemPrompt = "You are HinaguanBot, the warm, friendly, intelligent, and helpful AI concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OPERATIONAL RULES (STRICTLY ENFORCED):\n"
-            . "1. STRICT DATABASE-ONLY KNOWLEDGE & SCOPE:\n"
-            . "   - You ONLY search and retrieve information from the LIVE DATABASE CONTEXT below.\n"
-            . "   - You ONLY answer topics directly related to Hinaguan Nature Park (amenities, weather, rates, schedules, rules, reviews, bookings).\n"
-            . "   - If a user asks about anything unrelated to the park (e.g. general knowledge, math, homework, coding, politics, other businesses), politely decline in 1 short sentence and redirect them to ask about Hinaguan Nature Park.\n"
+            . "1. STRICT DATABASE-ONLY KNOWLEDGE & SCOPE (12 PERMITTED TABLES ONLY):\n"
+            . "   - You ONLY search and retrieve information from the LIVE DATABASE CONTEXT below across these 12 tables:\n"
+            . "     1) amenities: ID, amenities_name, description, daytime_price, nighttime_price, minimum_capacity, maximum_capacity, status.\n"
+            . "     2) amenities_benefits: 1-to-1 with amenities; free_entrance, free_pool, is_aircon.\n"
+            . "     3) customers: ID, first_name, middle_name, last_name, age, gender, phone, email.\n"
+            . "     4) daily_weather_shift_logs: ID, log_date, shift, weather_condition, temperature_celsius, precipitation_probability, notes.\n"
+            . "     5) feedbacks: ID, stars, description, full_name, is_anonymous, is_shown.\n"
+            . "     6) park_activities: ID, activity, description, image.\n"
+            . "     7) park_events: ID, title, event, date, day, time, is_active.\n"
+            . "     8) park_rules: ID, rule_name, rule_descriptions.\n"
+            . "     9) park_settings: ID, park_status, opening_time, closing_time, daytime_start, daytime_end, nighttime_start, nighttime_end, fees, contact.\n"
+            . "     10) reservations: ID, booker_name, phone, email, reservation_type, reservation_date, start_slot, end_date, end_slot, status, total_amount, amount_paid, remaining_balance, payment_status, number_of_guests.\n"
+            . "     11) reservation_amenities: ID, reservation_id, amenity_id, start_date, start_slot, end_date, end_slot, price, status.\n"
+            . "     12) reservation_guests: ID, reservation_id, customer_id, is_primary_guest, has_pool_access, checked_out_at.\n"
+            . "   - STRICT SECURITY GUARDRAIL: You have NO access to employee/staff accounts, admin accounts, sessions, migrations, or server logs. Never discuss confidential sales or internal credentials.\n"
+            . "   - STRICT RELEVANCE: You ONLY answer topics directly related to Hinaguan Nature Park. If a user asks about anything unrelated (e.g. general knowledge, math, homework, coding, politics, other businesses), politely decline in 1 short sentence and redirect them to ask about Hinaguan Nature Park.\n"
             . "2. GO STRAIGHT TO THE POINT:\n"
-            . "   - Answer directly in 1 to 3 friendly, helpful, and concise human sentences.\n"
+            . "   - Answer directly in 1 to 3 friendly, helpful, and concise human sentences (or clear bullet points if step-by-step directions or booking instructions are requested).\n"
             . "   - NEVER output internal reasoning, outlines, numbered analysis, scratchpads, or draft prefixes.\n"
-            . "3. MATCH THE USER'S LANGUAGE:\n"
-            . "   - If the user asks in Bisaya / Cebuano (e.g., 'tagpila', 'pila', 'asa dapit', 'naay pool', 'nindot', 'suba', 'init', 'uwan'), reply warmly and naturally in Bisaya!\n"
-            . "   - If the user asks in Tagalog / Filipino / Taglish (e.g., 'magkano', 'meron ba', 'saan', 'ano po rates', 'pwede ba'), reply warmly and naturally in Tagalog!\n"
+            . "3. MATCH THE USER'S LANGUAGE & FORGIVE TYPOS/GRAMMAR:\n"
+            . "   - Seamlessly understand misspelled words, typographical errors, phonetic spelling, and broken grammar (e.g. 'cotag', 'pyag', 'boking', 'chek in', 'magkano po ahouse', 'pila bayranan', 'resrvation', 'unsaon pag adto', 'paano pumunta'). Deduce intent directly without correcting the user.\n"
+            . "   - If the user asks in Bisaya / Cebuano (e.g., 'tagpila', 'pila', 'asa dapit', 'naay pool', 'nindot', 'suba', 'init', 'uwan', 'pila bayad', 'unsaon pag book', 'unsaon pag adto'), reply warmly and naturally in Bisaya!\n"
+            . "   - If the user asks in Tagalog / Filipino / Taglish (e.g., 'magkano', 'meron ba', 'saan', 'ano po rates', 'pwede ba', 'paano mag book', 'paano pumunta'), reply warmly and naturally in Tagalog!\n"
             . "   - If the user asks in English, reply in English!\n"
-            . "4. AMENITY VIBE, LOCATION & DESCRIPTION AWARENESS:\n"
-            . "   - Read and use the EXACT 'Description, Vibe & Location' from each amenity in the database. Even for the same amenity type, locations and atmospheres differ:\n"
-            . "     * Payag 2 & Payag 6: Riverside native payags right by the water, surrounded by lush greenery.\n"
-            . "     * Payag 3: Enjoying refreshing mountain breezes, perfect for quiet small-group picnics.\n"
-            . "     * Payag 4: Open-air bamboo payag with scenic nature views.\n"
-            . "     * Payag 5: Nestled under shade trees in a serene garden setting.\n"
-            . "     * Payag 1: Traditional bamboo payag with natural ventilation.\n"
-            . "     * Cottages 1 to 6: Open-air dining cottages with table and chairs for family dining and unwinding.\n"
-            . "     * A-Houses 1 to 8: Private rooms/cabins for overnight or restful stays (A-House 2 & 3 are air-conditioned; all A-Houses include free entrance & free pool access for 2).\n"
-            . "     * Function Hall: Spacious event pavilion for celebrations and big gatherings (15 to 50+ pax, includes free entrance & pool access).\n"
-            . "5. TODAY'S WEATHER-AWARE RECOMMENDATIONS:\n"
+            . "4. HOW TO BOOK A RESERVATION ONLINE (CRITICAL PROCEDURE):\n"
+            . "   - Explain the simple steps to reserve online:\n"
+            . "     1. Click the 'Book Now' button on the website.\n"
+            . "     2. First, either pick your target date or pick your preferred amenity (Cottage, Payag, A-House, Function Hall).\n"
+            . "     3. Choose your session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM next day, or multi-day Continuous Stay).\n"
+            . "     4. Fill in primary guest details and companion headcount (with pool access options).\n"
+            . "     5. Pay the required 50% DOWNPAYMENT online to secure and confirm the reservation.\n"
+            . "   - MANDATORY POLICY REMINDER: Explicitly mention that the 50% downpayment is STRICTLY NON-REFUNDABLE (no refund policy), though date rescheduling can be requested.\n"
+            . "5. HOW TO GO / DIRECTIONS TO THE PARK (LANDMARKS & NAVIGATION):\n"
+            . "   - Location: Hinaguan Nature Park is located in Barangay Solana, Jasaan, Misamis Oriental.\n"
+            . "   - Landmark: 'Spring View Resort' (a popular spring-water swimming pool resort in Solana, Jasaan, right after Solana Bridge).\n"
+            . "   - Commute / Driving Directions:\n"
+            . "     * From Cagayan de Oro City or nearby towns, take any bus, van, or jeep bound for Jasaan or Balingasag (e.g. from Agora Bus Terminal).\n"
+            . "     * Tell the driver or conductor to drop you off in Solana, Jasaan, right by the turn-off near Spring View Resort (after Solana Bridge).\n"
+            . "     * From the highway near Spring View Resort, enter and follow the inner road heading inland toward the river/hills.\n"
+            . "     * You can take a local 'habal-habal' (motorcycle taxi) directly to Hinaguan Nature Park, or drive through the inner road following Google Maps or Waze (searchable as 'Hinaguan Nature Park' or 'Spring View Resort').\n"
+            . "6. AMENITY INCLUSIONS (NEVER HALLUCINATE):\n"
+            . "   - COTTAGES (₱200) and PAYAGS (₱300): DO NOT include free entrance or free pool access. Regular entrance (₱20 daytime adult) and pool access (₱50 per person) are separate fees. NEVER claim cottages or payags include free entrance or pool!\n"
+            . "   - A-HOUSES (₱300 day / ₱500 night): Includes FREE entrance and FREE swimming pool access for 2 guests.\n"
+            . "   - FUNCTION HALL: Includes FREE entrance and FREE swimming pool access for the booked group (15 to 50+ pax).\n"
+            . "7. TODAY'S WEATHER-AWARE RECOMMENDATIONS:\n"
             . "   - Check [TODAY'S WEATHER LOG (FROM DATABASE)].\n"
             . "   - If rainy, overcast, or high chance of rain: Recommend weather-sheltered spots (like cozy A-Houses, Function Hall, or covered cottages/payags) and mention staying dry.\n"
             . "   - If sunny, warm, or clear: Recommend riverside payags (Payag 2 or 6), breezy mountain payag (Payag 3), shaded garden payag (Payag 5), or taking a refreshing swim in the pool!\n"
-            . "6. STRICT INCLUSION RULES (NEVER VIOLATE):\n"
-            . "   - COTTAGES (₱200) and PAYAGS (₱300): DO NOT include free entrance or free pool access. Regular entrance (₱20 daytime adult) and pool access (₱50 per person) are separate fees. NEVER claim cottages or payags include free entrance or pool!\n"
-            . "   - A-HOUSES (₱300 day / ₱500 night): Includes FREE entrance and FREE swimming pool access for 2 guests.\n"
-            . "   - FUNCTION HALL: Includes FREE entrance and FREE swimming pool access for the booked group.\n"
-            . "7. GENERAL PARK POLICIES:\n"
+            . "8. GENERAL PARK POLICIES:\n"
             . "   - Outside food allowed with NO corkage fee; free grilling stations available.\n"
-            . "   - Pets allowed on leash; free parking on site.\n"
-            . "   - Booking steps: Online ('Book Now' on website) or Walk-in at entrance counter.\n\n"
+            . "   - Pets allowed on leash; free parking on site.\n\n"
             . "=== LIVE PARK & DATABASE CONTEXT ===\n"
             . $guestContext;
 
@@ -262,8 +282,8 @@ class GuestChatbotController extends Controller
         $msgLower = strtolower($userMessage);
 
         // Detect language
-        $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|man|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tao)\b/i', $userMessage);
-        $isTagalog = (bool) preg_match('/\b(?:magkano|meron|saan|ano|ba|po|ulan|mainit|pwede|kami|tayo|sino|kailan|tao|bawat)\b/i', $userMessage);
+        $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|man|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tao|unsaon|adto|anhi|sakay)\b/i', $userMessage);
+        $isTagalog = (bool) preg_match('/\b(?:magkano|meron|saan|ano|ba|po|ulan|mainit|pwede|kami|tayo|sino|kailan|tao|bawat|paano|pumunta|sakyan)\b/i', $userMessage);
 
         // 1. Guardrail for completely unrelated topics
         $unrelated = (bool) preg_match('/\b(?:python|javascript|php|code|coding|equation|solve|calculate|math|president|election|crypto|bitcoin|homework)\b/i', $userMessage);
@@ -277,6 +297,90 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // 2. How to Book Online Inquiry (with 50% non-refundable downpayment rule)
+        $isBookingInquiry = (bool) preg_match('/(?:how\s+to\s+book|paano\s+(?:mag-?)?book|unsaon\s+pag-?book|unsaon\s+pag-?reserve|paano\s+mag-?reserve|steps?\s+to\s+book|online\s+booking|mag-?book|pag-?book|downpayment|down\s*payment|no\s*refund|non-?refundable|refund)/i', $msgLower);
+        if ($isBookingInquiry) {
+            if ($isBisaya) {
+                return "Aron mag-book online sa Hinaguan Nature Park:\n"
+                    . "1. I-click ang 'Book Now' button sa among website.\n"
+                    . "2. Pagpili una ug petsa (target date) o pilia ang imong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
+                    . "3. Pilia ang session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM, o Continuous Stay).\n"
+                    . "4. Isulod ang mga detalye sa primary guest ug gidaghanon sa mga kauban.\n"
+                    . "5. Bayri ang 50% DOWNPAYMENT online aron ma-secure ug makumpirma ang imong reservation.\n\n"
+                    . "PAHINUMDOM: Ang 50% downpayment kay STRICTLY NON-REFUNDABLE (walay refund), apan pwede mohangyo ug reschedule sa petsa kung naay pahibalo.";
+            } elseif ($isTagalog) {
+                return "Para mag-book online sa Hinaguan Nature Park:\n"
+                    . "1. I-click ang 'Book Now' button sa aming website.\n"
+                    . "2. Pumili muna ng inyong target date o piliin ang inyong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
+                    . "3. Piliin ang session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM kinabukasan, o Continuous Stay).\n"
+                    . "4. Ilagay ang detalye ng primary guest at bilang ng mga kasama.\n"
+                    . "5. Magbayad ng 50% DOWNPAYMENT online upang ma-secure at makumpirma ang inyong reservation.\n\n"
+                    . "MAHALAGANG PAALALA: Ang 50% downpayment po ay STRICTLY NON-REFUNDABLE (walang refund), ngunit maaari kayong mag-request ng rescheduling ng petsa.";
+            } else {
+                return "To book a reservation online at Hinaguan Nature Park:\n"
+                    . "1. Click the 'Book Now' button on our website.\n"
+                    . "2. First, either select your preferred visit date or pick your desired amenity (Cottage, Payag, A-House, or Function Hall).\n"
+                    . "3. Choose your session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM next morning, or multi-day Continuous Stay).\n"
+                    . "4. Fill in your primary guest details and companion headcount.\n"
+                    . "5. Pay the required 50% DOWNPAYMENT online to lock in and confirm your reservation.\n\n"
+                    . "IMPORTANT POLICY: Please note that the 50% downpayment is STRICTLY NON-REFUNDABLE (no refund policy), though date rescheduling can be requested.";
+            }
+        }
+
+        // 3. How to Go / Directions Inquiry (Solana, Jasaan, Spring View Resort landmark, inner road, Google Maps)
+        $isDirectionsInquiry = (bool) preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pag-?anhi|location|address|asa\s+dapit|saan\s+banda|saan\s+ang|spring\s*view|jasaan|solana|commute|byahe|inner\s*road|inner\s*way|google\s*map|waze)/i', $msgLower);
+        if ($isDirectionsInquiry) {
+            if ($isBisaya) {
+                return "Unsaon pag-adto sa Hinaguan Nature Park:\n"
+                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark sa Highway: Manaog sa Jasaan, dapit sa sikat nga swimming pool resort nga gitawag ug 'Spring View Resort' (human gyud sa taytayan sa Solana).\n"
+                    . "• Agianan: Gikan sa highway duol sa Spring View Resort, sudla ang sulod nga agianan (inner road) paingon sa suba ug bukid.\n"
+                    . "• Sakyanan: Pwede mosakay ug habal-habal (motorcycle taxi) diretso sa park, o magdala ug kaugalingong sakyanan.\n"
+                    . "• Navigation: Pwede kaayo nimo i-check ug sundon sa Google Maps o Waze pinaagi sa pag-search sa 'Hinaguan Nature Park' o 'Spring View Resort'!";
+            } elseif ($isTagalog) {
+                return "Paano pumunta sa Hinaguan Nature Park:\n"
+                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark sa Highway: Bumaba sa Jasaan, sa may tapat ng pampublikong swimming pool resort na tinatawag na 'Spring View Resort' (pagkalampas ng Solana Bridge).\n"
+                    . "• Daan: Mula sa highway sa tapat ng Spring View Resort, pumasok sa inner road (panloob na daan) patungo sa ilog.\n"
+                    . "• Sasakyan: Maaari kayong sumakay ng habal-habal (motorcycle taxi) papasok sa park o mag-drive ng sariling sasakyan.\n"
+                    . "• Navigation: Maaari niyo rin itong i-check at i-navigate gamit ang Google Maps o Waze (i-search lamang ang 'Hinaguan Nature Park' o 'Spring View Resort')!";
+            } else {
+                return "How to get to Hinaguan Nature Park:\n"
+                    . "• Location: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark & Drop-off: Tell your driver to drop you off in Solana, Jasaan, right by the well-known swimming pool resort called 'Spring View Resort' (just past Solana Bridge).\n"
+                    . "• Route: From the highway at Spring View Resort, enter and take the inner road heading inland toward the river.\n"
+                    . "• Local Transport: Take a local 'habal-habal' (motorcycle taxi) directly to the park gate, or drive your private vehicle.\n"
+                    . "• Google Maps / Waze: You can easily search and navigate on Google Maps or Waze by typing 'Hinaguan Nature Park' or 'Spring View Resort'!";
+            }
+        }
+
+        // 4. Park Activities Inquiry (from park_activities table)
+        $isActivitiesInquiry = (bool) preg_match('/(?:activit|unsa(?:ng)?\s*(?:mabuhat|buhaton)|ano(?:ng)?\s*(?:pwedeng\s*)?gawin|things\s+to\s+do|river\s*swim|pictorial|picture|swimming)/i', $msgLower);
+        if ($isActivitiesInquiry) {
+            $acts = ParkActivity::all();
+            if ($acts->isNotEmpty()) {
+                $actList = $acts->map(fn ($a) => "• {$a->activity}: {$a->description}")->implode("\n");
+                if ($isBisaya) {
+                    return "Mao kini ang mga nindot nga kalihokan (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPwede sab mo mag-relax sa among riverside payags ug mag-swimming sa pool!";
+                } elseif ($isTagalog) {
+                    return "Narito po ang mga puwedeng gawin (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPuwede rin po kayong mag-relax sa aming riverside payag at mag-swimming sa pool!";
+                } else {
+                    return "Here are the wonderful activities you can enjoy at Hinaguan Nature Park:\n{$actList}\n\nYou can also relax by the scenic riverbanks or take a swim in our pool!";
+                }
+            }
+        }
+
+        // 5. Reservation Status Lookup (if user provided a reservation number)
+        if (preg_match('/(?:res(?:ervation)?|booking|boking)\s*(?:#|no\.?|num(?:ber)?)?\s*(\d+)/i', $msgLower, $m)) {
+            $resId = (int) $m[1];
+            $res = Reservation::with(['reservationAmenities.amenity'])->find($resId);
+            if ($res) {
+                $ams = $res->reservationAmenities->map(fn ($ra) => $ra->amenity?->amenities_name ?? 'Amenity')->implode(', ');
+                $stay = "{$res->reservation_date} [{$res->start_slot}]";
+                return "Reservation #{$res->id} for {$res->booker_name} is currently [{$res->status}]. Stay date: {$stay}. Booked amenities: " . ($ams ?: 'None') . ". Remaining balance: ₱" . number_format($res->remaining_balance, 2) . " ({$res->payment_status}).";
+            }
+        }
+
         // Fetch live weather from database (daily_weather_shift_logs)
         $latestWeather = DailyWeatherShiftLog::orderBy('log_date', 'desc')->first();
         $weatherCond = $latestWeather ? $latestWeather->weather_condition : 'Sunny';
@@ -284,7 +388,7 @@ class GuestChatbotController extends Controller
         $weatherRain = $latestWeather ? (int) $latestWeather->precipitation_probability : 10;
         $isRainy = stripos($weatherCond, 'rain') !== false || $weatherRain >= 50;
 
-        // 2. Weather inquiry
+        // 6. Weather inquiry
         if (str_contains($msgLower, 'weather') || str_contains($msgLower, 'panahon') || str_contains($msgLower, 'klima') || str_contains($msgLower, 'ulan') || str_contains($msgLower, 'uwan')) {
             if ($isBisaya) {
                 $advice = $isRainy ? "Tungod kay naay uwan, maayo mag-book sa among covered A-Houses o Function Hall para komportable mo." : "Nindot kaayo ang panahon para mag-langoy sa pool o mag-relax sa riverside Payag 2 o 6!";
@@ -298,7 +402,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 3. Location / Vibe inquiry (Riverside, Mountain breeze, Garden shade, Scenic view)
+        // 7. Location / Vibe inquiry (Riverside, Mountain breeze, Garden shade, Scenic view)
         if (str_contains($msgLower, 'river') || str_contains($msgLower, 'suba') || str_contains($msgLower, 'ilog')) {
             if ($isBisaya) {
                 return "Kung gusto kag duol sa suba nga presko ug relaxing, girekomenda namo ang Payag 2 ug Payag 6 (₱300)! Naa kini dapit sa sapa nga gilibutan sa kalasangan.";
@@ -325,7 +429,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 4. Group recommendation (pax / number of people)
+        // 8. Group recommendation (pax / number of people)
         if (preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $m) ||
             preg_match('/for\s+(\d+)/i', $userMessage, $m)) {
             $pax = (int) $m[1];
@@ -356,7 +460,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 5. Specific amenity inquiry (Cottage / Payag / A-House / Function Hall)
+        // 9. Specific amenity inquiry (Cottage / Payag / A-House / Function Hall)
         if (str_contains($msgLower, 'cottage') || str_contains($msgLower, 'kubo') || str_contains($msgLower, 'shed')) {
             if ($isBisaya) {
                 return "Ang among mga Cottage (Cottage 1 to 6) kay ₱200 para sa daytime o nighttime, naay lamesa ug lingkoranan para sa pamilya hangtod 10 ka tawo (lahi ang entrance nga ₱20 ug pool nga ₱50).";
@@ -385,7 +489,7 @@ class GuestChatbotController extends Controller
             return "Our Function Hall is ₱5,000 for daytime and ₱10,000 for nighttime (accommodating 15 to 50+ guests). It includes free entrance and free pool access for your group!";
         }
 
-        // 6. Entrance fees / swimming pool inquiry
+        // 10. Entrance fees / swimming pool inquiry
         if (str_contains($msgLower, 'entrance') || str_contains($msgLower, 'fee') || str_contains($msgLower, 'rate') || str_contains($msgLower, 'price') || str_contains($msgLower, 'pool')) {
             $settings = ParkSetting::first();
             $dayAdult = $settings ? number_format((float)($settings->daytime_adult_entrance_fee ?? 20)) : '20';
@@ -399,7 +503,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 7. Operating hours / schedule inquiry
+        // 11. Operating hours / schedule inquiry
         if (str_contains($msgLower, 'hour') || str_contains($msgLower, 'time') || str_contains($msgLower, 'open') || str_contains($msgLower, 'schedule') || str_contains($msgLower, 'oras')) {
             $settings = ParkSetting::first();
             $openTime = $settings?->opening_time ? Carbon::parse($settings->opening_time)->format('g:i A') : '8:00 AM';
@@ -422,6 +526,130 @@ class GuestChatbotController extends Controller
         }
     }
 
+    /**
+     * Intelligent topic detector for Guest AI assistant across all 12 permitted tables.
+     * Supports misspellings, colloquial expressions, Bisaya, Tagalog, and English.
+     */
+    private function detectGuestTopics(string $message): array
+    {
+        $msg = ' ' . strtolower($message) . ' ';
+        $topics = [
+            'is_specific' => false,
+            'specific_entity' => false,
+            'specific_id' => null,
+            'search_terms' => [],
+            'booking_guide' => false,
+            'directions' => false,
+            'amenities' => false,
+            'weather' => false,
+            'activities' => false,
+            'events' => false,
+            'rules' => false,
+            'feedbacks' => false,
+            'reservations' => false,
+        ];
+
+        // 1. Specific Reservation / Booking ID (e.g., "res #12", "booking 5", "reservation 104")
+        if (preg_match('/(?:res(?:ervation)?|booking|boking|ref(?:erence)?)\s*(?:#|no\.?|num(?:ber)?)?\s*(\d+)/i', $msg, $m)) {
+            $topics['specific_id'] = (int) $m[1];
+            $topics['specific_entity'] = true;
+            $topics['reservations'] = true;
+            $topics['is_specific'] = true;
+        } elseif (preg_match('/#(\d+)\b/', $msg, $m)) {
+            $topics['specific_id'] = (int) $m[1];
+            $topics['specific_entity'] = true;
+            $topics['reservations'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 2. Search for booker name, email, or phone number
+        if (preg_match('/(?:under|name\s*is|para\s*kang|kay|booker|guest)\s+([A-Za-z]{2,}(?:\s+[A-Za-z]{2,})*)/i', $message, $m)) {
+            $candidate = trim($m[1]);
+            if (!in_array(strtolower($candidate), ['hinaguan', 'nature park', 'spring view', 'jasaan', 'solana', 'cottage', 'payag', 'ahouse', 'pool'])) {
+                $topics['search_terms'][] = $candidate;
+                $topics['specific_entity'] = true;
+                $topics['reservations'] = true;
+                $topics['is_specific'] = true;
+            }
+        }
+        if (preg_match('/(09\d{9}|\+639\d{9})/', $message, $m)) {
+            $topics['search_terms'][] = $m[1];
+            $topics['specific_entity'] = true;
+            $topics['reservations'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 3. Online Booking Guide Intent (with typo tolerance & multilingual)
+        if (preg_match('/(?:how\s+to\s+book|paano\s+(?:mag-?)?book|unsaon\s+pag-?book|unsaon\s+pag-?reserve|paano\s+mag-?reserve|steps?\s+to\s+book|online\s+booking|book\s+now|downpayment|down\s*payment|no\s*refund|non-?refundable|refund\s*policy|dp\b|unsaon\s+pagpa-?reserve)/i', $msg)) {
+            $topics['booking_guide'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 4. Directions / How to Go Intent (Spring View, Solana, Jasaan, inner road, commute, Google Maps)
+        if (preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pag-?anhi|paano\s+makarating|location|address|asa\s+dapit|saan\s+banda|saan\s+ang|spring\s*view|jasaan|solana|commute|byahe|sakay|inner\s*road|inner\s*way|google\s*map|waze|landmark)/i', $msg)) {
+            $topics['directions'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 5. Amenities & Rates (cottage, payag, a-house, function hall, pool, rates)
+        if (preg_match('/(?:amenit|cottage|cotag|kotats|payag|pyag|a-?house|ahouse|function\s*hall|kubo|pool|swim|rate|price|tagpila|magkano|pila|entrance|bayad|presyo)/i', $msg)) {
+            $topics['amenities'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 6. Weather & Climate
+        if (preg_match('/(?:weather|panahon|klima|ulan|uwan|rain|init|sunny|temp|forecast|tugnaw|bagyo)/i', $msg)) {
+            $topics['weather'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 7. Park Activities (park_activities)
+        if (preg_match('/(?:activit|unsa(?:ng)?\s*(?:mabuhat|buhaton)|ano(?:ng)?\s*(?:pwedeng\s*)?gawin|things\s+to\s+do|river\s*swim|pictorial|picture|photo|relax|hike|adventure)/i', $msg)) {
+            $topics['activities'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 8. Park Events (park_events)
+        if (preg_match('/(?:event|happening|kalingawan|selebrasyon|occasion|fiesta|party|gathering|schedule)/i', $msg)) {
+            $topics['events'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 9. Park Rules & Policies (park_rules)
+        if (preg_match('/(?:rule|policy|pet|corkage|food|dala\s*pagkaon|pwede\s*ba|bawal|allowed|prohibit|oras|open|close|operating\s*hour)/i', $msg)) {
+            $topics['rules'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 10. Reviews & Feedbacks (feedbacks)
+        if (preg_match('/(?:feedback|review|rating|star|comment|kasinatian|opinyon|testimoni)/i', $msg)) {
+            $topics['feedbacks'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        // 11. General Reservations / Booking inquiry
+        if (preg_match('/(?:reserv|booking|boking|status|check-?in|check\s*my)/i', $msg)) {
+            $topics['reservations'] = true;
+        }
+
+        return $topics;
+    }
+
+    /**
+     * Assemble live guest context from the 12 permitted database tables:
+     * 1. park_settings
+     * 2. daily_weather_shift_logs
+     * 3. amenities
+     * 4. amenities_benefits
+     * 5. reservation_amenities
+     * 6. park_activities
+     * 7. park_rules
+     * 8. park_events
+     * 9. feedbacks
+     * 10. reservations
+     * 11. customers
+     * 12. reservation_guests
+     */
     private function getGuestContext(string $message): string
     {
         $context = '';
@@ -535,7 +763,7 @@ class GuestChatbotController extends Controller
                 . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
         }
 
-        // Live occupancy check
+        // Table 5: reservation_amenities (Live occupancy check)
         $activeBooked = ReservationAmenity::with(['reservation', 'amenity'])
             ->whereIn('status', ['Checked In', 'Confirmed', 'active'])
             ->whereHas('reservation', fn ($q) => $q->whereIn('status', ['Checked In', 'Confirmed', 'active']))
@@ -562,38 +790,125 @@ class GuestChatbotController extends Controller
             . "- 7 to 10 persons: Recommend Cottages (₱200) or Payags (₱300).\n"
             . "- 15 to 50+ persons (Large events, reunions, corporate gatherings): Recommend Function Hall (₱5,000 day / ₱10,000 night, includes free entrance & pool access).\n";
 
-        // Table 5: park_rules
-        $rules = ParkRule::all();
-        if ($rules->isNotEmpty()) {
-            $context .= "\n[5. OFFICIAL PARK RULES & POLICIES (FROM DATABASE park_rules)]:\n";
-            foreach ($rules as $r) {
-                $context .= "- {$r->rule_name}: {$r->rule_descriptions}\n";
+        // Intelligent connected topic detection
+        $topics = $this->detectGuestTopics($message);
+
+        // Table 6: park_activities
+        if (!empty($topics['activities']) || empty($topics['is_specific'])) {
+            $activities = ParkActivity::all();
+            if ($activities->isNotEmpty()) {
+                $context .= "\n[5. OFFICIAL PARK ACTIVITIES (FROM DATABASE park_activities)]:\n";
+                foreach ($activities as $act) {
+                    $context .= "- {$act->activity}: {$act->description}\n";
+                }
             }
         }
 
-        // Table 6: park_events
-        $events = ParkEvent::where('is_active', true)->orderBy('date')->get();
-        if ($events->isNotEmpty()) {
-            $context .= "\n[6. ACTIVE PARK EVENTS & HAPPENINGS (FROM DATABASE park_events)]:\n";
-            foreach ($events as $ev) {
-                $dateStr = $ev->date ? Carbon::parse($ev->date)->format('M d, Y') : 'Date TBA';
-                $dayStr = $ev->day ? " ({$ev->day})" : "";
-                $timeStr = $ev->time ? " at {$ev->time}" : "";
-                $context .= "- {$ev->title}: {$dateStr}{$dayStr}{$timeStr} - {$ev->event}\n";
+        // Table 7: park_rules
+        if (!empty($topics['rules']) || empty($topics['is_specific'])) {
+            $rules = ParkRule::all();
+            if ($rules->isNotEmpty()) {
+                $context .= "\n[6. OFFICIAL PARK RULES & POLICIES (FROM DATABASE park_rules)]:\n";
+                foreach ($rules as $r) {
+                    $context .= "- {$r->rule_name}: {$r->rule_descriptions}\n";
+                }
             }
         }
 
-        // Table 7: feedbacks
-        $feedbackCount = Feedback::count();
-        $feedbacks = Feedback::where('is_shown', true)->latest()->take(3)->get();
-        if ($feedbackCount > 0 || $feedbacks->isNotEmpty()) {
-            $avgStars = number_format((float) (Feedback::avg('stars') ?: 5.0), 1);
-            $context .= "\n[7. GUEST REVIEWS & FEEDBACK (FROM DATABASE feedbacks)]:\n"
-                . "- Overall Rating: {$avgStars} / 5.0 stars ({$feedbackCount} verified reviews).\n";
-            foreach ($feedbacks as $fb) {
-                $name = $fb->is_anonymous ? 'A guest' : ($fb->full_name ?: 'A guest');
-                $context .= "- {$name} ({$fb->stars} stars): \"{$fb->description}\"\n";
+        // Table 8: park_events
+        if (!empty($topics['events']) || empty($topics['is_specific'])) {
+            $events = ParkEvent::where('is_active', true)->orderBy('date')->get();
+            if ($events->isNotEmpty()) {
+                $context .= "\n[7. ACTIVE PARK EVENTS & HAPPENINGS (FROM DATABASE park_events)]:\n";
+                foreach ($events as $ev) {
+                    $dateStr = $ev->date ? Carbon::parse($ev->date)->format('M d, Y') : 'Date TBA';
+                    $dayStr = $ev->day ? " ({$ev->day})" : "";
+                    $timeStr = $ev->time ? " at {$ev->time}" : "";
+                    $context .= "- {$ev->title}: {$dateStr}{$dayStr}{$timeStr} - {$ev->event}\n";
+                }
             }
+        }
+
+        // Table 9: feedbacks
+        if (!empty($topics['feedbacks']) || empty($topics['is_specific'])) {
+            $feedbackCount = Feedback::count();
+            $feedbacks = Feedback::where('is_shown', true)->latest()->take(3)->get();
+            if ($feedbackCount > 0 || $feedbacks->isNotEmpty()) {
+                $avgStars = number_format((float) (Feedback::avg('stars') ?: 5.0), 1);
+                $context .= "\n[8. GUEST REVIEWS & FEEDBACK (FROM DATABASE feedbacks)]:\n"
+                    . "- Overall Rating: {$avgStars} / 5.0 stars ({$feedbackCount} verified reviews).\n";
+                foreach ($feedbacks as $fb) {
+                    $name = $fb->is_anonymous ? 'A guest' : ($fb->full_name ?: 'A guest');
+                    $context .= "- {$name} ({$fb->stars} stars): \"{$fb->description}\"\n";
+                }
+            }
+        }
+
+        // Tables 10, 11 & 12: reservations, customers, reservation_guests
+        if (!empty($topics['specific_id']) || !empty($topics['search_terms']) || (!empty($topics['reservations']) && !empty($topics['is_specific']))) {
+            $matchedReservations = collect();
+
+            if (!empty($topics['specific_id'])) {
+                $foundById = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+                    ->find($topics['specific_id']);
+                if ($foundById) {
+                    $matchedReservations->push($foundById);
+                }
+            }
+
+            if (!empty($topics['search_terms'])) {
+                foreach ($topics['search_terms'] as $term) {
+                    $found = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer'])
+                        ->where(function ($q) use ($term) {
+                            $q->where('booker_name', 'like', "%{$term}%")
+                              ->orWhere('phone', 'like', "%{$term}%")
+                              ->orWhere('email', 'like', "%{$term}%");
+                        })
+                        ->take(3)
+                        ->get();
+                    $matchedReservations = $matchedReservations->merge($found);
+                }
+            }
+
+            $matchedReservations = $matchedReservations->unique('id');
+
+            if ($matchedReservations->isNotEmpty()) {
+                $context .= "\n[9. GUEST RESERVATION STATUS (FROM DATABASE reservations, customers, reservation_guests)]:\n";
+                foreach ($matchedReservations as $r) {
+                    $ams = $r->reservationAmenities->map(fn ($ra) => ($ra->amenity?->amenities_name ?? 'Amenity') . " [{$ra->status}]")->implode(', ');
+                    $guestList = $r->reservationGuests->map(fn ($g) => $g->customer ? "{$g->customer->first_name} {$g->customer->last_name}" : 'Guest')->implode(', ');
+                    $dpStatus = $r->amount_paid >= ($r->total_amount * 0.5) ? 'Paid (50% deposit received)' : 'Pending deposit';
+
+                    $context .= "- Reservation #{$r->id} for {$r->booker_name}:\n"
+                        . "  * Status: {$r->status} ({$r->reservation_type})\n"
+                        . "  * Dates & Slot: {$r->reservation_date} [{$r->start_slot}] to " . ($r->end_date ?: $r->reservation_date) . " [" . ($r->end_slot ?: $r->start_slot) . "]\n"
+                        . "  * Number of Guests: {$r->number_of_guests}\n"
+                        . "  * Amenities: " . ($ams ?: 'None recorded') . "\n"
+                        . "  * Registered Companions: " . ($guestList ?: 'None recorded') . "\n"
+                        . "  * Financials: Total: ₱" . number_format($r->total_amount, 2) . ", Paid: ₱" . number_format($r->amount_paid, 2) . ", Balance Due: ₱" . number_format($r->remaining_balance, 2) . " [{$r->payment_status}, Deposit: {$dpStatus}]\n";
+                }
+            }
+        }
+
+        // Connected Guides: Online Booking and How to Go
+        if (!empty($topics['booking_guide']) || empty($topics['is_specific'])) {
+            $context .= "\n[10. HOW TO BOOK A RESERVATION ONLINE (PROCEDURE & 50% NON-REFUNDABLE POLICY)]:\n"
+                . "1. Click the 'Book Now' button on the website navigation bar.\n"
+                . "2. Step 1: Either pick your visit date on the interactive calendar, or pick your desired amenity (Cottage 1-6, Payag 1-6, A-House 1-8, or Function Hall).\n"
+                . "3. Step 2: Choose your session slot: Daytime (8:00 AM – 5:00 PM), Nighttime (6:00 PM – 8:00 AM next morning), or multi-day Continuous stay.\n"
+                . "4. Step 3: Enter the primary guest information (Full name, phone, email) and companion headcount with optional swimming pool access.\n"
+                . "5. Step 4: Pay the required 50% DOWNPAYMENT online to lock in and confirm your reservation.\n"
+                . "CRITICAL POLICY REMINDER: The 50% downpayment is STRICTLY NON-REFUNDABLE (no refund policy), but rescheduling of dates can be requested if given prior notice.\n";
+        }
+
+        if (!empty($topics['directions']) || empty($topics['is_specific'])) {
+            $context .= "\n[11. HOW TO GO / DIRECTIONS TO HINAGUAN NATURE PARK (LANDMARK & NAVIGATION)]:\n"
+                . "- Location: Zone 2, Barangay Solana, Jasaan, Misamis Oriental.\n"
+                . "- Landmark on the Highway: Drop off at 'Spring View Resort' (a popular swimming pool resort along the highway in Solana, Jasaan, right past the Solana Bridge).\n"
+                . "- Inner Road Route: From the national highway right at the Spring View Resort turn-off, enter and take the inner road heading inland toward the river and mountains.\n"
+                . "- Commute: From Cagayan de Oro City (Agora Bus Terminal) or neighboring towns, board any bus (Rural Transit), van, or jeep heading to Jasaan or Balingasag. Tell the driver or conductor to drop you off in Solana, Jasaan at the Spring View Resort corner.\n"
+                . "- Inner Road Transport: At the Spring View junction, take a local 'habal-habal' (motorcycle taxi) directly to Hinaguan Nature Park, or drive through the inner road with your private vehicle.\n"
+                . "- Google Maps & Waze: Searchable and navigable directly on Google Maps or Waze by typing 'Hinaguan Nature Park' or 'Spring View Resort'.\n";
         }
 
         return $context;
