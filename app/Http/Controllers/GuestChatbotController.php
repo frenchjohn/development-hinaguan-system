@@ -60,7 +60,7 @@ class GuestChatbotController extends Controller
 
         $guestContext = $this->getGuestContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the warm, friendly, intelligent, and helpful AI concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+        $systemPrompt = "You are Bren (also known as Bren AI Assistant), the warm, friendly, intelligent, and helpful AI concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OPERATIONAL RULES (STRICTLY ENFORCED):\n"
             . "1. STRICT DATABASE-ONLY KNOWLEDGE & SCOPE (12 PERMITTED TABLES ONLY):\n"
             . "   - You ONLY search and retrieve information from the LIVE DATABASE CONTEXT below across these 12 tables:\n"
@@ -245,8 +245,8 @@ class GuestChatbotController extends Controller
         // 6. Strip any leftover "Draft:", "Response:", "Answer:" labels at start
         $text = preg_replace('/^(?:Draft|Final\s+Response|Final\s+Answer|Response|Output|Answer|Reply):\s*/i', '', trim($text));
 
-        // 7. Strip leading bot/role prefixes like "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
-        $text = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
+        // 7. Strip leading bot/role prefixes like "Bren:", "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
+        $text = preg_replace('/^(?:Bren(?:\s+AI\s+Assistant)?|HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
 
         // 8. If the text still starts with numbered analysis like "1. Analyze User Input:", reject and generate direct answer
         if (preg_match('/^\s*\d+\.\s*(?:Analyze|Analysis|Check|Determine|Plan)/i', $text)) {

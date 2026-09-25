@@ -61,7 +61,7 @@ class AdminChatbotController extends Controller
         $forbiddenTopics = ['write python code', 'solve math equation', 'celebrity gossip', 'astrology horoscope', 'cryptocurrency trading'];
         foreach ($forbiddenTopics as $topic) {
             if (stripos($userMessage, $topic) !== false) {
-                $offTopicReply = "I am the Hinaguan Nature Park Admin Intelligence Assistant. I specialize in park operations, reservations, revenue analytics, staff records, and activity audit logs.";
+                $offTopicReply = "I am Admin Bren, the Hinaguan Nature Park Admin Bren AI Assistant. I specialize in park operations, reservations, revenue analytics, staff records, and activity audit logs.";
                 if ($userId) {
                     ChatbotMessage::create([
                         'user_type' => 'admin',
@@ -94,10 +94,10 @@ class AdminChatbotController extends Controller
 
         $adminContext = $this->getAdminContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the intelligent, highly capable, and professional Executive Intelligence Assistant for administrators at Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+        $systemPrompt = "You are Admin Bren (also known as Admin Bren AI Assistant), the intelligent, highly capable, and professional Executive Intelligence Assistant for administrators at Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
             . "- OUTPUT ONLY YOUR DIRECT CONVERSATIONAL BRIEFING to the administrator. Never output reasoning steps, thinking processes, chain-of-thought, scratchpads, or draft prefixes.\n"
-            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your briefing.\n"
+            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', 'Admin Bren:', 'Bren:', or 'HinaguanBot:'. Start directly with your briefing.\n"
             . "- Maintain an articulate, executive, and warm tone (1 to 3 concise flowing sentences for standard questions, or structured bulleted reports when detailed breakdowns are requested).\n"
             . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote revenue figures, staff records, guest counts, rates, and audit logs EXACTLY as provided in the LIVE SYSTEM & DATABASE CONTEXT below. Never guess or fabricate information.\n\n"
             . "DATABASE COMPREHENSION & PARK LOGIC:\n"
@@ -474,8 +474,8 @@ class AdminChatbotController extends Controller
         // 6. Strip any leftover "Draft:", "Response:", "Answer:" labels at start
         $text = preg_replace('/^(?:Draft|Final\s+Response|Final\s+Answer|Response|Output|Answer|Reply):\s*/i', '', trim($text));
 
-        // 7. Strip leading bot/role prefixes like "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
-        $text = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
+        // 7. Strip leading bot/role prefixes like "Admin Bren:", "Bren:", "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
+        $text = preg_replace('/^(?:Admin\s+Bren|Bren(?:\s+AI\s+Assistant)?|HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
 
         // 8. Strip surrounding quotation marks if the draft was wrapped in quotes (e.g., `"Right now, ..."` or `'Right now, ...'`)
         $text = trim($text);

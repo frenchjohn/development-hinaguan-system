@@ -10,7 +10,7 @@
                     <span class="chatbot-proactive-bubble__pulse" aria-hidden="true"></span>
                 </div>
                 <div class="chatbot-proactive-bubble__meta">
-                    <span class="chatbot-proactive-bubble__name">Admin Intelligence</span>
+                    <span class="chatbot-proactive-bubble__name">Admin Bren</span>
                     <span class="chatbot-proactive-bubble__tag" id="proactiveHeadline">Notice</span>
                 </div>
                 <button type="button" class="chatbot-proactive-bubble__close-icon" id="proactiveCloseIcon" aria-label="Dismiss message" title="Dismiss">
@@ -41,7 +41,7 @@
     </aside>
 
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open Admin AI Assistant" aria-expanded="false">
-        <span class="chatbot-toggle__label">Admin Intelligence</span>
+        <span class="chatbot-toggle__label">Admin Bren AI Assistant</span>
         <div class="chatbot-toggle__icon chatbot-toggle__icon--chat chatbot-toggle__logo-wrap">
             <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Admin Logo" class="chatbot-toggle__logo-img">
         </div>
@@ -59,10 +59,10 @@
                 </div>
                 <div>
                     <div class="chatbot-header__title-row">
-                        <h4 class="chatbot-header__title">Admin Intelligence</h4>
+                        <h4 class="chatbot-header__title">Admin Bren</h4>
                         <span class="chatbot-badge-admin">ADMIN</span>
                     </div>
-                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Analytics &amp; Operations &middot; Online</p>
+                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Admin Bren AI Assistant &middot; Online</p>
                 </div>
             </div>
             <div class="chatbot-header__actions">
@@ -80,7 +80,7 @@
         </div>
 
         <div class="chatbot-quick" id="chatbotQuick">
-            <span class="chatbot-quick__label">Admin Intelligence Queries</span>
+            <span class="chatbot-quick__label">Admin Bren Queries</span>
             <div class="chatbot-quick__chips">
                 <button type="button" class="chatbot-chip" data-quick-reply="What are the recent activities and who performed them?">Recent Activities</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="Show me sales and revenue breakdown">Sales &amp; Revenue</button>
@@ -97,10 +97,10 @@
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">Admin Intelligence</span>
+                        <span class="chatbot-message__author">Admin Bren</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>Welcome, Administrator! I am your <strong>Admin Intelligence Assistant</strong>. I can mine revenue metrics, guest demographics (kids, teens, adults, seniors), staff account status, and query our live <strong>Recent Activity audit log</strong> (e.g., <em>"When did reservation 4 extend stay and who did it?"</em>). How may I assist you?</p>
+                        <p>Welcome, Administrator! I am <strong>Admin Bren</strong>, your <strong>Admin Bren AI Assistant</strong>. I can mine revenue metrics, guest demographics (kids, teens, adults, seniors), staff account status, and query our live <strong>Recent Activity audit log</strong> (e.g., <em>"When did reservation 4 extend stay and who did it?"</em>). How may I assist you?</p>
                     </div>
                 </div>
             </div>

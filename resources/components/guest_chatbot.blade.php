@@ -15,7 +15,7 @@
     </aside>
 
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open chatbot" aria-expanded="false">
-        <span class="chatbot-toggle__label">Ask HinaguanBot</span>
+        <span class="chatbot-toggle__label">Bren AI Assistant</span>
         <div class="chatbot-toggle__icon chatbot-toggle__icon--chat chatbot-toggle__logo-wrap">
             <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park Logo" class="chatbot-toggle__logo-img">
         </div>
@@ -32,8 +32,8 @@
                     <span class="chatbot-avatar__status" aria-hidden="true"></span>
                 </div>
                 <div>
-                    <h4 class="chatbot-header__title">HinaguanBot</h4>
-                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Online &middot; replies instantly</p>
+                    <h4 class="chatbot-header__title">Bren</h4>
+                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Bren AI Assistant &middot; Online</p>
                 </div>
             </div>
             <div class="chatbot-header__actions">
@@ -51,7 +51,7 @@
         </div>
 
         <div class="chatbot-quick" id="chatbotQuick">
-            <span class="chatbot-quick__label">Ask HinaguanBot</span>
+            <span class="chatbot-quick__label">Ask Bren</span>
             <div class="chatbot-quick__chips">
                 <button type="button" class="chatbot-chip" data-quick-reply="What amenities are available today and what are their rates?">Available Amenities</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="Suggest the best amenity for our group of 10 people">Suggest for 10 Pax</button>
@@ -68,10 +68,10 @@
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot</span>
+                        <span class="chatbot-message__author">Bren</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>Hello and welcome to <strong>Hinaguan Nature Park</strong>! &#127807; I can suggest the best amenities for your group size, check live availability &amp; expected checkout times, and guide you through online or walk-in booking. How may I help you today?</p>
+                        <p>Hello and welcome to <strong>Hinaguan Nature Park</strong>! &#127807; I am <strong>Bren</strong>, your <strong>Bren AI Assistant</strong>. I can suggest the best amenities for your group size, check live availability &amp; expected checkout times, and guide you through online or walk-in booking. How may I help you today?</p>
                     </div>
                 </div>
             </div>

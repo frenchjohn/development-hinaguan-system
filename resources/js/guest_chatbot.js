@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot</span>
+                        <span class="chatbot-message__author">Bren</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatbotMessages.innerHTML = '';
         // Bring back the welcome message + quick-reply chips
         chatbotWidget.classList.remove('is-conversation');
-        addMessage('Hello! I\'m HinaguanBot 🌿 I can help you with our amenities, rates, and how to book your visit. What would you like to know?', true, false);
+        addMessage('Hello! I\'m Bren, your Bren AI Assistant 🌿 I can help you with our amenities, rates, and how to book your visit. What would you like to know?', true, false);
         chatbotInput?.focus();
     });
 

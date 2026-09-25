@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">Staff Co-Pilot</span>
+                        <span class="chatbot-message__author">Bren</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showWelcomeMessage = () => {
         chatbotMessages.innerHTML = '';
         chatbotWidget.classList.remove('is-conversation');
-        addMessage('Hello! I\'m HinaguanBot, your staff assistant. I can walk you through check-ins, guest records, reservations, and park operations. How can I help your shift today?', true);
+        addMessage('Hello! I\'m Bren, your Bren AI Assistant for staff operations. I can walk you through check-ins, guest records, reservations, and park operations. How can I help your shift today?', true);
     };
 
     // Load database history

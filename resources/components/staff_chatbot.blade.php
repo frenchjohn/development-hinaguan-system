@@ -10,7 +10,7 @@
                     <span class="chatbot-proactive-bubble__pulse" aria-hidden="true"></span>
                 </div>
                 <div class="chatbot-proactive-bubble__meta">
-                    <span class="chatbot-proactive-bubble__name">Hinaguan AI</span>
+                    <span class="chatbot-proactive-bubble__name">Bren AI</span>
                     <span class="chatbot-proactive-bubble__tag" id="proactiveHeadline">Notice</span>
                 </div>
                 <button type="button" class="chatbot-proactive-bubble__close-icon" id="proactiveCloseIcon" aria-label="Dismiss message" title="Dismiss">
@@ -41,7 +41,7 @@
     </aside>
 
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open chatbot" aria-expanded="false">
-        <span class="chatbot-toggle__label">Staff Operations Co-Pilot</span>
+        <span class="chatbot-toggle__label">Bren AI Assistant</span>
         <div class="chatbot-toggle__icon chatbot-toggle__icon--chat chatbot-toggle__logo-wrap">
             <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Staff Logo" class="chatbot-toggle__logo-img">
         </div>
@@ -59,10 +59,10 @@
                 </div>
                 <div>
                     <div class="chatbot-header__title-row">
-                        <h4 class="chatbot-header__title">Staff Co-Pilot</h4>
+                        <h4 class="chatbot-header__title">Bren</h4>
                         <span class="chatbot-badge-staff">STAFF</span>
                     </div>
-                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Operations Assistant &middot; Online</p>
+                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Bren AI Assistant &middot; Online</p>
                 </div>
             </div>
             <div class="chatbot-header__actions">
@@ -97,10 +97,10 @@
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">Staff Co-Pilot</span>
+                        <span class="chatbot-message__author">Bren</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>Hello! I am your <strong>Staff Operations &amp; Data Mining Copilot</strong>. I can assist you with guest check-in/out schedules, checkout countdowns, reservation lookups, sales figures, and demographic mining (kids, teens, adults, seniors, gender, nationality). How can I assist your shift?</p>
+                        <p>Hello! I am <strong>Bren</strong>, your <strong>Bren AI Assistant</strong> for staff operations. I can assist you with guest check-in/out schedules, checkout countdowns, reservation lookups, sales figures, and demographic mining (kids, teens, adults, seniors, gender, nationality). How can I assist your shift?</p>
                     </div>
                 </div>
             </div>

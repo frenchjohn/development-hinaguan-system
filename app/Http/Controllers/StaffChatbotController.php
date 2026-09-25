@@ -117,10 +117,10 @@ class StaffChatbotController extends Controller
 
         $staffContext = $this->getStaffContext($userMessage);
 
-        $systemPrompt = "You are HinaguanBot, the intelligent and highly accurate AI Operations Assistant for park staff at Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
+        $systemPrompt = "You are Bren (also known as Bren AI Assistant), the intelligent and highly accurate AI Operations Assistant for park staff at Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
             . "- OUTPUT ONLY YOUR DIRECT CONVERSATIONAL RESPONSE. Never include internal reasoning, thinking steps, chain-of-thought, outlines, scratchpads, or draft prefixes.\n"
-            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', or 'HinaguanBot:'. Start directly with your message to the staff member.\n"
+            . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', 'Bren:', or 'HinaguanBot:'. Start directly with your message to the staff member.\n"
             . "- Keep your answer concise, natural, and friendly (1 to 3 clear sentences for quick questions, or neatly structured bullet points if a list or full breakdown is asked).\n"
             . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Every name, reservation ID, rate, headcount, balance, and schedule must be derived STRICTLY from the LIVE DATABASE CONTEXT below. Never guess or invent numbers.\n\n"
             . "DATABASE COMPREHENSION & PARK LOGIC:\n"
@@ -573,8 +573,8 @@ class StaffChatbotController extends Controller
         // 6. Strip any leftover "Draft:", "Response:", "Answer:" labels at start
         $text = preg_replace('/^(?:Draft|Final\s+Response|Final\s+Answer|Response|Output|Answer|Reply):\s*/i', '', trim($text));
 
-        // 7. Strip leading bot/role prefixes like "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
-        $text = preg_replace('/^(?:HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
+        // 7. Strip leading bot/role prefixes like "Bren:", "HinaguanBot:", "StaffBot:", "AdminBot:", "Assistant:"
+        $text = preg_replace('/^(?:Bren(?:\s+AI\s+Assistant)?|HinaguanBot|StaffBot|AdminBot|GuestBot|Bot|Assistant|AI):\s*/i', '', trim($text));
 
         // 8. Strip surrounding quotation marks if the draft was wrapped in quotes (e.g., `"Right now, ..."` or `'Right now, ...'`)
         $text = trim($text);
