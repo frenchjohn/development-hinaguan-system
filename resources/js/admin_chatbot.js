@@ -161,6 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
         chatbotWindow.hidden = false;
         chatbotToggle.setAttribute('aria-expanded', 'true');
         chatbotWidget.classList.add('is-open');
+        if (window.innerWidth <= 640 && window.visualViewport) {
+            chatbotWindow.style.height = `${window.visualViewport.height}px`;
+        }
         setTimeout(() => {
             if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
         }, 300);
@@ -278,6 +281,9 @@ document.addEventListener('DOMContentLoaded', () => {
         savePreferences(isOpen, selectedModel);
 
         if (isOpen) {
+            if (window.innerWidth <= 640 && window.visualViewport) {
+                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+            }
             dismissProactiveBubble();
             chatbotInput?.focus();
             setTimeout(() => {
@@ -285,8 +291,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
                 }
             }, 50);
+        } else {
+            chatbotWindow.style.height = '';
         }
     };
+
+    if (window.visualViewport) {
+        const updateMobileViewportHeight = () => {
+            if (!isOpen) return;
+            if (window.innerWidth <= 640) {
+                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+                if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            } else {
+                chatbotWindow.style.height = '';
+            }
+        };
+        window.visualViewport.addEventListener('resize', updateMobileViewportHeight);
+        window.visualViewport.addEventListener('scroll', updateMobileViewportHeight);
+    }
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);

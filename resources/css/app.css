@@ -67,9 +67,17 @@
     --shadow-glass: var(--glass-shadow);
 }
 
+.hp-mobile-nav.is-open {
+    transform: translateX(0) !important;
+    translate: 0 0 !important;
+    --tw-translate-x: 0% !important;
+}
+
 @layer utilities {
     .hp-mobile-nav.is-open {
         transform: translateX(0) !important;
+        translate: 0 0 !important;
+        --tw-translate-x: 0% !important;
     }
     .hp-activity-modal.is-open {
         opacity: 1 !important;

@@ -60,12 +60,15 @@
                 </a>
 
                 {{-- Mobile Menu Button --}}
-                <button type="button" class="lg:hidden p-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition hp-menu-toggle" aria-label="Toggle navigation">
-                    <i class="bi bi-list text-2xl"></i>
+                <button type="button" id="hpMobileMenuToggle" class="lg:hidden p-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition hp-menu-toggle cursor-pointer" aria-label="Toggle navigation" aria-controls="hpMobileNav" aria-expanded="false">
+                    <i class="bi bi-list text-2xl pointer-events-none"></i>
                 </button>
             </div>
         </div>
     </header>
+
+    {{-- Mobile Navigation Backdrop Overlay --}}
+    <div id="hpMobileNavBackdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 opacity-0 hidden lg:hidden" aria-hidden="true"></div>
 
     {{-- Mobile Navigation Drawer --}}
     <div id="hpMobileNav" class="hp-mobile-nav fixed inset-y-0 right-0 w-72 bg-[#061a10]/95 backdrop-blur-xl border-l border-white/10 z-50 p-6 flex flex-col justify-between translate-x-full transition-transform duration-300 lg:hidden" aria-hidden="true">
@@ -76,7 +79,7 @@
                     <span class="font-serif font-bold text-white text-sm">Hinaguan Park</span>
                 </div>
                 <button type="button" id="hpMobileNavClose" class="text-white/70 hover:text-white p-1" aria-label="Close menu">
-                    <i class="bi bi-x-lg text-lg"></i>
+                    <i class="bi bi-x-lg text-lg pointer-events-none"></i>
                 </button>
             </div>
 

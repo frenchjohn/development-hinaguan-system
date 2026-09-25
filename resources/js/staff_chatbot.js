@@ -160,7 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Restore window state
     if (isOpen) {
         chatbotWindow.hidden = false;
+        chatbotWidget?.classList.add('is-open');
         chatbotToggle.setAttribute('aria-expanded', 'true');
+        if (window.innerWidth <= 640 && window.visualViewport) {
+            chatbotWindow.style.height = `${window.visualViewport.height}px`;
+        }
         setTimeout(() => {
             if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
         }, 300);
@@ -281,10 +285,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleChatbot = () => {
         isOpen = !isOpen;
         chatbotWindow.hidden = !isOpen;
+        chatbotWidget?.classList.toggle('is-open', isOpen);
         chatbotToggle.setAttribute('aria-expanded', isOpen);
         chatbotToggle.setAttribute('aria-label', isOpen ? 'Close chatbot' : 'Open chatbot');
         
         if (isOpen) {
+            if (window.innerWidth <= 640 && window.visualViewport) {
+                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+            }
             dismissProactiveBubble();
             chatbotInput.focus();
             setTimeout(() => {
@@ -292,10 +300,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
                 }
             }, 50);
+        } else {
+            chatbotWindow.style.height = '';
         }
         
         savePreferences(isOpen, selectedModel);
     };
+
+    if (window.visualViewport) {
+        const updateMobileViewportHeight = () => {
+            if (!isOpen) return;
+            if (window.innerWidth <= 640) {
+                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+                if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            } else {
+                chatbotWindow.style.height = '';
+            }
+        };
+        window.visualViewport.addEventListener('resize', updateMobileViewportHeight);
+        window.visualViewport.addEventListener('scroll', updateMobileViewportHeight);
+    }
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
