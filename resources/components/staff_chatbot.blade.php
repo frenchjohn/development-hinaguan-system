@@ -1,5 +1,5 @@
 <!-- Staff Chatbot Widget -->
-<div class="chatbot-widget chatbot-widget--staff" id="chatbotWidget" data-user-id="{{ session('auth_user.id', 0) }}">
+<div class="chatbot-widget chatbot-widget--staff" id="chatbotWidget" data-user-id="{{ session('auth_user.id', 0) }}" data-logo="{{ asset('storage/design_images/main_logo.jpeg') }}">
 
     <!-- Responsive AI Proactive Speech Bubble Pop-up -->
     <aside class="chatbot-proactive-bubble" id="chatbotProactiveBubble" hidden aria-live="polite" role="dialog" aria-label="AI Proactive Notice">
@@ -41,11 +41,10 @@
     </aside>
 
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open chatbot" aria-expanded="false">
-        <span class="chatbot-toggle__label">Ask the Assistant</span>
-        <svg class="chatbot-toggle__icon chatbot-toggle__icon--chat" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 14.5v.01"/>
-        </svg>
+        <span class="chatbot-toggle__label">Staff Operations Co-Pilot</span>
+        <div class="chatbot-toggle__icon chatbot-toggle__icon--chat chatbot-toggle__logo-wrap">
+            <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Staff Logo" class="chatbot-toggle__logo-img">
+        </div>
         <svg class="chatbot-toggle__icon chatbot-toggle__icon--close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -59,8 +58,11 @@
                     <span class="chatbot-avatar__status" aria-hidden="true"></span>
                 </div>
                 <div>
-                    <h4 class="chatbot-header__title">HinaguanBot</h4>
-                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Staff assistant &middot; online</p>
+                    <div class="chatbot-header__title-row">
+                        <h4 class="chatbot-header__title">Staff Co-Pilot</h4>
+                        <span class="chatbot-badge-staff">STAFF</span>
+                    </div>
+                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Operations Assistant &middot; Online</p>
                 </div>
             </div>
             <div class="chatbot-header__actions">
@@ -91,14 +93,11 @@
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chatbot-message chatbot-message--bot">
                 <div class="chatbot-message__avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
-                    </svg>
+                    <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot (Staff)</span>
+                        <span class="chatbot-message__author">Staff Co-Pilot</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>Hello! I am your <strong>Staff Operations &amp; Data Mining Copilot</strong>. I can assist you with guest check-in/out schedules, checkout countdowns, reservation lookups, sales figures, and demographic mining (kids, teens, adults, seniors, gender, nationality). How can I assist your shift?</p>
@@ -107,7 +106,7 @@
             </div>
         </div>
 
-        <div class="chatbot-model-selector">
+        <div class="chatbot-model-selector" id="chatbotModelSelector" hidden>
             <svg class="chatbot-model-selector__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/>
             </svg>
@@ -115,6 +114,11 @@
             <select id="chatbotModel" class="chatbot-model-select">
                 <option value="openrouter/free" selected>OpenRouter Free (Auto)</option>
             </select>
+            <button type="button" class="chatbot-model-selector__hide" id="chatbotModelHide" aria-label="Hide AI Model Selector" title="Hide AI Model Selector">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
         <div class="chatbot-input-wrapper">

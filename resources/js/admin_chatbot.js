@@ -83,6 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let clearArmTimer = null;
     let messages = [];
 
+    const getBotLogoUrl = () => {
+        return chatbotWidget?.getAttribute('data-logo')
+            || document.querySelector('.chatbot-avatar img')?.src
+            || '/storage/design_images/main_logo.jpeg';
+    };
+
     // Add message to chat UI
     const addMessage = (content, isBot = true) => {
         const messageDiv = document.createElement('div');
@@ -91,13 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isBot) {
             messageDiv.innerHTML = `
                 <div class="chatbot-message__avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693l-1.57-.393m15.6 0l1.134 4.536a.75.75 0 01-.728.932H3.794a.75.75 0 01-.728-.932L4.2 15.3"/>
-                    </svg>
+                    <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot (Admin)</span>
+                        <span class="chatbot-message__author">Admin Intelligence</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -178,6 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
     modelSelect?.addEventListener('change', (e) => {
         selectedModel = e.target.value;
         savePreferences(isOpen, selectedModel);
+    });
+
+    // Model selector toggle / hide handlers
+    const modelSelector = document.getElementById('chatbotModelSelector');
+    const modelHideBtn = document.getElementById('chatbotModelHide');
+    modelHideBtn?.addEventListener('click', () => {
+        if (modelSelector) {
+            modelSelector.hidden = true;
+        }
     });
 
     const currentUserId = chatbotWidget?.getAttribute('data-user-id') || '0';
@@ -393,9 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         typingDiv.id = 'chatbotTyping';
         typingDiv.innerHTML = `
             <div class="chatbot-message__avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693l-1.57-.393m15.6 0l1.134 4.536a.75.75 0 01-.728.932H3.794a.75.75 0 01-.728-.932L4.2 15.3"/>
-                </svg>
+                <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
             </div>
             <div class="chatbot-message__body">
                 <div class="chatbot-message__content">
@@ -424,6 +435,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const message = chatbotInput.value.trim();
         if (!message) return;
+
+        // Command to show/toggle AI Model selector
+        if (message.toLowerCase() === '/aimodel') {
+            chatbotInput.value = '';
+            if (modelSelector) {
+                modelSelector.hidden = !modelSelector.hidden;
+            }
+            return;
+        }
 
         const modelSelect = document.getElementById('chatbotModel');
         const activeModel = modelSelect ? modelSelect.value : 'openrouter/free';

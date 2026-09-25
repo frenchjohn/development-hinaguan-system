@@ -1,5 +1,5 @@
 <!-- Admin Chatbot Widget -->
-<div class="chatbot-widget chatbot-widget--admin" id="chatbotWidget" data-user-id="{{ session('auth_user.id', 0) }}">
+<div class="chatbot-widget chatbot-widget--admin" id="chatbotWidget" data-user-id="{{ session('auth_user.id', 0) }}" data-logo="{{ asset('storage/design_images/main_logo.jpeg') }}">
 
     <!-- Responsive AI Proactive Speech Bubble Pop-up -->
     <aside class="chatbot-proactive-bubble" id="chatbotProactiveBubble" hidden aria-live="polite" role="dialog" aria-label="Admin AI Proactive Notice">
@@ -42,9 +42,9 @@
 
     <button class="chatbot-toggle" id="chatbotToggle" aria-label="Open Admin AI Assistant" aria-expanded="false">
         <span class="chatbot-toggle__label">Admin Intelligence</span>
-        <svg class="chatbot-toggle__icon chatbot-toggle__icon--chat" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693l-1.57-.393m15.6 0l1.134 4.536a.75.75 0 01-.728.932H3.794a.75.75 0 01-.728-.932L4.2 15.3"/>
-        </svg>
+        <div class="chatbot-toggle__icon chatbot-toggle__icon--chat chatbot-toggle__logo-wrap">
+            <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Admin Logo" class="chatbot-toggle__logo-img">
+        </div>
         <svg class="chatbot-toggle__icon chatbot-toggle__icon--close" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
@@ -58,8 +58,11 @@
                     <span class="chatbot-avatar__status" aria-hidden="true"></span>
                 </div>
                 <div>
-                    <h4 class="chatbot-header__title">HinaguanBot <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 font-semibold uppercase tracking-wider ml-1">Admin</span></h4>
-                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Analytics &amp; Operations Copilot</p>
+                    <div class="chatbot-header__title-row">
+                        <h4 class="chatbot-header__title">Admin Intelligence</h4>
+                        <span class="chatbot-badge-admin">ADMIN</span>
+                    </div>
+                    <p class="chatbot-header__subtitle"><span class="chatbot-header__dot" aria-hidden="true"></span> Analytics &amp; Operations &middot; Online</p>
                 </div>
             </div>
             <div class="chatbot-header__actions">
@@ -90,13 +93,11 @@
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chatbot-message chatbot-message--bot">
                 <div class="chatbot-message__avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693l-1.57-.393m15.6 0l1.134 4.536a.75.75 0 01-.728.932H3.794a.75.75 0 01-.728-.932L4.2 15.3"/>
-                    </svg>
+                    <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot (Admin)</span>
+                        <span class="chatbot-message__author">Admin Intelligence</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>Welcome, Administrator! I am your <strong>Admin Intelligence Assistant</strong>. I can mine revenue metrics, guest demographics (kids, teens, adults, seniors), staff account status, and query our live <strong>Recent Activity audit log</strong> (e.g., <em>"When did reservation 4 extend stay and who did it?"</em>). How may I assist you?</p>
@@ -105,7 +106,7 @@
             </div>
         </div>
 
-        <div class="chatbot-model-selector">
+        <div class="chatbot-model-selector" id="chatbotModelSelector" hidden>
             <svg class="chatbot-model-selector__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/>
             </svg>
@@ -113,6 +114,11 @@
             <select id="chatbotModel" class="chatbot-model-select">
                 <option value="openrouter/free" selected>OpenRouter Free (Auto)</option>
             </select>
+            <button type="button" class="chatbot-model-selector__hide" id="chatbotModelHide" aria-label="Hide AI Model Selector" title="Hide AI Model Selector">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
         <div class="chatbot-input-wrapper">

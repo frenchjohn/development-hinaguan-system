@@ -84,6 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let clearArmTimer = null;
     let messages = [];
 
+    const getBotLogoUrl = () => {
+        return chatbotWidget?.getAttribute('data-logo')
+            || document.querySelector('.chatbot-avatar img')?.src
+            || '/storage/design_images/main_logo.jpeg';
+    };
+
     // Add message to chat UI
     const addMessage = (content, isBot = true) => {
         const messageDiv = document.createElement('div');
@@ -92,14 +98,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isBot) {
             messageDiv.innerHTML = `
                 <div class="chatbot-message__avatar">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
-                    </svg>
+                    <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
                 </div>
                 <div class="chatbot-message__body">
                     <div class="chatbot-message__meta">
-                        <span class="chatbot-message__author">HinaguanBot (Staff)</span>
+                        <span class="chatbot-message__author">Staff Co-Pilot</span>
                     </div>
                     <div class="chatbot-message__content">
                         <p>${formatBotMessage(content)}</p>
@@ -179,6 +182,15 @@ document.addEventListener('DOMContentLoaded', () => {
     modelSelect?.addEventListener('change', (e) => {
         selectedModel = e.target.value;
         savePreferences(isOpen, selectedModel);
+    });
+
+    // Model selector toggle / hide handlers
+    const modelSelector = document.getElementById('chatbotModelSelector');
+    const modelHideBtn = document.getElementById('chatbotModelHide');
+    modelHideBtn?.addEventListener('click', () => {
+        if (modelSelector) {
+            modelSelector.hidden = true;
+        }
     });
 
     const currentUserId = chatbotWidget?.getAttribute('data-user-id') || '0';
@@ -403,10 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         typingDiv.id = 'chatbotTyping';
         typingDiv.innerHTML = `
             <div class="chatbot-message__avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c-1.5 2.5-4 5-4 8a4 4 0 108 0c0-3-2.5-5.5-4-8z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M10 18h4"/>
-                </svg>
+                <img src="${getBotLogoUrl()}" alt="Hinaguan Logo" class="chatbot-avatar-img">
             </div>
             <div class="chatbot-message__body">
                 <div class="chatbot-message__content">
@@ -436,6 +445,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const message = chatbotInput.value.trim();
         if (!message) return;
+
+        // Command to show/toggle AI Model selector
+        if (message.toLowerCase() === '/aimodel') {
+            chatbotInput.value = '';
+            if (modelSelector) {
+                modelSelector.hidden = !modelSelector.hidden;
+            }
+            return;
+        }
         
         const modelSelect = document.getElementById('chatbotModel');
         const activeModel = modelSelect ? modelSelect.value : 'openrouter/free';
