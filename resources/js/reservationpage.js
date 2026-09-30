@@ -176,7 +176,7 @@ function initReservationPage() {
     const markTermsAccepted = () => {
         try {
             sessionStorage.setItem(TERMS_STORAGE_KEY, '1');
-        } catch (e) {}
+        } catch (e) { }
     };
 
     const updateTermsModalUI = () => {
@@ -1407,7 +1407,7 @@ function initReservationPage() {
                 document.querySelectorAll('[data-av-end-slot]').forEach(b => {
                     const slot = b.dataset.avEndSlot;
                     const isBooked = (slot === 'Daytime' && endDaytimeBooked) ||
-                                     (slot === 'Nighttime' && endNighttimeBooked);
+                        (slot === 'Nighttime' && endNighttimeBooked);
                     b.disabled = isBooked;
                     b.classList.toggle('is-disabled-slot', isBooked);
                     if (isBooked) {
@@ -2952,17 +2952,17 @@ function initReservationPage() {
         // for the currently selected start date (and end date for dpEndSlot buttons).
         if (curDate && datePickerAvailability.length > 0) {
             const startEntry = datePickerAvailability.find(e => e.date === curDate);
-            const endEntry   = curEndDate && curEndDate !== curDate
+            const endEntry = curEndDate && curEndDate !== curDate
                 ? datePickerAvailability.find(e => e.date === curEndDate)
                 : startEntry;
 
-            const dayBtn   = document.querySelector('[data-dp-start-slot="Daytime"]');
+            const dayBtn = document.querySelector('[data-dp-start-slot="Daytime"]');
             const nightBtn = document.querySelector('[data-dp-start-slot="Nighttime"]');
             const wholeDayPill = document.getElementById('dpWholeDayPill');
 
             // --- Start slot buttons ---
             if (startEntry) {
-                const startDaytimeBooked   = startEntry.daytime   === false;
+                const startDaytimeBooked = startEntry.daytime === false;
                 const startNighttimeBooked = startEntry.nighttime === false;
 
                 if (dayBtn && !dayBtn.disabled) {
@@ -3019,15 +3019,15 @@ function initReservationPage() {
                     if (dpRangeStartSlot === 'Daytime' && startDaytimeBooked && !startNighttimeBooked) {
                         dpSingleDayWholeDayActive = false;
                         dpRangeStartSlot = 'Nighttime';
-                        dpRangeEndSlot   = 'Nighttime';
-                        if (dayBtn)   dayBtn.classList.remove('is-active');
+                        dpRangeEndSlot = 'Nighttime';
+                        if (dayBtn) dayBtn.classList.remove('is-active');
                         if (nightBtn) nightBtn.classList.add('is-active');
                     } else if (dpRangeStartSlot === 'Nighttime' && startNighttimeBooked && !startDaytimeBooked) {
                         dpSingleDayWholeDayActive = false;
                         dpRangeStartSlot = 'Daytime';
-                        dpRangeEndSlot   = 'Daytime';
+                        dpRangeEndSlot = 'Daytime';
                         if (nightBtn) nightBtn.classList.remove('is-active');
-                        if (dayBtn && !dayBtn.disabled)   dayBtn.classList.add('is-active');
+                        if (dayBtn && !dayBtn.disabled) dayBtn.classList.add('is-active');
                     }
                 } else {
                     // Multi-day: if start slot is booked, switch to the other
@@ -3047,13 +3047,13 @@ function initReservationPage() {
 
             // --- End slot buttons (multi-day checkout session) ---
             if (!isSingleDay && endEntry) {
-                const endDaytimeBooked   = endEntry.daytime   === false;
+                const endDaytimeBooked = endEntry.daytime === false;
                 const endNighttimeBooked = endEntry.nighttime === false;
 
                 document.querySelectorAll('[data-dp-end-slot]').forEach(b => {
                     const slot = b.dataset.dpEndSlot;
                     const isBooked = (slot === 'Daytime' && endDaytimeBooked) ||
-                                     (slot === 'Nighttime' && endNighttimeBooked);
+                        (slot === 'Nighttime' && endNighttimeBooked);
                     b.disabled = isBooked;
                     b.classList.toggle('is-disabled-slot', isBooked);
                     if (isBooked) {

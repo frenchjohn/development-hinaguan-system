@@ -287,8 +287,16 @@
                             <span>Resched Requests</span>
                             <span id="reschedRequestsBadge" class="hidden inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-amber-600 rounded-full">0</span>
                         </button>
-                        <button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR" aria-label="Scan reservation QR">
-                            <i class="bi bi-qr-code-scan text-base"></i>
+                        <div class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <i class="bi bi-upc-scan text-xs"></i>
+                            <span>Hardware Scanner Ready</span>
+                        </div>
+                        <button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
+                            <i class="bi bi-camera-video text-base"></i>
                         </button>
                         <button type="button" class="resv-tool-btn inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#dfe5e0] bg-white px-3.5 py-2 text-sm font-semibold text-[#183d28] shadow-sm transition-all duration-150 hover:bg-gray-50 active:scale-95 dark:border-white/15 dark:bg-[#181b19] dark:text-[#f3f4f6] dark:hover:bg-[#242a26]" id="refreshTableBtn">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -1374,8 +1382,15 @@
         <div class="guest-modal__content guest-modal__content--wide relative z-[1] flex w-full max-w-[900px] max-h-[min(84vh,760px)] flex-row overflow-y-auto rounded-2xl bg-hp-cream p-6 shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="scanQrModalTitle">
             <button type="button" class="guest-modal__close absolute right-3 top-3 cursor-pointer border-0 bg-transparent text-2xl text-hp-text" data-close-scan-modal="true" aria-label="Close QR scanner">&times;</button>
             <div class="flex flex-1 flex-col justify-center p-6">
-                <h3 id="scanQrModalTitle" class="guest-modal__title m-0 mb-6 font-display text-xl text-hp-text">Scan Reservation QR</h3>
-                <p class="scan-modal__hint mb-6 text-sm leading-relaxed text-hp-text">Allow camera access and hold the reservation QR code in front of the lens.</p>
+                <h3 id="scanQrModalTitle" class="guest-modal__title m-0 mb-4 font-display text-xl text-hp-text">Scan Reservation QR</h3>
+                <p class="scan-modal__hint mb-3 text-sm leading-relaxed text-hp-text">Allow camera access and hold the reservation QR code in front of the lens.</p>
+                <div class="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200">
+                    <i class="bi bi-upc-scan text-base shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5"></i>
+                    <div>
+                        <span class="font-bold">Using a handheld USB / Wireless scanner?</span>
+                        <p class="mt-0.5 mb-0 text-[0.8rem] opacity-90">No need to use the camera! Handheld QR scanners work anywhere across all staff pages. Just aim and scan!</p>
+                    </div>
+                </div>
                 <label class="guest-form__field mb-4 grid gap-1.5">
                     <span class="mb-1 block text-sm font-semibold text-hp-text">Camera</span>
                     <select id="qrCameraSelect" class="w-full rounded-xl border border-hp-green-dark bg-white px-3.5 py-3 text-black"></select>

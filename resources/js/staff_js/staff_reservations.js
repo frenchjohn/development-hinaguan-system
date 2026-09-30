@@ -3001,14 +3001,36 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const parseReservationId = (text) => {
-        if (!text) return null;
+        if (!text || typeof text !== 'string') return null;
         try {
-            const normalized = text.trim();
-            const maybeUrl = normalized.includes('reservation_id=') ? normalized : `reservation_id=${normalized}`;
-            const query = maybeUrl.includes('?') ? maybeUrl.split('?')[1] : maybeUrl;
-            const params = new URLSearchParams(query);
-            const value = params.get('reservation_id');
-            return value && /^[0-9]+$/.test(value) ? value : null;
+            const clean = text.trim();
+            if (!clean) return null;
+
+            // 1. Matches reservation_id=123 (query param or raw key=val)
+            const matchParam = clean.match(/[?&]reservation_id=(\d+)/i) || clean.match(/^reservation_id=(\d+)$/i);
+            if (matchParam && matchParam[1]) return matchParam[1];
+
+            // 2. Matches URL path containing reservations/123 or check-ins/123
+            const matchPath = clean.match(/\/(?:reservations|check-ins)\/(\d+)/i);
+            if (matchPath && matchPath[1]) return matchPath[1];
+
+            // 3. Matches JSON format: {"reservation_id": 123} or {"id": 123}
+            if (clean.startsWith('{') && clean.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(clean);
+                    const val = parsed.reservation_id || parsed.id || parsed.resId;
+                    if (val && /^\d+$/.test(String(val))) return String(val);
+                } catch (_) {}
+            }
+
+            // 4. Matches prefixes like #123, RES-123, REF-123, BOOKING-123
+            const matchPrefix = clean.match(/^(?:#|res-|ref-|booking-)(\d+)$/i);
+            if (matchPrefix && matchPrefix[1]) return matchPrefix[1];
+
+            // 5. Standalone numeric string
+            if (/^\d{1,8}$/.test(clean)) return clean;
+
+            return null;
         } catch (error) {
             return null;
         }
@@ -3922,6 +3944,61 @@ window.AppPage['staff_reservations'] = function () {
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
     };
+
+    const openReservationById = async (resId) => {
+        if (!resId) return;
+        const cleanId = String(resId).replace(/\D/g, '');
+        if (!cleanId) return;
+
+        if (!reservationData[cleanId]) {
+            try {
+                showToast(`Loading reservation #${cleanId}...`, 'info');
+                const response = await fetch(`/staff/check-ins/lookup?reservation_id=${encodeURIComponent(cleanId)}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const body = await response.json().catch(() => ({}));
+                if (response.ok && body.reservation) {
+                    reservationData[cleanId] = body.reservation;
+                    if (window.staffReservationData) {
+                        window.staffReservationData[cleanId] = body.reservation;
+                    }
+                } else {
+                    showToast(body.message || `Reservation #${cleanId} not found.`, 'error');
+                    return;
+                }
+            } catch (fetchErr) {
+                showToast(`Unable to load reservation #${cleanId}.`, 'error');
+                return;
+            }
+        }
+
+        const res = reservationData[cleanId];
+        if (!res) {
+            showToast(`Reservation #${cleanId} not found.`, 'error');
+            return;
+        }
+
+        const targetRow = document.querySelector(`tr[data-reservation-id="${cleanId}"]`);
+        if (targetRow) {
+            targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetRow.classList.add('bg-emerald-100/80', 'dark:bg-emerald-950/60');
+            setTimeout(() => {
+                targetRow.classList.remove('bg-emerald-100/80', 'dark:bg-emerald-950/60');
+            }, 3000);
+        }
+
+        if (scanQrModal && scanQrModal.classList.contains('is-open')) {
+            await closeScanModal();
+        }
+
+        openModal(cleanId);
+        showToast(`Opened reservation #${cleanId}`, 'success');
+    };
+
+    window.openReservationById = openReservationById;
 
     const updateReservationStatus = async (reservationId, targetStatus) => {
         try {
@@ -6671,6 +6748,30 @@ window.AppPage['staff_reservations'] = function () {
     // server-rendered flash banners (session('success')) into toasts.
     convertFlashToToast();
     showPendingToast();
+
+    // Auto-open reservation if reservation_id query parameter is in URL (e.g. from hardware scanner redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramResId = urlParams.get('reservation_id');
+    if (paramResId) {
+        setTimeout(() => {
+            openReservationById(paramResId);
+            try {
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({ spa: true, url: cleanUrl }, '', cleanUrl);
+            } catch (_) {}
+        }, 150);
+    }
+
+    // Listen for direct hardware scan event on this page
+    if (!window.__staffResvScannerBound) {
+        window.__staffResvScannerBound = true;
+        window.addEventListener('scanner:scanned', (e) => {
+            const resId = e.detail?.reservationId;
+            if (resId && (window.location.pathname === '/staff/reservations' || window.location.pathname.endsWith('/staff/reservations'))) {
+                openReservationById(resId);
+            }
+        });
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => window.AppPage['staff_reservations']());

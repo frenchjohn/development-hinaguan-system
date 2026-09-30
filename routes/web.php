@@ -5762,12 +5762,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservation = Reservation::query()
             ->with(['reservationGuests.customer', 'reservationAmenities.amenity'])
             ->where('id', $reservationId)
-            ->where('reservation_type', 'online')
-            ->whereIn('status', ['Pending', 'Confirmed', 'Checked In'])
             ->first();
 
         if (! $reservation) {
-            return response()->json(['message' => 'Reservation not found or cannot be checked in.'], 404);
+            return response()->json(['message' => 'Reservation not found.'], 404);
         }
 
         return response()->json([

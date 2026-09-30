@@ -389,6 +389,7 @@ window.addEventListener('DOMContentLoaded', function () {
     let targetNavHref = window.location.href;
 
     async function navigateTo(url, push = true) {
+        window.navigateTo = navigateTo;
         const targetUrl = new URL(url, window.location.origin);
         const targetHref = targetUrl.href;
 
@@ -1299,6 +1300,154 @@ window.addEventListener('DOMContentLoaded', function () {
             return res;
         };
     }
+
+    // ============================================================
+    // HARDWARE QR CODE SCANNER (Handheld USB / 2.4G Wireless HID)
+    // ============================================================
+    function initHardwareQrScanner() {
+        if (window.__hardwareQrScannerBound) return;
+        window.__hardwareQrScannerBound = true;
+
+        let scanBuffer = '';
+        let lastCharTime = 0;
+        const SCAN_SPEED_THRESHOLD_MS = 80;
+
+        function parseScannedReservationId(text) {
+            if (!text || typeof text !== 'string') return null;
+            const clean = text.trim();
+            if (!clean) return null;
+
+            // 1. Matches reservation_id=123 (query param or raw text)
+            const matchParam = clean.match(/[?&]reservation_id=(\d+)/i) || clean.match(/^reservation_id=(\d+)$/i);
+            if (matchParam && matchParam[1]) {
+                return matchParam[1];
+            }
+
+            // 2. Matches URL path containing reservations/123 or check-ins/123
+            const matchPath = clean.match(/\/(?:reservations|check-ins)\/(\d+)/i);
+            if (matchPath && matchPath[1]) {
+                return matchPath[1];
+            }
+
+            // 3. Matches JSON format: {"reservation_id": 123} or {"id": 123}
+            if (clean.startsWith('{') && clean.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(clean);
+                    const val = parsed.reservation_id || parsed.id || parsed.resId;
+                    if (val && /^\d+$/.test(String(val))) return String(val);
+                } catch (_) {}
+            }
+
+            // 4. Matches prefixes like #123, RES-123, REF-123, BOOKING-123
+            const matchPrefix = clean.match(/^(?:#|res-|ref-|booking-)(\d+)$/i);
+            if (matchPrefix && matchPrefix[1]) {
+                return matchPrefix[1];
+            }
+
+            // 5. Standalone numeric string if it looks like a valid reservation ID
+            if (/^\d{1,8}$/.test(clean)) {
+                return clean;
+            }
+
+            return null;
+        }
+
+        function playScannerSound(success = true) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (success) {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1760, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.12);
+                } else {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(320, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.2);
+                }
+            } catch (_) {}
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const now = Date.now();
+            const timeSinceLastChar = now - lastCharTime;
+            lastCharTime = now;
+
+            if (timeSinceLastChar > SCAN_SPEED_THRESHOLD_MS) {
+                scanBuffer = '';
+            }
+
+            if (e.key === 'Enter') {
+                if (scanBuffer.length >= 2) {
+                    const candidateText = scanBuffer.trim();
+                    const reservationId = parseScannedReservationId(candidateText);
+
+                    if (reservationId) {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const activeEl = document.activeElement;
+                        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+                            if (activeEl.value.endsWith(candidateText)) {
+                                activeEl.value = activeEl.value.slice(0, -candidateText.length);
+                            } else if (activeEl.value === candidateText) {
+                                activeEl.value = '';
+                            }
+                            activeEl.blur();
+                        }
+
+                        scanBuffer = '';
+                        playScannerSound(true);
+
+                        if (typeof window.showToast === 'function') {
+                            window.showToast(`Scanned QR: Reservation #${reservationId}`, 'success');
+                        }
+
+                        window.dispatchEvent(new CustomEvent('scanner:scanned', {
+                            detail: { reservationId, raw: candidateText }
+                        }));
+
+                        const currentPath = window.location.pathname;
+                        const isReservationsPage = currentPath === '/staff/reservations' || currentPath.endsWith('/staff/reservations');
+
+                        if (isReservationsPage) {
+                            if (typeof window.openReservationById === 'function') {
+                                window.openReservationById(reservationId);
+                            } else {
+                                navigateTo(`/staff/reservations?reservation_id=${encodeURIComponent(reservationId)}`);
+                            }
+                        } else {
+                            navigateTo(`/staff/reservations?reservation_id=${encodeURIComponent(reservationId)}`);
+                        }
+                        return;
+                    }
+                }
+                scanBuffer = '';
+                return;
+            }
+
+            if (e.key && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                scanBuffer += e.key;
+            }
+        }, true);
+    }
+
+    initHardwareQrScanner();
 
     // Initial content entrance
     runContentEntrance();
