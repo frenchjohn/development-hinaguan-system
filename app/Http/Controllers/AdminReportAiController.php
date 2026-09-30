@@ -38,7 +38,7 @@ class AdminReportAiController extends Controller
         // Compile comprehensive real-time database context
         $stats = $this->compileDatabaseStatistics();
 
-        $apiKey = env('OPENROUTER_API_KEY');
+        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
         $model = env('OPENROUTER_MODEL', 'openrouter/free');
 
         if ($apiKey) {

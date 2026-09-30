@@ -49,7 +49,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        $apiKey = env('OPENROUTER_API_KEY');
+        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {

@@ -867,7 +867,7 @@ class FeedbackAiService
      */
     protected function attemptLlmInsightsEnhancement(Collection $feedbacks, array $baseInsights): ?array
     {
-        $apiKey = env('OPENROUTER_API_KEY');
+        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
         if (!$apiKey) {
             return null;
         }
@@ -943,7 +943,7 @@ class FeedbackAiService
      */
     protected function attemptLlmAutoReply(Feedback $feedback): ?string
     {
-        $apiKey = env('OPENROUTER_API_KEY');
+        $apiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
         if (!$apiKey) {
             return null;
         }
