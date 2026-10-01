@@ -3568,6 +3568,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         $parkSettings = \App\Models\ParkSetting::first();
         $daytimeHoursFormatted = '8:00 AM – 5:00 PM';
         $overnightHoursFormatted = '6:00 PM – 8:00 AM';
+        $dayStart = $parkSettings->daytime_start ?? '08:00:00';
+        $dayEnd = $parkSettings->daytime_end ?? '17:00:00';
+        $nightStart = $parkSettings->nighttime_start ?? '18:00:00';
+        $nightEnd = $parkSettings->nighttime_end ?? '08:00:00';
+
         if ($parkSettings) {
             if ($parkSettings->daytime_start && $parkSettings->daytime_end) {
                 $daytimeHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->daytime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->daytime_end)->format('g:i A');
@@ -3576,6 +3581,50 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 $overnightHoursFormatted = \Illuminate\Support\Carbon::parse($parkSettings->nighttime_start)->format('g:i A') . ' – ' . \Illuminate\Support\Carbon::parse($parkSettings->nighttime_end)->format('g:i A');
             }
         }
+
+        // Fetch staff cash & remittance collection activity logs
+        $staffLogs = \App\Models\ActivityLog::with(['staff', 'reservation'])
+            ->where(function ($q) {
+                $q->whereNotNull('staff_id')->orWhere('actor_role', 'staff');
+            })
+            ->where('payment_amount', '>', 0)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $reportData['staffCollections'] = $staffLogs->map(function ($log) use ($dayStart, $dayEnd, $nightStart, $nightEnd) {
+            $logTime = $log->created_at ? $log->created_at->timezone(config('app.timezone', 'Asia/Manila')) : now();
+            $time24 = $logTime->format('H:i:s');
+            $dateIso = $logTime->format('Y-m-d');
+
+            $isDay = ($time24 >= $dayStart && $time24 <= $dayEnd);
+            $isNight = ($nightStart > $nightEnd)
+                ? ($time24 >= $nightStart || $time24 <= $nightEnd)
+                : ($time24 >= $nightStart && $time24 <= $nightEnd);
+
+            $session = $isDay ? 'daytime' : ($isNight ? 'overnight' : 'daytime');
+
+            return [
+                'id' => (int) $log->id,
+                'staff_id' => $log->staff_id,
+                'staff_name' => (string) ($log->staff?->name ?? $log->actor_name ?? 'Staff User'),
+                'payment_amount' => (float) $log->payment_amount,
+                'date' => $dateIso,
+                'time' => $logTime->format('h:i A'),
+                'session' => $session,
+                'action' => (string) ($log->action ?? $log->activity_type ?? 'payment'),
+                'title' => (string) ($log->title ?: 'Payment Received'),
+                'reservation_id' => $log->reservation_id,
+                'booker_name' => (string) ($log->reservation?->booker_name ?? ''),
+            ];
+        })->values()->all();
+
+        $thisMonthStart = now()->startOfMonth()->toDateString();
+        $thisMonthEnd = now()->endOfMonth()->toDateString();
+        $totalStaffCollections = (float) $staffLogs->sum('payment_amount');
+        $thisMonthStaffCollections = (float) $staffLogs->filter(function ($log) use ($thisMonthStart, $thisMonthEnd) {
+            $d = $log->created_at ? $log->created_at->timezone(config('app.timezone', 'Asia/Manila'))->toDateString() : '';
+            return $d >= $thisMonthStart && $d <= $thisMonthEnd;
+        })->sum('payment_amount');
 
         return view('admin.admin_reports', [
             'allAmenities' => $allAmenities,
@@ -3605,6 +3654,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'parkSettings' => $parkSettings,
             'daytimeHoursFormatted' => $daytimeHoursFormatted,
             'overnightHoursFormatted' => $overnightHoursFormatted,
+            'totalStaffCollections' => $totalStaffCollections,
+            'thisMonthStaffCollections' => $thisMonthStaffCollections,
         ]);
     })->name('reports');
 

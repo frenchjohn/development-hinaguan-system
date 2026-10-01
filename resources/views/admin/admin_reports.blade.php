@@ -188,32 +188,152 @@
             border-radius: 6px;
         }
 
-        /* ===== PRINT SPECIFIC STYLES ===== */
+        /* ===== PRINT SPECIFIC STYLES (CLEAN BLACK & WHITE OFFICIAL REPORT) ===== */
         @media print {
-            aside, header, nav, .dash-sidebar, .sidebar-wrapper, .header-container, .dash-header-wrap, #reportsFilters, #exportCsvBtn, #printReportsButton, #resetFiltersBtn, .preset-chip, .matrix-tab-item, .matrix-controls-panel, .web-only-section, .web-only-charts, .dash-header { display: none !important; }
+            aside, header, nav, .dash-sidebar, .sidebar-wrapper, .header-container, .dash-header-wrap, 
+            #reportsFilters, #exportCsvBtn, #printReportsButton, #includeLedgerPrintToggleWrapper, 
+            #resetFiltersBtn, .preset-chip, .matrix-tab-item, .matrix-controls-panel, 
+            .web-only-section, .web-only-charts, .dash-header, .report-tab-btn, #dateFilterModal,
+            .web-only-tab-wrapper { 
+                display: none !important; 
+            }
 
-            @page { size: A4 portrait; margin: 15mm; }
-            html, body { background: #ffffff !important; color: #000000 !important; font-family: Arial, sans-serif !important; font-size: 10pt !important; }
-            
-            .print-only-header { display: block !important; border-bottom: 2px solid #000 !important; margin-bottom: 20px !important; }
-            .print-meta-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 6px 20px !important; font-size: 9pt !important; color: #000000 !important; background: #ffffff !important; padding: 8px 0 !important; border-top: 1px solid #e5e7eb !important; }
+            /* Completely remove background image, pseudo-elements, and background colors */
+            body.admin-portal,
+            body.admin-portal .dash-layout,
+            body.admin-portal .dash-main,
+            body.admin-portal .dash-content,
+            html {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+                background-image: none !important;
+                color: #111827 !important;
+            }
 
-            /* 4. Official Clean Metric Summary Boxes */
-            .print-summary-box { width: 100% !important; margin-bottom: 20px !important; border: 1px solid #000000 !important; background: #ffffff !important; }
-            .print-summary-row { display: flex !important; width: 100% !important; }
-            .print-summary-cell { flex: 1 !important; padding: 10px 12px !important; text-align: center !important; border-right: 1px solid #000000 !important; }
-            .print-summary-cell:last-child { border-right: none !important; }
-            .print-summary-val { display: block !important; font-size: 13pt !important; font-weight: 700 !important; color: #000000 !important; margin-bottom: 2px !important; }
-            .print-summary-lbl { display: block !important; font-size: 8pt !important; text-transform: uppercase !important; font-weight: 600 !important; color: #4b5563 !important; }
+            body.admin-portal .dash-main::before,
+            .dash-main::before {
+                display: none !important;
+                content: none !important;
+                background: none !important;
+                background-image: none !important;
+            }
 
-            /* 5. Clean Official Ledger Table */
-            .print-ledger-title { display: block !important; font-size: 11pt !important; font-weight: 700 !important; text-transform: uppercase !important; margin: 16px 0 8px 0 !important; color: #000000 !important; letter-spacing: 0.3px !important; }
-            .print-table-wrapper { overflow: visible !important; border: 1px solid #000000 !important; background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
-            table { width: 100% !important; border-collapse: collapse !important; font-size: 8.5pt !important; }
-            thead th { background: #f3f4f6 !important; color: #000000 !important; font-weight: 700 !important; text-transform: uppercase !important; border: 1px solid #000000 !important; padding: 6px 8px !important; }
-            tbody td { border: 1px solid #e5e7eb !important; padding: 6px 8px !important; color: #000000 !important; }
-            tbody tr:nth-child(even) { background-color: #fafafa !important; }
-            .status-pill { border: none !important; background: transparent !important; padding: 0 !important; font-weight: 600 !important; color: #000000 !important; }
+            @page { 
+                size: A4 portrait; 
+                margin: 10mm 12mm; 
+            }
+
+            html, body { 
+                background: #ffffff !important; 
+                color: #111827 !important; 
+                font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important; 
+                font-size: 8pt !important; 
+                line-height: 1.35 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .dash-layout, .dash-main, .dash-content {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                background: transparent !important;
+            }
+
+            /* Remove shadows */
+            * {
+                box-shadow: none !important;
+                text-shadow: none !important;
+            }
+
+            .print-standard-report {
+                display: block !important;
+                width: 100% !important;
+                background: #ffffff !important;
+            }
+
+            /* Ledger table visibility: default HIDDEN in print, unless body has .print-with-ledger */
+            .print-ledger-section {
+                display: none !important;
+            }
+
+            body.print-with-ledger .print-ledger-section {
+                display: block !important;
+                margin-top: 14px !important;
+                page-break-before: auto !important;
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+            }
+
+            body.print-with-ledger .print-ledger-title {
+                display: block !important;
+                font-size: 8.5pt !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+                margin: 12px 0 5px 0 !important;
+                color: #18181b !important;
+                border-bottom: 1px solid #d4d4d8 !important;
+                padding-bottom: 2px !important;
+            }
+
+            body.print-with-ledger table#reservationsTable {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 7.5pt !important;
+                border: 1px solid #d4d4d8 !important;
+                background: #ffffff !important;
+            }
+
+            body.print-with-ledger table#reservationsTable thead th {
+                background: #fafafa !important;
+                color: #52525b !important;
+                font-weight: 600 !important;
+                text-transform: uppercase !important;
+                border-bottom: 1px solid #d4d4d8 !important;
+                border-right: 1px solid #e4e4e7 !important;
+                padding: 4px 6px !important;
+                font-size: 7pt !important;
+            }
+
+            body.print-with-ledger table#reservationsTable tbody td {
+                border-bottom: 1px solid #e4e4e7 !important;
+                border-right: 1px solid #f4f4f5 !important;
+                padding: 4px 6px !important;
+                color: #18181b !important;
+                background: transparent !important;
+            }
+
+            body.print-with-ledger table#reservationsTable tr:nth-child(even) {
+                background-color: transparent !important;
+            }
+
+            body.print-with-ledger table#reservationsTable tr {
+                page-break-inside: avoid !important;
+            }
+
+            body.print-with-ledger .status-pill {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+                color: #18181b !important;
+            }
+        }
+
+            body.print-with-ledger table#reservationsTable tr {
+                page-break-inside: avoid !important;
+            }
+
+            body.print-with-ledger .status-pill {
+                border: none !important;
+                background: transparent !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+                color: #000000 !important;
+            }
         }
     </style>
 </head>
@@ -629,45 +749,93 @@
                 <!-- SECTION 2: STANDARD OPERATIONAL REPORTS   -->
                 <!-- ========================================== -->
                 <div id="standardReportsSection" class="hidden transition-opacity duration-300">
-                    <!-- PRINT ONLY OFFICIAL REPORT HEADER -->
-                    <div class="print-only-header hidden print:block">
-                        <div class="print-header-top">
-                            <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park Logo" class="print-logo">
+                    <!-- PRINT ONLY OFFICIAL REPORT (CLEAN REFINED BLACK & WHITE FORMAT) -->
+                    <div class="print-standard-report hidden print:block">
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #71717a; padding-bottom: 10px; margin-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img src="{{ asset('storage/design_images/main_logo.jpeg') }}" alt="Hinaguan Nature Park Logo" style="width: 42px; height: 42px; object-fit: contain; filter: grayscale(100%);">
+                                <div>
+                                    <h1 style="margin: 0; font-size: 14pt; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #18181b;">Hinaguan Nature Park</h1>
+                                    <p style="margin: 2px 0 0 0; font-size: 8.5pt; font-weight: 600; text-transform: uppercase; color: #52525b; letter-spacing: 0.5px;">Standard Operational &amp; Revenue Report</p>
+                                </div>
+                            </div>
+                            <div style="text-align: right; font-size: 7.5pt; color: #52525b; line-height: 1.4;">
+                                <div style="font-weight: 700; color: #18181b;">OFFICIAL PARK RECORD</div>
+                                <div>Generated: <span id="printGeneratedTimestamp">{{ now()->format('M d, Y • h:i A') }}</span></div>
+                            </div>
+                        </div>
+
+                        <!-- FILTER / SCOPE METADATA (SYNCS DYNAMICALLY WITH FILTERS) -->
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px; font-size: 7.5pt; border: 1px solid #d4d4d8; padding: 6px 10px; margin-bottom: 14px; background: #ffffff;">
+                            <div><strong style="color: #3f3f46;">Date Range / Period:</strong> <span id="printDateRangeLabel" style="color: #18181b;">This Month</span></div>
+                            <div><strong style="color: #3f3f46;">Operating Session:</strong> <span id="printSessionLabel" style="color: #18181b;">24 Hours (All Sessions)</span></div>
+                            <div><strong style="color: #3f3f46;">Amenity Filter:</strong> <span id="printAmenityLabel" style="color: #18181b;">All Amenities</span></div>
+                            <div><strong style="color: #3f3f46;">Status Filter:</strong> <span id="printStatusLabel" style="color: #18181b;">All Statuses</span></div>
+                        </div>
+
+                        <!-- I. OPERATIONAL & REVENUE SUMMARY -->
+                        <div style="margin-bottom: 14px;">
+                            <div style="font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #18181b; border-bottom: 1px solid #d4d4d8; padding-bottom: 2px;">
+                                I. Operational &amp; Revenue Summary
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #d4d4d8; font-size: 8pt; text-align: center;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #d4d4d8; background: #fafafa;">
+                                        <th style="padding: 5px 6px; border-right: 1px solid #e4e4e7; font-weight: 600; text-transform: uppercase; font-size: 7pt; color: #52525b; width: 25%;">Total Reservations</th>
+                                        <th style="padding: 5px 6px; border-right: 1px solid #e4e4e7; font-weight: 600; text-transform: uppercase; font-size: 7pt; color: #52525b; width: 25%;">Total Guests</th>
+                                        <th style="padding: 5px 6px; border-right: 1px solid #e4e4e7; font-weight: 600; text-transform: uppercase; font-size: 7pt; color: #52525b; width: 25%;">Total Gross Revenue</th>
+                                        <th style="padding: 5px 6px; font-weight: 600; text-transform: uppercase; font-size: 7pt; color: #52525b; width: 25%;">Staff Collections (Remittance)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 6px 6px; border-right: 1px solid #e4e4e7; font-size: 11pt; font-weight: 700; color: #18181b;" id="printKpiRes">{{ $totalReservations }}</td>
+                                        <td style="padding: 6px 6px; border-right: 1px solid #e4e4e7; font-size: 11pt; font-weight: 700; color: #18181b;" id="printKpiGuests">{{ $totalGuests }}</td>
+                                        <td style="padding: 6px 6px; border-right: 1px solid #e4e4e7; font-size: 11pt; font-weight: 700; color: #18181b;" id="printKpiRev">₱{{ number_format($revenue, 2) }}</td>
+                                        <td style="padding: 6px 6px; font-size: 11pt; font-weight: 700; color: #18181b;" id="printKpiStaffRev">₱{{ number_format($thisMonthStaffCollections, 2) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- II. STAFF COLLECTIONS & DOINGS BREAKDOWN -->
+                        <div style="margin-bottom: 14px;">
+                            <div style="font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #18181b; border-bottom: 1px solid #d4d4d8; padding-bottom: 2px;">
+                                II. Staff Remittance &amp; Activity Breakdown
+                            </div>
+                            <table style="width: 100%; border-collapse: collapse; border: 1px solid #d4d4d8; font-size: 7.5pt;" id="printStaffCollectionsTable">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid #d4d4d8; background: #fafafa; text-transform: uppercase; font-size: 7pt; color: #52525b;">
+                                        <th style="padding: 4px 6px; border-right: 1px solid #e4e4e7; text-align: left; width: 42%;">Staff Personnel</th>
+                                        <th style="padding: 4px 6px; border-right: 1px solid #e4e4e7; text-align: center; width: 24%;">Transactions Handled</th>
+                                        <th style="padding: 4px 6px; border-right: 1px solid #e4e4e7; text-align: right; width: 22%;">Money Received (Remittance)</th>
+                                        <th style="padding: 4px 6px; text-align: right; width: 12%;">Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="printStaffCollectionsTableBody">
+                                    <!-- Populated dynamically by JS matching active date & session filter -->
+                                </tbody>
+                                <tfoot id="printStaffCollectionsTableFoot" style="border-top: 1px solid #d4d4d8; font-weight: 600; background: #fafafa; color: #18181b;">
+                                    <!-- Populated dynamically by JS -->
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- PRINT DOCUMENT SIGN-OFF BLOCK -->
+                        <div class="print-signatures" style="margin-top: 18px; padding-top: 12px; border-top: 1px solid #e4e4e7; display: grid; grid-template-columns: repeat(2, 1fr); gap: 36px; font-size: 7.5pt; page-break-inside: avoid;">
                             <div>
-                                <h1 class="print-title">Hinaguan Nature Park</h1>
-                                <p class="print-subtitle">Official Reservation & Revenue Operational Report</p>
+                                <p style="margin: 0 0 24px 0; font-weight: 600; text-transform: uppercase; color: #52525b;">Prepared &amp; Verified By:</p>
+                                <div style="border-top: 1px solid #71717a; width: 80%; padding-top: 3px;">
+                                    <div style="font-weight: 700; color: #18181b;">{{ session('auth_user.name') ?? 'Admin User' }}</div>
+                                    <div style="color: #71717a;">Park Administrator / Operations</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="print-meta-grid">
-                            <div><strong>Date Generated:</strong> {{ now()->format('F d, Y - h:i A') }}</div>
-                            <div><strong>Filter Amenity:</strong> <span id="printAmenityLabel">All Amenities</span></div>
-                            <div><strong>Filter Status:</strong> <span id="printStatusLabel">All Statuses</span></div>
-                            <div><strong>Date Range:</strong> <span id="printDateRangeLabel">All Time</span></div>
-                        </div>
-                    </div>
-
-                    @php
-                        $averageSpend = $totalReservations > 0 ? $revenue / $totalReservations : 0;
-                    @endphp
-
-                    <!-- PRINT ONLY SUMMARY METRICS TABLE -->
-                    <div class="print-summary-box hidden print:table">
-                        <div class="print-summary-row">
-                            <div class="print-summary-cell">
-                                <span class="print-summary-val" id="printKpiRes">{{ $totalReservations }}</span>
-                                <span class="print-summary-lbl">Total Reservations</span>
-                            </div>
-                            <div class="print-summary-cell">
-                                <span class="print-summary-val" id="printKpiGuests">{{ $totalGuests }}</span>
-                                <span class="print-summary-lbl">Total Guests</span>
-                            </div>
-                            <div class="print-summary-cell">
-                                <span class="print-summary-val" id="printKpiRev">₱{{ number_format($revenue, 2) }}</span>
-                                <span class="print-summary-lbl">Total Revenue</span>
-                            </div>
-                            <div class="print-summary-cell">
-                                <span class="print-summary-val">₱{{ number_format($averageSpend, 2) }}</span>
-                                <span class="print-summary-lbl">Avg / Reservation</span>
+                            <div>
+                                <p style="margin: 0 0 24px 0; font-weight: 600; text-transform: uppercase; color: #52525b;">Acknowledged &amp; Received By:</p>
+                                <div style="border-top: 1px solid #71717a; width: 80%; padding-top: 3px;">
+                                    <div style="font-weight: 700; color: #18181b;">Park Management / Accounting</div>
+                                    <div style="color: #71717a;">Hinaguan Nature Park Operations</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -684,7 +852,13 @@
                                     <p class="m-0 text-sm text-hp-text-muted">Narrow reservations by amenity, status, payment status, or date range</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-3">
+                            <div class="flex flex-wrap items-center gap-3">
+                                {{-- Include Ledger in Print Checkbox (Default: Not Included) --}}
+                                <label class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover select-none" id="includeLedgerPrintToggleWrapper" title="Check this if you want the detailed reservations ledger table to be included in the printed report">
+                                    <input type="checkbox" id="includeLedgerInPrintCheckbox" class="h-4 w-4 rounded border-gray-300 text-hp-green-mid focus:ring-hp-green-mid cursor-pointer">
+                                    <span>Include Ledger in Print</span>
+                                </label>
+
                                 <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="exportCsvBtn">
                                     <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     Export CSV
@@ -725,19 +899,19 @@
                                     <button
                                         type="button"
                                         id="openDateFilterModalBtn"
-                                        class="h-[38px] w-full flex items-center justify-between gap-2 px-3.5 rounded-xl border border-glass-border bg-glass hover:bg-glass-hover text-xs font-semibold text-hp-text transition-all cursor-pointer shadow-2xs"
+                                        class="h-[38px] w-full flex items-center justify-between gap-2 px-3.5 rounded-xl border border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition-all cursor-pointer shadow-2xs"
                                     >
                                         <span class="flex items-center gap-2">
                                             <i class="bi bi-calendar-event text-emerald-600 dark:text-emerald-400"></i>
-                                            <span id="dateFilterBtnLabel">Date &amp; Session</span>
+                                            <span id="dateFilterBtnLabel">{{ now()->format('M 01') }} – {{ now()->endOfMonth()->format('M d') }} • 24 hrs</span>
                                         </span>
-                                        <span id="dateFilterActiveDot" class="hidden h-2 w-2 rounded-full bg-emerald-500"></span>
+                                        <span id="dateFilterActiveDot" class="h-2 w-2 rounded-full bg-emerald-500"></span>
                                     </button>
                                 </label>
                                 <label class="flex flex-col gap-2">
                                     <span class="text-xs font-semibold text-hp-text-muted">Active Filter Output</span>
                                     <div class="flex h-[38px] items-center rounded-xl border border-glass-border bg-glass-hover px-3 text-xs font-semibold text-hp-text-muted" id="activeFilterText">
-                                        Showing all reservations
+                                        Showing reservations for This Month (24 hrs)
                                     </div>
                                 </label>
                             </div>
@@ -745,7 +919,7 @@
                     </section>
 
                     {{-- ===== KPI STAT CARDS (WEB ONLY) ===== --}}
-                    <div class="web-only-section mb-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+                    <div class="web-only-section mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                                 <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -762,7 +936,7 @@
                                 <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             </div>
                             <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">{{ $totalGuests }}</h4>
+                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text" id="kpiGuests">{{ $totalGuests }}</h4>
                                 <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Total Guests</p>
                                 <span class="text-xs text-hp-text-muted opacity-70">• Booked visitor volume</span>
                             </div>
@@ -779,20 +953,26 @@
                             </div>
                         </article>
 
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#f0e9f4] text-[#6d4b8e] dark:bg-[#2b1f33] dark:text-[#a889c4]">
-                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        {{-- Staff Collections / Money Received by Staff (Remittance) --}}
+                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass ring-1 ring-amber-500/20">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
                             </div>
                             <div class="flex flex-col">
-                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-hp-text">₱{{ number_format($averageSpend, 2) }}</h4>
-                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted">Avg / Reservation</p>
-                                <span class="text-xs text-hp-text-muted opacity-70">• Average booking amount</span>
+                                <h4 class="m-0 mb-0.5 font-display text-2xl font-bold text-amber-700 dark:text-amber-400" id="kpiStaffCollections">₱{{ number_format($thisMonthStaffCollections, 2) }}</h4>
+                                <p class="m-0 mb-1 text-sm font-semibold text-hp-text-muted flex items-center gap-1.5">
+                                    <span>Staff Collections</span>
+                                    <span class="rounded bg-amber-500/15 px-1.5 py-0.2 text-[0.65rem] font-bold text-amber-700 dark:text-amber-300">Remittance</span>
+                                </p>
+                                <span class="text-xs text-hp-text-muted opacity-70" id="kpiStaffCollectionsCount">• Money received by staff</span>
                             </div>
                         </article>
                     </div>
 
-                    {{-- ===== CHARTS GRID (WEB ONLY) ===== --}}
-                    <div class="web-only-charts web-only-section mb-6 grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
+                    {{-- ===== REVENUE TREND CHART (WEB ONLY) ===== --}}
+                    <div class="web-only-charts web-only-section mb-6">
                         {{-- Revenue Trend Area Chart --}}
                         <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                             <div class="mb-6 flex items-center justify-between">
@@ -803,32 +983,8 @@
                                     <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue Performance Trend</h3>
                                 </div>
                             </div>
-                            <div class="relative min-h-[280px] w-full flex-1">
+                            <div class="relative min-h-[300px] w-full flex-1">
                                 <canvas id="revenueChart"></canvas>
-                            </div>
-                        </section>
-
-                        {{-- Status Donut Chart --}}
-                        <section class="flex flex-col rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                            <div class="mb-6 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#eaf5e1] text-[#4b8022] dark:bg-[#213316] dark:text-[#96c76e]">
-                                        <svg class="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                    </div>
-                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Reservation Status</h3>
-                                </div>
-                            </div>
-                            <div class="flex flex-1 flex-col items-center gap-6">
-                                <div class="relative h-[200px] w-[200px]">
-                                    <canvas id="statusDonutChart"></canvas>
-                                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-                                        <span class="block text-[1.8rem] font-bold leading-none text-hp-text" id="donutTotalCount">{{ $totalReservations }}</span>
-                                        <span class="text-xs uppercase tracking-[0.5px] text-hp-text-muted">Total</span>
-                                    </div>
-                                </div>
-                                <div class="flex w-full flex-col gap-2.5" id="donutLegendContainer">
-                                    <!-- Populated dynamically by JS -->
-                                </div>
                             </div>
                         </section>
                     </div>
@@ -875,6 +1031,63 @@
                         </section>
                     </div>
 
+                    {{-- ===== STAFF COLLECTIONS & REMITTANCE BREAKDOWN (MONEY RECEIVED BY STAFF) ===== --}}
+                    <section class="web-only-section mb-6 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-glass-border pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="m-0 text-lg font-semibold text-hp-text flex items-center gap-2 flex-wrap">
+                                        <span>Staff Collections &amp; Remittance Breakdown</span>
+                                        <span class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[0.68rem] font-bold text-amber-700 dark:text-amber-400">Cash Received by Staff</span>
+                                    </h3>
+                                    <p class="m-0 text-xs text-hp-text-muted">On-site walk-ins, check-in balances, companions, and damage payments received by staff personnel</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-semibold text-hp-text-muted">Total Remitted:</span>
+                                <span class="text-base font-bold text-amber-700 dark:text-amber-400" id="staffBreakdownTotalAmount">₱{{ number_format($thisMonthStaffCollections, 2) }}</span>
+                            </div>
+                        </div>
+
+                        {{-- Summary Table of Staff Collections --}}
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs" id="staffCollectionsTable">
+                                <thead>
+                                    <tr class="border-b border-glass-border uppercase tracking-wider text-hp-text-muted text-[0.7rem]">
+                                        <th class="py-2.5 px-3">Staff Name</th>
+                                        <th class="py-2.5 px-3">Transactions Handled</th>
+                                        <th class="py-2.5 px-3">Recent Activity</th>
+                                        <th class="py-2.5 px-3">Total Money Received (Remittance)</th>
+                                        <th class="py-2.5 px-3 text-right">Share of Remittance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffCollectionsTableBody" class="divide-y divide-glass-border/60">
+                                    <!-- Populated dynamically by JS based on date & session filter -->
+                                </tbody>
+                                <tfoot id="staffCollectionsTableFoot" class="font-bold border-t border-glass-border text-hp-text bg-glass-hover/30">
+                                    <!-- Populated dynamically by JS -->
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        {{-- Staff Individual Payment Receipts Accordion --}}
+                        <div class="mt-4 pt-3 border-t border-glass-border flex items-center justify-between">
+                            <button type="button" id="toggleStaffTransactionsListBtn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-hp-green-mid hover:underline cursor-pointer">
+                                <span id="toggleStaffTransactionsListText">View Individual Staff Payment Receipts</span>
+                                <i class="bi bi-chevron-down text-[10px] transition-transform duration-200" id="toggleStaffTransactionsListIcon"></i>
+                            </button>
+                            <span class="text-[0.7rem] text-hp-text-muted" id="staffTransactionCountLabel">0 payments in selected period</span>
+                        </div>
+                        <div id="staffTransactionsListDrawer" class="hidden mt-3 max-h-[300px] overflow-y-auto rounded-xl border border-glass-border bg-glass-hover/10 p-3 space-y-2">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                    </section>
+
                     {{-- ===== LEDGER TABLE ===== --}}
                     <section class="print-ledger-section rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
                         <div class="web-only-section mb-4 flex items-center justify-between">
@@ -883,7 +1096,7 @@
                                 <p class="m-0 text-xs text-hp-text-muted">All active records in the selected view</p>
                             </div>
                         </div>
-                        <div class="print-ledger-title hidden">Reservation Operational Records</div>
+                        <div class="print-ledger-title hidden">III. Detailed Reservation Operational Ledger</div>
                         <div class="dash-table-wrap overflow-x-auto">
                             <table class="dash-table w-full text-left text-sm" id="reservationsTable">
                                 <thead>
@@ -1174,6 +1387,9 @@
                         </button>
                         <button type="button" id="presetLastMonthBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
                             Last Month
+                        </button>
+                        <button type="button" id="presetAllTimeBtn" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            All Time
                         </button>
                     </div>
                 </div>

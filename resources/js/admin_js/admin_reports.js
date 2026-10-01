@@ -12,6 +12,7 @@ window.AppPage['admin_reports'] = function () {
     const reservationsTable = document.getElementById('reservationsTable');
     const activeFilterText = document.getElementById('activeFilterText');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+    const includeLedgerInPrintCheckbox = document.getElementById('includeLedgerInPrintCheckbox');
 
     // Date & Session Modal Trigger & Elements
     const openModalBtn          = document.getElementById('openDateFilterModalBtn');
@@ -32,13 +33,22 @@ window.AppPage['admin_reports'] = function () {
     const presetThisWeekBtn     = document.getElementById('presetThisWeekBtn');
     const presetThisMonthBtn    = document.getElementById('presetThisMonthBtn');
     const presetLastMonthBtn    = document.getElementById('presetLastMonthBtn');
-
-    // Applied Date & Session State
-    let appliedStartDate = '';
-    let appliedEndDate   = '';
-    let appliedSession   = '';
+    const presetAllTimeBtn      = document.getElementById('presetAllTimeBtn');
 
     const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    // Standard Report section default: This Month, 24 hrs session
+    const currentNow = new Date();
+    const defaultThisMonthStart = new Date(currentNow.getFullYear(), currentNow.getMonth(), 1);
+    const defaultThisMonthEnd   = new Date(currentNow.getFullYear(), currentNow.getMonth() + 1, 0);
+
+    const defaultStartDate = isoDate(defaultThisMonthStart);
+    const defaultEndDate   = isoDate(defaultThisMonthEnd);
+
+    // Applied Date & Session State (Default: This Month, 24 hrs session)
+    let appliedStartDate = defaultStartDate;
+    let appliedEndDate   = defaultEndDate;
+    let appliedSession   = ''; // 24 hrs session (all sessions)
 
     // =========================================================
     // DAILY AMENITY & ROOM OCCUPANCY MONITORING MATRIX ENGINE
@@ -1552,69 +1562,18 @@ window.AppPage['admin_reports'] = function () {
                 }
             });
         }
-
-        // 2. Status Donut Chart
-        const statusMap = { 'Pending': 0, 'Confirmed': 0, 'Checked In': 0, 'Checked Out': 0, 'Cancelled': 0 };
-        filteredRows.forEach(r => {
-            const st = r.status || 'Pending';
-            statusMap[st] = (statusMap[st] || 0) + 1;
-        });
-
-        const statusColors = {
-            'Pending': '#c8a45d',
-            'Confirmed': '#4c9a5f',
-            'Checked In': '#2f6f45',
-            'Checked Out': '#9ca3af',
-            'Cancelled': '#d64550',
-        };
-
-        const ctxDonut = document.getElementById('statusDonutChart');
-        if (ctxDonut) {
-            if (donutChart) donutChart.destroy();
-            donutChart = new Chart(ctxDonut, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(statusMap),
-                    datasets: [{
-                        data: Object.values(statusMap),
-                        backgroundColor: Object.keys(statusMap).map(k => statusColors[k] || '#c8a45d'),
-                        borderWidth: 0,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '72%',
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        // Legend list
-        const legendContainer = document.getElementById('donutLegendContainer');
-        if (legendContainer) {
-            legendContainer.innerHTML = '';
-            Object.entries(statusMap).forEach(([st, cnt]) => {
-                const col = statusColors[st] || '#c8a45d';
-                legendContainer.innerHTML += `
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="flex items-center gap-2 text-hp-text">
-                            <span class="h-2.5 w-2.5 rounded-full" style="background: ${col}"></span>
-                            ${st}
-                        </span>
-                        <strong class="font-bold text-hp-text">${cnt}</strong>
-                    </div>
-                `;
-            });
-        }
     };
 
     const updatePrintLabels = (filteredRows) => {
         const printAmenityLabel = document.getElementById('printAmenityLabel');
         const printStatusLabel = document.getElementById('printStatusLabel');
         const printDateRangeLabel = document.getElementById('printDateRangeLabel');
+        const printSessionLabel = document.getElementById('printSessionLabel');
+        const printTimestamp = document.getElementById('printGeneratedTimestamp');
         const printKpiRes = document.getElementById('printKpiRes');
         const printKpiRev = document.getElementById('printKpiRev');
+        const printKpiStaffRev = document.getElementById('printKpiStaffRev');
+        const printKpiGuests = document.getElementById('printKpiGuests');
 
         if (printAmenityLabel) {
             printAmenityLabel.textContent = amenityFilter && amenityFilter.value !== 'all' ? amenityFilter.value : 'All Amenities';
@@ -1625,26 +1584,326 @@ window.AppPage['admin_reports'] = function () {
         if (printDateRangeLabel) {
             let label = 'All Time';
             if (appliedStartDate && appliedEndDate) {
-                label = `${appliedStartDate} to ${appliedEndDate}`;
+                if (appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate) {
+                    label = `This Month (${appliedStartDate} to ${appliedEndDate})`;
+                } else {
+                    label = `${appliedStartDate} to ${appliedEndDate}`;
+                }
             } else if (appliedStartDate) {
                 label = `From ${appliedStartDate}`;
             } else if (appliedEndDate) {
                 label = `Until ${appliedEndDate}`;
             }
-
-            if (appliedSession === 'daytime') {
-                label += ' (Daytime)';
-            } else if (appliedSession === 'overnight') {
-                label += ' (Overnight)';
-            }
             printDateRangeLabel.textContent = label;
         }
+
+        if (printSessionLabel) {
+            if (appliedSession === 'daytime') {
+                printSessionLabel.textContent = 'Daytime (08:00 AM – 05:00 PM)';
+            } else if (appliedSession === 'overnight') {
+                printSessionLabel.textContent = 'Overnight (Evening Session)';
+            } else {
+                printSessionLabel.textContent = '24 Hours (All Sessions)';
+            }
+        }
+
+        if (printTimestamp) {
+            const cur = new Date();
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const m = months[cur.getMonth()];
+            const d = String(cur.getDate()).padStart(2, '0');
+            const y = cur.getFullYear();
+            let hours = cur.getHours();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            const mins = String(cur.getMinutes()).padStart(2, '0');
+            printTimestamp.textContent = `${m} ${d}, ${y} • ${hours}:${mins} ${ampm}`;
+        }
+
         if (printKpiRes) printKpiRes.textContent = filteredRows.length;
         if (printKpiRev) {
             const totalRev = filteredRows.reduce((acc, r) => acc + Number(r.amount || 0), 0);
             printKpiRev.textContent = formatMoney(totalRev);
         }
+        if (printKpiGuests) {
+            const totalG = filteredRows.reduce((acc, r) => acc + Number(r.guests || 0), 0);
+            printKpiGuests.textContent = totalG;
+        }
+
+        const filteredStaff = getFilteredStaffCollections();
+        const totalStaffRev = filteredStaff.reduce((sum, s) => sum + Number(s.payment_amount || 0), 0);
+        if (printKpiStaffRev) {
+            printKpiStaffRev.textContent = formatMoney(totalStaffRev);
+        }
+
+        // Render Clean Black & White Staff Doings Table in Print
+        const printStaffTbody = document.getElementById('printStaffCollectionsTableBody');
+        const printStaffTfoot = document.getElementById('printStaffCollectionsTableFoot');
+        if (printStaffTbody) {
+            if (filteredStaff.length === 0) {
+                printStaffTbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="padding: 6px 8px; text-align: center; font-style: italic; color: #52525b; border-bottom: 1px solid #d4d4d8;">
+                            No staff collections recorded for the selected filter period and session.
+                        </td>
+                    </tr>
+                `;
+                if (printStaffTfoot) printStaffTfoot.innerHTML = '';
+            } else {
+                const staffMap = {};
+                filteredStaff.forEach(log => {
+                    const name = log.staff_name || 'Staff User';
+                    if (!staffMap[name]) {
+                        staffMap[name] = { name: name, count: 0, total: 0 };
+                    }
+                    staffMap[name].count += 1;
+                    staffMap[name].total += Number(log.payment_amount || 0);
+                });
+
+                const sortedStaff = Object.values(staffMap).sort((a, b) => b.total - a.total);
+                let rowsHtml = '';
+                sortedStaff.forEach((st, idx) => {
+                    const pct = totalStaffRev > 0 ? ((st.total / totalStaffRev) * 100).toFixed(1) : '0.0';
+                    rowsHtml += `
+                        <tr style="border-bottom: 1px solid #e4e4e7;">
+                            <td style="padding: 4px 6px; border-right: 1px solid #e4e4e7; font-weight: 600; color: #18181b;">
+                                ${idx + 1}. ${st.name}
+                            </td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #e4e4e7; text-align: center; color: #27272a;">
+                                ${st.count} ${st.count === 1 ? 'transaction' : 'transactions'}
+                            </td>
+                            <td style="padding: 4px 6px; border-right: 1px solid #e4e4e7; text-align: right; font-weight: 600; color: #18181b;">
+                                ${formatMoney(st.total)}
+                            </td>
+                            <td style="padding: 4px 6px; text-align: right; color: #52525b;">
+                                ${pct}%
+                            </td>
+                        </tr>
+                    `;
+                });
+                printStaffTbody.innerHTML = rowsHtml;
+
+                if (printStaffTfoot) {
+                    printStaffTfoot.innerHTML = `
+                        <tr>
+                            <td style="padding: 5px 6px; border-right: 1px solid #e4e4e7; text-transform: uppercase;">Total Staff Collections</td>
+                            <td style="padding: 5px 6px; border-right: 1px solid #e4e4e7; text-align: center;">${filteredStaff.length} transactions</td>
+                            <td style="padding: 5px 6px; border-right: 1px solid #e4e4e7; text-align: right;">${formatMoney(totalStaffRev)}</td>
+                            <td style="padding: 5px 6px; text-align: right;">100.0%</td>
+                        </tr>
+                    `;
+                }
+            }
+        }
     };
+
+    const getFilteredStaffCollections = () => {
+        return (data.staffCollections || []).filter(item => {
+            let dateMatch = true;
+            if (appliedStartDate || appliedEndDate) {
+                if (item.date) {
+                    if (appliedStartDate && appliedEndDate) {
+                        dateMatch = item.date >= appliedStartDate && item.date <= appliedEndDate;
+                    } else if (appliedStartDate) {
+                        dateMatch = item.date === appliedStartDate;
+                    } else if (appliedEndDate) {
+                        dateMatch = item.date <= appliedEndDate;
+                    }
+                } else {
+                    dateMatch = false;
+                }
+            }
+
+            let sessionMatch = true;
+            if (appliedSession) {
+                sessionMatch = item.session === appliedSession;
+            }
+
+            return dateMatch && sessionMatch;
+        });
+    };
+
+    const renderStaffCollectionsBreakdown = (staffLogs) => {
+        const tbody = document.getElementById('staffCollectionsTableBody');
+        const tfoot = document.getElementById('staffCollectionsTableFoot');
+        const countLabel = document.getElementById('staffTransactionCountLabel');
+        const drawer = document.getElementById('staffTransactionsListDrawer');
+
+        const totalStaffAmount = staffLogs.reduce((sum, s) => sum + Number(s.payment_amount || 0), 0);
+
+        if (countLabel) {
+            countLabel.textContent = `${staffLogs.length} payment${staffLogs.length === 1 ? '' : 's'} in selected period`;
+        }
+
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (staffLogs.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-6 text-center text-xs text-hp-text-muted">
+                            <i class="bi bi-wallet2 text-xl block mb-1 opacity-50"></i>
+                            No staff collections recorded for the selected date range and session.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                // Group by staff_name
+                const staffMap = {};
+                staffLogs.forEach(log => {
+                    const name = log.staff_name || 'Staff User';
+                    if (!staffMap[name]) {
+                        staffMap[name] = {
+                            name: name,
+                            count: 0,
+                            total: 0,
+                            recentActions: new Set(),
+                            lastTime: log.date + ' ' + (log.time || '')
+                        };
+                    }
+                    staffMap[name].count += 1;
+                    staffMap[name].total += Number(log.payment_amount || 0);
+                    if (log.action) {
+                        const cleanAct = log.action.replace(/_/g, ' ');
+                        staffMap[name].recentActions.add(cleanAct);
+                    }
+                });
+
+                Object.values(staffMap).sort((a, b) => b.total - a.total).forEach(staff => {
+                    const pct = totalStaffAmount > 0 ? Math.round((staff.total / totalStaffAmount) * 100) : 0;
+                    const actionTags = Array.from(staff.recentActions).slice(0, 3).map(act => 
+                        `<span class="rounded bg-black/5 dark:bg-white/5 px-2 py-0.5 text-[0.65rem] font-semibold capitalize text-hp-text-muted">${act}</span>`
+                    ).join(' ');
+
+                    const initials = staff.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-glass-hover/50 transition-colors">
+                            <td class="py-3 px-3">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="h-7 w-7 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold flex items-center justify-center text-xs shrink-0">
+                                        ${initials}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-hp-text">${staff.name}</div>
+                                        <div class="text-[0.68rem] text-hp-text-muted">Front-Desk Staff / Cashier</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                                    <i class="bi bi-receipt"></i>
+                                    ${staff.count} ${staff.count === 1 ? 'payment' : 'payments'}
+                                </span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="flex flex-wrap gap-1 items-center">
+                                    ${actionTags || '<span class="text-hp-text-muted text-[0.68rem]">Payments received</span>'}
+                                </div>
+                            </td>
+                            <td class="py-3 px-3">
+                                <div class="font-bold text-sm text-amber-700 dark:text-amber-400">
+                                    ${formatMoney(staff.total)}
+                                </div>
+                                <div class="text-[0.65rem] text-hp-text-muted">Direct Cash / Remittance</div>
+                            </td>
+                            <td class="py-3 px-3 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    <div class="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-neutral-800 overflow-hidden">
+                                        <div class="h-full bg-amber-500 rounded-full" style="width: ${pct}%"></div>
+                                    </div>
+                                    <span class="font-bold text-hp-text">${pct}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        if (tfoot) {
+            if (staffLogs.length > 0) {
+                tfoot.innerHTML = `
+                    <tr>
+                        <td class="py-3 px-3">
+                            <span class="uppercase tracking-wider text-[0.7rem] font-bold text-hp-text">Total Staff Remittance</span>
+                        </td>
+                        <td class="py-3 px-3 text-hp-text font-bold">
+                            ${staffLogs.length} ${staffLogs.length === 1 ? 'payment' : 'payments'}
+                        </td>
+                        <td class="py-3 px-3 text-hp-text-muted text-[0.7rem]">
+                            All on-site cashier collections
+                        </td>
+                        <td class="py-3 px-3 text-sm font-bold text-amber-700 dark:text-amber-400">
+                            ${formatMoney(totalStaffAmount)}
+                        </td>
+                        <td class="py-3 px-3 text-right text-hp-text font-bold">
+                            100%
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tfoot.innerHTML = '';
+            }
+        }
+
+        if (drawer) {
+            drawer.innerHTML = '';
+            if (staffLogs.length === 0) {
+                drawer.innerHTML = '<p class="text-center py-3 text-xs text-hp-text-muted">No individual payment logs for this period.</p>';
+            } else {
+                staffLogs.forEach(log => {
+                    const sessionBadge = log.session === 'overnight'
+                        ? '<span class="rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 text-[0.62rem] font-bold">Overnight</span>'
+                        : '<span class="rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[0.62rem] font-bold">Daytime</span>';
+
+                    drawer.innerHTML += `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass/60 text-xs">
+                            <div class="flex items-center gap-2.5">
+                                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 font-bold shrink-0 text-xs">
+                                    ₱
+                                </span>
+                                <div>
+                                    <div class="font-semibold text-hp-text flex items-center gap-1.5">
+                                        <span>${log.title || 'Payment Received'}</span>
+                                        ${log.booker_name ? `<span class="text-hp-text-muted font-normal">(Guest: ${log.booker_name})</span>` : ''}
+                                    </div>
+                                    <div class="text-[0.68rem] text-hp-text-muted flex items-center gap-2 mt-0.5">
+                                        <span><i class="bi bi-clock"></i> ${log.date} ${log.time}</span>
+                                        <span>•</span>
+                                        <span>Handler: <strong class="text-hp-text font-medium">${log.staff_name}</strong></span>
+                                        <span>•</span>
+                                        ${sessionBadge}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right sm:text-right">
+                                <span class="font-bold text-sm text-emerald-600 dark:text-emerald-400">${formatMoney(log.payment_amount)}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+    };
+
+    const toggleStaffBtn = document.getElementById('toggleStaffTransactionsListBtn');
+    const staffDrawer = document.getElementById('staffTransactionsListDrawer');
+    const toggleStaffText = document.getElementById('toggleStaffTransactionsListText');
+    const toggleStaffIcon = document.getElementById('toggleStaffTransactionsListIcon');
+
+    toggleStaffBtn?.addEventListener('click', () => {
+        if (!staffDrawer) return;
+        const isClosed = staffDrawer.classList.contains('hidden');
+        if (isClosed) {
+            staffDrawer.classList.remove('hidden');
+            if (toggleStaffText) toggleStaffText.textContent = 'Hide Individual Staff Payment Receipts';
+            if (toggleStaffIcon) toggleStaffIcon.classList.add('rotate-180');
+        } else {
+            staffDrawer.classList.add('hidden');
+            if (toggleStaffText) toggleStaffText.textContent = 'View Individual Staff Payment Receipts';
+            if (toggleStaffIcon) toggleStaffIcon.classList.remove('rotate-180');
+        }
+    });
 
     const applyFilters = () => {
         const filteredRows = getFilteredRows();
@@ -1665,20 +1924,43 @@ window.AppPage['admin_reports'] = function () {
             });
 
             if (activeFilterText) {
-                activeFilterText.textContent = visible === rows.length
-                    ? 'Showing all reservations'
-                    : `Showing ${visible} of ${rows.length} reservations`;
+                const isAllDefault = appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate && !appliedSession && (!amenityFilter || amenityFilter.value === 'all') && (!statusFilter || statusFilter.value === 'all');
+                activeFilterText.textContent = isAllDefault
+                    ? `Showing ${visible} of ${rows.length} reservations (This Month • 24 hrs)`
+                    : (visible === rows.length
+                        ? 'Showing all reservations'
+                        : `Showing ${visible} of ${rows.length} reservations`);
             }
         }
 
         // Update KPIs
         const kpiRes = document.getElementById('kpiReservations');
         const kpiRev = document.getElementById('kpiRevenue');
+        const kpiGuests = document.getElementById('kpiGuests');
+        const kpiStaffCollections = document.getElementById('kpiStaffCollections');
+        const kpiStaffCount = document.getElementById('kpiStaffCollectionsCount');
+        const staffBreakdownTotal = document.getElementById('staffBreakdownTotalAmount');
+
         if (kpiRes) kpiRes.textContent = filteredRows.length;
         if (kpiRev) {
             const totalRev = filteredRows.reduce((acc, r) => acc + Number(r.amount || 0), 0);
             kpiRev.textContent = formatMoney(totalRev);
         }
+        if (kpiGuests) {
+            const totalGuestsCount = filteredRows.reduce((acc, r) => acc + Number(r.guests || 0), 0);
+            kpiGuests.textContent = totalGuestsCount;
+        }
+
+        // Filter and update Staff Collections (Remittance)
+        const filteredStaff = getFilteredStaffCollections();
+        const totalStaffRev = filteredStaff.reduce((sum, s) => sum + Number(s.payment_amount || 0), 0);
+
+        if (kpiStaffCollections) kpiStaffCollections.textContent = formatMoney(totalStaffRev);
+        if (kpiStaffCount) kpiStaffCount.textContent = `• ${filteredStaff.length} payment${filteredStaff.length === 1 ? '' : 's'} received by staff`;
+        if (staffBreakdownTotal) staffBreakdownTotal.textContent = formatMoney(totalStaffRev);
+
+        // Render staff collections breakdown table
+        renderStaffCollectionsBreakdown(filteredStaff);
 
         // Update Print Labels
         updatePrintLabels(filteredRows);
@@ -1695,6 +1977,17 @@ window.AppPage['admin_reports'] = function () {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day   = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    function formatShortDate(iso) {
+        if (!iso) return '';
+        try {
+            const [y, m, d] = iso.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        } catch {
+            return iso;
+        }
     }
 
     presetTodayBtn?.addEventListener('click', () => {
@@ -1739,6 +2032,11 @@ window.AppPage['admin_reports'] = function () {
         if (modalEndDateInput)   modalEndDateInput.value   = toISODateString(end);
     });
 
+    presetAllTimeBtn?.addEventListener('click', () => {
+        if (modalStartDateInput) modalStartDateInput.value = '';
+        if (modalEndDateInput)   modalEndDateInput.value   = '';
+    });
+
     // ─── Date Filter Modal Open & Close ──────────────────────────────────────
     function openModal() {
         if (!dateFilterModal) return;
@@ -1774,10 +2072,10 @@ window.AppPage['admin_reports'] = function () {
         }
     });
 
-    // Reset inside modal
+    // Reset inside modal (resets back to default: This Month, 24 hrs session)
     resetModalBtn?.addEventListener('click', () => {
-        if (modalStartDateInput) modalStartDateInput.value = '';
-        if (modalEndDateInput)   modalEndDateInput.value   = '';
+        if (modalStartDateInput) modalStartDateInput.value = defaultStartDate;
+        if (modalEndDateInput)   modalEndDateInput.value   = defaultEndDate;
         if (modalSessionSelect)  modalSessionSelect.value  = '';
     });
 
@@ -1809,7 +2107,7 @@ window.AppPage['admin_reports'] = function () {
         const isActive = hasDate || hasSession;
 
         if (!isActive) {
-            if (dateFilterBtnLabel)  dateFilterBtnLabel.textContent = 'Date & Session';
+            if (dateFilterBtnLabel)  dateFilterBtnLabel.textContent = 'All Time • 24 hrs';
             if (dateFilterActiveDot) dateFilterActiveDot.classList.add('hidden');
             openModalBtn?.classList.remove('border-emerald-500', 'bg-emerald-50/60', 'dark:bg-emerald-950/30', 'text-emerald-700', 'dark:text-emerald-300');
             return;
@@ -1820,39 +2118,39 @@ window.AppPage['admin_reports'] = function () {
 
         const parts = [];
         if (appliedStartDate && appliedEndDate) {
-            if (appliedStartDate === appliedEndDate) {
-                try {
-                    const [y, m, d] = appliedStartDate.split('-');
-                    const dObj = new Date(y, m - 1, d);
-                    parts.push(dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                } catch {
-                    parts.push(appliedStartDate);
-                }
+            if (appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate) {
+                parts.push(`This Month (${formatShortDate(appliedStartDate)} – ${formatShortDate(appliedEndDate)})`);
+            } else if (appliedStartDate === appliedEndDate) {
+                parts.push(formatShortDate(appliedStartDate));
             } else {
-                parts.push(`${appliedStartDate.slice(5)} to ${appliedEndDate.slice(5)}`);
+                parts.push(`${formatShortDate(appliedStartDate)} – ${formatShortDate(appliedEndDate)}`);
             }
         } else if (appliedStartDate) {
-            try {
-                const [y, m, d] = appliedStartDate.split('-');
-                const dObj = new Date(y, m - 1, d);
-                parts.push(dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            } catch {
-                parts.push(appliedStartDate);
-            }
+            parts.push(`From ${formatShortDate(appliedStartDate)}`);
         } else if (appliedEndDate) {
-            parts.push(`Until ${appliedEndDate.slice(5)}`);
+            parts.push(`Until ${formatShortDate(appliedEndDate)}`);
+        } else {
+            parts.push('All Time');
         }
 
         if (appliedSession === 'daytime') {
             parts.push('Daytime');
         } else if (appliedSession === 'overnight') {
             parts.push('Overnight');
+        } else {
+            parts.push('24 hrs');
         }
 
         if (dateFilterBtnLabel) {
             dateFilterBtnLabel.textContent = parts.join(' • ') || 'Filtered';
         }
     }
+
+    // Set initial values in modal inputs
+    if (modalStartDateInput) modalStartDateInput.value = appliedStartDate;
+    if (modalEndDateInput)   modalEndDateInput.value   = appliedEndDate;
+    if (modalSessionSelect)  modalSessionSelect.value  = appliedSession;
+    updateTriggerButtonUI();
 
     [amenityFilter, statusFilter].forEach((input) => {
         input?.addEventListener('change', () => {
@@ -1864,12 +2162,12 @@ window.AppPage['admin_reports'] = function () {
         resetFiltersBtn.addEventListener('click', () => {
             if (amenityFilter) amenityFilter.value = 'all';
             if (statusFilter) statusFilter.value = 'all';
-            appliedStartDate = '';
-            appliedEndDate   = '';
+            appliedStartDate = defaultStartDate;
+            appliedEndDate   = defaultEndDate;
             appliedSession   = '';
 
-            if (modalStartDateInput) modalStartDateInput.value = '';
-            if (modalEndDateInput)   modalEndDateInput.value   = '';
+            if (modalStartDateInput) modalStartDateInput.value = defaultStartDate;
+            if (modalEndDateInput)   modalEndDateInput.value   = defaultEndDate;
             if (modalSessionSelect)  modalSessionSelect.value  = '';
 
             updateTriggerButtonUI();
@@ -1910,6 +2208,33 @@ window.AppPage['admin_reports'] = function () {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        });
+    }
+
+    // Include Ledger in Print Checkbox Listener (Default is not included)
+    if (includeLedgerInPrintCheckbox) {
+        includeLedgerInPrintCheckbox.addEventListener('change', () => {
+            if (includeLedgerInPrintCheckbox.checked) {
+                document.body.classList.add('print-with-ledger');
+            } else {
+                document.body.classList.remove('print-with-ledger');
+            }
+        });
+    }
+
+    // Standard Report Print PDF Button Handler
+    if (printButton) {
+        printButton.addEventListener('click', () => {
+            if (includeLedgerInPrintCheckbox && includeLedgerInPrintCheckbox.checked) {
+                document.body.classList.add('print-with-ledger');
+            } else {
+                document.body.classList.remove('print-with-ledger');
+            }
+
+            const filteredRows = getFilteredRows();
+            updatePrintLabels(filteredRows);
+
+            window.print();
         });
     }
 
