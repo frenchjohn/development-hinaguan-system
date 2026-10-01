@@ -9379,12 +9379,8 @@ window.AppPage['staff_check_ins'] = function () {
                         reservationData[reservationId] = body.reservation;
                         await closeScanQrModal();
 
-                        // Check if reservation is already checked in
-                        if (body.reservation.status === 'Checked In') {
-                            openQrCheckOutConfirmModal(body.reservation);
-                        } else {
-                            openReservationModal(reservationId);
-                        }
+                        // Open the modal of that reservation
+                        openReservationModal(reservationId);
                     } else {
                         qrScannerStatus.textContent = 'Reservation not found for scanned QR code.';
                     }
@@ -9965,6 +9961,76 @@ window.AppPage['staff_check_ins'] = function () {
     })();
     if (justAddedRes && (window.staffReservationData?.[justAddedRes] || reservationData[justAddedRes])) {
         setTimeout(() => openReservationModal(justAddedRes), 450);
+    }
+
+    // Auto-open reservation modal if reservation_id is in URL (e.g. redirected from QR scanner or reservations page)
+    const checkInsUrlParams = new URLSearchParams(window.location.search);
+    const targetUrlResId = checkInsUrlParams.get('reservation_id') || checkInsUrlParams.get('id');
+    if (targetUrlResId) {
+        const cleanTargetId = String(targetUrlResId).replace(/\D/g, '');
+        if (cleanTargetId) {
+            const autoOpenTargetReservation = async () => {
+                if (!reservationData[cleanTargetId] && !window.staffReservationData?.[cleanTargetId]) {
+                    try {
+                        const res = await fetch(`/staff/check-ins/lookup?reservation_id=${encodeURIComponent(cleanTargetId)}`, {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const body = await res.json().catch(() => ({}));
+                        if (res.ok && body.reservation) {
+                            if (!window.staffReservationData) window.staffReservationData = {};
+                            window.staffReservationData[cleanTargetId] = body.reservation;
+                            reservationData[cleanTargetId] = body.reservation;
+                        }
+                    } catch (_) {}
+                }
+
+                if (window.staffReservationData?.[cleanTargetId] || reservationData[cleanTargetId]) {
+                    const row = document.querySelector(`tr[data-reservation-id="${cleanTargetId}"]`);
+                    if (row) {
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        row.classList.add('bg-emerald-100/80', 'dark:bg-emerald-950/60');
+                        setTimeout(() => row.classList.remove('bg-emerald-100/80', 'dark:bg-emerald-950/60'), 3000);
+                    }
+                    openReservationModal(cleanTargetId);
+                }
+
+                try {
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({ spa: true, url: cleanUrl }, '', cleanUrl);
+                } catch (_) {}
+            };
+            setTimeout(autoOpenTargetReservation, 200);
+        }
+    }
+
+    // Expose openReservationModal globally for hardware scanner and cross-module calls
+    window.openReservationModal = openReservationModal;
+
+    // Listen for direct hardware scan event on this page
+    if (!window.__staffCheckInsScannerBound) {
+        window.__staffCheckInsScannerBound = true;
+        window.addEventListener('scanner:scanned', (e) => {
+            const resId = e.detail?.reservationId;
+            if (resId && (window.location.pathname === '/staff/check-ins' || window.location.pathname.endsWith('/staff/check-ins'))) {
+                const cleanId = String(resId).replace(/\D/g, '');
+                if (cleanId) {
+                    if (window.staffReservationData?.[cleanId] || reservationData[cleanId]) {
+                        openReservationModal(cleanId);
+                    } else {
+                        fetch(`/staff/check-ins/lookup?reservation_id=${encodeURIComponent(cleanId)}`, {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        }).then(r => r.json()).then(body => {
+                            if (body.reservation) {
+                                if (!window.staffReservationData) window.staffReservationData = {};
+                                window.staffReservationData[cleanId] = body.reservation;
+                                reservationData[cleanId] = body.reservation;
+                                openReservationModal(cleanId);
+                            }
+                        }).catch(() => {});
+                    }
+                }
+            }
+        });
     }
 
     // Success toasts — show anything queued for after a reload and convert

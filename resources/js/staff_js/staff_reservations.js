@@ -3167,55 +3167,18 @@ window.AppPage['staff_reservations'] = function () {
                         reservationData[reservationId] = body.reservation;
                         await closeScanModal();
 
-                        // Check if reservation is already checked in
-                        if (body.reservation.status === 'Checked In') {
-                            // Show checkout confirmation modal
-                            const checkOutConfirm = confirm(
-                                `Reservation ${reservationId} is already checked in.\n\nDo you want to check it out now?`
-                            );
-                            if (checkOutConfirm) {
-                                // Auto checkout the reservation
-                                try {
-                                    const checkoutResponse = await fetch(`/staff/reservations/${reservationId}/check-out`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Accept': 'application/json',
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': csrfToken,
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                        },
-                                    });
+                        // Check if reservation is currently checked in or active (scanned twice)
+                        const statusLower = (body.reservation.status || '').toLowerCase().trim();
+                        const isCurrentlyCheckedIn = statusLower === 'checked in' || statusLower === 'active' || (body.reservation.check_in && !body.reservation.check_out && !statusLower.includes('cancel') && !statusLower.includes('no show'));
 
-                                    const checkoutPayload = await checkoutResponse.json().catch(() => ({}));
-                                    if (!checkoutResponse.ok) {
-                                        window.alert(checkoutPayload.message || 'Unable to check out this reservation.');
-                                    } else {
-                                        if (window.reservationsData && window.reservationsData[reservationId]) {
-                                            window.reservationsData[reservationId].status = 'Completed';
-                                        }
-                                        const resRow = document.querySelector(`tr[data-reservation-id="${reservationId}"]`);
-                                        if (resRow) {
-                                            const statusPill = resRow.querySelector('.status-pill, .badge-status');
-                                            if (statusPill) {
-                                                statusPill.textContent = 'Completed';
-                                                statusPill.className = 'status-pill status-pill--completed';
-                                            }
-                                        }
-                                        closeModal();
-                                        window.dispatchEvent(new CustomEvent('app:data-mutated'));
-                                        showToast(`Reservation #${reservationId} checked out successfully.`);
-                                    }
-                                } catch (checkoutError) {
-                                    window.alert('Unable to check out this reservation. Please try again.');
-                                }
-                            } else {
-                                // Open modal to view reservation details
-                                openModal(reservationId);
-                            }
-                        } else {
-                            // Proceed with normal check-in flow
-                            openCheckInModal(reservationId);
+                        if (isCurrentlyCheckedIn) {
+                            // Lead to staff checkins page and open the modal of that reservation
+                            window.location.href = `/staff/check-ins?reservation_id=${encodeURIComponent(reservationId)}`;
+                            return;
                         }
+
+                        // Otherwise proceed with normal check-in flow
+                        openCheckInModal(reservationId);
                     } else {
                         qrScannerStatus.textContent = 'Reservation not found for scanned QR code.';
                     }
@@ -4030,6 +3993,15 @@ window.AppPage['staff_reservations'] = function () {
         const res = reservationData[cleanId];
         if (!res) {
             showToast(`Reservation #${cleanId} not found.`, 'error');
+            return;
+        }
+
+        // If reservation is currently checked in / active, lead to staff checkins page and open modal
+        const statusLower = (res.status || '').toLowerCase().trim();
+        const isCurrentlyCheckedIn = statusLower === 'checked in' || statusLower === 'active' || (res.check_in && !res.check_out && !statusLower.includes('cancel') && !statusLower.includes('no show'));
+
+        if (isCurrentlyCheckedIn) {
+            window.location.href = `/staff/check-ins?reservation_id=${encodeURIComponent(cleanId)}`;
             return;
         }
 

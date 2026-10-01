@@ -1424,8 +1424,15 @@ window.addEventListener('DOMContentLoaded', function () {
 
                         const currentPath = window.location.pathname;
                         const isReservationsPage = currentPath === '/staff/reservations' || currentPath.endsWith('/staff/reservations');
+                        const isCheckInsPage = currentPath === '/staff/check-ins' || currentPath.endsWith('/staff/check-ins');
 
-                        if (isReservationsPage) {
+                        if (isCheckInsPage) {
+                            if (typeof window.openReservationModal === 'function') {
+                                window.openReservationModal(reservationId);
+                            } else {
+                                navigateTo(`/staff/check-ins?reservation_id=${encodeURIComponent(reservationId)}`);
+                            }
+                        } else if (isReservationsPage) {
                             if (typeof window.openReservationById === 'function') {
                                 window.openReservationById(reservationId);
                             } else {
