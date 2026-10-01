@@ -2512,6 +2512,31 @@ Route::get('/reservation/{id}/download-pass', function ($id) {
     return $pdf->download("Hinaguan-Reservation-Pass-{$reservation->id}.pdf");
 })->name('reservation.download-pass');
 
+Route::get('/reservation/{id}/download-receipt', function ($id) {
+    $reservation = Reservation::with(['reservationGuests.customer', 'reservationAmenities.amenity', 'entranceFee', 'reservationCharges'])->findOrFail($id);
+    $primaryGuest = $reservation->reservationGuests->firstWhere('is_primary_guest', true) ?: $reservation->reservationGuests->first();
+    $customer = $primaryGuest?->customer ?? new \App\Models\Customer([
+        'first_name' => $reservation->booker_name ?: 'Valued',
+        'last_name' => 'Guest',
+        'email' => $reservation->email,
+        'phone' => $reservation->phone,
+    ]);
+
+    $checkInDateTime = $reservation->check_in ? $reservation->check_in->format('F j, Y g:i A') : ($reservation->reservation_date ? $reservation->reservation_date->format('F j, Y') : now()->format('F j, Y g:i A'));
+    $checkOutDateTime = $reservation->check_out ? $reservation->check_out->format('F j, Y g:i A') : now()->format('F j, Y g:i A');
+
+    $pdfService = app(\App\Services\ReceiptPdfService::class);
+    $pdf = $pdfService->generatePdf(
+        customer: $customer,
+        reservation: $reservation,
+        checkInDateTime: $checkInDateTime,
+        checkOutDateTime: $checkOutDateTime,
+        totalCost: (float) ($reservation->total_amount ?: $reservation->amount_paid ?: 0)
+    );
+
+    return $pdf->download("Hinaguan-Receipt-Res-{$reservation->id}.pdf");
+})->name('reservation.download-receipt');
+
 Route::post('/xendit/webhook', function (Request $request) use ($createReservationFromPayment) {
     // Verify the callback token from Xendit dashboard
     $token = $request->header('x-callback-token', '');
@@ -6092,8 +6117,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $activityLogs = \App\Models\ActivityLog::with('staff')
             ->whereIn('reservation_id', $resIds)
             ->where(function ($q) {
-                $q->whereIn('action', ['checked_in', 'check_in', 'checked_out', 'check_out', 'walkin_created'])
-                  ->orWhereIn('activity_type', ['check_in', 'check_out', 'walkin_created']);
+                $q->whereIn('action', ['checked_in', 'check_in', 'checked_out', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added'])
+                  ->orWhereIn('activity_type', ['check_in', 'check_out', 'walkin_created', 'additional_charge_paid', 'companion_added', 'amenity_added', 'online_reservation_created'])
+                  ->orWhere('payment_amount', '>', 0);
             })
             ->orderBy('created_at', 'asc')
             ->get()
@@ -6275,6 +6301,71 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'created_at' => $charge->created_at ? $charge->created_at->format('M d, Y h:i A') : null,
                     ];
                 })->toArray(),
+                'payment_history' => (function () use ($reservation, $logsForRes, $checkedInStaff) {
+                    $paymentHistory = [];
+                    $totalPaid = (float) ($reservation->amount_paid ?? 0);
+                    $paymentLogs = $logsForRes->filter(fn ($l) => (float) ($l->payment_amount ?? 0) > 0);
+                    $sumLoggedPayments = (float) $paymentLogs->sum('payment_amount');
+
+                    if ($reservation->reservation_type === 'online') {
+                        $onlineDeposit = round(max(0, $totalPaid - $sumLoggedPayments), 2);
+                        if ($onlineDeposit > 0) {
+                            $paymentHistory[] = [
+                                'type' => 'downpayment',
+                                'title' => 'Online Booking Downpayment',
+                                'description' => 'Advance deposit paid online (' . ($reservation->payment_method ?: 'GCash') . ')',
+                                'amount' => $onlineDeposit,
+                                'method' => $reservation->payment_method ?: 'Online',
+                                'date' => $reservation->created_at ? $reservation->created_at->format('M d, Y · h:i A') : null,
+                                'staff_name' => 'Online Gateway',
+                            ];
+                        }
+                    } elseif ($sumLoggedPayments <= 0 && $totalPaid > 0) {
+                        $paymentHistory[] = [
+                            'type' => 'walkin_payment',
+                            'title' => 'Walk-In Payment',
+                            'description' => 'Paid at front desk upon check-in',
+                            'amount' => $totalPaid,
+                            'method' => $reservation->payment_method ?: 'Cash',
+                            'date' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y · h:i A') : ($reservation->created_at ? $reservation->created_at->format('M d, Y · h:i A') : null),
+                            'staff_name' => $checkedInStaff ?: 'Front Desk',
+                        ];
+                    }
+
+                    foreach ($paymentLogs as $log) {
+                        $actionTitle = match($log->action ?: $log->activity_type) {
+                            'checked_in', 'check_in' => 'Check-In Payment (Remaining Balance)',
+                            'companion_added' => 'Companion / Entrance Fee Payment',
+                            'additional_charge_paid' => $log->title ?: 'Damage / Incidental Fee Payment',
+                            'walkin_created' => 'Walk-In Payment',
+                            default => $log->title ?: 'Payment Received',
+                        };
+
+                        $paymentHistory[] = [
+                            'type' => $log->action ?: $log->activity_type,
+                            'title' => $actionTitle,
+                            'description' => $log->description,
+                            'amount' => (float) $log->payment_amount,
+                            'method' => $reservation->payment_method ?: 'Cash',
+                            'date' => $log->created_at ? $log->created_at->format('M d, Y · h:i A') : null,
+                            'staff_name' => $log->staff?->name ?: ($log->actor_name ?: 'Front Desk'),
+                        ];
+                    }
+
+                    if (empty($paymentHistory) && $totalPaid > 0) {
+                        $paymentHistory[] = [
+                            'type' => 'settlement',
+                            'title' => 'Total Settled Payment',
+                            'description' => 'Recorded payment (' . ($reservation->payment_method ?: 'Cash') . ')',
+                            'amount' => $totalPaid,
+                            'method' => $reservation->payment_method ?: 'Cash',
+                            'date' => $reservation->check_in ? \Carbon\Carbon::parse($reservation->check_in)->format('M d, Y · h:i A') : null,
+                            'staff_name' => $checkedInStaff ?: 'Staff',
+                        ];
+                    }
+
+                    return $paymentHistory;
+                })(),
             ]];
         });
 
@@ -8138,7 +8229,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         );
 
         // Send receipt emails to all guests with email addresses
-        $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity']);
+        $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity', 'entranceFee', 'reservationCharges']);
         $checkInDateTime = $reservation->check_in ? $reservation->check_in->format('F j, Y g:i A') : now()->format('F j, Y g:i A');
         $checkOutDateTime = now()->format('F j, Y g:i A');
 
@@ -8152,6 +8243,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
                 'price' => $amenityCost,
             ];
+        }
+
+        $resTotal = (float) ($reservation->total_amount ?: $reservation->amount_paid ?: 0);
+        if ($resTotal > 0) {
+            $totalCost = $resTotal;
         }
 
         \Log::info('Reservation checkout - attempting to send receipts', [
@@ -9600,7 +9696,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $amenities = [];
 
                 if ($reservation) {
-                    $reservation->load('reservationAmenities.amenity');
+                    $reservation->load(['reservationAmenities.amenity', 'entranceFee', 'reservationCharges']);
                     foreach ($reservation->reservationAmenities as $reservationAmenity) {
                         $amenityCost = $reservationAmenity->price_at_booking * $reservationAmenity->quantity;
                         $totalCost += $amenityCost;
@@ -9608,6 +9704,10 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
                             'price' => $amenityCost,
                         ];
+                    }
+                    $resTotal = (float) ($reservation->total_amount ?: $reservation->amount_paid ?: 0);
+                    if ($resTotal > 0) {
+                        $totalCost = $resTotal;
                     }
                 }
 

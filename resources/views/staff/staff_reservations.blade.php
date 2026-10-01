@@ -96,6 +96,26 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
+        @keyframes input-error-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-3px); }
+            40%, 80% { transform: translateX(3px); }
+        }
+        .input-error-highlight {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25) !important;
+            outline: 2px solid #ef4444 !important;
+            outline-offset: 1px !important;
+            background-color: rgba(254, 242, 242, 0.65) !important;
+            animation: input-error-shake 0.3s ease-in-out;
+        }
+        [data-theme="dark"] .input-error-highlight {
+            border-color: #f87171 !important;
+            box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.3) !important;
+            outline: 2px solid #f87171 !important;
+            outline-offset: 1px !important;
+            background-color: rgba(239, 68, 68, 0.15) !important;
+        }
     </style>
 </head>
 <body class="antialiased staff-portal">

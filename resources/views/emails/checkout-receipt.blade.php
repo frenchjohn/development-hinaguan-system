@@ -71,15 +71,72 @@
             </div>
         </div>
 
+        <!-- Entrance & Admission -->
+        @if(!empty($entranceBreakdown) && ($entranceBreakdown['total_amount'] ?? 0) > 0)
+        <div style="margin-bottom:20px;">
+            <p style="margin:0 0 12px; font-size:12px; text-transform:uppercase; border-bottom:1px solid #ddd; padding-bottom:8px;">Entrance & Admission:</p>
+            
+            @if(($entranceBreakdown['base_entrance'] ?? 0) > 0)
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:14px; flex:1;">
+                    Park Admission
+                    @php
+                        $counts = [];
+                        if (!empty($entranceBreakdown['adult_count'])) {
+                            $counts[] = $entranceBreakdown['adult_count'] . ' ' . ($entranceBreakdown['adult_count'] > 1 ? 'Adults' : 'Adult');
+                        }
+                        if (!empty($entranceBreakdown['child_count'])) {
+                            $counts[] = $entranceBreakdown['child_count'] . ' ' . ($entranceBreakdown['child_count'] > 1 ? 'Children' : 'Child');
+                        }
+                    @endphp
+                    @if(count($counts) > 0)
+                        ({{ implode(', ', $counts) }})
+                    @endif
+                    :
+                </span>
+                <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($entranceBreakdown['base_entrance'], 2) }}</span>
+            </div>
+            @endif
+
+            @if(($entranceBreakdown['pool_fee'] ?? 0) > 0)
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:14px; flex:1;">
+                    Pool Access Pass
+                    @if(!empty($entranceBreakdown['pool_access_count']))
+                        ({{ $entranceBreakdown['pool_access_count'] }} {{ $entranceBreakdown['pool_access_count'] > 1 ? 'guests' : 'guest' }})
+                    @endif
+                    :
+                </span>
+                <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($entranceBreakdown['pool_fee'], 2) }}</span>
+            </div>
+            @endif
+
+            @if(($entranceBreakdown['base_entrance'] ?? 0) <= 0 && ($entranceBreakdown['pool_fee'] ?? 0) <= 0)
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:14px; flex:1;">Park Entrance Fee:</span>
+                <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($entranceBreakdown['total_amount'], 2) }}</span>
+            </div>
+            @endif
+        </div>
+        @endif
+
         <!-- Amenities -->
         <div style="margin-bottom:20px;">
             <p style="margin:0 0 12px; font-size:12px; text-transform:uppercase; border-bottom:1px solid #ddd; padding-bottom:8px;">Amenities Used:</p>
             
-            @if($amenities && count($amenities) > 0)
-                @foreach($amenities as $amenity)
+            @php
+                $amenitiesDisplay = !empty($amenitiesList) ? $amenitiesList : $amenities;
+            @endphp
+
+            @if(!empty($amenitiesDisplay) && count($amenitiesDisplay) > 0)
+                @foreach($amenitiesDisplay as $amenity)
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <span style="font-size:14px; flex:1;">{{ $amenity['name'] ?? 'Amenity' }}:</span>
-                    <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($amenity['price'], 2) }}</span>
+                    <span style="font-size:14px; flex:1;">
+                        {{ $amenity['name'] ?? 'Amenity' }}
+                        @if(isset($amenity['quantity']) && (int)$amenity['quantity'] > 1) (x{{ $amenity['quantity'] }})@endif
+                        :
+                    </span>
+                    <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($amenity['price'] ?? 0, 2) }}</span>
                 </div>
                 @endforeach
             @elseif($reservation && $reservation->reservationAmenities && $reservation->reservationAmenities->count() > 0)
@@ -101,13 +158,42 @@
             @endif
         </div>
 
+        <!-- Additional Fees / Charges (Damages, Extra Head, etc.) -->
+        @if(!empty($additionalChargesList) && count($additionalChargesList) > 0)
+        <div style="margin-bottom:20px;">
+            <p style="margin:0 0 12px; font-size:12px; text-transform:uppercase; border-bottom:1px solid #ddd; padding-bottom:8px;">Additional Fees & Charges:</p>
+            
+            @foreach($additionalChargesList as $charge)
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:14px; flex:1;">{{ $charge['label'] ?? 'Additional Fee' }}:</span>
+                <span style="font-size:14px; margin-left:16px; white-space:nowrap;">₱{{ number_format($charge['amount'] ?? 0, 2) }}</span>
+            </div>
+            @endforeach
+        </div>
+        @endif
+
         <!-- Total -->
         <div style="border-top:2px solid #333; border-bottom:2px solid #333; padding:16px 0; margin-bottom:20px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:16px; font-weight:bold; text-transform:uppercase;">Total Amount:</span>
+                <span style="font-size:16px; font-weight:bold; text-transform:uppercase;">Total Cost:</span>
                 <span style="font-size:24px; font-weight:bold;">₱{{ number_format($totalCost, 2) }}</span>
             </div>
         </div>
+
+        <!-- PDF Downloader -->
+        @php
+            $pdfUrl = $downloadPdfUrl ?? ($reservation ? route('reservation.download-receipt', ['id' => $reservation->id]) : null);
+        @endphp
+        @if($pdfUrl)
+        <div style="text-align:center; margin-bottom:20px; padding:14px; background:#f9f9f9; border:1px solid #eee;">
+            <a href="{{ $pdfUrl }}" 
+               target="_blank" 
+               style="display:inline-block; background-color:#333; color:#ffffff; text-decoration:none; padding:10px 22px; font-size:13px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; font-family:'Courier New', Courier, monospace;">
+                Download PDF Receipt
+            </a>
+            <p style="margin:8px 0 0; font-size:11px; color:#777;">(A PDF copy is also attached to this email)</p>
+        </div>
+        @endif
 
         <!-- Footer -->
         <div style="text-align:center; border-top:1px dashed #ddd; padding-top:20px;">

@@ -1711,7 +1711,52 @@ window.AppPage['staff_reservations'] = function () {
         const err = document.getElementById('checkInMainGuestModalError');
         if (err && isComplete) {
             err.classList.add('hidden');
+            clearCheckInMainGuestFieldErrors();
         }
+    };
+
+    const clearCheckInMainGuestFieldErrors = () => {
+        ['checkInMainFirstName', 'checkInMainLastName', 'checkInMainAge', 'checkInMainGender'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('input-error-highlight');
+        });
+        const err = document.getElementById('checkInMainGuestModalError');
+        if (err) err.classList.add('hidden');
+    };
+
+    const validateCheckInMainGuestFields = (highlightErrors = true) => {
+        const requiredChecks = [
+            { id: 'checkInMainFirstName', val: checkInPrimaryGuest.first_name },
+            { id: 'checkInMainLastName', val: checkInPrimaryGuest.last_name },
+            { id: 'checkInMainAge', val: checkInPrimaryGuest.age, isAge: true },
+            { id: 'checkInMainGender', val: checkInPrimaryGuest.gender },
+        ];
+
+        let hasError = false;
+        let firstInvalid = null;
+
+        requiredChecks.forEach(({ id, val, isAge }) => {
+            const el = document.getElementById(id);
+            let isMissing = !val || String(val).trim() === '';
+            if (!isMissing && isAge) {
+                const parsed = parseInt(val, 10);
+                if (isNaN(parsed) || parsed < 0) {
+                    isMissing = true;
+                }
+            }
+
+            if (isMissing) {
+                hasError = true;
+                if (!firstInvalid && el) firstInvalid = el;
+                if (highlightErrors && el) {
+                    el.classList.add('input-error-highlight');
+                }
+            } else if (el) {
+                el.classList.remove('input-error-highlight');
+            }
+        });
+
+        return { isValid: !hasError, firstInvalid };
     };
 
     // Bind inline input listeners for real-time reactivity
@@ -1728,6 +1773,7 @@ window.AppPage['staff_reservations'] = function () {
 
         mFirst?.addEventListener('input', (e) => {
             checkInPrimaryGuest.first_name = e.target.value.trim();
+            if (checkInPrimaryGuest.first_name) mFirst.classList.remove('input-error-highlight');
             const hFirst = document.getElementById('checkInHiddenPrimaryFirstName');
             if (hFirst) hFirst.value = checkInPrimaryGuest.first_name;
             syncCheckInPrimaryGuestUI();
@@ -1739,12 +1785,15 @@ window.AppPage['staff_reservations'] = function () {
         });
         mLast?.addEventListener('input', (e) => {
             checkInPrimaryGuest.last_name = e.target.value.trim();
+            if (checkInPrimaryGuest.last_name) mLast.classList.remove('input-error-highlight');
             const hLast = document.getElementById('checkInHiddenPrimaryLastName');
             if (hLast) hLast.value = checkInPrimaryGuest.last_name;
             syncCheckInPrimaryGuestUI();
         });
         mAge?.addEventListener('input', (e) => {
             checkInPrimaryGuest.age = e.target.value.trim();
+            const parsedAge = parseInt(checkInPrimaryGuest.age, 10);
+            if (!isNaN(parsedAge) && parsedAge >= 0) mAge.classList.remove('input-error-highlight');
             const hAge = document.getElementById('checkInHiddenPrimaryAge');
             if (hAge) hAge.value = checkInPrimaryGuest.age;
             syncCheckInPrimaryGuestUI();
@@ -1752,6 +1801,7 @@ window.AppPage['staff_reservations'] = function () {
         });
         mGender?.addEventListener('change', (e) => {
             checkInPrimaryGuest.gender = e.target.value;
+            if (checkInPrimaryGuest.gender) mGender.classList.remove('input-error-highlight');
             const hGender = document.getElementById('checkInHiddenPrimaryGender');
             if (hGender) hGender.value = checkInPrimaryGuest.gender;
             syncCheckInPrimaryGuestUI();
@@ -2980,6 +3030,7 @@ window.AppPage['staff_reservations'] = function () {
         renderCheckInModalCompanionPreview();
         switchCheckInTab('checkInAmenitiesTab');
         updateCheckInFeeSummary();
+        clearCheckInMainGuestFieldErrors();
 
         if (checkInModal) {
             checkInModal.classList.add('is-open');
@@ -2993,6 +3044,7 @@ window.AppPage['staff_reservations'] = function () {
         checkInCompanions = [];
         bulkCompanionGroups = [];
         checkInReservationWasEdited = false;
+        clearCheckInMainGuestFieldErrors();
         if (checkInModal) {
             checkInModal.classList.remove('is-open');
             checkInModal.classList.add('hidden');
@@ -5718,19 +5770,17 @@ window.AppPage['staff_reservations'] = function () {
             return;
         }
 
-        if (!checkInPrimaryGuest.first_name || !checkInPrimaryGuest.last_name || !checkInPrimaryGuest.age || !checkInPrimaryGuest.gender) {
+        const { isValid, firstInvalid } = validateCheckInMainGuestFields(true);
+
+        if (!isValid) {
             const err = document.getElementById('checkInMainGuestModalError');
             if (err) {
                 err.textContent = 'Please complete the main guest information (first name, last name, age, and gender required) before checking in.';
                 err.classList.remove('hidden');
             }
-            const emptyField = !checkInPrimaryGuest.first_name ? document.getElementById('checkInMainFirstName')
-                : !checkInPrimaryGuest.last_name ? document.getElementById('checkInMainLastName')
-                : !checkInPrimaryGuest.age ? document.getElementById('checkInMainAge')
-                : document.getElementById('checkInMainGender');
-            if (emptyField) {
-                emptyField.focus();
-                emptyField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (firstInvalid) {
+                firstInvalid.focus();
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
             return;
         }

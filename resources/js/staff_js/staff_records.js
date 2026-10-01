@@ -646,11 +646,7 @@ window.AppPage['staff_records'] = function () {
         const rawAmountPaid = parseFloat(reservation.amount_paid || 0);
         const isPaidStatus = (reservation.payment_status || '').toLowerCase() === 'paid';
         const hasZeroBalance = parseFloat(reservation.remaining_balance || 0) <= 0;
-        const amountPaid = (isPaidStatus && hasZeroBalance && rawAmountPaid < totalAmount) ? totalAmount : rawAmountPaid;
-        const paidChargesTotal = charges.filter(c => (c.status || 'Paid').toLowerCase() === 'paid').reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
-        const totalSettledPaid = amountPaid + paidChargesTotal;
-        const finalBilledTotal = totalAmount + chargesTotal;
-        const remainingBal = Math.max(0, parseFloat(reservation.remaining_balance ?? (finalBilledTotal - totalSettledPaid)));
+        const paymentHistory = reservation.payment_history || [];
 
         // Format money helper
         const formatMoney = (val) => {
@@ -663,6 +659,19 @@ window.AppPage['staff_records'] = function () {
         const entranceFeeTotal = parseFloat(reservation.entrance_fee?.total_entrance_fee ?? reservation.entrance_fee?.total_amount ?? derivedEntranceFee) || derivedEntranceFee;
         const baseEntranceFee = parseFloat(reservation.entrance_fee?.base_entrance_fee ?? Math.max(0, entranceFeeTotal - poolFee));
         const addHeadFee = parseFloat(reservation.entrance_fee?.additional_guest_fee || 0);
+
+        // True Billed Calculation:
+        // Do not add chargesTotal on top of totalAmount if totalAmount in database already accounts for them
+        const computedItemsTotal = amenitiesTotal + entranceFeeTotal + chargesTotal;
+        const finalBilledTotal = Math.max(totalAmount, computedItemsTotal);
+
+        // True Settled Payment Calculation:
+        const sumPaymentHistory = paymentHistory.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        let totalSettledPaid = sumPaymentHistory > 0 ? Math.min(finalBilledTotal, Math.max(sumPaymentHistory, rawAmountPaid)) : Math.min(finalBilledTotal, rawAmountPaid);
+        if (isPaidStatus && hasZeroBalance && totalSettledPaid < finalBilledTotal) {
+            totalSettledPaid = finalBilledTotal;
+        }
+        const remainingBal = Math.max(0, parseFloat(reservation.remaining_balance ?? (finalBilledTotal - totalSettledPaid)));
 
         // Payment status badge styling
         const paymentStatusRaw = (reservation.payment_status || 'Paid').trim();
@@ -892,77 +901,87 @@ window.AppPage['staff_records'] = function () {
                 </div>
             </div>
 
-            <!-- Reserved Amenities (if any) -->
-            ${amenities.length > 0 ? `
-                <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
-                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Reserved Amenities (${amenities.length})</span>
-                        <span class="text-[0.68rem] font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(amenitiesTotal)}</span>
-                    </div>
-                    <div class="space-y-1.5 text-xs">
-                        ${amenities.map(a => {
-                            const price = parseFloat(a.price || a.price_at_booking || 0);
-                            const qty = parseInt(a.quantity || 1, 10);
-                            const subtotal = parseFloat(a.subtotal || (price * qty));
-                            return `
-                                <div class="flex items-center justify-between p-2 rounded-lg bg-[#f9faf9] dark:bg-[#141715] border border-[#e5e9e6] dark:border-[#282c29]">
-                                    <div>
-                                        <div class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')}</div>
-                                        ${a.time_slot ? `<div class="text-[0.68rem] text-[#889b8a]">${escapeHtml(a.time_slot)}</div>` : ''}
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0]">₱${formatMoney(subtotal)}</div>
-                                        <div class="text-[0.65rem] text-[#889b8a]">₱${formatMoney(price)} × ${qty}</div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            ` : ''}
-
-            <!-- Billing & Payment Summary -->
-            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-3">
+            <!-- Unified Official Bill & Settlement Card -->
+            <div class="rounded-xl border border-[#e5e9e6] dark:border-[#282c29] bg-white dark:bg-[#181b19] p-4 space-y-4">
                 <div class="flex items-center justify-between pb-2 border-b border-[#f0f4f1] dark:border-[#242825]">
-                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8]">Billing & Settlement</span>
+                    <div>
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#5a6b5c] dark:text-[#a8b8a8] block">Official Bill & Settlement</span>
+                        <span class="text-[0.65rem] text-[#889b8a]">${reservation.reservation_type === 'walk_in' ? 'Walk-In Desk' : 'Online Booking'} · Ref #${reservation.id}</span>
+                    </div>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border ${paymentBadgeClass}">${escapeHtml(reservation.payment_status || 'Paid')}</span>
                 </div>
-                <div class="space-y-2 text-xs">
-                    <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
-                        <span>Entrance Admission:</span>
-                        <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(entranceFeeTotal)}</span>
+
+                <!-- Itemized Cost Breakdown (One clean list, no duplicates) -->
+                <div class="space-y-1.5 text-xs">
+                    <div class="text-[0.65rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a] pb-1 border-b border-[#f0f4f1] dark:border-[#242825]">
+                        Itemized Charges
                     </div>
+
+                    <!-- 1. Individual Reserved Amenities -->
+                    ${amenities.map(a => {
+                        const price = parseFloat(a.price || a.price_at_booking || 0);
+                        const qty = parseInt(a.quantity || 1, 10);
+                        const subtotal = parseFloat(a.subtotal || (price * qty));
+                        return `
+                            <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
+                                <div class="min-w-0 pr-2">
+                                    <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">${escapeHtml(a.amenity?.amenities_name || a.amenity_name || 'Amenity')}</span>
+                                    <span class="text-[0.68rem] text-[#889b8a] ml-1">(${qty > 1 ? `₱${formatMoney(price)} × ${qty}` : 'Amenity Rental'}${a.time_slot ? ` · ${escapeHtml(a.time_slot)}` : ''})</span>
+                                </div>
+                                <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(subtotal)}</span>
+                            </div>
+                        `;
+                    }).join('')}
+
+                    <!-- 2. Park Entrance Admission -->
+                    ${baseEntranceFee > 0 ? `
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
+                            <div class="min-w-0 pr-2">
+                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Park Entrance Admission</span>
+                                ${(reservation.entrance_fee?.adult_count > 0 || reservation.entrance_fee?.child_count > 0) ? `
+                                    <span class="text-[0.68rem] text-[#889b8a] ml-1">(${reservation.entrance_fee.adult_count || 0} Adults${reservation.entrance_fee.child_count ? `, ${reservation.entrance_fee.child_count} Children` : ''})</span>
+                                ` : ''}
+                            </div>
+                            <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(baseEntranceFee)}</span>
+                        </div>
+                    ` : (entranceFeeTotal > 0 && poolFee <= 0 ? `
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
+                            <div class="min-w-0 pr-2">
+                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Park Entrance Admission</span>
+                            </div>
+                            <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(entranceFeeTotal)}</span>
+                        </div>
+                    ` : '')}
+
+                    <!-- 3. Pool Access Passes (if any) -->
                     ${poolFee > 0 ? `
-                        <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
-                            <span>Pool Access Passes (${poolAccessCount}x):</span>
-                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(poolFee)}</span>
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
+                            <div class="min-w-0 pr-2">
+                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Pool Access Pass</span>
+                                <span class="text-[0.68rem] text-[#889b8a] ml-1">(${poolAccessCount} guests)</span>
+                            </div>
+                            <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(poolFee)}</span>
                         </div>
                     ` : ''}
-                    ${amenitiesTotal > 0 ? `
-                        <div class="flex items-center justify-between text-[#718774] dark:text-[#889b8a]">
-                            <span>Amenities Subtotal:</span>
-                            <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(amenitiesTotal)}</span>
+
+                    <!-- 4. Individual Additional Charges / Damages -->
+                    ${charges.map(c => `
+                        <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f] text-amber-800 dark:text-amber-300">
+                            <div class="min-w-0 pr-2">
+                                <span class="font-medium">${c.charge_type === 'damage' ? 'Damage Fee' : (c.charge_type === 'cleaning' ? 'Cleaning Fee' : (c.charge_type === 'extra_head' ? 'Additional Head Fee' : 'Incidental Fee'))}</span>
+                                ${c.description ? `<span class="text-[0.68rem] opacity-80 ml-1">(${escapeHtml(c.description)})</span>` : ''}
+                            </div>
+                            <span class="font-semibold tabular-nums shrink-0">+ ₱${formatMoney(c.amount)}</span>
                         </div>
-                    ` : ''}
-                    ${chargesTotal > 0 ? `
-                        <div class="flex items-center justify-between text-amber-700 dark:text-amber-400">
-                            <span>Additional / Damage Charges:</span>
-                            <span class="font-medium tabular-nums">+ ₱${formatMoney(chargesTotal)}</span>
+                    `).join('')}
+
+                    <!-- TOTAL BILL (Prominent, cleanly below individual items) -->
+                    <div class="pt-2.5 mt-1 border-t-2 border-[#0d2c1d] dark:border-[#f5f5f0] flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-[#0d2c1d] dark:text-[#f5f5f0] block">Total Bill:</span>
+                            <span class="text-[0.65rem] text-[#718774] dark:text-[#889b8a]">Settled via ${escapeHtml(reservation.payment_method || 'Cash')}</span>
                         </div>
-                    ` : ''}
-                    <div class="pt-2 border-t border-[#e8eee9] dark:border-[#282c29] flex items-center justify-between font-bold">
-                        <span class="text-[#0d2c1d] dark:text-[#f5f5f0]">Total Billed:</span>
-                        <span class="text-sm text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-[#718774] dark:text-[#889b8a]">Total Paid (${escapeHtml(reservation.payment_method || 'Cash')}):</span>
-                        <span class="font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">₱${formatMoney(totalSettledPaid)}</span>
-                    </div>
-                    <div class="flex items-center justify-between text-xs pt-1">
-                        <span class="text-[#718774] dark:text-[#889b8a]">Remaining Balance:</span>
-                        <span class="font-bold tabular-nums ${remainingBal > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}">
-                            ₱${formatMoney(remainingBal)} ${remainingBal <= 0 ? '(Fully Settled)' : '(Pending)'}
-                        </span>
+                        <span class="text-base font-extrabold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums">₱${formatMoney(finalBilledTotal)}</span>
                     </div>
                 </div>
             </div>
