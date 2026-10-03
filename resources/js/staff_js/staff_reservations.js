@@ -476,6 +476,7 @@ window.AppPage['staff_reservations'] = function () {
         checkInCompanionGroupEditModal.classList.remove('is-open');
         checkInCompanionGroupEditModal.classList.add('hidden');
         checkInCompanionGroupEditModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     document.querySelectorAll('[data-close-checkin-group-edit-modal="true"]').forEach(btn => {
@@ -1201,6 +1202,7 @@ window.AppPage['staff_reservations'] = function () {
             checkInCompanionModal.classList.remove('is-open');
             checkInCompanionModal.classList.add('hidden');
             checkInCompanionModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -1245,6 +1247,7 @@ window.AppPage['staff_reservations'] = function () {
         if (companionSummaryModal) {
             companionSummaryModal.classList.remove('is-open');
             companionSummaryModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -1367,6 +1370,7 @@ window.AppPage['staff_reservations'] = function () {
         if (checkInConfirmationModal) {
             checkInConfirmationModal.classList.remove('is-open');
             checkInConfirmationModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -1876,6 +1880,7 @@ window.AppPage['staff_reservations'] = function () {
             duplicateCompanionModal.classList.remove('is-open');
             duplicateCompanionModal.classList.add('hidden');
             duplicateCompanionModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -1909,6 +1914,7 @@ window.AppPage['staff_reservations'] = function () {
         removeCompanionConfirmModal.classList.add('hidden');
         removeCompanionConfirmModal.setAttribute('aria-hidden', 'true');
         pendingRemoveAction = null;
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     document.querySelectorAll('[data-close-remove-companion-modal="true"]').forEach(btn => {
@@ -2510,6 +2516,7 @@ window.AppPage['staff_reservations'] = function () {
         checkInAmenityPickerModal.classList.add('hidden');
         checkInAmenityPickerModal.classList.remove('flex');
         checkInAmenityPickerModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     const loadCheckInAmenityAvailability = async () => {
@@ -3049,6 +3056,7 @@ window.AppPage['staff_reservations'] = function () {
             checkInModal.classList.remove('is-open');
             checkInModal.classList.add('hidden');
             checkInModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -3113,6 +3121,7 @@ window.AppPage['staff_reservations'] = function () {
         if (scanQrModal) {
             scanQrModal.classList.remove('is-open');
             scanQrModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -4088,6 +4097,7 @@ window.AppPage['staff_reservations'] = function () {
         if (typeof closeEditCalendarModal === 'function') {
             closeEditCalendarModal();
         }
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     const renderTableFromData = (data) => {
@@ -4227,6 +4237,7 @@ window.AppPage['staff_reservations'] = function () {
             confirmModalConfirm.className = 'guest-form__button min-w-[100px] cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark';
         }
         confirmCallback = null;
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     confirmModalCloseButtons.forEach((button) => {
@@ -4258,6 +4269,7 @@ window.AppPage['staff_reservations'] = function () {
     const closeSuccessModal = () => {
         successModal.classList.remove('is-open');
         successModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     successModalCloseButtons.forEach((button) => {
@@ -5455,6 +5467,7 @@ window.AppPage['staff_reservations'] = function () {
             editCalendarModal.classList.remove('is-open', 'flex');
             editCalendarModal.classList.add('hidden');
             editCalendarModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -6197,6 +6210,7 @@ window.AppPage['staff_reservations'] = function () {
             if (!anyOpen) {
                 document.body.classList.remove('overflow-hidden');
             }
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -6302,6 +6316,7 @@ window.AppPage['staff_reservations'] = function () {
             if (!anyOpen) {
                 document.body.classList.remove('overflow-hidden');
             }
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 
@@ -6674,6 +6689,7 @@ window.AppPage['staff_reservations'] = function () {
             if (!anyOpen) {
                 document.body.classList.remove('overflow-hidden');
             }
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 

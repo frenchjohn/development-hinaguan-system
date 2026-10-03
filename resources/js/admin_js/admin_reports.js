@@ -734,7 +734,8 @@ window.AppPage['admin_reports'] = function () {
     const openColumnsModal = () => {
         if (!matrixColumnsModal) return;
         matrixColumnsModal.classList.remove('opacity-0', 'pointer-events-none');
-        matrixColumnsModal.classList.add('opacity-100', 'pointer-events-auto');
+        matrixColumnsModal.classList.add('opacity-100', 'pointer-events-auto', 'is-open');
+        matrixColumnsModal.setAttribute('aria-hidden', 'false');
         const card = matrixColumnsModal.querySelector('.matrix-modal-card');
         if (card) {
             card.classList.remove('scale-95');
@@ -755,8 +756,10 @@ window.AppPage['admin_reports'] = function () {
             card.classList.remove('scale-100');
             card.classList.add('scale-95');
         }
-        matrixColumnsModal.classList.remove('opacity-100', 'pointer-events-auto');
+        matrixColumnsModal.classList.remove('opacity-100', 'pointer-events-auto', 'is-open');
         matrixColumnsModal.classList.add('opacity-0', 'pointer-events-none');
+        matrixColumnsModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     const filterAmenityCards = (query) => {
@@ -2041,18 +2044,27 @@ window.AppPage['admin_reports'] = function () {
     function openModal() {
         if (!dateFilterModal) return;
 
-        if (modalStartDateInput) modalStartDateInput.value = appliedStartDate;
-        if (modalEndDateInput)   modalEndDateInput.value   = appliedEndDate;
-        if (modalSessionSelect)  modalSessionSelect.value  = appliedSession;
+        if (modalStartDateInput && (!modalStartDateInput.value || dateFilterModal.classList.contains('hidden'))) {
+            modalStartDateInput.value = appliedStartDate;
+        }
+        if (modalEndDateInput && (!modalEndDateInput.value || dateFilterModal.classList.contains('hidden'))) {
+            modalEndDateInput.value   = appliedEndDate;
+        }
+        if (modalSessionSelect && (!modalSessionSelect.value || dateFilterModal.classList.contains('hidden'))) {
+            modalSessionSelect.value  = appliedSession;
+        }
 
         dateFilterModal.classList.remove('hidden');
-        dateFilterModal.classList.add('flex');
+        dateFilterModal.classList.add('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'false');
     }
 
     function closeModal() {
         if (!dateFilterModal) return;
         dateFilterModal.classList.add('hidden');
-        dateFilterModal.classList.remove('flex');
+        dateFilterModal.classList.remove('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     }
 
     openModalBtn?.addEventListener('click', openModal);

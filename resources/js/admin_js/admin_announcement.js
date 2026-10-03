@@ -34,11 +34,18 @@ window.AppPage['admin_announcement'] = function () {
         _smsAlertCallback = callback || null;
         if (smsAlertModal) {
             smsAlertModal.classList.remove('hidden');
+            smsAlertModal.classList.add('flex', 'is-open');
+            smsAlertModal.setAttribute('aria-hidden', 'false');
         }
     }
 
     smsAlertOkBtn?.addEventListener('click', () => {
-        if (smsAlertModal) smsAlertModal.classList.add('hidden');
+        if (smsAlertModal) {
+            smsAlertModal.classList.add('hidden');
+            smsAlertModal.classList.remove('flex', 'is-open');
+            smsAlertModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
+        }
         if (typeof _smsAlertCallback === 'function') { _smsAlertCallback(); _smsAlertCallback = null; }
     });
 
@@ -46,6 +53,9 @@ window.AppPage['admin_announcement'] = function () {
     smsAlertModal?.addEventListener('click', (e) => {
         if (e.target === smsAlertModal) {
             smsAlertModal.classList.add('hidden');
+            smsAlertModal.classList.remove('flex', 'is-open');
+            smsAlertModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
             if (typeof _smsAlertCallback === 'function') { _smsAlertCallback(); _smsAlertCallback = null; }
         }
     });
@@ -88,22 +98,39 @@ window.AppPage['admin_announcement'] = function () {
         }
 
         _smsConfirmCallback = onConfirm;
-        if (smsConfirmModal) smsConfirmModal.classList.remove('hidden');
+        if (smsConfirmModal) {
+            smsConfirmModal.classList.remove('hidden');
+            smsConfirmModal.classList.add('flex', 'is-open');
+            smsConfirmModal.setAttribute('aria-hidden', 'false');
+        }
     }
 
     smsConfirmOkBtn?.addEventListener('click', () => {
-        if (smsConfirmModal) smsConfirmModal.classList.add('hidden');
+        if (smsConfirmModal) {
+            smsConfirmModal.classList.add('hidden');
+            smsConfirmModal.classList.remove('flex', 'is-open');
+            smsConfirmModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
+        }
         if (typeof _smsConfirmCallback === 'function') { _smsConfirmCallback(); _smsConfirmCallback = null; }
     });
 
     smsConfirmCancelBtn?.addEventListener('click', () => {
-        if (smsConfirmModal) smsConfirmModal.classList.add('hidden');
+        if (smsConfirmModal) {
+            smsConfirmModal.classList.add('hidden');
+            smsConfirmModal.classList.remove('flex', 'is-open');
+            smsConfirmModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
+        }
         _smsConfirmCallback = null;
     });
 
     smsConfirmModal?.addEventListener('click', (e) => {
         if (e.target === smsConfirmModal) {
             smsConfirmModal.classList.add('hidden');
+            smsConfirmModal.classList.remove('flex', 'is-open');
+            smsConfirmModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
             _smsConfirmCallback = null;
         }
     });
@@ -127,7 +154,8 @@ window.AppPage['admin_announcement'] = function () {
     function openWizard(step = 1) {
         if (!broadcastWizardModal) return;
         broadcastWizardModal.classList.remove('hidden');
-        broadcastWizardModal.classList.add('flex');
+        broadcastWizardModal.classList.add('flex', 'is-open');
+        broadcastWizardModal.setAttribute('aria-hidden', 'false');
         document.body.classList.add('overflow-hidden');
         goToStep(step);
     }
@@ -135,8 +163,10 @@ window.AppPage['admin_announcement'] = function () {
     function closeWizard() {
         if (!broadcastWizardModal) return;
         broadcastWizardModal.classList.add('hidden');
-        broadcastWizardModal.classList.remove('flex');
+        broadcastWizardModal.classList.remove('flex', 'is-open');
+        broadcastWizardModal.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('overflow-hidden');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     }
 
     if (openWizardModalBtn) {
@@ -548,15 +578,18 @@ window.AppPage['admin_announcement'] = function () {
         currentPage = 1;
         applyFiltersAndPagination();
         recipientsCustomizerModal.classList.remove('hidden');
-        recipientsCustomizerModal.classList.add('flex');
+        recipientsCustomizerModal.classList.add('flex', 'is-open');
+        recipientsCustomizerModal.setAttribute('aria-hidden', 'false');
     }
 
     function closeCustomizerModal() {
         if (!recipientsCustomizerModal) return;
         recipientsCustomizerModal.classList.add('hidden');
-        recipientsCustomizerModal.classList.remove('flex');
+        recipientsCustomizerModal.classList.remove('flex', 'is-open');
+        recipientsCustomizerModal.setAttribute('aria-hidden', 'true');
         // Sync summary card with latest selection
         updateStep1SummaryCard();
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     }
 
     openCustomizerModalBtn?.addEventListener('click', openCustomizerModal);
@@ -1054,21 +1087,26 @@ window.AppPage['admin_announcement'] = function () {
             }
 
             companionsModal?.classList.remove('hidden');
-            companionsModal?.classList.add('flex');
+            companionsModal?.classList.add('flex', 'is-open');
+            companionsModal?.setAttribute('aria-hidden', 'false');
         }
     });
 
     closeCompanionsBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             companionsModal?.classList.add('hidden');
-            companionsModal?.classList.remove('flex');
+            companionsModal?.classList.remove('flex', 'is-open');
+            companionsModal?.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         });
     });
 
     companionsModal?.addEventListener('click', (e) => {
         if (e.target === companionsModal) {
             companionsModal.classList.add('hidden');
-            companionsModal.classList.remove('flex');
+            companionsModal.classList.remove('flex', 'is-open');
+            companionsModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     });
 

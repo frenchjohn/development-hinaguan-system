@@ -49,10 +49,16 @@ window.AppPage['admin_payment'] = function () {
     let currentPage = window.__adminPaymentCurrentPage || 1;
     let matchedRows = [];
 
-    // Applied Date & Session State
-    let appliedStartDate = modalStartDateInput?.value?.trim() || '';
-    let appliedEndDate   = modalEndDateInput?.value?.trim() || '';
-    let appliedSession   = modalSessionSelect?.value || '';
+    // Applied Date & Session State (preserved across SPA refreshes)
+    let appliedStartDate = window.__adminPaymentAppliedStartDate !== undefined
+        ? window.__adminPaymentAppliedStartDate
+        : (modalStartDateInput?.value?.trim() || '');
+    let appliedEndDate   = window.__adminPaymentAppliedEndDate !== undefined
+        ? window.__adminPaymentAppliedEndDate
+        : (modalEndDateInput?.value?.trim() || '');
+    let appliedSession   = window.__adminPaymentAppliedSession !== undefined
+        ? window.__adminPaymentAppliedSession
+        : (modalSessionSelect?.value || '');
 
     // ─── Quick Presets Helpers ───────────────────────────────────────────────
 
@@ -110,18 +116,27 @@ window.AppPage['admin_payment'] = function () {
     function openModal() {
         if (!dateFilterModal) return;
 
-        if (modalStartDateInput) modalStartDateInput.value = appliedStartDate;
-        if (modalEndDateInput)   modalEndDateInput.value   = appliedEndDate;
-        if (modalSessionSelect)  modalSessionSelect.value  = appliedSession;
+        if (modalStartDateInput && (!modalStartDateInput.value || dateFilterModal.classList.contains('hidden'))) {
+            modalStartDateInput.value = appliedStartDate;
+        }
+        if (modalEndDateInput && (!modalEndDateInput.value || dateFilterModal.classList.contains('hidden'))) {
+            modalEndDateInput.value   = appliedEndDate;
+        }
+        if (modalSessionSelect && (!modalSessionSelect.value || dateFilterModal.classList.contains('hidden'))) {
+            modalSessionSelect.value  = appliedSession;
+        }
 
         dateFilterModal.classList.remove('hidden');
-        dateFilterModal.classList.add('flex');
+        dateFilterModal.classList.add('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'false');
     }
 
     function closeModal() {
         if (!dateFilterModal) return;
         dateFilterModal.classList.add('hidden');
-        dateFilterModal.classList.remove('flex');
+        dateFilterModal.classList.remove('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     }
 
     openModalBtn?.addEventListener('click', openModal);
@@ -131,6 +146,12 @@ window.AppPage['admin_payment'] = function () {
     // Close when clicking backdrop
     dateFilterModal?.addEventListener('click', (e) => {
         if (e.target === dateFilterModal) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && dateFilterModal && !dateFilterModal.classList.contains('hidden')) {
             closeModal();
         }
     });
@@ -157,6 +178,10 @@ window.AppPage['admin_payment'] = function () {
         appliedStartDate = startVal;
         appliedEndDate   = endVal;
         appliedSession   = modalSessionSelect?.value ?? '';
+
+        window.__adminPaymentAppliedStartDate = appliedStartDate;
+        window.__adminPaymentAppliedEndDate   = appliedEndDate;
+        window.__adminPaymentAppliedSession   = appliedSession;
 
         updateTriggerButtonUI();
         closeModal();
@@ -407,6 +432,9 @@ window.AppPage['admin_payment'] = function () {
 
     function clearAllFilters() {
         window.__adminPaymentCurrentPage = 1;
+        window.__adminPaymentAppliedStartDate = '';
+        window.__adminPaymentAppliedEndDate   = '';
+        window.__adminPaymentAppliedSession   = '';
         if (searchInput)   searchInput.value   = '';
         if (typeSelect)    typeSelect.value    = '';
         if (staffSelect)   staffSelect.value   = '';
@@ -432,6 +460,9 @@ window.AppPage['admin_payment'] = function () {
 
 window.addEventListener('spa:leaving', () => {
     window.__adminPaymentCurrentPage = 1;
+    window.__adminPaymentAppliedStartDate = '';
+    window.__adminPaymentAppliedEndDate   = '';
+    window.__adminPaymentAppliedSession   = '';
 });
 
 document.addEventListener('DOMContentLoaded', () => {

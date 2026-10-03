@@ -962,199 +962,198 @@
                         </div>
                     </section>
                 </div>
-
-                {{-- MODALS --}}
-                <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="guestModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" data-close-modal="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
-                        <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-[#5a6b5c] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:text-white" data-close-modal="true" aria-label="Close details">&times;</button>
-                        <div class="guest-modal__header mb-4 flex items-center gap-3">
-                            <h3 id="guestModalTitle" class="guest-modal__title m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Guest Details</h3>
-                        </div>
-                        <div id="guestModalBody" class="guest-modal__body grid gap-4 text-xs"></div>
-                    </div>
-                </div>
-
-                <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-xs" data-close-reservation-modal="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-2xl max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-0 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
-                        <div class="px-5 py-4 border-b border-[#e8eee9] dark:border-[#282c29] bg-white dark:bg-[#181b19] flex items-center justify-between gap-3 shrink-0">
-                            <div class="flex items-center gap-2.5 min-w-0">
-                                <span id="reservationModalIdBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#f0f4f1] text-[#2c5f3e] dark:bg-[#202722] dark:text-[#8fd0ab] border border-[#dbe3de] dark:border-[#282c29] font-mono">#0</span>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">Reservation Record</h3>
-                                        <span id="reservationModalStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border"></span>
-                                    </div>
-                                    <p id="reservationModalSubtitle" class="m-0 text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Archive Details & Activity Summary</p>
-                                </div>
-                            </div>
-                            <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#f4f7f5] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
-                        </div>
-                        <div id="reservationModalBody" class="guest-modal__body p-5 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
-                        <div id="reservationModalFooter" class="px-5 py-3 border-t border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
-                            <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]" id="reservationModalFooterInfo"></span>
-                            <div class="flex items-center gap-2">
-                                <button type="button" id="modalReopenBtn" style="display: none;" class="hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition-all">
-                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                                    <span>Reopen Reservation</span>
-                                </button>
-                                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715]" data-close-reservation-modal="true">Close</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- REOPEN CONFIRMATION MODAL --}}
-                <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="reopenConfirmModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-confirm="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-[480px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="reopenConfirmTitle">
-                        <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-confirm="true" aria-label="Close modal">&times;</button>
-                        <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
-                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                        </div>
-                        <div class="text-center space-y-1">
-                            <h3 id="reopenConfirmTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reopen Reservation</h3>
-                            <p class="text-xs text-[#5a6b5c] dark:text-[#a8b8a8]" id="reopenConfirmSubtitle">Change booking status back to Pending</p>
-                        </div>
-
-                        <div class="my-4 p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3 text-xs">
-                            <div class="flex items-center justify-between">
-                                <span class="text-[#718774] dark:text-[#889b8a]">Reservation ID:</span>
-                                <span class="font-bold font-mono text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmResId">#0</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-[#718774] dark:text-[#889b8a]">Booker Name:</span>
-                                <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmBookerName">—</span>
-                            </div>
-
-                            {{-- Stay Schedule (Check-in to Check-out) --}}
-                            <div class="p-3 rounded-xl bg-white dark:bg-[#181b19] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Reserved Stay Schedule</span>
-                                    <span class="text-[0.68rem] text-[#178a52] dark:text-[#8fd0ab] font-bold" id="reopenConfirmStayDays">1 Day Stay</span>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2 text-xs">
-                                    <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
-                                        <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold text-[0.7rem] mb-1">
-                                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
-                                            <span>Check-In</span>
-                                        </div>
-                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckIn">—</div>
-                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckInSlot">Daytime</div>
-                                    </div>
-                                    <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
-                                        <div class="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold text-[0.7rem] mb-1">
-                                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
-                                            <span>Check-Out</span>
-                                        </div>
-                                        <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckOut">—</div>
-                                        <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckOutSlot">Daytime</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between pt-1.5 border-t border-[#e8eee9] dark:border-[#282c29]">
-                                <span class="text-[#718774] dark:text-[#889b8a]">New Status:</span>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">Pending</span>
-                            </div>
-                        </div>
-
-                        <p class="text-xs text-center text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed mb-4">
-                            Original dates, reserved amenities, guests, and payment records will be preserved and listed on the active Staff Reservations page.
-                        </p>
-
-                        <div id="reopenConfirmError" class="hidden mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300 text-center"></div>
-
-                        <div class="flex items-center justify-center gap-2.5">
-                            <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-confirm="true">Cancel</button>
-                            <button type="button" id="confirmReopenActionBtn" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-amber-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-amber-700 active:scale-[0.98] transition-all">
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                                <span>Yes, Reopen</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- REOPEN SUCCESS MODAL --}}
-                <div class="guest-modal guest-modal--success fixed inset-0 z-[1500] hidden items-center justify-center is-open:flex" style="z-index: 1500 !important;" id="reopenSuccessModal" aria-hidden="true">
-                    <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-success="true"></div>
-                    <div class="guest-modal__content relative z-[1] w-full max-w-[440px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in text-center" role="dialog" aria-modal="true" aria-labelledby="reopenSuccessTitle">
-                        <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-success="true" aria-label="Close modal">&times;</button>
-                        <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shadow-xs">
-                            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-                        </div>
-                        <h3 id="reopenSuccessTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reservation Reopened!</h3>
-                        <p id="reopenSuccessMessage" class="mt-2 mb-5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
-                            The reservation has been returned to Pending status and is now listed on the active Staff Reservations page.
-                        </p>
-                        <div class="flex items-center justify-center gap-2.5">
-                            <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-success="true">Stay on Records</button>
-                            <a href="{{ route('staff.reservations') }}" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-[#178a52] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#126e41] active:scale-[0.98] transition-all no-underline">
-                                <span>Go to Reservations</span>
-                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- NO RECORDS TO PRINT MODAL MESSAGE (1.5s fade in and fade out animation, no buttons) --}}
-                <style>
-                    @keyframes recordModalFadeInOut {
-                        0% {
-                            opacity: 0;
-                            transform: scale(0.9);
-                        }
-                        18% {
-                            opacity: 1;
-                            transform: scale(1);
-                        }
-                        78% {
-                            opacity: 1;
-                            transform: scale(1);
-                        }
-                        100% {
-                            opacity: 0;
-                            transform: scale(0.9);
-                        }
-                    }
-                    @keyframes recordBackdropFadeInOut {
-                        0% { opacity: 0; }
-                        18% { opacity: 1; }
-                        78% { opacity: 1; }
-                        100% { opacity: 0; }
-                    }
-                    .animate-modal-fade-15 {
-                        animation: recordModalFadeInOut 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-                    }
-                    .animate-backdrop-fade-15 {
-                        animation: recordBackdropFadeInOut 1.5s ease forwards !important;
-                    }
-                </style>
-                <div class="fixed inset-0 pointer-events-none"
-                     style="display: none; align-items: center; justify-content: center; z-index: 9999 !important;"
-                     id="noRecordsModal"
-                     role="status"
-                     aria-live="polite">
-                    <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs pointer-events-none"
-                         id="noRecordsModalBackdrop"></div>
-                    <div class="relative z-[1] w-full max-w-[360px] mx-4 flex flex-col items-center overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl text-center pointer-events-auto"
-                         id="noRecordsModalCard">
-                        <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                            </svg>
-                        </div>
-                        <h3 id="noRecordsModalTitle" class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">
-                            No Records to Print
-                        </h3>
-                        <p id="noRecordsModalMsg" class="mt-1.5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
-                            There are currently no records available in the table.
-                        </p>
-                    </div>
-                </div>
-
             </main>
+        </div>
+    </div>
+
+    {{-- MODALS (Direct children of body) --}}
+    <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="guestModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" data-close-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[720px] max-h-[min(84vh,760px)] overflow-y-auto rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="guestModalTitle">
+            <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-[#5a6b5c] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:text-white" data-close-modal="true" aria-label="Close details">&times;</button>
+            <div class="guest-modal__header mb-4 flex items-center gap-3">
+                <h3 id="guestModalTitle" class="guest-modal__title m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Guest Details</h3>
+            </div>
+            <div id="guestModalBody" class="guest-modal__body grid gap-4 text-xs"></div>
+        </div>
+    </div>
+
+    <div class="guest-modal fixed inset-0 z-[1000] hidden items-center justify-center is-open:flex" id="reservationModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 backdrop-blur-xs" data-close-reservation-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-2xl max-h-[min(90vh,820px)] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-0 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="reservationModalTitle">
+            <div class="px-5 py-4 border-b border-[#e8eee9] dark:border-[#282c29] bg-white dark:bg-[#181b19] flex items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span id="reservationModalIdBadge" class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold tracking-wide bg-[#f0f4f1] text-[#2c5f3e] dark:bg-[#202722] dark:text-[#8fd0ab] border border-[#dbe3de] dark:border-[#282c29] font-mono">#0</span>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 id="reservationModalTitle" class="guest-modal__title m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0] truncate">Reservation Record</h3>
+                            <span id="reservationModalStatusBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.68rem] font-bold border"></span>
+                        </div>
+                        <p id="reservationModalSubtitle" class="m-0 text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]">Archive Details & Activity Summary</p>
+                    </div>
+                </div>
+                <button type="button" class="guest-modal__close flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#f4f7f5] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reservation-modal="true" aria-label="Close details">&times;</button>
+            </div>
+            <div id="reservationModalBody" class="guest-modal__body p-5 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"></div>
+            <div id="reservationModalFooter" class="px-5 py-3 border-t border-[#e8eee9] dark:border-[#282c29] bg-[#f8faf9] dark:bg-[#141715] flex items-center justify-between gap-3 shrink-0">
+                <span class="text-[0.72rem] text-[#5a6b5c] dark:text-[#a8b8a8]" id="reservationModalFooterInfo"></span>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="modalReopenBtn" style="display: none;" class="hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs cursor-pointer active:scale-95 transition-all">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                        <span>Reopen Reservation</span>
+                    </button>
+                    <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-1.5 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715]" data-close-reservation-modal="true">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- REOPEN CONFIRMATION MODAL --}}
+    <div class="guest-modal guest-modal--confirm fixed inset-0 z-[1400] hidden items-center justify-center is-open:flex" style="z-index: 1400 !important;" id="reopenConfirmModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-confirm="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[480px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="reopenConfirmTitle">
+            <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-confirm="true" aria-label="Close modal">&times;</button>
+            <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
+                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+            </div>
+            <div class="text-center space-y-1">
+                <h3 id="reopenConfirmTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reopen Reservation</h3>
+                <p class="text-xs text-[#5a6b5c] dark:text-[#a8b8a8]" id="reopenConfirmSubtitle">Change booking status back to Pending</p>
+            </div>
+
+            <div class="my-4 p-3.5 rounded-xl bg-[#f8faf9] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29] space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[#718774] dark:text-[#889b8a]">Reservation ID:</span>
+                    <span class="font-bold font-mono text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmResId">#0</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[#718774] dark:text-[#889b8a]">Booker Name:</span>
+                    <span class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmBookerName">—</span>
+                </div>
+
+                {{-- Stay Schedule (Check-in to Check-out) --}}
+                <div class="p-3 rounded-xl bg-white dark:bg-[#181b19] border border-[#e5e9e6] dark:border-[#282c29] space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[0.68rem] font-bold uppercase tracking-wider text-[#718774] dark:text-[#889b8a]">Reserved Stay Schedule</span>
+                        <span class="text-[0.68rem] text-[#178a52] dark:text-[#8fd0ab] font-bold" id="reopenConfirmStayDays">1 Day Stay</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
+                            <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold text-[0.7rem] mb-1">
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                                <span>Check-In</span>
+                            </div>
+                            <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckIn">—</div>
+                            <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckInSlot">Daytime</div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-[#f4f7f5] dark:bg-[#141715] border border-[#dbe3de] dark:border-[#282c29]">
+                            <div class="flex items-center gap-1.5 text-rose-700 dark:text-rose-400 font-semibold text-[0.7rem] mb-1">
+                                <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/></svg>
+                                <span>Check-Out</span>
+                            </div>
+                            <div class="font-bold text-[#0d2c1d] dark:text-[#f5f5f0]" id="reopenConfirmCheckOut">—</div>
+                            <div class="text-[0.68rem] text-[#718774] dark:text-[#889b8a]" id="reopenConfirmCheckOutSlot">Daytime</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1.5 border-t border-[#e8eee9] dark:border-[#282c29]">
+                    <span class="text-[#718774] dark:text-[#889b8a]">New Status:</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">Pending</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-center text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed mb-4">
+                Original dates, reserved amenities, guests, and payment records will be preserved and listed on the active Staff Reservations page.
+            </p>
+
+            <div id="reopenConfirmError" class="hidden mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300 text-center"></div>
+
+            <div class="flex items-center justify-center gap-2.5">
+                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-confirm="true">Cancel</button>
+                <button type="button" id="confirmReopenActionBtn" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-amber-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-amber-700 active:scale-[0.98] transition-all">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    <span>Yes, Reopen</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- REOPEN SUCCESS MODAL --}}
+    <div class="guest-modal guest-modal--success fixed inset-0 z-[1500] hidden items-center justify-center is-open:flex" style="z-index: 1500 !important;" id="reopenSuccessModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-reopen-success="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[440px] flex flex-col overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl animate-fade-in text-center" role="dialog" aria-modal="true" aria-labelledby="reopenSuccessTitle">
+            <button type="button" class="guest-modal__close absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-[#5a6b5c] hover:bg-[#e8eee9] hover:text-[#0d2c1d] dark:text-[#a8b8a8] dark:hover:bg-[#202722] dark:hover:text-white transition-colors cursor-pointer border-0 bg-transparent text-xl leading-none" data-close-reopen-success="true" aria-label="Close modal">&times;</button>
+            <div class="mx-auto mb-3.5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shadow-xs">
+                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+            </div>
+            <h3 id="reopenSuccessTitle" class="m-0 text-lg font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">Reservation Reopened!</h3>
+            <p id="reopenSuccessMessage" class="mt-2 mb-5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
+                The reservation has been returned to Pending status and is now listed on the active Staff Reservations page.
+            </p>
+            <div class="flex items-center justify-center gap-2.5">
+                <button type="button" class="cursor-pointer rounded-xl border border-[#dbe3de] dark:border-[#282c29] bg-white dark:bg-[#181b19] px-4 py-2 text-xs font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] hover:bg-[#f4f7f5] dark:hover:bg-[#141715] transition-all" data-close-reopen-success="true">Stay on Records</button>
+                <a href="{{ route('staff.reservations') }}" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-[#178a52] px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-[#126e41] active:scale-[0.98] transition-all no-underline">
+                    <span>Go to Reservations</span>
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {{-- NO RECORDS TO PRINT MODAL MESSAGE (1.5s fade in and fade out animation, no buttons) --}}
+    <style>
+        @keyframes recordModalFadeInOut {
+            0% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            18% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            78% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+        }
+        @keyframes recordBackdropFadeInOut {
+            0% { opacity: 0; }
+            18% { opacity: 1; }
+            78% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .animate-modal-fade-15 {
+            animation: recordModalFadeInOut 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+        }
+        .animate-backdrop-fade-15 {
+            animation: recordBackdropFadeInOut 1.5s ease forwards !important;
+        }
+    </style>
+    <div class="fixed inset-0 pointer-events-none"
+         style="display: none; align-items: center; justify-content: center; z-index: 9999 !important;"
+         id="noRecordsModal"
+         role="status"
+         aria-live="polite">
+        <div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-xs pointer-events-none"
+             id="noRecordsModalBackdrop"></div>
+        <div class="relative z-[1] w-full max-w-[360px] mx-4 flex flex-col items-center overflow-hidden rounded-2xl bg-white dark:bg-[#181b19] border border-[#dbe3de] dark:border-[#282c29] p-6 shadow-2xl text-center pointer-events-auto"
+             id="noRecordsModalCard">
+            <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shadow-xs">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h3 id="noRecordsModalTitle" class="m-0 text-base font-bold text-[#0d2c1d] dark:text-[#f5f5f0]">
+                No Records to Print
+            </h3>
+            <p id="noRecordsModalMsg" class="mt-1.5 text-xs text-[#5a6b5c] dark:text-[#a8b8a8] leading-relaxed">
+                There are currently no records available in the table.
+            </p>
         </div>
     </div>
 

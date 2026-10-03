@@ -625,16 +625,20 @@ window.addEventListener('DOMContentLoaded', function () {
     function syncBodyOverlays(doc) {
         const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown, #weatherAlertModal';
 
-        document.body.querySelectorAll('body > .modal, body > [id$="odal"], #printableHandoverSlip').forEach((el) => {
+        document.body.querySelectorAll('body > .modal, body > .guest-modal, body > [id*="modal" i], body > [id*="Modal"], #printableHandoverSlip').forEach((el) => {
             if (el.matches(keepSelector)) return;
+            // CRITICAL: Do not remove or destroy any modal that is currently open/visible
+            if (isModalElementOpen(el)) return;
             el.remove();
         });
 
         Array.from(doc.body.children).forEach((el) => {
             if (el.matches('script, style, link, meta')) return;
             if (el.matches(keepSelector)) return;
-            if (el.matches('.modal') || /[Mm]odal/.test(el.id || '') || el.id === 'printableHandoverSlip') {
+            if (el.matches('.modal, .guest-modal') || /[Mm]odal/i.test(el.id || '') || el.id === 'printableHandoverSlip') {
                 const existing = document.getElementById(el.id);
+                // Keep the active open modal untouched so user input and state are preserved
+                if (existing && isModalElementOpen(existing)) return;
                 if (existing) existing.remove();
                 document.body.appendChild(el.cloneNode(true));
             }
@@ -966,14 +970,60 @@ window.addEventListener('DOMContentLoaded', function () {
         'staff_settings',
     ]);
 
+    function isModalElementOpen(el) {
+        if (!el || !el.isConnected) return false;
+        if (['BUTTON', 'A', 'INPUT', 'LABEL', 'I', 'SPAN', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(el.tagName)) return false;
+        // If element itself or any ancestor is explicitly hidden, it is not open
+        if (el.hasAttribute('hidden') || el.classList.contains('hidden') || el.style.display === 'none') return false;
+        const hiddenAncestor = el.closest('.hidden, [hidden], [style*="display: none"], [style*="display:none"]');
+        if (hiddenAncestor && hiddenAncestor !== el) return false;
+
+        if (el.classList.contains('is-open')) return true;
+        const openAncestor = el.closest('.is-open');
+        if (openAncestor) return true;
+
+        if (el.tagName === 'DIALOG' && el.open) return true;
+        if (el.classList.contains('opacity-0') && el.classList.contains('pointer-events-none') && !el.classList.contains('is-open')) return false;
+
+        try {
+            const style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden' || (style.opacity === '0' && !el.classList.contains('is-open'))) {
+                return false;
+            }
+            if (el.offsetWidth > 0 || el.offsetHeight > 0 || style.position === 'fixed' || style.position === 'absolute') {
+                return true;
+            }
+        } catch (e) {
+            return false;
+        }
+        return false;
+    }
+
     function isAnyModalOpen() {
+        // Fast path 1: explicit standard open classes or dialogs
         const hasOpenClass = !!document.querySelector(
             '.modal.is-open, .guest-modal.is-open, [id$="Modal"].is-open, [id$="modal"].is-open, dialog[open], .is-open'
         );
         if (hasOpenClass) return true;
+
+        // Specific named overlays
         const weatherModal = document.getElementById('weatherAlertModal');
-        if (weatherModal && (weatherModal.classList.contains('is-open') || (!weatherModal.classList.contains('hidden') && weatherModal.style.display !== 'none' && weatherModal.style.display !== ''))) {
-            return true;
+        if (weatherModal && isModalElementOpen(weatherModal)) return true;
+
+        const notifDetail = document.getElementById('notifDetailModal');
+        if (notifDetail && isModalElementOpen(notifDetail)) return true;
+
+        const allNotifs = document.getElementById('allNotifsModal');
+        if (allNotifs && isModalElementOpen(allNotifs)) return true;
+
+        // Comprehensive query across all modal and dialog elements in document
+        const potentialModals = document.querySelectorAll(
+            'div[id*="Modal" i], div[id*="modal" i], div.modal, div.guest-modal, div.admin-settings__modal, div.chatbot-modal-overlay, div[role="dialog"]'
+        );
+        for (const el of potentialModals) {
+            if (isModalElementOpen(el)) {
+                return true;
+            }
         }
         return false;
     }
@@ -1091,14 +1141,33 @@ window.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // 3. Capture form controls (inputs, selects, textareas)
+            // 3. Capture form controls (inputs, selects, textareas) across main AND all overlays
             const formStates = new Map();
-            currentMain.querySelectorAll('input, select, textarea').forEach(el => {
+            document.querySelectorAll('input, select, textarea').forEach(el => {
                 if (el.id) {
                     formStates.set(el.id, {
                         value: el.value,
                         checked: el.checked,
-                        type: el.type
+                        type: el.type,
+                        selectedIndex: el.selectedIndex
+                    });
+                }
+            });
+
+            // 3b. Snapshot state of all open modals so they remain open and look identical after refresh
+            const openModalsSnapshot = [];
+            document.querySelectorAll(
+                'div[id*="Modal" i], div[id*="modal" i], div.modal, div.guest-modal, div.admin-settings__modal, div.chatbot-modal-overlay, div[role="dialog"]'
+            ).forEach(el => {
+                if (isModalElementOpen(el)) {
+                    openModalsSnapshot.push({
+                        id: el.id || null,
+                        classList: Array.from(el.classList),
+                        styleDisplay: el.style.display,
+                        ariaHidden: el.getAttribute('aria-hidden'),
+                        scrollTop: el.scrollTop,
+                        scrollLeft: el.scrollLeft,
+                        innerHTML: el.innerHTML
                     });
                 }
             });
@@ -1157,6 +1226,35 @@ window.addEventListener('DOMContentLoaded', function () {
                     } else if (el.value !== state.value) {
                         el.value = state.value;
                     }
+                    if (state.selectedIndex !== undefined && el.tagName === 'SELECT') {
+                        el.selectedIndex = state.selectedIndex;
+                    }
+                }
+            });
+
+            // Re-open and restore appearance of any modals that were open
+            openModalsSnapshot.forEach(mState => {
+                const modalEl = mState.id ? document.getElementById(mState.id) : null;
+                if (modalEl) {
+                    if (mState.innerHTML && modalEl.innerHTML !== mState.innerHTML) {
+                        modalEl.innerHTML = mState.innerHTML;
+                    }
+                    modalEl.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                    mState.classList.forEach(cls => {
+                        if (cls !== 'hidden' && cls !== 'opacity-0' && cls !== 'pointer-events-none') {
+                            modalEl.classList.add(cls);
+                        }
+                    });
+                    if (mState.styleDisplay && mState.styleDisplay !== 'none') {
+                        modalEl.style.display = mState.styleDisplay;
+                    } else if (modalEl.style.display === 'none') {
+                        modalEl.style.display = '';
+                    }
+                    if (mState.ariaHidden !== null) {
+                        modalEl.setAttribute('aria-hidden', mState.ariaHidden);
+                    }
+                    if (mState.scrollTop) modalEl.scrollTop = mState.scrollTop;
+                    if (mState.scrollLeft) modalEl.scrollLeft = mState.scrollLeft;
                 }
             });
 
@@ -1231,6 +1329,10 @@ window.addEventListener('DOMContentLoaded', function () {
         if (NO_AUTO_REFRESH_PAGES.has(pageKey)) {
             return;
         }
+        if (isAnyModalOpen()) {
+            pendingRefreshAfterModal = true;
+            return;
+        }
         scheduleActivePageRefresh(300, false);
     });
 
@@ -1245,6 +1347,10 @@ window.addEventListener('DOMContentLoaded', function () {
         if (document.visibilityState === 'visible') {
             const pageKey = getSpaPageKey(window.location.pathname);
             if (!NO_AUTO_REFRESH_PAGES.has(pageKey)) {
+                if (isAnyModalOpen()) {
+                    pendingRefreshAfterModal = true;
+                    return;
+                }
                 scheduleActivePageRefresh(100, false);
             }
         }
@@ -1260,14 +1366,44 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     document.addEventListener('click', (e) => {
-        if (e.target.closest('[data-close-reservation-modal], [data-close-check-in-modal], [data-close-scan-modal], [data-close-companion-summary], [data-close-bulk-companion-modal], [data-close-resched-requests-modal], [data-close-date-filter-modal], [data-logout-cancel], .guest-modal__backdrop, .modal-backdrop, [data-close-weather-modal]')) {
-            setTimeout(checkPendingRefresh, 200);
+        if (e.target.closest('[data-close-reservation-modal], [data-close-check-in-modal], [data-close-scan-modal], [data-close-companion-summary], [data-close-bulk-companion-modal], [data-close-resched-requests-modal], [data-close-date-filter-modal], [data-logout-cancel], .guest-modal__backdrop, .modal-backdrop, [data-close-weather-modal], [id*="close" i], [id*="cancel" i], [class*="close" i], [class*="modal" i]')) {
+            setTimeout(checkPendingRefresh, 250);
         }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            setTimeout(checkPendingRefresh, 250);
+        }
+    });
+
+    window.addEventListener('modal:closed', () => {
+        setTimeout(checkPendingRefresh, 200);
     });
 
     document.addEventListener('focusout', () => {
         setTimeout(checkPendingRefresh, 300);
     });
+
+    // Automatic modal closing detector via MutationObserver
+    let wasAnyModalOpenPreviously = false;
+    try {
+        const modalMutationObserver = new MutationObserver(() => {
+            const currentlyOpen = isAnyModalOpen();
+            if (wasAnyModalOpenPreviously && !currentlyOpen) {
+                wasAnyModalOpenPreviously = false;
+                window.dispatchEvent(new CustomEvent('modal:closed'));
+                setTimeout(checkPendingRefresh, 150);
+            } else if (currentlyOpen) {
+                wasAnyModalOpenPreviously = true;
+            }
+        });
+        modalMutationObserver.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ['class', 'style', 'aria-hidden', 'hidden']
+        });
+    } catch (e) {}
 
     // Background idle heartbeat refresh (every 12 seconds)
     setInterval(() => {

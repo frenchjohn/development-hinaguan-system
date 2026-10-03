@@ -5198,40 +5198,48 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $endDate = $startDate;
         }
 
+        $session = strtolower((string) $request->query('session', 'all'));
+        if (!in_array($session, ['all', 'daytime', 'nighttime'], true)) {
+            $session = 'all';
+        }
+
         // Fetch reservations relevant to the selected date range
         // Include: Checked In (active stays on site)
         // Include: Pending or Confirmed (reserved stays that overlap with the date range)
         // Exclude: Cancelled, Checked Out
         $reservations = \App\Models\Reservation::query()
             ->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out'])
-            ->where(function ($query) use ($startDate, $endDate) {
-                $query->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active'])
-                      ->orWhere(function ($q) use ($startDate, $endDate) {
-                          $q->whereIn('status', ['Pending', 'Confirmed', 'Approved', 'pending', 'confirmed', 'approved'])
-                            ->where(function ($dateQ) use ($startDate, $endDate) {
-                                $dateQ->where(function ($dSub) use ($startDate, $endDate) {
-                                    $dSub->whereDate('reservation_date', '<=', $endDate)
-                                         ->where(function ($endQ) use ($startDate) {
-                                             $endQ->whereNull('end_date')
-                                                  ->whereDate('reservation_date', '>=', \Illuminate\Support\Carbon::parse($startDate)->subDays(2)->toDateString())
-                                                  ->orWhereDate('end_date', '>=', $startDate);
-                                         });
-                                })
-                                ->orWhereHas('reservationAmenities', function ($raQ) use ($startDate, $endDate) {
-                                    $raQ->where(function ($sq) {
-                                        $sq->whereNull('status')
-                                           ->orWhere('status', '!=', 'Completed');
-                                    })
-                                    ->whereNotNull('start_date')
-                                    ->whereDate('start_date', '<=', $endDate)
-                                    ->where(function ($sub) use ($startDate) {
-                                        $sub->whereNull('end_date')
-                                            ->whereDate('start_date', '>=', \Illuminate\Support\Carbon::parse($startDate)->subDays(2)->toDateString())
-                                            ->orWhereDate('end_date', '>=', $startDate);
-                                    });
-                                });
-                            });
-                      });
+            ->where(function ($query) use ($startDate, $endDate, $today) {
+                $query->where(function ($dateQ) use ($startDate, $endDate) {
+                    $dateQ->where(function ($dSub) use ($startDate, $endDate) {
+                        $dSub->whereDate('reservation_date', '<=', $endDate)
+                             ->where(function ($endQ) use ($startDate) {
+                                 $endQ->whereNull('end_date')
+                                      ->whereDate('reservation_date', '>=', \Illuminate\Support\Carbon::parse($startDate)->subDays(2)->toDateString())
+                                      ->orWhereDate('end_date', '>=', $startDate);
+                             });
+                    })
+                    ->orWhereHas('reservationAmenities', function ($raQ) use ($startDate, $endDate) {
+                        $raQ->where(function ($sq) {
+                            $sq->whereNull('status')
+                               ->orWhere('status', '!=', 'Completed');
+                        })
+                        ->whereNotNull('start_date')
+                        ->whereDate('start_date', '<=', $endDate)
+                        ->where(function ($sub) use ($startDate) {
+                            $sub->whereNull('end_date')
+                                ->whereDate('start_date', '>=', \Illuminate\Support\Carbon::parse($startDate)->subDays(2)->toDateString())
+                                ->orWhereDate('end_date', '>=', $startDate);
+                        });
+                    });
+                });
+
+                if ($today >= $startDate && $today <= $endDate) {
+                    $query->orWhere(function ($activeQ) {
+                        $activeQ->whereIn('status', ['Checked In', 'checked in', 'checked_in', 'Checked-In', 'checked-in', 'Active', 'active'])
+                                ->whereNull('check_out');
+                    });
+                }
             })
             ->with(['reservationAmenities' => function ($query) {
                 $query->with('amenity');
@@ -5262,13 +5270,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         $matchedSlots = [];
                         foreach ($timeline as [$d, $s]) {
                             if ($d >= $startDate && $d <= $endDate) {
-                                $matchedSlots[] = $s;
+                                if ($session === 'all' || strtolower($s) === $session) {
+                                    $matchedSlots[] = $s;
+                                }
                             }
                         }
 
                         if (empty($matchedSlots)) {
-                            if ($isCheckedIn && empty($reservation->check_out)) {
-                                $matchedSlots = ['Daytime', 'Nighttime'];
+                            // Only if today falls within the selected range, an active checked-in guest
+                            // without checkout is considered on site for today's slots.
+                            if ($isCheckedIn && empty($reservation->check_out) && $today >= $startDate && $today <= $endDate) {
+                                if ($session === 'all') {
+                                    $matchedSlots = ['Daytime', 'Nighttime'];
+                                } elseif ($session === 'daytime') {
+                                    $matchedSlots = ['Daytime'];
+                                } elseif ($session === 'nighttime') {
+                                    $matchedSlots = ['Nighttime'];
+                                }
                             } else {
                                 continue;
                             }
@@ -5304,9 +5322,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             'total_amenities_count' => $uniqueAmenitiesCount,
                         ];
 
-                        if ($isCheckedIn) {
+                        if ($isCheckedIn && ($today >= $startDate && $today <= $endDate)) {
                             $occupancyData[$amenity->id]['occupied'][] = $entry;
-                        } elseif ($isReserved) {
+                        } else {
                             $occupancyData[$amenity->id]['reserved'][] = $entry;
                         }
                     }
@@ -5336,10 +5354,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $occupancyRate = $totalAmenities > 0 ? (int) round($inUseCount / $totalAmenities * 100) : 0;
 
         // Visitors: checked-in guests (main + companions, still inside) whose
-        // reservation availed no amenity at all.
-        $visitorCount = $reservations
-            ->filter(fn ($res) => $res->reservationAmenities->isEmpty())
-            ->sum(fn ($res) => $res->reservationGuests->whereNull('checked_out_at')->count());
+        // reservation availed no amenity at all (only applicable if today is in inspected range).
+        $visitorCount = ($today >= $startDate && $today <= $endDate)
+            ? $reservations
+                ->filter(fn ($res) => $res->reservationAmenities->isEmpty() && in_array(strtolower(trim((string)$res->status)), ['checked in', 'checked-in', 'checked_in', 'active']))
+                ->sum(fn ($res) => $res->reservationGuests->whereNull('checked_out_at')->count())
+            : 0;
 
         return view('staff.staff_occupancy_monitor', compact(
             'amenities',
@@ -5354,7 +5374,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'visitorCount',
             'today',
             'startDate',
-            'endDate'
+            'endDate',
+            'session'
         ));
     })->name('occupancy-monitor');
 

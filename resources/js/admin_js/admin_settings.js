@@ -80,16 +80,19 @@ window.AppPage['admin_settings'] = function () {
 
     const closeActivityModal = () => {
         addActivityModal?.classList.add('hidden');
-        addActivityModal?.classList.remove('flex');
+        addActivityModal?.classList.remove('flex', 'is-open');
+        addActivityModal?.setAttribute('aria-hidden', 'true');
         if (activityImageInput) activityImageInput.value = '';
         activityImagePreview?.classList.add('hidden');
         if (activityImagePreview) activityImagePreview.removeAttribute('src');
         activityImagePlaceholder?.classList.remove('hidden');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     addActivityBtn?.addEventListener('click', () => {
         addActivityModal?.classList.remove('hidden');
-        addActivityModal?.classList.add('flex');
+        addActivityModal?.classList.add('flex', 'is-open');
+        addActivityModal?.setAttribute('aria-hidden', 'false');
     });
 
     cancelActivityBtn?.addEventListener('click', closeActivityModal);

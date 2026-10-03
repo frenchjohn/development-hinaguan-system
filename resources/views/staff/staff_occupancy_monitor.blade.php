@@ -105,8 +105,8 @@
 
             <main class="dash-content p-6">
 
-                {{-- Live status strip --}}
-                <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3">
+                {{-- Live status strip (KPIs) --}}
+                <div class="mb-4 grid grid-cols-2 gap-3.5 md:grid-cols-3 lg:grid-cols-5" id="occupancyKpiStrip">
                     <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/></svg>
@@ -153,7 +153,7 @@
                             <p class="mt-0.5 truncate text-[0.7rem] text-hp-text-muted/70">{{ $inUseCount }} of {{ $totalAmenities }} in use</p>
                         </div>
                     </article>
-                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5">
+                    <article class="flex min-w-0 items-center gap-3 rounded-2xl border border-glass-border bg-glass p-4 shadow-glass transition-transform duration-300 hover:-translate-y-0.5 col-span-2 sm:col-span-1">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[#f1eafd] text-[#7c3aed] dark:bg-[#2b2142] dark:text-[#b79df0]">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
                         </span>
@@ -165,80 +165,105 @@
                     </article>
                 </div>
 
-                <div class="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-glass-border bg-glass px-4 py-2 text-[0.74rem] text-hp-text-muted shadow-glass">
-                    @if ($startDate === $today && $endDate === $today)
+                {{-- Date Range & Active Status Indicator Badge --}}
+                <div class="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-glass-border bg-glass px-4 py-2 text-[0.74rem] text-hp-text-muted shadow-glass" id="occupancyDateRangeBadge">
+                    @if ($startDate === $today && $endDate === $today && ($session === 'all' || empty($session)))
                         <span class="inline-flex items-center gap-1.5 font-bold text-hp-green"><i class="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]"></i> Live (Today)</span>
                     @elseif ($startDate === $endDate)
-                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Date: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }}</span>
+                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Date: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
                     @else
-                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Range: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }} – {{ \Illuminate\Support\Carbon::parse($endDate)->format('M d, Y') }}</span>
+                        <span class="inline-flex items-center gap-1.5 font-bold text-[#0284c7] dark:text-[#38bdf8]"><i class="h-2 w-2 rounded-full bg-[#0284c7]"></i> Range: {{ \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y') }} – {{ \Illuminate\Support\Carbon::parse($endDate)->format('M d, Y') }}{{ ($session && $session !== 'all') ? ' (' . ($session === 'daytime' ? 'Daytime' : 'Overnight') . ')' : '' }}</span>
                     @endif
                     <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#dc2626]"></i>Occupied</span>
                     <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-[#c8a45d]"></i>Reserved</span>
                     <span class="inline-flex items-center gap-1.5 font-semibold"><i class="h-[0.55rem] w-[0.55rem] rounded-full bg-hp-green"></i>Available</span>
-                    <span class="ml-auto italic text-hp-text-muted/70">Click any amenity card for full details</span>
                 </div>
 
-                <div class="mb-3">
-                    <button type="button" id="filterToggleBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-glass-border bg-glass px-4 py-2.5 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-                        </svg>
-                        Filters
-                        @if ($startDate !== $today || $endDate !== $today)
-                            <span class="rounded-full bg-hp-green/20 px-2 py-0.5 text-xs font-bold text-hp-green">Active</span>
-                        @endif
-                    </button>
+                {{-- Clean Modern Filter Toolbar --}}
+                <div class="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-glass-border bg-glass p-3 sm:p-3.5 shadow-glass backdrop-blur-md">
+                    {{-- Left: Filter Controls --}}
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        {{-- Date & Session Filter Modal Trigger --}}
+                        <button
+                            type="button"
+                            id="openDateFilterModalBtn"
+                            class="h-[38px] inline-flex cursor-pointer items-center gap-2.5 rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:bg-glass-hover hover:border-hp-green/40 px-3.5 py-1.5 text-xs font-semibold text-hp-text transition-all shadow-xs"
+                            title="Filter by Date & Session"
+                        >
+                            <i class="bi bi-calendar-range text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                            <span id="dateFilterBtnLabel" class="max-w-[240px] truncate">
+                                @php
+                                    $labelParts = [];
+                                    if ($startDate && $endDate) {
+                                        if ($startDate === $endDate) {
+                                            if ($startDate === $today) {
+                                                $labelParts[] = 'Today';
+                                            } else {
+                                                $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
+                                            }
+                                        } else {
+                                            $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('m/d') . ' – ' . \Illuminate\Support\Carbon::parse($endDate)->format('m/d');
+                                        }
+                                    } elseif ($startDate) {
+                                        $labelParts[] = \Illuminate\Support\Carbon::parse($startDate)->format('M d, Y');
+                                    }
+
+                                    $currSession = $session ?? 'all';
+                                    if ($currSession === 'daytime') {
+                                        $labelParts[] = 'Daytime';
+                                    } elseif ($currSession === 'nighttime' || $currSession === 'overnight') {
+                                        $labelParts[] = 'Overnight';
+                                    }
+                                    $isFiltered = ($startDate !== $today || $endDate !== $today || ($session && $session !== 'all'));
+                                @endphp
+                                {{ count($labelParts) > 0 ? implode(' • ', $labelParts) : 'Filter by Date & Session' }}
+                            </span>
+                            <span id="dateFilterActiveDot" class="{{ $isFiltered ? '' : 'hidden' }} h-2 w-2 rounded-full bg-emerald-500 shadow-xs"></span>
+                            <i class="bi bi-chevron-down text-[10px] text-hp-text-muted"></i>
+                        </button>
+
+                        {{-- Availability Dropdown --}}
+                        <div class="relative flex items-center">
+                            <i class="bi bi-funnel-fill absolute left-3 text-xs text-hp-text-muted pointer-events-none"></i>
+                            <select id="availabilityFilter" class="h-[38px] rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:border-hp-green/40 pl-8 pr-7 py-1.5 text-xs font-semibold text-hp-text outline-none focus:border-hp-green cursor-pointer appearance-none shadow-xs transition-colors">
+                                <option value="all">All Statuses</option>
+                                <option value="available">Available</option>
+                                <option value="occupied">Occupied</option>
+                                <option value="reserved">Reserved</option>
+                                <option value="unavailable">Unavailable (Occupied/Reserved)</option>
+                            </select>
+                            <i class="bi bi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-hp-text-muted pointer-events-none"></i>
+                        </div>
+
+                        {{-- Reset Filter Button --}}
+                        <button
+                            type="button"
+                            id="clearFiltersBtn"
+                            class="{{ $isFiltered ? '' : 'hidden' }} h-[38px] inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 hover:bg-glass-hover px-3 py-1.5 text-xs font-semibold text-hp-text-muted hover:text-hp-text transition-all shadow-xs"
+                            title="Reset to Today & All Sessions"
+                        >
+                            <i class="bi bi-arrow-counterclockwise text-xs"></i>
+                            <span>Reset to Today</span>
+                        </button>
+                    </div>
+
+                    {{-- Right: Search Input --}}
+                    <div class="relative w-full sm:w-64 max-w-full">
+                        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-hp-text-muted pointer-events-none"></i>
+                        <input
+                            type="text"
+                            id="searchAmenities"
+                            placeholder="Search amenities..."
+                            class="h-[38px] w-full rounded-xl border border-glass-border bg-white/80 dark:bg-[#161a17]/80 pl-8 pr-8 text-xs font-medium text-hp-text outline-none focus:border-hp-green placeholder:text-hp-text-muted/60 transition-colors shadow-xs"
+                        />
+                        <button type="button" id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer" title="Clear search">
+                            <i class="bi bi-x-circle-fill text-xs"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="occupancy-monitor__filter-panel mb-6 hidden rounded-xl border border-glass-border bg-glass p-5 shadow-glass [&.is-open]:block" id="filterPanel">
-                    <form method="GET" action="{{ route('staff.occupancy-monitor') }}" id="occupancyFilterForm">
-                        <div class="mb-4 grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
-                            <div class="flex flex-col gap-1.5">
-                                <label for="searchAmenities" class="text-[0.8rem] font-semibold text-hp-text">Search Amenities</label>
-                                <input type="text" id="searchAmenities" placeholder="Search by name..." class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label for="startDateFilter" class="text-[0.8rem] font-semibold text-hp-text">Start Date</label>
-                                <input type="date" id="startDateFilter" name="start_date" value="{{ $startDate }}" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label for="endDateFilter" class="text-[0.8rem] font-semibold text-hp-text">End Date</label>
-                                <input type="date" id="endDateFilter" name="end_date" value="{{ $endDate }}" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]" />
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label for="timeSlotFilter" class="text-[0.8rem] font-semibold text-hp-text">Time Slot</label>
-                                <select id="timeSlotFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
-                                    <option value="all">All Time Slots</option>
-                                    <option value="daytime">Daytime</option>
-                                    <option value="nighttime">Overnight</option>
-                                </select>
-                            </div>
-                            <div class="flex flex-col gap-1.5">
-                                <label for="availabilityFilter" class="text-[0.8rem] font-semibold text-hp-text">Availability</label>
-                                <select id="availabilityFilter" class="rounded-md border border-glass-border bg-glass px-3 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:bg-[#0d2812]">
-                                    <option value="all">All Statuses</option>
-                                    <option value="available">Available</option>
-                                    <option value="occupied">Occupied</option>
-                                    <option value="reserved">Reserved</option>
-                                    <option value="unavailable">Unavailable (Occupied/Reserved)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-glass-border pt-4">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <button type="button" id="todayFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Today</button>
-                                <button type="button" id="tomorrowFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Tomorrow</button>
-                                <button type="button" id="thisWeekendFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">This Weekend</button>
-                                <button type="button" id="nextWeekFilterBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-3 py-1.5 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Next Week</button>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" id="clearFiltersBtn" class="cursor-pointer rounded-md border border-glass-border bg-transparent px-4 py-2 text-sm font-medium text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Reset to Today</button>
-                                <button type="submit" class="cursor-pointer rounded-md border border-hp-green bg-hp-green px-4 py-2 text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark">Apply Date Range</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                {{-- Dynamic Occupancy Data Container (Categories & Amenity Cards) --}}
+                <div id="occupancyDataContainer">
 
                 @php
                     $getCategoryName = function($name) {
@@ -495,6 +520,7 @@
                         </div>
                     @endforelse
                 </div>
+                </div> {{-- End #occupancyDataContainer --}}
             </main>
         </div>
     </div>
@@ -551,6 +577,149 @@
             <div class="flex justify-end border-t border-[#e5e7eb] px-6 py-4 dark:border-glass-border">
                 <button type="button" class="btn btn--secondary cursor-pointer rounded-lg border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:-translate-y-px hover:border-glass-border-strong hover:bg-glass-hover" id="closeAmenityDetailModalFooter">Close</button>
             </div>
+        </div>
+    </div>
+
+    {{-- DATE & SESSION FILTER MODAL --}}
+    <div
+        id="dateFilterModal"
+        class="hidden fixed inset-0 z-[2000] items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity print:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dateFilterModalTitle"
+    >
+        <div class="relative w-full max-w-md rounded-2xl bg-white dark:bg-[#141715] border border-gray-200 dark:border-neutral-800 shadow-2xl overflow-hidden flex flex-col">
+            
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-neutral-800 bg-gray-50/50 dark:bg-neutral-900/40">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                        <i class="bi bi-calendar-range text-sm"></i>
+                    </span>
+                    <div>
+                        <h3 id="dateFilterModalTitle" class="m-0 text-sm font-bold text-gray-900 dark:text-neutral-100">Filter by Date &amp; Session</h3>
+                        <p class="m-0 text-[11px] text-gray-500 dark:text-neutral-400">Configure date range and operating session</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    id="closeDateFilterModalBtn"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors"
+                    aria-label="Close"
+                >
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-5 space-y-4 text-xs">
+                
+                {{-- Date Section (Start & End Dates) --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-gray-900 dark:text-neutral-100">Select Date</label>
+                        <span class="text-[10px] text-gray-500 dark:text-neutral-400">Leave End empty for single date</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <span class="block text-[11px] text-gray-500 dark:text-neutral-400 mb-1 font-semibold">Start Date</span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalStartDateInput"
+                                    value="{{ $startDate }}"
+                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-[11px] text-gray-500 dark:text-neutral-400 mb-1 font-semibold">End Date <span class="text-[10px] font-normal text-gray-400">(optional)</span></span>
+                            <div class="relative">
+                                <i class="bi bi-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none"></i>
+                                <input
+                                    type="date"
+                                    id="modalEndDateInput"
+                                    value="{{ $endDate !== $startDate ? $endDate : '' }}"
+                                    class="h-9 w-full appearance-none rounded-xl border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-8 pr-2.5 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors font-medium"
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Quick Presets --}}
+                    <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span class="text-[10px] font-semibold text-gray-500 dark:text-neutral-400 mr-0.5">Quick:</span>
+                        <button type="button" id="presetTodayBtn" data-preset="today" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Today
+                        </button>
+                        <button type="button" id="presetTomorrowBtn" data-preset="tomorrow" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            Tomorrow
+                        </button>
+                        <button type="button" id="presetThisWeekendBtn" data-preset="weekend" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Weekend
+                        </button>
+                        <button type="button" id="presetThisWeekBtn" data-preset="week" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Week
+                        </button>
+                        <button type="button" id="presetThisMonthBtn" data-preset="month" class="px-2 py-0.5 rounded-md border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/40 text-[11px] font-semibold text-gray-600 dark:text-neutral-400 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 cursor-pointer transition-all">
+                            This Month
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Subtle Divider --}}
+                <div class="border-t border-gray-200 dark:border-neutral-800 pt-3">
+                    {{-- Operating Session --}}
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <label for="modalSessionSelect" class="block font-semibold text-gray-900 dark:text-neutral-100 text-[11px]">Operating Session</label>
+                            <p class="m-0 text-[10px] text-gray-500 dark:text-neutral-400">Filter amenity occupancy by session</p>
+                        </div>
+                        <div class="relative min-w-[190px]">
+                            <select
+                                id="modalSessionSelect"
+                                class="h-8 w-full appearance-none rounded-lg border border-gray-200 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60 pl-2.5 pr-7 text-xs text-gray-900 dark:text-neutral-100 outline-none focus:border-emerald-500 cursor-pointer transition-colors"
+                            >
+                                <option value="all" {{ ($session === 'all' || empty($session)) ? 'selected' : '' }}>All Sessions (24 hrs)</option>
+                                <option value="daytime" {{ ($session === 'daytime') ? 'selected' : '' }}>Daytime (8:00 AM – 5:00 PM)</option>
+                                <option value="nighttime" {{ ($session === 'nighttime') ? 'selected' : '' }}>Overnight (6:00 PM – 8:00 AM)</option>
+                            </select>
+                            <i class="bi bi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- Footer --}}
+            <div class="flex items-center justify-between gap-3 px-5 py-3.5 border-t border-gray-200 dark:border-neutral-800 bg-gray-50/50 dark:bg-neutral-900/40">
+                <button
+                    type="button"
+                    id="modalResetFilterBtn"
+                    class="h-9 px-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-xs font-semibold text-gray-600 dark:text-neutral-400 hover:border-rose-400 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer transition-all"
+                >
+                    Reset
+                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="modalCancelFilterBtn"
+                        class="h-9 px-4 rounded-xl border border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-800 text-xs font-semibold text-gray-900 dark:text-neutral-100 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-all"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        id="modalApplyFilterBtn"
+                        class="h-9 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                    >
+                        Apply Filter
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 

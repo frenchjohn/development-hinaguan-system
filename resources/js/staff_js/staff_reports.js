@@ -94,13 +94,16 @@ window.AppPage['staff_reports'] = function () {
         if (modalSessionSelect)  modalSessionSelect.value  = appliedSession || 'all';
 
         dateFilterModal.classList.remove('hidden');
-        dateFilterModal.classList.add('flex');
+        dateFilterModal.classList.add('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'false');
     }
 
     function closeModal() {
         if (!dateFilterModal) return;
         dateFilterModal.classList.add('hidden');
-        dateFilterModal.classList.remove('flex');
+        dateFilterModal.classList.remove('flex', 'is-open');
+        dateFilterModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     }
 
     openModalBtn?.addEventListener('click', openModal);
@@ -443,7 +446,7 @@ window.AppPage['staff_reports'] = function () {
         const m = document.getElementById('ledgerModal');
         if (!m) return;
         m.classList.remove('hidden');
-        m.classList.add('flex');
+        m.classList.add('flex', 'is-open');
         m.setAttribute('aria-hidden', 'false');
         const searchInput = document.getElementById('ledgerSearchInput');
         if (searchInput) {
@@ -457,8 +460,9 @@ window.AppPage['staff_reports'] = function () {
         const m = document.getElementById('ledgerModal');
         if (!m) return;
         m.classList.add('hidden');
-        m.classList.remove('flex');
+        m.classList.remove('flex', 'is-open');
         m.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     closeLedgerModalBtn?.addEventListener('click', closeLedgerModal);
@@ -545,7 +549,7 @@ window.AppPage['staff_reports'] = function () {
         const m = document.getElementById('handoverModal');
         if (!m) return;
         m.classList.remove('hidden');
-        m.classList.add('flex');
+        m.classList.add('flex', 'is-open');
         m.setAttribute('aria-hidden', 'false');
     };
 
@@ -553,8 +557,9 @@ window.AppPage['staff_reports'] = function () {
         const m = document.getElementById('handoverModal');
         if (!m) return;
         m.classList.add('hidden');
-        m.classList.remove('flex');
+        m.classList.remove('flex', 'is-open');
         m.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
 
     closeHandoverModalBtn?.addEventListener('click', closeHandoverModal);

@@ -9322,6 +9322,7 @@ window.AppPage['staff_check_ins'] = function () {
         if (scanQrModal) {
             scanQrModal.classList.remove('is-open');
             scanQrModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     };
 

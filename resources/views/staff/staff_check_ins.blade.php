@@ -772,9 +772,17 @@
 								<div class="flex items-center">
 									<h2 class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Data View</h2>
 								</div>
-								<div class="flex items-center gap-2">
-									<button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" aria-label="Scan QR Code" title="Scan QR Code / Camera">
-										<i class="bi bi-qr-code-scan text-base"></i>
+								<div class="flex flex-wrap items-center gap-2">
+									<div class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 shadow-xs" title="Hardware USB / Wireless QR Scanner is active. Pull the trigger on any QR pass anytime to open it!">
+										<span class="relative flex h-2 w-2">
+											<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+											<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+										</span>
+										<i class="bi bi-upc-scan text-xs"></i>
+										<span>Hardware Scanner Ready</span>
+									</div>
+									<button type="button" id="scanQrBtn" class="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-hp-green/30 bg-hp-green/10 text-hp-green transition-all duration-150 hover:bg-hp-green hover:text-white hover:border-hp-green active:scale-[0.98] dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-hp-green dark:hover:text-white shadow-xs" title="Scan reservation QR with Camera" aria-label="Scan reservation QR with Camera">
+										<i class="bi bi-camera-video text-base"></i>
 									</button>
 									<button type="button" class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-white/15 bg-hp-green px-4 text-xs sm:text-sm font-semibold text-white shadow-xs transition-all duration-150 hover:bg-hp-green-dark hover:shadow active:scale-[0.98]" data-open-add-guest-modal="true">
 										<i class="bi bi-person-plus-fill text-sm"></i>

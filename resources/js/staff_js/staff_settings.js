@@ -1,4 +1,4 @@
-﻿window.AppPage = window.AppPage || {};
+window.AppPage = window.AppPage || {};
 window.AppPage['staff_settings'] = function () {
 
 
@@ -21,11 +21,20 @@ window.AppPage['staff_settings'] = function () {
         closeEls.forEach(el => el.addEventListener('click', () => {
             otpModal.classList.remove('is-open');
             otpModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }));
         otpModal.addEventListener('click', (e) => {
             if (e.target === otpModal) {
                 otpModal.classList.remove('is-open');
                 otpModal.setAttribute('aria-hidden', 'true');
+                window.dispatchEvent(new CustomEvent('modal:closed'));
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && otpModal.classList.contains('is-open')) {
+                otpModal.classList.remove('is-open');
+                otpModal.setAttribute('aria-hidden', 'true');
+                window.dispatchEvent(new CustomEvent('modal:closed'));
             }
         });
     }

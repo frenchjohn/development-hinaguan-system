@@ -389,6 +389,7 @@ window.AppPage['staff_records'] = function () {
         button.addEventListener('click', () => {
             guestModal.classList.remove('is-open');
             guestModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         });
     });
 
@@ -396,6 +397,7 @@ window.AppPage['staff_records'] = function () {
         if (event.target === guestModal || event.target.classList.contains('guest-modal__backdrop')) {
             guestModal.classList.remove('is-open');
             guestModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         }
     });
 
@@ -431,6 +433,7 @@ window.AppPage['staff_records'] = function () {
             errBox.textContent = '';
             errBox.classList.add('hidden');
         }
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
     document.querySelectorAll('[data-close-reopen-confirm="true"]').forEach(btn => btn.addEventListener('click', closeReopenConfirmModal));
     reopenConfirmModal?.addEventListener('click', (e) => {
@@ -444,6 +447,7 @@ window.AppPage['staff_records'] = function () {
         if (!reopenSuccessModal) return;
         reopenSuccessModal.classList.remove('is-open');
         reopenSuccessModal.setAttribute('aria-hidden', 'true');
+        window.dispatchEvent(new CustomEvent('modal:closed'));
     };
     document.querySelectorAll('[data-close-reopen-success="true"]').forEach(btn => btn.addEventListener('click', closeReopenSuccessModal));
     reopenSuccessModal?.addEventListener('click', (e) => {
@@ -1304,6 +1308,7 @@ window.AppPage['staff_records'] = function () {
         button.addEventListener('click', () => {
             reservationModal.classList.remove('is-open');
             reservationModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
         });
     });
 
@@ -1311,6 +1316,24 @@ window.AppPage['staff_records'] = function () {
         if (event.target === reservationModal || event.target.classList.contains('guest-modal__backdrop')) {
             reservationModal.classList.remove('is-open');
             reservationModal.setAttribute('aria-hidden', 'true');
+            window.dispatchEvent(new CustomEvent('modal:closed'));
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (reopenConfirmModal?.classList.contains('is-open')) closeReopenConfirmModal();
+            else if (reopenSuccessModal?.classList.contains('is-open')) closeReopenSuccessModal();
+            else if (guestModal?.classList.contains('is-open')) {
+                guestModal.classList.remove('is-open');
+                guestModal.setAttribute('aria-hidden', 'true');
+                window.dispatchEvent(new CustomEvent('modal:closed'));
+            } else if (reservationModal?.classList.contains('is-open')) {
+                reservationModal.classList.remove('is-open');
+                reservationModal.setAttribute('aria-hidden', 'true');
+                window.dispatchEvent(new CustomEvent('modal:closed'));
+            }
         }
     });
 
