@@ -17,14 +17,21 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     $this->info("=========================================");
     $this->line("Config Cached: " . ($isCached ? "⚠️ YES (Cached - run 'php artisan config:clear' to apply changes!)" : "✓ NO (Live)"));
     $this->line("Default Mailer: {$mailer}");
-    if ($mailer === 'gmail_api') {
+    if ($mailer === 'failover') {
+        $chain = config('mail.mailers.failover.mailers', []);
+        $this->line("Failover Chain: " . implode(' -> ', $chain));
+        $this->line("Primary (SSL):  " . config('mail.mailers.smtp_ssl.host') . ':' . config('mail.mailers.smtp_ssl.port'));
+        $this->line("Alt (TLS 2525): " . config('mail.mailers.smtp_alt.host') . ':' . config('mail.mailers.smtp_alt.port'));
+        $this->line("SMTP (587):     " . config('mail.mailers.smtp.host') . ':' . config('mail.mailers.smtp.port'));
+        $this->line("Brevo User:     " . config('mail.mailers.smtp_ssl.username'));
+    } elseif ($mailer === 'gmail_api') {
         $url = env('GMAIL_WEBHOOK_URL') ?: config('mail.mailers.gmail_api.endpoint') ?: config('mail.mailers.gmail_api.url') ?: '';
         $this->line("Gmail Webhook:  " . ($url ? substr($url, 0, 45) . '...' : '❌ NOT SET (Add GMAIL_WEBHOOK_URL in Railway!)'));
     } else {
-        $this->line("SMTP Host:      " . config('mail.mailers.smtp.host'));
-        $this->line("SMTP Port:      " . config('mail.mailers.smtp.port'));
-        $this->line("SMTP Encryption:" . (config('mail.mailers.smtp.encryption') ?: 'none'));
-        $this->line("SMTP Username:  " . config('mail.mailers.smtp.username'));
+        $this->line("SMTP Host:      " . config("mail.mailers.{$mailer}.host", config('mail.mailers.smtp.host')));
+        $this->line("SMTP Port:      " . config("mail.mailers.{$mailer}.port", config('mail.mailers.smtp.port')));
+        $this->line("SMTP Encryption:" . (config("mail.mailers.{$mailer}.encryption", config('mail.mailers.smtp.encryption')) ?: 'none'));
+        $this->line("SMTP Username:  " . config("mail.mailers.{$mailer}.username", config('mail.mailers.smtp.username')));
     }
     $this->line("From Address:   " . config('mail.from.address'));
     $this->line("Queue Driver:   " . config('queue.default'));

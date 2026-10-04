@@ -1509,6 +1509,17 @@ Route::get('/reservation', function (WeatherService $weather) {
 $createReservationFromPayment = function (string $paymentIntentId, ?string $paymentMethod = null, ?array $intentDetails = null) use ($calculateContinuousSlotsCount): ?Reservation {
     $existing = Reservation::where('payment_intent_id', $paymentIntentId)->first();
     if ($existing) {
+        if (!empty($existing->email)) {
+            $emailSentKey = "reservation_email_sent_{$existing->id}";
+            if (!Cache::has($emailSentKey)) {
+                try {
+                    Mail::to(trim($existing->email))->send(new ReservationQrMail($existing));
+                    Cache::put($emailSentKey, true, now()->addDays(30));
+                } catch (\Throwable $ex) {
+                    \Illuminate\Support\Facades\Log::error("Failed to re-dispatch ReservationQrMail for existing reservation #{$existing->id} to {$existing->email}: " . $ex->getMessage(), ['exception' => $ex]);
+                }
+            }
+        }
         return $existing;
     }
 
@@ -1657,11 +1668,15 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
         Cache::forget("pending_reservation_{$paymentIntentId}");
 
         if (!empty($reservation->email)) {
-            try {
-                Mail::to(trim($reservation->email))->send(new ReservationQrMail($reservation));
-            } catch (\Throwable $ex) {
-                \Illuminate\Support\Facades\Log::error("Failed to dispatch ReservationQrMail for reservation #{$reservation->id} to {$reservation->email}: " . $ex->getMessage(), ['exception' => $ex]);
-                report($ex);
+            $emailSentKey = "reservation_email_sent_{$reservation->id}";
+            if (!Cache::has($emailSentKey)) {
+                try {
+                    Mail::to(trim($reservation->email))->send(new ReservationQrMail($reservation));
+                    Cache::put($emailSentKey, true, now()->addDays(30));
+                } catch (\Throwable $ex) {
+                    \Illuminate\Support\Facades\Log::error("Failed to dispatch ReservationQrMail for reservation #{$reservation->id} to {$reservation->email}: " . $ex->getMessage(), ['exception' => $ex]);
+                    report($ex);
+                }
             }
         }
 
@@ -2302,6 +2317,19 @@ Route::get('/reservation/payment-return', function (Request $request) use ($crea
                 $status = 'processing';
             }
         }
+
+        // Ensure booking confirmation email is dispatched upon successful return
+        if ($reservation && !empty($reservation->email)) {
+            $emailSentKey = "reservation_email_sent_{$reservation->id}";
+            if (!Cache::has($emailSentKey)) {
+                try {
+                    Mail::to(trim($reservation->email))->send(new ReservationQrMail($reservation));
+                    Cache::put($emailSentKey, true, now()->addDays(30));
+                } catch (\Throwable $ex) {
+                    \Illuminate\Support\Facades\Log::error("Failed to dispatch ReservationQrMail on payment-return for reservation #{$reservation->id} to {$reservation->email}: " . $ex->getMessage(), ['exception' => $ex]);
+                }
+            }
+        }
     }
 
     return view('reservation_payment_return', [
@@ -2419,11 +2447,15 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
     });
 
     if (!empty($data['email'])) {
-        try {
-            Mail::to(trim($data['email']))->send(new ReservationQrMail($reservation));
-        } catch (\Throwable $exception) {
-            \Illuminate\Support\Facades\Log::error("Failed to dispatch prototype ReservationQrMail to {$data['email']}: " . $exception->getMessage(), ['exception' => $exception]);
-            report($exception);
+        $emailSentKey = "reservation_email_sent_{$reservation->id}";
+        if (!Cache::has($emailSentKey)) {
+            try {
+                Mail::to(trim($data['email']))->send(new ReservationQrMail($reservation));
+                Cache::put($emailSentKey, true, now()->addDays(30));
+            } catch (\Throwable $exception) {
+                \Illuminate\Support\Facades\Log::error("Failed to dispatch prototype ReservationQrMail to {$data['email']}: " . $exception->getMessage(), ['exception' => $exception]);
+                report($exception);
+            }
         }
     }
 
