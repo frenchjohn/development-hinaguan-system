@@ -41,17 +41,35 @@ class GmailWebhookTransport extends AbstractTransport
             'from_name' => config('mail.from.name') ?: 'Hinaguan Nature Park',
         ];
 
+        // Attachments support (e.g. PDF entry pass)
+        $attachments = [];
+        foreach ($email->getAttachments() as $att) {
+            $attachments[] = [
+                'name' => $att->getFilename() ?: 'attachment.pdf',
+                'mime' => $att->getContentType() ?: 'application/pdf',
+                'base64' => base64_encode($att->getBody()),
+            ];
+        }
+        if (!empty($attachments)) {
+            $payload['attachments'] = $attachments;
+        }
+
         $response = Http::withOptions([
             'allow_redirects' => [
                 'max' => 5,
-                'strict' => false,
+                'strict' => true,
                 'referer' => true,
                 'protocols' => ['https'],
             ],
-        ])->timeout(20)->post($this->webhookUrl, $payload);
+        ])->timeout(30)->asJson()->post($this->webhookUrl, $payload);
 
         if ($response->failed()) {
-            throw new \RuntimeException('Google Gmail Webhook delivery failed: ' . $response->body(), $response->status());
+            throw new \RuntimeException('Google Gmail Webhook delivery failed (HTTP ' . $response->status() . '): ' . substr($response->body(), 0, 300), $response->status());
+        }
+
+        $json = $response->json();
+        if (is_array($json) && isset($json['success']) && $json['success'] === false) {
+            throw new \RuntimeException('Google Gmail Webhook error: ' . ($json['error'] ?? 'Unknown script error'));
         }
     }
 

@@ -35,11 +35,12 @@ return [
 
         'failover' => [
             'transport' => 'failover',
-            'mailers' => [
+            'mailers' => array_values(array_filter([
+                env('GMAIL_WEBHOOK_URL') ? 'gmail_api' : null,
                 'smtp_ssl',
                 'smtp_alt',
                 'smtp',
-            ],
+            ])),
             'retry_after' => 60,
         ],
 
