@@ -33,5 +33,10 @@ class AppServiceProvider extends ServiceProvider
             $url = $config['endpoint'] ?? $config['url'] ?? env('GMAIL_WEBHOOK_URL') ?? '';
             return new GmailWebhookTransport($url);
         });
+
+        Mail::extend('brevo_api', function (array $config = []) {
+            $key = $config['key'] ?? env('BREVO_API_KEY') ?? env('MAIL_PASSWORD') ?? '';
+            return new \App\Mail\Transports\BrevoApiTransport($key);
+        });
     }
 }

@@ -58,6 +58,11 @@ return [
             'endpoint' => env('GMAIL_WEBHOOK_URL'),
         ],
 
+        'brevo_api' => [
+            'transport' => 'brevo_api',
+            'key' => env('BREVO_API_KEY', env('MAIL_PASSWORD')),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

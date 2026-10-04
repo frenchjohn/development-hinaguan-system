@@ -20,6 +20,10 @@ Artisan::command('mail:test {email?}', function (?string $email = null) {
     if ($mailer === 'gmail_api') {
         $url = env('GMAIL_WEBHOOK_URL') ?: config('mail.mailers.gmail_api.endpoint') ?: config('mail.mailers.gmail_api.url') ?: '';
         $this->line("Gmail Webhook:  " . ($url ? substr($url, 0, 45) . '...' : '❌ NOT SET (Add GMAIL_WEBHOOK_URL in Railway!)'));
+    } elseif ($mailer === 'brevo_api') {
+        $key = env('BREVO_API_KEY') ?: env('MAIL_PASSWORD') ?: '';
+        $this->line("Brevo HTTPS API: https://api.brevo.com/v3/smtp/email (Port 443)");
+        $this->line("Brevo API Key:  " . ($key ? substr($key, 0, 15) . '...' : '❌ NOT SET (Add BREVO_API_KEY in Railway!)'));
     } else {
         $this->line("SMTP Host:      " . config("mail.mailers.{$mailer}.host", config('mail.mailers.smtp.host')));
         $this->line("SMTP Port:      " . config("mail.mailers.{$mailer}.port", config('mail.mailers.smtp.port')));
