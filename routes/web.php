@@ -24,56 +24,6 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
-Route::get('/debug-deployed-mail', function () {
-    $info = [
-        'default_mailer' => config('mail.default'),
-        'smtp_host' => config('mail.mailers.smtp.host'),
-        'smtp_port' => config('mail.mailers.smtp.port'),
-        'smtp_encryption' => config('mail.mailers.smtp.encryption'),
-        'smtp_username_set' => !empty(config('mail.mailers.smtp.username')),
-        'smtp_password_set' => !empty(config('mail.mailers.smtp.password')),
-        'from_address' => config('mail.from.address'),
-        'from_name' => config('mail.from.name'),
-        'app_env' => config('app.env'),
-        'cached_config' => app()->configurationIsCached(),
-    ];
-
-    $host = (string) (config('mail.mailers.smtp.host') ?: 'smtp-relay.brevo.com');
-    $port = (int) (config('mail.mailers.smtp.port') ?: 587);
-
-    // Test port 587
-    $fp = @fsockopen($host, $port, $errno, $errstr, 5);
-    $info["port_{$port}_test"] = $fp ? "OPEN" : "FAILED: [{$errno}] {$errstr}";
-    if ($fp) fclose($fp);
-
-    // Test port 465 (SSL)
-    $fp465 = @fsockopen($host, 465, $errno465, $errstr465, 5);
-    $info['port_465_test'] = $fp465 ? "OPEN" : "FAILED: [{$errno465}] {$errstr465}";
-    if ($fp465) fclose($fp465);
-
-    // Test port 2525 (TLS)
-    $fp2525 = @fsockopen($host, 2525, $errno2525, $errstr2525, 5);
-    $info['port_2525_test'] = $fp2525 ? "OPEN" : "FAILED: [{$errno2525}] {$errstr2525}";
-    if ($fp2525) fclose($fp2525);
-
-    try {
-        Mail::raw('Diagnostic email from Railway deployed app', function ($m) {
-            $fromAddress = config('mail.from.address') ?: 'parkhinaguan@gmail.com';
-            $fromName = config('mail.from.name') ?: 'Hinaguan Nature Park';
-            $m->from($fromAddress, $fromName)
-              ->to('parkhinaguan@gmail.com')
-              ->subject('Railway Diagnostic Test');
-        });
-        $info['mail_send_result'] = 'SUCCESS';
-    } catch (\Throwable $e) {
-        $info['mail_send_result'] = 'FAILED: ' . $e->getMessage();
-        $info['exception_class'] = get_class($e);
-    }
-
-    return response()->json($info);
-});
-
-
 // ── Continuous Stay & Booking slot helpers ─────────────────────────────────
 $formatLocalDate = function ($val, ?string $column = null): ?string {
     if (! $val) return null;

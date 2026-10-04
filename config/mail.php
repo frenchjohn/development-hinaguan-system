@@ -37,11 +37,19 @@ return [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
-            'port' => env('MAIL_PORT', 587),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'port' => (int) (
+                env('MAIL_PORT') == 587 && str_contains((string) env('MAIL_HOST', 'smtp-relay.brevo.com'), 'brevo.com')
+                    ? 465
+                    : env('MAIL_PORT', 465)
+            ),
+            'encryption' => (
+                (env('MAIL_PORT') == 587 && str_contains((string) env('MAIL_HOST', 'smtp-relay.brevo.com'), 'brevo.com'))
+                    ? 'ssl'
+                    : ((env('MAIL_PORT') == 2525) ? 'tls' : env('MAIL_ENCRYPTION', 'ssl'))
+            ),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => 30,
+            'timeout' => 20,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
