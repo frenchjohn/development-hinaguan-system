@@ -15,9 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
+    const CONFUSED_FALLBACK = "I'm sorry, i couldnt understand and im confuse can you state it again";
+    const sanitizeChatbotContent = (text) => {
+        if (!text) return '';
+        if (/(?:user\s+safety|response\s+safety)/i.test(text)) {
+            return CONFUSED_FALLBACK;
+        }
+        return text;
+    };
+
     // Format bot responses with clean markdown rendering
     const formatBotMessage = (text) => {
-        let formatted = escapeHtml(text);
+        let formatted = escapeHtml(sanitizeChatbotContent(text));
         // Headers
         formatted = formatted.replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-sm text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h5>');
         formatted = formatted.replace(/^##\s+(.*)$/gm, '<h4 class="font-bold text-base text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h4>');
@@ -39,7 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const saved = localStorage.getItem('guestChatbotState');
             if (saved) {
-                return JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed.messages)) {
+                    parsed.messages = parsed.messages.map(m => {
+                        if (m.isBot) {
+                            m.content = sanitizeChatbotContent(m.content);
+                        }
+                        return m;
+                    });
+                }
+                return parsed;
             }
         } catch (e) {
             console.error('Error loading guest chatbot state:', e);
@@ -70,6 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add message to chat
     const addMessage = (content, isBot = true, shouldSave = true) => {
+        if (isBot) {
+            content = sanitizeChatbotContent(content);
+        }
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 
@@ -383,10 +405,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedModel = modelSelect ? modelSelect.value : 'openrouter/free';
         
         // Prepare multi-turn history before adding new user message to state
-        const historyPayload = messages.slice(-6).map(m => ({
-            role: m.isBot ? 'assistant' : 'user',
-            content: m.content
-        }));
+        const historyPayload = messages
+            .filter(m => !/(?:user\s+safety|response\s+safety)/i.test(m.content) && !m.content.includes("im confuse can you state it again"))
+            .slice(-6)
+            .map(m => ({
+                role: m.isBot ? 'assistant' : 'user',
+                content: m.content
+            }));
 
         // Add user message
         addMessage(message, false);

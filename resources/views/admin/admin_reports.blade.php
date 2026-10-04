@@ -279,6 +279,7 @@
                 padding-bottom: 2px !important;
             }
 
+            body.print-with-ledger table#printReservationsTable,
             body.print-with-ledger table#reservationsTable {
                 width: 100% !important;
                 border-collapse: collapse !important;
@@ -287,6 +288,7 @@
                 background: #ffffff !important;
             }
 
+            body.print-with-ledger table#printReservationsTable thead th,
             body.print-with-ledger table#reservationsTable thead th {
                 background: #fafafa !important;
                 color: #52525b !important;
@@ -298,6 +300,7 @@
                 font-size: 7pt !important;
             }
 
+            body.print-with-ledger table#printReservationsTable tbody td,
             body.print-with-ledger table#reservationsTable tbody td {
                 border-bottom: 1px solid #e4e4e7 !important;
                 border-right: 1px solid #f4f4f5 !important;
@@ -306,10 +309,12 @@
                 background: transparent !important;
             }
 
+            body.print-with-ledger table#printReservationsTable tr:nth-child(even),
             body.print-with-ledger table#reservationsTable tr:nth-child(even) {
                 background-color: transparent !important;
             }
 
+            body.print-with-ledger table#printReservationsTable tr,
             body.print-with-ledger table#reservationsTable tr {
                 page-break-inside: avoid !important;
             }
@@ -320,19 +325,6 @@
                 padding: 0 !important;
                 font-weight: 600 !important;
                 color: #18181b !important;
-            }
-        }
-
-            body.print-with-ledger table#reservationsTable tr {
-                page-break-inside: avoid !important;
-            }
-
-            body.print-with-ledger .status-pill {
-                border: none !important;
-                background: transparent !important;
-                padding: 0 !important;
-                font-weight: 600 !important;
-                color: #000000 !important;
             }
         }
     </style>
@@ -859,6 +851,11 @@
                                     <span>Include Ledger in Print</span>
                                 </label>
 
+                                <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="openAdminLedgerModalBtnHeader" title="Open Detailed Reservation Ledger Modal">
+                                    <i class="bi bi-journal-text text-hp-green-mid text-sm"></i>
+                                    <span>View Ledger</span>
+                                </button>
+
                                 <button type="button" class="inline-flex cursor-pointer items-center gap-2 rounded-[10px] border border-glass-border px-3.5 py-2 text-xs font-semibold text-hp-text transition-all hover:bg-glass-hover" id="exportCsvBtn">
                                     <svg class="h-4 w-4 text-hp-green-mid" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     Export CSV
@@ -954,7 +951,7 @@
                         </article>
 
                         {{-- Staff Collections / Money Received by Staff (Remittance) --}}
-                        <article class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass ring-1 ring-amber-500/20">
+                        <article id="kpiStaffCollectionsCard" class="flex items-start gap-4 rounded-2xl border border-glass-border bg-glass p-5 shadow-glass ring-1 ring-amber-500/20 hover:ring-amber-500/40 hover:bg-glass-hover/50 cursor-pointer transition-all" title="Click to view full Staff Collections & Remittance Breakdown">
                             <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
                                 <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -1031,74 +1028,86 @@
                         </section>
                     </div>
 
-                    {{-- ===== STAFF COLLECTIONS & REMITTANCE BREAKDOWN (MONEY RECEIVED BY STAFF) ===== --}}
+                    {{-- ===== STAFF COLLECTIONS GRAPH & OVERVIEW (WEB ONLY) ===== --}}
                     <section class="web-only-section mb-6 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                        <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-glass-border pb-4">
+                        <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-glass-border pb-4">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
                                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                 </div>
                                 <div>
                                     <h3 class="m-0 text-lg font-semibold text-hp-text flex items-center gap-2 flex-wrap">
-                                        <span>Staff Collections &amp; Remittance Breakdown</span>
+                                        <span>Staff Collections &amp; Remittance</span>
                                         <span class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[0.68rem] font-bold text-amber-700 dark:text-amber-400">Cash Received by Staff</span>
                                     </h3>
-                                    <p class="m-0 text-xs text-hp-text-muted">On-site walk-ins, check-in balances, companions, and damage payments received by staff personnel</p>
+                                    <p class="m-0 text-xs text-hp-text-muted">Comparative graph of on-site cash collections and remittances per staff member</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-semibold text-hp-text-muted">Total Remitted:</span>
-                                <span class="text-base font-bold text-amber-700 dark:text-amber-400" id="staffBreakdownTotalAmount">₱{{ number_format($thisMonthStaffCollections, 2) }}</span>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass/60 px-3 py-1.5 text-xs">
+                                    <span class="text-hp-text-muted font-medium">Total Remitted:</span>
+                                    <span class="text-sm font-bold text-amber-700 dark:text-amber-400" id="staffCollectionsChartTotal">₱{{ number_format($thisMonthStaffCollections, 2) }}</span>
+                                </div>
+                                <button type="button" id="openStaffCollectionsModalBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all focus:ring-2 focus:ring-amber-500/30">
+                                    <i class="bi bi-arrows-fullscreen text-xs"></i>
+                                    <span>View Remittance Breakdown</span>
+                                    <span id="staffCollectionsBadgeCount" class="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[0.7rem] font-bold">Details</span>
+                                </button>
                             </div>
                         </div>
 
-                        {{-- Summary Table of Staff Collections --}}
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs" id="staffCollectionsTable">
-                                <thead>
-                                    <tr class="border-b border-glass-border uppercase tracking-wider text-hp-text-muted text-[0.7rem]">
-                                        <th class="py-2.5 px-3">Staff Name</th>
-                                        <th class="py-2.5 px-3">Transactions Handled</th>
-                                        <th class="py-2.5 px-3">Recent Activity</th>
-                                        <th class="py-2.5 px-3">Total Money Received (Remittance)</th>
-                                        <th class="py-2.5 px-3 text-right">Share of Remittance</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="staffCollectionsTableBody" class="divide-y divide-glass-border/60">
-                                    <!-- Populated dynamically by JS based on date & session filter -->
-                                </tbody>
-                                <tfoot id="staffCollectionsTableFoot" class="font-bold border-t border-glass-border text-hp-text bg-glass-hover/30">
-                                    <!-- Populated dynamically by JS -->
-                                </tfoot>
-                            </table>
+                        {{-- Graph Canvas Area --}}
+                        <div class="relative w-full">
+                            <div class="relative h-[270px] sm:h-[300px] w-full" id="staffCollectionsChartWrapper">
+                                <canvas id="staffCollectionsChart"></canvas>
+                            </div>
+                            {{-- Empty State when no collections --}}
+                            <div id="staffCollectionsChartEmpty" class="hidden flex-col items-center justify-center py-12 text-center text-xs text-hp-text-muted">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 mb-2">
+                                    <i class="bi bi-wallet2 text-2xl"></i>
+                                </div>
+                                <p class="font-medium text-hp-text">No staff collections recorded</p>
+                                <p class="text-[0.75rem] text-hp-text-muted mt-0.5">No cash remittance entries found for the selected filter period and session.</p>
+                            </div>
                         </div>
 
-                        {{-- Staff Individual Payment Receipts Accordion --}}
-                        <div class="mt-4 pt-3 border-t border-glass-border flex items-center justify-between">
-                            <button type="button" id="toggleStaffTransactionsListBtn" class="inline-flex items-center gap-1.5 text-xs font-semibold text-hp-green-mid hover:underline cursor-pointer">
-                                <span id="toggleStaffTransactionsListText">View Individual Staff Payment Receipts</span>
-                                <i class="bi bi-chevron-down text-[10px] transition-transform duration-200" id="toggleStaffTransactionsListIcon"></i>
-                            </button>
-                            <span class="text-[0.7rem] text-hp-text-muted" id="staffTransactionCountLabel">0 payments in selected period</span>
-                        </div>
-                        <div id="staffTransactionsListDrawer" class="hidden mt-3 max-h-[300px] overflow-y-auto rounded-xl border border-glass-border bg-glass-hover/10 p-3 space-y-2">
+                        {{-- Quick Staff Ranking Pills --}}
+                        <div class="mt-4 pt-3 border-t border-glass-border flex flex-wrap items-center justify-between gap-2 text-xs" id="staffCollectionsQuickSummary">
                             <!-- Populated dynamically by JS -->
                         </div>
                     </section>
 
-                    {{-- ===== LEDGER TABLE ===== --}}
-                    <section class="print-ledger-section rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
-                        <div class="web-only-section mb-4 flex items-center justify-between">
-                            <div>
-                                <h3 class="m-0 text-lg font-semibold text-hp-text">Detailed Reservation Ledger</h3>
-                                <p class="m-0 text-xs text-hp-text-muted">All active records in the selected view</p>
+                    {{-- ===== LEDGER CARD (WEB ONLY) ===== --}}
+                    <section class="web-only-section rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
+                                    <i class="bi bi-journal-text text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="m-0 text-lg font-semibold text-hp-text">Detailed Reservation Ledger</h3>
+                                    <p class="m-0 text-xs text-hp-text-muted" id="standardReportLedgerSummaryText">
+                                        Browse all active records in the selected view (paginated at 100 records per page)
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button type="button" id="openAdminLedgerModalBtn" class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1c5c3c] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-[#16482f] focus:ring-2 focus:ring-[#1c5c3c]/30">
+                                    <i class="bi bi-arrows-fullscreen text-xs"></i>
+                                    <span>Open Reservation Ledger</span>
+                                    <span id="ledgerBadgeCount" class="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-[0.7rem] font-bold">{{ count($reservations) }}</span>
+                                </button>
                             </div>
                         </div>
-                        <div class="print-ledger-title hidden">III. Detailed Reservation Operational Ledger</div>
+                    </section>
+
+                    {{-- ===== PRINT ONLY LEDGER TABLE ===== --}}
+                    <section class="print-ledger-section hidden print:block">
+                        <div class="print-ledger-title">III. Detailed Reservation Operational Ledger</div>
                         <div class="dash-table-wrap overflow-x-auto">
-                            <table class="dash-table w-full text-left text-sm" id="reservationsTable">
+                            <table class="dash-table w-full text-left text-sm" id="printReservationsTable">
                                 <thead>
                                     <tr class="border-b border-glass-border text-xs uppercase tracking-wider text-hp-text-muted">
                                         <th class="py-3 px-3">Booker</th>
@@ -1131,7 +1140,7 @@
                                                 }
                                             }
                                         @endphp
-                                        <tr class="border-b border-glass-border/50 hover:bg-glass-hover"
+                                        <tr class="border-b border-glass-border/50"
                                             data-amenity="{{ strtolower($amenitiesStr) }}"
                                             data-status="{{ strtolower($r->status) }}"
                                             data-checkin="{{ $checkInStr }}"
@@ -1445,6 +1454,230 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- DETAILED RESERVATION LEDGER MODAL (100 DATA PER PAGE)        --}}
+    {{-- ============================================================ --}}
+    <div id="adminLedgerModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6 print:hidden" role="dialog" aria-modal="true" aria-labelledby="adminLedgerModalTitle">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" data-close-admin-ledger-modal="true"></div>
+
+        {{-- Dialog Box --}}
+        <div class="relative flex flex-col w-full max-w-6xl max-h-[92vh] bg-white dark:bg-[#161a17] border border-glass-border rounded-2xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                        <i class="bi bi-journal-text text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 id="adminLedgerModalTitle" class="m-0 text-base sm:text-lg font-display font-bold text-hp-text">Detailed Reservation Ledger</h2>
+                        <p id="adminLedgerModalSubtitle" class="m-0 text-xs text-hp-text-muted">Standard Report Operations • 100 records per page</p>
+                    </div>
+                </div>
+                <button type="button" id="closeAdminLedgerModalBtn" class="rounded-xl p-2 text-hp-text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-hp-text transition-colors cursor-pointer" title="Close modal (Esc)">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
+            </div>
+
+            {{-- Filter & Search Toolbar inside Modal --}}
+            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#161a17]">
+                <div class="relative w-full sm:w-80">
+                    <i class="bi bi-search absolute left-3 top-2.5 text-xs text-hp-text-muted"></i>
+                    <input type="text" id="adminLedgerSearchInput" placeholder="Search booker, amenity, ID, status..." class="w-full rounded-xl border border-glass-border bg-gray-50 dark:bg-[#121513] pl-8 pr-3 py-2 text-xs text-hp-text outline-none focus:border-[#1c5c3c] focus:ring-1 focus:ring-[#1c5c3c]">
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                    <span id="adminLedgerCounterLabel" class="font-semibold text-hp-text-muted">Showing 0 of 0 reservations</span>
+                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 text-[0.7rem] font-bold text-emerald-700 dark:text-emerald-400" id="adminLedgerTotalAmountBadge">
+                        Total: ₱0.00
+                    </span>
+                </div>
+            </div>
+
+            {{-- Modal Body: Scrollable Table --}}
+            <div class="overflow-y-auto flex-1 p-0">
+                <table class="w-full text-left text-xs border-collapse" id="reservationsTable">
+                    <thead class="bg-gray-50 dark:bg-[#121513] text-gray-500 dark:text-gray-400 uppercase text-[0.68rem] font-bold sticky top-0 z-10 border-b border-gray-200 dark:border-gray-800">
+                        <tr>
+                            <th class="px-5 py-3">Booker & ID</th>
+                            <th class="px-4 py-3">Amenity</th>
+                            <th class="px-4 py-3">Check-in Date</th>
+                            <th class="px-4 py-3">Session</th>
+                            <th class="px-3 py-3 text-center">Guests</th>
+                            <th class="px-5 py-3 text-right">Amount</th>
+                            <th class="px-5 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminLedgerTableBody" class="divide-y divide-gray-100 dark:divide-gray-800">
+                        @forelse($reservations as $r)
+                            @php
+                                $amenitiesStr = $r->reservationAmenities->pluck('amenity.amenities_name')->filter()->join(', ') ?: 'None';
+                                $effectiveCheckIn = $r->check_in ?? $r->reservation_date;
+                                $checkInStr = $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('Y-m-d') : '';
+
+                                $slot = strtolower((string) ($r->start_slot ?? ''));
+                                if (str_contains($slot, 'day') || str_contains($slot, 'morning') || str_contains($slot, 'afternoon')) {
+                                    $resSession = 'daytime';
+                                } elseif (str_contains($slot, 'night') || str_contains($slot, 'overnight')) {
+                                    $resSession = 'overnight';
+                                } else {
+                                    $checkInTime = $r->check_in ? \Illuminate\Support\Carbon::parse($r->check_in)->timezone(config('app.timezone', 'Asia/Manila')) : null;
+                                    if ($checkInTime) {
+                                        $hour = (int) $checkInTime->format('G');
+                                        $resSession = ($hour >= 6 && $hour < 18) ? 'daytime' : 'overnight';
+                                    } else {
+                                        $resSession = 'daytime';
+                                    }
+                                }
+                            @endphp
+                            <tr class="admin-ledger-row hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
+                                data-amenity="{{ strtolower($amenitiesStr) }}"
+                                data-status="{{ strtolower($r->status) }}"
+                                data-checkin="{{ $checkInStr }}"
+                                data-session="{{ $resSession }}"
+                                data-amount="{{ (float) $r->amount_paid }}"
+                                data-search="{{ strtolower($r->booker_name . ' ' . $amenitiesStr . ' ' . $r->status . ' ' . $checkInStr . ' ' . $r->number_of_guests . ' ' . $r->amount_paid . ' res#' . $r->id . ' #' . $r->id . ' ' . $resSession) }}">
+                                <td class="px-5 py-3 whitespace-nowrap font-medium text-hp-text">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold">{{ $r->booker_name }}</span>
+                                        <span class="rounded-md bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-bold text-hp-text-muted">#{{ $r->id }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-xs text-hp-text-muted max-w-[220px] truncate" title="{{ $amenitiesStr }}">{{ $amenitiesStr }}</td>
+                                <td class="mono-cell px-4 py-3 text-xs text-hp-text-muted whitespace-nowrap">{{ $effectiveCheckIn ? \Illuminate\Support\Carbon::parse($effectiveCheckIn)->timezone(config('app.timezone', 'Asia/Manila'))->format('M d, Y') : 'N/A' }}</td>
+                                <td class="px-4 py-3 text-xs whitespace-nowrap">
+                                    <span class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[0.68rem] font-semibold {{ $resSession === 'daytime' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300' : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300' }}">
+                                        @if($resSession === 'daytime')
+                                            <i class="bi bi-sun-fill text-[0.65rem] text-amber-500"></i>
+                                            <span>Daytime</span>
+                                        @else
+                                            <i class="bi bi-moon-stars-fill text-[0.65rem] text-indigo-400"></i>
+                                            <span>Overnight</span>
+                                        @endif
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3 text-xs text-center font-medium text-hp-text whitespace-nowrap">{{ $r->number_of_guests }}</td>
+                                <td class="px-5 py-3 font-semibold text-hp-text text-right whitespace-nowrap">₱{{ number_format($r->amount_paid, 2) }}</td>
+                                <td class="px-5 py-3 text-center whitespace-nowrap">
+                                    <span class="status-pill status-pill--{{ strtolower(str_replace(' ', '-', $r->status)) }} rounded-full px-2.5 py-1 text-[0.7rem] font-bold">{{ $r->status }}</span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr id="adminLedgerEmptyRow">
+                                <td colspan="7" class="py-12 text-center text-sm text-hp-text-muted">No reservations found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Modal Footer: Pagination & Actions --}}
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-6 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <div class="text-xs text-hp-text-muted" id="adminLedgerPaginationInfo">
+                    Showing page 1 of 1 (100 items per page)
+                </div>
+
+                {{-- Pagination Controls --}}
+                <div class="flex items-center gap-1" id="adminLedgerPaginationControls">
+                    <button type="button" id="adminLedgerFirstPageBtn" class="px-2.5 py-1 rounded-lg border border-glass-border text-xs font-semibold hover:bg-glass-hover disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer" title="First Page">
+                        <i class="bi bi-chevron-double-left"></i>
+                    </button>
+                    <button type="button" id="adminLedgerPrevPageBtn" class="px-2.5 py-1 rounded-lg border border-glass-border text-xs font-semibold hover:bg-glass-hover disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer" title="Previous Page">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <div id="adminLedgerPageNumbers" class="flex items-center gap-1">
+                        <!-- Rendered by JS -->
+                    </div>
+                    <button type="button" id="adminLedgerNextPageBtn" class="px-2.5 py-1 rounded-lg border border-glass-border text-xs font-semibold hover:bg-glass-hover disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer" title="Next Page">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    <button type="button" id="adminLedgerLastPageBtn" class="px-2.5 py-1 rounded-lg border border-glass-border text-xs font-semibold hover:bg-glass-hover disabled:opacity-40 disabled:pointer-events-none transition-colors cursor-pointer" title="Last Page">
+                        <i class="bi bi-chevron-double-right"></i>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" id="closeAdminLedgerModalBtnFooter" class="rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                        Close Ledger
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ============================================================ --}}
+    {{-- STAFF COLLECTIONS & REMITTANCE BREAKDOWN MODAL               --}}
+    {{-- ============================================================ --}}
+    <div id="staffCollectionsModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-3 sm:p-6 print:hidden" role="dialog" aria-modal="true" aria-labelledby="staffCollectionsModalTitle">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" data-close-staff-collections-modal="true"></div>
+
+        {{-- Dialog Box --}}
+        <div class="relative flex flex-col w-full max-w-5xl max-h-[92vh] bg-white dark:bg-[#161a17] border border-glass-border rounded-2xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 id="staffCollectionsModalTitle" class="m-0 text-base sm:text-lg font-display font-bold text-hp-text flex items-center gap-2 flex-wrap">
+                            <span>Staff Collections &amp; Remittance Breakdown</span>
+                            <span class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[0.68rem] font-bold text-amber-700 dark:text-amber-400">Cash Received by Staff</span>
+                        </h2>
+                        <p id="staffCollectionsModalSubtitle" class="m-0 text-xs text-hp-text-muted">On-site walk-ins, check-in balances, companions, and damage payments received by staff personnel</p>
+                    </div>
+                </div>
+                <button type="button" id="closeStaffCollectionsModalBtn" class="rounded-xl p-2 text-hp-text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-hp-text transition-colors cursor-pointer" title="Close modal (Esc)">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
+            </div>
+
+            {{-- Summary Toolbar inside Modal --}}
+            <div class="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#161a17]">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-hp-text-muted">Total Remitted:</span>
+                    <span class="text-base font-bold text-amber-700 dark:text-amber-400" id="staffBreakdownTotalAmount">₱{{ number_format($thisMonthStaffCollections, 2) }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-hp-text-muted" id="staffTransactionCountLabel">0 payments in selected period</span>
+                </div>
+            </div>
+
+            {{-- Modal Body: Fixed for 3 staff rows, scrollbar if 4+ --}}
+            <div class="p-6">
+                {{-- Scrollable Table of Staff Collections: max-h-[285px] perfectly displays 3 staff rows, scrollbar if 4+ --}}
+                <div class="overflow-x-auto overflow-y-auto max-h-[285px] rounded-xl border border-glass-border shadow-sm">
+                    <table class="w-full text-left text-xs border-collapse" id="staffCollectionsTable">
+                        <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-[#121513] border-b border-glass-border uppercase tracking-wider text-hp-text-muted text-[0.7rem]">
+                            <tr>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Staff Name</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Transactions Handled</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Recent Activity</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Total Money Received (Remittance)</th>
+                                <th class="py-2.5 px-3 text-right bg-gray-50 dark:bg-[#121513]">Share of Remittance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffCollectionsTableBody" class="divide-y divide-glass-border/60">
+                            <!-- Populated dynamically by JS based on date & session filter -->
+                        </tbody>
+                        <tfoot id="staffCollectionsTableFoot" class="sticky bottom-0 z-10 font-bold border-t border-glass-border text-hp-text bg-gray-50 dark:bg-[#121513]">
+                            <!-- Populated dynamically by JS -->
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="flex items-center justify-end gap-3 px-6 py-3.5 border-t border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <button type="button" id="closeStaffCollectionsModalBtnFooter" class="rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    Close Breakdown
+                </button>
+            </div>
         </div>
     </div>
 

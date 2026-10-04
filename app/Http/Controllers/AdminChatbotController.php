@@ -98,6 +98,7 @@ class AdminChatbotController extends Controller
             . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
             . "- OUTPUT ONLY YOUR DIRECT CONVERSATIONAL BRIEFING to the administrator. Never output reasoning steps, thinking processes, chain-of-thought, scratchpads, or draft prefixes.\n"
             . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', 'Admin Bren:', 'Bren:', or 'HinaguanBot:'. Start directly with your briefing.\n"
+            . "- NEVER OUTPUT SAFETY EVALUATIONS OR MODERATION LABELS: Never output lines like 'User Safety:', 'Response Safety:', 'Safety: safe', or meta moderation checks. Answer the query directly.\n"
             . "- Maintain an articulate, executive, and warm tone (1 to 3 concise flowing sentences for standard questions, or structured bulleted reports when detailed breakdowns are requested).\n"
             . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Always quote revenue figures, staff records, guest counts, rates, and audit logs EXACTLY as provided in the LIVE SYSTEM & DATABASE CONTEXT below. Never guess or fabricate information.\n\n"
             . "DATABASE COMPREHENSION & PARK LOGIC:\n"
@@ -140,6 +141,10 @@ class AdminChatbotController extends Controller
                 ->reverse();
 
             foreach ($pastDbMessages as $msg) {
+                // Safeguard against context poisoning: never feed safety checks or confused loops back to the model
+                if (preg_match('/(?:user\s+safety|response\s+safety)/i', $msg->content) || str_contains($msg->content, "im confuse can you state it again")) {
+                    continue;
+                }
                 $messagesPayload[] = [
                     'role' => $msg->role,
                     'content' => $msg->content,
@@ -151,6 +156,9 @@ class AdminChatbotController extends Controller
                 $recentHistory = array_slice($history, -4);
                 foreach ($recentHistory as $turn) {
                     if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
+                        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $turn['content']) || str_contains($turn['content'], "im confuse can you state it again")) {
+                            continue;
+                        }
                         $messagesPayload[] = [
                             'role' => $turn['role'],
                             'content' => $turn['content']
@@ -239,14 +247,20 @@ class AdminChatbotController extends Controller
             return response()->json(['messages' => []]);
         }
 
+        $confusedFallback = "I'm sorry, i couldnt understand and im confuse can you state it again";
+
         $messages = ChatbotMessage::forUser('admin', (int) $authUser['id'])
             ->orderBy('id', 'asc')
             ->get(['id', 'role', 'content', 'created_at'])
-            ->map(function ($msg) {
+            ->map(function ($msg) use ($confusedFallback) {
+                $content = $msg->content;
+                if (preg_match('/(?:user\s+safety|response\s+safety)/i', $content)) {
+                    $content = $confusedFallback;
+                }
                 return [
                     'id' => $msg->id,
                     'role' => $msg->role,
-                    'content' => $msg->content,
+                    'content' => $content,
                     'isBot' => $msg->role === 'assistant',
                     'created_at' => $msg->created_at?->toIso8601String(),
                 ];
@@ -421,11 +435,22 @@ class AdminChatbotController extends Controller
      */
     private function cleanChatbotReply(string $reply): string
     {
+        $confusedFallback = "I'm sorry, i couldnt understand and im confuse can you state it again";
+
         if (empty(trim($reply))) {
-            return '';
+            return $confusedFallback;
         }
 
         $text = trim($reply);
+
+        // Check for safety evaluation/guardrail responses (e.g. "User Safety: safe\nResponse Safety: safe")
+        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $reply) || preg_match('/(?:user\s+safety|response\s+safety)/i', $text)) {
+            $strippedSafety = trim(preg_replace('/^(?:user|response)\s*safety\s*:\s*[^\r\n]*/im', '', $text));
+            if (empty($strippedSafety) || preg_match('/(?:user\s+safety|response\s+safety)/i', $strippedSafety)) {
+                return $confusedFallback;
+            }
+            $text = $strippedSafety;
+        }
 
         // 1. Strip XML-like thinking/reasoning tags (<think>...</think>, <thought>...</thought>, etc.)
         $text = preg_replace('/<(?:think|thought|reasoning|scratchpad|analysis|internal)>.*?<\/(?:think|thought|reasoning|scratchpad|analysis|internal)>/is', '', $text);
@@ -489,7 +514,12 @@ class AdminChatbotController extends Controller
             $text = ltrim($text, '"');
         }
 
-        return trim($text);
+        $text = trim($text);
+        if (empty($text) || preg_match('/(?:user\s+safety|response\s+safety)/i', $text)) {
+            return $confusedFallback;
+        }
+
+        return $text;
     }
 
     private function getAdminContext(string $message): string

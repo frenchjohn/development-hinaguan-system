@@ -31,13 +31,33 @@ class DatabaseSeeder extends Seeder
             DailyWeatherShiftLogSeeder::class,
         ]);
 
-        StaffAccount::firstOrCreate(
-            ['email' => 'staff@example.com'],
+        // Remove legacy staff account if present
+        StaffAccount::where('email', 'staff@example.com')->delete();
+
+        $staffAccounts = [
             [
-                'name' => 'Staff User',
+                'name' => 'french famador',
+                'email' => 'famador.frenchjohn123@gmail.com',
                 'password' => Hash::make('staff1234'),
-            ]
-        );
+            ],
+            [
+                'name' => 'rimuru tempest',
+                'email' => 'rimurutempest@gmail.com',
+                'password' => Hash::make('staff1234'),
+            ],
+            [
+                'name' => 'toneri otsutsuki',
+                'email' => 'tenoriotsutsuki@gmail.com',
+                'password' => Hash::make('staff1234'),
+            ],
+        ];
+
+        foreach ($staffAccounts as $account) {
+            StaffAccount::firstOrCreate(
+                ['email' => $account['email']],
+                $account
+            );
+        }
 
         AdminAccount::firstOrCreate(
             ['email' => 'parkhinaguan@gmail.com'],

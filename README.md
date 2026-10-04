@@ -151,7 +151,9 @@ For testing and evaluation purposes, the seeder automatically provisions default
 | Role | Email | Password | Access Portal |
 | :--- | :--- | :--- | :--- |
 | **Administrator** | `parkhinaguan@gmail.com` | `admin1234` | `/login` $\to$ `/admin/dashboard` |
-| **Staff Personnel**| `staff@example.com` | `staff1234` | `/login` $\to$ `/staff/dashboard` |
+| **Staff: French Famador** | `famador.frenchjohn123@gmail.com` | `staff1234` | `/login` $\to$ `/staff/dashboard` |
+| **Staff: Rimuru Tempest** | `rimurutempest@gmail.com` | `staff1234` | `/login` $\to$ `/staff/dashboard` |
+| **Staff: Toneri Otsutsuki** | `tenoriotsutsuki@gmail.com` | `staff1234` | `/login` $\to$ `/staff/dashboard` |
 
 ---
 

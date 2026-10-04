@@ -121,6 +121,7 @@ class StaffChatbotController extends Controller
             . "CRITICAL OUTPUT RULES (STRICTLY ENFORCED):\n"
             . "- OUTPUT ONLY YOUR DIRECT CONVERSATIONAL RESPONSE. Never include internal reasoning, thinking steps, chain-of-thought, outlines, scratchpads, or draft prefixes.\n"
             . "- NEVER prefix your response with 'Draft:', 'Response:', 'Answer:', 'Bren:', or 'HinaguanBot:'. Start directly with your message to the staff member.\n"
+            . "- NEVER OUTPUT SAFETY EVALUATIONS OR MODERATION LABELS: Never output lines like 'User Safety:', 'Response Safety:', 'Safety: safe', or meta moderation checks. Answer the query directly.\n"
             . "- Keep your answer concise, natural, and friendly (1 to 3 clear sentences for quick questions, or neatly structured bullet points if a list or full breakdown is asked).\n"
             . "- STRICT DATABASE ACCURACY (ZERO HALLUCINATION): Every name, reservation ID, rate, headcount, balance, and schedule must be derived STRICTLY from the LIVE DATABASE CONTEXT below. Never guess or invent numbers.\n\n"
             . "DATABASE COMPREHENSION & PARK LOGIC:\n"
@@ -162,6 +163,10 @@ class StaffChatbotController extends Controller
                 ->reverse();
 
             foreach ($pastDbMessages as $msg) {
+                // Safeguard against context poisoning: never feed safety checks or confused loops back to the model
+                if (preg_match('/(?:user\s+safety|response\s+safety)/i', $msg->content) || str_contains($msg->content, "im confuse can you state it again")) {
+                    continue;
+                }
                 $messagesPayload[] = [
                     'role' => $msg->role,
                     'content' => $msg->content,
@@ -173,6 +178,9 @@ class StaffChatbotController extends Controller
                 $recentHistory = array_slice($history, -4);
                 foreach ($recentHistory as $turn) {
                     if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
+                        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $turn['content']) || str_contains($turn['content'], "im confuse can you state it again")) {
+                            continue;
+                        }
                         $messagesPayload[] = [
                             'role' => $turn['role'],
                             'content' => $turn['content']
@@ -261,14 +269,20 @@ class StaffChatbotController extends Controller
             return response()->json(['messages' => []]);
         }
 
+        $confusedFallback = "I'm sorry, i couldnt understand and im confuse can you state it again";
+
         $messages = ChatbotMessage::forUser('staff', (int) $authUser['id'])
             ->orderBy('id', 'asc')
             ->get(['id', 'role', 'content', 'created_at'])
-            ->map(function ($msg) {
+            ->map(function ($msg) use ($confusedFallback) {
+                $content = $msg->content;
+                if (preg_match('/(?:user\s+safety|response\s+safety)/i', $content)) {
+                    $content = $confusedFallback;
+                }
                 return [
                     'id' => $msg->id,
                     'role' => $msg->role,
-                    'content' => $msg->content,
+                    'content' => $content,
                     'isBot' => $msg->role === 'assistant',
                     'created_at' => $msg->created_at?->toIso8601String(),
                 ];
@@ -520,11 +534,22 @@ class StaffChatbotController extends Controller
      */
     private function cleanChatbotReply(string $reply): string
     {
+        $confusedFallback = "I'm sorry, i couldnt understand and im confuse can you state it again";
+
         if (empty(trim($reply))) {
-            return '';
+            return $confusedFallback;
         }
 
         $text = trim($reply);
+
+        // Check for safety evaluation/guardrail responses (e.g. "User Safety: safe\nResponse Safety: safe")
+        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $reply) || preg_match('/(?:user\s+safety|response\s+safety)/i', $text)) {
+            $strippedSafety = trim(preg_replace('/^(?:user|response)\s*safety\s*:\s*[^\r\n]*/im', '', $text));
+            if (empty($strippedSafety) || preg_match('/(?:user\s+safety|response\s+safety)/i', $strippedSafety)) {
+                return $confusedFallback;
+            }
+            $text = $strippedSafety;
+        }
 
         // 1. Strip XML-like thinking/reasoning tags (<think>...</think>, <thought>...</thought>, etc.)
         $text = preg_replace('/<(?:think|thought|reasoning|scratchpad|analysis|internal)>.*?<\/(?:think|thought|reasoning|scratchpad|analysis|internal)>/is', '', $text);
@@ -588,7 +613,12 @@ class StaffChatbotController extends Controller
             $text = ltrim($text, '"');
         }
 
-        return trim($text);
+        $cleaned = trim($text);
+        if (empty($cleaned) || preg_match('/(?:user\s+safety|response\s+safety)/i', $cleaned)) {
+            return $confusedFallback;
+        }
+
+        return $cleaned;
     }
 
     private function getStaffContext(string $message): string

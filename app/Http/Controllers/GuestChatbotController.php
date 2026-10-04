@@ -81,6 +81,7 @@ class GuestChatbotController extends Controller
             . "2. GO STRAIGHT TO THE POINT:\n"
             . "   - Answer directly in 1 to 3 friendly, helpful, and concise human sentences (or clear bullet points if step-by-step directions or booking instructions are requested).\n"
             . "   - NEVER output internal reasoning, outlines, numbered analysis, scratchpads, or draft prefixes.\n"
+            . "   - NEVER OUTPUT SAFETY EVALUATIONS OR MODERATION LABELS: Never output lines like 'User Safety:', 'Response Safety:', 'Safety: safe', or meta moderation checks. Answer the guest directly.\n"
             . "3. MATCH THE USER'S LANGUAGE & FORGIVE TYPOS/GRAMMAR:\n"
             . "   - Seamlessly understand misspelled words, typographical errors, phonetic spelling, and broken grammar (e.g. 'cotag', 'pyag', 'boking', 'chek in', 'magkano po ahouse', 'pila bayranan', 'resrvation', 'unsaon pag adto', 'paano pumunta'). Deduce intent directly without correcting the user.\n"
             . "   - If the user asks in Bisaya / Cebuano (e.g., 'tagpila', 'pila', 'asa dapit', 'naay pool', 'nindot', 'suba', 'init', 'uwan', 'pila bayad', 'unsaon pag book', 'unsaon pag adto'), reply warmly and naturally in Bisaya!\n"
@@ -128,6 +129,10 @@ class GuestChatbotController extends Controller
             $recentHistory = array_slice($history, -4);
             foreach ($recentHistory as $turn) {
                 if (!empty($turn['content']) && in_array($turn['role'], ['user', 'assistant'])) {
+                    // Safeguard against context poisoning: never feed safety checks or confused loops back to the model
+                    if (preg_match('/(?:user\s+safety|response\s+safety)/i', $turn['content']) || str_contains($turn['content'], "im confuse can you state it again")) {
+                        continue;
+                    }
                     $messagesPayload[] = [
                         'role' => $turn['role'],
                         'content' => $turn['content']
@@ -186,11 +191,22 @@ class GuestChatbotController extends Controller
      */
     private function cleanChatbotReply(string $reply, string $userMessage = ''): string
     {
+        $confusedFallback = "I'm sorry, i couldnt understand and im confuse can you state it again";
+
         if (empty(trim($reply))) {
-            return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : '';
+            return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : $confusedFallback;
         }
 
         $text = trim($reply);
+
+        // Check for safety evaluation/guardrail responses (e.g. "User Safety: safe\nResponse Safety: safe")
+        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $reply) || preg_match('/(?:user\s+safety|response\s+safety)/i', $text)) {
+            $strippedSafety = trim(preg_replace('/^(?:user|response)\s*safety\s*:\s*[^\r\n]*/im', '', $text));
+            if (empty($strippedSafety) || preg_match('/(?:user\s+safety|response\s+safety)/i', $strippedSafety)) {
+                return $confusedFallback;
+            }
+            $text = $strippedSafety;
+        }
 
         // 1. Strip XML-like thinking/reasoning tags (<think>...</think>, <thought>...</thought>, etc.)
         $text = preg_replace('/<(?:think|thought|reasoning|scratchpad|analysis|internal)>.*?<\/(?:think|thought|reasoning|scratchpad|analysis|internal)>/is', '', $text);
@@ -271,7 +287,15 @@ class GuestChatbotController extends Controller
             $text = preg_replace('/(?:includes|has|with)\s+free\s+(?:entrance|pool)(?:\s+access)?/i', 'regular entrance and pool access apply separately', $text);
         }
 
-        return trim($text);
+        $cleaned = trim($text);
+        if (empty($cleaned)) {
+            return !empty($userMessage) ? $this->generateDirectFallbackResponse($userMessage) : $confusedFallback;
+        }
+        if (preg_match('/(?:user\s+safety|response\s+safety)/i', $cleaned)) {
+            return $confusedFallback;
+        }
+
+        return $cleaned;
     }
 
     /**

@@ -30,6 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return div.innerHTML;
     };
 
+    const CONFUSED_FALLBACK = "I'm sorry, i couldnt understand and im confuse can you state it again";
+    const sanitizeChatbotContent = (text) => {
+        if (!text) return '';
+        if (/(?:user\s+safety|response\s+safety)/i.test(text)) {
+            return CONFUSED_FALLBACK;
+        }
+        return text;
+    };
+
     const getCsrfToken = () => {
         return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             || document.querySelector('input[name="_token"]')?.value
@@ -38,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Format bot responses with enhanced clean markdown rendering
     const formatBotMessage = (text) => {
-        let formatted = escapeHtml(text);
+        let formatted = escapeHtml(sanitizeChatbotContent(text));
         // Headers
         formatted = formatted.replace(/^###\s+(.*)$/gm, '<h5 class="font-bold text-sm text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h5>');
         formatted = formatted.replace(/^##\s+(.*)$/gm, '<h4 class="font-bold text-base text-emerald-800 dark:text-emerald-300 mt-2 mb-1">$1</h4>');
@@ -91,6 +100,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add message to chat UI
     const addMessage = (content, isBot = true) => {
+        if (isBot) {
+            content = sanitizeChatbotContent(content);
+        }
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `chatbot-message ${isBot ? 'chatbot-message--bot' : 'chatbot-message--user'}`;
 

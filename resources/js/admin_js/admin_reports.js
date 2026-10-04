@@ -10,9 +10,29 @@ window.AppPage['admin_reports'] = function () {
     const amenityFilter = document.getElementById('amenityFilter');
     const statusFilter = document.getElementById('statusFilter');
     const reservationsTable = document.getElementById('reservationsTable');
+    const printReservationsTable = document.getElementById('printReservationsTable');
     const activeFilterText = document.getElementById('activeFilterText');
     const resetFiltersBtn = document.getElementById('resetFiltersBtn');
     const includeLedgerInPrintCheckbox = document.getElementById('includeLedgerInPrintCheckbox');
+
+    // Admin Ledger Modal & Pagination State (100 items per page)
+    const LEDGER_PAGE_SIZE = 100;
+    let ledgerCurrentPage = 1;
+    let ledgerSearchQuery = '';
+
+    const openAdminLedgerModalBtn       = document.getElementById('openAdminLedgerModalBtn');
+    const openAdminLedgerModalBtnHeader = document.getElementById('openAdminLedgerModalBtnHeader');
+    const closeAdminLedgerModalBtn       = document.getElementById('closeAdminLedgerModalBtn');
+    const closeAdminLedgerModalBtnFooter = document.getElementById('closeAdminLedgerModalBtnFooter');
+    const adminLedgerModal               = document.getElementById('adminLedgerModal');
+    const adminLedgerSearchInput         = document.getElementById('adminLedgerSearchInput');
+
+    // Staff Collections Breakdown Modal Elements
+    const openStaffCollectionsModalBtn        = document.getElementById('openStaffCollectionsModalBtn');
+    const closeStaffCollectionsModalBtn       = document.getElementById('closeStaffCollectionsModalBtn');
+    const closeStaffCollectionsModalBtnFooter = document.getElementById('closeStaffCollectionsModalBtnFooter');
+    const staffCollectionsModal               = document.getElementById('staffCollectionsModal');
+    const kpiStaffCollectionsCard             = document.getElementById('kpiStaffCollectionsCard');
 
     // Date & Session Modal Trigger & Elements
     const openModalBtn          = document.getElementById('openDateFilterModalBtn');
@@ -1501,6 +1521,7 @@ window.AppPage['admin_reports'] = function () {
 
     let revenueChart = null;
     let donutChart = null;
+    let staffCollectionsChart = null;
 
     const updateCharts = (filteredRows) => {
         if (typeof Chart === 'undefined') return;
@@ -1730,7 +1751,6 @@ window.AppPage['admin_reports'] = function () {
         const tbody = document.getElementById('staffCollectionsTableBody');
         const tfoot = document.getElementById('staffCollectionsTableFoot');
         const countLabel = document.getElementById('staffTransactionCountLabel');
-        const drawer = document.getElementById('staffTransactionsListDrawer');
 
         const totalStaffAmount = staffLogs.reduce((sum, s) => sum + Number(s.payment_amount || 0), 0);
 
@@ -1826,7 +1846,7 @@ window.AppPage['admin_reports'] = function () {
         if (tfoot) {
             if (staffLogs.length > 0) {
                 tfoot.innerHTML = `
-                    <tr>
+                    <tr class="bg-gray-50 dark:bg-[#121513]">
                         <td class="py-3 px-3">
                             <span class="uppercase tracking-wider text-[0.7rem] font-bold text-hp-text">Total Staff Remittance</span>
                         </td>
@@ -1848,74 +1868,370 @@ window.AppPage['admin_reports'] = function () {
                 tfoot.innerHTML = '';
             }
         }
+    };
 
-        if (drawer) {
-            drawer.innerHTML = '';
-            if (staffLogs.length === 0) {
-                drawer.innerHTML = '<p class="text-center py-3 text-xs text-hp-text-muted">No individual payment logs for this period.</p>';
-            } else {
-                staffLogs.forEach(log => {
-                    const sessionBadge = log.session === 'overnight'
-                        ? '<span class="rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 text-[0.62rem] font-bold">Overnight</span>'
-                        : '<span class="rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[0.62rem] font-bold">Daytime</span>';
+    const updateStaffCollectionsChart = (filteredStaff) => {
+        if (typeof Chart === 'undefined') return;
 
-                    drawer.innerHTML += `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl border border-glass-border bg-glass/60 text-xs">
-                            <div class="flex items-center gap-2.5">
-                                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 font-bold shrink-0 text-xs">
-                                    ₱
-                                </span>
-                                <div>
-                                    <div class="font-semibold text-hp-text flex items-center gap-1.5">
-                                        <span>${log.title || 'Payment Received'}</span>
-                                        ${log.booker_name ? `<span class="text-hp-text-muted font-normal">(Guest: ${log.booker_name})</span>` : ''}
-                                    </div>
-                                    <div class="text-[0.68rem] text-hp-text-muted flex items-center gap-2 mt-0.5">
-                                        <span><i class="bi bi-clock"></i> ${log.date} ${log.time}</span>
-                                        <span>•</span>
-                                        <span>Handler: <strong class="text-hp-text font-medium">${log.staff_name}</strong></span>
-                                        <span>•</span>
-                                        ${sessionBadge}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-right sm:text-right">
-                                <span class="font-bold text-sm text-emerald-600 dark:text-emerald-400">${formatMoney(log.payment_amount)}</span>
-                            </div>
-                        </div>
-                    `;
+        const ctx = document.getElementById('staffCollectionsChart');
+        const emptyState = document.getElementById('staffCollectionsChartEmpty');
+        const wrapper = document.getElementById('staffCollectionsChartWrapper');
+        const chartTotal = document.getElementById('staffCollectionsChartTotal');
+        const badgeCount = document.getElementById('staffCollectionsBadgeCount');
+        const quickSummary = document.getElementById('staffCollectionsQuickSummary');
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#9baaa1' : '#5c6b62';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+
+        const totalStaffRev = filteredStaff.reduce((sum, s) => sum + Number(s.payment_amount || 0), 0);
+
+        if (chartTotal) {
+            chartTotal.textContent = formatMoney(totalStaffRev);
+        }
+        if (badgeCount) {
+            badgeCount.textContent = `${filteredStaff.length} payment${filteredStaff.length === 1 ? '' : 's'}`;
+        }
+
+        if (!ctx) return;
+
+        if (filteredStaff.length === 0) {
+            if (staffCollectionsChart) {
+                staffCollectionsChart.destroy();
+                staffCollectionsChart = null;
+            }
+            if (wrapper) wrapper.classList.add('hidden');
+            if (emptyState) {
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+            }
+            if (quickSummary) {
+                quickSummary.innerHTML = `
+                    <div class="text-hp-text-muted italic py-1">No cashier transactions recorded for this period</div>
+                `;
+            }
+            return;
+        }
+
+        if (wrapper) wrapper.classList.remove('hidden');
+        if (emptyState) {
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+        }
+
+        // Aggregate by staff_name
+        const staffMap = {};
+        filteredStaff.forEach(log => {
+            const name = log.staff_name || 'Staff User';
+            if (!staffMap[name]) {
+                staffMap[name] = { name: name, count: 0, total: 0 };
+            }
+            staffMap[name].count += 1;
+            staffMap[name].total += Number(log.payment_amount || 0);
+        });
+
+        const sortedStaff = Object.values(staffMap).sort((a, b) => b.total - a.total);
+        const labels = sortedStaff.map(s => s.name);
+        const amounts = sortedStaff.map(s => s.total);
+
+        // Update Quick Summary ranking pills below the chart
+        if (quickSummary) {
+            const topCollector = sortedStaff[0];
+            const avgPerStaff = sortedStaff.length > 0 ? totalStaffRev / sortedStaff.length : 0;
+            quickSummary.innerHTML = `
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 px-2.5 py-1 font-semibold text-amber-700 dark:text-amber-400">
+                        <i class="bi bi-trophy-fill text-xs text-amber-500"></i>
+                        <span>Top Collector: <strong>${topCollector.name}</strong> (${formatMoney(topCollector.total)})</span>
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-glass-hover/60 px-2.5 py-1 text-hp-text-muted">
+                        <i class="bi bi-people text-xs"></i>
+                        <span>${sortedStaff.length} active cashier${sortedStaff.length === 1 ? '' : 's'}</span>
+                    </span>
+                </div>
+                <div class="text-hp-text-muted">
+                    <span>Average per cashier: <strong class="text-hp-text font-semibold">${formatMoney(avgPerStaff)}</strong></span>
+                </div>
+            `;
+        }
+
+        if (staffCollectionsChart) {
+            staffCollectionsChart.destroy();
+            staffCollectionsChart = null;
+        }
+
+        const chartCtx = ctx.getContext('2d');
+        const gradient = chartCtx.createLinearGradient(0, 0, 450, 0);
+        if (isDark) {
+            gradient.addColorStop(0, '#f59e0b');
+            gradient.addColorStop(1, '#fbbf24');
+        } else {
+            gradient.addColorStop(0, '#d97706');
+            gradient.addColorStop(1, '#f59e0b');
+        }
+
+        staffCollectionsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Remittance Collections (₱)',
+                    data: amounts,
+                    backgroundColor: gradient,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barThickness: Math.min(32, Math.max(18, Math.round(180 / Math.max(sortedStaff.length, 1)))),
+                    maxBarThickness: 34,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(22, 26, 23, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                        titleColor: isDark ? '#ffffff' : '#18181b',
+                        bodyColor: isDark ? '#d4d4d8' : '#3f3f46',
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw || 0;
+                                const staffObj = sortedStaff[context.dataIndex];
+                                const count = staffObj ? staffObj.count : 0;
+                                const pct = totalStaffRev > 0 ? ((val / totalStaffRev) * 100).toFixed(1) : 0;
+                                return [
+                                    ` Remittance: ${formatMoney(val)}`,
+                                    ` Handled: ${count} transaction${count === 1 ? '' : 's'} (${pct}% share)`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textColor,
+                            font: { weight: '600', size: 12 }
+                        }
+                    },
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            callback: (v) => '₱' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    const renderLedgerPagination = () => {
+        if (!reservationsTable) return;
+
+        const allRows = Array.from(reservationsTable.querySelectorAll('tbody tr.admin-ledger-row'));
+        const emptyRow = document.getElementById('adminLedgerEmptyRow');
+
+        // Filter rows by main filters AND search query
+        const matchingRows = allRows.filter((row) => {
+            const matchesActiveFilter = matchesFilter({
+                amenities: row.dataset.amenity,
+                status: row.dataset.status,
+                check_in: row.dataset.checkin,
+                session: row.dataset.session
+            });
+            if (!matchesActiveFilter) return false;
+
+            if (ledgerSearchQuery) {
+                const searchStr = (row.dataset.search || '').toLowerCase();
+                if (!searchStr.includes(ledgerSearchQuery)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        const totalMatching = matchingRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalMatching / LEDGER_PAGE_SIZE));
+
+        if (ledgerCurrentPage > totalPages) {
+            ledgerCurrentPage = totalPages;
+        }
+        if (ledgerCurrentPage < 1) {
+            ledgerCurrentPage = 1;
+        }
+
+        const startIndex = (ledgerCurrentPage - 1) * LEDGER_PAGE_SIZE;
+        const endIndex = Math.min(startIndex + LEDGER_PAGE_SIZE, totalMatching);
+
+        // Hide all rows first
+        allRows.forEach((row) => {
+            row.style.display = 'none';
+        });
+
+        // Show only the 100 rows for the current page
+        for (let i = startIndex; i < endIndex; i++) {
+            if (matchingRows[i]) {
+                matchingRows[i].style.display = '';
+            }
+        }
+
+        // Show/hide empty state row
+        if (emptyRow) {
+            emptyRow.style.display = totalMatching === 0 ? '' : 'none';
+        }
+
+        // Sum amount for all matching rows
+        const totalMatchingAmount = matchingRows.reduce((sum, row) => sum + Number(row.dataset.amount || 0), 0);
+
+        // Update UI counters and badges
+        const ledgerBadgeCount = document.getElementById('ledgerBadgeCount');
+        if (ledgerBadgeCount) {
+            ledgerBadgeCount.textContent = totalMatching;
+        }
+
+        const standardReportLedgerSummaryText = document.getElementById('standardReportLedgerSummaryText');
+        if (standardReportLedgerSummaryText) {
+            standardReportLedgerSummaryText.textContent = totalMatching === 0
+                ? 'No active records found for the selected view'
+                : `Showing ${totalMatching} active records in the selected view (100 per page)`;
+        }
+
+        const counterLabel = document.getElementById('adminLedgerCounterLabel');
+        if (counterLabel) {
+            counterLabel.textContent = totalMatching === 0
+                ? 'No matching reservations'
+                : `Showing ${startIndex + 1}–${endIndex} of ${totalMatching} reservations`;
+        }
+
+        const totalAmountBadge = document.getElementById('adminLedgerTotalAmountBadge');
+        if (totalAmountBadge) {
+            totalAmountBadge.textContent = `Total: ${formatMoney(totalMatchingAmount)}`;
+        }
+
+        const paginationInfo = document.getElementById('adminLedgerPaginationInfo');
+        if (paginationInfo) {
+            paginationInfo.textContent = totalMatching === 0
+                ? 'Showing 0 reservations'
+                : `Showing ${startIndex + 1}–${endIndex} of ${totalMatching} (Page ${ledgerCurrentPage} of ${totalPages} • 100 per page)`;
+        }
+
+        const modalSubtitle = document.getElementById('adminLedgerModalSubtitle');
+        if (modalSubtitle) {
+            let sessionText = '24 hrs (All Sessions)';
+            if (appliedSession === 'daytime') sessionText = 'Daytime Session';
+            if (appliedSession === 'overnight') sessionText = 'Overnight Session';
+
+            let dateText = 'All Time';
+            if (appliedStartDate && appliedEndDate) {
+                dateText = appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate
+                    ? 'This Month'
+                    : `${appliedStartDate} to ${appliedEndDate}`;
+            } else if (appliedStartDate) {
+                dateText = `From ${appliedStartDate}`;
+            } else if (appliedEndDate) {
+                dateText = `Until ${appliedEndDate}`;
+            }
+
+            modalSubtitle.textContent = `${dateText} • ${sessionText} • 100 records per page`;
+        }
+
+        // Active filter text on the main report page
+        if (activeFilterText) {
+            const isAllDefault = appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate && !appliedSession && (!amenityFilter || amenityFilter.value === 'all') && (!statusFilter || statusFilter.value === 'all');
+            activeFilterText.textContent = isAllDefault
+                ? `Showing ${totalMatching} of ${allRows.length} reservations (This Month • 24 hrs)`
+                : (totalMatching === allRows.length
+                    ? 'Showing all reservations'
+                    : `Showing ${totalMatching} of ${allRows.length} reservations`);
+        }
+
+        // Update pagination buttons
+        const firstBtn = document.getElementById('adminLedgerFirstPageBtn');
+        const prevBtn  = document.getElementById('adminLedgerPrevPageBtn');
+        const nextBtn  = document.getElementById('adminLedgerNextPageBtn');
+        const lastBtn  = document.getElementById('adminLedgerLastPageBtn');
+        const pageNumbersContainer = document.getElementById('adminLedgerPageNumbers');
+
+        if (firstBtn) firstBtn.disabled = (ledgerCurrentPage <= 1);
+        if (prevBtn)  prevBtn.disabled  = (ledgerCurrentPage <= 1);
+        if (nextBtn)  nextBtn.disabled  = (ledgerCurrentPage >= totalPages || totalMatching === 0);
+        if (lastBtn)  lastBtn.disabled  = (ledgerCurrentPage >= totalPages || totalMatching === 0);
+
+        if (pageNumbersContainer) {
+            pageNumbersContainer.innerHTML = '';
+
+            const createPageBtn = (pageNum) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = pageNum;
+                btn.className = pageNum === ledgerCurrentPage
+                    ? 'h-7 min-w-[28px] px-2 rounded-lg bg-[#1c5c3c] text-white text-xs font-bold transition-all shadow-xs cursor-default'
+                    : 'h-7 min-w-[28px] px-2 rounded-lg border border-glass-border hover:bg-glass-hover text-xs font-semibold text-hp-text transition-all cursor-pointer';
+                btn.addEventListener('click', () => {
+                    ledgerCurrentPage = pageNum;
+                    renderLedgerPagination();
+                    const container = reservationsTable.closest('.overflow-y-auto');
+                    if (container) container.scrollTop = 0;
                 });
+                return btn;
+            };
+
+            const createEllipsis = () => {
+                const span = document.createElement('span');
+                span.textContent = '…';
+                span.className = 'px-1 text-xs text-hp-text-muted select-none';
+                return span;
+            };
+
+            if (totalPages <= 7) {
+                for (let p = 1; p <= totalPages; p++) {
+                    pageNumbersContainer.appendChild(createPageBtn(p));
+                }
+            } else {
+                pageNumbersContainer.appendChild(createPageBtn(1));
+
+                let startPage = Math.max(2, ledgerCurrentPage - 1);
+                let endPage = Math.min(totalPages - 1, ledgerCurrentPage + 1);
+
+                if (ledgerCurrentPage <= 3) {
+                    startPage = 2;
+                    endPage = 4;
+                } else if (ledgerCurrentPage >= totalPages - 2) {
+                    startPage = totalPages - 3;
+                    endPage = totalPages - 1;
+                }
+
+                if (startPage > 2) {
+                    pageNumbersContainer.appendChild(createEllipsis());
+                }
+
+                for (let p = startPage; p <= endPage; p++) {
+                    pageNumbersContainer.appendChild(createPageBtn(p));
+                }
+
+                if (endPage < totalPages - 1) {
+                    pageNumbersContainer.appendChild(createEllipsis());
+                }
+
+                pageNumbersContainer.appendChild(createPageBtn(totalPages));
             }
         }
     };
 
-    const toggleStaffBtn = document.getElementById('toggleStaffTransactionsListBtn');
-    const staffDrawer = document.getElementById('staffTransactionsListDrawer');
-    const toggleStaffText = document.getElementById('toggleStaffTransactionsListText');
-    const toggleStaffIcon = document.getElementById('toggleStaffTransactionsListIcon');
-
-    toggleStaffBtn?.addEventListener('click', () => {
-        if (!staffDrawer) return;
-        const isClosed = staffDrawer.classList.contains('hidden');
-        if (isClosed) {
-            staffDrawer.classList.remove('hidden');
-            if (toggleStaffText) toggleStaffText.textContent = 'Hide Individual Staff Payment Receipts';
-            if (toggleStaffIcon) toggleStaffIcon.classList.add('rotate-180');
-        } else {
-            staffDrawer.classList.add('hidden');
-            if (toggleStaffText) toggleStaffText.textContent = 'View Individual Staff Payment Receipts';
-            if (toggleStaffIcon) toggleStaffIcon.classList.remove('rotate-180');
-        }
-    });
-
     const applyFilters = () => {
         const filteredRows = getFilteredRows();
 
-        // Update DOM Table Rows
-        if (reservationsTable) {
-            const rows = reservationsTable.querySelectorAll('tbody tr');
-            let visible = 0;
-            rows.forEach((row) => {
+        // Update Print Reservations Table Rows (all matching rows visible in print)
+        if (printReservationsTable) {
+            const printRows = printReservationsTable.querySelectorAll('tbody tr');
+            printRows.forEach((row) => {
                 const show = matchesFilter({
                     amenities: row.dataset.amenity,
                     status: row.dataset.status,
@@ -1923,18 +2239,11 @@ window.AppPage['admin_reports'] = function () {
                     session: row.dataset.session
                 });
                 row.style.display = show ? '' : 'none';
-                if (show) visible += 1;
             });
-
-            if (activeFilterText) {
-                const isAllDefault = appliedStartDate === defaultStartDate && appliedEndDate === defaultEndDate && !appliedSession && (!amenityFilter || amenityFilter.value === 'all') && (!statusFilter || statusFilter.value === 'all');
-                activeFilterText.textContent = isAllDefault
-                    ? `Showing ${visible} of ${rows.length} reservations (This Month • 24 hrs)`
-                    : (visible === rows.length
-                        ? 'Showing all reservations'
-                        : `Showing ${visible} of ${rows.length} reservations`);
-            }
         }
+
+        // Render paginated Ledger Modal rows (100 per page)
+        renderLedgerPagination();
 
         // Update KPIs
         const kpiRes = document.getElementById('kpiReservations');
@@ -1962,8 +2271,15 @@ window.AppPage['admin_reports'] = function () {
         if (kpiStaffCount) kpiStaffCount.textContent = `• ${filteredStaff.length} payment${filteredStaff.length === 1 ? '' : 's'} received by staff`;
         if (staffBreakdownTotal) staffBreakdownTotal.textContent = formatMoney(totalStaffRev);
 
-        // Render staff collections breakdown table
+        const chartTotal = document.getElementById('staffCollectionsChartTotal');
+        if (chartTotal) chartTotal.textContent = formatMoney(totalStaffRev);
+
+        const badgeCount = document.getElementById('staffCollectionsBadgeCount');
+        if (badgeCount) badgeCount.textContent = `${filteredStaff.length} payment${filteredStaff.length === 1 ? '' : 's'}`;
+
+        // Render staff collections breakdown table in modal & overview graph on page
         renderStaffCollectionsBreakdown(filteredStaff);
+        updateStaffCollectionsChart(filteredStaff);
 
         // Update Print Labels
         updatePrintLabels(filteredRows);
@@ -2182,6 +2498,10 @@ window.AppPage['admin_reports'] = function () {
             if (modalEndDateInput)   modalEndDateInput.value   = defaultEndDate;
             if (modalSessionSelect)  modalSessionSelect.value  = '';
 
+            if (adminLedgerSearchInput) adminLedgerSearchInput.value = '';
+            ledgerSearchQuery = '';
+            ledgerCurrentPage = 1;
+
             updateTriggerButtonUI();
             applyFilters();
         });
@@ -2251,6 +2571,130 @@ window.AppPage['admin_reports'] = function () {
     }
 
     // ==========================================
+    // ADMIN RESERVATION LEDGER MODAL & PAGINATION HANDLERS
+    // ==========================================
+    const openAdminLedgerModal = () => {
+        if (!adminLedgerModal) return;
+        adminLedgerModal.classList.remove('hidden');
+        adminLedgerModal.classList.add('flex');
+        adminLedgerModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        if (adminLedgerSearchInput) {
+            setTimeout(() => adminLedgerSearchInput.focus(), 60);
+        }
+    };
+
+    const closeAdminLedgerModal = () => {
+        if (!adminLedgerModal) return;
+        adminLedgerModal.classList.add('hidden');
+        adminLedgerModal.classList.remove('flex');
+        adminLedgerModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    };
+
+    openAdminLedgerModalBtn?.addEventListener('click', openAdminLedgerModal);
+    openAdminLedgerModalBtnHeader?.addEventListener('click', openAdminLedgerModal);
+    closeAdminLedgerModalBtn?.addEventListener('click', closeAdminLedgerModal);
+    closeAdminLedgerModalBtnFooter?.addEventListener('click', closeAdminLedgerModal);
+
+    adminLedgerModal?.addEventListener('click', (e) => {
+        if (e.target === adminLedgerModal || e.target.hasAttribute('data-close-admin-ledger-modal')) {
+            closeAdminLedgerModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && adminLedgerModal && !adminLedgerModal.classList.contains('hidden')) {
+            closeAdminLedgerModal();
+        }
+    });
+
+    // ==========================================
+    // STAFF COLLECTIONS BREAKDOWN MODAL HANDLERS
+    // ==========================================
+    const openStaffCollectionsModal = () => {
+        if (!staffCollectionsModal) return;
+        staffCollectionsModal.classList.remove('hidden');
+        staffCollectionsModal.classList.add('flex');
+        staffCollectionsModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeStaffCollectionsModal = () => {
+        if (!staffCollectionsModal) return;
+        staffCollectionsModal.classList.add('hidden');
+        staffCollectionsModal.classList.remove('flex');
+        staffCollectionsModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    };
+
+    openStaffCollectionsModalBtn?.addEventListener('click', openStaffCollectionsModal);
+    kpiStaffCollectionsCard?.addEventListener('click', openStaffCollectionsModal);
+    closeStaffCollectionsModalBtn?.addEventListener('click', closeStaffCollectionsModal);
+    closeStaffCollectionsModalBtnFooter?.addEventListener('click', closeStaffCollectionsModal);
+
+    staffCollectionsModal?.addEventListener('click', (e) => {
+        if (e.target === staffCollectionsModal || e.target.hasAttribute('data-close-staff-collections-modal')) {
+            closeStaffCollectionsModal();
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && staffCollectionsModal && !staffCollectionsModal.classList.contains('hidden')) {
+            closeStaffCollectionsModal();
+        }
+    });
+
+    adminLedgerSearchInput?.addEventListener('input', () => {
+        ledgerSearchQuery = (adminLedgerSearchInput.value || '').trim().toLowerCase();
+        ledgerCurrentPage = 1;
+        renderLedgerPagination();
+    });
+
+    document.getElementById('adminLedgerFirstPageBtn')?.addEventListener('click', () => {
+        ledgerCurrentPage = 1;
+        renderLedgerPagination();
+        const container = reservationsTable?.closest('.overflow-y-auto');
+        if (container) container.scrollTop = 0;
+    });
+
+    document.getElementById('adminLedgerPrevPageBtn')?.addEventListener('click', () => {
+        if (ledgerCurrentPage > 1) {
+            ledgerCurrentPage--;
+            renderLedgerPagination();
+            const container = reservationsTable?.closest('.overflow-y-auto');
+            if (container) container.scrollTop = 0;
+        }
+    });
+
+    document.getElementById('adminLedgerNextPageBtn')?.addEventListener('click', () => {
+        ledgerCurrentPage++;
+        renderLedgerPagination();
+        const container = reservationsTable?.closest('.overflow-y-auto');
+        if (container) container.scrollTop = 0;
+    });
+
+    document.getElementById('adminLedgerLastPageBtn')?.addEventListener('click', () => {
+        const allRows = Array.from(reservationsTable?.querySelectorAll('tbody tr.admin-ledger-row') || []);
+        const matchingCount = allRows.filter((row) => {
+            const mf = matchesFilter({
+                amenities: row.dataset.amenity,
+                status: row.dataset.status,
+                check_in: row.dataset.checkin,
+                session: row.dataset.session
+            });
+            if (!mf) return false;
+            if (ledgerSearchQuery && !row.dataset.search?.includes(ledgerSearchQuery)) return false;
+            return true;
+        }).length;
+        const totalPages = Math.max(1, Math.ceil(matchingCount / LEDGER_PAGE_SIZE));
+        ledgerCurrentPage = totalPages;
+        renderLedgerPagination();
+        const container = reservationsTable?.closest('.overflow-y-auto');
+        if (container) container.scrollTop = 0;
+    });
+
+    // ==========================================
     // SECTION SWITCHING (Matrix vs Standard vs AI Studio)
     // ==========================================
     const tabMatrix = document.getElementById('tabMatrixReports');
@@ -2291,6 +2735,7 @@ window.AppPage['admin_reports'] = function () {
             // Trigger chart resize if needed
             if (revenueChart) revenueChart.resize();
             if (donutChart) donutChart.resize();
+            if (staffCollectionsChart) staffCollectionsChart.resize();
         } else {
             setTabButtonActive(tabMatrix, tabs);
             sectionMatrix?.classList.remove('hidden');
