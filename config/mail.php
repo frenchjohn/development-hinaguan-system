@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'failover'),
+    'default' => env('MAIL_MAILER', 'smtp'),
 
     /*
     |--------------------------------------------------------------------------
@@ -33,41 +33,6 @@ return [
 
     'mailers' => [
 
-        'failover' => [
-            'transport' => 'failover',
-            'mailers' => array_values(array_filter([
-                env('GMAIL_WEBHOOK_URL') ? 'gmail_api' : null,
-                'smtp_ssl',
-                'smtp_alt',
-                'smtp',
-            ])),
-            'retry_after' => 60,
-        ],
-
-        'smtp_ssl' => [
-            'transport' => 'smtp',
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
-            'port' => 465,
-            'encryption' => 'ssl',
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => 10,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
-        ],
-
-        'smtp_alt' => [
-            'transport' => 'smtp',
-            'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', 'smtp-relay.brevo.com'),
-            'port' => 2525,
-            'encryption' => 'tls',
-            'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
-            'timeout' => 10,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
-        ],
-
         'smtp' => [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
@@ -76,7 +41,7 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => 10,
+            'timeout' => 30,
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
