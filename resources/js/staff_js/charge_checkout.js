@@ -339,6 +339,7 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
             
             await onPaid?.();
         } catch (error) {
+            hideLoadingScreen();
             console.error('Error during checkout charges:', error);
             window.alert(error.message || 'An error occurred while saving charges.');
         } finally {

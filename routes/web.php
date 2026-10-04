@@ -8231,121 +8231,149 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $staffName = $user['name'] ?? 'Staff User';
         $staffId = isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null;
 
-        // Settle any remaining unpaid charges (e.g. damages or additional fees) upon checkout if not yet paid
-        $unpaidCharges = $reservation->reservationCharges()->where('status', 'unpaid')->get();
-        if ($unpaidCharges->isNotEmpty()) {
-            $unpaidTotal = (float) $unpaidCharges->sum('amount');
-            $reservation->reservationCharges()->where('status', 'unpaid')->update(['status' => 'paid']);
-            $reservation->increment('total_amount', $unpaidTotal);
-            $reservation->increment('amount_paid', $unpaidTotal);
+        try {
+            DB::beginTransaction();
 
-            $hasDamage = $unpaidCharges->contains('charge_type', 'damage');
-            $chargeTitle = $hasDamage ? 'Damage Charge Paid' : 'Additional Charge Paid';
+            // Settle any remaining unpaid charges (e.g. damages or additional fees) upon checkout if not yet paid
+            $unpaidCharges = $reservation->reservationCharges()->where('status', 'unpaid')->get();
+            if ($unpaidCharges->isNotEmpty()) {
+                $unpaidTotal = (float) $unpaidCharges->sum('amount');
+                $reservation->reservationCharges()->where('status', 'unpaid')->update(['status' => 'paid']);
+                $reservation->increment('total_amount', $unpaidTotal);
+                $reservation->increment('amount_paid', $unpaidTotal);
+
+                $hasDamage = $unpaidCharges->contains('charge_type', 'damage');
+                $chargeTitle = $hasDamage ? 'Damage Charge Paid' : 'Additional Charge Paid';
+
+                ActivityLog::log(
+                    action: 'additional_charge_paid',
+                    activityType: 'additional_charge_paid',
+                    paymentAmount: $unpaidTotal,
+                    title: $chargeTitle,
+                    description: "Reservation #{$reservation->id} ({$reservation->booker_name}) paid ₱" . number_format($unpaidTotal, 2) . " in charges ({$unpaidCharges->pluck('charge_type')->unique()->implode(', ')}) during checkout with {$staffName}",
+                    reservationId: $reservation->id,
+                    actorName: $staffName,
+                    actorRole: $user['role'] ?? 'staff',
+                    staffId: $staffId,
+                    metadata: [
+                        'paid_total' => $unpaidTotal,
+                        'charge_count' => $unpaidCharges->count(),
+                        'charges' => $unpaidCharges->map(fn ($c) => [
+                            'id' => $c->id,
+                            'type' => $c->charge_type,
+                            'amount' => (float) $c->amount,
+                            'description' => $c->description,
+                        ])->toArray(),
+                        'staff_name' => $staffName,
+                    ]
+                );
+            }
+
+            // Only check out guests who haven't been checked out yet
+            ReservationGuest::where('reservation_id', $reservation->id)
+                ->whereNull('checked_out_at')
+                ->update([
+                    'checked_out_at' => now(),
+                ]);
+
+            // Update reservation checkout date and status
+            $reservation->update([
+                'check_out' => now()->toDateTimeString(),
+                'status' => 'Checked Out',
+            ]);
+
+            // Auto-complete every availed amenity when the whole reservation checks out
+            ReservationAmenity::where('reservation_id', $reservation->id)
+                ->where('status', 'Active')
+                ->update(['status' => 'Completed']);
 
             ActivityLog::log(
-                action: 'additional_charge_paid',
-                activityType: 'additional_charge_paid',
-                paymentAmount: $unpaidTotal,
-                title: $chargeTitle,
-                description: "Reservation #{$reservation->id} ({$reservation->booker_name}) paid ₱" . number_format($unpaidTotal, 2) . " in charges ({$unpaidCharges->pluck('charge_type')->unique()->implode(', ')}) during checkout with {$staffName}",
+                action: 'checked_out',
+                activityType: 'check_out',
+                paymentAmount: 0.00,
+                title: 'Guest Checked Out',
+                description: "Reservation #{$reservation->id} ({$reservation->booker_name}) completed check out with {$staffName}",
                 reservationId: $reservation->id,
                 actorName: $staffName,
                 actorRole: $user['role'] ?? 'staff',
                 staffId: $staffId,
                 metadata: [
-                    'paid_total' => $unpaidTotal,
-                    'charge_count' => $unpaidCharges->count(),
-                    'charges' => $unpaidCharges->map(fn ($c) => [
-                        'id' => $c->id,
-                        'type' => $c->charge_type,
-                        'amount' => (float) $c->amount,
-                        'description' => $c->description,
-                    ])->toArray(),
+                    'checked_out_at' => now()->toDateTimeString(),
                     'staff_name' => $staffName,
                 ]
             );
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error('Reservation checkout database transaction failed: ' . $e->getMessage(), [
+                'reservation_id' => $reservation->id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process checkout: ' . $e->getMessage(),
+            ], 500);
         }
 
-        // Only check out guests who haven't been checked out yet
-        ReservationGuest::where('reservation_id', $reservation->id)
-            ->whereNull('checked_out_at')
-            ->update([
-                'checked_out_at' => now(),
+        // Send receipt emails safely outside the database transaction
+        try {
+            $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity', 'entranceFee', 'reservationCharges']);
+            $checkInDateTime = $reservation->check_in
+                ? ($reservation->check_in instanceof \DateTimeInterface ? $reservation->check_in->format('F j, Y g:i A') : \Carbon\Carbon::parse($reservation->check_in)->format('F j, Y g:i A'))
+                : ($reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') : now()->format('F j, Y g:i A'));
+            $checkOutDateTime = now()->format('F j, Y g:i A');
+
+            // Calculate total cost from amenities
+            $totalCost = 0;
+            $amenities = [];
+            foreach ($reservation->reservationAmenities as $reservationAmenity) {
+                $qty = max(1, (int) ($reservationAmenity->quantity ?? 1));
+                $price = (float) ($reservationAmenity->price_at_booking ?? 0);
+                $amenityCost = $price * $qty;
+                $totalCost += $amenityCost;
+                $amenities[] = [
+                    'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
+                    'price' => $amenityCost,
+                ];
+            }
+
+            $resTotal = (float) ($reservation->total_amount ?: $reservation->amount_paid ?: 0);
+            if ($resTotal > 0) {
+                $totalCost = $resTotal;
+            }
+
+            // Gather all recipients (guests with email + booker email)
+            $recipientMap = [];
+            foreach ($reservation->reservationGuests as $reservationGuest) {
+                $customer = $reservationGuest->customer;
+                if ($customer && !empty($customer->email)) {
+                    $recipientMap[strtolower(trim($customer->email))] = $customer;
+                }
+            }
+
+            if (!empty($reservation->email) && !isset($recipientMap[strtolower(trim($reservation->email))])) {
+                $bookerCustomer = new \App\Models\Customer([
+                    'first_name' => $reservation->booker_name ?: 'Valued',
+                    'last_name' => 'Guest',
+                    'email' => trim($reservation->email),
+                    'phone' => $reservation->phone,
+                ]);
+                $recipientMap[strtolower(trim($reservation->email))] = $bookerCustomer;
+            }
+
+            \Log::info('Reservation checkout - attempting to send receipts', [
+                'reservation_id' => $reservation->id,
+                'recipients' => array_keys($recipientMap),
+                'total_cost' => $totalCost,
             ]);
 
-        // Update reservation checkout date and status
-        $reservation->update([
-            'check_out' => now()->toDateTimeString(),
-            'status' => 'Checked Out',
-        ]);
-
-        // Auto-complete every availed amenity when the whole reservation checks out
-        ReservationAmenity::where('reservation_id', $reservation->id)
-            ->where('status', 'Active')
-            ->update(['status' => 'Completed']);
-
-        ActivityLog::log(
-            action: 'checked_out',
-            activityType: 'check_out',
-            paymentAmount: 0.00,
-            title: 'Guest Checked Out',
-            description: "Reservation #{$reservation->id} ({$reservation->booker_name}) completed check out with {$staffName}",
-            reservationId: $reservation->id,
-            actorName: $staffName,
-            actorRole: $user['role'] ?? 'staff',
-            staffId: $staffId,
-            metadata: [
-                'checked_out_at' => now()->toDateTimeString(),
-                'staff_name' => $staffName,
-            ]
-        );
-
-        // Send receipt emails to all guests with email addresses
-        $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity', 'entranceFee', 'reservationCharges']);
-        $checkInDateTime = $reservation->check_in ? $reservation->check_in->format('F j, Y g:i A') : now()->format('F j, Y g:i A');
-        $checkOutDateTime = now()->format('F j, Y g:i A');
-
-        // Calculate total cost from amenities
-        $totalCost = 0;
-        $amenities = [];
-        foreach ($reservation->reservationAmenities as $reservationAmenity) {
-            $amenityCost = $reservationAmenity->price_at_booking * $reservationAmenity->quantity;
-            $totalCost += $amenityCost;
-            $amenities[] = [
-                'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
-                'price' => $amenityCost,
-            ];
-        }
-
-        $resTotal = (float) ($reservation->total_amount ?: $reservation->amount_paid ?: 0);
-        if ($resTotal > 0) {
-            $totalCost = $resTotal;
-        }
-
-        \Log::info('Reservation checkout - attempting to send receipts', [
-            'reservation_id' => $reservation->id,
-            'total_guests' => $reservation->reservationGuests->count(),
-            'total_cost' => $totalCost,
-        ]);
-
-        // Send email to each guest who has an email
-        foreach ($reservation->reservationGuests as $reservationGuest) {
-            $customer = $reservationGuest->customer;
-            \Log::info('Checking guest for email', [
-                'reservation_guest_id' => $reservationGuest->id,
-                'has_customer' => $customer ? true : false,
-                'customer_email' => $customer?->email,
-            ]);
-
-            if ($customer && $customer->email) {
+            foreach ($recipientMap as $email => $targetCustomer) {
                 try {
-                    \Log::info('Sending checkout receipt to guest', [
-                        'customer_email' => $customer->email,
-                    ]);
-
-                    Mail::to($customer->email)->send(
+                    \Log::info('Sending checkout receipt to: ' . $email);
+                    Mail::to($email)->send(
                         new \App\Mail\CheckoutReceiptMail(
-                            $customer,
+                            $targetCustomer,
                             $reservation,
                             $amenities,
                             $checkInDateTime,
@@ -8353,22 +8381,18 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                             $totalCost
                         )
                     );
-
-                    \Log::info('Checkout receipt sent successfully to guest', [
-                        'customer_email' => $customer->email,
-                    ]);
+                    \Log::info('Checkout receipt sent successfully to: ' . $email);
                 } catch (\Throwable $e) {
-                    \Log::error('Failed to send checkout receipt email: ' . $e->getMessage(), [
-                        'customer_id' => $customer->id,
+                    \Log::error('Failed to send checkout receipt email to ' . $email . ': ' . $e->getMessage(), [
+                        'email' => $email,
                         'reservation_id' => $reservation->id,
-                        'trace' => $e->getTraceAsString(),
                     ]);
                 }
-            } else {
-                \Log::info('Skipping guest - no email', [
-                    'reservation_guest_id' => $reservationGuest->id,
-                ]);
             }
+        } catch (\Throwable $receiptEx) {
+            \Log::error('Failed to process receipt generation/sending: ' . $receiptEx->getMessage(), [
+                'reservation_id' => $reservation->id,
+            ]);
         }
 
         return response()->json([
@@ -9758,8 +9782,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         if ($customer && $customer->email) {
             try {
                 $checkInDateTime = $reservation && $reservation->check_in
-                    ? $reservation->check_in->format('F j, Y g:i A')
-                    : now()->format('F j, Y g:i A');
+                    ? ($reservation->check_in instanceof \DateTimeInterface ? $reservation->check_in->format('F j, Y g:i A') : \Carbon\Carbon::parse($reservation->check_in)->format('F j, Y g:i A'))
+                    : ($reservation && $reservation->reservation_date ? \Carbon\Carbon::parse($reservation->reservation_date)->format('F j, Y') : now()->format('F j, Y g:i A'));
 
                 $checkOutDateTime = now()->format('F j, Y g:i A');
 
@@ -9770,7 +9794,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 if ($reservation) {
                     $reservation->load(['reservationAmenities.amenity', 'entranceFee', 'reservationCharges']);
                     foreach ($reservation->reservationAmenities as $reservationAmenity) {
-                        $amenityCost = $reservationAmenity->price_at_booking * $reservationAmenity->quantity;
+                        $qty = max(1, (int) ($reservationAmenity->quantity ?? 1));
+                        $price = (float) ($reservationAmenity->price_at_booking ?? 0);
+                        $amenityCost = $price * $qty;
                         $totalCost += $amenityCost;
                         $amenities[] = [
                             'name' => $reservationAmenity->amenity?->amenities_name ?? 'Amenity',
@@ -9826,7 +9852,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             reservationId: $reservation?->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'reservation_guest_id' => $reservationGuest->id,
                 'guest_name' => $guestName,
@@ -9952,7 +9978,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
-            staffId: (string) ($user['id'] ?? ''),
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
             metadata: [
                 'checked_out_count' => $checkedOut,
                 'staff_name' => $staffName,

@@ -50,7 +50,7 @@ class ActivityLog extends Model
         ?int $reservationId = null,
         ?string $actorName = null,
         ?string $actorRole = null,
-        ?int $staffId = null,
+        int|string|null $staffId = null,
         float|int|string $paymentAmount = 0.00,
         array $metadata = [],
         ?string $action = null
@@ -61,9 +61,30 @@ class ActivityLog extends Model
         $resolvedActorRole = $actorRole ?: ($authUser['role'] ?? 'staff');
 
         // Resolve staff_id if actor is staff
-        $resolvedStaffId = $staffId;
+        $resolvedStaffId = (isset($staffId) && is_numeric($staffId)) ? (int) $staffId : null;
         if ($resolvedStaffId === null && $resolvedActorRole === 'staff' && isset($authUser['id']) && is_numeric($authUser['id'])) {
             $resolvedStaffId = (int) $authUser['id'];
+        }
+
+        // Verify foreign key integrity to avoid 1452 Integrity Constraint Violations
+        if ($resolvedStaffId !== null) {
+            try {
+                if (!\App\Models\StaffAccount::where('id', $resolvedStaffId)->exists()) {
+                    $resolvedStaffId = null;
+                }
+            } catch (\Throwable $e) {
+                $resolvedStaffId = null;
+            }
+        }
+
+        if ($reservationId !== null) {
+            try {
+                if (!\App\Models\Reservation::where('id', $reservationId)->exists()) {
+                    $reservationId = null;
+                }
+            } catch (\Throwable $e) {
+                $reservationId = null;
+            }
         }
 
         // Action and activity_type synchronization
@@ -71,17 +92,26 @@ class ActivityLog extends Model
         $finalActivityType = $activityType ?: $finalAction;
         $finalPaymentAmount = (float) $paymentAmount;
 
-        return self::create([
-            'staff_id' => $resolvedStaffId,
-            'reservation_id' => $reservationId,
-            'action' => $finalAction,
-            'activity_type' => $finalActivityType,
-            'payment_amount' => $finalPaymentAmount,
-            'title' => $title,
-            'description' => $description,
-            'actor_name' => $resolvedActorName,
-            'actor_role' => $resolvedActorRole,
-            'metadata' => $metadata,
-        ]);
+        try {
+            return self::create([
+                'staff_id' => $resolvedStaffId,
+                'reservation_id' => $reservationId,
+                'action' => substr($finalAction, 0, 64),
+                'activity_type' => substr($finalActivityType, 0, 64),
+                'payment_amount' => $finalPaymentAmount,
+                'title' => substr($title, 0, 128),
+                'description' => $description,
+                'actor_name' => substr($resolvedActorName, 0, 128),
+                'actor_role' => substr($resolvedActorRole, 0, 32),
+                'metadata' => $metadata,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('ActivityLog::log could not be created: ' . $e->getMessage(), [
+                'action' => $finalAction,
+                'reservation_id' => $reservationId,
+                'staff_id' => $resolvedStaffId,
+            ]);
+            return new self();
+        }
     }
 }
