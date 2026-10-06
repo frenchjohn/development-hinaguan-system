@@ -5874,7 +5874,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return \Carbon\Carbon::parse($checkoutAtStr)->timestamp;
         })->values();
 
-        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'occupiedTodayAmenityIds', 'currentPeriod', 'currentSlotName'));
+        return view('staff.staff_check_ins', compact('customers', 'guestData', 'amenities', 'activeReservations', 'reservationData', 'availableAmenityIds', 'occupiedTodayAmenityIds', 'currentPeriod', 'currentSlotName', 'settings'));
     })->name('checkins');
 
     Route::get('/check-ins/lookup', function (Request $request) use ($amenityCheckoutAt, $amenityContinuousCheckoutAt, $amenityStartsAt, $computeReservationCheckoutAt, $formatLocalDate) {
@@ -7502,7 +7502,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'companions.*.is_foreigner' => ['nullable', 'boolean'],
             'companions.*.phone' => ['nullable', 'string', 'max:255'],
             'companions.*.email' => ['nullable', 'email', 'max:255'],
-            'companions.*.pool_access' => ['nullable', 'boolean'],
+            'companions.*.amenity_id' => ['nullable'],
+            'companions.*.pool_access' => ['nullable'],
+            'companions.*.has_pool_access' => ['nullable'],
             'companions.*.is_free_entrance' => ['nullable'],
             'companions.*.free_entrance' => ['nullable'],
         ]);
@@ -7512,6 +7514,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return response()->json(['message' => 'Only checked-in reservations can accept new companions.'], 422);
         }
 
+        $resAmenities = $reservation->reservationAmenities()->with(['amenity.benefits', 'amenity.benefit'])->get();
+
         // Adult/child counts from the new companions (12 and below = child),
         // accounting for free entrance, plus how many of them get pool access.
         $adultCount = 0;
@@ -7519,11 +7523,36 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $payingAdultCount = 0;
         $payingChildCount = 0;
         $poolCount = 0;
+        $payingPoolCount = 0;
         foreach ($data['companions'] ?? [] as $companionData) {
-            if (! empty($companionData['pool_access'])) {
-                $poolCount++;
+            $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+            $hasFreeEntrance = false;
+            $hasFreePool = false;
+            if ($cAmId && $resAmenities->isNotEmpty()) {
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                $am = $ra?->amenity;
+                if ($am) {
+                    $benefit = $am->benefits ?? $am->benefit ?? null;
+                    if ($benefit) {
+                        if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
+                        if (!empty($benefit->free_pool)) $hasFreePool = true;
+                    }
+                }
             }
-            $cFree = ! empty($companionData['is_free_entrance']) || ! empty($companionData['free_entrance']);
+
+            $wantsPoolExplicit = filter_var($companionData['pool_access'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || filter_var($companionData['has_pool_access'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $wantsPool = $wantsPoolExplicit || $hasFreePool;
+            if ($wantsPool) {
+                $poolCount++;
+                if (! $hasFreePool) {
+                    $payingPoolCount++;
+                }
+            }
+
+            $isFreeEntranceExplicit = filter_var($companionData['is_free_entrance'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || filter_var($companionData['free_entrance'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $cFree = $isFreeEntranceExplicit || $hasFreeEntrance;
             if (($companionData['age_group'] ?? null) === '0-12') {
                 $childCount++;
                 if (! $cFree) $payingChildCount++;
@@ -7544,9 +7573,9 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $entranceFee = \App\Models\ReservationEntranceFee::where('reservation_id', $reservation->id)->first();
         $pricingType = $entranceFee?->pricing_type;
         $effectivePeriod = match ($pricingType) {
+            'Daytime' => 'daytime',
             'Nighttime' => 'nighttime',
-            'DayToNight' => 'daytonight',
-            'NightToDay' => 'daytonight',
+            'DayToNight', 'NightToDay' => 'daytonight',
             default => null,
         };
         if (! $effectivePeriod) {
@@ -7561,7 +7590,15 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'NightToDay Aircon' => 'daytonight',
             ];
             $firstAmenityPricingType = $reservation->reservationAmenities()->first()?->pricing_type;
-            $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? 'daytime';
+            $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? null;
+        }
+        if (! $effectivePeriod) {
+            $slot = $reservation->start_slot ?: $reservation->end_slot;
+            $effectivePeriod = match ($slot) {
+                'Nighttime' => 'nighttime',
+                'DayToNight', 'NightToDay' => 'daytonight',
+                default => 'daytime',
+            };
         }
 
         $settings = \App\Models\ParkSetting::first();
@@ -7584,7 +7621,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $newEntranceTotal = round(($payingAdultCount * $adultRate) + ($payingChildCount * $childRate), 2);
 
         // Pool fee: charged per companion that ticks pool access, priced by
-        // the same effective period as the entrance fee.
+        // the same effective period as the entrance fee (free pool waived by amenity benefit).
         $dayPool = (float) ($settings->day_pool_fee ?? 0);
         $nightPool = (float) ($settings->night_pool_fee ?? 0);
         if ($effectivePeriod === 'nighttime') {
@@ -7594,18 +7631,21 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         } else {
             $poolRate = $dayPool;
         }
-        $newPoolTotal = round($poolCount * $poolRate, 2);
+        $newPoolTotal = round($payingPoolCount * $poolRate, 2);
 
         // Additional per head fee if reservation has amenities with limits
+        // Only companions explicitly assigned to an amenity consume its capacity
         $newExtraHeadFee = 0;
-        $resAmenities = $reservation->reservationAmenities()->with('amenity')->get();
         if ($resAmenities->isNotEmpty()) {
-            $defaultAmenityId = (string) $resAmenities->first()->amenity_id;
             $existingGuestsCount = $reservation->reservationGuests()->whereNull('checked_out_at')->count();
 
             foreach ($data['companions'] ?? [] as $companionData) {
-                $cAmId = (string) ($companionData['amenity_id'] ?? $defaultAmenityId);
-                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->first();
+                $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+                if (! $cAmId) {
+                    continue; // No amenity chosen: no extra head fee!
+                }
+
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
                 $am = $ra?->amenity;
                 if ($am) {
                     $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
@@ -7641,11 +7681,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $companionEmail,
             ]);
 
+            $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+            $hasFreePool = false;
+            if ($cAmId && $resAmenities->isNotEmpty()) {
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                $am = $ra?->amenity;
+                $benefit = $am?->benefits ?? $am?->benefit ?? null;
+                if (!empty($benefit?->free_pool)) {
+                    $hasFreePool = true;
+                }
+            }
+
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
-                'has_pool_access' => ! empty($companionData['pool_access']),
+                'has_pool_access' => ! empty($companionData['pool_access']) || ! empty($companionData['has_pool_access']) || $hasFreePool,
             ]);
         }
 
@@ -7708,14 +7759,221 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]
         );
 
+        $reservation->load(['reservationGuests.customer', 'reservationAmenities.amenity', 'entranceFee']);
+        $formattedGuests = $reservation->reservationGuests->map(function ($rg) {
+            return [
+                'id' => $rg->id,
+                'customer_id' => $rg->customer_id,
+                'is_primary_guest' => (bool) $rg->is_primary_guest,
+                'has_pool_access' => (bool) $rg->has_pool_access,
+                'checked_out_at' => $rg->checked_out_at,
+                'customer' => [
+                    'id' => $rg->customer?->id,
+                    'first_name' => $rg->customer?->first_name,
+                    'middle_name' => $rg->customer?->middle_name,
+                    'last_name' => $rg->customer?->last_name,
+                    'age' => $rg->customer?->age,
+                    'gender' => $rg->customer?->gender,
+                    'is_foreigner' => (bool) ($rg->customer?->is_foreigner ?? false),
+                    'phone' => $rg->customer?->phone,
+                    'email' => $rg->customer?->email,
+                ],
+            ];
+        })->values();
+
         return response()->json([
             'success' => true,
             'added' => count($data['companions'] ?? []),
             'entrance_fee' => $newEntranceTotal,
             'pool_fee' => $newPoolTotal,
+            'extra_head_fee' => $newExtraHeadFee,
+            'total_payment' => $newCompanionTotal,
             'number_of_guests' => $actualGuestCount,
+            'total_amount' => (float) $reservation->total_amount,
+            'amount_paid' => (float) $reservation->amount_paid,
+            'remaining_balance' => (float) $reservation->remaining_balance,
+            'reservation_guests' => $formattedGuests,
         ]);
     })->name('reservations.add-companion');
+
+    // Calculate companion fee preview before adding to an active checked-in reservation
+    Route::post('/reservations/{reservation}/calculate-companion-fee', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'staff') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $data = $request->validate([
+            'companions' => ['required', 'array'],
+            'companions.*.age' => ['nullable', 'integer', 'min:0'],
+            'companions.*.age_group' => ['nullable', 'string', 'max:255'],
+            'companions.*.pool_access' => ['nullable'],
+            'companions.*.has_pool_access' => ['nullable'],
+            'companions.*.is_free_entrance' => ['nullable'],
+            'companions.*.free_entrance' => ['nullable'],
+            'companions.*.amenity_id' => ['nullable'],
+        ]);
+
+        $adultCount = 0;
+        $childCount = 0;
+        $payingAdultCount = 0;
+        $payingChildCount = 0;
+        $freeCount = 0;
+        $poolCount = 0;
+        $payingPoolCount = 0;
+
+        $resAmenities = $reservation->reservationAmenities()->with(['amenity.benefits', 'amenity.benefit'])->get();
+
+        foreach ($data['companions'] ?? [] as $companionData) {
+            $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+            $hasFreeEntrance = false;
+            $hasFreePool = false;
+            if ($cAmId && $resAmenities->isNotEmpty()) {
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                $am = $ra?->amenity;
+                if ($am) {
+                    $benefit = $am->benefits ?? $am->benefit ?? null;
+                    if ($benefit) {
+                        if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
+                        if (!empty($benefit->free_pool)) $hasFreePool = true;
+                    }
+                }
+            }
+
+            $wantsPoolExplicit = filter_var($companionData['pool_access'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || filter_var($companionData['has_pool_access'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $wantsPool = $wantsPoolExplicit || $hasFreePool;
+            if ($wantsPool) {
+                $poolCount++;
+                if (! $hasFreePool) {
+                    $payingPoolCount++;
+                }
+            }
+
+            $isFreeEntranceExplicit = filter_var($companionData['is_free_entrance'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                || filter_var($companionData['free_entrance'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $cFree = $isFreeEntranceExplicit || $hasFreeEntrance;
+            if ($cFree) {
+                $freeCount++;
+            }
+
+            if (($companionData['age_group'] ?? null) === '0-12') {
+                $childCount++;
+                if (! $cFree) $payingChildCount++;
+            } else {
+                $companionAge = (int) ($companionData['age'] ?? 99);
+                if ($companionAge <= 12) {
+                    $childCount++;
+                    if (! $cFree) $payingChildCount++;
+                } else {
+                    $adultCount++;
+                    if (! $cFree) $payingAdultCount++;
+                }
+            }
+        }
+
+        $entranceFee = \App\Models\ReservationEntranceFee::where('reservation_id', $reservation->id)->first();
+        $pricingType = $entranceFee?->pricing_type;
+        $effectivePeriod = match ($pricingType) {
+            'Daytime' => 'daytime',
+            'Nighttime' => 'nighttime',
+            'DayToNight', 'NightToDay' => 'daytonight',
+            default => null,
+        };
+        if (! $effectivePeriod) {
+            $amenityPeriodToEntrance = [
+                'Daytime' => 'daytime',
+                'Daytime Aircon' => 'daytime',
+                'Nighttime' => 'nighttime',
+                'Nighttime Aircon' => 'nighttime',
+                'DayToNight' => 'daytonight',
+                'DayToNight Aircon' => 'daytonight',
+                'NightToDay' => 'daytonight',
+                'NightToDay Aircon' => 'daytonight',
+            ];
+            $firstAmenityPricingType = $reservation->reservationAmenities()->first()?->pricing_type;
+            $effectivePeriod = $amenityPeriodToEntrance[$firstAmenityPricingType] ?? null;
+        }
+        if (! $effectivePeriod) {
+            $slot = $reservation->start_slot ?: $reservation->end_slot;
+            $effectivePeriod = match ($slot) {
+                'Nighttime' => 'nighttime',
+                'DayToNight', 'NightToDay' => 'daytonight',
+                default => 'daytime',
+            };
+        }
+
+        $settings = \App\Models\ParkSetting::first();
+        $dayAdult = (float) ($settings->daytime_adult_entrance_fee ?? 0);
+        $dayChild = (float) ($settings->daytime_child_entrance_fee ?? 0);
+        $nightAdult = (float) ($settings->nighttime_adult_entrance_fee ?? 0);
+        $nightChild = (float) ($settings->nighttime_child_entrance_fee ?? 0);
+
+        if ($effectivePeriod === 'nighttime') {
+            $adultRate = $nightAdult;
+            $childRate = $nightChild;
+            $poolRate = (float) ($settings->night_pool_fee ?? 0);
+        } elseif (in_array($effectivePeriod, ['daytonight', 'nighttoday'], true)) {
+            $adultRate = $dayAdult + $nightAdult;
+            $childRate = $dayChild + $nightChild;
+            $poolRate = (float) ($settings->day_pool_fee ?? 0) + (float) ($settings->night_pool_fee ?? 0);
+        } else {
+            $adultRate = $dayAdult;
+            $childRate = $dayChild;
+            $poolRate = (float) ($settings->day_pool_fee ?? 0);
+        }
+
+        $newEntranceTotal = round(($payingAdultCount * $adultRate) + ($payingChildCount * $childRate), 2);
+        $newPoolTotal = round($payingPoolCount * $poolRate, 2);
+
+        $newExtraHeadFee = 0;
+        $extraHeadCount = 0;
+        if ($resAmenities->isNotEmpty()) {
+            $existingGuestsCount = $reservation->reservationGuests()->whereNull('checked_out_at')->count();
+
+            foreach ($data['companions'] ?? [] as $companionData) {
+                $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+                if (! $cAmId) {
+                    continue; // No amenity chosen: no extra head fee!
+                }
+
+                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                $am = $ra?->amenity;
+                if ($am) {
+                    $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
+                    if ($maxCap !== null && $existingGuestsCount >= $maxCap) {
+                        $newExtraHeadFee += (float) ($am->additional_per_head ?? 0);
+                        $extraHeadCount++;
+                    }
+                    $existingGuestsCount++;
+                }
+            }
+        }
+
+        $newCompanionTotal = round($newEntranceTotal + $newPoolTotal + $newExtraHeadFee, 2);
+
+        return response()->json([
+            'success' => true,
+            'effective_period' => $effectivePeriod,
+            'adult_rate' => $adultRate,
+            'child_rate' => $childRate,
+            'pool_rate' => $poolRate,
+            'adult_count' => $adultCount,
+            'child_count' => $childCount,
+            'paying_adult_count' => $payingAdultCount,
+            'paying_child_count' => $payingChildCount,
+            'free_count' => $freeCount,
+            'pool_count' => $poolCount,
+            'paying_pool_count' => $payingPoolCount,
+            'extra_head_count' => $extraHeadCount,
+            'adult_subtotal' => round($payingAdultCount * $adultRate, 2),
+            'child_subtotal' => round($payingChildCount * $childRate, 2),
+            'entrance_fee' => $newEntranceTotal,
+            'pool_fee' => $newPoolTotal,
+            'extra_head_fee' => $newExtraHeadFee,
+            'total_payment' => $newCompanionTotal,
+        ]);
+    })->name('reservations.calculate-companion-fee');
 
     // Extend / Adjust master stay schedule for an active checked-in reservation
     Route::post('/reservations/{reservation}/extend-stay', function (Request $request, Reservation $reservation) use ($calculateContinuousSlotsCount, $continuousSlotTimeline, $computeReservationCheckoutAt) {

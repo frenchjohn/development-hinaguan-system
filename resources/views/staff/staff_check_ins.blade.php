@@ -2760,212 +2760,419 @@
 				</div>
 
 				{{-- Add Companion to Active Reservation Modal --}}
-				<div class="guest-modal guest-modal--wide" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
+				<div class="guest-modal guest-modal--add guest-modal--wide hidden" id="reservationAddCompanionModal" aria-hidden="true" style="z-index: 1250;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-reservation-add-companion="true"></div>
-					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(880px, 95vw) !important; max-width: 880px !important;" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
+					<div class="guest-modal__content guest-modal__content--wide relative z-[1] w-full max-w-[900px] max-h-[min(90vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="reservationAddCompanionTitle">
 						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all duration-200 z-10" data-close-reservation-add-companion="true" aria-label="Close companion form">&times;</button>
-						<div class="reservation-add-companion-header guest-modal__header mb-5 flex items-center gap-3 border-b border-glass-border pb-4">
-							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green"><i class="bi bi-people-fill text-xl"></i></div>
-							<div>
-								<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
-								<p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to the active reservation</p>
-								<span id="reservationAddCompanionFor" class="mt-1 inline-flex text-[0.7rem] font-semibold text-hp-green"></span>
+						
+						<!-- MODAL HEADER -->
+						<div class="guest-modal__header mb-3 flex items-center justify-between border-b border-glass-border pb-2.5">
+							<div class="flex items-center gap-2.5">
+								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+									<i class="bi bi-people-fill text-lg"></i>
+								</div>
+								<div>
+									<div class="flex items-center gap-2">
+										<h3 id="reservationAddCompanionTitle" class="guest-modal__title m-0 font-display text-base sm:text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Add Companions</h3>
+										<span id="reservationAddCompanionFor" class="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300"></span>
+									</div>
+									<p class="m-0 text-xs text-hp-text-muted">Add companions by group and review the list before applying to check-in</p>
+								</div>
 							</div>
 						</div>
-						<div class="reservation-add-companion-layout">
-							<div class="reservation-add-companion-column">
 
-						<!-- Single Companion Form -->
-						<form id="reservationAddSingleForm" class="hidden" data-res-add-content="single" aria-hidden="true">
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-3">
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_first_name">First name</label>
-									<input type="text" name="first_name" id="resadd_first_name" placeholder="Enter first name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_middle_name">Middle name</label>
-									<input type="text" name="middle_name" id="resadd_middle_name" placeholder="Enter middle name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_last_name">Last name</label>
-									<input type="text" name="last_name" id="resadd_last_name" placeholder="Enter last name" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_age">Age</label>
-									<input type="number" name="age" id="resadd_age" min="0" placeholder="Age" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_gender">Gender</label>
-									<select name="gender" id="resadd_gender" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="">Select gender</option>
-										<option value="Male">Male</option>
-										<option value="Female">Female</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_is_foreigner">Nationality</label>
-									<select name="is_foreigner" id="resadd_is_foreigner" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="0" selected>Filipino</option>
-										<option value="1">Foreigner</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_phone">Phone</label>
-									<input type="text" name="phone" id="resadd_phone" placeholder="Phone number" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_email">Email</label>
-									<input type="email" name="email" id="resadd_email" placeholder="Email address" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-300 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-								</div>
-								<div class="guest-form__field-group grid gap-1.5 sm:col-span-3" id="resaddSingleAmenityWrap" style="display: none;">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_amenity">Assign to Amenity</label>
-									<select name="amenity_id" id="resadd_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="" selected>No amenity</option>
-									</select>
-								</div>
-							</div>
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
-										<input type="checkbox" name="pool_access" id="resadd_pool_access" class="h-4 w-4 accent-hp-green">
-										<span>Include Pool Access</span>
-									</label>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
-										<input type="checkbox" name="is_free_entrance" id="resadd_free_entrance" class="h-4 w-4 accent-hp-green">
-										<span><i class="bi bi-ticket-perforated-fill text-amber-600 me-1"></i>Free Entrance Fee</span>
-									</label>
-								</div>
-							</div>
-							<div class="guest-form__field-group grid gap-1.5">
-								<label class="guest-form__label text-sm font-semibold text-hp-text">Fees (auto-computed)</label>
-								<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Adult Entrance (<span id="resaddAdultCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddAdultFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Child Entrance (<span id="resaddChildCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddChildFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Pool Fee (<span id="resaddPoolCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddPoolFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between" id="resaddExtraHeadRow" style="display: none;">
-										<span>Extra Head Fee:</span>
-										<strong class="text-[#e65100] dark:text-[#ffb74d]" id="resaddExtraHeadFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
-										<span>Total:</span>
-										<strong class="text-hp-green" id="resaddTotalFee">₱0.00</strong>
-									</div>
-								</div>
-							</div>
-							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
-								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companion</button>
-							</div>
-						</form>
+						<!-- TWO COLUMN LAYOUT: CREATOR (LEFT) & PREVIEW (RIGHT) -->
+						<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+							<!-- LEFT SIDE: COMPANION CREATOR (6 cols) -->
+							<div class="lg:col-span-6 flex flex-col gap-2.5">
+								<form id="reservationAddSingleForm" class="hidden" aria-hidden="true"></form>
 
-						<!-- Bulk Companion Form -->
-						<form id="reservationAddBulkForm" class="guest-form guest-form--tab-content grid gap-4" data-res-add-content="bulk">
-							<div class="guest-form__grid grid grid-cols-1 gap-4 sm:grid-cols-2">
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text">Gender</label>
-									<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
-										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="gender" value="Male" checked class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span></label>
-										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="gender" value="Female" class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span></label>
+								<!-- Bulk Companion Form -->
+								<form id="reservationAddBulkForm" class="guest-form--tab-content guest-form--tab-content--active grid gap-2.5" action="#">
+									<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-3 sm:p-3.5 grid gap-2.5">
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+											<div class="guest-form__field-group grid gap-1">
+												<label class="guest-form__label text-xs font-semibold text-hp-text">Gender</label>
+												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+													<label class="flex-1 text-center cursor-pointer">
+														<input type="radio" name="gender" value="Male" checked class="peer sr-only">
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Male</span>
+													</label>
+													<label class="flex-1 text-center cursor-pointer">
+														<input type="radio" name="gender" value="Female" class="peer sr-only">
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Female</span>
+													</label>
+												</div>
+											</div>
+											<div class="guest-form__field-group grid gap-1">
+												<label class="guest-form__label text-xs font-semibold text-hp-text">Nationality</label>
+												<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
+													<label class="flex-1 text-center cursor-pointer">
+														<input type="radio" name="is_foreigner" value="0" checked class="peer sr-only">
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span>
+													</label>
+													<label class="flex-1 text-center cursor-pointer">
+														<input type="radio" name="is_foreigner" value="1" class="peer sr-only">
+														<span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span>
+													</label>
+												</div>
+											</div>
+										</div>
+
+										<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+											<div class="guest-form__field-group grid gap-1">
+												<label class="guest-form__label text-xs font-semibold text-hp-text">Age Group</label>
+												<div class="grid grid-cols-2 overflow-hidden rounded-xl border border-glass-border bg-glass text-center">
+													<label class="cursor-pointer border-b border-r border-glass-border">
+														<input type="radio" name="age_group" value="0-12" class="peer sr-only">
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span>
+													</label>
+													<label class="cursor-pointer border-b border-glass-border">
+														<input type="radio" name="age_group" value="13-17" class="peer sr-only">
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span>
+													</label>
+													<label class="cursor-pointer border-r border-glass-border">
+														<input type="radio" name="age_group" value="18-59" checked class="peer sr-only">
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span>
+													</label>
+													<label class="cursor-pointer">
+														<input type="radio" name="age_group" value="60+" class="peer sr-only">
+														<span class="block py-1 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span>
+													</label>
+												</div>
+											</div>
+
+											<div class="guest-form__field-group grid gap-1">
+												<label class="guest-form__label text-xs font-semibold text-hp-text" for="resadd_bulk_quantity">Group Quantity</label>
+												<div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass p-1">
+													<button type="button" id="resAddBulkQtyMinus" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">−</button>
+													<input type="number" name="quantity" id="resadd_bulk_quantity" value="1" min="1" max="500" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="resAddBulkQtyPlus" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text transition-colors hover:bg-black/10">+</button>
+												</div>
+											</div>
+										</div>
+
+										<div class="guest-form__field-group grid gap-1" id="resaddBulkAmenityWrap" style="display: none;">
+											<div class="flex items-center justify-between">
+												<label class="guest-form__label text-xs font-semibold text-hp-text m-0" for="resadd_bulk_amenity">Assign to Amenity</label>
+												<span class="text-[0.68rem] text-hp-text-muted">Optional</span>
+											</div>
+											<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3 py-1.5 text-xs font-semibold text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+												<option value="" selected>No amenity</option>
+											</select>
+											<div id="resaddBulkAmenityBenefitBadge" class="hidden mt-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[0.72rem] font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+												<i class="bi bi-gift-fill text-emerald-600 dark:text-emerald-400 text-xs shrink-0"></i>
+												<span id="resaddBulkAmenityBenefitText">Includes Free Entrance & Free Pool Access</span>
+											</div>
+										</div>
+
+										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="resAddBulkAccessRow">
+											<!-- Free Entrance Compact Stepper Card -->
+											<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="resAddBulkFreeEntranceWrap">
+												<div class="flex items-center justify-between gap-1">
+													<label class="text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_free_passes">
+														<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free <span id="resAddBulkFreeHint">0 of 1 with free entrance</span>
+													</label>
+												</div>
+												<div class="flex items-center gap-1 rounded-lg border border-amber-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
+													<button type="button" id="resAddBulkFreeMinus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease free entrance">−</button>
+													<input type="number" name="free_passes" id="resadd_bulk_free_passes" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-amber-950 dark:text-amber-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="resAddBulkFreePlus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase free entrance">+</button>
+												</div>
+											</div>
+
+											<!-- Pool Access Compact Stepper Card -->
+											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="resAddBulkPoolWrap">
+												<div class="flex items-center justify-between gap-1">
+													<label class="text-[0.7rem] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_pool_passes">
+														<i class="bi bi-water text-sky-600"></i> Pool <span id="resAddBulkPoolHint">0 of 1 with pool access</span>
+													</label>
+												</div>
+												<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
+													<button type="button" id="resAddBulkPoolMinus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool access">−</button>
+													<input type="number" name="pool_passes" id="resadd_bulk_pool_passes" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+													<button type="button" id="resAddBulkPoolPlus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase pool access">+</button>
+												</div>
+											</div>
+										</div>
 									</div>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text">Nationality</label>
-									<div class="flex overflow-hidden rounded-xl border border-glass-border bg-glass">
-										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="is_foreigner" value="0" checked class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white border-r border-glass-border">Filipino</span></label>
-										<label class="flex-1 cursor-pointer text-center"><input type="radio" name="is_foreigner" value="1" class="peer sr-only"><span class="block py-2 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Foreigner</span></label>
+
+									<div class="guest-form__actions flex flex-wrap justify-end pt-1">
+										<button type="submit" class="guest-form__button inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-sm active:scale-[0.98]">
+											<i class="bi bi-people-fill"></i>
+											<span>Add Companions</span>
+										</button>
 									</div>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text">Age Group</label>
-									<div class="grid grid-cols-2 overflow-hidden rounded-xl border border-glass-border bg-glass text-center">
-										<label class="cursor-pointer border-b border-r border-glass-border"><input type="radio" name="age_group" value="0-12" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Kids (0-12)</span></label>
-										<label class="cursor-pointer border-b border-glass-border"><input type="radio" name="age_group" value="13-17" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Teens (13-17)</span></label>
-										<label class="cursor-pointer border-r border-glass-border"><input type="radio" name="age_group" value="18-59" checked class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Adults (18-59)</span></label>
-										<label class="cursor-pointer"><input type="radio" name="age_group" value="60+" class="peer sr-only"><span class="block py-1.5 text-xs font-semibold transition-colors peer-checked:bg-hp-green peer-checked:text-white">Seniors (60+)</span></label>
+								</form>
+							</div>
+
+							<!-- RIGHT SIDE: COMPANION PREVIEW (6 cols) -->
+							<div class="lg:col-span-6 flex flex-col gap-2.5">
+								<div class="rounded-2xl border border-glass-border bg-hp-cream/70 dark:bg-white/5 p-3 sm:p-3.5 shadow-xs flex flex-col">
+									<div class="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/40 pb-2">
+										<div class="flex items-center gap-2">
+											<i class="bi bi-person-lines-fill text-hp-green text-base"></i>
+											<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Staged Companions</h4>
+										</div>
+										<div class="flex items-center gap-2">
+											<span id="reservationAddCompanionPreviewCount" class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
+											<button type="button" id="resAddCompanionClearBtn" class="hidden text-xs font-semibold text-red-500 hover:text-red-700 transition-colors cursor-pointer">
+												Clear
+											</button>
+										</div>
 									</div>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_quantity">Group Quantity</label>
-									<div class="flex items-center gap-1.5 rounded-xl border border-glass-border bg-glass p-1">
-										<button type="button" id="resAddBulkQtyMinus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 text-base font-extrabold text-hp-text">−</button>
-										<input type="number" name="quantity" id="resadd_bulk_quantity" min="1" max="500" value="1" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-lg font-bold text-hp-green-dark focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-										<button type="button" id="resAddBulkQtyPlus" class="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border-0 bg-black/5 text-base font-extrabold text-hp-text">+</button>
+
+									<!-- Scrollable Staged List Container -->
+									<div id="reservationAddCompanionPreviewList" class="grid gap-2 max-h-[170px] sm:max-h-[190px] overflow-y-auto pr-1.5 [scrollbar-width:thin]">
+										<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted py-6">Fill the form on the left to preview companions.</p>
 									</div>
-								</div>
-								<div class="guest-form__field-group sm:col-span-2 rounded-xl border border-glass-border bg-glass p-2.5" id="resaddBulkAmenityWrap" style="display: none;">
-									<label class="guest-form__label text-sm font-semibold text-hp-text" for="resadd_bulk_amenity">Assign to Amenity</label>
-									<select name="amenity_id" id="resadd_bulk_amenity" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm font-semibold text-hp-text transition-colors duration-300 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
-										<option value="" selected>No amenity</option>
-									</select>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
-										<input type="checkbox" name="pool_access" id="resadd_bulk_pool_access" class="h-4 w-4 accent-hp-green">
-										<span id="resaddBulkPoolLabel">Include Pool Access (all 1)</span>
-									</label>
-								</div>
-								<div class="guest-form__field-group grid gap-1.5">
-									<label class="guest-form__checkbox-wrapper flex cursor-pointer items-center gap-2 text-sm text-hp-text">
-										<input type="checkbox" name="is_free_entrance" id="resadd_bulk_free_entrance" class="h-4 w-4 accent-hp-green">
-										<span id="resaddBulkFreeEntranceLabel"><i class="bi bi-ticket-perforated-fill text-amber-600 me-1"></i>Free Entrance Fee (all 1)</span>
-									</label>
+
+									<!-- Live Payment Calculation Card -->
+									<div class="mt-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 dark:bg-emerald-500/10 p-3 flex flex-col gap-1.5 transition-all">
+										<div class="flex items-center justify-between border-b border-emerald-500/20 pb-1.5">
+											<span class="text-[0.7rem] font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+												<i class="bi bi-calculator text-hp-green"></i>
+												Payment Calculation
+											</span>
+											<span id="resAddCalcPeriodBadge" class="rounded-full bg-hp-green/15 px-2 py-0.5 text-[0.68rem] font-bold text-hp-green">
+												Daytime
+											</span>
+										</div>
+										<div class="grid gap-1 text-xs text-hp-text">
+											<div class="flex justify-between items-center text-[0.75rem]">
+												<span class="text-hp-text-muted">Adult Entrance (<span id="resAddCalcAdultCount">0</span>):</span>
+												<span id="resAddCalcAdultSubtotal" class="font-semibold">₱0.00</span>
+											</div>
+											<div class="flex justify-between items-center text-[0.75rem]">
+												<span class="text-hp-text-muted">Child Entrance (<span id="resAddCalcChildCount">0</span>):</span>
+												<span id="resAddCalcChildSubtotal" class="font-semibold">₱0.00</span>
+											</div>
+											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcFreeRow" style="display: none;">
+												<span class="text-amber-800 dark:text-amber-300">Free Passes (<span id="resAddCalcFreeCount">0</span>):</span>
+												<span class="font-semibold text-amber-800 dark:text-amber-300">₱0.00 (Free)</span>
+											</div>
+											<div class="flex justify-between items-center text-[0.75rem]">
+												<span class="text-hp-text-muted">Pool Access (<span id="resAddCalcPoolCount">0</span>):</span>
+												<span id="resAddCalcPoolSubtotal" class="font-semibold">₱0.00</span>
+											</div>
+											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcFreePoolRow" style="display: none;">
+												<span class="text-sky-800 dark:text-sky-300">Free Pool Passes (<span id="resAddCalcFreePoolCount">0</span>):</span>
+												<span class="font-semibold text-sky-800 dark:text-sky-300">₱0.00 (Benefit)</span>
+											</div>
+											<div class="flex justify-between items-center text-[0.75rem]" id="resAddCalcExtraHeadRow" style="display: none;">
+												<span class="text-amber-800 dark:text-amber-300">Extra Capacity (<span id="resAddCalcExtraHeadCount">0</span>):</span>
+												<span id="resAddCalcExtraHeadSubtotal" class="font-semibold text-amber-800 dark:text-amber-300">₱0.00</span>
+											</div>
+											<div class="flex justify-between items-center border-t border-emerald-500/20 pt-1.5 font-bold">
+												<span class="text-xs text-hp-text">Total Calculated:</span>
+												<span id="resAddCalcGrandTotal" class="text-sm font-extrabold text-hp-green-dark dark:text-emerald-400">₱0.00</span>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
-							<div class="guest-form__field-group grid gap-1.5">
-								<label class="guest-form__label text-sm font-semibold text-hp-text">Fees (auto-computed)</label>
-								<div class="guest-form__fees-list flex flex-col gap-1.5 rounded-lg border border-glass-border bg-glass p-3 text-sm text-hp-text-muted">
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Adult Entrance (<span id="resaddBulkAdultCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddBulkAdultFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Child Entrance (<span id="resaddBulkChildCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddBulkChildFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between">
-										<span>Pool Fee (<span id="resaddBulkPoolCount">0</span>):</span>
-										<strong class="text-hp-text" id="resaddBulkPoolFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item flex justify-between" id="resaddBulkExtraHeadRow" style="display: none;">
-										<span>Extra Head Fee:</span>
-										<strong class="text-[#e65100] dark:text-[#ffb74d]" id="resaddBulkExtraHeadFee">₱0.00</strong>
-									</div>
-									<div class="guest-form__fee-item guest-form__fee-item--total flex justify-between border-t border-glass-border pt-2">
-										<span>Total:</span>
-										<strong class="text-hp-green" id="resaddBulkTotalFee">₱0.00</strong>
-									</div>
-								</div>
+						</div>
+
+						<!-- MODAL FOOTER ACTIONS -->
+						<div class="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-3">
+							<div class="text-xs font-semibold text-hp-text-muted flex items-center gap-2">
+								<span id="resAddCompanionFooterSummary">0 companions added so far</span>
+								<span class="text-hp-text-muted/40">•</span>
+								<span>Total: <strong id="resAddFooterTotalPayment" class="text-hp-green-dark dark:text-emerald-400 font-extrabold text-sm">₱0.00</strong></span>
 							</div>
-							<div class="guest-form__actions flex flex-wrap justify-end gap-3">
-								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2.5 text-sm font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
-								<button type="submit" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Add Companions</button>
-							</div>
-						</form>
-							</div>
-							<div class="reservation-add-companion-preview flex min-h-[320px] flex-col rounded-2xl border border-glass-border bg-hp-cream/70 p-4 shadow-xs dark:bg-white/5" id="reservationAddCompanionPreview">
-								<div class="flex items-center justify-between border-b border-glass-border pb-3">
-									<h4 class="m-0 text-sm font-bold text-hp-text dark:text-[#f3f4f6]"><i class="bi bi-person-lines-fill me-1"></i> Staged Companions</h4>
-									<span id="reservationAddCompanionPreviewCount" class="rounded-full bg-hp-green/15 px-2.5 py-0.5 text-xs font-bold text-hp-green">0 companions</span>
-								</div>
-								<div id="reservationAddCompanionPreviewList" class="flex flex-1 flex-col gap-2 py-3">
-									<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Fill the form on the left to preview companions.</p>
-								</div>
-								<button type="button" id="reservationAddAllCompanionsBtn" class="mt-auto inline-flex w-full items-center justify-center gap-2 rounded-xl border-0 bg-hp-green px-4 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-hp-green-dark disabled:cursor-not-allowed disabled:opacity-50" disabled>
-									<i class="bi bi-check2-circle"></i> Add All Companions
+							<div class="flex flex-wrap items-center gap-2.5">
+								<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-reservation-add-companion="true">Cancel</button>
+								<button type="button" id="reservationAddAllCompanionsBtn" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2 text-xs sm:text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50" disabled>
+									<i class="bi bi-receipt text-base"></i>
+									<span>Review & Confirm</span>
 								</button>
 							</div>
 						</div>
+					</div>
+				</div>
+
+				{{-- Confirmation Modal for Adding Companions to Active Reservation --}}
+				<div class="guest-modal guest-modal--compact hidden" id="reservationAddCompanionConfirmModal" aria-hidden="true" style="z-index: 1350 !important;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/75" data-close-res-add-confirm="true"></div>
+					<div class="guest-modal__content guest-modal__content--compact relative z-[1] w-full max-w-[560px] max-h-[min(90vh,820px)] overflow-y-auto rounded-3xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" role="dialog" aria-modal="true" aria-labelledby="resAddConfirmTitle">
+						<button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 text-gray-500 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all duration-200 z-10" data-close-res-add-confirm="true" aria-label="Close confirmation">&times;</button>
+						
+						<!-- Header -->
+						<div class="guest-modal__header mb-4 flex items-center gap-3 border-b border-glass-border pb-3">
+							<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-hp-green/15 text-hp-green">
+								<i class="bi bi-receipt text-xl"></i>
+							</div>
+							<div>
+								<h3 id="resAddConfirmTitle" class="guest-modal__title m-0 font-display text-lg sm:text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Confirm Additional Companion Payment</h3>
+								<p class="m-0 text-xs text-hp-text-muted">Review payment calculation before adding companion(s) to this reservation</p>
+							</div>
+						</div>
+
+						<div class="guest-modal__body grid gap-3.5">
+							<!-- Reservation & Guest Target Banner -->
+							<div class="rounded-2xl border border-glass-border bg-glass/60 dark:bg-white/5 p-3.5 text-xs text-hp-text grid gap-2">
+								<div class="flex justify-between items-center border-b border-glass-border/40 pb-2">
+									<span class="text-hp-text-muted font-semibold">Active Reservation:</span>
+									<strong id="resAddConfirmResNumber" class="font-bold text-hp-text text-sm">#—</strong>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-hp-text-muted font-semibold">Booker Name:</span>
+									<span id="resAddConfirmBookerName" class="font-medium text-hp-text">—</span>
+								</div>
+								<div class="flex justify-between items-center border-t border-glass-border/40 pt-1.5">
+									<span class="text-hp-text-muted font-semibold">New Companions to Add:</span>
+									<span id="resAddConfirmTotalGuests" class="font-bold text-hp-green">0 Guests</span>
+								</div>
+								<div class="text-[0.75rem] text-hp-text-muted" id="resAddConfirmCompanionsSummary">
+									—
+								</div>
+							</div>
+
+							<!-- Itemized Fees Breakdown -->
+							<div class="rounded-2xl border border-glass-border bg-glass p-3.5 text-xs text-hp-text grid gap-2">
+								<div class="flex justify-between items-center border-b border-glass-border/40 pb-1.5">
+									<span class="font-bold text-hp-text-muted uppercase tracking-wider text-[0.7rem]">Fee Breakdown</span>
+									<span id="resAddConfirmPeriodBadge" class="rounded-full bg-hp-green/15 px-2 py-0.5 text-[0.7rem] font-bold text-hp-green">Daytime</span>
+								</div>
+
+								<div class="flex justify-between items-center">
+									<span class="text-hp-text-muted" id="resAddConfirmAdultLabel">Adult Entrance:</span>
+									<span id="resAddConfirmAdultAmount" class="font-medium">₱0.00</span>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-hp-text-muted" id="resAddConfirmChildLabel">Child Entrance:</span>
+									<span id="resAddConfirmChildAmount" class="font-medium">₱0.00</span>
+								</div>
+								<div class="flex justify-between items-center" id="resAddConfirmFreeRow" style="display: none;">
+									<span class="text-amber-800 dark:text-amber-300" id="resAddConfirmFreeLabel">Free Entrance:</span>
+									<span class="font-medium text-amber-800 dark:text-amber-300">₱0.00 (Free)</span>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-hp-text-muted" id="resAddConfirmPoolLabel">Pool Access:</span>
+									<span id="resAddConfirmPoolAmount" class="font-medium">₱0.00</span>
+								</div>
+								<div class="flex justify-between items-center" id="resAddConfirmFreePoolRow" style="display: none;">
+									<span class="text-sky-800 dark:text-sky-300" id="resAddConfirmFreePoolLabel">Free Pool Access:</span>
+									<span class="font-medium text-sky-800 dark:text-sky-300">₱0.00 (Benefit)</span>
+								</div>
+								<div class="flex justify-between items-center" id="resAddConfirmExtraHeadRow" style="display: none;">
+									<span class="text-amber-800 dark:text-amber-300" id="resAddConfirmExtraHeadLabel">Extra Head Fee (Capacity Limit):</span>
+									<span id="resAddConfirmExtraHeadAmount" class="font-medium text-amber-800 dark:text-amber-300">₱0.00</span>
+								</div>
+							</div>
+
+							<!-- Big Highlighted Payment Box -->
+							<div class="rounded-2xl border border-hp-green/30 bg-hp-green/10 p-4 text-center">
+								<span class="block text-xs font-bold uppercase tracking-wider text-hp-green">Total Additional Payment</span>
+								<strong id="resAddConfirmGrandTotal" class="block font-display text-3xl font-extrabold text-hp-green-dark dark:text-[#4ade80] mt-1">₱0.00</strong>
+								<span id="resAddConfirmPaymentBadge" class="mt-1.5 inline-block rounded-full bg-hp-green px-3.5 py-1 text-[0.72rem] font-bold uppercase tracking-wider text-white">To Collect at Counter</span>
+							</div>
+						</div>
+
+						<!-- Action Buttons -->
+						<div class="guest-form__actions mt-5 flex flex-wrap justify-end gap-3 border-t border-glass-border pt-4">
+							<button type="button" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong" data-close-res-add-confirm="true">Back / Edit</button>
+							<button type="button" class="inline-flex items-center gap-2 cursor-pointer rounded-xl border-0 bg-hp-green px-6 py-2.5 text-xs sm:text-sm font-bold text-white transition-all duration-200 hover:bg-hp-green-dark shadow-md active:scale-[0.98]" id="resAddConfirmSubmitBtn">
+								<i class="bi bi-check2-circle text-base"></i>
+								<span>Confirm & Add Companions</span>
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Reservation Edit Companion Group Modal -->
+				<div class="guest-modal hidden" id="resAddGroupEditModal" aria-hidden="true" style="z-index: 1350 !important;">
+					<div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80" data-close-res-group-edit-modal="true"></div>
+					<div class="guest-modal__content relative z-[1] w-full max-w-[560px] !max-h-none !overflow-visible rounded-2xl bg-hp-cream p-5 sm:p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="resAddGroupEditTitle">
+						<button type="button" class="group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs z-10" data-close-res-group-edit-modal="true" aria-label="Close modal">
+							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+						</button>
+
+						<!-- Modal Header -->
+						<div class="mb-3 flex items-center gap-3 border-b border-glass-border/60 pb-3">
+							<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
+								<i class="bi bi-people-fill text-lg"></i>
+							</div>
+							<div>
+								<h3 id="resAddGroupEditTitle" class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Edit Companion Group</h3>
+								<p class="m-0 text-xs text-hp-text-muted">Adjust group size and access privileges</p>
+							</div>
+						</div>
+
+						<!-- Demographics Badge -->
+						<div class="mb-3 flex flex-wrap items-center gap-2">
+							<span id="resAddGroupEditDemographicsBadge" class="inline-flex items-center gap-1.5 rounded-lg bg-hp-green/15 text-hp-green px-3 py-1 text-xs font-bold"></span>
+							<span id="resAddGroupEditAmenityBadge" class="hidden inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-2.5 py-1 text-xs font-bold"></span>
+						</div>
+
+						<form id="resAddGroupEditForm" class="grid gap-3" action="#">
+							<input type="hidden" id="resAddGroupEditIndex" value="-1">
+
+							<!-- Row 1: Group Quantity -->
+							<div class="flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/60 dark:bg-white/5 px-3.5 py-2.5">
+								<div>
+									<label class="text-sm font-bold text-hp-text dark:text-[#f3f4f6] flex items-center gap-2 cursor-pointer m-0" for="resAddGroupEditQuantityInput">
+										<i class="bi bi-people text-hp-green text-base"></i> Group Quantity
+									</label>
+									<p class="m-0 text-xs text-hp-text-muted">Total number of guests in this group</p>
+								</div>
+								<div class="flex items-center gap-1 rounded-lg border border-glass-border bg-white/90 dark:bg-black/30 p-1 shadow-2xs">
+									<button type="button" id="resAddGroupEditQtyMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Decrease quantity">−</button>
+									<input type="number" id="resAddGroupEditQuantityInput" min="1" max="500" value="1" class="no-spinners m-0 w-14 border-0 bg-transparent text-center font-display text-base font-bold text-hp-green-dark dark:text-hp-green focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+									<button type="button" id="resAddGroupEditQtyPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-base font-extrabold text-hp-text hover:bg-black/10 active:scale-95 transition-all" title="Increase quantity">+</button>
+								</div>
+							</div>
+
+							<!-- Row 2: Free Entrance & Pool Access -->
+							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="resAddGroupEditAccessRow">
+								<!-- Free Entrance Access -->
+								<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-3 flex flex-col justify-between gap-2 transition-all">
+									<div class="flex items-center justify-between gap-1.5">
+										<label class="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="resAddGroupEditFreeInput">
+											<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm"></i> Free Entrance
+										</label>
+										<span class="text-xs font-bold text-amber-800 dark:text-amber-300 shrink-0" id="resAddGroupEditFreeHint">0 of 1</span>
+									</div>
+									<div class="flex items-center gap-1 rounded-lg border border-amber-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
+										<button type="button" id="resAddGroupEditFreeMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all">−</button>
+										<input type="number" id="resAddGroupEditFreeInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-amber-950 dark:text-amber-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+										<button type="button" id="resAddGroupEditFreePlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-amber-900 dark:text-amber-200 hover:bg-black/10 active:scale-95 transition-all">+</button>
+									</div>
+									<div class="flex items-center justify-end gap-1.5 pt-0.5">
+										<button type="button" id="resAddGroupEditFreeZeroBtn" class="cursor-pointer rounded-lg border border-amber-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all">None (0)</button>
+										<button type="button" id="resAddGroupEditFreeAllBtn" class="cursor-pointer rounded-lg border border-amber-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all">All Free</button>
+									</div>
+								</div>
+
+								<!-- Pool Access Passes -->
+								<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all">
+									<div class="flex items-center justify-between gap-1.5">
+										<label class="text-xs font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="resAddGroupEditPoolInput">
+											<i class="bi bi-water text-sky-600 text-sm"></i> Pool Passes
+										</label>
+										<span class="text-xs font-bold text-sky-800 dark:text-sky-300 shrink-0" id="resAddGroupEditPoolHint">0 of 1</span>
+									</div>
+									<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/95 dark:bg-black/30 p-1 shadow-2xs">
+										<button type="button" id="resAddGroupEditPoolMinusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all">−</button>
+										<input type="number" id="resAddGroupEditPoolInput" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-sm font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
+										<button type="button" id="resAddGroupEditPoolPlusBtn" class="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-sm font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all">+</button>
+									</div>
+									<div class="flex items-center justify-end gap-1.5 pt-0.5">
+										<button type="button" id="resAddGroupEditPoolZeroBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">None (0)</button>
+										<button type="button" id="resAddGroupEditPoolAllBtn" class="cursor-pointer rounded-lg border border-sky-500/25 bg-white/80 dark:bg-white/10 px-2.5 py-1 text-xs font-bold text-sky-800 dark:text-sky-300 hover:bg-sky-500/20 active:scale-95 transition-all">All Pool</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Actions -->
+							<div class="mt-1 flex items-center justify-end gap-2.5 border-t border-glass-border/60 pt-3">
+								<button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs sm:text-sm font-semibold text-hp-text transition-colors hover:bg-glass-hover" data-close-res-group-edit-modal="true">Cancel</button>
+								<button type="submit" class="inline-flex items-center gap-1.5 cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs transition-all hover:bg-hp-green-dark active:scale-[0.98]">
+									<i class="bi bi-check-lg text-sm"></i>
+									<span>Apply Changes</span>
+								</button>
+							</div>
+						</form>
 					</div>
 				</div>
 
@@ -3715,6 +3922,7 @@
 		window.SERVER_CURRENT_SESSION = "{{ ($currentPeriod ?? '') === 'nighttime' ? 'Nighttime' : 'Daytime' }}";
 		window.AVAILABLE_AMENITY_IDS = @json($availableAmenityIds ?? []);
 		window.OCCUPIED_TODAY_AMENITY_IDS = @json($occupiedTodayAmenityIds ?? []);
+		window.parkSettings = @json($settings ?? null);
 	</script>
 </body>
 </html>

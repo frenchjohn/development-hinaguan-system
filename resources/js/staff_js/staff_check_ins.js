@@ -702,16 +702,21 @@ window.AppPage['staff_check_ins'] = function () {
                 const companionCards = individualCompanions.map((guest) => {
                     const customer = guest.customer;
                     const fullName = [customer.first_name, customer.middle_name || '', customer.last_name].filter(Boolean).join(' ');
-                    const poolLabel = guest.has_pool_access ? 'Pool Pass' : 'Standard';
+                    const poolBadge = guest.has_pool_access
+                        ? '<span class="ms-1 inline-flex items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/15 px-1.5 py-0.5 text-[0.62rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water"></i>Pool Pass</span>'
+                        : '<span class="ms-1 rounded-md border border-slate-400/30 bg-slate-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-slate-700 dark:text-slate-300">Standard</span>';
                     return `<button type="button" class="ci-guest-card w-full cursor-pointer text-left transition-colors hover:border-hp-green/50" data-guest-id="${guest.customer_id || ''}">
                         <div class="ci-guest-icon ${guest.has_pool_access ? 'guest-avatar-glow--pool' : ''}"><i class="bi bi-person-fill"></i></div>
-                        <div class="ci-guest-info"><div class="ci-guest-role">COMPANION <span class="ms-1 rounded-md border border-slate-400/30 bg-slate-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold">${poolLabel}</span></div><div class="ci-guest-name">${escapeHtml(fullName)}</div><div class="ci-guest-meta">${customer.age || 'N/A'} yrs &bull; ${customer.gender || 'N/A'} &bull; ${customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div></div>
+                        <div class="ci-guest-info"><div class="ci-guest-role flex items-center flex-wrap gap-1"><span>COMPANION</span>${poolBadge}</div><div class="ci-guest-name">${escapeHtml(fullName)}</div><div class="ci-guest-meta">${customer.age || 'N/A'} yrs &bull; ${customer.gender || 'N/A'} &bull; ${customer.is_foreigner ? 'Foreigner' : 'Filipino'}</div></div>
                     </button>`;
                 }).join('');
 
                 const bulkCards = Object.values(bulkGroups).map((group) => {
                     const poolCount = group.poolCount;
-                    return `<div class="ci-guest-card" style="align-items: flex-start;"><div class="ci-guest-icon"><i class="bi bi-people-fill"></i></div><div class="ci-guest-info"><div class="ci-guest-role">COMPANIONS <span class="ms-1 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-cyan-700">${group.count} guests</span></div><div class="ci-guest-name">${escapeHtml(group.gender)} · ${escapeHtml(ageGroupLabel(group.age))} · ${escapeHtml(group.status)}</div><div class="ci-guest-meta">${poolCount} with pool access &bull; ${group.count - poolCount} standard</div></div></div>`;
+                    const bulkPoolBadge = poolCount > 0
+                        ? `<span class="ms-1 inline-flex items-center gap-1 rounded-md border border-sky-500/30 bg-sky-500/15 px-1.5 py-0.5 text-[0.62rem] font-bold text-sky-700 dark:text-sky-300"><i class="bi bi-water"></i>${poolCount} Pool</span>`
+                        : '';
+                    return `<div class="ci-guest-card" style="align-items: flex-start;"><div class="ci-guest-icon"><i class="bi bi-people-fill"></i></div><div class="ci-guest-info"><div class="ci-guest-role flex items-center flex-wrap gap-1"><span>COMPANIONS</span><span class="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[0.62rem] font-bold text-cyan-700">${group.count} guests</span>${bulkPoolBadge}</div><div class="ci-guest-name">${escapeHtml(group.gender)} · ${escapeHtml(ageGroupLabel(group.age))} · ${escapeHtml(group.status)}</div><div class="ci-guest-meta">${poolCount > 0 ? `<strong class="text-sky-700 dark:text-sky-300">${poolCount} with pool access</strong>` : '0 with pool access'} &bull; ${group.count - poolCount} standard</div></div></div>`;
                 }).join('');
 
                 return `
@@ -4656,8 +4661,12 @@ window.AppPage['staff_check_ins'] = function () {
         daytime_start: '06:00',
         daytime_end: '18:00',
         nighttime_start: '18:00',
-        nighttime_end: '06:00'
+        nighttime_end: '06:00',
+        ...(window.parkSettings || {})
     };
+    if (window.parkSettings) {
+        parkSettings = { ...parkSettings, ...window.parkSettings };
+    }
 
     // Calculate slots count for a continuous range
     const calculateWalkInSlots = (startDate, endDate, startSlot = 'Daytime', endSlot = 'Daytime') => {
@@ -5200,6 +5209,9 @@ window.AppPage['staff_check_ins'] = function () {
 
     // Load park settings from server
     const loadParkSettings = async () => {
+        if (window.parkSettings) {
+            parkSettings = { ...parkSettings, ...window.parkSettings };
+        }
         try {
             const response = await fetch('/api/park-settings');
             if (response.ok) {
@@ -5211,6 +5223,9 @@ window.AppPage['staff_check_ins'] = function () {
             console.error('Failed to load park settings:', error);
         }
     };
+
+    // Load settings on page initialization
+    loadParkSettings();
 
     // Pool Policy UI Controls
     const walkInEntranceOption = document.getElementById('walkInEntranceOption');
@@ -9530,39 +9545,490 @@ window.AppPage['staff_check_ins'] = function () {
     const resAddCompanionModal = document.getElementById('reservationAddCompanionModal');
     const resAddCompanionFor = document.getElementById('reservationAddCompanionFor');
     const resAddCloseButtons = document.querySelectorAll('[data-close-reservation-add-companion="true"]');
-    const resAddSingleForm = document.getElementById('reservationAddSingleForm');
     const resAddBulkForm = document.getElementById('reservationAddBulkForm');
     const resAddPreviewList = document.getElementById('reservationAddCompanionPreviewList');
     const resAddPreviewCount = document.getElementById('reservationAddCompanionPreviewCount');
+    const resAddCompanionClearBtn = document.getElementById('resAddCompanionClearBtn');
+    const resAddCompanionFooterSummary = document.getElementById('resAddCompanionFooterSummary');
     const resAddAllCompanionsBtn = document.getElementById('reservationAddAllCompanionsBtn');
-    const resAddTabs = document.querySelectorAll('[data-res-add-tab]');
-    const resAddContents = document.querySelectorAll('[data-res-add-content]');
     const resAddBulkQtyMinus = document.getElementById('resAddBulkQtyMinus');
     const resAddBulkQtyPlus = document.getElementById('resAddBulkQtyPlus');
+    const resAddBulkFreeMinus = document.getElementById('resAddBulkFreeMinus');
+    const resAddBulkFreePlus = document.getElementById('resAddBulkFreePlus');
+    const resAddBulkPoolMinus = document.getElementById('resAddBulkPoolMinus');
+    const resAddBulkPoolPlus = document.getElementById('resAddBulkPoolPlus');
     let resAddStagedCompanions = [];
+
+    // Group edit modal elements
+    const resAddGroupEditModal = document.getElementById('resAddGroupEditModal');
+    const resAddGroupEditForm = document.getElementById('resAddGroupEditForm');
+    const resAddGroupEditIndex = document.getElementById('resAddGroupEditIndex');
+    const resAddGroupEditDemographicsBadge = document.getElementById('resAddGroupEditDemographicsBadge');
+    const resAddGroupEditAmenityBadge = document.getElementById('resAddGroupEditAmenityBadge');
+    const resAddGroupEditQuantityInput = document.getElementById('resAddGroupEditQuantityInput');
+    const resAddGroupEditQtyMinusBtn = document.getElementById('resAddGroupEditQtyMinusBtn');
+    const resAddGroupEditQtyPlusBtn = document.getElementById('resAddGroupEditQtyPlusBtn');
+    const resAddGroupEditFreeInput = document.getElementById('resAddGroupEditFreeInput');
+    const resAddGroupEditFreeHint = document.getElementById('resAddGroupEditFreeHint');
+    const resAddGroupEditFreeMinusBtn = document.getElementById('resAddGroupEditFreeMinusBtn');
+    const resAddGroupEditFreePlusBtn = document.getElementById('resAddGroupEditFreePlusBtn');
+    const resAddGroupEditFreeZeroBtn = document.getElementById('resAddGroupEditFreeZeroBtn');
+    const resAddGroupEditFreeAllBtn = document.getElementById('resAddGroupEditFreeAllBtn');
+    const resAddGroupEditPoolInput = document.getElementById('resAddGroupEditPoolInput');
+    const resAddGroupEditPoolHint = document.getElementById('resAddGroupEditPoolHint');
+    const resAddGroupEditPoolMinusBtn = document.getElementById('resAddGroupEditPoolMinusBtn');
+    const resAddGroupEditPoolPlusBtn = document.getElementById('resAddGroupEditPoolPlusBtn');
+    const resAddGroupEditPoolZeroBtn = document.getElementById('resAddGroupEditPoolZeroBtn');
+    const resAddGroupEditPoolAllBtn = document.getElementById('resAddGroupEditPoolAllBtn');
+
+    // Live calculation elements
+    const resAddCalcPeriodBadge = document.getElementById('resAddCalcPeriodBadge');
+    const resAddCalcAdultCount = document.getElementById('resAddCalcAdultCount');
+    const resAddCalcAdultSubtotal = document.getElementById('resAddCalcAdultSubtotal');
+    const resAddCalcChildCount = document.getElementById('resAddCalcChildCount');
+    const resAddCalcChildSubtotal = document.getElementById('resAddCalcChildSubtotal');
+    const resAddCalcFreeRow = document.getElementById('resAddCalcFreeRow');
+    const resAddCalcFreeCount = document.getElementById('resAddCalcFreeCount');
+    const resAddCalcPoolCount = document.getElementById('resAddCalcPoolCount');
+    const resAddCalcPoolSubtotal = document.getElementById('resAddCalcPoolSubtotal');
+    const resAddCalcFreePoolRow = document.getElementById('resAddCalcFreePoolRow');
+    const resAddCalcFreePoolCount = document.getElementById('resAddCalcFreePoolCount');
+    const resAddCalcExtraHeadRow = document.getElementById('resAddCalcExtraHeadRow');
+    const resAddCalcExtraHeadCount = document.getElementById('resAddCalcExtraHeadCount');
+    const resAddCalcExtraHeadSubtotal = document.getElementById('resAddCalcExtraHeadSubtotal');
+    const resAddCalcGrandTotal = document.getElementById('resAddCalcGrandTotal');
+    const resAddFooterTotalPayment = document.getElementById('resAddFooterTotalPayment');
+
+    // Add companion confirmation modal elements
+    const resAddConfirmModal = document.getElementById('reservationAddCompanionConfirmModal');
+    const resAddConfirmCloseButtons = document.querySelectorAll('[data-close-res-add-confirm="true"]');
+    const resAddConfirmSubmitBtn = document.getElementById('resAddConfirmSubmitBtn');
+    const resAddConfirmResNumber = document.getElementById('resAddConfirmResNumber');
+    const resAddConfirmBookerName = document.getElementById('resAddConfirmBookerName');
+    const resAddConfirmTotalGuests = document.getElementById('resAddConfirmTotalGuests');
+    const resAddConfirmCompanionsSummary = document.getElementById('resAddConfirmCompanionsSummary');
+    const resAddConfirmPeriodBadge = document.getElementById('resAddConfirmPeriodBadge');
+    const resAddConfirmAdultLabel = document.getElementById('resAddConfirmAdultLabel');
+    const resAddConfirmAdultAmount = document.getElementById('resAddConfirmAdultAmount');
+    const resAddConfirmChildLabel = document.getElementById('resAddConfirmChildLabel');
+    const resAddConfirmChildAmount = document.getElementById('resAddConfirmChildAmount');
+    const resAddConfirmFreeRow = document.getElementById('resAddConfirmFreeRow');
+    const resAddConfirmFreeLabel = document.getElementById('resAddConfirmFreeLabel');
+    const resAddConfirmPoolLabel = document.getElementById('resAddConfirmPoolLabel');
+    const resAddConfirmPoolAmount = document.getElementById('resAddConfirmPoolAmount');
+    const resAddConfirmFreePoolRow = document.getElementById('resAddConfirmFreePoolRow');
+    const resAddConfirmFreePoolLabel = document.getElementById('resAddConfirmFreePoolLabel');
+    const resAddConfirmExtraHeadRow = document.getElementById('resAddConfirmExtraHeadRow');
+    const resAddConfirmExtraHeadLabel = document.getElementById('resAddConfirmExtraHeadLabel');
+    const resAddConfirmExtraHeadAmount = document.getElementById('resAddConfirmExtraHeadAmount');
+    const resAddConfirmGrandTotal = document.getElementById('resAddConfirmGrandTotal');
+    const resAddConfirmPaymentBadge = document.getElementById('resAddConfirmPaymentBadge');
+
+    const resAddCalculatePayment = () => {
+        const res = (window.staffReservationData && window.staffReservationData[currentReservationId])
+            || (typeof reservationData !== 'undefined' ? reservationData[currentReservationId] : null);
+
+        let effectivePeriod = 'daytime';
+        const entranceFeePricing = res?.entrance_fee?.pricing_type;
+        if (entranceFeePricing === 'Nighttime') {
+            effectivePeriod = 'nighttime';
+        } else if (entranceFeePricing === 'DayToNight' || entranceFeePricing === 'NightToDay') {
+            effectivePeriod = 'daytonight';
+        } else if (res?.reservation_amenities && res.reservation_amenities.length > 0) {
+            const firstAmenityPricing = String(res.reservation_amenities[0]?.pricing_type || '');
+            if (firstAmenityPricing.includes('NightToDay') || firstAmenityPricing.includes('DayToNight')) {
+                effectivePeriod = 'daytonight';
+            } else if (firstAmenityPricing.includes('Nighttime') || firstAmenityPricing.endsWith('Night')) {
+                effectivePeriod = 'nighttime';
+            } else {
+                effectivePeriod = 'daytime';
+            }
+        } else if (res?.start_slot === 'Nighttime' || res?.end_slot === 'Nighttime') {
+            effectivePeriod = 'nighttime';
+        }
+
+        const activeSettings = {
+            ...parkSettings,
+            ...(window.parkSettings || {})
+        };
+
+        const dayAdult = parseFloat(activeSettings.daytime_adult_entrance_fee) || 0;
+        const dayChild = parseFloat(activeSettings.daytime_child_entrance_fee) || 0;
+        const nightAdult = parseFloat(activeSettings.nighttime_adult_entrance_fee) || 0;
+        const nightChild = parseFloat(activeSettings.nighttime_child_entrance_fee) || 0;
+        const dayPool = parseFloat(activeSettings.day_pool_fee) || 0;
+        const nightPool = parseFloat(activeSettings.nightpool_fee || activeSettings.night_pool_fee) || 0;
+
+        let adultRate = dayAdult;
+        let childRate = dayChild;
+        let poolRate = dayPool;
+        let periodName = 'Daytime';
+
+        if (effectivePeriod === 'nighttime') {
+            adultRate = nightAdult;
+            childRate = nightChild;
+            poolRate = nightPool;
+            periodName = 'Nighttime';
+        } else if (effectivePeriod === 'daytonight') {
+            adultRate = dayAdult + nightAdult;
+            childRate = dayChild + nightChild;
+            poolRate = dayPool + nightPool;
+            periodName = 'Day & Night';
+        }
+
+        const resAmenities = res?.reservation_amenities || [];
+
+        let adultCount = 0;
+        let childCount = 0;
+        let payingAdultCount = 0;
+        let payingChildCount = 0;
+        let freeCount = 0;
+        let poolCount = 0;
+        let payingPoolCount = 0;
+        let freePoolCount = 0;
+        let totalGuests = 0;
+        const amenityNamesSet = new Set();
+
+        resAddStagedCompanions.forEach(group => {
+            const qty = Math.max(parseInt(group.quantity, 10) || 1, 1);
+            let freePasses = Math.min(Math.max(0, parseInt(group.free_passes, 10) || 0), qty);
+            let poolPasses = Math.min(Math.max(0, parseInt(group.pool_passes, 10) || 0), qty);
+
+            // Apply amenity benefits if companion group is assigned to an amenity with benefits
+            let hasFreeEntranceBenefit = false;
+            let hasFreePoolBenefit = false;
+            if (group.amenity_id) {
+                const ra = resAmenities.find(a => String(a.amenity_id || a.amenity?.id || a.id) === String(group.amenity_id));
+                if (ra) {
+                    hasFreeEntranceBenefit = Boolean(ra.free_entrance || ra.amenity?.benefits?.free_entrance);
+                    hasFreePoolBenefit = Boolean(ra.free_pool || ra.amenity?.benefits?.free_pool);
+                }
+            }
+
+            if (hasFreeEntranceBenefit) {
+                freePasses = qty;
+            }
+            if (hasFreePoolBenefit) {
+                poolPasses = qty;
+            }
+
+            const isChild = (group.age_group === '0-12' || parseInt(group.age, 10) <= 12);
+
+            totalGuests += qty;
+            freeCount += freePasses;
+            poolCount += poolPasses;
+
+            if (hasFreePoolBenefit) {
+                freePoolCount += poolPasses;
+            } else {
+                payingPoolCount += poolPasses;
+            }
+
+            if (group.amenity_name) {
+                amenityNamesSet.add(group.amenity_name);
+            }
+
+            if (isChild) {
+                childCount += qty;
+                payingChildCount += Math.max(0, qty - freePasses);
+            } else {
+                adultCount += qty;
+                payingAdultCount += Math.max(0, qty - freePasses);
+            }
+        });
+
+        // Extra head capacity fee: ONLY charged for companions assigned to an amenity whose capacity is exceeded
+        let extraHeadCount = 0;
+        let extraHeadFee = 0;
+        if (resAmenities.length > 0) {
+            let existingGuestsCount = (res?.reservation_guests || []).filter(g => !g.checked_out_at).length;
+
+            resAddStagedCompanions.forEach(group => {
+                const qty = Math.max(parseInt(group.quantity, 10) || 1, 1);
+                // "No amenity" does NOT take up amenity capacity and does NOT incur extra head fee!
+                if (!group.amenity_id) {
+                    return;
+                }
+                const cAmId = String(group.amenity_id);
+                const ra = resAmenities.find(a => String(a.amenity_id || a.amenity?.id || a.id) === cAmId);
+                const am = ra?.amenity || ra;
+
+                if (am) {
+                    const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '')
+                        ? parseInt(am.maximum_capacity, 10) : null;
+                    const perHeadFee = parseFloat(am.additional_per_head) || 0;
+
+                    for (let i = 0; i < qty; i++) {
+                        if (maxCap !== null && existingGuestsCount >= maxCap) {
+                            extraHeadFee += perHeadFee;
+                            extraHeadCount++;
+                        }
+                        existingGuestsCount++;
+                    }
+                }
+            });
+        }
+
+        const adultSubtotal = Math.round(payingAdultCount * adultRate * 100) / 100;
+        const childSubtotal = Math.round(payingChildCount * childRate * 100) / 100;
+        const entranceSubtotal = Math.round((adultSubtotal + childSubtotal) * 100) / 100;
+        const poolSubtotal = Math.round(payingPoolCount * poolRate * 100) / 100;
+        const extraHeadSubtotal = Math.round(extraHeadFee * 100) / 100;
+        const totalPayment = Math.round((entranceSubtotal + poolSubtotal + extraHeadSubtotal) * 100) / 100;
+
+        return {
+            effectivePeriod,
+            periodName,
+            adultRate,
+            childRate,
+            poolRate,
+            totalGuests,
+            adultCount,
+            childCount,
+            payingAdultCount,
+            payingChildCount,
+            freeCount,
+            poolCount,
+            payingPoolCount,
+            freePoolCount,
+            extraHeadCount,
+            adultSubtotal,
+            childSubtotal,
+            entranceSubtotal,
+            poolSubtotal,
+            extraHeadSubtotal,
+            totalPayment,
+            amenityNames: Array.from(amenityNamesSet).join(', ')
+        };
+    };
+
+    const resAddUpdateCalculationUI = () => {
+        const calc = resAddCalculatePayment();
+        if (resAddCalcPeriodBadge) resAddCalcPeriodBadge.textContent = calc.periodName;
+        if (resAddCalcAdultCount) resAddCalcAdultCount.textContent = `${calc.payingAdultCount} paying`;
+        if (resAddCalcAdultSubtotal) resAddCalcAdultSubtotal.textContent = `₱${calc.adultSubtotal.toFixed(2)}`;
+        if (resAddCalcChildCount) resAddCalcChildCount.textContent = `${calc.payingChildCount} paying`;
+        if (resAddCalcChildSubtotal) resAddCalcChildSubtotal.textContent = `₱${calc.childSubtotal.toFixed(2)}`;
+        if (resAddCalcFreeRow) resAddCalcFreeRow.style.display = calc.freeCount > 0 ? 'flex' : 'none';
+        if (resAddCalcFreeCount) resAddCalcFreeCount.textContent = calc.freeCount;
+        if (resAddCalcPoolCount) {
+            resAddCalcPoolCount.textContent = `${calc.payingPoolCount} paying${calc.freePoolCount > 0 ? ` (${calc.freePoolCount} free)` : ''}`;
+        }
+        if (resAddCalcPoolSubtotal) resAddCalcPoolSubtotal.textContent = `₱${calc.poolSubtotal.toFixed(2)}`;
+        if (resAddCalcFreePoolRow) resAddCalcFreePoolRow.style.display = calc.freePoolCount > 0 ? 'flex' : 'none';
+        if (resAddCalcFreePoolCount) resAddCalcFreePoolCount.textContent = calc.freePoolCount;
+        if (resAddCalcExtraHeadRow) resAddCalcExtraHeadRow.style.display = calc.extraHeadCount > 0 ? 'flex' : 'none';
+        if (resAddCalcExtraHeadCount) resAddCalcExtraHeadCount.textContent = calc.extraHeadCount;
+        if (resAddCalcExtraHeadSubtotal) resAddCalcExtraHeadSubtotal.textContent = `₱${calc.extraHeadSubtotal.toFixed(2)}`;
+        if (resAddCalcGrandTotal) resAddCalcGrandTotal.textContent = `₱${calc.totalPayment.toFixed(2)}`;
+        if (resAddFooterTotalPayment) resAddFooterTotalPayment.textContent = `₱${calc.totalPayment.toFixed(2)}`;
+        return calc;
+    };
+
+    const openResAddConfirmModal = () => {
+        if (!currentReservationId || !resAddStagedCompanions.length) return;
+
+        const res = (window.staffReservationData && window.staffReservationData[currentReservationId])
+            || (typeof reservationData !== 'undefined' ? reservationData[currentReservationId] : null);
+        const calc = resAddCalculatePayment();
+
+        if (resAddConfirmResNumber) resAddConfirmResNumber.textContent = `#${currentReservationId}`;
+        if (resAddConfirmBookerName) resAddConfirmBookerName.textContent = res?.booker_name || 'Guest';
+        if (resAddConfirmTotalGuests) resAddConfirmTotalGuests.textContent = `${calc.totalGuests} Guest${calc.totalGuests === 1 ? '' : 's'}`;
+
+        const summaryParts = [];
+        if (calc.adultCount > 0) summaryParts.push(`${calc.adultCount} Adult${calc.adultCount === 1 ? '' : 's'}`);
+        if (calc.childCount > 0) summaryParts.push(`${calc.childCount} Child${calc.childCount === 1 ? '' : 'ren'}`);
+        if (calc.freeCount > 0) summaryParts.push(`${calc.freeCount} Free Entrance`);
+        if (calc.payingPoolCount > 0) summaryParts.push(`${calc.payingPoolCount} Paying Pool`);
+        if (calc.freePoolCount > 0) summaryParts.push(`${calc.freePoolCount} Free Pool`);
+        if (calc.amenityNames) summaryParts.push(`Assigned: ${calc.amenityNames}`);
+        if (resAddConfirmCompanionsSummary) resAddConfirmCompanionsSummary.textContent = summaryParts.join(' • ');
+
+        if (resAddConfirmPeriodBadge) resAddConfirmPeriodBadge.textContent = calc.periodName;
+        if (resAddConfirmAdultLabel) resAddConfirmAdultLabel.textContent = `Adult Entrance (${calc.payingAdultCount} × ₱${calc.adultRate.toFixed(2)}):`;
+        if (resAddConfirmAdultAmount) resAddConfirmAdultAmount.textContent = `₱${calc.adultSubtotal.toFixed(2)}`;
+        if (resAddConfirmChildLabel) resAddConfirmChildLabel.textContent = `Child Entrance (${calc.payingChildCount} × ₱${calc.childRate.toFixed(2)}):`;
+        if (resAddConfirmChildAmount) resAddConfirmChildAmount.textContent = `₱${calc.childSubtotal.toFixed(2)}`;
+
+        if (resAddConfirmFreeRow) resAddConfirmFreeRow.style.display = calc.freeCount > 0 ? 'flex' : 'none';
+        if (resAddConfirmFreeLabel) resAddConfirmFreeLabel.textContent = `Free Entrance (${calc.freeCount} passes):`;
+
+        if (resAddConfirmPoolLabel) resAddConfirmPoolLabel.textContent = `Pool Access (${calc.payingPoolCount} × ₱${calc.poolRate.toFixed(2)}):`;
+        if (resAddConfirmPoolAmount) resAddConfirmPoolAmount.textContent = `₱${calc.poolSubtotal.toFixed(2)}`;
+
+        if (resAddConfirmFreePoolRow) resAddConfirmFreePoolRow.style.display = calc.freePoolCount > 0 ? 'flex' : 'none';
+        if (resAddConfirmFreePoolLabel) resAddConfirmFreePoolLabel.textContent = `Free Pool Access (${calc.freePoolCount} passes from amenity benefit):`;
+
+        if (resAddConfirmExtraHeadRow) resAddConfirmExtraHeadRow.style.display = calc.extraHeadCount > 0 ? 'flex' : 'none';
+        if (resAddConfirmExtraHeadLabel) resAddConfirmExtraHeadLabel.textContent = `Extra Capacity (${calc.extraHeadCount} × head fee):`;
+        if (resAddConfirmExtraHeadAmount) resAddConfirmExtraHeadAmount.textContent = `₱${calc.extraHeadSubtotal.toFixed(2)}`;
+
+        if (resAddConfirmGrandTotal) resAddConfirmGrandTotal.textContent = `₱${calc.totalPayment.toFixed(2)}`;
+        if (resAddConfirmPaymentBadge) {
+            resAddConfirmPaymentBadge.textContent = calc.totalPayment > 0 ? 'To Collect at Counter' : 'No Payment Required (Free)';
+            if (calc.totalPayment > 0) {
+                resAddConfirmPaymentBadge.className = 'mt-1.5 inline-block rounded-full bg-hp-green px-3.5 py-1 text-[0.72rem] font-bold uppercase tracking-wider text-white';
+            } else {
+                resAddConfirmPaymentBadge.className = 'mt-1.5 inline-block rounded-full bg-emerald-700/80 px-3.5 py-1 text-[0.72rem] font-bold uppercase tracking-wider text-white';
+            }
+        }
+
+        if (resAddConfirmSubmitBtn) {
+            resAddConfirmSubmitBtn.disabled = false;
+            resAddConfirmSubmitBtn.innerHTML = '<i class="bi bi-check2-circle text-base"></i> <span>Confirm & Add Companions</span>';
+        }
+
+        resAddConfirmModal?.classList.add('is-open');
+        resAddConfirmModal?.classList.remove('hidden');
+        resAddConfirmModal?.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeResAddConfirmModal = () => {
+        resAddConfirmModal?.classList.remove('is-open');
+        resAddConfirmModal?.classList.add('hidden');
+        resAddConfirmModal?.setAttribute('aria-hidden', 'true');
+    };
+
+    const resAddSyncBulkHints = () => {
+        const qtyInput = document.getElementById('resadd_bulk_quantity');
+        const qty = Math.min(Math.max(parseInt(qtyInput?.value, 10) || 1, 1), 500);
+        const freeInput = document.getElementById('resadd_bulk_free_passes');
+        const poolInput = document.getElementById('resadd_bulk_pool_passes');
+        const freeHint = document.getElementById('resAddBulkFreeHint');
+        const poolHint = document.getElementById('resAddBulkPoolHint');
+
+        let freeVal = parseInt(freeInput?.value, 10) || 0;
+        if (freeVal > qty) freeVal = qty;
+        if (freeVal < 0) freeVal = 0;
+        if (freeInput) {
+            freeInput.value = freeVal;
+            freeInput.max = qty;
+        }
+        if (freeHint) {
+            freeHint.textContent = `${freeVal} of ${qty} with free entrance`;
+        }
+
+        let poolVal = parseInt(poolInput?.value, 10) || 0;
+        if (poolVal > qty) poolVal = qty;
+        if (poolVal < 0) poolVal = 0;
+        if (poolInput) {
+            poolInput.value = poolVal;
+            poolInput.max = qty;
+        }
+        if (poolHint) {
+            poolHint.textContent = `${poolVal} of ${qty} with pool access`;
+        }
+    };
 
     const resAddRenderPreview = () => {
         if (!resAddPreviewList || !resAddPreviewCount) return;
 
-        const total = resAddStagedCompanions.length;
-        resAddPreviewCount.textContent = `${total} companion${total === 1 ? '' : 's'}`;
-        if (resAddAllCompanionsBtn) resAddAllCompanionsBtn.disabled = total === 0;
+        const totalGuests = resAddStagedCompanions.reduce((acc, c) => acc + (parseInt(c.quantity, 10) || 1), 0);
+        const totalPool = resAddStagedCompanions.reduce((acc, c) => acc + (parseInt(c.pool_passes, 10) || 0), 0);
 
-        if (total === 0) {
-            resAddPreviewList.innerHTML = '<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Add companions from the form on the left to see them here.</p>';
+        resAddPreviewCount.textContent = `${totalGuests} companion${totalGuests === 1 ? '' : 's'}${totalPool > 0 ? ` (${totalPool} pool)` : ''}`;
+        if (resAddCompanionFooterSummary) {
+            resAddCompanionFooterSummary.textContent = totalGuests === 0
+                ? '0 companions added so far'
+                : `${totalGuests} companion${totalGuests === 1 ? '' : 's'} staged (Ready to apply)`;
+        }
+        if (resAddCompanionClearBtn) {
+            resAddCompanionClearBtn.classList.toggle('hidden', totalGuests === 0);
+        }
+        if (resAddAllCompanionsBtn) {
+            resAddAllCompanionsBtn.disabled = totalGuests === 0;
+            resAddAllCompanionsBtn.innerHTML = '<i class="bi bi-receipt text-base"></i> <span>Review & Confirm</span>';
+        }
+
+        // Update live payment calculation card and footer
+        resAddUpdateCalculationUI();
+
+        if (resAddStagedCompanions.length === 0) {
+            resAddPreviewList.innerHTML = '<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted py-6">Fill the form on the left to preview companions.</p>';
             return;
         }
 
-        resAddPreviewList.innerHTML = resAddStagedCompanions.map((companion, index) => {
-            const label = companion.age_group ? `Age ${companion.age_group}` : `${companion.age || 'N/A'} yrs`;
-            const name = companion.first_name ? `${companion.first_name} ${companion.last_name || ''}`.trim() : `${companion.quantity || 1} guest${(companion.quantity || 1) === 1 ? '' : 's'}`;
-            return `<div class="flex items-center justify-between gap-2 rounded-xl border border-glass-border bg-glass p-3 shadow-xs">
-                <div class="flex min-w-0 items-center gap-2">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-hp-green/15 text-hp-green"><i class="bi bi-people-fill"></i></div>
-                    <div class="min-w-0"><div class="text-xs font-bold text-hp-text dark:text-[#f3f4f6]">${escapeHtml(name)}</div><div class="text-[0.68rem] text-hp-text-muted">${escapeHtml(companion.gender || '')}, ${escapeHtml(label)}, ${companion.is_foreigner ? 'Foreigner' : 'Filipino'}</div></div>
+        resAddPreviewList.innerHTML = resAddStagedCompanions.map((group, groupIndex) => {
+            const qty = Math.max(parseInt(group.quantity, 10) || 1, 1);
+            group.quantity = qty;
+            const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+            const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
+            const genderBadge = getGenderBadgeHtml(group.gender);
+
+            let freeBadgeHtml = '';
+            const fQty = Math.min(Math.max(0, parseInt(group.free_passes, 10) || 0), qty);
+            group.free_passes = fQty;
+            if (fQty === qty && fQty > 0) {
+                freeBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance for all ${qty} guests"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`;
+            } else if (fQty > 0) {
+                freeBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-amber-500/30 bg-amber-500/15 px-2 text-xs font-bold text-amber-700 dark:text-amber-300 shadow-2xs shrink-0" title="Free entrance passes for ${fQty} of ${qty} guests">
+                    <i class="bi bi-ticket-perforated-fill text-xs"></i>
+                    <span>${fQty}/${qty}</span>
+                </div>`;
+            }
+
+            let poolBadgeHtml = '';
+            const pQty = Math.min(Math.max(0, parseInt(group.pool_passes, 10) || 0), qty);
+            group.pool_passes = pQty;
+            if (pQty === qty && pQty > 0) {
+                poolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${qty} guests"><i class="bi bi-water text-xs"></i></span>`;
+            } else if (pQty > 0) {
+                poolBadgeHtml = `<div class="inline-flex items-center gap-1 h-7 rounded-xl border border-sky-500/30 bg-sky-500/15 px-2 text-xs font-bold text-sky-700 dark:text-sky-300 shadow-2xs shrink-0" title="Pool passes for ${pQty} of ${qty} guests">
+                    <i class="bi bi-water text-xs"></i>
+                    <span>${pQty}/${qty}</span>
+                </div>`;
+            }
+
+            let amenityBenefitBadge = '';
+            if (group.has_free_entrance_benefit || group.has_free_pool_benefit) {
+                const ben = [];
+                if (group.has_free_entrance_benefit) ben.push('Free Entrance');
+                if (group.has_free_pool_benefit) ben.push('Free Pool');
+                amenityBenefitBadge = `
+                    <span class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-800 dark:text-emerald-300" title="${escapeHtml(ben.join(' & '))} Included with Amenity">
+                        <i class="bi bi-gift-fill text-[0.65rem]"></i> ${escapeHtml(ben.join(' & '))}
+                    </span>
+                `;
+            }
+
+            const amenityHtml = group.amenity_name ? `
+                <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(group.amenity_name)}"><i class="bi bi-geo-alt-fill text-xs"></i> <span>${escapeHtml(group.amenity_name)}</span></span>
+                ${amenityBenefitBadge}
+            ` : '';
+
+            return `
+                <div class="group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass">
+                    <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none">
+                        <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                            <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                            <span>${qty} ${qty === 1 ? 'guest' : 'guests'}</span>
+                        </div>
+                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                        ${genderBadge}
+                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                        <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${escapeHtml(group.age_group)} (${rateLabel})</span>
+                        <span class="text-hp-text-muted/40 font-light select-none">|</span>
+                        <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
+                        ${amenityHtml}
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="flex items-center gap-1.5">
+                            ${freeBadgeHtml}
+                            ${poolBadgeHtml}
+                        </div>
+                        <div class="flex items-center gap-1.5 border-l border-glass-border pl-2.5 ml-1">
+                            <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl border border-glass-border bg-glass text-hp-text-muted hover:text-hp-green hover:border-hp-green/40 hover:bg-hp-green/10 transition-colors cursor-pointer text-xs shadow-2xs" data-res-add-open-group-edit="${groupIndex}" title="Edit group">
+                                <i class="bi bi-pencil-fill text-xs"></i>
+                            </button>
+                            <button type="button" class="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all duration-200 cursor-pointer shadow-xs active:scale-95 text-xs" data-res-add-remove-index="${groupIndex}" title="Remove companion group">
+                                <i class="bi bi-trash3 text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <button type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white" data-res-add-remove-index="${index}" aria-label="Remove staged companion"><i class="bi bi-trash3 text-xs"></i></button>
-            </div>`;
+            `;
         }).join('');
     };
 
@@ -9572,48 +10038,94 @@ window.AppPage['staff_check_ins'] = function () {
     };
 
     const resAddStageBulk = () => {
+        if (!resAddBulkForm) return;
         const formData = new FormData(resAddBulkForm);
         const quantity = Math.min(Math.max(parseInt(formData.get('quantity'), 10) || 1, 1), 500);
-        const group = {
-            quantity,
-            age_group: formData.get('age_group'),
-            gender: formData.get('gender'),
-            is_foreigner: formData.get('is_foreigner') === '1',
-            pool_access: formData.get('pool_access') === 'on',
-            is_free_entrance: resAddBulkForm.querySelector('[name="is_free_entrance"]')?.checked || false,
-            amenity_id: formData.get('amenity_id'),
-        };
-        for (let i = 0; i < quantity; i++) {
-            resAddStagedCompanions.push({ ...group, quantity: undefined, first_name: '', last_name: '', age: '', phone: '', email: '' });
-        }
-        resAddRenderPreview();
-        resAddBulkForm.reset();
-        resAddUpdateBulkFees();
-    };
+        const freePassesInput = document.getElementById('resadd_bulk_free_passes');
+        const rawFreePasses = freePassesInput ? parseInt(freePassesInput.value, 10) : 0;
+        let freePasses = Math.min(Math.max(isNaN(rawFreePasses) ? 0 : rawFreePasses, 0), quantity);
+        const poolPassesInput = document.getElementById('resadd_bulk_pool_passes');
+        const rawPoolPasses = poolPassesInput ? parseInt(poolPassesInput.value, 10) : 0;
+        let poolPasses = Math.min(Math.max(isNaN(rawPoolPasses) ? 0 : rawPoolPasses, 0), quantity);
 
-    const resAddStageSingle = () => {
-        const formData = new FormData(resAddSingleForm);
-        const firstName = (formData.get('first_name') || '').trim();
-        const lastName = (formData.get('last_name') || '').trim();
-        if (!firstName || !lastName) {
-            showToast('First name and last name are required.', 'error');
-            return;
+        const gender = formData.get('gender') || 'Male';
+        const isForeigner = formData.get('is_foreigner') === '1';
+        const ageGroup = formData.get('age_group') || '18-59';
+        const ageMidpoint = { '0-12': 6, '13-17': 15, '18-59': 30, '60+': 65, 'Kids (0-12)': 6, 'Teens (13-17)': 15, 'Adults (18-59)': 30, 'Seniors (60+)': 65 };
+        const approxAge = ageMidpoint[ageGroup] || 30;
+        const amenityId = String(formData.get('amenity_id') || '');
+
+        let amenityName = '';
+        let hasFreeEntranceBenefit = false;
+        let hasFreePoolBenefit = false;
+        if (amenityId) {
+            const res = (window.staffReservationData && window.staffReservationData[currentReservationId])
+                || (typeof reservationData !== 'undefined' ? reservationData[currentReservationId] : null);
+            const resAmenities = res?.reservation_amenities || [];
+            const found = resAmenities.find(ra => String(ra.amenity_id || ra.amenity?.id || ra.id) === amenityId);
+            if (found) {
+                amenityName = found.amenity?.amenities_name || found.amenity_name || '';
+                hasFreeEntranceBenefit = Boolean(found.free_entrance || found.amenity?.benefits?.free_entrance);
+                hasFreePoolBenefit = Boolean(found.free_pool || found.amenity?.benefits?.free_pool);
+            }
         }
-        resAddStagedCompanions.push({
-            first_name: firstName,
-            middle_name: formData.get('middle_name'),
-            last_name: lastName,
-            age: formData.get('age'),
-            gender: formData.get('gender'),
-            is_foreigner: formData.get('is_foreigner') === '1',
-            phone: formData.get('phone'),
-            email: formData.get('email'),
-            pool_access: formData.get('pool_access') === 'on',
-            is_free_entrance: resAddSingleForm.querySelector('[name="is_free_entrance"]')?.checked || false,
-            amenity_id: formData.get('amenity_id'),
-        });
+
+        if (hasFreeEntranceBenefit) {
+            freePasses = quantity;
+        }
+        if (hasFreePoolBenefit) {
+            poolPasses = quantity;
+        }
+        if (!amenityId) {
+            hasFreeEntranceBenefit = false;
+            hasFreePoolBenefit = false;
+        }
+
+        // Prevent repeating same companion group: merge into existing group if same characteristics
+        const existing = resAddStagedCompanions.find(c =>
+            c.is_group &&
+            c.gender === gender &&
+            Boolean(c.is_foreigner) === isForeigner &&
+            c.age_group === ageGroup &&
+            String(c.amenity_id || '') === amenityId
+        );
+
+        if (existing) {
+            existing.quantity = Math.min(existing.quantity + quantity, 500);
+            existing.free_passes = Math.min(existing.quantity, (existing.free_passes || 0) + freePasses);
+            existing.pool_passes = Math.min(existing.quantity, (existing.pool_passes || 0) + poolPasses);
+            if (hasFreeEntranceBenefit) existing.has_free_entrance_benefit = true;
+            if (hasFreePoolBenefit) existing.has_free_pool_benefit = true;
+            showToast(`Updated existing ${gender} (${ageGroup}) group (+${quantity} guests).`);
+        } else {
+            resAddStagedCompanions.push({
+                is_group: true,
+                gender,
+                age_group: ageGroup,
+                age: approxAge,
+                is_foreigner: isForeigner,
+                amenity_id: amenityId,
+                amenity_name: amenityName,
+                has_free_entrance_benefit: hasFreeEntranceBenefit,
+                has_free_pool_benefit: hasFreePoolBenefit,
+                quantity,
+                free_passes: freePasses,
+                pool_passes: poolPasses,
+            });
+        }
+
         resAddRenderPreview();
-        resAddSingleForm.reset();
+
+        // Reset bulk inputs back to defaults
+        const qtyInput = document.getElementById('resadd_bulk_quantity');
+        if (qtyInput) qtyInput.value = '1';
+        if (freePassesInput) freePassesInput.value = '0';
+        if (poolPassesInput) poolPassesInput.value = '0';
+        const bulkSelect = document.getElementById('resadd_bulk_amenity');
+        if (bulkSelect) bulkSelect.value = '';
+        const benefitBadge = document.getElementById('resaddBulkAmenityBenefitBadge');
+        if (benefitBadge) benefitBadge.classList.add('hidden');
+        resAddSyncBulkHints();
     };
 
     const resAddRemoveStaged = (index) => {
@@ -9621,270 +10133,477 @@ window.AppPage['staff_check_ins'] = function () {
         resAddRenderPreview();
     };
 
-    const resAddClearPreviewLegacy = () => {
-        if (resAddPreviewCount) resAddPreviewCount.textContent = '0 companions';
-        if (resAddPreviewList) {
-            resAddPreviewList.innerHTML = '<p class="m-auto max-w-[240px] text-center text-xs italic text-hp-text-muted">Fill the form on the left to preview companions.</p>';
+    // ── Group Edit Modal Logic for Reservation ──
+    const openResAddGroupEditModal = (groupIndex) => {
+        const group = resAddStagedCompanions[groupIndex];
+        if (!group || !resAddGroupEditModal) return;
+
+        if (resAddGroupEditIndex) resAddGroupEditIndex.value = groupIndex;
+        const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
+        const rateLabel = (group.age_group === '0-12' || group.age_type === 'child') ? 'Child' : 'Adult';
+
+        if (resAddGroupEditDemographicsBadge) {
+            resAddGroupEditDemographicsBadge.innerHTML = `
+                ${getGenderBadgeHtml(group.gender)}
+                <span class="text-xs font-bold text-hp-text dark:text-gray-100">Age ${escapeHtml(group.age_group)} <span class="font-normal text-hp-text-muted">(${rateLabel})</span></span>
+                <span class="text-hp-text-muted/40">•</span>
+                <span class="inline-flex items-center text-xs font-medium text-hp-text-muted">${nationality}</span>
+            `;
+            resAddGroupEditDemographicsBadge.className = 'flex flex-wrap items-center gap-2';
         }
-    };
 
-    // --- Live fee summary for the reservation add-companion modal ---
-    // Mirror the backend: 12 and below = child; the pricing period comes from
-    // the reservation's stored entrance pricing_type (no amenity) or its first
-    // amenity's pricing_type (with amenities).
-    const resAddEffectivePeriod = () => {
-        const res = reservationData[currentReservationId];
-        if (!res) return 'daytime';
-        const efPeriodMap = { Nighttime: 'nighttime', DayToNight: 'daytonight', NightToDay: 'daytonight' };
-        if (res.entrance_fee && efPeriodMap[res.entrance_fee.pricing_type]) {
-            return efPeriodMap[res.entrance_fee.pricing_type];
-        }
-        const amenityPeriodMap = {
-            'Daytime': 'daytime', 'Daytime Aircon': 'daytime',
-            'Nighttime': 'nighttime', 'Nighttime Aircon': 'nighttime',
-            'DayToNight': 'daytonight', 'DayToNight Aircon': 'daytonight',
-            'NightToDay': 'daytonight', 'NightToDay Aircon': 'daytonight',
-        };
-        const firstAmenity = (res.reservation_amenities || []).find(a => parseFloat(a.price) > 0);
-        return amenityPeriodMap[firstAmenity?.pricing_type] || 'daytime';
-    };
-
-    const resAddRates = () => {
-        const p = parkSettings || {};
-        const period = resAddEffectivePeriod();
-        const dayAdult = parseFloat(p.daytime_adult_entrance_fee) || 0;
-        const dayChild = parseFloat(p.daytime_child_entrance_fee) || 0;
-        const nightAdult = parseFloat(p.nighttime_adult_entrance_fee) || 0;
-        const nightChild = parseFloat(p.nighttime_child_entrance_fee) || 0;
-        const dayPool = parseFloat(p.day_pool_fee) || 0;
-        const nightPool = parseFloat(p.night_pool_fee) || 0;
-        if (period === 'nighttime') return { adult: nightAdult, child: nightChild, pool: nightPool };
-        if (period === 'daytonight' || period === 'nighttoday') return { adult: dayAdult + nightAdult, child: dayChild + nightChild, pool: dayPool + nightPool };
-        return { adult: dayAdult, child: dayChild, pool: dayPool };
-    };
-
-    const money = (n) => `₱${(parseFloat(n) || 0).toFixed(2)}`;
-
-    const resAddUpdateSingleFees = () => {
-        const ageVal = parseInt(resAddSingleForm?.querySelector('[name="age"]')?.value, 10);
-        const rates = resAddRates();
-        const hasAge = !Number.isNaN(ageVal);
-        const isChild = hasAge && ageVal <= 12;
-        const isFree = Boolean(resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.checked);
-        const adultCount = hasAge && !isChild ? 1 : 0;
-        const childCount = hasAge && isChild ? 1 : 0;
-        const payingAdultCount = isFree ? 0 : adultCount;
-        const payingChildCount = isFree ? 0 : childCount;
-        const poolOn = resAddSingleForm?.querySelector('[name="pool_access"]')?.checked;
-        const adultFee = payingAdultCount * rates.adult;
-        const childFee = payingChildCount * rates.child;
-        const poolFee = poolOn ? rates.pool : 0;
-
-        // Calculate Extra Head Fee if assigned amenity has capacity limit
-        const res = reservationData[currentReservationId];
-        const resAmenities = res?.reservation_amenities || [];
-        const amId = String(resAddSingleForm?.querySelector('[name="amenity_id"]')?.value || '');
-        const foundAmenity = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id || ra.id) === amId);
-        let extraHeadFee = 0;
-        if (foundAmenity) {
-            const amData = foundAmenity.amenity || foundAmenity;
-            const maxCap = (amData.maximum_capacity !== null && amData.maximum_capacity !== undefined && amData.maximum_capacity !== '') ? parseInt(amData.maximum_capacity, 10) : null;
-            const addRate = parseFloat(amData.additional_per_head) || 0;
-            const currentGuestCount = (res.reservation_guests || []).length;
-            if (maxCap !== null && !isNaN(maxCap) && currentGuestCount >= maxCap) {
-                extraHeadFee = addRate;
+        if (resAddGroupEditAmenityBadge) {
+            if (group.amenity_name) {
+                resAddGroupEditAmenityBadge.innerHTML = `<i class="bi bi-geo-alt-fill me-1"></i>${escapeHtml(group.amenity_name)}`;
+                resAddGroupEditAmenityBadge.classList.remove('hidden');
+            } else {
+                resAddGroupEditAmenityBadge.classList.add('hidden');
             }
         }
 
-        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        set('resaddAdultCount', adultCount);
-        set('resaddAdultFee', isFree && adultCount > 0 ? '₱0.00 (Free)' : money(adultFee));
-        set('resaddChildCount', childCount);
-        set('resaddChildFee', isFree && childCount > 0 ? '₱0.00 (Free)' : money(childFee));
-        set('resaddPoolCount', poolOn ? 1 : 0);
-        set('resaddPoolFee', money(poolFee));
-        const extraHeadRow = document.getElementById('resaddExtraHeadRow');
-        if (extraHeadRow) {
-            extraHeadRow.style.display = extraHeadFee > 0 ? 'flex' : 'none';
-            set('resaddExtraHeadFee', money(extraHeadFee));
+        const qty = parseInt(group.quantity, 10) || 1;
+        if (resAddGroupEditQuantityInput) {
+            resAddGroupEditQuantityInput.value = qty;
         }
-        set('resaddTotalFee', money(adultFee + childFee + poolFee + extraHeadFee));
+
+        const curFree = Math.min(Math.max(0, parseInt(group.free_passes, 10) || 0), qty);
+        if (resAddGroupEditFreeInput) {
+            resAddGroupEditFreeInput.value = curFree;
+            resAddGroupEditFreeInput.max = qty;
+        }
+        if (resAddGroupEditFreeHint) {
+            resAddGroupEditFreeHint.textContent = `${curFree} of ${qty}`;
+        }
+
+        const curPool = Math.min(Math.max(0, parseInt(group.pool_passes, 10) || 0), qty);
+        if (resAddGroupEditPoolInput) {
+            resAddGroupEditPoolInput.value = curPool;
+            resAddGroupEditPoolInput.max = qty;
+        }
+        if (resAddGroupEditPoolHint) {
+            resAddGroupEditPoolHint.textContent = `${curPool} of ${qty}`;
+        }
+
+        resAddGroupEditModal.classList.add('is-open');
+        resAddGroupEditModal.classList.remove('hidden');
+        resAddGroupEditModal.setAttribute('aria-hidden', 'false');
     };
 
-    const resAddUpdateBulkFees = () => {
-        const qty = Math.min(Math.max(parseInt(resAddBulkForm?.querySelector('[name="quantity"]')?.value, 10) || 1, 1), 500);
-        const ageGroup = resAddBulkForm?.querySelector('[name="age_group"]')?.value || '18-59';
-        const rates = resAddRates();
-        const isChild = ageGroup === '0-12';
-        const isFree = Boolean(resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.checked);
-        const adultCount = isChild ? 0 : qty;
-        const childCount = isChild ? qty : 0;
-        const payingAdultCount = isFree ? 0 : adultCount;
-        const payingChildCount = isFree ? 0 : childCount;
-        const poolOn = resAddBulkForm?.querySelector('[name="pool_access"]')?.checked;
-        const poolCount = poolOn ? qty : 0;
-        const adultFee = payingAdultCount * rates.adult;
-        const childFee = payingChildCount * rates.child;
-        const poolFee = poolCount * rates.pool;
+    const closeResAddGroupEditModal = () => {
+        if (!resAddGroupEditModal) return;
+        resAddGroupEditModal.classList.remove('is-open');
+        resAddGroupEditModal.classList.add('hidden');
+        resAddGroupEditModal.setAttribute('aria-hidden', 'true');
+    };
 
-        // Calculate Extra Head Fee if assigned amenity has capacity limit
-        const res = reservationData[currentReservationId];
-        const resAmenities = res?.reservation_amenities || [];
-        const amId = String(resAddBulkForm?.querySelector('[name="amenity_id"]')?.value || resAmenities[0]?.amenity?.id || resAmenities[0]?.amenity_id || resAmenities[0]?.id || '');
-        const foundAmenity = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id || ra.id) === amId);
-        let bulkExtraHeadFee = 0;
-        if (foundAmenity) {
-            const amData = foundAmenity.amenity || foundAmenity;
-            const maxCap = (amData.maximum_capacity !== null && amData.maximum_capacity !== undefined && amData.maximum_capacity !== '') ? parseInt(amData.maximum_capacity, 10) : null;
-            const addRate = parseFloat(amData.additional_per_head) || 0;
-            let currentGuestCount = (res.reservation_guests || []).length;
-            for (let i = 0; i < qty; i++) {
-                if (maxCap !== null && !isNaN(maxCap) && currentGuestCount >= maxCap) {
-                    bulkExtraHeadFee += addRate;
+    document.querySelectorAll('[data-close-res-group-edit-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeResAddGroupEditModal);
+    });
+
+    const syncResAddGroupEditHints = () => {
+        const qty = Math.max(1, parseInt(resAddGroupEditQuantityInput?.value, 10) || 1);
+        if (resAddGroupEditFreeInput) {
+            resAddGroupEditFreeInput.max = qty;
+            let freeVal = parseInt(resAddGroupEditFreeInput.value, 10) || 0;
+            if (freeVal > qty) freeVal = qty;
+            if (freeVal < 0) freeVal = 0;
+            resAddGroupEditFreeInput.value = freeVal;
+            if (resAddGroupEditFreeHint) {
+                resAddGroupEditFreeHint.textContent = `${freeVal} of ${qty}`;
+            }
+        }
+        if (resAddGroupEditPoolInput) {
+            resAddGroupEditPoolInput.max = qty;
+            let poolVal = parseInt(resAddGroupEditPoolInput.value, 10) || 0;
+            if (poolVal > qty) poolVal = qty;
+            if (poolVal < 0) poolVal = 0;
+            resAddGroupEditPoolInput.value = poolVal;
+            if (resAddGroupEditPoolHint) {
+                resAddGroupEditPoolHint.textContent = `${poolVal} of ${qty}`;
+            }
+        }
+    };
+
+    resAddGroupEditQtyMinusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditQuantityInput) return;
+        const cur = parseInt(resAddGroupEditQuantityInput.value, 10) || 1;
+        if (cur > 1) {
+            resAddGroupEditQuantityInput.value = cur - 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditQtyPlusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditQuantityInput) return;
+        const cur = parseInt(resAddGroupEditQuantityInput.value, 10) || 1;
+        if (cur < 500) {
+            resAddGroupEditQuantityInput.value = cur + 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditQuantityInput?.addEventListener('input', syncResAddGroupEditHints);
+
+    resAddGroupEditFreeMinusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditFreeInput) return;
+        const cur = parseInt(resAddGroupEditFreeInput.value, 10) || 0;
+        if (cur > 0) {
+            resAddGroupEditFreeInput.value = cur - 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditFreePlusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditFreeInput || !resAddGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(resAddGroupEditQuantityInput.value, 10) || 1);
+        const cur = parseInt(resAddGroupEditFreeInput.value, 10) || 0;
+        if (cur < max) {
+            resAddGroupEditFreeInput.value = cur + 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditFreeInput?.addEventListener('input', syncResAddGroupEditHints);
+
+    resAddGroupEditFreeZeroBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditFreeInput) return;
+        resAddGroupEditFreeInput.value = 0;
+        syncResAddGroupEditHints();
+    });
+
+    resAddGroupEditFreeAllBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditFreeInput || !resAddGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(resAddGroupEditQuantityInput.value, 10) || 1);
+        resAddGroupEditFreeInput.value = max;
+        syncResAddGroupEditHints();
+    });
+
+    resAddGroupEditPoolMinusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditPoolInput) return;
+        const cur = parseInt(resAddGroupEditPoolInput.value, 10) || 0;
+        if (cur > 0) {
+            resAddGroupEditPoolInput.value = cur - 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditPoolPlusBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditPoolInput || !resAddGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(resAddGroupEditQuantityInput.value, 10) || 1);
+        const cur = parseInt(resAddGroupEditPoolInput.value, 10) || 0;
+        if (cur < max) {
+            resAddGroupEditPoolInput.value = cur + 1;
+            syncResAddGroupEditHints();
+        }
+    });
+
+    resAddGroupEditPoolInput?.addEventListener('input', syncResAddGroupEditHints);
+
+    resAddGroupEditPoolZeroBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditPoolInput) return;
+        resAddGroupEditPoolInput.value = 0;
+        syncResAddGroupEditHints();
+    });
+
+    resAddGroupEditPoolAllBtn?.addEventListener('click', () => {
+        if (!resAddGroupEditPoolInput || !resAddGroupEditQuantityInput) return;
+        const max = Math.max(1, parseInt(resAddGroupEditQuantityInput.value, 10) || 1);
+        resAddGroupEditPoolInput.value = max;
+        syncResAddGroupEditHints();
+    });
+
+    resAddGroupEditForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const gIdx = parseInt(resAddGroupEditIndex?.value, 10);
+        if (isNaN(gIdx) || !resAddStagedCompanions[gIdx]) return;
+
+        const group = resAddStagedCompanions[gIdx];
+        const newQty = Math.max(1, parseInt(resAddGroupEditQuantityInput?.value, 10) || 1);
+        group.quantity = newQty;
+        group.free_passes = Math.min(Math.max(0, parseInt(resAddGroupEditFreeInput?.value, 10) || 0), newQty);
+        group.pool_passes = Math.min(Math.max(0, parseInt(resAddGroupEditPoolInput?.value, 10) || 0), newQty);
+
+        resAddRenderPreview();
+        closeResAddGroupEditModal();
+        showToast('Companion group updated.');
+    });
+
+    // ── Watchers for Bulk Add Creator Steppers ──
+    const resAddBindBulkWatchers = () => {
+        const qtyInput = document.getElementById('resadd_bulk_quantity');
+        const freeInput = document.getElementById('resadd_bulk_free_passes');
+        const poolInput = document.getElementById('resadd_bulk_pool_passes');
+        const bulkSelect = document.getElementById('resadd_bulk_amenity');
+        const benefitBadge = document.getElementById('resaddBulkAmenityBenefitBadge');
+        const benefitText = document.getElementById('resaddBulkAmenityBenefitText');
+
+        const syncAmenityBenefits = (isAmenityChange = false) => {
+            const res = (window.staffReservationData && window.staffReservationData[currentReservationId])
+                || (typeof reservationData !== 'undefined' ? reservationData[currentReservationId] : null);
+            const resAmenities = res?.reservation_amenities || [];
+            const selectedAmId = String(bulkSelect?.value || '');
+
+            const found = resAmenities.find(ra => String(ra.amenity_id || ra.amenity?.id || ra.id) === selectedAmId);
+            const qty = Math.max(parseInt(qtyInput?.value, 10) || 1, 1);
+
+            const hasFreeEnt = Boolean(found && (found.free_entrance || found.amenity?.benefits?.free_entrance));
+            const hasFreePl = Boolean(found && (found.free_pool || found.amenity?.benefits?.free_pool));
+
+            if (hasFreeEnt || hasFreePl) {
+                const parts = [];
+                if (hasFreeEnt) {
+                    parts.push('Free Entrance');
+                    if (freeInput) freeInput.value = qty;
+                } else if (isAmenityChange) {
+                    if (freeInput) freeInput.value = '0';
                 }
-                currentGuestCount++;
+
+                if (hasFreePl) {
+                    parts.push('Free Pool Access');
+                    if (poolInput) poolInput.value = qty;
+                } else if (isAmenityChange) {
+                    if (poolInput) poolInput.value = '0';
+                }
+
+                if (benefitBadge) {
+                    benefitBadge.classList.remove('hidden');
+                    if (benefitText) benefitText.textContent = `Includes ${parts.join(' & ')}`;
+                }
+            } else {
+                if (benefitBadge) benefitBadge.classList.add('hidden');
+                if (isAmenityChange) {
+                    // Selected "No amenity" or amenity with no free benefits: reset free passes to 0
+                    if (freeInput) freeInput.value = '0';
+                    if (poolInput) poolInput.value = '0';
+                }
             }
-        }
+            resAddSyncBulkHints();
+        };
 
-        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        set('resaddBulkAdultCount', adultCount);
-        set('resaddBulkAdultFee', isFree && adultCount > 0 ? `₱0.00 (All ${qty} Free)` : money(adultFee));
-        set('resaddBulkChildCount', childCount);
-        set('resaddBulkChildFee', isFree && childCount > 0 ? `₱0.00 (All ${qty} Free)` : money(childFee));
-        set('resaddBulkPoolCount', poolCount);
-        set('resaddBulkPoolFee', money(poolFee));
-        const bulkExtraHeadRow = document.getElementById('resaddBulkExtraHeadRow');
-        if (bulkExtraHeadRow) {
-            bulkExtraHeadRow.style.display = bulkExtraHeadFee > 0 ? 'flex' : 'none';
-            set('resaddBulkExtraHeadFee', money(bulkExtraHeadFee));
-        }
-        set('resaddBulkTotalFee', money(adultFee + childFee + poolFee + bulkExtraHeadFee));
-        const poolLabel = document.getElementById('resaddBulkPoolLabel');
-        if (poolLabel) poolLabel.textContent = `Include Pool Access (all ${qty})`;
-        const freeLabel = document.getElementById('resaddBulkFreeEntranceLabel');
-        if (freeLabel) freeLabel.innerHTML = `<i class="bi bi-ticket-perforated-fill me-1"></i>Free Entrance Fee (all ${qty})`;
-    };
+        bulkSelect?.addEventListener('change', () => syncAmenityBenefits(true));
 
-    const resAddBindFeeWatchers = () => {
-        const singleAge = resAddSingleForm?.querySelector('[name="age"]');
-        singleAge?.addEventListener('input', resAddUpdateSingleFees);
-        resAddSingleForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateSingleFees);
-        resAddSingleForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateSingleFees);
-        resAddSingleForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateSingleFees);
-        resAddBulkForm?.querySelectorAll('[name="gender"], [name="age_group"], [name="is_foreigner"]').forEach((input) => {
-            input.addEventListener('change', () => {
-                resAddUpdateBulkFees();
-                resAddRenderPreview();
-            });
+        qtyInput?.addEventListener('input', () => {
+            syncAmenityBenefits(false);
+            resAddSyncBulkHints();
         });
-        resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddUpdateBulkFees);
-        resAddBulkForm?.querySelector('[name="pool_access"]')?.addEventListener('change', resAddUpdateBulkFees);
-        resAddBulkForm?.querySelector('[name="is_free_entrance"]')?.addEventListener('change', resAddUpdateBulkFees);
-        resAddBulkForm?.querySelector('[name="amenity_id"]')?.addEventListener('change', resAddUpdateBulkFees);
-        resAddBulkForm?.querySelector('[name="quantity"]')?.addEventListener('input', resAddRenderPreview);
+        freeInput?.addEventListener('input', resAddSyncBulkHints);
+        poolInput?.addEventListener('input', resAddSyncBulkHints);
 
         resAddBulkQtyMinus?.addEventListener('click', () => {
-            const input = resAddBulkForm?.querySelector('[name="quantity"]');
-            if (!input) return;
-            input.value = Math.max(1, (parseInt(input.value, 10) || 1) - 1);
-            resAddUpdateBulkFees();
-            resAddRenderPreview();
+            if (!qtyInput) return;
+            const cur = parseInt(qtyInput.value, 10) || 1;
+            if (cur > 1) {
+                qtyInput.value = cur - 1;
+                syncAmenityBenefits();
+                resAddSyncBulkHints();
+            }
         });
+
         resAddBulkQtyPlus?.addEventListener('click', () => {
-            const input = resAddBulkForm?.querySelector('[name="quantity"]');
-            if (!input) return;
-            input.value = Math.min(500, (parseInt(input.value, 10) || 1) + 1);
-            resAddUpdateBulkFees();
-            resAddRenderPreview();
+            if (!qtyInput) return;
+            const cur = parseInt(qtyInput.value, 10) || 1;
+            if (cur < 500) {
+                qtyInput.value = cur + 1;
+                syncAmenityBenefits();
+                resAddSyncBulkHints();
+            }
+        });
+
+        resAddBulkFreeMinus?.addEventListener('click', () => {
+            if (!freeInput) return;
+            const cur = parseInt(freeInput.value, 10) || 0;
+            if (cur > 0) {
+                freeInput.value = cur - 1;
+                resAddSyncBulkHints();
+            }
+        });
+
+        resAddBulkFreePlus?.addEventListener('click', () => {
+            if (!freeInput || !qtyInput) return;
+            const max = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+            const cur = parseInt(freeInput.value, 10) || 0;
+            if (cur < max) {
+                freeInput.value = cur + 1;
+                resAddSyncBulkHints();
+            }
+        });
+
+        resAddBulkPoolMinus?.addEventListener('click', () => {
+            if (!poolInput) return;
+            const cur = parseInt(poolInput.value, 10) || 0;
+            if (cur > 0) {
+                poolInput.value = cur - 1;
+                resAddSyncBulkHints();
+            }
+        });
+
+        resAddBulkPoolPlus?.addEventListener('click', () => {
+            if (!poolInput || !qtyInput) return;
+            const max = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+            const cur = parseInt(poolInput.value, 10) || 0;
+            if (cur < max) {
+                poolInput.value = cur + 1;
+                resAddSyncBulkHints();
+            }
         });
     };
 
     const openResAddCompanionModal = () => {
+        if (window.parkSettings) {
+            parkSettings = { ...parkSettings, ...window.parkSettings };
+        }
+        loadParkSettings();
+
         if (resAddCompanionFor && currentReservationId) {
             resAddCompanionFor.textContent = `Reservation #${currentReservationId}`;
         }
 
-        // Setup Amenity select dropdowns for companion modals
-        const res = reservationData[currentReservationId];
+        if (resAddAllCompanionsBtn) {
+            resAddAllCompanionsBtn.innerHTML = '<i class="bi bi-receipt text-base"></i> <span>Review & Confirm</span>';
+            resAddAllCompanionsBtn.disabled = true;
+        }
+
+        // Reset bulk inputs back to initial fresh defaults
+        const qtyInput = document.getElementById('resadd_bulk_quantity');
+        const freeInput = document.getElementById('resadd_bulk_free_passes');
+        const poolInput = document.getElementById('resadd_bulk_pool_passes');
+        if (qtyInput) qtyInput.value = '1';
+        if (freeInput) {
+            freeInput.value = '0';
+            freeInput.max = '1';
+        }
+        if (poolInput) {
+            poolInput.value = '0';
+            poolInput.max = '1';
+        }
+
+        // Setup Amenity select dropdown for active reservation
+        const res = (window.staffReservationData && window.staffReservationData[currentReservationId])
+            || (typeof reservationData !== 'undefined' ? reservationData[currentReservationId] : null);
         const resAmenities = res?.reservation_amenities || [];
-        const singleWrap = document.getElementById('resaddSingleAmenityWrap');
-        const singleSelect = document.getElementById('resadd_amenity');
         const bulkWrap = document.getElementById('resaddBulkAmenityWrap');
         const bulkSelect = document.getElementById('resadd_bulk_amenity');
+        const benefitBadge = document.getElementById('resaddBulkAmenityBenefitBadge');
+
+        if (benefitBadge) benefitBadge.classList.add('hidden');
 
         if (resAmenities.length >= 1) {
             let optionsHtml = '<option value="" selected>No amenity</option>';
             resAmenities.forEach(ra => {
                 const am = ra.amenity || ra;
-                const amId = String(am.id || ra.amenity_id || '');
+                const amId = String(ra.amenity_id || am.id || ra.id || '');
                 const name = am.amenities_name || ra.amenity_name || 'Amenity';
                 const max = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? `Max: ${am.maximum_capacity}` : 'No limit';
                 const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
-                optionsHtml += `<option value="${amId}">${escapeHtml(name)} (${max}${addFee})</option>`;
+                const hasFreeEnt = Boolean(ra.free_entrance || am.benefits?.free_entrance);
+                const hasFreePl = Boolean(ra.free_pool || am.benefits?.free_pool);
+                const benefitBadges = [];
+                if (hasFreeEnt) benefitBadges.push('Free Entrance');
+                if (hasFreePl) benefitBadges.push('Free Pool');
+                const benefitSuffix = benefitBadges.length > 0 ? ` • ${benefitBadges.join(' + ')}` : '';
+                optionsHtml += `<option value="${amId}">${escapeHtml(name)} (${max}${addFee}${benefitSuffix})</option>`;
             });
-            if (singleSelect) singleSelect.innerHTML = optionsHtml;
-            if (bulkSelect) bulkSelect.innerHTML = optionsHtml;
-            if (singleWrap) singleWrap.style.display = 'grid';
+            if (bulkSelect) {
+                bulkSelect.innerHTML = optionsHtml;
+                bulkSelect.value = '';
+            }
             if (bulkWrap) bulkWrap.style.display = 'block';
         } else {
-            if (singleSelect) singleSelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (bulkSelect) bulkSelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (singleWrap) singleWrap.style.display = 'none';
+            if (bulkSelect) {
+                bulkSelect.innerHTML = '<option value="" selected>No amenity</option>';
+                bulkSelect.value = '';
+            }
             if (bulkWrap) bulkWrap.style.display = 'none';
         }
 
-        loadParkSettings().then(() => {
-            resAddUpdateSingleFees();
-            resAddUpdateBulkFees();
-        });
         resAddClearPreview();
+        resAddSyncBulkHints();
+        resAddUpdateCalculationUI();
         resAddCompanionModal.classList.add('is-open');
+        resAddCompanionModal.classList.remove('hidden');
         resAddCompanionModal.setAttribute('aria-hidden', 'false');
     };
 
     const closeResAddCompanionModal = () => {
+        closeResAddConfirmModal();
         resAddCompanionModal.classList.remove('is-open');
+        resAddCompanionModal.classList.add('hidden');
         resAddCompanionModal.setAttribute('aria-hidden', 'true');
-        resAddSingleForm?.reset();
         resAddBulkForm?.reset();
+        const qtyInput = document.getElementById('resadd_bulk_quantity');
+        if (qtyInput) qtyInput.value = '1';
+        const freeInput = document.getElementById('resadd_bulk_free_passes');
+        if (freeInput) freeInput.value = '0';
+        const poolInput = document.getElementById('resadd_bulk_pool_passes');
+        if (poolInput) poolInput.value = '0';
+        const bulkSelect = document.getElementById('resadd_bulk_amenity');
+        if (bulkSelect) bulkSelect.value = '';
+        const benefitBadge = document.getElementById('resaddBulkAmenityBenefitBadge');
+        if (benefitBadge) benefitBadge.classList.add('hidden');
         resAddClearPreview();
+        if (resAddAllCompanionsBtn) {
+            resAddAllCompanionsBtn.innerHTML = '<i class="bi bi-receipt text-base"></i> <span>Review & Confirm</span>';
+            resAddAllCompanionsBtn.disabled = true;
+        }
     };
 
     reservationAddCompanionBtn?.addEventListener('click', openResAddCompanionModal);
     resAddCloseButtons.forEach(button => button.addEventListener('click', closeResAddCompanionModal));
+    resAddCompanionClearBtn?.addEventListener('click', resAddClearPreview);
 
-    resAddTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const tabType = tab.dataset.resAddTab;
-            resAddTabs.forEach(t => {
-                if (t.dataset.resAddTab === tabType) {
-                    t.classList.add('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
-                    t.classList.remove('bg-transparent', 'text-hp-text', 'font-semibold');
-                } else {
-                    t.classList.remove('guest-form__tab--active', 'bg-hp-green', 'text-white', 'font-bold');
-                    t.classList.add('bg-transparent', 'text-hp-text', 'font-semibold');
-                }
-            });
-            resAddContents.forEach(content => {
-                const active = content.dataset.resAddContent === tabType;
-                content.classList.toggle('guest-form--tab-content--active', active);
-                content.style.display = active ? 'grid' : 'none';
-            });
-        });
-    });
-
-    resAddBindFeeWatchers();
+    resAddBindBulkWatchers();
 
     resAddPreviewList?.addEventListener('click', (event) => {
         const removeButton = event.target.closest('[data-res-add-remove-index]');
-        if (!removeButton) return;
-        resAddRemoveStaged(parseInt(removeButton.dataset.resAddRemoveIndex, 10));
+        if (removeButton) {
+            const index = parseInt(removeButton.dataset.resAddRemoveIndex, 10);
+            if (!isNaN(index) && resAddStagedCompanions[index]) {
+                resAddRemoveStaged(index);
+            }
+            return;
+        }
+
+        const editButton = event.target.closest('[data-res-add-open-group-edit]');
+        if (editButton) {
+            const index = parseInt(editButton.dataset.resAddOpenGroupEdit, 10);
+            if (!isNaN(index) && resAddStagedCompanions[index]) {
+                openResAddGroupEditModal(index);
+            }
+            return;
+        }
     });
 
-    const postCompanionsToReservation = async (companions, submitButton, originalText) => {
-        if (!currentReservationId || !companions.length) return;
+    const postCompanionsToReservation = async (stagedGroups, submitButton, originalText) => {
+        if (!currentReservationId || !stagedGroups.length) return;
+
+        // Flatten staged groups into individual companion records
+        const flattenedCompanions = [];
+        stagedGroups.forEach(group => {
+            const qty = Math.max(parseInt(group.quantity, 10) || 1, 1);
+            const freeCount = Math.min(Math.max(parseInt(group.free_passes, 10) || 0, 0), qty);
+            const poolCount = Math.min(Math.max(parseInt(group.pool_passes, 10) || 0, 0), qty);
+
+            for (let i = 0; i < qty; i++) {
+                flattenedCompanions.push({
+                    first_name: group.first_name || 'Companion',
+                    last_name: group.last_name || 'Guest',
+                    gender: group.gender || 'Male',
+                    age_group: group.age_group || '18-59',
+                    age: group.age || 30,
+                    is_foreigner: Boolean(group.is_foreigner),
+                    amenity_id: group.amenity_id || null,
+                    is_free_entrance: i < freeCount,
+                    free_entrance: i < freeCount,
+                    has_pool_access: i < poolCount,
+                    pool_access: i < poolCount,
+                });
+            }
+        });
+
+        if (!flattenedCompanions.length) return;
+
         submitButton.disabled = true;
-        submitButton.textContent = 'Adding...';
+        submitButton.innerHTML = '<span class="inline-block animate-spin mr-1.5"><i class="bi bi-arrow-repeat"></i></span> Adding...';
         try {
             const response = await fetch(`/staff/reservations/${currentReservationId}/add-companion`, {
                 method: 'POST',
@@ -9894,44 +10613,75 @@ window.AppPage['staff_check_ins'] = function () {
                     'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
-                body: JSON.stringify({ companions }),
+                body: JSON.stringify({ companions: flattenedCompanions }),
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const firstError = payload.errors ? Object.values(payload.errors)[0]?.[0] : null;
                 throw new Error(payload.message || firstError || 'Unable to add companion.');
             }
-            closeResAddCompanionModal();
 
-            // Append added companions into in-memory dataset
-            if (window.staffReservationData && window.staffReservationData[currentReservationId]) {
-                const res = window.staffReservationData[currentReservationId];
-                if (!res.reservation_guests) res.reservation_guests = [];
-                companions.forEach(c => {
-                    res.reservation_guests.push({
-                        id: 'temp_' + Date.now() + Math.random(),
-                        customer: { first_name: c.first_name || 'Companion', last_name: c.last_name || '' },
-                        has_pool_access: Boolean(c.has_pool_access),
-                        is_primary_guest: false,
-                        checked_out_at: null,
+            // Sync updated reservation into in-memory dataset
+            const targetRes = (window.staffReservationData && window.staffReservationData[currentReservationId])
+                || (typeof reservationData !== 'undefined' && reservationData ? reservationData[currentReservationId] : null);
+
+            if (targetRes) {
+                if (payload.reservation_guests && Array.isArray(payload.reservation_guests)) {
+                    targetRes.reservation_guests = payload.reservation_guests;
+                } else {
+                    if (!targetRes.reservation_guests) targetRes.reservation_guests = [];
+                    const ageGroupMidpoint = { '0-12': 6, '13-17': 15, '18-59': 30, '60+': 65, 'Kids (0-12)': 6, 'Teens (13-17)': 15, 'Adults (18-59)': 30, 'Seniors (60+)': 65 };
+                    flattenedCompanions.forEach(c => {
+                        const poolAccess = Boolean(c.has_pool_access || c.pool_access);
+                        const ageVal = c.age ? parseInt(c.age, 10) : (ageGroupMidpoint[c.age_group] || 30);
+                        targetRes.reservation_guests.push({
+                            id: 'temp_' + Date.now() + Math.random(),
+                            customer: {
+                                first_name: c.first_name || 'Companion',
+                                last_name: c.last_name || 'Guest',
+                                gender: c.gender || 'Male',
+                                age: ageVal,
+                                is_foreigner: Boolean(c.is_foreigner),
+                                phone: c.phone || null,
+                                email: c.email || null,
+                            },
+                            has_pool_access: poolAccess,
+                            is_primary_guest: false,
+                            checked_out_at: null,
+                        });
                     });
-                });
-                res.number_of_guests = (parseInt(res.number_of_guests || 0, 10) + companions.length);
+                }
+
+                if (payload.number_of_guests) {
+                    targetRes.number_of_guests = payload.number_of_guests;
+                } else {
+                    targetRes.number_of_guests = (parseInt(targetRes.number_of_guests || 0, 10) + flattenedCompanions.length);
+                }
+
+                if (payload.total_amount !== undefined) targetRes.total_amount = payload.total_amount;
+                if (payload.amount_paid !== undefined) targetRes.amount_paid = payload.amount_paid;
+                if (payload.remaining_balance !== undefined) targetRes.remaining_balance = payload.remaining_balance;
+
+                if (window.staffReservationData) window.staffReservationData[currentReservationId] = targetRes;
+                if (typeof reservationData !== 'undefined' && reservationData) reservationData[currentReservationId] = targetRes;
+
                 openReservationModal(currentReservationId);
             }
 
-            showToast(`${payload.added || companions.length} companion${(payload.added || companions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.`);
+            closeResAddConfirmModal();
+            closeResAddCompanionModal();
+            const totalPay = payload.total_payment !== undefined ? parseFloat(payload.total_payment) : null;
+            const payText = totalPay !== null ? ` Total Payment: ₱${totalPay.toFixed(2)}.` : '';
+            showToast(`${payload.added || flattenedCompanions.length} companion${(payload.added || flattenedCompanions.length) > 1 ? 's' : ''} added to Reservation #${currentReservationId}.${payText}`);
         } catch (error) {
             showToast(error.message || 'Unable to add companion.', 'error');
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = resAddStagedCompanions.length === 0;
+                submitButton.innerHTML = `<i class="bi bi-check2-circle text-base"></i> <span>${originalText || 'Confirm & Add Companions'}</span>`;
+            }
         }
     };
-
-    resAddSingleForm?.addEventListener('submit', (e) => {
-        e.preventDefault();
-        resAddStageSingle();
-    });
 
     resAddBulkForm?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -9939,7 +10689,16 @@ window.AppPage['staff_check_ins'] = function () {
     });
 
     resAddAllCompanionsBtn?.addEventListener('click', () => {
-        postCompanionsToReservation(resAddStagedCompanions, resAddAllCompanionsBtn, 'Add All Companions');
+        if (!resAddStagedCompanions.length) return;
+        openResAddConfirmModal();
+    });
+
+    resAddConfirmSubmitBtn?.addEventListener('click', () => {
+        postCompanionsToReservation(resAddStagedCompanions, resAddConfirmSubmitBtn, 'Confirm & Add Companions');
+    });
+
+    resAddConfirmCloseButtons.forEach(button => {
+        button.addEventListener('click', closeResAddConfirmModal);
     });
 
     // Primary guest nationality handling
