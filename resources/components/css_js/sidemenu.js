@@ -623,7 +623,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
 
     function syncBodyOverlays(doc) {
-        const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown, #weatherAlertModal';
+        const keepSelector = '.dash-layout, .chatbot-widget, #notifDetailModal, #allNotifsModal, #weatherDropdown';
 
         document.body.querySelectorAll('body > .modal, body > .guest-modal, body > [id*="modal" i], body > [id*="Modal"], #printableHandoverSlip').forEach((el) => {
             if (el.matches(keepSelector)) return;

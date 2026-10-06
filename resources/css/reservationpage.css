@@ -3823,8 +3823,8 @@ html {
 
 .rp-label-hint {
     font-size: 0.75rem;
-    font-weight: 600;
-    color: #1f2937;
+    font-weight: 500;
+    color: #a7f3d0;
     margin-left: 0.25rem;
 }
 
@@ -4058,6 +4058,11 @@ html {
 .rp-booking-form h3,
 .rp-booking-form label {
     color: #ffffff;
+}
+
+.rp-booking-form .rp-label-hint {
+    color: #a7f3d0;
+    font-weight: 500;
 }
 
 .rp-booking-form input,
@@ -8917,6 +8922,11 @@ body:has(.rp-modal.is-open) .rp-footer {
 .rp-booking-form h3,
 .rp-booking-form label {
     color: #ffffff;
+}
+
+.rp-booking-form .rp-label-hint {
+    color: #a7f3d0;
+    font-weight: 500;
 }
 
 .rp-booking-form input::placeholder {

@@ -245,7 +245,8 @@
                 {{-- ░░ COMPACT WEATHER STRIP ░░ --}}
                 <button type="button" id="weatherAlertStripBtn"
                     class="w-full mb-4 flex items-center gap-3 rounded-2xl border {{ $stripClass }} px-4 py-3 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.005] active:scale-[0.998] cursor-pointer"
-                    aria-haspopup="dialog" aria-controls="weatherAlertModal" data-open-weather-modal="true">
+                    aria-haspopup="dialog" aria-controls="weatherAlertModal" data-open-weather-modal="true"
+                    onclick="if (typeof window.openWeatherAlertModal === 'function') { window.openWeatherAlertModal(); }">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm {{ $stripIconClass }} pointer-events-none">
                         <i class="bi {{ $stripIcon }}"></i>
                     </span>
@@ -1429,7 +1430,7 @@
     <!-- UNIFIED TWO-COLUMN COMPANION MODAL -->
     <div class="guest-modal guest-modal--wide fixed inset-0 z-[1060] hidden items-center justify-center is-open:flex" style="z-index: 1060 !important;" id="checkInCompanionModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-close-check-in-companion-modal="true"></div>
-        <div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border !w-[min(1360px,95vw)] !max-w-[1360px]" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
+        <div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,860px)] overflow-y-auto rounded-3xl bg-hp-cream p-6 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border !w-[min(880px,95vw)] !max-w-[880px]" style="width: min(880px, 95vw) !important; max-width: 880px !important;" role="dialog" aria-modal="true" aria-labelledby="checkInCompanionModalTitle">
             <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text hover:opacity-75 transition-opacity" data-close-check-in-companion-modal="true" aria-label="Close modal">&times;</button>
             
             <div class="guest-modal__header mb-4 flex items-center justify-between border-b border-glass-border pb-3">
@@ -1839,11 +1840,13 @@
          class="fixed inset-0 z-[1300] hidden items-center justify-center p-3 sm:p-4 overflow-y-auto is-open:flex"
          style="display: none;"
          aria-hidden="true"
-         data-close-weather-modal="true">
+         data-close-weather-modal="true"
+         onclick="if (event.target === this) { window.closeWeatherAlertModal && window.closeWeatherAlertModal(); }">
         {{-- Backdrop --}}
-        <div class="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs transition-opacity" 
+        <div class="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs transition-opacity cursor-pointer" 
              id="weatherAlertModalBackdrop" 
-             data-close-weather-modal="true"></div>
+             data-close-weather-modal="true"
+             onclick="window.closeWeatherAlertModal && window.closeWeatherAlertModal()"></div>
 
         {{-- Dialog Panel --}}
         <div class="relative z-10 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-3xl sm:rounded-2xl bg-white dark:bg-[#161a18] shadow-2xl overflow-hidden border border-[#e5e9e6] dark:border-white/10 my-auto"
@@ -1863,7 +1866,8 @@
                 <button type="button" id="closeWeatherAlertModal"
                     class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 mt-0.5"
                     aria-label="Close"
-                    data-close-weather-modal="true">
+                    data-close-weather-modal="true"
+                    onclick="window.closeWeatherAlertModal && window.closeWeatherAlertModal()">
                     <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90 pointer-events-none"></i>
                 </button>
             </div>
@@ -1880,7 +1884,8 @@
                 </p>
                 <button type="button" id="closeWeatherAlertModalFooterBtn"
                     class="cursor-pointer rounded-xl border border-gray-300 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2 text-xs sm:text-sm font-semibold text-[#183d28] dark:text-[#f3f4f6] transition-colors hover:bg-gray-100 dark:hover:bg-white/10"
-                    data-close-weather-modal="true">
+                    data-close-weather-modal="true"
+                    onclick="window.closeWeatherAlertModal && window.closeWeatherAlertModal()">
                     Close
                 </button>
             </div>
@@ -2141,7 +2146,11 @@
 
         function openModal() {
             const modal = getModal();
-            if (!modal) return;
+            if (!modal) {
+                console.warn('[weatherAlertModal] Modal element not found in DOM');
+                return;
+            }
+            if (modal.classList.contains('is-open')) return;
             try {
                 buildModal();
             } catch (err) {

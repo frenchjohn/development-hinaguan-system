@@ -5453,8 +5453,18 @@ tr.row-checkout-near:hover td {
 }
 
 .guest-modal__content--companion-unified {
-    width: min(1360px, 95vw) !important;
-    max-width: 1360px !important;
+    width: min(880px, 95vw) !important;
+    max-width: 880px !important;
+}
+
+#companionModal .guest-modal__content,
+#companionModal .guest-modal__content--companion-unified,
+#reservationAddCompanionModal .guest-modal__content,
+#reservationAddCompanionModal .guest-modal__content--wide,
+#checkInCompanionModal .guest-modal__content,
+#checkInCompanionModal .guest-modal__content--companion-unified {
+    width: min(880px, 95vw) !important;
+    max-width: 880px !important;
 }
 
 #reservationAddCompanionModal .reservation-add-companion-header {

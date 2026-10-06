@@ -945,7 +945,7 @@
 
                             <label for="bookingGuestCount">
 
-                                <span>Number of guests</span>
+                                <span>Number of guests <span class="rp-label-hint">(estimated guest)</span></span>
 
                                 <input type="number" name="number_of_guests" id="bookingGuestCount" min="1" required>
 
