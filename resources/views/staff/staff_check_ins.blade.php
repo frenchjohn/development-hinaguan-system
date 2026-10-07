@@ -1527,6 +1527,7 @@
 														<span id="mainGuestCardName" class="font-bold text-sm text-hp-text dark:text-[#f3f4f6] truncate"></span>
 														<span id="mainGuestCardRateBadge" class="rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 bg-emerald-500/10 dark:text-emerald-300">Adult Rate</span>
 														<span id="mainGuestCardNationality" class="rounded px-1.5 py-0.5 text-[0.68rem] font-medium text-hp-text-muted bg-glass dark:bg-white/5 border border-glass-border">Filipino</span>
+														<span id="mainGuestCardAmenity" class="hidden rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30"></span>
 													</div>
 													<div class="flex items-center gap-3 text-xs text-hp-text-muted mt-0.5 flex-wrap">
 														<span id="mainGuestCardDetails"></span>
@@ -1773,6 +1774,26 @@
 									<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_email">Email Address <span class="text-red-500">*</span></label>
 									<input type="email" form="addGuestForm" name="primary_guest[email]" id="primary_email" placeholder="example@email.com" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
 								</div>
+							</div>
+
+							<div class="guest-form__field-group grid gap-1" id="walkInPrimaryAmenityWrap" style="display: none;">
+								<label class="guest-form__label text-xs font-bold text-hp-text" for="primary_amenity_id">Assign to Amenity</label>
+								<select form="addGuestForm" name="primary_guest[amenity_id]" id="primary_amenity_id" class="guest-form__select w-full rounded-xl border border-glass-border bg-glass px-3.5 py-2.5 text-sm text-hp-text transition-colors duration-200 focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+									<option value="" selected>No amenity</option>
+								</select>
+							</div>
+
+							<div id="walkInPrimaryPoolAccessRow" class="mt-2 flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 p-3">
+								<div class="flex items-center gap-2">
+									<i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
+									<div>
+										<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Main Guest Pool Access</p>
+										<p class="m-0 text-[0.72rem] text-sky-700/80 dark:text-sky-300/80" id="walkInPrimaryPoolHint">Include pool pass for the main guest (Standard rate applies if no amenity pool benefit)</p>
+									</div>
+								</div>
+								<label class="relative inline-flex cursor-pointer items-center">
+									<input type="checkbox" id="walkInModalPrimaryHasPool" class="h-4 w-4 accent-hp-green cursor-pointer">
+								</label>
 							</div>
 						</div>
 
@@ -2044,13 +2065,13 @@
 				<!-- TWO COLUMN COMPANION MODAL (WALK-IN) -->
 				<div class="guest-modal guest-modal--wide" id="companionModal" aria-hidden="true" style="z-index: 1250 !important;">
 					<div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-companion-modal="true"></div>
-					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(94vh,740px)] !overflow-visible flex flex-col rounded-3xl bg-hp-cream p-4 sm:p-5 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(880px, 95vw) !important; max-width: 880px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
+					<div class="guest-modal__content guest-modal__content--companion-unified relative z-[1] w-full max-h-[min(92vh,740px)] overflow-hidden flex flex-col rounded-3xl bg-hp-cream p-4 sm:p-5 shadow-2xl dark:bg-[rgba(26,30,28,0.98)] border border-glass-border" style="width: min(880px, 95vw) !important; max-width: 880px !important;" role="dialog" aria-modal="true" aria-labelledby="companionModalTitle">
 						<button type="button" class="guest-modal__close group absolute right-4 top-4 cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95 z-10" data-close-companion-modal="true" aria-label="Close companion form">
 							<i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
 						</button>
 						
 						<!-- MODAL HEADER -->
-						<div class="guest-modal__header mb-3 flex items-center justify-between border-b border-glass-border pb-2.5">
+						<div class="guest-modal__header shrink-0 mb-3 flex items-center justify-between border-b border-glass-border pb-2.5">
 							<div class="flex items-center gap-2.5">
 								<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green">
 									<i class="bi bi-people-fill text-lg"></i>
@@ -2063,7 +2084,7 @@
 						</div>
 
 						<!-- TWO COLUMN LAYOUT: CREATOR (LEFT) & PREVIEW (RIGHT) -->
-						<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
+						<div class="flex-1 overflow-y-auto min-h-0 pr-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start [scrollbar-width:thin]">
 							
 							<!-- LEFT SIDE: COMPANION CREATOR (6 cols) -->
 							<div class="lg:col-span-6 flex flex-col gap-2.5">
@@ -2341,7 +2362,7 @@
 						</div>
 
 						<!-- MODAL FOOTER ACTIONS -->
-						<div class="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-3">
+						<div class="shrink-0 mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/40 pt-3">
 							<div class="text-xs font-semibold text-hp-text-muted">
 								<span id="modalCompanionFooterSummary">0 companions added so far</span>
 							</div>
@@ -2866,9 +2887,9 @@
 											</div>
 										</div>
 
-										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="resAddBulkAccessRow">
-											<!-- Free Entrance Compact Stepper Card -->
-											<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="resAddBulkFreeEntranceWrap">
+										<div class="grid grid-cols-1 gap-2" id="resAddBulkAccessRow">
+											<!-- Free Entrance Compact Stepper Card (Hidden: Entrance fee is automated) -->
+											<div class="hidden" id="resAddBulkFreeEntranceWrap" style="display: none !important;">
 												<div class="flex items-center justify-between gap-1">
 													<label class="text-[0.7rem] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_free_passes">
 														<i class="bi bi-ticket-perforated-fill text-amber-600"></i> Free <span id="resAddBulkFreeHint">0 of 1 with free entrance</span>
@@ -2882,10 +2903,10 @@
 											</div>
 
 											<!-- Pool Access Compact Stepper Card -->
-											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="resAddBulkPoolWrap">
+											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all w-full" id="resAddBulkPoolWrap">
 												<div class="flex items-center justify-between gap-1">
 													<label class="text-[0.7rem] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_pool_passes">
-														<i class="bi bi-water text-sky-600"></i> Pool <span id="resAddBulkPoolHint">0 of 1 with pool access</span>
+														<i class="bi bi-water text-sky-600"></i> Pool Access <span id="resAddBulkPoolHint" class="font-normal text-sky-700 dark:text-sky-300">(0 of 1 with pool access)</span>
 													</label>
 												</div>
 												<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
@@ -3124,9 +3145,9 @@
 							</div>
 
 							<!-- Row 2: Free Entrance & Pool Access -->
-							<div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="resAddGroupEditAccessRow">
-								<!-- Free Entrance Access -->
-								<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-3 flex flex-col justify-between gap-2 transition-all">
+							<div class="grid grid-cols-1 gap-3" id="resAddGroupEditAccessRow">
+								<!-- Free Entrance Access (Hidden: Entrance fee is automated) -->
+								<div class="hidden" id="resAddGroupEditFreeWrap" style="display: none !important;">
 									<div class="flex items-center justify-between gap-1.5">
 										<label class="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="resAddGroupEditFreeInput">
 											<i class="bi bi-ticket-perforated-fill text-amber-600 text-sm"></i> Free Entrance
@@ -3145,7 +3166,7 @@
 								</div>
 
 								<!-- Pool Access Passes -->
-								<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all">
+								<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-3 flex flex-col justify-between gap-2 transition-all w-full" id="resAddGroupEditPoolWrap">
 									<div class="flex items-center justify-between gap-1.5">
 										<label class="text-xs font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5 cursor-pointer m-0 truncate select-none" for="resAddGroupEditPoolInput">
 											<i class="bi bi-water text-sky-600 text-sm"></i> Pool Passes

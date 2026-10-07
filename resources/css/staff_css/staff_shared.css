@@ -5463,30 +5463,46 @@ tr.row-checkout-near:hover td {
 #reservationAddCompanionModal .guest-modal__content--wide,
 #checkInCompanionModal .guest-modal__content,
 #checkInCompanionModal .guest-modal__content--companion-unified {
-    width: min(880px, 95vw) !important;
-    max-width: 880px !important;
+    width: min(920px, 96vw) !important;
+    max-width: 920px !important;
 }
 
 #reservationAddCompanionModal .reservation-add-companion-header {
     justify-content: flex-start;
 }
 
-#reservationAddCompanionModal .reservation-add-companion-layout {
+#reservationAddCompanionModal .reservation-add-companion-layout,
+#checkInCompanionModal .check-in-companion-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
-    gap: 1.5rem;
+    gap: 1.25rem;
 }
 
 #reservationAddCompanionModal .reservation-add-companion-column,
-#reservationAddCompanionModal .reservation-add-companion-preview {
-    min-width: 0;
+#reservationAddCompanionModal .reservation-add-companion-preview,
+#checkInCompanionModal .check-in-companion-column,
+#checkInCompanionModal .check-in-companion-preview {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
 }
 
-@media (max-width: 768px) {
-    #reservationAddCompanionModal .reservation-add-companion-layout {
+@media (max-width: 1023px) {
+    #reservationAddCompanionModal .reservation-add-companion-layout,
+    #checkInCompanionModal .check-in-companion-layout {
         grid-template-columns: 1fr;
     }
+}
+
+#checkInCompanionModal #checkInBulkCompanionForm.guest-form--tab-content--active,
+#checkInCompanionModal #checkInCompanionForm.guest-form--tab-content--active {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+#checkInCompanionModal .guest-form__field-group {
+    margin-bottom: 0 !important;
 }
 
 /* Form Actions */

@@ -224,6 +224,18 @@ window.AppPage['staff_reservations'] = function () {
     let currentModalReservationId = null;
     let companionCount = 0;
     let bulkCompanionGroups = [];
+    let checkInPrimaryGuest = {
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        age: '',
+        gender: '',
+        is_foreigner: false,
+        phone: '',
+        email: '',
+        has_pool_access: false,
+        amenity_id: '',
+    };
 
     const checkInEntranceOption = document.getElementById('checkInEntranceOption');
     const checkInEntranceOptionHelp = document.getElementById('checkInEntranceOptionHelp');
@@ -251,6 +263,159 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
+    const getResAmenityBenefits = (amenityId) => {
+        if (!amenityId) return { free_entrance: false, free_pool: false };
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+        const ra = resAmenities.find(r => String(r.amenity?.id || r.amenity_id) === String(amenityId));
+        if (!ra) {
+            const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(amenityId));
+            if (!fullAm) return { free_entrance: false, free_pool: false };
+            return {
+                free_entrance: Boolean(fullAm.free_entrance || fullAm.benefits?.free_entrance),
+                free_pool: Boolean(fullAm.free_pool || fullAm.benefits?.free_pool),
+            };
+        }
+        const am = ra.amenity || {};
+        const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
+        return {
+            free_entrance: Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm?.benefits?.free_entrance || fullAm?.free_entrance),
+            free_pool: Boolean(am.free_pool || am.benefits?.free_pool || fullAm?.benefits?.free_pool || fullAm?.free_pool),
+        };
+    };
+
+    const autoSyncCheckInPoolAccessPolicy = () => {
+        if (!checkInPoolOption) return;
+
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+        const defaultAmId = resAmenities.length === 1
+            ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '')
+            : '';
+
+        const guestModeVal = (checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value)
+            || (checkInForm?.querySelector('input[name="check_in_guest_mode"]')?.value)
+            || 'with_primary';
+        const hasPrimary = guestModeVal !== 'without_primary';
+
+        let totalGuests = 0;
+        let guestsWithPoolBenefit = 0;
+        let guestsWithManualPool = 0;
+
+        if (hasPrimary) {
+            totalGuests += 1;
+            const primaryAmId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
+                ? String(checkInPrimaryGuest.amenity_id).trim()
+                : ((document.getElementById('checkInMainAmenity')?.value || '').trim() || defaultAmId);
+            const pBenefits = getResAmenityBenefits(primaryAmId);
+            if (pBenefits.free_pool) {
+                guestsWithPoolBenefit += 1;
+            } else if (checkInPrimaryGuest.has_pool_access || Boolean(checkInPrimaryGuestHasPool?.checked)) {
+                guestsWithManualPool += 1;
+            }
+        }
+
+        checkInCompanions.forEach((c) => {
+            totalGuests += 1;
+            const cAmId = (c.amenity_id !== undefined && c.amenity_id !== null && c.amenity_id !== '')
+                ? String(c.amenity_id)
+                : '';
+            const cBenefits = getResAmenityBenefits(cAmId);
+            if (cBenefits.free_pool) {
+                guestsWithPoolBenefit += 1;
+            } else if (c.has_pool_access) {
+                guestsWithManualPool += 1;
+            }
+        });
+
+        bulkCompanionGroups.forEach((g) => {
+            const qty = parseInt(g.quantity, 10) || 1;
+            totalGuests += qty;
+            const gAmId = (g.amenity_id !== undefined && g.amenity_id !== null && g.amenity_id !== '')
+                ? String(g.amenity_id)
+                : '';
+            const gBenefits = getResAmenityBenefits(gAmId);
+            if (gBenefits.free_pool) {
+                guestsWithPoolBenefit += qty;
+            } else {
+                const pQty = Math.min(Math.max(0, parseInt(g.pool_quantity, 10) || 0), qty);
+                guestsWithManualPool += pQty;
+            }
+        });
+
+        if (totalGuests > 0 && guestsWithPoolBenefit === totalGuests) {
+            checkInPoolOption.value = 'all_free';
+        } else if (guestsWithPoolBenefit > 0 || guestsWithManualPool > 0) {
+            if (checkInPoolOption.value !== 'all_paid') {
+                checkInPoolOption.value = 'specific';
+            }
+        } else {
+            if (checkInPoolOption.value !== 'all_paid') {
+                checkInPoolOption.value = 'no_pool';
+            }
+        }
+    };
+
+    const syncCheckInCompanionAmenityBenefitsUI = () => {
+        const bulkAmSelect = document.getElementById('checkInBulkCompanionAmenity');
+        const bulkAmId = bulkAmSelect?.value || '';
+        const bulkBenefits = getResAmenityBenefits(bulkAmId);
+
+        const bulkPoolWrap = document.getElementById('checkInBulkCompanionPoolWrap');
+        const bulkBenefitBadge = document.getElementById('checkInBulkCompanionAmenityBenefitBadge');
+        const bulkBenefitText = document.getElementById('checkInBulkCompanionAmenityBenefitText');
+
+        if (bulkPoolWrap) {
+            if (bulkBenefits.free_pool) {
+                bulkPoolWrap.style.display = 'none';
+            } else {
+                bulkPoolWrap.style.display = 'flex';
+            }
+        }
+
+        if (bulkBenefitBadge) {
+            if (bulkBenefits.free_pool || bulkBenefits.free_entrance) {
+                bulkBenefitBadge.classList.remove('hidden');
+                bulkBenefitBadge.classList.add('flex');
+                const parts = [];
+                if (bulkBenefits.free_entrance) parts.push('Free Entrance');
+                if (bulkBenefits.free_pool) parts.push('Free Pool Access');
+                if (bulkBenefitText) bulkBenefitText.textContent = `Includes ${parts.join(' & ')}`;
+            } else {
+                bulkBenefitBadge.classList.add('hidden');
+                bulkBenefitBadge.classList.remove('flex');
+            }
+        }
+
+        const singleAmSelect = document.getElementById('checkInCompanionAmenity');
+        const singleAmId = singleAmSelect?.value || '';
+        const singleBenefits = getResAmenityBenefits(singleAmId);
+
+        const singlePoolWrap = document.getElementById('checkInCompanionPoolWrap');
+        const singleBenefitBadge = document.getElementById('checkInCompanionAmenityBenefitBadge');
+        const singleBenefitText = document.getElementById('checkInCompanionAmenityBenefitText');
+
+        if (singlePoolWrap) {
+            if (singleBenefits.free_pool) {
+                singlePoolWrap.style.display = 'none';
+            } else {
+                singlePoolWrap.style.display = 'flex';
+            }
+        }
+
+        if (singleBenefitBadge) {
+            if (singleBenefits.free_pool || singleBenefits.free_entrance) {
+                singleBenefitBadge.classList.remove('hidden');
+                singleBenefitBadge.classList.add('flex');
+                const parts = [];
+                if (singleBenefits.free_entrance) parts.push('Free Entrance');
+                if (singleBenefits.free_pool) parts.push('Free Pool Access');
+                if (singleBenefitText) singleBenefitText.textContent = `Includes ${parts.join(' & ')}`;
+            } else {
+                singleBenefitBadge.classList.add('hidden');
+                singleBenefitBadge.classList.remove('flex');
+            }
+        }
+    };
+
     const syncCheckInPoolOptionUI = () => {
         const opt = checkInPoolOption?.value || 'no_pool';
         const isSpecific = opt === 'specific';
@@ -259,20 +424,28 @@ window.AppPage['staff_reservations'] = function () {
         const isNoPool = opt === 'no_pool';
 
         if (checkInPrimaryGuestPoolWrap) {
-            checkInPrimaryGuestPoolWrap.style.display = isSpecific ? 'flex' : 'none';
+            checkInPrimaryGuestPoolWrap.style.display = (isSpecific || isNoPool) ? 'flex' : 'none';
         }
-        if (checkInCompanionPoolWrap) {
-            checkInCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
-        }
-        if (checkInBulkCompanionPoolWrap) {
-            checkInBulkCompanionPoolWrap.style.display = isSpecific ? 'flex' : 'none';
+        syncCheckInCompanionAmenityBenefitsUI();
+
+        const poolCompactText = document.getElementById('checkInPoolCompactText');
+        if (poolCompactText) {
+            if (isNoPool) {
+                poolCompactText.textContent = 'Pool: None';
+            } else if (isSpecific) {
+                poolCompactText.textContent = 'Pool: Specific Access';
+            } else if (isAllPaid) {
+                poolCompactText.textContent = 'Pool: All Paid';
+            } else if (isAllFree) {
+                poolCompactText.textContent = 'Pool: Free Promo';
+            }
         }
 
         if (checkInPoolOptionHelp) {
             if (isNoPool) {
                 checkInPoolOptionHelp.textContent = 'No pool fee will be charged for any guest in this reservation.';
             } else if (isSpecific) {
-                checkInPoolOptionHelp.textContent = 'Pool fee will only be charged for individual guests or bulk group counts selected below.';
+                checkInPoolOptionHelp.textContent = 'Custom: specify which primary guest, companions, and group counts have pool access.';
             } else if (isAllPaid) {
                 checkInPoolOptionHelp.textContent = 'Standard pool fee will be applied to all guests in this reservation.';
             } else if (isAllFree) {
@@ -447,8 +620,9 @@ window.AppPage['staff_reservations'] = function () {
             checkInGroupEditQuantityInput.value = qty;
         }
 
+        const groupBenefits = getResAmenityBenefits(group.amenity_id);
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
-        const showPool = (currentPoolOpt === 'specific');
+        const showPool = !groupBenefits.free_pool && (currentPoolOpt === 'specific' || currentPoolOpt === 'no_pool');
 
         const curPool = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), qty);
         if (checkInGroupEditPoolInput) {
@@ -560,19 +734,23 @@ window.AppPage['staff_reservations'] = function () {
         const group = bulkCompanionGroups[gIdx];
         const newQty = Math.max(1, parseInt(checkInGroupEditQuantityInput?.value, 10) || 1);
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
+        const groupBenefits = getResAmenityBenefits(group.amenity_id);
 
         group.quantity = newQty;
 
         let newPool = Math.min(Math.max(0, parseInt(checkInGroupEditPoolInput?.value, 10) || 0), newQty);
-        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+        if (groupBenefits.free_pool || currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
             newPool = newQty;
-        } else if (currentPoolOpt === 'no_pool') {
+        } else if (currentPoolOpt === 'no_pool' && newPool === 0) {
             newPool = 0;
         }
         group.pool_quantity = newPool;
 
+        autoSyncCheckInPoolAccessPolicy();
+        syncCheckInPoolOptionUI();
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
+        updateCheckInFeeSummary();
         closeCheckInGroupEditModal();
     });
 
@@ -584,15 +762,19 @@ window.AppPage['staff_reservations'] = function () {
         if (val > 500) val = 500;
         group.quantity = val;
         const curPoolOpt = checkInPoolOption?.value || 'no_pool';
-        if (curPoolOpt === 'all_paid' || curPoolOpt === 'all_free') {
+        const gBenefits = getResAmenityBenefits(group.amenity_id);
+        if (gBenefits.free_pool || curPoolOpt === 'all_paid' || curPoolOpt === 'all_free') {
             group.pool_quantity = val;
-        } else if (curPoolOpt === 'specific') {
+        } else if (curPoolOpt === 'specific' || curPoolOpt === 'no_pool') {
             group.pool_quantity = Math.min(group.pool_quantity || 0, val);
         } else {
             group.pool_quantity = 0;
         }
+        autoSyncCheckInPoolAccessPolicy();
+        syncCheckInPoolOptionUI();
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
+        updateCheckInFeeSummary();
     };
 
     const renderCheckInModalCompanionPreview = () => {
@@ -657,18 +839,21 @@ window.AppPage['staff_reservations'] = function () {
             const parsedAge = parseInt(companion.age, 10);
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
+            const cAmId = companion.amenity_id || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '');
+            const cBenefits = getResAmenityBenefits(cAmId);
+
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
+            if (cBenefits.free_pool || currentPoolOpt === 'all_free') {
                 poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'all_paid') {
                 poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
-            } else if (currentPoolOpt === 'specific') {
+            } else if (currentPoolOpt === 'specific' || currentPoolOpt === 'no_pool') {
                 poolBadgeHtml = companion.has_pool_access
                     ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
                     : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-modal-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
-            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
+            const entranceBadgeHtml = (cBenefits.free_entrance || currentEntranceOpt === 'all_free')
                 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
                 : '';
 
@@ -681,16 +866,19 @@ window.AppPage['staff_reservations'] = function () {
             }
             const amenityHtml = amenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(amenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(amenityName)}</span></span>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 max-w-[140px] truncate shrink min-w-0" title="${escapeHtml(amenityName)}">
+                    <i class="bi bi-house-door-fill text-xs text-emerald-600 shrink-0"></i> 
+                    <span class="truncate">${escapeHtml(amenityName)}</span>
+                </span>
             ` : '';
 
             const genderBadge = getGenderBadgeHtml(companion.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/30 hover:bg-glass';
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass/80 p-2 sm:p-2.5 shadow-xs transition-all hover:border-hp-green/30 hover:bg-glass min-w-0 w-full overflow-hidden';
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                <div class="flex items-center gap-1.5 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap">
+                    <div class="flex items-center gap-1 font-bold text-hp-text dark:text-white shrink-0">
                         <i class="bi bi-person-fill text-hp-green text-sm"></i>
                         <span>${companion.first_name ? `${escapeHtml(companion.first_name)} ${escapeHtml(companion.last_name)}` : '1 guest'}</span>
                     </div>
@@ -702,7 +890,7 @@ window.AppPage['staff_reservations'] = function () {
                     <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
                     ${amenityHtml}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0 ml-auto">
                     <div class="flex items-center gap-1.5">
                         ${entranceBadgeHtml}
                         ${poolBadgeHtml}
@@ -731,12 +919,15 @@ window.AppPage['staff_reservations'] = function () {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
+            const gAmId = group.amenity_id || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '');
+            const gBenefits = getResAmenityBenefits(gAmId);
+
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
+            if (gBenefits.free_pool || currentPoolOpt === 'all_free') {
                 bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'all_paid') {
                 bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-            } else if (currentPoolOpt === 'specific') {
+            } else if (currentPoolOpt === 'specific' || currentPoolOpt === 'no_pool') {
                 const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
                 group.pool_quantity = pQty;
                 if (pQty === group.quantity && pQty > 0) {
@@ -749,7 +940,7 @@ window.AppPage['staff_reservations'] = function () {
                 }
             }
 
-            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
+            const bulkEntranceBadgeHtml = (gBenefits.free_entrance || currentEntranceOpt === 'all_free')
                 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
                 : '';
 
@@ -762,18 +953,21 @@ window.AppPage['staff_reservations'] = function () {
             }
             const bulkAmenityHtml = bulkAmenityName ? `
                 <span class="text-hp-text-muted/40 font-light select-none">|</span>
-                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 shrink-0" title="${escapeHtml(bulkAmenityName)}"><i class="bi bi-house-door-fill text-xs text-emerald-600"></i> <span>${escapeHtml(bulkAmenityName)}</span></span>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400 max-w-[140px] truncate shrink min-w-0" title="${escapeHtml(bulkAmenityName)}">
+                    <i class="bi bi-house-door-fill text-xs text-emerald-600 shrink-0"></i> 
+                    <span class="truncate">${escapeHtml(bulkAmenityName)}</span>
+                </span>
             ` : '';
 
             const genderBadge = getGenderBadgeHtml(group.gender);
 
             const item = document.createElement('div');
-            item.className = 'group relative flex items-center justify-between gap-3 rounded-xl border border-glass-border bg-glass/80 p-2.5 sm:p-3 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer';
+            item.className = 'group relative flex items-center justify-between gap-2.5 rounded-xl border border-glass-border bg-glass/80 p-2 sm:p-2.5 shadow-xs transition-all hover:border-hp-green/40 hover:bg-glass cursor-pointer min-w-0 w-full overflow-hidden';
             item.setAttribute('data-modal-open-group-edit', index);
             item.setAttribute('title', 'Click to edit quantity and access passes');
             item.innerHTML = `
-                <div class="flex items-center gap-2 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap sm:flex-nowrap select-none pointer-events-none">
-                    <div class="flex items-center gap-1.5 font-bold text-hp-text dark:text-white shrink-0">
+                <div class="flex items-center gap-1.5 text-xs text-hp-text dark:text-gray-200 min-w-0 flex-1 flex-wrap select-none pointer-events-none">
+                    <div class="flex items-center gap-1 font-bold text-hp-text dark:text-white shrink-0">
                         <i class="bi bi-people-fill text-emerald-600 dark:text-emerald-400 text-sm"></i>
                         <span>${group.quantity} ${group.quantity === 1 ? 'guest' : 'guests'}</span>
                     </div>
@@ -785,7 +979,7 @@ window.AppPage['staff_reservations'] = function () {
                     <span class="text-hp-text/85 dark:text-gray-300 shrink-0">${nationality}</span>
                     ${bulkAmenityHtml}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0 ml-auto">
                     <div class="flex items-center gap-1.5">
                         ${bulkEntranceBadgeHtml}
                         ${bulkPoolBadgeHtml}
@@ -822,8 +1016,11 @@ window.AppPage['staff_reservations'] = function () {
                     `Are you sure you want to remove <strong>${escapeHtml(name)}</strong> from staged companions?`,
                     () => {
                         checkInCompanions.splice(idx, 1);
+                        autoSyncCheckInPoolAccessPolicy();
+                        syncCheckInPoolOptionUI();
                         renderCheckInCompanions();
                         renderCheckInModalCompanionPreview();
+                        updateCheckInFeeSummary();
                     }
                 );
             }
@@ -840,8 +1037,11 @@ window.AppPage['staff_reservations'] = function () {
                     `Are you sure you want to remove the staged bulk group with <strong>${escapeHtml(desc)}</strong>?`,
                     () => {
                         bulkCompanionGroups.splice(bIdx, 1);
+                        autoSyncCheckInPoolAccessPolicy();
+                        syncCheckInPoolOptionUI();
                         renderCheckInCompanions();
                         renderCheckInModalCompanionPreview();
+                        updateCheckInFeeSummary();
                     }
                 );
             }
@@ -864,8 +1064,11 @@ window.AppPage['staff_reservations'] = function () {
             const idx = parseInt(togglePoolBtn.dataset.modalToggleCompanionPool, 10);
             if (!isNaN(idx) && checkInCompanions[idx]) {
                 checkInCompanions[idx].has_pool_access = !checkInCompanions[idx].has_pool_access;
+                autoSyncCheckInPoolAccessPolicy();
+                syncCheckInPoolOptionUI();
                 renderCheckInCompanions();
                 renderCheckInModalCompanionPreview();
+                updateCheckInFeeSummary();
             }
             return;
         }
@@ -878,8 +1081,11 @@ window.AppPage['staff_reservations'] = function () {
             () => {
                 checkInCompanions = [];
                 bulkCompanionGroups = [];
+                autoSyncCheckInPoolAccessPolicy();
+                syncCheckInPoolOptionUI();
                 renderCheckInCompanions();
                 renderCheckInModalCompanionPreview();
+                updateCheckInFeeSummary();
             }
         );
     });
@@ -924,18 +1130,24 @@ window.AppPage['staff_reservations'] = function () {
     const getAllCheckInCompanions = () => {
         const opt = checkInPoolOption?.value || 'no_pool';
         const allCompanions = [];
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+        const defaultAmId = resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '';
 
         checkInCompanions.forEach((c) => {
-            const hasPool = (opt === 'all_paid' || opt === 'all_free') ? true : (opt === 'specific' ? !!c.has_pool_access : false);
+            const cAmId = (c.amenity_id !== undefined && c.amenity_id !== null && c.amenity_id !== '') ? String(c.amenity_id) : defaultAmId;
+            const cBenefits = getResAmenityBenefits(cAmId);
+            const hasPool = (opt === 'all_paid' || opt === 'all_free' || cBenefits.free_pool) ? true : !!c.has_pool_access;
             allCompanions.push({
                 ...c,
                 has_pool_access: hasPool,
-                amenity_id: c.amenity_id || '',
+                amenity_id: cAmId,
             });
         });
 
         bulkCompanionGroups.forEach((group) => {
-            const poolLimit = (opt === 'all_paid' || opt === 'all_free') ? group.quantity : (opt === 'specific' ? (group.pool_quantity || 0) : 0);
+            const gAmId = (group.amenity_id !== undefined && group.amenity_id !== null && group.amenity_id !== '') ? String(group.amenity_id) : defaultAmId;
+            const gBenefits = getResAmenityBenefits(gAmId);
+            const poolLimit = (opt === 'all_paid' || opt === 'all_free' || gBenefits.free_pool) ? group.quantity : (group.pool_quantity || 0);
             for (let i = 0; i < group.quantity; i++) {
                 allCompanions.push({
                     first_name: 'Companion',
@@ -948,7 +1160,7 @@ window.AppPage['staff_reservations'] = function () {
                     phone: '',
                     email: '',
                     has_pool_access: i < poolLimit,
-                    amenity_id: group.amenity_id || '',
+                    amenity_id: gAmId,
                 });
             }
         });
@@ -1014,18 +1226,21 @@ window.AppPage['staff_reservations'] = function () {
             const parsedAge = parseInt(companion.age, 10);
             const rateLabel = (!isNaN(parsedAge) && parsedAge <= 12) ? 'Child' : 'Adult';
 
+            const cAmId = companion.amenity_id || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '');
+            const cBenefits = getResAmenityBenefits(cAmId);
+
             let poolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
+            if (cBenefits.free_pool || currentPoolOpt === 'all_free') {
                 poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access Included"><i class="bi bi-water text-xs"></i></span>';
             } else if (currentPoolOpt === 'all_paid') {
                 poolBadgeHtml = '<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included"><i class="bi bi-water text-xs"></i></span>';
-            } else if (currentPoolOpt === 'specific') {
+            } else if (currentPoolOpt === 'specific' || currentPoolOpt === 'no_pool') {
                 poolBadgeHtml = companion.has_pool_access
                     ? `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/35 bg-sky-500/20 text-sky-700 dark:text-sky-300 hover:bg-sky-500/30 shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="Pool Pass Included (Click to remove)"><i class="bi bi-water text-xs"></i></button>`
                     : `<button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-glass-border bg-glass/60 text-hp-text-muted/40 hover:text-hp-text hover:bg-glass shadow-2xs cursor-pointer transition-colors shrink-0" data-toggle-companion-pool="${index}" title="No Pool Pass (Click to grant)"><i class="bi bi-water text-xs"></i></button>`;
             }
 
-            const entranceBadgeHtml = (currentEntranceOpt === 'all_free')
+            const entranceBadgeHtml = (cBenefits.free_entrance || currentEntranceOpt === 'all_free')
                 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
                 : '';
 
@@ -1088,12 +1303,15 @@ window.AppPage['staff_reservations'] = function () {
             const nationality = group.is_foreigner ? 'Foreigner' : 'Filipino';
             const rateLabel = (group.age_group === '0-12') ? 'Child' : 'Adult';
 
+            const gAmId = group.amenity_id || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '');
+            const gBenefits = getResAmenityBenefits(gAmId);
+
             let bulkPoolBadgeHtml = '';
-            if (currentPoolOpt === 'all_free') {
+            if (gBenefits.free_pool || currentPoolOpt === 'all_free') {
                 bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-2xs shrink-0" title="Free Pool Access for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
             } else if (currentPoolOpt === 'all_paid') {
                 bulkPoolBadgeHtml = `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-2xs shrink-0" title="Pool Pass Included for all ${group.quantity} guests"><i class="bi bi-water text-xs"></i></span>`;
-            } else if (currentPoolOpt === 'specific') {
+            } else if (currentPoolOpt === 'specific' || currentPoolOpt === 'no_pool') {
                 const pQty = Math.min(Math.max(0, parseInt(group.pool_quantity, 10) || 0), group.quantity);
                 group.pool_quantity = pQty;
                 if (pQty === group.quantity && pQty > 0) {
@@ -1106,7 +1324,7 @@ window.AppPage['staff_reservations'] = function () {
                 }
             }
 
-            const bulkEntranceBadgeHtml = (currentEntranceOpt === 'all_free')
+            const bulkEntranceBadgeHtml = (gBenefits.free_entrance || currentEntranceOpt === 'all_free')
                 ? `<span class="inline-flex h-7 w-7 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-2xs shrink-0" title="Free Entrance (Promo)"><i class="bi bi-ticket-perforated-fill text-xs"></i></span>`
                 : '';
 
@@ -1187,6 +1405,7 @@ window.AppPage['staff_reservations'] = function () {
     const openCheckInCompanionModal = () => {
         checkInCompanionForm?.reset();
         checkInBulkCompanionForm?.reset();
+        syncCheckInCompanionAmenityDropdowns();
         syncCheckInPoolOptionUI();
         syncCheckInBulkPoolMax();
         renderCheckInModalCompanionPreview();
@@ -1443,22 +1662,43 @@ window.AppPage['staff_reservations'] = function () {
 
         let adultCount = 0;
         let childCount = 0;
+        let payingAdultCount = 0;
+        let payingChildCount = 0;
+        let freeEntranceCount = 0;
         let poolCount = 0;
+        let payingPoolCount = 0;
 
+        const resAmenities = currentReservationData?.reservation_amenities || [];
         const poolOpt = checkInPoolOption?.value || 'no_pool';
-        const guestMode = checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value;
-        const hasPrimary = guestMode === 'with_primary';
+        const entranceOpt = checkInEntranceOption?.value || 'all_paid';
+        const guestModeVal = (checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value)
+            || (checkInForm?.querySelector('input[name="check_in_guest_mode"]')?.value)
+            || 'with_primary';
+        const hasPrimary = guestModeVal !== 'without_primary';
 
         if (hasPrimary) {
             const primaryAge = parseInt(checkInPrimaryGuest.age, 10);
-            if (!isNaN(primaryAge) && primaryAge <= 12) childCount += 1;
+            const isChild = !isNaN(primaryAge) && primaryAge <= 12;
+            if (isChild) childCount += 1;
             else adultCount += 1;
 
-            if (poolOpt === 'all_paid' || poolOpt === 'all_free') {
+            const pAmId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
+                ? String(checkInPrimaryGuest.amenity_id).trim()
+                : ((document.getElementById('checkInMainAmenity')?.value || '').trim() || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : ''));
+            const pBenefits = getResAmenityBenefits(pAmId);
+            const pGetsFreeEnt = (entranceOpt === 'all_free') || pBenefits.free_entrance;
+            if (pGetsFreeEnt) {
+                freeEntranceCount += 1;
+            } else {
+                if (isChild) payingChildCount += 1; else payingAdultCount += 1;
+            }
+
+            const primaryWantsPool = Boolean(checkInPrimaryGuest.has_pool_access || checkInPrimaryGuestHasPool?.checked);
+            const pHasPool = (poolOpt === 'all_paid' || poolOpt === 'all_free' || pBenefits.free_pool) || primaryWantsPool;
+            if (pHasPool) {
                 poolCount += 1;
-            } else if (poolOpt === 'specific') {
-                if (checkInPrimaryGuest.has_pool_access) {
-                    poolCount += 1;
+                if (poolOpt !== 'all_free' && !pBenefits.free_pool) {
+                    payingPoolCount += 1;
                 }
             }
         }
@@ -1466,39 +1706,54 @@ window.AppPage['staff_reservations'] = function () {
         const companions = getAllCheckInCompanions();
         companions.forEach((companion) => {
             const companionAge = parseInt(companion.age, 10);
-            if (!isNaN(companionAge) && companionAge <= 12) childCount += 1;
+            const isChild = !isNaN(companionAge) && companionAge <= 12;
+            if (isChild) childCount += 1;
             else adultCount += 1;
 
-            if (companion.has_pool_access) {
+            const cAmId = (companion.amenity_id !== undefined && companion.amenity_id !== null)
+                ? String(companion.amenity_id).trim()
+                : (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '');
+            const cBenefits = getResAmenityBenefits(cAmId);
+            const cGetsFreeEnt = (entranceOpt === 'all_free') || cBenefits.free_entrance;
+            if (cGetsFreeEnt) {
+                freeEntranceCount += 1;
+            } else {
+                if (isChild) payingChildCount += 1; else payingAdultCount += 1;
+            }
+
+            const cHasPool = (poolOpt === 'all_paid' || poolOpt === 'all_free' || cBenefits.free_pool) || Boolean(companion.has_pool_access);
+            if (cHasPool) {
                 poolCount += 1;
+                if (poolOpt !== 'all_free' && !cBenefits.free_pool) {
+                    payingPoolCount += 1;
+                }
             }
         });
 
-        const entranceOpt = checkInEntranceOption?.value || 'all_paid';
-        const entranceTotal = entranceOpt === 'all_free' ? 0 : (adultCount * adultRate + childCount * childRate);
-        let poolTotal = 0;
-        if (poolOpt === 'all_paid' || poolOpt === 'specific') {
-            poolTotal = poolCount * poolRate;
-        } else {
-            poolTotal = 0;
-        }
+        const entranceTotal = (payingAdultCount * adultRate) + (payingChildCount * childRate);
+        const poolTotal = payingPoolCount * poolRate;
 
         // Calculate Extra Head Fee for booked amenities exceeding maximum capacity
         let extraHeadTotal = 0;
         const extraHeadBreakdown = [];
-        const resAmenities = currentReservationData?.reservation_amenities || [];
         if (resAmenities.length > 0) {
-            const defaultAmenityId = String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '');
+            const defaultAmenityId = resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '';
             const amenityCounts = {};
 
             if (hasPrimary) {
-                const pAmenityId = String(defaultAmenityId);
-                amenityCounts[pAmenityId] = (amenityCounts[pAmenityId] || 0) + 1;
+                const pAmenityId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
+                    ? String(checkInPrimaryGuest.amenity_id).trim()
+                    : ((document.getElementById('checkInMainAmenity')?.value || '').trim() || defaultAmenityId);
+                if (pAmenityId) {
+                    amenityCounts[pAmenityId] = (amenityCounts[pAmenityId] || 0) + 1;
+                }
             }
 
             companions.forEach(c => {
-                if (c.amenity_id) {
-                    const cAmenityId = String(c.amenity_id);
+                const cAmenityId = (c.amenity_id !== undefined && c.amenity_id !== null)
+                    ? String(c.amenity_id).trim()
+                    : defaultAmenityId;
+                if (cAmenityId) {
                     amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
                 }
             });
@@ -1530,11 +1785,15 @@ window.AppPage['staff_reservations'] = function () {
             period,
             adultCount,
             childCount,
+            payingAdultCount,
+            payingChildCount,
+            freeEntranceCount,
             adultRate,
             childRate,
             entranceOpt,
             poolOpt,
             poolCount,
+            payingPoolCount,
             poolRate,
             poolTotal,
             entranceTotal,
@@ -1545,7 +1804,7 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     const updateCheckInFeeSummary = () => {
-        const { period, adultCount, childCount, adultRate, childRate, entranceOpt, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
+        const { period, adultCount, childCount, payingAdultCount, payingChildCount, adultRate, childRate, entranceOpt, poolOpt, poolCount, poolRate, poolTotal, entranceTotal, extraHeadTotal, extraHeadBreakdown, total } = computeCheckInEntrance();
         const totalAmount = Number(currentReservationData?.total_amount || 0);
         const balance = Number(currentReservationData?.remaining_balance || 0);
         const paidDeposit = Number(currentReservationData?.amount_paid !== undefined && currentReservationData?.amount_paid !== null ? currentReservationData.amount_paid : Math.max(0, totalAmount - balance));
@@ -1558,6 +1817,10 @@ window.AppPage['staff_reservations'] = function () {
         if (adultEl) {
             if (entranceOpt === 'all_free') {
                 adultEl.textContent = `${adultCount} × ₱0.00 (Promo)`;
+            } else if (payingAdultCount === 0 && adultCount > 0) {
+                adultEl.textContent = `${adultCount} × ₱0.00 (Free Benefit)`;
+            } else if (payingAdultCount < adultCount) {
+                adultEl.textContent = `${payingAdultCount} × ₱${adultRate.toFixed(2)} (${adultCount - payingAdultCount} Free)`;
             } else {
                 adultEl.textContent = `${adultCount} × ₱${adultRate.toFixed(2)}`;
             }
@@ -1566,6 +1829,10 @@ window.AppPage['staff_reservations'] = function () {
         if (childEl) {
             if (entranceOpt === 'all_free') {
                 childEl.textContent = `${childCount} × ₱0.00 (Promo)`;
+            } else if (payingChildCount === 0 && childCount > 0) {
+                childEl.textContent = `${childCount} × ₱0.00 (Free Benefit)`;
+            } else if (payingChildCount < childCount) {
+                childEl.textContent = `${payingChildCount} × ₱${childRate.toFixed(2)} (${childCount - payingChildCount} Free)`;
             } else {
                 childEl.textContent = `${childCount} × ₱${childRate.toFixed(2)}`;
             }
@@ -1621,7 +1888,7 @@ window.AppPage['staff_reservations'] = function () {
         }
     };
 
-    let checkInPrimaryGuest = {
+    checkInPrimaryGuest = {
         first_name: '',
         middle_name: '',
         last_name: '',
@@ -1631,6 +1898,7 @@ window.AppPage['staff_reservations'] = function () {
         phone: '',
         email: '',
         has_pool_access: false,
+        amenity_id: '',
     };
 
     const syncCheckInPrimaryGuestUI = () => {
@@ -1644,6 +1912,7 @@ window.AppPage['staff_reservations'] = function () {
         const hPhone = document.getElementById('checkInHiddenPrimaryPhone');
         const hEmail = document.getElementById('checkInHiddenPrimaryEmail');
         const hPool = document.getElementById('checkInHiddenPrimaryHasPool');
+        const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
 
         if (hFirst) hFirst.value = checkInPrimaryGuest.first_name || '';
         if (hMiddle) hMiddle.value = checkInPrimaryGuest.middle_name || '';
@@ -1654,6 +1923,7 @@ window.AppPage['staff_reservations'] = function () {
         if (hPhone) hPhone.value = checkInPrimaryGuest.phone || '';
         if (hEmail) hEmail.value = checkInPrimaryGuest.email || '';
         if (hPool) hPool.value = checkInPrimaryGuest.has_pool_access ? '1' : '0';
+        if (hAmenity) hAmenity.value = checkInPrimaryGuest.amenity_id || '';
 
         // Sync directly to the inline form inputs
         const mFirst = document.getElementById('checkInMainFirstName');
@@ -1665,6 +1935,7 @@ window.AppPage['staff_reservations'] = function () {
         const mPhone = document.getElementById('checkInMainPhone');
         const mEmail = document.getElementById('checkInMainEmail');
         const mPool = document.getElementById('checkInPrimaryGuestHasPool');
+        const mAmenity = document.getElementById('checkInMainAmenity');
         const poolRow = document.getElementById('checkInMainPoolAccessRow');
         const ageBadge = document.getElementById('checkInMainAgeBadge');
 
@@ -1676,7 +1947,7 @@ window.AppPage['staff_reservations'] = function () {
         if (mNat && document.activeElement !== mNat) mNat.value = checkInPrimaryGuest.is_foreigner ? '1' : '0';
         if (mPhone && document.activeElement !== mPhone) mPhone.value = checkInPrimaryGuest.phone || '';
         if (mEmail && document.activeElement !== mEmail) mEmail.value = checkInPrimaryGuest.email || '';
-        if (mPool) mPool.checked = !!checkInPrimaryGuest.has_pool_access;
+        if (mAmenity && document.activeElement !== mAmenity) mAmenity.value = checkInPrimaryGuest.amenity_id || '';
 
         if (ageBadge) {
             const parsedAge = parseInt(checkInPrimaryGuest.age, 10);
@@ -1692,7 +1963,44 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const poolOpt = checkInPoolOption?.value || 'no_pool';
-        if (poolRow) poolRow.style.display = poolOpt === 'specific' ? 'flex' : 'none';
+        const resAmenities = currentReservationData?.reservation_amenities || [];
+        const primaryAmId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
+            ? String(checkInPrimaryGuest.amenity_id).trim()
+            : ((document.getElementById('checkInMainAmenity')?.value || '').trim() || (resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : ''));
+        const pBenefits = getResAmenityBenefits(primaryAmId);
+
+        if (poolRow) {
+            const poolSubText = poolRow.querySelector('p.text-\\[0\\.72rem\\]');
+            if (pBenefits.free_pool) {
+                poolRow.style.display = 'flex';
+                if (mPool) {
+                    mPool.checked = true;
+                    mPool.disabled = true;
+                }
+                if (poolSubText) poolSubText.textContent = 'Complimentary pool access included with assigned amenity benefits (Promo • ₱0.00)';
+            } else if (poolOpt === 'all_free') {
+                poolRow.style.display = 'flex';
+                if (mPool) {
+                    mPool.checked = true;
+                    mPool.disabled = true;
+                }
+                if (poolSubText) poolSubText.textContent = 'Free promo pool access included for all guests in this reservation';
+            } else if (poolOpt === 'all_paid') {
+                poolRow.style.display = 'flex';
+                if (mPool) {
+                    mPool.checked = true;
+                    mPool.disabled = true;
+                }
+                if (poolSubText) poolSubText.textContent = 'Standard pool pass included for all guests';
+            } else {
+                poolRow.style.display = (poolOpt === 'specific' || poolOpt === 'no_pool') ? 'flex' : 'none';
+                if (mPool) {
+                    mPool.disabled = false;
+                    mPool.checked = !!checkInPrimaryGuest.has_pool_access;
+                }
+                if (poolSubText) poolSubText.textContent = 'Grant pool access pass for primary guest (Standard pool fee applies without benefit)';
+            }
+        }
 
         // Ready badge indicator for main guest
         const readyBadge = document.getElementById('checkInMainGuestReadyBadge');
@@ -1830,6 +2138,23 @@ window.AppPage['staff_reservations'] = function () {
             checkInPrimaryGuest.has_pool_access = e.target.checked;
             const hPool = document.getElementById('checkInHiddenPrimaryHasPool');
             if (hPool) hPool.value = checkInPrimaryGuest.has_pool_access ? '1' : '0';
+            autoSyncCheckInPoolAccessPolicy();
+            syncCheckInPoolOptionUI();
+            syncCheckInPrimaryGuestUI();
+            renderCheckInCompanions();
+            renderCheckInModalCompanionPreview();
+            updateCheckInFeeSummary();
+        });
+        const mAmenity = document.getElementById('checkInMainAmenity');
+        mAmenity?.addEventListener('change', (e) => {
+            checkInPrimaryGuest.amenity_id = e.target.value;
+            const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
+            if (hAmenity) hAmenity.value = checkInPrimaryGuest.amenity_id;
+            autoSyncCheckInPoolAccessPolicy();
+            syncCheckInPoolOptionUI();
+            syncCheckInPrimaryGuestUI();
+            renderCheckInCompanions();
+            renderCheckInModalCompanionPreview();
             updateCheckInFeeSummary();
         });
     };
@@ -1852,11 +2177,9 @@ window.AppPage['staff_reservations'] = function () {
 
     checkInPoolOption?.addEventListener('change', () => {
         syncCheckInPoolOptionUI();
+        syncCheckInPrimaryGuestUI();
         renderCheckInCompanions();
-        updateCheckInFeeSummary();
-    });
-
-    checkInPrimaryGuestHasPool?.addEventListener('change', () => {
+        renderCheckInModalCompanionPreview();
         updateCheckInFeeSummary();
     });
 
@@ -2044,9 +2367,12 @@ window.AppPage['staff_reservations'] = function () {
             }, 1000);
         }
 
-        const companionHasPool = (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free')
+        const cBenefits = getResAmenityBenefits(cAmenityId);
+        const companionHasPool = cBenefits.free_pool
             ? true
-            : (currentPoolOpt === 'specific' ? (formData.get('has_pool_access') === '1' || checkInCompanionHasPool?.checked) : false);
+            : (currentPoolOpt === 'all_paid'
+                ? true
+                : (formData.get('has_pool_access') === '1' || Boolean(checkInCompanionHasPool?.checked)));
 
         const companion = {
             first_name: firstName || 'Companion',
@@ -2062,12 +2388,16 @@ window.AppPage['staff_reservations'] = function () {
         };
 
         checkInCompanions.push(companion);
+        autoSyncCheckInPoolAccessPolicy();
+        syncCheckInPoolOptionUI();
+        syncCheckInPrimaryGuestUI();
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
+        updateCheckInFeeSummary();
 
         checkInCompanionForm.reset();
         if (checkInCompanionIsForeigner) checkInCompanionIsForeigner.value = '0';
-        syncCheckInPoolOptionUI();
+        syncCheckInCompanionAmenityDropdowns();
     });
 
     // Bulk companion form submission with duplicate validation & 1s anti-double-click lock
@@ -2083,12 +2413,11 @@ window.AppPage['staff_reservations'] = function () {
         const currentPoolOpt = checkInPoolOption?.value || 'no_pool';
         const bAmenityId = String(formData.get('amenity_id') || '');
 
+        const bBenefits = getResAmenityBenefits(bAmenityId);
         const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
         let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
-        if (currentPoolOpt === 'all_paid' || currentPoolOpt === 'all_free') {
+        if (bBenefits.free_pool || currentPoolOpt === 'all_paid') {
             poolQty = quantity;
-        } else if (currentPoolOpt === 'no_pool') {
-            poolQty = 0;
         }
 
         // Check for duplicate bulk group with exact same demographic profile & amenity
@@ -2124,11 +2453,16 @@ window.AppPage['staff_reservations'] = function () {
             amenity_id: bAmenityId,
         });
 
+        autoSyncCheckInPoolAccessPolicy();
+        syncCheckInPoolOptionUI();
+        syncCheckInPrimaryGuestUI();
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
+        updateCheckInFeeSummary();
 
         checkInBulkCompanionForm.reset();
         if (checkInBulkCompanionQuantity) checkInBulkCompanionQuantity.value = '1';
+        syncCheckInCompanionAmenityDropdowns();
         syncCheckInBulkPoolMax();
     });
 
@@ -2148,8 +2482,12 @@ window.AppPage['staff_reservations'] = function () {
                         `Are you sure you want to remove <strong>${escapeHtml(name)}</strong> from the companion list?`,
                         () => {
                             checkInCompanions.splice(idx, 1);
+                            autoSyncCheckInPoolAccessPolicy();
+                            syncCheckInPoolOptionUI();
+                            syncCheckInPrimaryGuestUI();
                             renderCheckInCompanions();
                             renderCheckInModalCompanionPreview();
+                            updateCheckInFeeSummary();
                         }
                     );
                 }
@@ -2162,8 +2500,12 @@ window.AppPage['staff_reservations'] = function () {
                         `Are you sure you want to remove the bulk companion group with <strong>${escapeHtml(desc)}</strong>?`,
                         () => {
                             bulkCompanionGroups.splice(bIdx, 1);
+                            autoSyncCheckInPoolAccessPolicy();
+                            syncCheckInPoolOptionUI();
+                            syncCheckInPrimaryGuestUI();
                             renderCheckInCompanions();
                             renderCheckInModalCompanionPreview();
+                            updateCheckInFeeSummary();
                         }
                     );
                 }
@@ -2187,8 +2529,12 @@ window.AppPage['staff_reservations'] = function () {
             const cIdx = parseInt(togglePoolBtn.dataset.toggleCompanionPool, 10);
             if (!isNaN(cIdx) && checkInCompanions[cIdx]) {
                 checkInCompanions[cIdx].has_pool_access = !checkInCompanions[cIdx].has_pool_access;
+                autoSyncCheckInPoolAccessPolicy();
+                syncCheckInPoolOptionUI();
+                syncCheckInPrimaryGuestUI();
                 renderCheckInCompanions();
                 renderCheckInModalCompanionPreview();
+                updateCheckInFeeSummary();
             }
             return;
         }
@@ -2196,16 +2542,6 @@ window.AppPage['staff_reservations'] = function () {
 
     checkInEntranceOption?.addEventListener('change', () => {
         syncCheckInEntranceOptionUI();
-        updateCheckInFeeSummary();
-    });
-
-    checkInPoolOption?.addEventListener('change', () => {
-        syncCheckInPoolOptionUI();
-        renderCheckInCompanions();
-        updateCheckInFeeSummary();
-    });
-
-    checkInPrimaryGuestHasPool?.addEventListener('change', () => {
         updateCheckInFeeSummary();
     });
 
@@ -2296,9 +2632,14 @@ window.AppPage['staff_reservations'] = function () {
         const companionAmenitySelect = document.getElementById('checkInCompanionAmenity');
         const bulkAmenityWrap = document.getElementById('checkInBulkCompanionAmenityWrap');
         const bulkAmenitySelect = document.getElementById('checkInBulkCompanionAmenity');
+        const mainAmenityWrap = document.getElementById('checkInMainAmenityWrap');
+        const mainAmenitySelect = document.getElementById('checkInMainAmenity');
 
         if (resAmenities.length >= 1) {
-            let optionsHtml = '<option value="" selected>No amenity</option>';
+            const isSingle = resAmenities.length === 1;
+            const singleAmId = isSingle ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '';
+
+            let optionsHtml = `<option value="" selected>No amenity</option>`;
             resAmenities.forEach(ra => {
                 const am = ra.amenity || {};
                 const amId = String(am.id || ra.amenity_id || '');
@@ -2307,17 +2648,54 @@ window.AppPage['staff_reservations'] = function () {
                 const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
                 optionsHtml += `<option value="${amId}">${escapeHtml(name)} (${max}${addFee})</option>`;
             });
-            if (companionAmenitySelect) companionAmenitySelect.innerHTML = optionsHtml;
-            if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = optionsHtml;
+
+            if (companionAmenitySelect) {
+                companionAmenitySelect.innerHTML = optionsHtml;
+                companionAmenitySelect.value = '';
+            }
+            if (bulkAmenitySelect) {
+                bulkAmenitySelect.innerHTML = optionsHtml;
+                bulkAmenitySelect.value = '';
+            }
+            if (mainAmenitySelect) {
+                const wasInitialized = mainAmenitySelect.dataset.initialized === 'true';
+                const curVal = checkInPrimaryGuest.amenity_id;
+                mainAmenitySelect.innerHTML = optionsHtml;
+                let chosenMain = '';
+                if (wasInitialized) {
+                    if (curVal === '' || resAmenities.some(ra => String(ra.amenity?.id || ra.amenity_id) === String(curVal))) {
+                        chosenMain = curVal;
+                    } else {
+                        chosenMain = isSingle ? singleAmId : '';
+                    }
+                } else {
+                    chosenMain = isSingle ? singleAmId : '';
+                    mainAmenitySelect.dataset.initialized = 'true';
+                }
+                mainAmenitySelect.value = chosenMain;
+                checkInPrimaryGuest.amenity_id = chosenMain;
+                const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
+                if (hAmenity) hAmenity.value = chosenMain;
+            }
             if (companionAmenityWrap) companionAmenityWrap.classList.remove('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.remove('hidden');
+            if (mainAmenityWrap) mainAmenityWrap.classList.remove('hidden');
         } else {
             if (companionAmenitySelect) companionAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
             if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
+            if (mainAmenitySelect) mainAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
+            checkInPrimaryGuest.amenity_id = '';
+            const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
+            if (hAmenity) hAmenity.value = '';
             if (companionAmenityWrap) companionAmenityWrap.classList.add('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.add('hidden');
+            if (mainAmenityWrap) mainAmenityWrap.classList.add('hidden');
         }
+        syncCheckInCompanionAmenityBenefitsUI();
     };
+
+    document.getElementById('checkInCompanionAmenity')?.addEventListener('change', syncCheckInCompanionAmenityBenefitsUI);
+    document.getElementById('checkInBulkCompanionAmenity')?.addEventListener('change', syncCheckInCompanionAmenityBenefitsUI);
 
     const renderCheckInAmenities = () => {
         const reservation = currentReservationData;
@@ -2976,12 +3354,12 @@ window.AppPage['staff_reservations'] = function () {
         });
 
         if (checkInEntranceOption) {
-            checkInEntranceOption.value = hasFreeEntrance ? 'all_free' : 'all_paid';
+            checkInEntranceOption.value = 'all_paid';
         }
         syncCheckInEntranceOptionUI();
 
         if (checkInPoolOption) {
-            checkInPoolOption.value = hasFreePool ? 'all_free' : 'no_pool';
+            checkInPoolOption.value = 'no_pool';
         }
         if (checkInPrimaryGuestHasPool) {
             checkInPrimaryGuestHasPool.checked = false;
@@ -3016,6 +3394,10 @@ window.AppPage['staff_reservations'] = function () {
             custLast = names.slice(1).join(' ') || '';
         }
 
+        const defaultAmId = resAmenities.length === 1
+            ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '')
+            : '';
+
         checkInPrimaryGuest = {
             first_name: custFirst,
             middle_name: custMiddle,
@@ -3026,13 +3408,18 @@ window.AppPage['staff_reservations'] = function () {
             phone: custPhone,
             email: custEmail,
             has_pool_access: custPool,
+            amenity_id: defaultAmId,
         };
 
+        syncCheckInCompanionAmenityDropdowns();
         syncCheckInPrimaryGuestUI();
 
         const guestModeWithPrimary = checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]');
         if (guestModeWithPrimary) guestModeWithPrimary.checked = true;
 
+        autoSyncCheckInPoolAccessPolicy();
+        syncCheckInPoolOptionUI();
+        syncCheckInPrimaryGuestUI();
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
         switchCheckInTab('checkInAmenitiesTab');
@@ -5807,6 +6194,7 @@ window.AppPage['staff_reservations'] = function () {
             phone: checkInPrimaryGuest.phone || formData.get('check_in_primary_guest[phone]') || '',
             email: checkInPrimaryGuest.email || formData.get('check_in_primary_guest[email]') || '',
             has_pool_access: primaryHasPool,
+            amenity_id: checkInPrimaryGuest.amenity_id || formData.get('check_in_primary_guest[amenity_id]') || '',
         } : null;
 
         if (checkInReservationWasEdited) {
