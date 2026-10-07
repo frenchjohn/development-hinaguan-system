@@ -1,3 +1,11 @@
+import Chart from 'chart.js/auto';
+import * as XLSX from 'xlsx';
+
+if (typeof window !== 'undefined') {
+    window.Chart = Chart;
+    window.XLSX = XLSX;
+}
+
 window.AppPage = window.AppPage || {};
 window.AppPage['admin_reports'] = function () {
     const data = window.reportData || {};
@@ -948,7 +956,8 @@ window.AppPage['admin_reports'] = function () {
             return;
         }
 
-        if (typeof XLSX === 'undefined') {
+        const xlsxLib = (typeof XLSX !== 'undefined' && XLSX && XLSX.utils) ? XLSX : (window.XLSX || {});
+        if (!xlsxLib || !xlsxLib.utils) {
             alert('Excel generator is not ready. Downloading CSV fallback instead.');
             if (exportMatrixCsvBtn) exportMatrixCsvBtn.click();
             return;
@@ -964,7 +973,7 @@ window.AppPage['admin_reports'] = function () {
             ? `${startMonthName.toUpperCase()} ${startYear}`
             : `${dStart.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${startYear} - ${dEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${endYear}`;
 
-        const wb = XLSX.utils.book_new();
+        const wb = xlsxLib.utils.book_new();
 
         // 1. Build Room / Amenity Matrix Sheet (Matching Image 3 template)
         const visibleAmenities = allAmenities.filter(a => selectedAmenityIds.has(String(a.id)));
@@ -1019,7 +1028,7 @@ window.AppPage['admin_reports'] = function () {
         totalRowArr.push(grandTotalCheckIn, grandTotalOvernight, grandTotalRoomsOccupied);
         roomSheetData.push(totalRowArr);
 
-        const wsRooms = XLSX.utils.aoa_to_sheet(roomSheetData);
+        const wsRooms = xlsxLib.utils.aoa_to_sheet(roomSheetData);
 
         // Column Widths for Room Matrix Sheet (Eliminates header truncation)
         wsRooms['!cols'] = [
@@ -1069,7 +1078,7 @@ window.AppPage['admin_reports'] = function () {
         });
         guestsSheetData.push(['TOTAL', '', grandTotalMale, grandTotalFemale, grandTotalForeigner, grandTotalAllGuests]);
 
-        const wsGuests = XLSX.utils.aoa_to_sheet(guestsSheetData);
+        const wsGuests = xlsxLib.utils.aoa_to_sheet(guestsSheetData);
         wsGuests['!cols'] = [
             { wch: Math.max(monthLabelText.length + 3, 16) },  // Month & DATE
             { wch: 15 }, // DAY
@@ -1092,15 +1101,15 @@ window.AppPage['admin_reports'] = function () {
         const guestsSheetTitle = `GUESTS-${startMonthName.toUpperCase()}`.substring(0, 31);
 
         if (currentMatrixView === 'guests') {
-            XLSX.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
-            XLSX.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
+            xlsxLib.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
+            xlsxLib.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
         } else {
-            XLSX.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
-            XLSX.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
+            xlsxLib.utils.book_append_sheet(wb, wsRooms, roomsSheetTitle);
+            xlsxLib.utils.book_append_sheet(wb, wsGuests, guestsSheetTitle);
         }
 
         const fileName = `Hinaguan_Park_Amenity_Monitoring_Matrix_${currentMatrixStartDate}_${currentMatrixEndDate}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+        xlsxLib.writeFile(wb, fileName);
     }
 
     if (exportMatrixExcelBtn) {
@@ -2720,6 +2729,22 @@ window.AppPage['admin_reports'] = function () {
         });
     };
 
+    const renderStandardCharts = () => {
+        if (!sectionStandard || sectionStandard.classList.contains('hidden')) return;
+        const filteredRows = getFilteredRows();
+        const filteredStaff = getFilteredStaffCollections();
+        updateStaffCollectionsChart(filteredStaff);
+        updateCharts(filteredRows);
+        if (revenueChart) {
+            revenueChart.resize();
+            revenueChart.update('none');
+        }
+        if (staffCollectionsChart) {
+            staffCollectionsChart.resize();
+            staffCollectionsChart.update('none');
+        }
+    };
+
     const switchSection = (mode) => {
         const tabs = [tabMatrix, tabStandard, tabAi];
         [sectionMatrix, sectionStandard, sectionAi].forEach(s => s?.classList.add('hidden'));
@@ -2732,10 +2757,12 @@ window.AppPage['admin_reports'] = function () {
             setTabButtonActive(tabStandard, tabs);
             sectionStandard?.classList.remove('hidden');
             localStorage.setItem('admin_reports_active_tab', 'standard');
-            // Trigger chart resize if needed
-            if (revenueChart) revenueChart.resize();
-            if (donutChart) donutChart.resize();
-            if (staffCollectionsChart) staffCollectionsChart.resize();
+            // Trigger chart render and resize once unhidden and painted by the browser
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    renderStandardCharts();
+                }, 50);
+            });
         } else {
             setTabButtonActive(tabMatrix, tabs);
             sectionMatrix?.classList.remove('hidden');
@@ -2746,6 +2773,44 @@ window.AppPage['admin_reports'] = function () {
     tabMatrix?.addEventListener('click', () => switchSection('matrix'));
     tabStandard?.addEventListener('click', () => switchSection('standard'));
     tabAi?.addEventListener('click', () => switchSection('ai'));
+
+    // Observe size changes on standard reports section so charts reliably resize on visibility changes
+    if (typeof ResizeObserver !== 'undefined' && sectionStandard) {
+        let lastObservedWidth = 0;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const curWidth = Math.round(entry.contentRect.width);
+                if (curWidth > 50 && !sectionStandard.classList.contains('hidden')) {
+                    if (lastObservedWidth === 0 || !revenueChart || !staffCollectionsChart || revenueChart.width === 0 || staffCollectionsChart.width === 0) {
+                        renderStandardCharts();
+                    } else if (Math.abs(curWidth - lastObservedWidth) > 10) {
+                        revenueChart?.resize();
+                        staffCollectionsChart?.resize();
+                    }
+                    lastObservedWidth = curWidth;
+                } else if (sectionStandard.classList.contains('hidden')) {
+                    lastObservedWidth = 0;
+                }
+            }
+        });
+        ro.observe(sectionStandard);
+    }
+
+    // Window resize handler
+    window.addEventListener('resize', () => {
+        if (sectionStandard && !sectionStandard.classList.contains('hidden')) {
+            revenueChart?.resize();
+            staffCollectionsChart?.resize();
+        }
+    });
+
+    // Theme toggle observer
+    const themeObserver = new MutationObserver(() => {
+        if (sectionStandard && !sectionStandard.classList.contains('hidden')) {
+            renderStandardCharts();
+        }
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // Check saved tab state or hash
     const savedTab = localStorage.getItem('admin_reports_active_tab');
@@ -3155,4 +3220,16 @@ window.AppPage['admin_reports'] = function () {
     applyFilters();
 };
 
-document.addEventListener('DOMContentLoaded', () => window.AppPage['admin_reports']());
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof window.AppPage?.['admin_reports'] === 'function') {
+            window.AppPage['admin_reports']();
+        }
+    });
+} else {
+    if (document.getElementById('matrixReportsSection') || document.getElementById('standardReportsSection')) {
+        if (typeof window.AppPage?.['admin_reports'] === 'function') {
+            window.AppPage['admin_reports']();
+        }
+    }
+}

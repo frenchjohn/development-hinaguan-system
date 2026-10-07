@@ -17,11 +17,6 @@
     <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700|playfair-display:400,500,600,700|poppins:300,400,500,600,700" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ asset('vendor/xlsx/xlsx.full.min.js') }}"></script>
-    <script>
-        if (typeof XLSX === 'undefined') {
-            document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
-        }
-    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite([
         'resources/css/app.css',
@@ -980,7 +975,7 @@
                                     <h3 class="m-0 text-lg font-semibold text-hp-text">Revenue Performance Trend</h3>
                                 </div>
                             </div>
-                            <div class="relative min-h-[300px] w-full flex-1">
+                            <div class="relative h-[300px] sm:h-[320px] w-full flex-1" id="revenueChartWrapper">
                                 <canvas id="revenueChart"></canvas>
                             </div>
                         </section>

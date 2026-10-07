@@ -314,7 +314,7 @@ window.addEventListener('DOMContentLoaded', function () {
             document.head.appendChild(fresh);
         });
 
-        // Page JS bundles
+        // Page JS bundles (ES modules)
         const missing = Array.from(doc.querySelectorAll('head script[type="module"][src]'))
             .map(s => s.getAttribute('src'))
             .filter(src => src && !loadedScriptSrcs.has(new URL(src, window.location.origin).href));
@@ -327,6 +327,26 @@ window.addEventListener('DOMContentLoaded', function () {
             } catch (err) {
                 console.warn('[instant-nav] could not load script', src, err);
             }
+        }
+
+        // Classic external scripts in head (e.g. Chart.js, XLSX, etc.)
+        const classicMissing = Array.from(doc.querySelectorAll('head script[src]:not([type="module"])'))
+            .map(s => s.getAttribute('src'))
+            .filter(src => src && !loadedScriptSrcs.has(new URL(src, window.location.origin).href));
+
+        for (const src of new Set(classicMissing)) {
+            const abs = new URL(src, window.location.origin).href;
+            if (document.querySelector(`script[src="${abs}"], script[src="${src}"]`)) {
+                loadedScriptSrcs.add(abs);
+                continue;
+            }
+            await new Promise((resolve) => {
+                const fresh = document.createElement('script');
+                fresh.src = src;
+                fresh.onload = () => { loadedScriptSrcs.add(abs); resolve(); };
+                fresh.onerror = () => { loadedScriptSrcs.add(abs); resolve(); };
+                document.head.appendChild(fresh);
+            });
         }
     }
 

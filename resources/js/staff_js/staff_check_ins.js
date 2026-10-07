@@ -3777,13 +3777,9 @@ window.AppPage['staff_check_ins'] = function () {
                             </div>
                         </div>
                         <div>
-                            ${!isCheckedOut ? `
-                                <button type="button" class="companion-single-quick-checkout-btn cursor-pointer rounded-lg bg-hp-green/10 border border-hp-green/30 text-hp-green hover:bg-hp-green hover:text-white px-2.5 py-1 text-xs font-bold transition-all shadow-2xs" data-rg-id="${primaryGuest.id || primaryGuest.customer_id}" data-guest-name="${escapeHtml(fullName)}">
-                                    Check Out
-                                </button>
-                            ` : `
+                            ${isCheckedOut ? `
                                 <span class="text-[0.7rem] font-semibold text-slate-500">Checked Out</span>
-                            `}
+                            ` : ''}
                         </div>
                     </div>
                 </div>
