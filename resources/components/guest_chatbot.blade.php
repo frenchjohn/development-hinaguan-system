@@ -24,6 +24,9 @@
         </svg>
     </button>
 
+    <!-- Centered Fullscreen Modal Backdrop -->
+    <div class="chatbot-fullscreen-backdrop" id="chatbotFullscreenBackdrop" hidden></div>
+
     <div class="chatbot-window" id="chatbotWindow" hidden>
         <div class="chatbot-header">
             <div class="chatbot-header__content">
@@ -37,6 +40,14 @@
                 </div>
             </div>
             <div class="chatbot-header__actions">
+                <button type="button" class="chatbot-fullscreen" id="chatbotFullscreen" aria-label="Expand to center modal" title="Expand to center modal">
+                    <svg class="chatbot-fullscreen__icon--expand" id="chatbotExpandIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                    </svg>
+                    <svg class="chatbot-fullscreen__icon--compress hidden" id="chatbotCompressIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7M10 4v6m0 0H4m6 0L3 3m10 7h6m-6 0V4m0 6l7-7"/>
+                    </svg>
+                </button>
                 <button type="button" class="chatbot-clear" id="chatbotClear" aria-label="Delete conversation" title="Delete conversation">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -47,18 +58,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
-            </div>
-        </div>
-
-        <!-- Conversational Booking Mode Bar -->
-        <div class="chatbot-booking-bar" id="chatbotBookingBar" hidden>
-            <div class="chatbot-booking-bar__content">
-                <span class="chatbot-booking-bar__tag"><span class="chatbot-booking-bar__pulse" aria-hidden="true"></span> Booking Mode</span>
-                <span class="chatbot-booking-bar__desc" id="chatbotBookingBarDesc">Setting up your reservation</span>
-            </div>
-            <div class="chatbot-booking-bar__actions">
-                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--pick" id="chatbotBarViewPickBtn" title="Current booking step"><i class="bi bi-houses me-1" id="chatbotBarViewPickIcon"></i> <span id="chatbotBarViewPickText">Choose Amenities</span></button>
-                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--exit" id="chatbotBarCancelBtn" title="Exit booking mode"><i class="bi bi-x-circle me-1"></i> Cancel</button>
             </div>
         </div>
 
@@ -105,14 +104,20 @@
         </div>
 
         <!-- Docked Bottom Booking Action Bar (Always visible above chat input when in booking mode) -->
-        <div class="chatbot-dock hidden border-t border-emerald-200/90 bg-emerald-50/95 dark:border-emerald-900/60 dark:bg-emerald-950/95 px-3 py-2 flex items-center justify-between gap-2 shadow-sm transition-all" id="chatbotDock">
-            <div class="flex items-center gap-1.5 min-w-0 text-emerald-900 dark:text-emerald-100 text-xs">
-                <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
-                <span class="font-medium truncate" id="chatbotDockSchedule">Schedule: 2026-10-24</span>
+        <div class="chatbot-dock hidden border-t border-emerald-200/90 bg-emerald-50/95 dark:border-emerald-900/60 dark:bg-emerald-950/95 px-3 py-1.5 flex items-center justify-between gap-2 shadow-sm transition-all" id="chatbotDock">
+            <div class="flex flex-col justify-center min-w-0 pr-1">
+                <div class="flex items-center gap-1 leading-none mb-0.5">
+                    <span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400" id="chatbotDockBadgeText">Booking Mode</span>
+                </div>
+                <span class="font-semibold text-xs text-emerald-950 dark:text-emerald-100 truncate" id="chatbotDockSchedule">Step 1: Pick Dates</span>
             </div>
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <button type="button" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm transition-colors flex items-center gap-1 cursor-pointer" id="chatbotDockActionBtn">
-                    <i class="bi bi-houses text-[12px]" id="chatbotDockActionIcon"></i> <span id="chatbotDockActionText">Choose Amenities</span>
+                    <i class="bi bi-calendar3 text-[12px]" id="chatbotDockActionIcon"></i> <span id="chatbotDockActionText">Pick Dates</span>
+                </button>
+                <button type="button" class="px-2 py-1 rounded-lg bg-white/90 hover:bg-red-50 text-red-600 hover:text-red-700 border border-red-200/80 dark:bg-zinc-800 dark:hover:bg-red-950/40 dark:text-red-400 dark:border-red-900/60 font-semibold text-[11px] shadow-xs transition-colors flex items-center gap-1 cursor-pointer" id="chatbotDockCancelBtn" title="Cancel booking mode">
+                    <i class="bi bi-x-circle text-[11px]"></i> <span>Cancel</span>
                 </button>
             </div>
         </div>

@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatbotInput = document.getElementById('chatbotInput');
     const chatbotMessages = document.getElementById('chatbotMessages');
     const chatbotSend = document.getElementById('chatbotSend');
+    const chatbotFullscreen = document.getElementById('chatbotFullscreen');
+    const chatbotExpandIcon = document.getElementById('chatbotExpandIcon');
+    const chatbotCompressIcon = document.getElementById('chatbotCompressIcon');
+    const chatbotFullscreenBackdrop = document.getElementById('chatbotFullscreenBackdrop');
 
     // Top booking bar elements
     const chatbotBookingBar = document.getElementById('chatbotBookingBar');
@@ -25,10 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bottom Action Dock elements
     const chatbotDock = document.getElementById('chatbotDock');
+    const chatbotDockBadge = document.getElementById('chatbotDockBadge');
+    const chatbotDockBadgeText = document.getElementById('chatbotDockBadgeText');
     const chatbotDockSchedule = document.getElementById('chatbotDockSchedule');
     const chatbotDockActionBtn = document.getElementById('chatbotDockActionBtn');
     const chatbotDockActionIcon = document.getElementById('chatbotDockActionIcon');
     const chatbotDockActionText = document.getElementById('chatbotDockActionText');
+    const chatbotDockCancelBtn = document.getElementById('chatbotDockCancelBtn');
 
     // Amenity Selection Modal elements
     const chatbotAmenityModal = document.getElementById('chatbotAmenityModal');
@@ -176,11 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateBookingBarUI = () => {
-        if (!chatbotBookingBar) return;
-
         if (!bookingDraft || !bookingDraft.active) {
-            chatbotBookingBar.hidden = true;
-            chatbotBookingBar.classList.add('hidden');
+            if (chatbotBookingBar) {
+                chatbotBookingBar.hidden = true;
+                chatbotBookingBar.classList.add('hidden');
+            }
             if (chatbotDock) {
                 chatbotDock.hidden = true;
                 chatbotDock.classList.add('hidden');
@@ -188,8 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        chatbotBookingBar.hidden = false;
-        chatbotBookingBar.classList.remove('hidden');
+        if (chatbotBookingBar) {
+            chatbotBookingBar.hidden = true;
+            chatbotBookingBar.classList.add('hidden');
+        }
 
         let stepTitle = 'Step 1: Pick Dates';
         let desc = 'Setting up reservation…';
@@ -259,15 +268,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (chatbotDock) {
             chatbotDock.hidden = false;
             chatbotDock.classList.remove('hidden');
+
+            if (chatbotDockBadgeText) {
+                chatbotDockBadgeText.textContent = 'Booking Mode';
+            }
+
             if (chatbotDockSchedule) {
                 if (bookingDraft.step === 'amenity') {
                     chatbotDockSchedule.textContent = amCount > 0
-                        ? `🏡 ${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} (₱${total.toFixed(2)})`
-                        : `📅 ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`;
+                        ? `Step 2: ${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} (₱${total.toFixed(2)})`
+                        : 'Step 2: Choose Amenities';
                 } else if (bookingDraft.step === 'date_slot') {
                     chatbotDockSchedule.textContent = bookingDraft.startDate
-                        ? `📅 ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`
-                        : '📅 Step 1: Pick Dates';
+                        ? `Step 1: ${bookingDraft.startDate}`
+                        : 'Step 1: Pick Dates';
+                } else if (bookingDraft.step === 'guest_info') {
+                    chatbotDockSchedule.textContent = bookingDraft.guest?.name
+                        ? `Step 3: ${bookingDraft.guest.name}`
+                        : 'Step 3: Primary Booker';
+                } else if (bookingDraft.step === 'review') {
+                    chatbotDockSchedule.textContent = 'Step 4: Review Booking';
+                } else if (bookingDraft.step === 'payment') {
+                    chatbotDockSchedule.textContent = `Step 4: Pay ₱${deposit.toFixed(2)}`;
                 } else {
                     chatbotDockSchedule.textContent = desc;
                 }
@@ -2739,9 +2761,14 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage("Booking mode cancelled. Your draft was cleared. Feel free to ask any other questions!", true);
     });
 
+    chatbotDockCancelBtn?.addEventListener('click', () => {
+        clearBookingDraft();
+        addMessage("Booking mode cancelled. Your draft was cleared. Feel free to ask any other questions!", true);
+    });
+
     // Delegated click listener for in-chat action buttons across deep conversation history
     document.addEventListener('click', (e) => {
-        const cancelBtn = e.target.closest('#chatbotBarCancelBtn') || e.target.closest('#cbCancelBookingBtn');
+        const cancelBtn = e.target.closest('#chatbotDockCancelBtn') || e.target.closest('#chatbotBarCancelBtn') || e.target.closest('#cbCancelBookingBtn');
         if (cancelBtn) {
             e.preventDefault();
             e.stopPropagation();
@@ -2932,34 +2959,155 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Toggle chatbot window
+    let isClosingAnimation = false;
+
+    // Toggle chatbot window with smooth opening and closing animations
     const toggleChatbot = () => {
-        isOpen = !isOpen;
-        chatbotWindow.hidden = !isOpen;
-        chatbotWidget?.classList.toggle('is-open', isOpen);
-        chatbotToggle.setAttribute('aria-expanded', isOpen);
-        chatbotToggle.setAttribute('aria-label', isOpen ? 'Close chatbot' : 'Open chatbot');
+        if (isClosingAnimation) return;
 
         if (isOpen) {
-            if (window.innerWidth <= 640 && window.visualViewport) {
-                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+            isClosingAnimation = true;
+            chatbotWindow.classList.add('is-closing');
+            if (chatbotFullscreenBackdrop && isFullscreenModal) {
+                chatbotFullscreenBackdrop.classList.remove('is-active');
             }
-            if (proactiveTimer) {
-                clearTimeout(proactiveTimer);
-                proactiveTimer = null;
-            }
-            sessionStorage.setItem(storageKeyProactive, 'true');
-            dismissProactiveBubble();
-            chatbotInput?.focus();
+            chatbotWidget?.classList.remove('is-open');
+
             setTimeout(() => {
-                if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
-            }, 50);
-        } else {
-            chatbotWindow.style.height = '';
+                isOpen = false;
+                chatbotWindow.hidden = true;
+                chatbotWindow.classList.remove('is-closing');
+                setFullscreenMode(false, false);
+                chatbotWindow.style.height = '';
+                chatbotToggle.setAttribute('aria-expanded', 'false');
+                chatbotToggle.setAttribute('aria-label', 'Open chatbot');
+                saveState(false, messages, selectedModel);
+                isClosingAnimation = false;
+            }, 210);
+            return;
         }
 
-        saveState(isOpen, messages, selectedModel);
+        isOpen = true;
+        chatbotWindow.hidden = false;
+        chatbotWindow.classList.remove('is-closing');
+        chatbotWidget?.classList.add('is-open');
+        chatbotToggle.setAttribute('aria-expanded', 'true');
+        chatbotToggle.setAttribute('aria-label', 'Close chatbot');
+
+        if (window.innerWidth <= 640 && window.visualViewport) {
+            chatbotWindow.style.height = `${window.visualViewport.height}px`;
+        }
+        if (proactiveTimer) {
+            clearTimeout(proactiveTimer);
+            proactiveTimer = null;
+        }
+        sessionStorage.setItem(storageKeyProactive, 'true');
+        dismissProactiveBubble();
+        chatbotInput?.focus();
+        setTimeout(() => {
+            if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }, 50);
+
+        saveState(true, messages, selectedModel);
     };
+
+    // Fullscreen / Centered Modal Mode Toggle with smooth expand & minimize animations
+    let isFullscreenModal = false;
+
+    const setFullscreenMode = (enable, animate = true) => {
+        if (enable) {
+            isFullscreenModal = true;
+            chatbotWindow?.classList.remove('is-fullscreen-minimizing');
+            chatbotWindow?.classList.add('is-fullscreen');
+            chatbotWidget?.classList.add('is-fullscreen');
+
+            if (chatbotFullscreenBackdrop) {
+                chatbotFullscreenBackdrop.hidden = false;
+                requestAnimationFrame(() => {
+                    chatbotFullscreenBackdrop.classList.add('is-active');
+                });
+            }
+
+            if (chatbotExpandIcon && chatbotCompressIcon) {
+                chatbotExpandIcon.classList.add('hidden');
+                chatbotCompressIcon.classList.remove('hidden');
+            }
+
+            if (chatbotFullscreen) {
+                chatbotFullscreen.setAttribute('title', 'Exit center modal');
+                chatbotFullscreen.setAttribute('aria-label', 'Exit center modal');
+            }
+
+            chatbotWindow.style.height = '';
+            setTimeout(() => {
+                if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+            }, 60);
+            return;
+        }
+
+        if (!isFullscreenModal) return;
+
+        if (animate === false) {
+            isFullscreenModal = false;
+            chatbotWindow?.classList.remove('is-fullscreen', 'is-fullscreen-minimizing');
+            chatbotWidget?.classList.remove('is-fullscreen');
+            if (chatbotFullscreenBackdrop) {
+                chatbotFullscreenBackdrop.hidden = true;
+                chatbotFullscreenBackdrop.classList.remove('is-active');
+            }
+            if (chatbotExpandIcon && chatbotCompressIcon) {
+                chatbotExpandIcon.classList.remove('hidden');
+                chatbotCompressIcon.classList.add('hidden');
+            }
+            if (chatbotFullscreen) {
+                chatbotFullscreen.setAttribute('title', 'Expand to center modal');
+                chatbotFullscreen.setAttribute('aria-label', 'Expand to center modal');
+            }
+            return;
+        }
+
+        // Animated minimizing from center modal back to compact widget
+        if (chatbotFullscreenBackdrop) {
+            chatbotFullscreenBackdrop.classList.remove('is-active');
+        }
+        chatbotWindow?.classList.add('is-fullscreen-minimizing');
+
+        setTimeout(() => {
+            isFullscreenModal = false;
+            chatbotWindow?.classList.remove('is-fullscreen', 'is-fullscreen-minimizing');
+            chatbotWidget?.classList.remove('is-fullscreen');
+
+            if (chatbotFullscreenBackdrop) {
+                chatbotFullscreenBackdrop.hidden = true;
+            }
+
+            if (chatbotExpandIcon && chatbotCompressIcon) {
+                chatbotExpandIcon.classList.remove('hidden');
+                chatbotCompressIcon.classList.add('hidden');
+            }
+
+            if (chatbotFullscreen) {
+                chatbotFullscreen.setAttribute('title', 'Expand to center modal');
+                chatbotFullscreen.setAttribute('aria-label', 'Expand to center modal');
+            }
+
+            if (window.innerWidth <= 640 && window.visualViewport && isOpen) {
+                chatbotWindow.style.height = `${window.visualViewport.height}px`;
+            }
+
+            if (chatbotMessages) chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }, 220);
+    };
+
+    const toggleFullscreenMode = () => {
+        if (!isOpen) toggleChatbot();
+        setFullscreenMode(!isFullscreenModal);
+    };
+
+    chatbotFullscreen?.addEventListener('click', toggleFullscreenMode);
+    chatbotFullscreenBackdrop?.addEventListener('click', () => {
+        setFullscreenMode(false);
+    });
 
     chatbotToggle?.addEventListener('click', toggleChatbot);
     chatbotClose?.addEventListener('click', toggleChatbot);
@@ -3021,6 +3169,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Close on escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            if (isFullscreenModal) {
+                setFullscreenMode(false);
+                return;
+            }
             if (chatbotProactiveBubble && !chatbotProactiveBubble.hidden) dismissProactiveBubble();
             if (isOpen) toggleChatbot();
         }
