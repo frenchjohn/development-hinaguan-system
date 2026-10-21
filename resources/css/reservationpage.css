@@ -2258,6 +2258,7 @@ html {
 /* ─────────────────────────── Amenity card ─────────────────────────── */
 
 .rp-card {
+    order: 1;
     position: relative;
     overflow: hidden;
     border-radius: 1.15rem;
@@ -2398,6 +2399,10 @@ html {
     text-align: center;
     pointer-events: none;
     z-index: 8;
+}
+
+.rp-card.is-booked {
+    order: 2;
 }
 
 .rp-card__overlay.is-booked,

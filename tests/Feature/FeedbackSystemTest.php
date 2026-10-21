@@ -314,4 +314,159 @@ class FeedbackSystemTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_checkout_receipt_mail_generates_and_includes_feedback_link(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'first_name' => 'Juan',
+            'last_name' => 'Dela Cruz',
+            'gender' => 'Male',
+            'email' => 'juan@example.com',
+        ]);
+
+        $reservation = \App\Models\Reservation::create([
+            'booker_name' => 'Juan Dela Cruz',
+            'phone' => '09123456789',
+            'email' => 'juan@example.com',
+            'number_of_guests' => 2,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'reservation_date' => now()->toDateString(),
+        ]);
+
+        $mail = new \App\Mail\CheckoutReceiptMail($customer, $reservation);
+
+        $this->assertNotNull($mail->feedbackUrl);
+        $this->assertStringContainsString('/feedback/review/', $mail->feedbackUrl);
+
+        $this->assertDatabaseHas('feedback_tokens', [
+            'customer_id' => $customer->id,
+            'reservation_id' => $reservation->id,
+            'submitted_at' => null,
+        ]);
+    }
+
+    public function test_guest_can_access_verified_feedback_page_with_valid_token(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'first_name' => 'Ana',
+            'last_name' => 'Reyes',
+            'gender' => 'Female',
+            'email' => 'ana@example.com',
+        ]);
+
+        $tokenRecord = \App\Models\FeedbackToken::createForCheckout($customer);
+
+        $response = $this->get('/feedback/review/' . $tokenRecord->token);
+
+        $response->assertOk();
+        $response->assertViewIs('feedback_review');
+        $response->assertViewHas('status', 'valid');
+        $response->assertSee('Ana Reyes');
+    }
+
+    public function test_guest_can_submit_feedback_with_verified_token(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'first_name' => 'Carlos',
+            'last_name' => 'Tan',
+            'gender' => 'Male',
+            'email' => 'carlos@example.com',
+        ]);
+
+        $tokenRecord = \App\Models\FeedbackToken::createForCheckout($customer);
+
+        $response = $this->postJson('/feedback/review/' . $tokenRecord->token, [
+            'full_name' => 'Carlos Tan',
+            'is_anonymous' => false,
+            'description' => 'A wonderful nature getaway with the whole family!',
+            'stars' => 5,
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('feedbacks', [
+            'full_name' => 'Carlos Tan',
+            'stars' => 5,
+            'customer_id' => $customer->id,
+        ]);
+
+        $tokenRecord->refresh();
+        $this->assertNotNull($tokenRecord->submitted_at);
+        $this->assertNotNull($tokenRecord->feedback_id);
+    }
+
+    public function test_verified_feedback_link_is_single_use_and_blocks_second_submission(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'first_name' => 'Liza',
+            'last_name' => 'Mendoza',
+            'gender' => 'Female',
+            'email' => 'liza@example.com',
+        ]);
+
+        $tokenRecord = \App\Models\FeedbackToken::createForCheckout($customer);
+
+        // First submission succeeds
+        $firstResponse = $this->postJson('/feedback/review/' . $tokenRecord->token, [
+            'full_name' => 'Liza Mendoza',
+            'is_anonymous' => false,
+            'description' => 'The pool and pine trees were breathtaking.',
+            'stars' => 5,
+        ]);
+        $firstResponse->assertOk();
+
+        // Visiting link again shows already_submitted state
+        $getResponse = $this->get('/feedback/review/' . $tokenRecord->token);
+        $getResponse->assertOk();
+        $getResponse->assertViewHas('status', 'already_submitted');
+        $getResponse->assertSee('Feedback Already Submitted');
+
+        // Trying to submit again via POST returns 422 error
+        $secondResponse = $this->postJson('/feedback/review/' . $tokenRecord->token, [
+            'full_name' => 'Liza Mendoza',
+            'is_anonymous' => false,
+            'description' => 'Trying to submit again.',
+            'stars' => 1,
+        ]);
+        $secondResponse->assertStatus(422);
+        $secondResponse->assertJsonFragment([
+            'message' => 'You have already submitted feedback for this visit.',
+        ]);
+    }
+
+    public function test_feedback_link_expires_after_24_hours(): void
+    {
+        $customer = \App\Models\Customer::create([
+            'first_name' => 'David',
+            'last_name' => 'Lim',
+            'gender' => 'Male',
+            'email' => 'david@example.com',
+        ]);
+
+        $tokenRecord = \App\Models\FeedbackToken::createForCheckout($customer);
+        // Simulate expiration (> 24 hours passed)
+        $tokenRecord->update(['expires_at' => now()->subHours(25)]);
+
+        // GET request shows expired view
+        $getResponse = $this->get('/feedback/review/' . $tokenRecord->token);
+        $getResponse->assertOk();
+        $getResponse->assertViewHas('status', 'expired');
+        $getResponse->assertSee('Link Has Expired');
+
+        // POST request is blocked with 422
+        $postResponse = $this->postJson('/feedback/review/' . $tokenRecord->token, [
+            'full_name' => 'David Lim',
+            'is_anonymous' => false,
+            'description' => 'Submitting too late.',
+            'stars' => 5,
+        ]);
+        $postResponse->assertStatus(422);
+    }
+
+    public function test_public_feedback_page_redirects_if_token_query_parameter_is_present(): void
+    {
+        $response = $this->get('/feedback?token=sample_token_xyz');
+        $response->assertRedirect(route('feedback.review', ['token' => 'sample_token_xyz']));
+    }
 }

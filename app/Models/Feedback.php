@@ -16,6 +16,8 @@ class Feedback extends Model
         'replied',
         'stars',
         'is_shown',
+        'reservation_id',
+        'customer_id',
     ];
 
     protected $casts = [
@@ -23,6 +25,21 @@ class Feedback extends Model
         'is_shown' => 'boolean',
         'stars' => 'integer',
     ];
+
+    public function reservation()
+    {
+        return $this->belongsTo(Reservation::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    public function feedbackToken()
+    {
+        return $this->hasOne(FeedbackToken::class, 'feedback_id');
+    }
 
     public function getMaskedNameAttribute(): string
     {

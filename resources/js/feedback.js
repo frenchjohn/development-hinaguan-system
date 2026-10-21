@@ -93,18 +93,54 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('click', closeFeedbackWarning);
     });
 
+    const verifiedInfoModal = document.getElementById('verifiedInfoModal');
+
+    const openVerifiedInfo = () => {
+        if (!verifiedInfoModal) return;
+        verifiedInfoModal.classList.add('is-open');
+        verifiedInfoModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeVerifiedInfo = () => {
+        if (!verifiedInfoModal) return;
+        verifiedInfoModal.classList.remove('is-open');
+        verifiedInfoModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    };
+
+    document.querySelectorAll('[data-open-verified-info]').forEach((btn) => {
+        btn.addEventListener('click', openVerifiedInfo);
+    });
+
+    document.querySelectorAll('[data-close-verified-info]').forEach((el) => {
+        el.addEventListener('click', closeVerifiedInfo);
+    });
+
     document.querySelectorAll('[data-open-review-modal]').forEach((btn) => {
-        btn.addEventListener('click', openModal);
+        btn.addEventListener('click', () => {
+            if (modal) {
+                openModal();
+            } else {
+                openVerifiedInfo();
+            }
+        });
     });
 
     document.querySelectorAll('[data-close-review-modal]').forEach((el) => {
         el.addEventListener('click', closeModal);
     });
 
-    // Auto-open review modal if navigated from "Write a Review" button
+    // Auto-open info/review modal if navigated with write query param
     const feedbackUrlParams = new URLSearchParams(window.location.search);
     if (feedbackUrlParams.get('write') === 'true' || feedbackUrlParams.get('write') === '1' || window.location.hash === '#write' || window.location.hash === '#write-review') {
-        window.setTimeout(() => openModal(), 200);
+        window.setTimeout(() => {
+            if (modal) {
+                openModal();
+            } else {
+                openVerifiedInfo();
+            }
+        }, 200);
     }
 
     /* ── Card Data Extractor ── */

@@ -142,6 +142,9 @@ function initReservationPage() {
     const filterMax = document.getElementById('filterMax');
 
     const cards = Array.from(document.querySelectorAll('.rp-card'));
+    cards.forEach((card, index) => {
+        card.dataset.initialOrder = String(index);
+    });
 
     const grid = document.getElementById('amenityGrid');
 
@@ -1896,11 +1899,26 @@ function initReservationPage() {
 
         });
 
-        // Toggle category group containers based on whether they have visible cards
+        // Toggle category group containers and place booked amenities at the bottom of each category
         document.querySelectorAll('.rp-category-group').forEach(group => {
-            const groupCards = group.querySelectorAll('.rp-card');
-            const hasVisible = Array.from(groupCards).some(c => c.style.display !== 'none');
+            const list = group.querySelector('.rp-grid__list');
+            const groupCards = Array.from(group.querySelectorAll('.rp-card'));
+            const hasVisible = groupCards.some(c => c.style.display !== 'none');
             group.style.display = hasVisible ? '' : 'none';
+
+            if (list && groupCards.length > 1) {
+                groupCards.sort((a, b) => {
+                    const aBooked = a.classList.contains('is-booked') ? 1 : 0;
+                    const bBooked = b.classList.contains('is-booked') ? 1 : 0;
+                    if (aBooked !== bBooked) {
+                        return aBooked - bBooked;
+                    }
+                    const aOrder = Number(a.dataset.initialOrder || 0);
+                    const bOrder = Number(b.dataset.initialOrder || 0);
+                    return aOrder - bOrder;
+                });
+                groupCards.forEach(card => list.appendChild(card));
+            }
         });
 
         if (grid) {

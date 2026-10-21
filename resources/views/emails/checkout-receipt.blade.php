@@ -195,6 +195,27 @@
         </div>
         @endif
 
+        <!-- Verified Guest Feedback Invitation -->
+        @if(!empty($feedbackUrl))
+        <div style="margin-bottom:24px; padding:22px; background:linear-gradient(135deg, #fdfbf7 0%, #f4efe2 100%); border:1px solid #d9ccb0; border-radius:8px; text-align:center; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <div style="font-size:22px; letter-spacing:4px; margin-bottom:8px; color:#c8a45d;">★ ★ ★ ★ ★</div>
+            <h3 style="margin:0 0 6px; font-size:15px; text-transform:uppercase; letter-spacing:1.5px; color:#123322; font-family:'Courier New', Courier, monospace; font-weight:bold;">
+                How Was Your Stay?
+            </h3>
+            <p style="margin:0 0 14px; font-size:12px; color:#555; line-height:1.5; font-family:'Courier New', Courier, monospace;">
+                We hope you enjoyed your time with nature! As a verified guest, we invite you to share your honest review to help future visitors and our team.
+            </p>
+            <a href="{{ $feedbackUrl }}" 
+               target="_blank" 
+               style="display:inline-block; background-color:#123322; color:#f6f4ec; text-decoration:none; padding:12px 26px; font-size:13px; font-weight:bold; text-transform:uppercase; letter-spacing:1px; border-radius:4px; border:1px solid #c8a45d; font-family:'Courier New', Courier, monospace; box-shadow:0 3px 6px rgba(18,51,34,0.2);">
+                Write a Guest Review
+            </a>
+            <p style="margin:12px 0 0; font-size:11px; color:#888; font-family:'Courier New', Courier, monospace;">
+                ⏳ <strong>Note:</strong> This temporary link is valid for <strong>24 hours</strong> from checkout and accepts <strong>1 review submission</strong>.
+            </p>
+        </div>
+        @endif
+
         <!-- Footer -->
         <div style="text-align:center; border-top:1px dashed #ddd; padding-top:20px;">
             <p style="margin:0 0 8px; font-size:12px; color:#666;">Thank you for visiting Hinaguan Nature Park!</p>

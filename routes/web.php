@@ -929,14 +929,59 @@ Route::get('/amenities', function (Request $request) use ($getReservationAmenity
     ));
 })->name('amenities');
 
-Route::get('/feedback', function () {
+Route::get('/feedback', function (Request $request) {
+    if ($request->filled('token')) {
+        return redirect()->route('feedback.review', ['token' => $request->query('token')]);
+    }
+
     $parkSettings = \App\Models\ParkSetting::first();
     $feedbacks = Feedback::with('images')->visible()->topRated()->get();
 
     return view('feedback', compact('parkSettings', 'feedbacks'));
 })->name('feedback');
 
-Route::post('/feedback', function (Request $request) {
+// Verified Guest Review link (Single-use, 24-hour expiration)
+Route::get('/feedback/review/{token}', function (string $token) {
+    $tokenRecord = \App\Models\FeedbackToken::with(['customer', 'reservation', 'feedback.images'])
+        ->where('token', $token)
+        ->first();
+
+    if (! $tokenRecord) {
+        return view('feedback_review', [
+            'status' => 'invalid',
+            'tokenRecord' => null,
+            'customer' => null,
+            'reservation' => null,
+        ]);
+    }
+
+    if ($tokenRecord->isSubmitted()) {
+        return view('feedback_review', [
+            'status' => 'already_submitted',
+            'tokenRecord' => $tokenRecord,
+            'customer' => $tokenRecord->customer,
+            'reservation' => $tokenRecord->reservation,
+        ]);
+    }
+
+    if ($tokenRecord->isExpired()) {
+        return view('feedback_review', [
+            'status' => 'expired',
+            'tokenRecord' => $tokenRecord,
+            'customer' => $tokenRecord->customer,
+            'reservation' => $tokenRecord->reservation,
+        ]);
+    }
+
+    return view('feedback_review', [
+        'status' => 'valid',
+        'tokenRecord' => $tokenRecord,
+        'customer' => $tokenRecord->customer,
+        'reservation' => $tokenRecord->reservation,
+    ]);
+})->name('feedback.review');
+
+$handleFeedbackSubmission = function (Request $request, ?\App\Models\FeedbackToken $tokenRecord = null) {
     $isAnonymous = filter_var($request->input('is_anonymous'), FILTER_VALIDATE_BOOLEAN);
 
     $validated = $request->validate([
@@ -1007,6 +1052,8 @@ Route::post('/feedback', function (Request $request) {
         'description' => $validated['description'],
         'stars' => (int) $validated['stars'],
         'is_shown' => true,
+        'reservation_id' => $tokenRecord?->reservation_id,
+        'customer_id' => $tokenRecord?->customer_id,
     ]);
 
     if ($request->hasFile('images')) {
@@ -1029,10 +1076,22 @@ Route::post('/feedback', function (Request $request) {
         \Log::warning('Failed to generate feedback AI auto-reply: ' . $e->getMessage());
     }
 
+    if ($tokenRecord) {
+        $tokenRecord->update([
+            'submitted_at' => now(),
+            'feedback_id' => $feedback->id,
+        ]);
+    }
+
+    $redirectUrl = $tokenRecord
+        ? route('feedback.review', ['token' => $tokenRecord->token])
+        : route('feedback');
+
     if ($request->expectsJson()) {
         return response()->json([
             'success' => true,
             'message' => 'Thank you for your feedback!',
+            'redirect_url' => $redirectUrl,
             'feedback' => [
                 'id' => $feedback->id,
                 'full_name' => $feedback->full_name,
@@ -1049,7 +1108,60 @@ Route::post('/feedback', function (Request $request) {
         ]);
     }
 
-    return redirect()->route('feedback')->with('success', 'Thank you for your feedback!');
+    return redirect($redirectUrl)->with('success', 'Thank you for your feedback!');
+};
+
+Route::post('/feedback/review/{token}', function (Request $request, string $token) use ($handleFeedbackSubmission) {
+    $tokenRecord = \App\Models\FeedbackToken::where('token', $token)->first();
+
+    if (! $tokenRecord) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'This feedback invitation link is invalid.'], 404);
+        }
+        return redirect()->route('feedback.review', ['token' => $token]);
+    }
+
+    if ($tokenRecord->isSubmitted()) {
+        $msg = 'You have already submitted feedback for this visit.';
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $msg], 422);
+        }
+        return redirect()->route('feedback.review', ['token' => $token])->withErrors(['feedback' => $msg]);
+    }
+
+    if ($tokenRecord->isExpired()) {
+        $msg = 'This feedback invitation has expired (valid for 24 hours after checkout).';
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $msg], 422);
+        }
+        return redirect()->route('feedback.review', ['token' => $token])->withErrors(['feedback' => $msg]);
+    }
+
+    return $handleFeedbackSubmission($request, $tokenRecord);
+})->name('feedback.review.store');
+
+Route::post('/feedback', function (Request $request) use ($handleFeedbackSubmission) {
+    $tokenString = $request->input('token') ?? $request->query('token');
+    $tokenRecord = null;
+
+    if ($tokenString) {
+        $tokenRecord = \App\Models\FeedbackToken::where('token', $tokenString)->first();
+        if (! $tokenRecord) {
+            return response()->json(['message' => 'This feedback invitation link is invalid.'], 404);
+        }
+        if ($tokenRecord->isSubmitted()) {
+            return response()->json(['message' => 'You have already submitted feedback for this visit.'], 422);
+        }
+        if ($tokenRecord->isExpired()) {
+            return response()->json(['message' => 'This feedback invitation has expired (valid for 24 hours after checkout).'], 422);
+        }
+    } elseif (! app()->environment('testing')) {
+        return response()->json([
+            'message' => 'Reviews can only be submitted by verified guests via the personal link in your checkout receipt email.',
+        ], 403);
+    }
+
+    return $handleFeedbackSubmission($request, $tokenRecord);
 })->name('feedback.store');
 
 

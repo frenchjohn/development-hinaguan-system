@@ -18,6 +18,7 @@ class CheckoutReceiptMail extends Mailable
     use Queueable, SerializesModels;
 
     public array $receiptData = [];
+    public ?string $feedbackUrl = null;
 
     public function __construct(
         public Customer $customer,
@@ -45,6 +46,15 @@ class CheckoutReceiptMail extends Mailable
             checkOutDateTime: $this->checkOutDateTime,
             totalCost: $this->totalCost
         );
+
+        try {
+            if ($this->customer && $this->customer->exists) {
+                $tokenRecord = \App\Models\FeedbackToken::createForCheckout($this->customer, $this->reservation);
+                $this->feedbackUrl = route('feedback.review', ['token' => $tokenRecord->token]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to generate feedback URL for checkout receipt: ' . $e->getMessage());
+        }
     }
 
     public function envelope(): Envelope
@@ -73,6 +83,7 @@ class CheckoutReceiptMail extends Mailable
                 'totalCost' => $this->receiptData['totalCost'] ?? $this->totalCost,
                 'mainGuestName' => $this->receiptData['mainGuestName'] ?? null,
                 'guestCount' => $this->receiptData['guestCount'] ?? 1,
+                'feedbackUrl' => $this->feedbackUrl,
             ], $this->receiptData),
         );
     }

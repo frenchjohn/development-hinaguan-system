@@ -46,7 +46,7 @@
             <header class="fb-hero">
                 <span class="fb-hero__label">Guest Reviews</span>
                 <h1 class="fb-hero__title">Stories From Our Guests</h1>
-                <p class="fb-hero__desc">Every visit leaves a mark. Read honest experiences from people who explored Hinaguan Nature Park — and share your own.</p>
+                <p class="fb-hero__desc">Every visit leaves a mark. Read honest, verified experiences from guests who explored Hinaguan Nature Park. Reviews are exclusively invited from verified guests following checkout.</p>
 
                 @if (session('success'))
                     <div class="fb-alert fb-alert--success" role="status">{{ session('success') }}</div>
@@ -89,9 +89,9 @@
                             </svg>
                             <input type="search" id="feedbackListSearch" placeholder="Search guest reviews..." class="shopee-search-input" autocomplete="off">
                         </div>
-                        <button type="button" class="fb-btn fb-btn--gold shopee-write-btn" data-open-review-modal>
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
-                            Write a Review
+                        <button type="button" class="fb-btn fb-btn--gold shopee-write-btn" data-open-verified-info>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-4 w-4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                            Verified Reviews
                         </button>
                     </div>
                 </div>
@@ -208,8 +208,8 @@
         </div>
     </main>
 
-    <button type="button" class="fb-fab" data-open-review-modal aria-label="Write a review">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5V19a2 2 0 01-2 2H5a2 2 0 01-2-2V6.5A2 2 0 015 4.5h8.5"/></svg>
+    <button type="button" class="fb-fab" data-open-verified-info aria-label="About verified guest reviews" title="About Verified Guest Reviews">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
     </button>
 
     {{-- Full Review Detail Modal for Guests --}}
@@ -257,67 +257,29 @@
         </div>
     </div>
 
-    {{-- Write a Review Modal --}}
-    <div class="fb-modal" id="reviewModal" aria-hidden="true" role="dialog" aria-labelledby="reviewModalTitle">
-        <div class="fb-modal__backdrop" data-close-review-modal></div>
-        <div class="fb-modal__panel" role="document">
-            <button type="button" class="fb-modal__close" data-close-review-modal aria-label="Close">&times;</button>
-
-            <h2 id="reviewModalTitle" class="fb-panel__title">Write a Review</h2>
-            <p class="fb-panel__subtitle">Your feedback helps us improve and inspires future guests.</p>
-
-            <form id="feedbackForm" class="fb-form" novalidate enctype="multipart/form-data">
-                @csrf
-                <div class="fb-field">
-                    <label for="feedbackFullName" class="fb-label">Full Name</label>
-                    <input type="text" id="feedbackFullName" name="full_name" maxlength="255" placeholder="Enter your full name" class="fb-input" autocomplete="name">
-                </div>
-
-                <label class="fb-checkbox">
-                    <input type="checkbox" id="feedbackAnonymous" name="is_anonymous" value="1">
-                    <span class="fb-checkbox__box" aria-hidden="true"></span>
-                    <span>Submit as anonymous feedback</span>
-                </label>
-
-                <div class="fb-field">
-                    <label class="fb-label">Your Rating</label>
-                    <div class="fb-star-input" id="feedbackStarInput" role="radiogroup" aria-label="Star rating">
-                        @for ($s = 1; $s <= 5; $s++)
-                            <button type="button" class="fb-star-input__btn" data-star="{{ $s }}" aria-label="{{ $s }} star{{ $s > 1 ? 's' : '' }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                            </button>
-                        @endfor
-                    </div>
-                    <input type="hidden" name="stars" id="feedbackStars" value="">
-                    <p class="fb-field-hint" id="feedbackStarHint">Tap a star to rate your visit.</p>
-                </div>
-
-                <div class="fb-field">
-                    <label for="feedbackDescription" class="fb-label">Your Feedback</label>
-                    <textarea id="feedbackDescription" name="description" rows="4" maxlength="2000" required placeholder="Tell us about your experience at Hinaguan Nature Park..." class="fb-textarea"></textarea>
-                </div>
-
-                <div class="fb-field">
-                    <div class="fb-field__header">
-                        <label class="fb-label">Attach Photos <span class="fb-label__optional">(Optional, max 5)</span></label>
-                        <span class="fb-uploader__count" id="feedbackImageCountText">0 / 5 photos</span>
-                    </div>
-                    <div class="fb-uploader" id="feedbackUploader">
-                        <input type="file" id="feedbackImagesInput" name="images[]" multiple accept="image/png,image/jpeg,image/jpg,image/webp,image/avif" class="fb-uploader__input">
-                        <label for="feedbackImagesInput" class="fb-uploader__dropzone" id="feedbackDropzone">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="fb-uploader__icon">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
-                            </svg>
-                            <span class="fb-uploader__text"><strong>Choose photos</strong> or drag & drop</span>
-                            <span class="fb-uploader__hint">PNG, JPG, WEBP up to 5MB</span>
-                        </label>
-                        <div class="fb-uploader__previews" id="feedbackPreviewsContainer"></div>
-                    </div>
-                </div>
-
-                <button type="submit" class="fb-submit" id="feedbackSubmitBtn">Send Feedback</button>
-            </form>
+    {{-- Verified Reviews Information Modal --}}
+    <div class="fb-modal" id="verifiedInfoModal" aria-hidden="true" role="dialog" aria-labelledby="verifiedInfoTitle">
+        <div class="fb-modal__backdrop" data-close-verified-info></div>
+        <div class="fb-modal__panel" role="document" style="max-width:30rem; text-align:center; padding:2.25rem 2rem;">
+            <button type="button" class="fb-modal__close" data-close-verified-info aria-label="Close">&times;</button>
+            <div style="width:3.75rem; height:3.75rem; margin:0 auto 1.25rem; background:#e4efe2; border:1px solid #c3dac0; border-radius:50%; display:grid; place-items:center; color:#123322;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+                    <path fill-rule="evenodd" d="M12.516 2.17a.75.75 0 00-1.032 0 11.209 11.209 0 01-7.877 3.08.75.75 0 00-.722.515A12.74 12.74 0 002.25 9.75c0 5.942 4.064 10.933 9.563 12.348a.749.749 0 00.374 0c5.499-1.415 9.563-6.406 9.563-12.348 0-1.39-.223-2.73-.635-3.985a.75.75 0 00-.722-.516l-.143.001c-2.996 0-5.717-1.17-7.734-3.08zm3.094 8.016a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h2 id="verifiedInfoTitle" class="fb-panel__title" style="margin-bottom:0.5rem; font-size:1.6rem;">Verified Reviews Only</h2>
+            <p class="fb-panel__subtitle" style="font-size:0.9rem; color:#556254; line-height:1.6; margin-bottom:1.5rem;">
+                To ensure authenticity and maintain real guest experiences, reviews can only be written by verified park visitors who have completed checkout.
+            </p>
+            <div style="background:#fdfbf7; border:1px dashed #d9ccb0; border-radius:10px; padding:1.15rem; margin-bottom:1.75rem; text-align:left; font-size:0.84rem; color:#4b5563; line-height:1.55;">
+                <p style="margin:0 0 0.5rem; font-weight:700; color:#123322;">How it works:</p>
+                <ol style="margin:0; padding-left:1.25rem;">
+                    <li style="margin-bottom:0.35rem;">Visit and check out from Hinaguan Nature Park.</li>
+                    <li style="margin-bottom:0.35rem;">Open your official checkout receipt in your email.</li>
+                    <li>Click your private feedback invitation link (valid for 24 hours, 1 submission).</li>
+                </ol>
+            </div>
+            <button type="button" class="fb-submit" data-close-verified-info style="margin-top:0;">Understood</button>
         </div>
     </div>
 
