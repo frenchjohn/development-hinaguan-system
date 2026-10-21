@@ -4,7 +4,7 @@
     <!-- Minimal AI Text Bubble Pop-up -->
     <aside class="chatbot-proactive-bubble chatbot-proactive-bubble--simple" id="chatbotProactiveBubble" hidden aria-live="polite" role="dialog" aria-label="Chatbot Greeting">
         <div class="chatbot-proactive-bubble__card chatbot-proactive-bubble__card--simple" id="proactiveBubbleCard" role="button" tabindex="0" title="Click to chat">
-            <span class="chatbot-proactive-bubble__simple-text">If you need help, just ask me! &#127807;</span>
+            <span class="chatbot-proactive-bubble__simple-text"><i class="bi bi-chat-dots-fill text-emerald-600 me-1"></i> Need assistance? Ask Bren!</span>
             <button type="button" class="chatbot-proactive-bubble__close-icon" id="proactiveCloseIcon" aria-label="Dismiss message" title="Dismiss">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -50,13 +50,25 @@
             </div>
         </div>
 
+        <!-- Conversational Booking Mode Bar -->
+        <div class="chatbot-booking-bar" id="chatbotBookingBar" hidden>
+            <div class="chatbot-booking-bar__content">
+                <span class="chatbot-booking-bar__tag"><span class="chatbot-booking-bar__pulse" aria-hidden="true"></span> Booking Mode</span>
+                <span class="chatbot-booking-bar__desc" id="chatbotBookingBarDesc">Setting up your reservation</span>
+            </div>
+            <div class="chatbot-booking-bar__actions">
+                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--pick" id="chatbotBarViewPickBtn" title="View your current selection"><i class="bi bi-card-checklist me-1"></i> My Selection</button>
+                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--exit" id="chatbotBarCancelBtn" title="Exit booking mode"><i class="bi bi-x-circle me-1"></i> Cancel</button>
+            </div>
+        </div>
+
         <div class="chatbot-quick" id="chatbotQuick">
             <span class="chatbot-quick__label">Ask Bren</span>
             <div class="chatbot-quick__chips">
+                <button type="button" class="chatbot-chip chatbot-chip--booking" data-quick-reply="I want to book an online reservation"><i class="bi bi-calendar-plus me-1 text-emerald-600"></i> Book via Chat</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="What amenities are available today and what are their rates?">Available Amenities</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="Suggest the best amenity for our group of 10 people">Suggest for 10 Pax</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="How do I book an amenity online?">How to Book Online</button>
-                <button type="button" class="chatbot-chip" data-quick-reply="How does walk-in booking work at the counter?">Walk-in Guide</button>
                 <button type="button" class="chatbot-chip" data-quick-reply="What are the entrance fees and operating sessions?">Entrance Fees &amp; Hours</button>
             </div>
         </div>
@@ -71,7 +83,7 @@
                         <span class="chatbot-message__author">Bren</span>
                     </div>
                     <div class="chatbot-message__content">
-                        <p>Hello and welcome to <strong>Hinaguan Nature Park</strong>! &#127807; I am <strong>Bren</strong>, your <strong>Bren AI Assistant</strong>. I can suggest the best amenities for your group size, check live availability &amp; expected checkout times, and guide you through online or walk-in booking. How may I help you today?</p>
+                        <p>Hello and welcome to <strong>Hinaguan Nature Park</strong>! I am <strong>Bren</strong>, your <strong>Bren AI Assistant</strong>. I can suggest the best amenities for your group size, check live availability &amp; expected checkout times, and guide you through online or walk-in booking. How may I help you today?</p>
                     </div>
                 </div>
             </div>
@@ -127,5 +139,80 @@
                 </div>
             </div>
         </div>
+    </div> <!-- /.chatbot-window -->
+</div> <!-- /.chatbot-widget -->
+
+<!-- Modals outside the chatbox, centered directly in the browser viewport using Tailwind CSS -->
+<!-- Step 1 Modal: Date & Session Range Selection Modal -->
+<div class="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-3 sm:p-5 hidden" id="chatbotDateModal">
+    <div class="relative w-full max-w-4xl max-h-[92vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-emerald-100 dark:border-slate-800" role="dialog" aria-modal="true" aria-labelledby="chatbotDateModalTitle">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg shrink-0">
+                    <i class="bi bi-calendar3"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-emerald-950 dark:text-emerald-300 m-0" id="chatbotDateModalTitle">Step 1: Select Dates &amp; Sessions</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0" id="chatbotDateModalSubtitle">Select continuous stay dates (up to 5 years ahead)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="hidden sm:inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800" id="cbCalModalCurrent">Current: Oct 20, 2026</span>
+                <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" id="cbDateModalClose" aria-label="Close calendar" title="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-4" id="cbDateModalBody"></div>
+        <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0" id="cbDateModalFooter"></div>
     </div>
 </div>
+
+<!-- Step 2 Modal: Amenity Selection Modal -->
+<div class="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-3 sm:p-5 hidden" id="chatbotAmenityModal">
+    <div class="relative w-full max-w-4xl max-h-[92vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-emerald-100 dark:border-slate-800" role="dialog" aria-modal="true" aria-labelledby="chatbotAmenityModalTitle">
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg shrink-0">
+                    <i class="bi bi-houses"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-emerald-950 dark:text-emerald-300 m-0" id="chatbotAmenityModalTitle">Step 2: Choose Amenities</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0" id="chatbotAmenityModalSubtitle">Select one or more cottages, payags, or halls for your stay</p>
+                </div>
+            </div>
+            <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" id="cbAmenityModalClose" aria-label="Close modal" title="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-4" id="cbAmenityModalBody"></div>
+        <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0" id="cbAmenityModalFooter"></div>
+    </div>
+</div>
+
+<!-- Step 3 Modal: Primary Booker Information Modal -->
+<div class="fixed inset-0 z-[100000] flex items-center justify-center bg-slate-950/70 backdrop-blur-md p-3 sm:p-5 hidden" id="chatbotGuestModal">
+    <div class="relative w-full max-w-2xl max-h-[92vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-emerald-100 dark:border-slate-800" role="dialog" aria-modal="true" aria-labelledby="chatbotGuestModalTitle">
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg shrink-0">
+                    <i class="bi bi-person-vcard"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-emerald-950 dark:text-emerald-300 m-0" id="chatbotGuestModalTitle">Step 3: Primary Booker Information</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 m-0" id="chatbotGuestModalSubtitle">Enter details for your reservation pass &amp; booking confirmation</p>
+                </div>
+            </div>
+            <button type="button" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" id="cbGuestModalClose" aria-label="Close guest information modal" title="Close">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1 min-h-0 space-y-4" id="cbGuestModalBody"></div>
+        <div class="px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/95 dark:bg-slate-800/90 shrink-0" id="cbGuestModalFooter"></div>
+    </div>
+</div>
+

@@ -67,22 +67,28 @@ window.AppPage['admin_feedback'] = function () {
 
     const getRowData = (row) => {
         const script = row.querySelector('.fb-admin-row-data');
-        if (script) {
+        if (script && script.textContent) {
             try {
-                return JSON.parse(script.textContent);
-            } catch (_) {}
+                const parsed = JSON.parse(script.textContent);
+                if (parsed && typeof parsed === 'object') {
+                    return parsed;
+                }
+            } catch (err) {
+                console.warn('Failed to parse feedback row JSON data, falling back to dataset attributes:', err);
+            }
         }
         return {
             id: row.dataset.feedbackId,
-            fullName: 'Guest',
-            initials: 'G',
+            fullName: row.dataset.fullName || 'Guest',
+            initials: row.dataset.initials || 'G',
+            isAnonymous: row.dataset.isAnonymous === '1',
             stars: parseInt(row.dataset.stars, 10) || 5,
-            description: '',
-            createdFormatted: '',
+            description: row.dataset.description || '',
+            createdFormatted: row.dataset.createdFormatted || '',
             visibility: row.dataset.visibility || 'shown',
             sentiment: row.dataset.sentiment || 'neutral',
-            sentimentLabel: 'Neutral',
-            sentimentEmoji: '🟡',
+            sentimentLabel: row.dataset.sentimentLabel || 'Neutral',
+            sentimentEmoji: row.dataset.sentimentEmoji || '🟡',
             points: [],
             images: [],
         };
@@ -336,7 +342,12 @@ window.AppPage['admin_feedback'] = function () {
             }
         }
 
-        if (detailDescription) detailDescription.textContent = data.description || '';
+        if (detailDescription) {
+            const hasText = Boolean(data.description && data.description.trim());
+            detailDescription.textContent = hasText ? data.description : 'No written feedback provided.';
+            detailDescription.classList.toggle('italic', !hasText);
+            detailDescription.classList.toggle('opacity-70', !hasText);
+        }
 
         // Photos gallery in modal
         const images = Array.isArray(data.images) ? data.images : [];

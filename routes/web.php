@@ -560,6 +560,79 @@ Route::get('/admin-chatbot/proactive', [AdminChatbotController::class, 'proactiv
 
 Route::post('/guest-chatbot', [GuestChatbotController::class, 'chat'])->name('chatbot.guest')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
+Route::get('/guest-chatbot/booking/amenities', function (Request $request) use ($occupiedAmenityIdsForContinuousRange, $calculateContinuousSlotsCount) {
+    $startDate = $request->query('start_date') ?: ($request->query('date') ?: now()->toDateString());
+    $endDate = $request->query('end_date') ?: $startDate;
+    $startSlot = $request->query('start_slot') ?: ($request->query('slot') ?: 'Daytime');
+    $endSlot = $request->query('end_slot') ?: $startSlot;
+
+    $today = now()->toDateString();
+    $settings = \App\Models\ParkSetting::first();
+    $daytimeStart = $settings ? strtotime((string) ($settings->daytime_start ?? '06:00')) : strtotime('06:00');
+    $daytimeEnd = $settings ? strtotime((string) ($settings->daytime_end ?? '18:00')) : strtotime('18:00');
+    $nowSeconds = strtotime(now()->format('H:i'));
+    $isTodayNighttime = !($nowSeconds >= $daytimeStart && $nowSeconds < $daytimeEnd);
+
+    $slotPassed = ($startDate === $today && $isTodayNighttime && (str_contains($startSlot, 'Day') || in_array($startSlot, ['Daytime', 'DayToNight'], true)));
+
+    $occupiedIds = $slotPassed
+        ? \App\Models\Amenity::where('status', true)->pluck('id')->map(fn ($id) => (string) $id)->all()
+        : array_map('strval', $occupiedAmenityIdsForContinuousRange($startDate, $endDate, $startSlot, $endSlot));
+
+    $slotCounts = $calculateContinuousSlotsCount($startDate, $endDate, $startSlot, $endSlot);
+    $dayCount = $slotCounts['day_count'];
+    $nightCount = $slotCounts['night_count'];
+    $daysSpan = $slotCounts['days_span'];
+
+    $amenities = \App\Models\Amenity::with('benefits')
+        ->where('status', true)
+        ->orderBy('amenities_name')
+        ->get()
+        ->map(function ($am) use ($occupiedIds, $dayCount, $nightCount) {
+            $computedPrice = ($dayCount * (float) $am->daytime_price) + ($nightCount * (float) $am->nighttime_price);
+            $isOccupied = in_array((string) $am->id, $occupiedIds, true);
+
+            $category = 'Cottage';
+            if (stripos($am->amenities_name, 'payag') !== false) {
+                $category = 'Payag';
+            } elseif (stripos($am->amenities_name, 'a-house') !== false || stripos($am->amenities_name, 'ahouse') !== false) {
+                $category = 'A-House';
+            } elseif (stripos($am->amenities_name, 'hall') !== false) {
+                $category = 'Function Hall';
+            }
+
+            return [
+                'id' => (string) $am->id,
+                'name' => $am->amenities_name,
+                'category' => $category,
+                'daytime_price' => (float) $am->daytime_price,
+                'nighttime_price' => (float) $am->nighttime_price,
+                'price' => $computedPrice > 0 ? $computedPrice : (float) $am->daytime_price,
+                'minimum_capacity' => (int) ($am->minimum_capacity ?: 1),
+                'maximum_capacity' => (int) ($am->maximum_capacity ?: 10),
+                'description' => $am->description ?: '',
+                'image' => $am->image ? asset('storage/' . $am->image) : null,
+                'is_available' => ! $isOccupied,
+                'is_aircon' => (bool) ($am->benefits?->is_aircon ?? false),
+                'free_entrance' => (bool) ($am->benefits?->free_entrance ?? false),
+                'free_pool' => (bool) ($am->benefits?->free_pool ?? false),
+            ];
+        });
+
+    return response()->json([
+        'success' => true,
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'start_slot' => $startSlot,
+        'end_slot' => $endSlot,
+        'slot_passed' => $slotPassed,
+        'day_count' => $dayCount,
+        'night_count' => $nightCount,
+        'days_span' => $daysSpan,
+        'amenities' => $amenities,
+    ]);
+})->name('chatbot.guest.booking.amenities')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::get('/api/active-guests-count', function () {
     $count = ReservationGuest::query()
         ->whereNull('checked_out_at')

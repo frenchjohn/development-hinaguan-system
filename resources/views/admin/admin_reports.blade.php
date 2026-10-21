@@ -696,6 +696,14 @@
                                     </tfoot>
                                 </table>
                             </div>
+
+                            {{-- Multi-room Group Booking Explanation & Legend --}}
+                            <div class="mt-2.5 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-[0.75rem] text-emerald-800 dark:text-emerald-300">
+                                <svg class="w-4 h-4 flex-shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span><strong>Even Distribution Active:</strong> For group bookings reserving multiple rooms/amenities, guest counts are allocated across the occupied units so row room sums match the <em>Number of Guest Check In</em>. Hover over any occupied cell to view the exact booking details.</span>
+                            </div>
                         </div>
 
                         {{-- VIEW 2: Excel-Style Number of Guests Breakdown (Male / Female / Foreigner / Total) Table --}}

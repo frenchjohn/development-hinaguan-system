@@ -327,4 +327,125 @@ class AiAssistantEnhancedKnowledgeTest extends TestCase
         $this->assertStringContainsString('Spring View Resort', $contextGuide);
         $this->assertStringContainsString('Google Maps', $contextGuide);
     }
+
+    public function test_guest_ai_conversational_booking_flow_and_picks()
+    {
+        $controller = new GuestChatbotController();
+        $refDetect = new ReflectionMethod($controller, 'detectGuestTopics');
+        $refDetect->setAccessible(true);
+        $refFallback = new ReflectionMethod($controller, 'generateDirectFallbackResponse');
+        $refFallback->setAccessible(true);
+
+        // 1. Detection of booking intent
+        $topicsBooking = $refDetect->invoke($controller, 'I want to book an online reservation');
+        $this->assertTrue($topicsBooking['booking_mode']);
+
+        // 2. Detection of "show me what amenity i just avail before it book"
+        $topicsPicks = $refDetect->invoke($controller, 'show me what amenity i just avail before it book');
+        $this->assertTrue($topicsPicks['show_picks']);
+
+        // 3. Fallback response for "show me what amenity i just avail before it book" with active draft
+        $sampleDraft = [
+            'active' => true,
+            'startDate' => '2026-10-25',
+            'slot' => 'Daytime',
+            'amenity' => [
+                'id' => 'ahouse_2',
+                'name' => 'A-House 2 Aircon',
+                'price' => 300,
+            ],
+            'guest' => [
+                'name' => 'Juan Dela Cruz',
+                'phone' => '09171234567',
+                'email' => 'juan@example.com',
+                'guests_count' => 2,
+            ],
+        ];
+
+        $picksResponse = $refFallback->invoke($controller, 'show me what amenity i just avail before it book', $sampleDraft);
+        $this->assertStringContainsString('A-House 2 Aircon', $picksResponse);
+        $this->assertStringContainsString('2026-10-25', $picksResponse);
+        $this->assertStringContainsString('Juan Dela Cruz', $picksResponse);
+        $this->assertStringContainsString('50% Downpayment', $picksResponse);
+        $this->assertStringContainsString('150.00', $picksResponse);
+        $this->assertStringContainsString('non-refundable', $picksResponse);
+
+        // 4. Multi-amenity picks & continuous schedule test
+        $multiDraft = [
+            'active' => true,
+            'startDate' => '2026-10-25',
+            'endDate' => '2026-10-26',
+            'startSlot' => 'Daytime',
+            'endSlot' => 'Nighttime',
+            'amenities' => [
+                [
+                    'id' => '1',
+                    'name' => 'Cottage 1',
+                    'price' => 400.00,
+                ],
+                [
+                    'id' => '2',
+                    'name' => 'Payag 2',
+                    'price' => 500.00,
+                ],
+            ],
+            'guest' => [
+                'name' => 'Maria Santos',
+                'phone' => '09181234567',
+                'email' => 'maria@example.com',
+                'guests_count' => 6,
+            ],
+        ];
+
+        $multiPicksResponse = $refFallback->invoke($controller, 'show me what amenity i just avail before it book', $multiDraft);
+        $this->assertStringContainsString('Cottage 1', $multiPicksResponse);
+        $this->assertStringContainsString('Payag 2', $multiPicksResponse);
+        $this->assertStringContainsString('Check-in: 2026-10-25 [Daytime]', $multiPicksResponse);
+        $this->assertStringContainsString('Check-out: 2026-10-26 [Nighttime]', $multiPicksResponse);
+        $this->assertStringContainsString('Maria Santos', $multiPicksResponse);
+        $this->assertStringContainsString('900.00', $multiPicksResponse);
+        $this->assertStringContainsString('450.00', $multiPicksResponse);
+    }
+
+    public function test_guest_chatbot_booking_amenities_availability_endpoint()
+    {
+        Amenity::create([
+            'id' => 'cottage_1',
+            'amenities_name' => 'Cottage 1',
+            'daytime_price' => 200,
+            'nighttime_price' => 250,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => 10,
+            'status' => true,
+        ]);
+
+        // Single date query
+        $response = $this->getJson('/guest-chatbot/booking/amenities?date=2026-10-25&slot=Daytime');
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'start_date' => '2026-10-25',
+                'start_slot' => 'Daytime',
+            ]);
+
+        $amenities = $response->json('amenities');
+        $this->assertNotEmpty($amenities);
+        $this->assertEquals('Cottage 1', $amenities[0]['name']);
+        $this->assertTrue($amenities[0]['is_available']);
+
+        // Multi-stay continuous range query: 2026-10-25 Daytime to 2026-10-26 Nighttime (1 Day + 2 Nights = 200 + 500 = 700)
+        $rangeResponse = $this->getJson('/guest-chatbot/booking/amenities?start_date=2026-10-25&end_date=2026-10-26&start_slot=Daytime&end_slot=Nighttime');
+        $rangeResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'start_date' => '2026-10-25',
+                'end_date' => '2026-10-26',
+                'start_slot' => 'Daytime',
+                'end_slot' => 'Nighttime',
+                'days_span' => 2,
+            ]);
+        $rangeAmenities = $rangeResponse->json('amenities');
+        $this->assertNotEmpty($rangeAmenities);
+        $this->assertEquals(900.0, (float) $rangeAmenities[0]['price']);
+    }
 }

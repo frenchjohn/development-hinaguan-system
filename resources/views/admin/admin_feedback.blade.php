@@ -26,6 +26,12 @@
         'resources/js/admin_js/admin_feedback.js',
     ])
     <style>
+        :root {
+            --surface-alt: #f4f7f4;
+        }
+        [data-theme="dark"] {
+            --surface-alt: #202522;
+        }
         body.admin-portal {
             background-color: #ebf3ec !important;
         }
@@ -286,36 +292,43 @@
                                         class="feedback-row cursor-pointer border-t border-[var(--border)] transition-colors hover:bg-[var(--surface-alt)]/70"
                                         data-feedback-id="{{ $feedback->id }}"
                                         data-guest-name="{{ strtolower($feedback->full_name) }}"
+                                        data-full-name="{{ $feedback->full_name }}"
+                                        data-initials="{{ $feedback->initials }}"
+                                        data-is-anonymous="{{ $feedback->is_anonymous ? '1' : '0' }}"
+                                        data-description="{{ $feedback->description }}"
                                         data-stars="{{ $feedback->stars }}"
                                         data-sentiment="{{ $feedback->ai_sentiment }}"
+                                        data-sentiment-label="{{ $feedback->ai_sentiment_label }}"
+                                        data-sentiment-emoji="{{ $feedback->ai_sentiment_emoji }}"
                                         data-visibility="{{ $feedback->is_shown ? 'shown' : 'hidden' }}"
                                         data-created-timestamp="{{ $feedback->created_at->timestamp }}"
                                         data-created-date="{{ $feedback->created_at->toDateString() }}"
+                                        data-created-formatted="{{ $feedback->created_at->format('M j, Y') }}"
                                         tabindex="0"
                                         role="button"
                                         aria-label="View feedback from {{ $feedback->full_name }}"
                                     >
-                                        <script type="application/json" class="fb-admin-row-data">
-                                        {!! json_encode([
-                                            'id' => $feedback->id,
-                                            'fullName' => $feedback->full_name,
-                                            'initials' => $feedback->initials,
-                                            'isAnonymous' => (bool) $feedback->is_anonymous,
-                                            'stars' => (int) $feedback->stars,
-                                            'description' => $feedback->description,
-                                            'createdFormatted' => $feedback->created_at->format('M j, Y'),
-                                            'visibility' => $feedback->is_shown ? 'shown' : 'hidden',
-                                            'sentiment' => $feedback->ai_sentiment,
-                                            'sentimentLabel' => $feedback->ai_sentiment_label,
-                                            'sentimentEmoji' => $feedback->ai_sentiment_emoji,
-                                            'points' => $feedback->ai_points,
-                                            'images' => $imagesArray,
-                                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}
-                                        </script>
                                         <td class="px-4 py-3">
+                                            <script type="application/json" class="fb-admin-row-data">
+                                            {!! json_encode([
+                                                'id' => $feedback->id,
+                                                'fullName' => $feedback->full_name,
+                                                'initials' => $feedback->initials,
+                                                'isAnonymous' => (bool) $feedback->is_anonymous,
+                                                'stars' => (int) $feedback->stars,
+                                                'description' => $feedback->description,
+                                                'createdFormatted' => $feedback->created_at->format('M j, Y'),
+                                                'visibility' => $feedback->is_shown ? 'shown' : 'hidden',
+                                                'sentiment' => $feedback->ai_sentiment,
+                                                'sentimentLabel' => $feedback->ai_sentiment_label,
+                                                'sentimentEmoji' => $feedback->ai_sentiment_emoji,
+                                                'points' => $feedback->ai_points,
+                                                'images' => $imagesArray,
+                                            ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP) !!}
+                                            </script>
                                             <div class="flex items-center gap-3">
                                                 <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#6E9F54] to-[#244A2D] text-xs font-bold text-white">{{ $feedback->initials }}</span>
-                                                <div>
+                                                <div class="min-w-0">
                                                     <div class="flex items-center gap-2">
                                                         <p class="m-0 text-sm font-semibold text-[var(--ink)]">{{ $feedback->full_name }}</p>
                                                         @if ($imagesCount > 0)
@@ -325,6 +338,11 @@
                                                             </span>
                                                         @endif
                                                     </div>
+                                                    @if ($feedback->description)
+                                                        <p class="m-0 mt-0.5 max-w-sm truncate text-xs text-[var(--ink-muted)]" title="{{ $feedback->description }}">
+                                                            {{ $feedback->description }}
+                                                        </p>
+                                                    @endif
                                                     @if ($feedback->is_anonymous)
                                                         <p class="m-0 text-[0.72rem] text-[var(--ink-muted)]">Anonymous submission</p>
                                                     @endif

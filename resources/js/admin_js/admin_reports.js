@@ -164,7 +164,11 @@ window.AppPage['admin_reports'] = function () {
             const dayName = dayNames[dateObj.getDay()];
 
             const amenityGuestsMap = {};
-            amenityIdList.forEach(id => amenityGuestsMap[id] = 0);
+            const amenityDetailsMap = {};
+            amenityIdList.forEach(id => {
+                amenityGuestsMap[id] = 0;
+                amenityDetailsMap[id] = [];
+            });
 
             let dayGuestsCheckIn = 0;
             let dayGuestsOvernight = 0;
@@ -210,24 +214,62 @@ window.AppPage['admin_reports'] = function () {
                 }
 
                 if (isOccupiedOnThisDate) {
-                    let hasMatchingActiveAmenity = false;
                     if (r.amenities && r.amenities.length > 0) {
+                        // Distribute reservation guests evenly across booked amenity units
+                        // so that sum of room columns equals total unique guests checked in (eliminating 4+4+4+4 vs 8 confusion)
+                        const totalUnits = r.amenities.reduce((sum, ra) => sum + Math.max(1, Number(ra.quantity) || 1), 0);
+                        const effectiveUnits = Math.max(1, totalUnits);
+                        const basePerUnit = Math.floor(guests / effectiveUnits);
+                        let remainder = guests % effectiveUnits;
+
+                        const reservationAmenityGuests = {};
+                        r.amenities.forEach(ra => {
+                            const aId = String(ra.amenity_id);
+                            const qty = Math.max(1, Number(ra.quantity) || 1);
+                            let assigned = basePerUnit * qty;
+                            for (let u = 0; u < qty; u++) {
+                                if (remainder > 0) {
+                                    assigned += 1;
+                                    remainder -= 1;
+                                }
+                            }
+                            reservationAmenityGuests[aId] = (reservationAmenityGuests[aId] || 0) + assigned;
+                        });
+
+                        let hasMatchingActiveAmenity = false;
+                        let activeAssignedGuests = 0;
+
                         r.amenities.forEach(ra => {
                             const aId = String(ra.amenity_id);
                             if (activeAmenityIds.has(aId)) {
-                                amenityGuestsMap[aId] = (amenityGuestsMap[aId] || 0) + guests;
-                                hasMatchingActiveAmenity = true;
+                                const assigned = reservationAmenityGuests[aId] || 0;
+                                if (assigned > 0) {
+                                    amenityGuestsMap[aId] = (amenityGuestsMap[aId] || 0) + assigned;
+                                    activeAssignedGuests += assigned;
+                                    hasMatchingActiveAmenity = true;
+
+                                    // Descriptive tooltip for hover clarity
+                                    if (effectiveUnits > 1) {
+                                        amenityDetailsMap[aId].push(
+                                            `${r.customer_name || 'Guest'}: ${assigned} guest(s) (Part of ${guests}-guest group booking across ${effectiveUnits} rooms/amenities)`
+                                        );
+                                    } else {
+                                        amenityDetailsMap[aId].push(
+                                            `${r.customer_name || 'Guest'}: ${assigned} guest(s)`
+                                        );
+                                    }
+                                }
                             }
                         });
-                    }
 
-                    // Strictly only include in Check-In and Overnight counts if at least one booked amenity is currently selected/active
-                    if (hasMatchingActiveAmenity) {
-                        if (dateStr === resCheckIn) {
-                            dayGuestsCheckIn += guests;
-                        }
-                        if (r.reservation_type === 'overnight' || totalDays >= 1) {
-                            dayGuestsOvernight += guests;
+                        // Strictly only include in Check-In and Overnight counts for active amenities
+                        if (hasMatchingActiveAmenity) {
+                            if (dateStr === resCheckIn) {
+                                dayGuestsCheckIn += activeAssignedGuests;
+                            }
+                            if (r.reservation_type === 'overnight' || totalDays >= 1) {
+                                dayGuestsOvernight += activeAssignedGuests;
+                            }
                         }
                     }
                 }
@@ -251,6 +293,7 @@ window.AppPage['admin_reports'] = function () {
                 dayNum,
                 dayName,
                 amenityGuestsMap,
+                amenityDetailsMap,
                 dayGuestsCheckIn,
                 dayGuestsOvernight,
                 dayRoomsOccupied
@@ -342,7 +385,10 @@ window.AppPage['admin_reports'] = function () {
             const amenityCells = visibleAmenities.map(a => {
                 const count = r.amenityGuestsMap[String(a.id)] || 0;
                 if (count > 0) {
-                    return `<td class="py-2 px-2 text-center border-r border-b border-gray-200/80 dark:border-white/10 font-bold text-hp-text"><span class="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 rounded-md font-bold bg-[#1c5c3c]/15 text-[#1c5c3c] dark:bg-[#4c9a5f]/25 dark:text-[#6ab88c] text-xs">${count}</span></td>`;
+                    const details = (r.amenityDetailsMap && r.amenityDetailsMap[String(a.id)] && r.amenityDetailsMap[String(a.id)].length > 0)
+                        ? r.amenityDetailsMap[String(a.id)].join('\n')
+                        : `${a.name}: ${count} guest(s)`;
+                    return `<td class="py-2 px-2 text-center border-r border-b border-gray-200/80 dark:border-white/10 font-bold text-hp-text"><span class="inline-flex items-center justify-center min-w-[26px] h-6 px-1.5 rounded-md font-bold bg-[#1c5c3c]/15 text-[#1c5c3c] dark:bg-[#4c9a5f]/25 dark:text-[#6ab88c] text-xs cursor-help transition-transform hover:scale-110" title="${details.replace(/"/g, '&quot;')}">${count}</span></td>`;
                 }
                 return `<td class="py-2 px-2 text-center border-r border-b border-gray-200/80 dark:border-white/10 text-hp-text-muted/30 font-normal text-xs">-</td>`;
             }).join('');
@@ -1273,7 +1319,11 @@ window.AppPage['admin_reports'] = function () {
                                 <td style="font-size: 7pt;">${r.dayName}</td>
                                 ${visibleAmenities.map(a => {
                                     const val = r.amenityGuestsMap[String(a.id)];
-                                    return `<td style="${val > 0 ? 'font-weight: bold; background-color: #e8f5e9;' : 'color: #999;'}">${val > 0 ? val : '-'}</td>`;
+                                    const details = (r.amenityDetailsMap && r.amenityDetailsMap[String(a.id)] && r.amenityDetailsMap[String(a.id)].length > 0)
+                                        ? r.amenityDetailsMap[String(a.id)].join(' • ')
+                                        : '';
+                                    const titleAttr = details ? `title="${details.replace(/"/g, '&quot;')}"` : '';
+                                    return `<td style="${val > 0 ? 'font-weight: bold; background-color: #e8f5e9;' : 'color: #999;'}" ${titleAttr}>${val > 0 ? val : '-'}</td>`;
                                 }).join('')}
                                 <td style="font-weight: 600;">${r.dayGuestsCheckIn > 0 ? r.dayGuestsCheckIn : '-'}</td>
                                 <td style="font-weight: 600;">${r.dayGuestsOvernight > 0 ? r.dayGuestsOvernight : '-'}</td>
@@ -1294,6 +1344,9 @@ window.AppPage['admin_reports'] = function () {
                         </tr>
                     </tfoot>
                 </table>
+                <p style="margin: 6px 0 0 0; font-size: 6.5pt; color: #555; font-style: italic;">
+                    * Note: For multi-room group bookings, guests are allocated evenly across the occupied rooms so row room counts directly match the Number of Guest Check In.
+                </p>
             `;
         }
 

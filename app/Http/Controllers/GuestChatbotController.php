@@ -29,10 +29,23 @@ class GuestChatbotController extends Controller
             'history.*.role' => 'required_with:history|string|in:user,assistant',
             'history.*.content' => 'required_with:history|string',
             'model' => 'nullable|string',
+            'booking_draft' => 'nullable|array',
         ]);
 
         $userMessage = trim($request->input('message'));
         $msgLower = strtolower($userMessage);
+        $bookingDraft = $request->input('booking_draft', []);
+
+        // Detect booking actions
+        $bookingAction = null;
+        if (preg_match('/(?:cancel\s+booking|reset\s+booking|stop\s+booking|exit\s+booking)/i', $msgLower)) {
+            $bookingAction = 'cancel_booking';
+            $bookingDraft = null;
+        } elseif (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
+            $bookingAction = 'show_picks';
+        } elseif (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower)) {
+            $bookingAction = 'enter_booking_mode';
+        }
 
         // Security / Privacy Guardrail: Strictly block confidential sales, company financials, staff accounts
         $sensitiveTerms = [
@@ -44,7 +57,9 @@ class GuestChatbotController extends Controller
         foreach ($sensitiveTerms as $term) {
             if (str_contains($msgLower, $term)) {
                 return response()->json([
-                    'reply' => "I am the Hinaguan Guest Assistant. For privacy and security reasons, I can only assist with park amenities, rates, availability, and booking procedures. For special inquiries, please contact our park front desk directly."
+                    'reply' => "I am the Hinaguan Guest Assistant. For privacy and security reasons, I can only assist with park amenities, rates, availability, and booking procedures. For special inquiries, please contact our park front desk directly.",
+                    'booking_action' => $bookingAction,
+                    'booking_draft' => $bookingDraft,
                 ]);
             }
         }
@@ -53,12 +68,15 @@ class GuestChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
+            $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
             return response()->json([
-                'reply' => 'The chatbot is currently offline. Please call park hotline 0917 861 8383.'
-            ], 500);
+                'reply' => !empty($fallback) ? $fallback : 'The chatbot is currently offline. Please call park hotline 0917 861 8383.',
+                'booking_action' => $bookingAction,
+                'booking_draft' => $bookingDraft,
+            ]);
         }
 
-        $guestContext = $this->getGuestContext($userMessage);
+        $guestContext = $this->getGuestContext($userMessage, $bookingDraft);
 
         $systemPrompt = "You are Bren (also known as Bren AI Assistant), the warm, friendly, intelligent, and helpful AI concierge for Hinaguan Nature Park in Jasaan, Misamis Oriental.\n\n"
             . "CRITICAL OPERATIONAL RULES (STRICTLY ENFORCED):\n"
@@ -169,19 +187,27 @@ class GuestChatbotController extends Controller
                 $rawReply = $data['choices'][0]['message']['content'] ?? '';
                 $reply = $this->cleanChatbotReply($rawReply, $userMessage);
 
-                return response()->json(['reply' => $reply]);
+                return response()->json([
+                    'reply' => $reply,
+                    'booking_action' => $bookingAction,
+                    'booking_draft' => $bookingDraft,
+                ]);
             } else {
                 Log::error('Guest Chatbot OpenRouter Error: ' . $response->body());
-                $fallback = $this->generateDirectFallbackResponse($userMessage);
+                $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
                 return response()->json([
-                    'reply' => !empty($fallback) ? $fallback : 'The assistant is temporarily unavailable. Please call 0917 861 8383.'
+                    'reply' => !empty($fallback) ? $fallback : 'The assistant is temporarily unavailable. Please call 0917 861 8383.',
+                    'booking_action' => $bookingAction,
+                    'booking_draft' => $bookingDraft,
                 ]);
             }
         } catch (\Exception $e) {
             Log::error('Guest Chatbot Exception: ' . $e->getMessage());
-            $fallback = $this->generateDirectFallbackResponse($userMessage);
+            $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
             return response()->json([
-                'reply' => !empty($fallback) ? $fallback : 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.'
+                'reply' => !empty($fallback) ? $fallback : 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.',
+                'booking_action' => $bookingAction,
+                'booking_draft' => $bookingDraft,
             ]);
         }
     }
@@ -301,7 +327,7 @@ class GuestChatbotController extends Controller
     /**
      * Context-aware direct fallback response in case a free LLM emits only analytical scratchpad tokens.
      */
-    private function generateDirectFallbackResponse(string $userMessage): string
+    private function generateDirectFallbackResponse(string $userMessage, ?array $bookingDraft = null): string
     {
         $msgLower = strtolower($userMessage);
 
@@ -318,6 +344,69 @@ class GuestChatbotController extends Controller
                 return "Paumanhin po, tanging mga katanungan lamang tungkol sa Hinaguan Nature Park ang aking masasagot. May maitutulong po ba ako sa inyong pagbisita, rates, o booking?";
             } else {
                 return "I can only assist with inquiries regarding Hinaguan Nature Park. How may I help you with our amenities, rates, weather, or bookings?";
+            }
+        }
+
+        // Show what I availed / current picks (supports multiple amenities & date ranges)
+        if (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
+            $amenities = !empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])
+                ? $bookingDraft['amenities']
+                : (!empty($bookingDraft['amenity']) ? [$bookingDraft['amenity']] : []);
+
+            if (!empty($amenities)) {
+                $amLines = [];
+                $total = 0;
+                foreach ($amenities as $am) {
+                    $name = $am['name'] ?? 'Amenity';
+                    $price = (float) ($am['price'] ?? 0);
+                    $total += $price;
+                    $amLines[] = "• 🏷️ {$name} (₱" . number_format($price, 2) . ")";
+                }
+                $amenitiesStr = implode("\n", $amLines);
+
+                $startDate = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? now()->toDateString());
+                $endDate = $bookingDraft['endDate'] ?? $startDate;
+                $startSlot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
+                $endSlot = $bookingDraft['endSlot'] ?? $startSlot;
+
+                $scheduleStr = ($startDate === $endDate && $startSlot === $endSlot)
+                    ? "{$startDate} [{$startSlot}]"
+                    : "Check-in: {$startDate} [{$startSlot}] &rarr; Check-out: {$endDate} [{$endSlot}]";
+
+                $booker = !empty($bookingDraft['guest']['name']) ? $bookingDraft['guest']['name'] : 'Not yet provided';
+                $phone = !empty($bookingDraft['guest']['phone']) ? $bookingDraft['guest']['phone'] : 'Not yet provided';
+                $email = !empty($bookingDraft['guest']['email']) ? $bookingDraft['guest']['email'] : 'Not yet provided';
+                $pax = !empty($bookingDraft['guest']['guests_count']) ? (int) $bookingDraft['guest']['guests_count'] : 1;
+
+                $dp = round($total * 0.5, 2);
+                $bal = round($total - $dp, 2);
+
+                return "Here is the record of what you have selected so far:\n"
+                    . "{$amenitiesStr}\n"
+                    . "• 📅 Target Schedule: {$scheduleStr}\n"
+                    . "• 👤 Primary Guest: {$booker}\n"
+                    . "• 📞 Mobile & Email: {$phone} | {$email}\n"
+                    . "• 👥 Headcount: {$pax} pax\n"
+                    . "• 💵 Total Reservation: ₱" . number_format($total, 2) . "\n"
+                    . "• 💳 Required 50% Downpayment: ₱" . number_format($dp, 2) . "\n"
+                    . "• ⏳ Remaining Balance: ₱" . number_format($bal, 2) . " (payable at park entrance)\n\n"
+                    . "POLICY NOTE: The 50% downpayment is strictly non-refundable upon payment. Would you like to proceed with payment or modify your selection?";
+            } else {
+                return "You haven't selected any amenities yet! To start your booking right now, let me know your preferred check-in and check-out dates and session slots, and I'll display our available cottages, payags, and A-houses.";
+            }
+        }
+
+        // Direct Booking Mode intent (e.g. "I want to book", "mag-book ko", "pwede mag-book")
+        if (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower) && !preg_match('/(?:how\s+to|paano|unsaon)/i', $msgLower)) {
+            if ($isBisaya) {
+                return "Sige, mag-book ta sa imong reservation online dinhi sa chat! 🌿\n"
+                    . "Palihug pilia o i-type ang imong target nga petsa sa pagbisita ug ang session slot (Daytime: 8:00 AM – 5:00 PM o Nighttime: 6:00 PM – 8:00 AM).";
+            } elseif ($isTagalog) {
+                return "Sige po, simulan natin ang inyong online reservation dito mismo sa chat! 🌿\n"
+                    . "Pakilagay o piliin ang inyong target date ng pagbisita at session slot (Daytime: 8:00 AM – 5:00 PM o Nighttime: 6:00 PM – 8:00 AM).";
+            } else {
+                return "Awesome! Let's set up your online reservation right here in the chat 🌿\n"
+                    . "To start, please choose or type your target visit date and preferred session slot (Daytime: 8:00 AM – 5:00 PM or Nighttime: 6:00 PM – 8:00 AM).";
             }
         }
 
@@ -656,6 +745,17 @@ class GuestChatbotController extends Controller
             $topics['reservations'] = true;
         }
 
+        // 12. Conversational Booking Intent & Picks Inquiry
+        if (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msg)) {
+            $topics['booking_mode'] = true;
+            $topics['is_specific'] = true;
+        }
+
+        if (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msg)) {
+            $topics['show_picks'] = true;
+            $topics['is_specific'] = true;
+        }
+
         return $topics;
     }
 
@@ -674,7 +774,7 @@ class GuestChatbotController extends Controller
      * 11. customers
      * 12. reservation_guests
      */
-    private function getGuestContext(string $message): string
+    private function getGuestContext(string $message, ?array $bookingDraft = null): string
     {
         $context = '';
         $now = now();
@@ -682,6 +782,32 @@ class GuestChatbotController extends Controller
         $currentTimeStr = $now->format('F j, Y - g:i A');
 
         $context .= "Current Date/Time: {$currentTimeStr}\n";
+
+        $draftAmenities = !empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])
+            ? $bookingDraft['amenities']
+            : (!empty($bookingDraft['amenity']) ? [$bookingDraft['amenity']] : []);
+
+        if (!empty($draftAmenities)) {
+            $amNames = array_map(fn ($a) => ($a['name'] ?? 'Amenity') . " (₱" . number_format((float) ($a['price'] ?? 0), 2) . ")", $draftAmenities);
+            $total = array_sum(array_map(fn ($a) => (float) ($a['price'] ?? 0), $draftAmenities));
+            $dp = round($total * 0.5, 2);
+            $bal = round($total - $dp, 2);
+            $startDate = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? $todayStr);
+            $endDate = $bookingDraft['endDate'] ?? $startDate;
+            $startSlot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
+            $endSlot = $bookingDraft['endSlot'] ?? $startSlot;
+            $booker = !empty($bookingDraft['guest']['name']) ? $bookingDraft['guest']['name'] : 'Pending name';
+            $phone = !empty($bookingDraft['guest']['phone']) ? $bookingDraft['guest']['phone'] : 'Pending phone';
+            $pax = !empty($bookingDraft['guest']['guests_count']) ? (int) $bookingDraft['guest']['guests_count'] : 1;
+
+            $context .= "\n[ACTIVE USER BOOKING DRAFT IN PROGRESS (STORED IN LOCALSTORAGE)]:\n"
+                . "- Picked Amenities (" . count($draftAmenities) . " items): " . implode(', ', $amNames) . "\n"
+                . "- Schedule: Check-in {$startDate} [{$startSlot}] to Check-out {$endDate} [{$endSlot}]\n"
+                . "- Primary Booker: {$booker} (Phone: {$phone})\n"
+                . "- Number of Guests: {$pax}\n"
+                . "- Total: ₱" . number_format($total, 2) . " | 50% Downpayment Required: ₱" . number_format($dp, 2) . " | Balance Due: ₱" . number_format($bal, 2) . "\n"
+                . "- Note: If the user asks 'show me what amenity i just avail before it book', confirm these exact details to them!\n";
+        }
 
         // Table 1: park_settings
         $settings = ParkSetting::first();
