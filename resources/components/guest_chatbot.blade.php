@@ -57,7 +57,7 @@
                 <span class="chatbot-booking-bar__desc" id="chatbotBookingBarDesc">Setting up your reservation</span>
             </div>
             <div class="chatbot-booking-bar__actions">
-                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--pick" id="chatbotBarViewPickBtn" title="View your current selection"><i class="bi bi-card-checklist me-1"></i> My Selection</button>
+                <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--pick" id="chatbotBarViewPickBtn" title="Current booking step"><i class="bi bi-houses me-1" id="chatbotBarViewPickIcon"></i> <span id="chatbotBarViewPickText">Choose Amenities</span></button>
                 <button type="button" class="chatbot-booking-bar__btn chatbot-booking-bar__btn--exit" id="chatbotBarCancelBtn" title="Exit booking mode"><i class="bi bi-x-circle me-1"></i> Cancel</button>
             </div>
         </div>
@@ -102,6 +102,19 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
+        </div>
+
+        <!-- Docked Bottom Booking Action Bar (Always visible above chat input when in booking mode) -->
+        <div class="chatbot-dock hidden border-t border-emerald-200/90 bg-emerald-50/95 dark:border-emerald-900/60 dark:bg-emerald-950/95 px-3 py-2 flex items-center justify-between gap-2 shadow-sm transition-all" id="chatbotDock">
+            <div class="flex items-center gap-1.5 min-w-0 text-emerald-900 dark:text-emerald-100 text-xs">
+                <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+                <span class="font-medium truncate" id="chatbotDockSchedule">Schedule: 2026-10-24</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button type="button" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-sm transition-colors flex items-center gap-1 cursor-pointer" id="chatbotDockActionBtn">
+                    <i class="bi bi-houses text-[12px]" id="chatbotDockActionIcon"></i> <span id="chatbotDockActionText">Choose Amenities</span>
+                </button>
+            </div>
         </div>
 
         <div class="chatbot-input-wrapper">

@@ -44,7 +44,7 @@ class GuestChatbotController extends Controller
         } elseif (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
             $bookingAction = 'show_picks';
         } elseif (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower)) {
-            $bookingAction = 'enter_booking_mode';
+            $bookingAction = 'confirm_booking_prompt';
         }
 
         // Security / Privacy Guardrail: Strictly block confidential sales, company financials, staff accounts
@@ -347,6 +347,15 @@ class GuestChatbotController extends Controller
             }
         }
 
+        // Request amenity picker or catalog
+        if (preg_match('/(?:(?:give|show|open|reopen|display|bring\s+up|launch|view|get)\s+(?:me\s+)?(?:the\s+)?(?:amenit(?:y|ies)?(?:\s+picker|\s+selector|\s+catalog|\s+list|\s+modal)?|cottages?|payags?|options)|amenit(?:y|ies)\s+picker|pick\s+(?:an\s+)?amenity|choose\s+(?:an\s+)?amenity|select\s+(?:an\s+)?amenity|pakita\s+ang\s+amenit|patingin\s+ng\s+amenit)/i', $msgLower)) {
+            $startDate = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? null);
+            $slot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
+            if ($startDate) {
+                return "Sure! Click the **Choose Amenities** button right above your message box (or in the top bar) to view all available cottages, payags, and A-houses for {$startDate} [{$slot}] 🌿";
+            }
+        }
+
         // Show what I availed / current picks (supports multiple amenities & date ranges)
         if (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
             $amenities = !empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])
@@ -392,6 +401,11 @@ class GuestChatbotController extends Controller
                     . "• ⏳ Remaining Balance: ₱" . number_format($bal, 2) . " (payable at park entrance)\n\n"
                     . "POLICY NOTE: The 50% downpayment is strictly non-refundable upon payment. Would you like to proceed with payment or modify your selection?";
             } else {
+                if (!empty($bookingDraft['active']) && !empty($bookingDraft['startDate'])) {
+                    $sd = $bookingDraft['startDate'];
+                    $sl = $bookingDraft['startSlot'] ?? 'Daytime';
+                    return "You haven't selected any amenities yet! Click the **Choose Amenities** button right above your message box to browse our cottages, payags, and A-houses for {$sd} [{$sl}].";
+                }
                 return "You haven't selected any amenities yet! To start your booking right now, let me know your preferred check-in and check-out dates and session slots, and I'll display our available cottages, payags, and A-houses.";
             }
         }
@@ -399,14 +413,11 @@ class GuestChatbotController extends Controller
         // Direct Booking Mode intent (e.g. "I want to book", "mag-book ko", "pwede mag-book")
         if (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower) && !preg_match('/(?:how\s+to|paano|unsaon)/i', $msgLower)) {
             if ($isBisaya) {
-                return "Sige, mag-book ta sa imong reservation online dinhi sa chat! 🌿\n"
-                    . "Palihug pilia o i-type ang imong target nga petsa sa pagbisita ug ang session slot (Daytime: 8:00 AM – 5:00 PM o Nighttime: 6:00 PM – 8:00 AM).";
+                return "Pwede kaayo! Pwede ta mag-book sa imong online reservation dinhi sa chat 🌿\n\nGusto ba nimo nga sugdan na nato ang imong booking karon?";
             } elseif ($isTagalog) {
-                return "Sige po, simulan natin ang inyong online reservation dito mismo sa chat! 🌿\n"
-                    . "Pakilagay o piliin ang inyong target date ng pagbisita at session slot (Daytime: 8:00 AM – 5:00 PM o Nighttime: 6:00 PM – 8:00 AM).";
+                return "Pwedeng-pwede po! Pwede tayong mag-book ng inyong online reservation dito mismo sa chat 🌿\n\nGusto niyo po bang simulan na natin ang inyong pag-book ngayon?";
             } else {
-                return "Awesome! Let's set up your online reservation right here in the chat 🌿\n"
-                    . "To start, please choose or type your target visit date and preferred session slot (Daytime: 8:00 AM – 5:00 PM or Nighttime: 6:00 PM – 8:00 AM).";
+                return "I can certainly book a reservation for you right here in our chat! 🌿\n\nWould you like to start your booking now?";
             }
         }
 

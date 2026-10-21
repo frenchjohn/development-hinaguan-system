@@ -15,11 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatbotBarActionBtn = document.getElementById('chatbotBarActionBtn');
     const chatbotBarActionBtnText = document.getElementById('chatbotBarActionBtnText');
     const chatbotBarViewPickBtn = document.getElementById('chatbotBarViewPickBtn');
+    const chatbotBarViewPickIcon = document.getElementById('chatbotBarViewPickIcon');
+    const chatbotBarViewPickText = document.getElementById('chatbotBarViewPickText');
     const chatbotBarCancelBtn = document.getElementById('chatbotBarCancelBtn');
     const cbBarStep1 = document.getElementById('cbBarStep1');
     const cbBarStep2 = document.getElementById('cbBarStep2');
     const cbBarStep3 = document.getElementById('cbBarStep3');
     const cbBarStep4 = document.getElementById('cbBarStep4');
+
+    // Bottom Action Dock elements
+    const chatbotDock = document.getElementById('chatbotDock');
+    const chatbotDockSchedule = document.getElementById('chatbotDockSchedule');
+    const chatbotDockActionBtn = document.getElementById('chatbotDockActionBtn');
+    const chatbotDockActionIcon = document.getElementById('chatbotDockActionIcon');
+    const chatbotDockActionText = document.getElementById('chatbotDockActionText');
 
     // Amenity Selection Modal elements
     const chatbotAmenityModal = document.getElementById('chatbotAmenityModal');
@@ -172,6 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!bookingDraft || !bookingDraft.active) {
             chatbotBookingBar.hidden = true;
             chatbotBookingBar.classList.add('hidden');
+            if (chatbotDock) {
+                chatbotDock.hidden = true;
+                chatbotDock.classList.add('hidden');
+            }
             return;
         }
 
@@ -201,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 desc = amCount > 0
                     ? `${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} Selected (₱${total.toFixed(2)})`
                     : `Schedule: ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`;
-                actionLabel = amCount > 0 ? 'Edit Amenities' : 'Pick Amenities';
-                actionIcon = 'bi-houses';
+                actionLabel = amCount > 0 ? `Amenities (${amCount})` : 'Choose Amenities';
+                actionIcon = amCount > 0 ? 'bi-card-checklist' : 'bi-houses';
                 break;
             case 'guest_info':
                 stepTitle = 'Step 3: Primary Booker Information';
@@ -237,6 +250,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (chatbotBarActionBtn) {
             chatbotBarActionBtn.innerHTML = `<i class="bi ${actionIcon} me-1"></i> <span id="chatbotBarActionBtnText">${actionLabel}</span>`;
+        }
+        if (chatbotBarViewPickBtn) {
+            chatbotBarViewPickBtn.innerHTML = `<i class="bi ${actionIcon} me-1" id="chatbotBarViewPickIcon"></i> <span id="chatbotBarViewPickText">${actionLabel}</span>`;
+        }
+
+        // Update Bottom Floating Dock (Always docked right above chat input)
+        if (chatbotDock) {
+            chatbotDock.hidden = false;
+            chatbotDock.classList.remove('hidden');
+            if (chatbotDockSchedule) {
+                if (bookingDraft.step === 'amenity') {
+                    chatbotDockSchedule.textContent = amCount > 0
+                        ? `🏡 ${amCount} Amenit${amCount > 1 ? 'ies' : 'y'} (₱${total.toFixed(2)})`
+                        : `📅 ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`;
+                } else if (bookingDraft.step === 'date_slot') {
+                    chatbotDockSchedule.textContent = bookingDraft.startDate
+                        ? `📅 ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}]`
+                        : '📅 Step 1: Pick Dates';
+                } else {
+                    chatbotDockSchedule.textContent = desc;
+                }
+            }
+            if (chatbotDockActionBtn) {
+                let dockAction = actionLabel;
+                let dockIcon = actionIcon;
+                if (bookingDraft.step === 'amenity' && amCount > 0) {
+                    dockAction = 'Continue to Booker →';
+                    dockIcon = 'bi-arrow-right-circle';
+                }
+                chatbotDockActionBtn.innerHTML = `<i class="bi ${dockIcon} text-[12px]" id="chatbotDockActionIcon"></i> <span id="chatbotDockActionText">${dockAction}</span>`;
+            }
         }
 
         // Update Step Pills with Tailwind classes
@@ -480,6 +524,65 @@ document.addEventListener('DOMContentLoaded', () => {
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${y}-${m}-${day}`;
+    };
+
+    let awaitingBookingConfirmation = false;
+
+    // Ask for Confirmation before entering Booking Mode
+    const askBookingConfirmation = () => {
+        if (bookingDraft && bookingDraft.active) {
+            addMessage(`You are already in booking mode! Your current step is **${bookingDraft.step === 'amenity' ? 'Choose Amenities' : (bookingDraft.step === 'guest_info' ? 'Booker Details' : 'Pick Dates')}**. Click the button above to continue your booking or type 'cancel booking' to reset.`, true);
+            return;
+        }
+
+        awaitingBookingConfirmation = true;
+
+        const confirmCard = document.createElement('div');
+        confirmCard.className = 'chatbot-booking-card';
+        confirmCard.innerHTML = `
+            <div class="chatbot-card-header">
+                <span><i class="bi bi-calendar-check text-emerald-600 me-1.5"></i> Online Reservation Assistant</span>
+                <span class="text-xs text-emerald-600 font-bold">Hinaguan Park</span>
+            </div>
+            <div style="font-size:0.8rem;color:#064e3b;line-height:1.45;margin-bottom:0.6rem;">
+                I can guide you through reserving your stay:
+                <ul style="margin:0.35rem 0 0 1rem;padding:0;list-style-type:disc;color:#047857;font-size:0.75rem;">
+                    <li>Select check-in &amp; check-out dates and sessions</li>
+                    <li>Browse live available cottages, payags, and A-houses</li>
+                    <li>Provide guest details and receive your official digital pass</li>
+                </ul>
+            </div>
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbConfirmStartBookingBtn" style="flex:1;">
+                    <i class="bi bi-check-circle-fill me-1"></i> Yes, Let's Book Now
+                </button>
+                <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbDeclineStartBookingBtn" style="flex:1;">
+                    <i class="bi bi-chat-dots me-1"></i> Not Yet, Ask Questions
+                </button>
+            </div>
+        `;
+
+        confirmCard.querySelector('#cbConfirmStartBookingBtn')?.addEventListener('click', () => {
+            awaitingBookingConfirmation = false;
+            const b = confirmCard.querySelector('#cbConfirmStartBookingBtn');
+            if (b) {
+                b.disabled = true;
+                b.innerHTML = '<i class="bi bi-check-lg me-1"></i> Starting Booking…';
+            }
+            startBookingMode();
+        });
+
+        confirmCard.querySelector('#cbDeclineStartBookingBtn')?.addEventListener('click', () => {
+            awaitingBookingConfirmation = false;
+            const b = confirmCard.querySelector('#cbDeclineStartBookingBtn');
+            if (b) b.disabled = true;
+            addMessage("No problem at all! 😊 Feel free to ask about our cottages, payags, pool rates, day/night schedules, or park policies anytime.", true);
+        });
+
+        addCustomCardMessage(
+            "I can certainly book a reservation for you right here in our chat! 🌿\n\nWould you like to start your booking now?",
+            confirmCard
+        );
     };
 
     // Start Booking Mode
@@ -1822,6 +1925,77 @@ document.addEventListener('DOMContentLoaded', () => {
         onAmenitiesConfirmed([amenity]);
     };
 
+    // Attach quick amenity pick / browse chips under bot messages during Step 2
+    const attachAmenityActionChips = (messageDiv, replyText) => {
+        if (!messageDiv || !bookingDraft.active || bookingDraft.step !== 'amenity') return;
+
+        const bodyDiv = messageDiv.querySelector('.chatbot-message__body');
+        if (!bodyDiv) return;
+
+        // Container for action chips
+        const chipContainer = document.createElement('div');
+        chipContainer.className = 'chatbot-amenity-recommend-bar mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center gap-1.5';
+
+        // Extract mentioned amenities from reply text: e.g. "Cottage 1", "Payag 2", "A-House 1", "Function Hall"
+        const regex = /\b(Riverside Cottage \d+|A-Frame (?:Riverside )?Cottage \d+|A-House \d+|Payag \d+|Cottage \d+|Function Hall)\b/gi;
+        const matches = [...new Set((replyText.match(regex) || []).map(m => m.trim()))];
+
+        if (matches.length > 0) {
+            matches.slice(0, 3).forEach(name => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1 cursor-pointer';
+                btn.innerHTML = `<i class="bi bi-plus-circle text-[10px]"></i> Select ${escapeHtml(name)}`;
+                btn.addEventListener('click', async () => {
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="bi bi-hourglass-split"></i> Adding…`;
+                    try {
+                        const startSlot = bookingDraft.startSlot || bookingDraft.slot || 'Daytime';
+                        const endSlot = bookingDraft.endSlot || bookingDraft.slot || 'Daytime';
+                        const res = await fetch(`/guest-chatbot/booking/amenities?start_date=${bookingDraft.startDate}&end_date=${bookingDraft.endDate}&start_slot=${startSlot}&end_slot=${endSlot}`, {
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success && Array.isArray(data.amenities)) {
+                            const match = data.amenities.find(a => a.name.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(a.name.toLowerCase()));
+                            if (match) {
+                                if (match.is_available) {
+                                    const currentList = (bookingDraft.amenities && bookingDraft.amenities.length > 0) ? [...bookingDraft.amenities] : [];
+                                    if (!currentList.some(a => String(a.id) === String(match.id))) {
+                                        currentList.push(match);
+                                    }
+                                    onAmenitiesConfirmed(currentList);
+                                    btn.innerHTML = `<i class="bi bi-check-lg"></i> Added!`;
+                                    btn.className = 'px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-600 text-white cursor-default';
+                                    return;
+                                } else {
+                                    alert(`${match.name} is already reserved for this schedule.`);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error selecting amenity from chip:', e);
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="bi bi-plus-circle text-[10px]"></i> Select ${escapeHtml(name)}`;
+                });
+                chipContainer.appendChild(btn);
+            });
+        }
+
+        // Always add a "Browse All Amenities" button
+        const browseBtn = document.createElement('button');
+        browseBtn.type = 'button';
+        browseBtn.className = 'px-2 py-1 rounded-md text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1 cursor-pointer';
+        browseBtn.innerHTML = `<i class="bi bi-houses text-[11px]"></i> Browse Amenities (${bookingDraft.startDate || 'Calendar'})`;
+        browseBtn.addEventListener('click', () => {
+            triggerAmenitySelection();
+        });
+        chipContainer.appendChild(browseBtn);
+
+        bodyDiv.appendChild(chipContainer);
+    };
+
     // Step 3: Create Guest Info In-Chat Card (Compact trigger for Guest Modal)
     const createGuestInfoCard = () => {
         const card = document.createElement('div');
@@ -1901,6 +2075,11 @@ document.addEventListener('DOMContentLoaded', () => {
             : (bookingDraft.amenity ? [bookingDraft.amenity] : []);
 
         if (!bookingDraft || list.length === 0) {
+            if (bookingDraft && bookingDraft.active && bookingDraft.startDate) {
+                addMessage(`You haven't selected any amenities yet! Opening our live amenity catalog for ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}] 🌿`, true);
+                triggerAmenitySelection();
+                return;
+            }
             addMessage("You haven't selected any amenities yet! Would you like to start a booking now? Type 'book now' or click 'Book via Chat'.", true);
             return;
         }
@@ -2500,7 +2679,59 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     chatbotBarViewPickBtn?.addEventListener('click', () => {
-        showBookingPicksSummary();
+        const amCount = bookingDraft.amenities ? bookingDraft.amenities.length : (bookingDraft.amenity ? 1 : 0);
+        switch (bookingDraft.step) {
+            case 'date_slot':
+                openDateModal();
+                break;
+            case 'amenity':
+                triggerAmenitySelection();
+                break;
+            case 'guest_info':
+                openGuestModal();
+                break;
+            case 'review':
+            case 'payment':
+            case 'confirmed':
+                showBookingPicksSummary();
+                break;
+            default:
+                if (!bookingDraft.startDate) {
+                    openDateModal();
+                } else if (amCount === 0) {
+                    triggerAmenitySelection();
+                } else {
+                    showBookingPicksSummary();
+                }
+                break;
+        }
+    });
+
+    chatbotDockActionBtn?.addEventListener('click', () => {
+        const amCount = bookingDraft.amenities ? bookingDraft.amenities.length : (bookingDraft.amenity ? 1 : 0);
+        switch (bookingDraft.step) {
+            case 'date_slot':
+                openDateModal();
+                break;
+            case 'amenity':
+                if (amCount > 0) {
+                    openGuestModal();
+                } else {
+                    triggerAmenitySelection();
+                }
+                break;
+            case 'guest_info':
+                openGuestModal();
+                break;
+            case 'review':
+            case 'payment':
+            case 'confirmed':
+                showBookingPicksSummary();
+                break;
+            default:
+                openDateModal();
+                break;
+        }
     });
 
     chatbotBarCancelBtn?.addEventListener('click', () => {
@@ -2546,6 +2777,57 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerAmenitySelection();
             return;
         }
+
+        const dockBtn = e.target.closest('#chatbotDockActionBtn');
+        if (dockBtn) {
+            e.preventDefault();
+            const amCount = bookingDraft.amenities ? bookingDraft.amenities.length : (bookingDraft.amenity ? 1 : 0);
+            if (bookingDraft.step === 'amenity') {
+                if (amCount > 0) openGuestModal();
+                else triggerAmenitySelection();
+            } else if (bookingDraft.step === 'date_slot') {
+                openDateModal();
+            } else if (bookingDraft.step === 'guest_info') {
+                openGuestModal();
+            } else {
+                showBookingPicksSummary();
+            }
+            return;
+        }
+
+        const viewPickBtn = e.target.closest('#chatbotBarViewPickBtn');
+        if (viewPickBtn) {
+            e.preventDefault();
+            if (bookingDraft.step === 'amenity') {
+                triggerAmenitySelection();
+            } else if (bookingDraft.step === 'date_slot') {
+                openDateModal();
+            } else if (bookingDraft.step === 'guest_info') {
+                openGuestModal();
+            } else {
+                showBookingPicksSummary();
+            }
+            return;
+        }
+
+        const confirmBookingBtn = e.target.closest('#cbConfirmStartBookingBtn');
+        if (confirmBookingBtn) {
+            e.preventDefault();
+            awaitingBookingConfirmation = false;
+            confirmBookingBtn.disabled = true;
+            confirmBookingBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Starting Booking…';
+            startBookingMode();
+            return;
+        }
+
+        const declineBookingBtn = e.target.closest('#cbDeclineStartBookingBtn');
+        if (declineBookingBtn) {
+            e.preventDefault();
+            awaitingBookingConfirmation = false;
+            declineBookingBtn.disabled = true;
+            addMessage("No problem at all! 😊 Feel free to ask about our cottages, payags, pool rates, day/night schedules, or park policies anytime.", true);
+            return;
+        }
     });
 
     // ─────────────────────────────────────────────────────────────
@@ -2557,10 +2839,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return /(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i.test(text);
     };
 
+    // Check if input is asking to open/reopen the amenity picker or view amenity catalog
+    const isAmenityPickerQuery = (text) => {
+        return /(?:(?:give|show|open|reopen|display|bring\s+up|launch|view|get)\s+(?:me\s+)?(?:the\s+)?(?:amenit(?:y|ies)?(?:\s+picker|\s+selector|\s+catalog|\s+list|\s+modal)?|cottages?|payags?|options)|amenit(?:y|ies)\s+picker|pick\s+(?:an\s+)?amenity|choose\s+(?:an\s+)?amenity|select\s+(?:an\s+)?amenity|pakita\s+ang\s+amenit|patingin\s+ng\s+amenit)/i.test(text);
+    };
+
     // Check if input is starting booking
     const isStartBookingQuery = (text) => {
         return /(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i.test(text)
             && !/(?:how\s+to|paano|unsaon)/i.test(text);
+    };
+
+    // Check if user replied affirmatively (yes, sure, sige, oo, etc.)
+    const isAffirmativeQuery = (text) => {
+        return /^(?:yes|yep|yeah|sure|ok|okay|sige|oo|opo|proceed|agree|let'?s\s+(?:book|go|start|do\s+it)|cge|g|game|yes\s+please|start|tara|pwede|sige\s+po)\b/i.test(text.trim());
+    };
+
+    // Check if user replied negatively (no, not yet, wait, etc.)
+    const isNegativeQuery = (text) => {
+        return /^(?:no|nope|not\s+yet|dili|ayaw|wag|wait|sandali|later|cancel|stop|ayaw\s+sa|dili\s+pa)\b/i.test(text.trim());
     };
 
     // Check if input is cancelling booking
@@ -2785,10 +3082,36 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 2. Direct Interception: Start Booking Mode
+        // 1.5 Direct Interception: Amenity Picker Query ("give me the amenity picker again", etc.)
+        if (isAmenityPickerQuery(rawMessage)) {
+            if (bookingDraft.active && bookingDraft.startDate) {
+                addMessage(`Sure thing! Opening our live amenity catalog for ${bookingDraft.startDate} [${bookingDraft.startSlot || 'Daytime'}] 🌿`, true);
+                triggerAmenitySelection();
+                return;
+            } else {
+                startBookingMode();
+                return;
+            }
+        }
+
+        // 2. Direct Interception: Start Booking Mode (Asks for confirmation first)
         if (isStartBookingQuery(rawMessage)) {
-            startBookingMode();
+            askBookingConfirmation();
             return;
+        }
+
+        // 2.5 Awaiting Booking Confirmation Answer ("yes", "sure", "sige", "oo", etc.)
+        if (awaitingBookingConfirmation) {
+            if (isAffirmativeQuery(rawMessage)) {
+                awaitingBookingConfirmation = false;
+                startBookingMode();
+                return;
+            } else if (isNegativeQuery(rawMessage)) {
+                awaitingBookingConfirmation = false;
+                addMessage("No problem at all! 😊 Take your time. Feel free to ask about our amenities, rates, swimming pool, or operating hours anytime.", true);
+                return;
+            }
+            awaitingBookingConfirmation = false;
         }
 
         // 3. Direct Interception: Cancel Booking Mode
@@ -2875,7 +3198,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conversationCleared) return;
 
             // Handle backend booking action
-            if (data.booking_action === 'enter_booking_mode' && !bookingDraft.active) {
+            if (data.booking_action === 'confirm_booking_prompt') {
+                askBookingConfirmation();
+                return;
+            } else if (data.booking_action === 'enter_booking_mode' && !bookingDraft.active) {
                 startBookingMode();
                 return;
             } else if (data.booking_action === 'show_picks') {
@@ -2886,7 +3212,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.reply) {
-                addMessage(data.reply, true);
+                const msgEl = addMessage(data.reply, true);
+                if (bookingDraft.active && bookingDraft.step === 'amenity' && msgEl) {
+                    attachAmenityActionChips(msgEl, data.reply);
+                }
             } else {
                 addMessage('I apologize, but I encountered an error. Please try again.', true);
             }
