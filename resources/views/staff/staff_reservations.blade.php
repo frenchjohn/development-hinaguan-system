@@ -571,6 +571,72 @@
         </div>
     </div>
 
+    <!-- Change Amenity Modal (for Pending Reservations) -->
+    <div class="guest-modal fixed inset-0 z-[1250] hidden items-center justify-center is-open:flex" style="z-index: 1250 !important;" id="changeAmenityModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-change-amenity="true"></div>
+        <div class="relative z-[1] w-full max-w-[560px] max-h-[90vh] flex flex-col overflow-hidden rounded-3xl bg-hp-cream dark:bg-[rgba(26,30,28,0.98)] border border-glass-border shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="changeAmenityModalTitle">
+            <!-- Header -->
+            <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/50 dark:bg-white/[0.02]">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-hp-green/15 text-hp-green dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <i class="bi bi-arrow-left-right text-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="changeAmenityModalTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6] truncate">Change Amenity</h3>
+                        <p id="changeAmenityModalSubtitle" class="m-0 text-xs text-hp-text-muted truncate">Swap booked unit with another available unit of the same category and price</p>
+                    </div>
+                </div>
+                <button type="button" class="group cursor-pointer w-8 h-8 shrink-0 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-change-amenity="true" aria-label="Close change amenity modal">
+                    <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div id="changeAmenityModalBody" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-4 space-y-4 text-xs">
+                <!-- Current Amenity Info Card -->
+                <div id="changeAmenityCurrentCard" class="rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-[#1c221e] p-4 space-y-2.5 shadow-2xs">
+                    <div class="flex items-center justify-between text-xs font-bold">
+                        <span class="text-gray-500 uppercase tracking-wider text-[10px]">Current Reserved Amenity</span>
+                        <span id="changeAmenityCurrentPrice" class="text-hp-green dark:text-emerald-400 font-mono text-xs">₱0.00</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-[#e8f5e9] text-[#1b4332] dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center font-bold shrink-0">
+                            <i class="bi bi-house-door-fill text-base"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div id="changeAmenityCurrentName" class="font-bold text-gray-900 dark:text-white text-sm truncate">—</div>
+                            <div id="changeAmenityCurrentRates" class="text-gray-500 dark:text-gray-400 text-[11px] truncate mt-0.5">Rates: Daytime ₱0.00 · Overnight ₱0.00</div>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-gray-100 dark:border-white/5 flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                        <i class="bi bi-calendar3 text-[0.7rem] text-hp-green dark:text-emerald-400"></i>
+                        <span id="changeAmenityCurrentSchedule">Schedule: —</span>
+                    </div>
+                </div>
+
+                <!-- Section: Available Choices -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold text-gray-800 dark:text-gray-200 text-xs">Available Replacement Units</span>
+                        <span id="changeAmenityChoicesCount" class="text-[11px] text-hp-green dark:text-emerald-300 font-semibold">Loading...</span>
+                    </div>
+                    <div id="changeAmenityOptionsContainer" class="grid gap-2">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="shrink-0 flex items-center justify-end gap-2.5 px-6 py-3.5 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-white/80 dark:bg-[#1a1e1c]/95">
+                <button type="button" class="cursor-pointer rounded-xl border border-gray-300/80 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/15 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10 transition-colors" data-close-change-amenity="true">Cancel</button>
+                <button type="button" id="confirmChangeAmenityBtn" disabled class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                    <i class="bi bi-check2 text-xs"></i>
+                    <span>Confirm Change</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="guest-modal guest-modal--calendar fixed inset-0 z-[1250] hidden items-center justify-center is-open:flex" style="z-index: 1250 !important;" id="editCalendarModal" aria-hidden="true">
         <div class="guest-modal__backdrop absolute inset-0 bg-black/50 dark:bg-black/75" data-close-edit-calendar="true"></div>
         <div class="guest-modal__content guest-modal__content--range relative z-[1] w-full max-w-[620px] max-h-[92vh] flex flex-col rounded-2xl bg-glass p-5 shadow-glass dark:bg-[rgba(30,30,30,0.96)]" role="dialog" aria-modal="true" aria-labelledby="editCalendarModalTitle">

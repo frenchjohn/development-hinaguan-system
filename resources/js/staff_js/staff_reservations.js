@@ -3682,8 +3682,23 @@ window.AppPage['staff_reservations'] = function () {
         });
     }
 
+    // Format reservation date to readable format (e.g. Sep 9, 2026)
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const cleanStr = String(dateStr).trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
+            const [y, m, d] = cleanStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        const date = new Date(cleanStr);
+        if (isNaN(date.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
     const openModal = (reservationId) => {
-        const reservation = reservationData?.[reservationId] ?? null;
+        const id = typeof reservationId === 'object' && reservationId !== null ? reservationId.id : reservationId;
+        const reservation = reservationData?.[id] ?? (typeof reservationId === 'object' ? reservationId : null);
         if (!reservation) {
             modalBody.innerHTML = '<p class="guest-empty">No reservation details available.</p>';
             modal.classList.add('is-open');
@@ -3692,7 +3707,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         // Store current reservation ID for edit functionality
-        currentModalReservationId = reservationId;
+        currentModalReservationId = id;
 
         const resvModalTitle = document.getElementById('reservationModalTitle');
         if (resvModalTitle) {
@@ -3709,20 +3724,6 @@ window.AppPage['staff_reservations'] = function () {
         if (editForm) {
             editForm.hidden = true;
         }
-
-        // Format reservation date to readable format (e.g. Sep 9, 2026)
-        const formatDate = (dateStr) => {
-            if (!dateStr) return 'N/A';
-            const cleanStr = String(dateStr).trim();
-            if (/^\d{4}-\d{2}-\d{2}$/.test(cleanStr)) {
-                const [y, m, d] = cleanStr.split('-').map(Number);
-                const dt = new Date(y, m - 1, d);
-                return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-            }
-            const date = new Date(cleanStr);
-            if (isNaN(date.getTime())) return cleanStr.replace(/T.*$/, '').replace(/Z$/, '');
-            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        };
 
         const formatStayDate = (sDate, eDate, totalDays, startSlot, endSlot) => {
             if (!sDate) return 'N/A';
@@ -3940,6 +3941,7 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         // Generate Amenities items HTML if present
+        const isPendingReservation = (reservation.status || '').toLowerCase() === 'pending';
         const amenitiesCardsHtml = rawAmenities.map((amenity) => {
             const name = amenity.amenity?.amenities_name || amenity.amenity_name || amenity.amenities_name || amenity.name || 'Amenity';
             const aSDate = amenity.start_date || reservation.reservation_date;
@@ -3954,17 +3956,25 @@ window.AppPage['staff_reservations'] = function () {
 
             return `
                 <div class="flex items-center justify-between p-2.5 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 text-xs">
-                    <div class="flex items-center gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
                         <div class="w-7 h-7 rounded-lg bg-[#e8f5e9] text-[#1b4332] dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center text-xs font-bold shrink-0">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                         </div>
-                        <div>
-                            <span class="font-bold text-gray-900 dark:text-white">${escapeHtml(name)}</span>
+                        <div class="min-w-0">
+                            <span class="font-bold text-gray-900 dark:text-white truncate">${escapeHtml(name)}</span>
                             <span class="text-gray-400 ml-1.5 font-normal">(${escapeHtml(pricingType)})</span>
                         </div>
                     </div>
-                    <div class="font-bold text-gray-900 dark:text-white">
-                        ₱${Number(amenity.price_at_booking || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <div class="flex items-center gap-2.5 shrink-0 ml-2">
+                        <div class="font-bold text-gray-900 dark:text-white font-mono">
+                            ₱${Number(amenity.price_at_booking || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        ${isPendingReservation ? `
+                            <button type="button" class="change-amenity-trigger-btn inline-flex items-center gap-1 rounded-lg border border-hp-green/30 bg-hp-green/10 hover:bg-hp-green hover:text-white text-hp-green dark:text-emerald-300 dark:border-emerald-700/50 dark:hover:bg-emerald-600 px-2.5 py-1 text-[0.7rem] font-bold transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95" data-ra-id="${amenity.id}" data-res-id="${reservation.id}" data-amenity-name="${escapeHtml(name)}" title="Change this amenity to another available unit of the same category and price">
+                                <i class="bi bi-arrow-left-right text-[0.65rem]"></i>
+                                <span>Change</span>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -4352,9 +4362,245 @@ window.AppPage['staff_reservations'] = function () {
             });
         }
 
+        // Hook up Change Amenity buttons on individual booked amenities
+        modalBody.querySelectorAll('.change-amenity-trigger-btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const resId = btn.getAttribute('data-res-id');
+                const raId = btn.getAttribute('data-ra-id');
+                openChangeAmenityModal(resId, raId);
+            });
+        });
+
         modal.classList.add('is-open');
         modal.setAttribute('aria-hidden', 'false');
     };
+
+    // ── Change Amenity Modal & Logic (for Pending Reservations) ───────
+    const changeAmenityModal = document.getElementById('changeAmenityModal');
+    const changeAmenityCloseButtons = document.querySelectorAll('[data-close-change-amenity="true"]');
+    const confirmChangeAmenityBtn = document.getElementById('confirmChangeAmenityBtn');
+    const changeAmenityOptionsContainer = document.getElementById('changeAmenityOptionsContainer');
+    const changeAmenityChoicesCount = document.getElementById('changeAmenityChoicesCount');
+    const changeAmenityCurrentName = document.getElementById('changeAmenityCurrentName');
+    const changeAmenityCurrentPrice = document.getElementById('changeAmenityCurrentPrice');
+    const changeAmenityCurrentRates = document.getElementById('changeAmenityCurrentRates');
+    const changeAmenityCurrentSchedule = document.getElementById('changeAmenityCurrentSchedule');
+
+    let currentChangeState = {
+        resId: null,
+        raId: null,
+        selectedAmenityId: null,
+    };
+
+    const closeChangeAmenityModal = () => {
+        if (changeAmenityModal) {
+            changeAmenityModal.classList.remove('is-open');
+            changeAmenityModal.setAttribute('aria-hidden', 'true');
+        }
+        currentChangeState = { resId: null, raId: null, selectedAmenityId: null };
+    };
+
+    changeAmenityCloseButtons.forEach((btn) => {
+        btn.addEventListener('click', closeChangeAmenityModal);
+    });
+
+    const openChangeAmenityModal = async (resId, raId) => {
+        if (!changeAmenityModal) return;
+
+        currentChangeState = {
+            resId,
+            raId,
+            selectedAmenityId: null,
+        };
+
+        if (confirmChangeAmenityBtn) {
+            confirmChangeAmenityBtn.disabled = true;
+            confirmChangeAmenityBtn.innerHTML = '<i class="bi bi-check2 text-xs"></i><span>Confirm Change</span>';
+        }
+
+        changeAmenityModal.classList.add('is-open');
+        changeAmenityModal.setAttribute('aria-hidden', 'false');
+
+        if (changeAmenityChoicesCount) changeAmenityChoicesCount.textContent = 'Checking availability...';
+        if (changeAmenityOptionsContainer) {
+            changeAmenityOptionsContainer.innerHTML = `
+                <div class="py-8 flex flex-col items-center justify-center text-center text-gray-400 gap-2">
+                    <div class="w-6 h-6 border-2 border-hp-green border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-xs">Finding available replacement amenities in same category with matching prices...</span>
+                </div>
+            `;
+        }
+
+        try {
+            const resp = await fetch(`/staff/reservations/${resId}/amenities/${raId}/available-replacements`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+            const data = await resp.json().catch(() => ({}));
+
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || 'Unable to retrieve available replacement amenities.');
+            }
+
+            const curr = data.current_amenity || {};
+            const sched = data.schedule || {};
+            const replacements = data.replacements || [];
+
+            if (changeAmenityCurrentName) {
+                changeAmenityCurrentName.textContent = curr.name || 'Current Amenity';
+            }
+            if (changeAmenityCurrentRates) {
+                changeAmenityCurrentRates.textContent = `Rates: Daytime ₱${Number(curr.daytime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })} · Overnight ₱${Number(curr.nighttime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            }
+            if (changeAmenityCurrentPrice) {
+                const dayP = Number(curr.daytime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                changeAmenityCurrentPrice.textContent = `₱${dayP} / day`;
+            }
+            if (changeAmenityCurrentSchedule) {
+                const sDate = formatDate(sched.start_date);
+                const eDate = sched.end_date && sched.end_date !== sched.start_date ? ` – ${formatDate(sched.end_date)}` : '';
+                changeAmenityCurrentSchedule.textContent = `Schedule: ${sDate}${eDate} (${sched.start_slot || 'Daytime'})`;
+            }
+
+            if (changeAmenityChoicesCount) {
+                changeAmenityChoicesCount.textContent = `${replacements.length} unit${replacements.length === 1 ? '' : 's'} available`;
+            }
+
+            if (!replacements.length) {
+                changeAmenityOptionsContainer.innerHTML = `
+                    <div class="p-4 rounded-2xl border border-amber-200/80 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs text-center space-y-1">
+                        <i class="bi bi-exclamation-circle text-lg text-amber-600 block"></i>
+                        <p class="font-bold m-0">No Available Replacement Units</p>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-400 m-0">
+                            There are no other active units in the same category (<strong>${escapeHtml(curr.category || 'amenity')}</strong>) with matching pricing (Daytime: ₱${Number(curr.daytime_price || 0).toFixed(2)}, Overnight: ₱${Number(curr.nighttime_price || 0).toFixed(2)}) available for these dates.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            changeAmenityOptionsContainer.innerHTML = replacements.map((rep) => {
+                const repDayP = Number(rep.daytime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                const repNightP = Number(rep.nighttime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                return `
+                    <label class="amenity-choice-card group flex items-center justify-between p-3.5 rounded-2xl border border-gray-200/80 dark:border-white/10 bg-white dark:bg-white/5 hover:border-hp-green hover:bg-[#f0f9f3] dark:hover:bg-emerald-950/20 dark:hover:border-emerald-500 cursor-pointer transition-all shadow-2xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <input type="radio" name="selectedReplacementUnit" value="${escapeHtml(rep.id)}" class="w-4 h-4 text-hp-green accent-hp-green shrink-0 cursor-pointer">
+                            <div class="min-w-0">
+                                <div class="font-bold text-gray-900 dark:text-white text-xs truncate group-hover:text-hp-green dark:group-hover:text-emerald-300">${escapeHtml(rep.amenities_name)}</div>
+                                <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Daytime: ₱${repDayP} · Overnight: ₱${repNightP} <span class="text-hp-green dark:text-emerald-400 font-semibold">(Price Matches)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="shrink-0 ml-2">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#e8f5e9] text-[#1b4332] dark:bg-emerald-950/60 dark:text-emerald-300 border border-[#c8e6c9]/60">
+                                <i class="bi bi-check-circle-fill text-[0.65rem]"></i>
+                                Available
+                            </span>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            const radios = changeAmenityOptionsContainer.querySelectorAll('input[name="selectedReplacementUnit"]');
+            radios.forEach((radio) => {
+                radio.addEventListener('change', () => {
+                    currentChangeState.selectedAmenityId = radio.value;
+                    if (confirmChangeAmenityBtn) {
+                        confirmChangeAmenityBtn.disabled = false;
+                    }
+                });
+            });
+
+        } catch (err) {
+            console.error('Error fetching available replacements:', err);
+            if (changeAmenityChoicesCount) changeAmenityChoicesCount.textContent = 'Error';
+            if (changeAmenityOptionsContainer) {
+                changeAmenityOptionsContainer.innerHTML = `
+                    <div class="p-4 rounded-xl border border-rose-200 bg-rose-50 dark:border-rose-900/40 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300 text-xs text-center">
+                        <i class="bi bi-x-circle text-base block mb-1 text-rose-600"></i>
+                        ${escapeHtml(err.message || 'Failed to load available replacements.')}
+                    </div>
+                `;
+            }
+        }
+    };
+
+    confirmChangeAmenityBtn?.addEventListener('click', async () => {
+        const { resId, raId, selectedAmenityId } = currentChangeState;
+        if (!resId || !raId || !selectedAmenityId) return;
+
+        confirmChangeAmenityBtn.disabled = true;
+        confirmChangeAmenityBtn.innerHTML = `
+            <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Changing...</span>
+        `;
+
+        try {
+            const resp = await fetch(`/staff/reservations/${resId}/amenities/${raId}/change`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({
+                    new_amenity_id: selectedAmenityId,
+                })
+            });
+
+            const result = await resp.json().catch(() => ({}));
+
+            if (!resp.ok || !result.success) {
+                throw new Error(result.message || 'Unable to change amenity.');
+            }
+
+            closeChangeAmenityModal();
+
+            if (result.reservation) {
+                if (reservationData[resId]) {
+                    reservationData[resId] = {
+                        ...reservationData[resId],
+                        ...result.reservation,
+                    };
+                }
+                if (window.staffReservationData && window.staffReservationData[resId]) {
+                    window.staffReservationData[resId] = {
+                        ...window.staffReservationData[resId],
+                        ...result.reservation,
+                    };
+                }
+
+                // Re-open/refresh the main Reservation Details modal with fresh data
+                openModal(resId);
+
+                // Update table row
+                if (typeof updateReservationTableRow === 'function') {
+                    updateReservationTableRow(resId, reservationData[resId] || result.reservation);
+                }
+            }
+
+            // Trigger notification polling / event so notification bell picks up the new activity log immediately
+            window.dispatchEvent(new CustomEvent('activity:new'));
+            if (typeof window.fetchActivityNotifications === 'function') {
+                window.fetchActivityNotifications();
+            }
+
+            showSuccessModal(result.message || 'Amenity successfully changed! Activity log and notification recorded.');
+
+        } catch (err) {
+            console.error('Failed to change amenity:', err);
+            window.alert(err.message || 'An error occurred while changing the amenity.');
+            confirmChangeAmenityBtn.disabled = false;
+            confirmChangeAmenityBtn.innerHTML = '<i class="bi bi-check2 text-xs"></i><span>Confirm Change</span>';
+        }
+    });
 
     const openReservationById = async (resId) => {
         if (!resId) return;

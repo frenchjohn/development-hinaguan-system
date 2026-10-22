@@ -4316,6 +4316,7 @@ tr.row-checkout-near:hover td {
 }
 
 /* Modals opened over #reservationModal and #addGuestModal (Walk-in sub-modals, edit stay, add amenity, extend amenity, companion modals) */
+#changeAmenityModal,
 #editCalendarModal,
 #extendStayModal,
 #extendAmenityModal,

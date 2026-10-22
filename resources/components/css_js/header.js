@@ -126,6 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 badgeBg: 'bg-teal-500/15 text-teal-700 dark:text-teal-300',
                 svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>'
             };
+        } else if (t === 'amenity_changed' || t.includes('amenity_change')) {
+            return {
+                label: 'Amenity Changed',
+                bg: 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+                badgeBg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>'
+            };
         } else if (t === 'companion_added') {
             return {
                 label: 'Companion Added',

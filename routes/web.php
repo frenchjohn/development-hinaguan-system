@@ -9610,6 +9610,284 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('reservations.update');
 
+    Route::get('/reservations/{reservation}/amenities/{reservationAmenity}/available-replacements', function (Request $request, Reservation $reservation, ReservationAmenity $reservationAmenity) use ($isAmenityRangeTaken, $formatLocalDate) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'] ?? '', ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (strtolower(trim((string) $reservation->status)) !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amenities can only be changed on pending reservations.',
+            ], 422);
+        }
+
+        if ((int) $reservationAmenity->reservation_id !== (int) $reservation->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amenity does not belong to this reservation.',
+            ], 404);
+        }
+
+        $currentAmenity = $reservationAmenity->amenity ?: \App\Models\Amenity::find($reservationAmenity->amenity_id);
+        if (! $currentAmenity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Current amenity record not found.',
+            ], 404);
+        }
+
+        $getCategoryBase = function ($name) {
+            $trimmed = trim((string) $name);
+            $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+            return strtolower(!empty($base) ? $base : $trimmed);
+        };
+
+        $currentCategory = $getCategoryBase($currentAmenity->amenities_name);
+        $currentDayPrice = (float) $currentAmenity->daytime_price;
+        $currentNightPrice = (float) $currentAmenity->nighttime_price;
+
+        $sDate = $formatLocalDate($reservationAmenity, 'start_date') ?: ($formatLocalDate($reservation, 'reservation_date') ?: now()->toDateString());
+        $eDate = $formatLocalDate($reservationAmenity, 'end_date') ?: ($formatLocalDate($reservation, 'end_date') ?: $sDate);
+        $sSlot = $reservationAmenity->start_slot ?: ($reservation->start_slot ?: 'Daytime');
+        $eSlot = $reservationAmenity->end_slot ?: ($reservation->end_slot ?: $sSlot);
+
+        // Exclude other amenities already booked in the same reservation
+        $otherBookedAmenityIds = $reservation->reservationAmenities()
+            ->where('id', '!=', $reservationAmenity->id)
+            ->pluck('amenity_id')
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        $allActive = \App\Models\Amenity::where('status', true)->orderBy('amenities_name')->get();
+        $replacements = [];
+
+        foreach ($allActive as $cand) {
+            if ((string) $cand->id === (string) $currentAmenity->id) {
+                continue;
+            }
+
+            // 1. Same category constraint
+            if ($getCategoryBase($cand->amenities_name) !== $currentCategory) {
+                continue;
+            }
+
+            // 2. Same price constraint: BOTH daytime and overnight prices must match identically
+            if (abs((float) $cand->daytime_price - $currentDayPrice) >= 0.01 ||
+                abs((float) $cand->nighttime_price - $currentNightPrice) >= 0.01) {
+                continue;
+            }
+
+            // 3. Not already booked in this reservation
+            if (in_array((string) $cand->id, $otherBookedAmenityIds, true)) {
+                continue;
+            }
+
+            // 4. Must be available on reservation schedule date/dates
+            if ($isAmenityRangeTaken((string) $cand->id, $sDate, $eDate, $sSlot, $eSlot, $reservation->id)) {
+                continue;
+            }
+
+            $replacements[] = [
+                'id' => (string) $cand->id,
+                'amenities_name' => $cand->amenities_name,
+                'daytime_price' => (float) $cand->daytime_price,
+                'nighttime_price' => (float) $cand->nighttime_price,
+                'description' => $cand->description,
+                'image' => $cand->image ? asset('storage/' . $cand->image) : null,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'current_amenity' => [
+                'id' => (string) $currentAmenity->id,
+                'name' => $currentAmenity->amenities_name,
+                'category' => $currentCategory,
+                'daytime_price' => $currentDayPrice,
+                'nighttime_price' => $currentNightPrice,
+            ],
+            'schedule' => [
+                'start_date' => $sDate,
+                'end_date' => $eDate,
+                'start_slot' => $sSlot,
+                'end_slot' => $eSlot,
+            ],
+            'replacements' => $replacements,
+        ]);
+    })->name('reservations.amenities.available-replacements');
+
+    Route::post('/reservations/{reservation}/amenities/{reservationAmenity}/change', function (Request $request, Reservation $reservation, ReservationAmenity $reservationAmenity) use ($isAmenityRangeTaken, $formatLocalDate, $computeReservationCheckoutAt) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'] ?? '', ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if (strtolower(trim((string) $reservation->status)) !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amenities can only be changed on pending reservations.',
+            ], 422);
+        }
+
+        if ((int) $reservationAmenity->reservation_id !== (int) $reservation->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amenity does not belong to this reservation.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'new_amenity_id' => 'required|string',
+        ]);
+
+        $currentAmenity = $reservationAmenity->amenity ?: \App\Models\Amenity::find($reservationAmenity->amenity_id);
+        if (! $currentAmenity) {
+            return response()->json(['success' => false, 'message' => 'Current amenity record not found.'], 404);
+        }
+
+        $newAmenity = \App\Models\Amenity::where('id', $validated['new_amenity_id'])->first();
+        if (! $newAmenity || ! $newAmenity->status) {
+            return response()->json(['success' => false, 'message' => 'Selected replacement amenity is not active or does not exist.'], 422);
+        }
+
+        if ((string) $newAmenity->id === (string) $currentAmenity->id) {
+            return response()->json(['success' => false, 'message' => 'Selected amenity is the same as current amenity.'], 422);
+        }
+
+        $getCategoryBase = function ($name) {
+            $trimmed = trim((string) $name);
+            $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+            return strtolower(!empty($base) ? $base : $trimmed);
+        };
+
+        $currentCategory = $getCategoryBase($currentAmenity->amenities_name);
+        $newCategory = $getCategoryBase($newAmenity->amenities_name);
+
+        if ($newCategory !== $currentCategory) {
+            return response()->json(['success' => false, 'message' => 'Replacement amenity must be in the same category.'], 422);
+        }
+
+        $currentDayPrice = (float) $currentAmenity->daytime_price;
+        $currentNightPrice = (float) $currentAmenity->nighttime_price;
+
+        if (abs((float) $newAmenity->daytime_price - $currentDayPrice) >= 0.01 ||
+            abs((float) $newAmenity->nighttime_price - $currentNightPrice) >= 0.01) {
+            return response()->json(['success' => false, 'message' => 'Replacement amenity must have the same daytime and overnight price.'], 422);
+        }
+
+        $sDate = $formatLocalDate($reservationAmenity, 'start_date') ?: ($formatLocalDate($reservation, 'reservation_date') ?: now()->toDateString());
+        $eDate = $formatLocalDate($reservationAmenity, 'end_date') ?: ($formatLocalDate($reservation, 'end_date') ?: $sDate);
+        $sSlot = $reservationAmenity->start_slot ?: ($reservation->start_slot ?: 'Daytime');
+        $eSlot = $reservationAmenity->end_slot ?: ($reservation->end_slot ?: $sSlot);
+
+        // Check not already booked by another amenity on the same reservation
+        $otherBookedAmenityIds = $reservation->reservationAmenities()
+            ->where('id', '!=', $reservationAmenity->id)
+            ->pluck('amenity_id')
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->all();
+
+        if (in_array((string) $newAmenity->id, $otherBookedAmenityIds, true)) {
+            return response()->json(['success' => false, 'message' => 'The selected amenity is already part of this reservation.'], 422);
+        }
+
+        // Check availability
+        if ($isAmenityRangeTaken((string) $newAmenity->id, $sDate, $eDate, $sSlot, $eSlot, $reservation->id)) {
+            return response()->json(['success' => false, 'message' => 'The selected amenity is not available on the scheduled reservation dates.'], 409);
+        }
+
+        $oldAmenityId = $reservationAmenity->amenity_id;
+        $oldAmenityName = $currentAmenity->amenities_name;
+
+        // Update the reservation amenity record
+        $reservationAmenity->update([
+            'amenity_id' => $newAmenity->id,
+        ]);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        $staffId = isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null;
+
+        // Activity log and notification creation
+        \App\Models\ActivityLog::log(
+            action: 'amenity_changed',
+            activityType: 'amenity_changed',
+            paymentAmount: 0.00,
+            title: 'Amenity Changed',
+            description: "Staff {$staffName} changed amenity from {$oldAmenityName} to {$newAmenity->amenities_name} for Reservation #{$reservation->id} ({$reservation->booker_name})",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: $staffId,
+            metadata: [
+                'reservation_id' => $reservation->id,
+                'booker_name' => $reservation->booker_name,
+                'old_amenity_id' => $oldAmenityId,
+                'old_amenity_name' => $oldAmenityName,
+                'new_amenity_id' => $newAmenity->id,
+                'new_amenity_name' => $newAmenity->amenities_name,
+                'category' => $currentCategory,
+                'daytime_price' => $currentDayPrice,
+                'nighttime_price' => $currentNightPrice,
+                'staff_name' => $staffName,
+            ]
+        );
+
+        $reservation->load(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee']);
+        $checkoutAt = $computeReservationCheckoutAt($reservation);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Amenity successfully changed from {$oldAmenityName} to {$newAmenity->amenities_name}.",
+            'reservation' => [
+                'id' => $reservation->id,
+                'booker_name' => $reservation->booker_name,
+                'email' => $reservation->email,
+                'phone' => $reservation->phone,
+                'reservation_date' => $formatLocalDate($reservation, 'reservation_date'),
+                'end_date' => $formatLocalDate($reservation, 'end_date'),
+                'start_slot' => $reservation->start_slot ?? 'Daytime',
+                'end_slot' => $reservation->end_slot ?? 'Daytime',
+                'total_days' => $reservation->total_days ?? 1,
+                'number_of_guests' => $reservation->number_of_guests,
+                'status' => $reservation->status,
+                'total_amount' => (float) $reservation->total_amount,
+                'amount_paid' => (float) $reservation->amount_paid,
+                'remaining_balance' => (float) $reservation->remaining_balance,
+                'payment_status' => $reservation->payment_status,
+                'checkout_at' => $checkoutAt?->toIso8601String(),
+                'reservation_amenities' => $reservation->reservationAmenities->map(function ($ra) use ($formatLocalDate) {
+                    return [
+                        'id' => $ra->id,
+                        'amenity_id' => $ra->amenity_id,
+                        'amenity_name' => $ra->amenity?->amenities_name,
+                        'pricing_type' => $ra->pricing_type,
+                        'price_at_booking' => (float) $ra->price_at_booking,
+                        'quantity' => (int) $ra->quantity,
+                        'start_date' => $formatLocalDate($ra, 'start_date'),
+                        'end_date' => $formatLocalDate($ra, 'end_date'),
+                        'start_slot' => $ra->start_slot,
+                        'end_slot' => $ra->end_slot,
+                        'day_slots_count' => $ra->day_slots_count,
+                        'night_slots_count' => $ra->night_slots_count,
+                        'amenity' => [
+                            'id' => $ra->amenity?->id,
+                            'amenities_name' => $ra->amenity?->amenities_name,
+                            'daytime_price' => (float) ($ra->amenity?->daytime_price ?? 0),
+                            'nighttime_price' => (float) ($ra->amenity?->nighttime_price ?? 0),
+                            'is_aircon' => (bool) ($ra->amenity?->benefits?->is_aircon ?? false),
+                            'free_entrance' => (bool) ($ra->amenity?->benefits?->free_entrance ?? false),
+                            'free_pool' => (bool) ($ra->amenity?->benefits?->free_pool ?? false),
+                        ],
+                    ];
+                })->values(),
+            ],
+        ]);
+    })->name('reservations.amenities.change');
+
     Route::post('/reservations/{reservation}/reopen', function (Request $request, Reservation $reservation) use ($computeReservationCheckoutAt, $formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
