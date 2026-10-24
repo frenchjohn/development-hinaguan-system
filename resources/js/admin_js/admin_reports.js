@@ -42,6 +42,17 @@ window.AppPage['admin_reports'] = function () {
     const staffCollectionsModal               = document.getElementById('staffCollectionsModal');
     const kpiStaffCollectionsCard             = document.getElementById('kpiStaffCollectionsCard');
 
+    // Specific Staff Payments Detail Modal Elements
+    const staffPaymentsDetailModal               = document.getElementById('staffPaymentsDetailModal');
+    const closeStaffPaymentsDetailModalBtn       = document.getElementById('closeStaffPaymentsDetailModalBtn');
+    const closeStaffPaymentsDetailModalBtnFooter = document.getElementById('closeStaffPaymentsDetailModalBtnFooter');
+    const backToStaffCollectionsBtn              = document.getElementById('backToStaffCollectionsBtn');
+    const staffPaymentsDetailModalTitle          = document.getElementById('staffPaymentsDetailModalTitle');
+    const staffPaymentsDetailBadge               = document.getElementById('staffPaymentsDetailBadge');
+    const staffPaymentsDetailAvatar              = document.getElementById('staffPaymentsDetailAvatar');
+    const staffPaymentsDetailTotalAmount         = document.getElementById('staffPaymentsDetailTotalAmount');
+    const staffPaymentsSearchInput               = document.getElementById('staffPaymentsSearchInput');
+
     // Date & Session Modal Trigger & Elements
     const openModalBtn          = document.getElementById('openDateFilterModalBtn');
     const closeModalBtn         = document.getElementById('closeDateFilterModalBtn');
@@ -1842,11 +1853,13 @@ window.AppPage['admin_reports'] = function () {
                             count: 0,
                             total: 0,
                             recentActions: new Set(),
-                            lastTime: log.date + ' ' + (log.time || '')
+                            lastTime: log.date + ' ' + (log.time || ''),
+                            payments: []
                         };
                     }
                     staffMap[name].count += 1;
                     staffMap[name].total += Number(log.payment_amount || 0);
+                    staffMap[name].payments.push(log);
                     if (log.action) {
                         const cleanAct = log.action.replace(/_/g, ' ');
                         staffMap[name].recentActions.add(cleanAct);
@@ -1875,10 +1888,14 @@ window.AppPage['admin_reports'] = function () {
                                 </div>
                             </td>
                             <td class="py-3 px-3">
-                                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                                    <i class="bi bi-receipt"></i>
-                                    ${staff.count} ${staff.count === 1 ? 'payment' : 'payments'}
-                                </span>
+                                <button type="button"
+                                        class="open-staff-payments-btn inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 dark:hover:bg-emerald-500/35 hover:scale-[1.03] active:scale-95 transition-all cursor-pointer ring-1 ring-emerald-500/30 hover:ring-emerald-500/50 shadow-sm group"
+                                        data-staff-name="${staff.name.replace(/"/g, '&quot;')}"
+                                        title="Click to view all ${staff.count} payments handled by ${staff.name}">
+                                    <i class="bi bi-receipt group-hover:rotate-6 transition-transform"></i>
+                                    <span>${staff.count} ${staff.count === 1 ? 'payment' : 'payments'}</span>
+                                    <i class="bi bi-chevron-right text-[0.65rem] opacity-70 group-hover:translate-x-0.5 transition-transform"></i>
+                                </button>
                             </td>
                             <td class="py-3 px-3">
                                 <div class="flex flex-wrap gap-1 items-center">
@@ -1902,6 +1919,19 @@ window.AppPage['admin_reports'] = function () {
                         </tr>
                     `;
                 });
+
+                // Attach click listeners to all itemized payment buttons
+                tbody.querySelectorAll('.open-staff-payments-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const sName = btn.getAttribute('data-staff-name');
+                        const staffObj = staffMap[sName];
+                        if (staffObj) {
+                            openStaffPaymentsDetailModal(sName, staffObj.payments, staffObj.total);
+                        }
+                    });
+                });
             }
         }
 
@@ -1913,7 +1943,14 @@ window.AppPage['admin_reports'] = function () {
                             <span class="uppercase tracking-wider text-[0.7rem] font-bold text-hp-text">Total Staff Remittance</span>
                         </td>
                         <td class="py-3 px-3 text-hp-text font-bold">
-                            ${staffLogs.length} ${staffLogs.length === 1 ? 'payment' : 'payments'}
+                            <button type="button"
+                                    id="openAllStaffPaymentsBtn"
+                                    class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25 dark:hover:bg-emerald-500/35 hover:scale-[1.03] active:scale-95 transition-all cursor-pointer ring-1 ring-emerald-500/30 hover:ring-emerald-500/50 shadow-sm group"
+                                    title="Click to view all ${staffLogs.length} payments handled by all staff">
+                                <i class="bi bi-receipt group-hover:rotate-6 transition-transform"></i>
+                                <span>${staffLogs.length} ${staffLogs.length === 1 ? 'payment' : 'payments'}</span>
+                                <i class="bi bi-chevron-right text-[0.65rem] opacity-70 group-hover:translate-x-0.5 transition-transform"></i>
+                            </button>
                         </td>
                         <td class="py-3 px-3 text-hp-text-muted text-[0.7rem]">
                             All on-site cashier collections
@@ -1926,6 +1963,12 @@ window.AppPage['admin_reports'] = function () {
                         </td>
                     </tr>
                 `;
+
+                document.getElementById('openAllStaffPaymentsBtn')?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openStaffPaymentsDetailModal('All Staff Personnel', staffLogs, totalStaffAmount);
+                });
             } else {
                 tfoot.innerHTML = '';
             }
@@ -2701,9 +2744,204 @@ window.AppPage['admin_reports'] = function () {
         }
     });
 
+    // ===============================================
+    // SPECIFIC STAFF PAYMENTS DETAIL MODAL HANDLERS
+    // ===============================================
+    let currentStaffPayments = [];
+    let currentStaffName = '';
+
+    const openStaffPaymentsDetailModal = (staffName, payments, total) => {
+        if (!staffPaymentsDetailModal) return;
+        currentStaffName = staffName;
+        currentStaffPayments = payments || [];
+
+        if (staffPaymentsDetailModalTitle) {
+            staffPaymentsDetailModalTitle.textContent = staffName === 'All Staff Personnel'
+                ? 'All Staff Remittance Payments'
+                : `Payments Handled by ${staffName}`;
+        }
+        if (staffPaymentsDetailBadge) {
+            staffPaymentsDetailBadge.textContent = `${currentStaffPayments.length} ${currentStaffPayments.length === 1 ? 'payment' : 'payments'}`;
+        }
+        if (staffPaymentsDetailAvatar) {
+            const initials = staffName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'ST';
+            staffPaymentsDetailAvatar.textContent = initials;
+        }
+        if (staffPaymentsDetailTotalAmount) {
+            staffPaymentsDetailTotalAmount.textContent = formatMoney(total);
+        }
+        if (staffPaymentsSearchInput) {
+            staffPaymentsSearchInput.value = '';
+        }
+
+        const periodLabel = document.getElementById('staffPaymentsPeriodLabel');
+        if (periodLabel) {
+            let pText = '';
+            if (appliedStartDate && appliedEndDate) {
+                pText = `(${appliedStartDate} to ${appliedEndDate})`;
+            } else if (appliedStartDate) {
+                pText = `(${appliedStartDate})`;
+            } else if (appliedEndDate) {
+                pText = `(Until ${appliedEndDate})`;
+            } else {
+                pText = `(All Time)`;
+            }
+            if (appliedSession) {
+                pText += ` • ${appliedSession.toUpperCase()}`;
+            }
+            periodLabel.textContent = pText;
+        }
+
+        renderStaffPaymentsDetailTable(currentStaffPayments);
+
+        staffPaymentsDetailModal.classList.remove('hidden');
+        staffPaymentsDetailModal.classList.add('flex');
+        staffPaymentsDetailModal.setAttribute('aria-hidden', 'false');
+    };
+
+    const closeStaffPaymentsDetailModal = () => {
+        if (!staffPaymentsDetailModal) return;
+        staffPaymentsDetailModal.classList.add('hidden');
+        staffPaymentsDetailModal.classList.remove('flex');
+        staffPaymentsDetailModal.setAttribute('aria-hidden', 'true');
+    };
+
+    const renderStaffPaymentsDetailTable = (paymentsToRender) => {
+        const tbody = document.getElementById('staffPaymentsDetailTableBody');
+        const tfoot = document.getElementById('staffPaymentsDetailTableFoot');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        if (!paymentsToRender || paymentsToRender.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-xs text-hp-text-muted">
+                        <i class="bi bi-search text-xl block mb-1 opacity-50"></i>
+                        No payment records found matching the filter.
+                    </td>
+                </tr>
+            `;
+            if (tfoot) tfoot.innerHTML = '';
+            return;
+        }
+
+        const totalFiltered = paymentsToRender.reduce((sum, p) => sum + Number(p.payment_amount || 0), 0);
+
+        paymentsToRender.forEach(p => {
+            let formattedDate = p.date || '';
+            if (p.date) {
+                try {
+                    const [y, m, d] = p.date.split('-');
+                    const dt = new Date(y, m - 1, d);
+                    formattedDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                } catch (e) {
+                    formattedDate = p.date;
+                }
+            }
+
+            const timeStr = p.time || '';
+            const sessionBadge = p.session === 'overnight'
+                ? `<span class="rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider">Night</span>`
+                : `<span class="rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider">Day</span>`;
+
+            const resId = p.reservation_id ? `Res #${p.reservation_id}` : 'Walk-in Direct';
+            const booker = p.booker_name || 'Guest';
+            const resType = p.reservation_type ? `(${p.reservation_type})` : '';
+
+            const actionClean = (p.action || 'Payment').replace(/_/g, ' ');
+            const titleClean = p.title || actionClean;
+            const desc = p.description || titleClean;
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-glass-hover/50 transition-colors">
+                    <td class="py-3 px-3 whitespace-nowrap">
+                        <div class="font-bold text-hp-text">${formattedDate}</div>
+                        <div class="flex items-center gap-1.5 text-[0.68rem] text-hp-text-muted mt-0.5">
+                            <span>${timeStr}</span>
+                            ${sessionBadge}
+                        </div>
+                    </td>
+                    <td class="py-3 px-3">
+                        <div class="font-bold text-hp-text flex items-center gap-1.5 flex-wrap">
+                            <span class="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5 text-[0.68rem] font-mono">${resId}</span>
+                            <span>${booker}</span>
+                        </div>
+                        ${resType ? `<div class="text-[0.65rem] text-hp-text-muted mt-0.5 capitalize">${resType}</div>` : ''}
+                    </td>
+                    <td class="py-3 px-3">
+                        <span class="inline-flex items-center rounded-md bg-amber-500/10 dark:bg-amber-500/20 px-2 py-0.5 text-[0.68rem] font-bold capitalize text-amber-800 dark:text-amber-300">
+                            ${titleClean}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 max-w-xs sm:max-w-md">
+                        <div class="text-[0.72rem] text-hp-text leading-snug line-clamp-2" title="${desc.replace(/"/g, '&quot;')}">
+                            ${desc}
+                        </div>
+                    </td>
+                    <td class="py-3 px-3 text-right whitespace-nowrap">
+                        <div class="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                            ${formatMoney(p.payment_amount)}
+                        </div>
+                        <div class="text-[0.62rem] text-hp-text-muted">Cash received</div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if (tfoot) {
+            tfoot.innerHTML = `
+                <tr class="bg-gray-50 dark:bg-[#121513]">
+                    <td colspan="4" class="py-3 px-3 uppercase tracking-wider text-[0.7rem] font-bold text-hp-text">
+                        Total Matching Payments (${paymentsToRender.length} ${paymentsToRender.length === 1 ? 'payment' : 'payments'})
+                    </td>
+                    <td class="py-3 px-3 text-right text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                        ${formatMoney(totalFiltered)}
+                    </td>
+                </tr>
+            `;
+        }
+    };
+
+    closeStaffPaymentsDetailModalBtn?.addEventListener('click', closeStaffPaymentsDetailModal);
+    closeStaffPaymentsDetailModalBtnFooter?.addEventListener('click', closeStaffPaymentsDetailModal);
+    backToStaffCollectionsBtn?.addEventListener('click', closeStaffPaymentsDetailModal);
+
+    staffPaymentsDetailModal?.addEventListener('click', (e) => {
+        if (e.target === staffPaymentsDetailModal || e.target.hasAttribute('data-close-staff-payments-detail-modal')) {
+            closeStaffPaymentsDetailModal();
+        }
+    });
+
+    staffPaymentsSearchInput?.addEventListener('input', (e) => {
+        const query = (e.target.value || '').trim().toLowerCase();
+        if (!query) {
+            renderStaffPaymentsDetailTable(currentStaffPayments);
+            return;
+        }
+
+        const filtered = currentStaffPayments.filter(p => {
+            const resId = String(p.reservation_id || '').toLowerCase();
+            const booker = String(p.booker_name || '').toLowerCase();
+            const title = String(p.title || '').toLowerCase();
+            const action = String(p.action || '').toLowerCase();
+            const desc = String(p.description || '').toLowerCase();
+            const date = String(p.date || '').toLowerCase();
+            return resId.includes(query) || booker.includes(query) || title.includes(query) || action.includes(query) || desc.includes(query) || date.includes(query);
+        });
+
+        renderStaffPaymentsDetailTable(filtered);
+    });
+
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && staffCollectionsModal && !staffCollectionsModal.classList.contains('hidden')) {
-            closeStaffCollectionsModal();
+        if (e.key === 'Escape') {
+            if (staffPaymentsDetailModal && !staffPaymentsDetailModal.classList.contains('hidden')) {
+                closeStaffPaymentsDetailModal();
+                return;
+            }
+            if (staffCollectionsModal && !staffCollectionsModal.classList.contains('hidden')) {
+                closeStaffCollectionsModal();
+            }
         }
     });
 

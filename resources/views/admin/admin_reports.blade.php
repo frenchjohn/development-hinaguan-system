@@ -1684,6 +1684,90 @@
         </div>
     </div>
 
+    {{-- ============================================================ --}}
+    {{-- SPECIFIC STAFF PAYMENTS DETAIL MODAL                         --}}
+    {{-- ============================================================ --}}
+    <div id="staffPaymentsDetailModal" class="fixed inset-0 z-[1050] hidden items-center justify-center p-3 sm:p-6 print:hidden" role="dialog" aria-modal="true" aria-labelledby="staffPaymentsDetailModalTitle">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity" data-close-staff-payments-detail-modal="true"></div>
+
+        {{-- Dialog Box --}}
+        <div class="relative flex flex-col w-full max-w-4xl max-h-[92vh] bg-white dark:bg-[#161a17] border border-glass-border rounded-2xl shadow-2xl overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <div class="flex items-center gap-3">
+                    <div id="staffPaymentsDetailAvatar" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold text-sm">
+                        ST
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h2 id="staffPaymentsDetailModalTitle" class="m-0 text-base sm:text-lg font-display font-bold text-hp-text">
+                                Payments Handled by Staff
+                            </h2>
+                            <span id="staffPaymentsDetailBadge" class="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-400">
+                                0 payments
+                            </span>
+                        </div>
+                        <p id="staffPaymentsDetailSubtitle" class="m-0 text-xs text-hp-text-muted">
+                            Complete breakdown of cash collections received during the selected period
+                        </p>
+                    </div>
+                </div>
+                <button type="button" id="closeStaffPaymentsDetailModalBtn" class="rounded-xl p-2 text-hp-text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-hp-text transition-colors cursor-pointer" title="Close (Esc)">
+                    <i class="bi bi-x-lg text-sm"></i>
+                </button>
+            </div>
+
+            {{-- Summary & Search Toolbar --}}
+            <div class="px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800/80 bg-white dark:bg-[#161a17]">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-hp-text-muted">Total Collected:</span>
+                    <span id="staffPaymentsDetailTotalAmount" class="text-base font-bold text-emerald-600 dark:text-emerald-400">₱0.00</span>
+                    <span class="text-xs text-hp-text-muted" id="staffPaymentsPeriodLabel"></span>
+                </div>
+                {{-- Search Filter --}}
+                <div class="relative w-full sm:w-64">
+                    <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-hp-text-muted text-xs"></i>
+                    <input type="text" id="staffPaymentsSearchInput" placeholder="Search res #, guest, or type..." class="w-full rounded-xl border border-glass-border bg-gray-50/80 dark:bg-[#121513] pl-8 pr-3 py-1.5 text-xs text-hp-text placeholder:text-hp-text-muted/60 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all">
+                </div>
+            </div>
+
+            {{-- Modal Body: Scrollable Table of Payments --}}
+            <div class="p-6 overflow-y-auto flex-1 max-h-[calc(92vh-200px)]">
+                <div class="overflow-x-auto rounded-xl border border-glass-border shadow-sm">
+                    <table class="w-full text-left text-xs border-collapse" id="staffPaymentsDetailTable">
+                        <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-[#121513] border-b border-glass-border uppercase tracking-wider text-hp-text-muted text-[0.7rem]">
+                            <tr>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Date &amp; Time</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Reservation / Guest</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Payment Category</th>
+                                <th class="py-2.5 px-3 bg-gray-50 dark:bg-[#121513]">Details &amp; Remarks</th>
+                                <th class="py-2.5 px-3 text-right bg-gray-50 dark:bg-[#121513]">Amount Received</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffPaymentsDetailTableBody" class="divide-y divide-glass-border/60">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                        <tfoot id="staffPaymentsDetailTableFoot" class="sticky bottom-0 z-10 font-bold border-t border-glass-border text-hp-text bg-gray-50 dark:bg-[#121513]">
+                            <!-- Populated dynamically by JS -->
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="flex items-center justify-between gap-3 px-6 py-3.5 border-t border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-[#121513]">
+                <button type="button" id="backToStaffCollectionsBtn" class="flex items-center gap-1.5 rounded-xl border border-gray-300 dark:border-gray-700 px-3.5 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Back to Remittance Summary</span>
+                </button>
+                <button type="button" id="closeStaffPaymentsDetailModalBtnFooter" class="rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-hp-text hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script data-spa-data>
         window.reportData = {!! json_encode($reportData ?? []) !!};
     </script>

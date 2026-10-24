@@ -3927,8 +3927,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
                 'session' => $session,
                 'action' => (string) ($log->action ?? $log->activity_type ?? 'payment'),
                 'title' => (string) ($log->title ?: 'Payment Received'),
+                'description' => (string) ($log->description ?: ''),
                 'reservation_id' => $log->reservation_id,
                 'booker_name' => (string) ($log->reservation?->booker_name ?? ''),
+                'phone' => (string) ($log->reservation?->phone ?? ''),
+                'reservation_type' => (string) ($log->reservation?->reservation_type ?? ''),
             ];
         })->values()->all();
 
