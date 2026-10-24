@@ -29,6 +29,18 @@ class ActivityLog extends Model
         'updated_at' => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (empty($model->action)) {
+                $model->action = $model->activity_type ?: 'general_activity';
+            }
+            if (empty($model->activity_type)) {
+                $model->activity_type = $model->action;
+            }
+        });
+    }
+
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class, 'reservation_id');

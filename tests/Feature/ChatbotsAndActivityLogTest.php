@@ -129,11 +129,26 @@ class ChatbotsAndActivityLogTest extends TestCase
 
     public function test_admin_recent_activities_api_returns_formatted_logs_for_admin()
     {
+        $res = Reservation::create([
+            'id' => 99,
+            'booker_name' => 'Guest 99',
+            'phone' => '09123456789',
+            'email' => 'guest99@example.com',
+            'reservation_date' => now()->toDateString(),
+            'total_days' => 1,
+            'number_of_guests' => 2,
+            'total_amount' => 500,
+            'amount_paid' => 500,
+            'remaining_balance' => 0,
+            'payment_status' => 'Paid',
+            'status' => 'Checked In',
+        ]);
+
         ActivityLog::create([
             'activity_type' => 'amenity_added',
             'title' => 'Amenity Added Mid-Stay',
             'description' => 'Reservation #99 added Pool Cottage by Staff Admin',
-            'reservation_id' => 99,
+            'reservation_id' => $res->id,
             'actor_name' => 'Staff Admin',
             'actor_role' => 'staff',
             'created_at' => now(),

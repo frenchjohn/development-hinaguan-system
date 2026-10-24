@@ -102,17 +102,17 @@ class StaffChatbotController extends Controller
         $model = $request->input('model', 'openrouter/free');
 
         if (!$apiKey) {
-            $offlineReply = 'The staff chatbot service is currently offline. Please check system configuration.';
+            $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
             if ($userId) {
                 ChatbotMessage::create([
                     'user_type' => 'staff',
                     'user_id' => $userId,
                     'role' => 'assistant',
-                    'content' => $offlineReply,
-                    'model' => $model,
+                    'content' => $fallback,
+                    'model' => 'local/fallback',
                 ]);
             }
-            return response()->json(['reply' => $offlineReply], 500);
+            return response()->json(['reply' => $fallback]);
         }
 
         $staffContext = $this->getStaffContext($userMessage);
@@ -127,6 +127,7 @@ class StaffChatbotController extends Controller
             . "DATABASE COMPREHENSION & PARK LOGIC:\n"
             . "You are deeply integrated into the park's operational database tables (reservations, reservation_amenities, reservation_charges, reservation_entrance_fees, reservation_guests, customers, amenities, amenities_benefits, park_settings, park_rules, park_events, park_activities, feedbacks, daily_weather_shift_logs, reschedule_requests, sms_notifications, activity_logs, chatbot_messages, user_activity_reads).\n"
             . "1. RESERVATIONS & LIFECYCLES: 'pending' (new online booking waiting approval), 'Confirmed' (downpayment received, confirmed), 'Checked In' (currently in park), 'Checked Out' (departed), 'Cancelled'.\n"
+            . "   - DUE & OVERDUE CHECKOUTS: If a checked-in guest's scheduled checkout date is today OR in the past (e.g. scheduled for Oct 20 but today is Oct 24), they are due/overdue for checkout (staff may have forgotten to perform checkout). When asked who is due for checkout, always report both today's scheduled checkouts and any overdue checkouts, explicitly flagging overdue ones so staff can attend to them immediately.\n"
             . "2. FINANCIAL CALCULATION: Total = Entrance Fees + Amenities + Extra Charges. Remaining Balance = Total - Amount Paid. Always alert staff if a departing or checked-in guest has an unpaid balance.\n"
             . "3. SESSIONS & SLOTS: Daytime (8:00 AM - 5:00 PM), Nighttime (6:00 PM - 8:00 AM next day). Continuous Stay spans across multiple days/slots.\n"
             . "4. AMENITY INCLUSIONS: Cottages (₱200) & Payags (₱300) DO NOT include free entrance or free pool access (standard entrance & pool fees apply). A-Houses include FREE entrance and FREE pool access for 2 guests. Function Hall includes FREE entrance & pool access for the booked group.\n"
@@ -230,32 +231,32 @@ class StaffChatbotController extends Controller
 
                 return response()->json(['reply' => $reply]);
             } else {
-                Log::error('Staff Chatbot OpenRouter Error: ' . $response->body());
-                $errReply = 'The staff assistant service encountered an error. Please try again shortly.';
+                Log::warning('Staff Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
+                $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
                 if ($userId) {
                     ChatbotMessage::create([
                         'user_type' => 'staff',
                         'user_id' => $userId,
                         'role' => 'assistant',
-                        'content' => $errReply,
-                        'model' => $model,
+                        'content' => $fallback,
+                        'model' => 'local/fallback',
                     ]);
                 }
-                return response()->json(['reply' => $errReply], 500);
+                return response()->json(['reply' => $fallback]);
             }
         } catch (\Exception $e) {
-            Log::error('Staff Chatbot Exception: ' . $e->getMessage());
-            $excReply = 'The staff assistant is temporarily unavailable. Error: ' . $e->getMessage();
+            Log::warning('Staff Chatbot Exception (engaging intelligent fallback): ' . $e->getMessage());
+            $fallback = $this->generateDirectStaffFallbackResponse($userMessage);
             if ($userId) {
                 ChatbotMessage::create([
                     'user_type' => 'staff',
                     'user_id' => $userId,
                     'role' => 'assistant',
-                    'content' => $excReply,
-                    'model' => $model,
+                    'content' => $fallback,
+                    'model' => 'local/fallback',
                 ]);
             }
-            return response()->json(['reply' => $excReply], 500);
+            return response()->json(['reply' => $fallback]);
         }
     }
 
@@ -368,12 +369,13 @@ class StaffChatbotController extends Controller
             }
         }
 
-        // 2. Checkouts Due Today
+        // 2. Checkouts Due or Overdue Today (includes past scheduled dates if staff forgot to check them out)
         $dueCheckoutsCount = Reservation::where('status', 'Checked In')
+            ->whereNull('check_out')
             ->where(function ($q) use ($todayStr) {
-                $q->whereDate('end_date', $todayStr)
+                $q->whereDate('end_date', '<=', $todayStr)
                   ->orWhere(function ($q2) use ($todayStr) {
-                      $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                      $q2->whereNull('end_date')->whereDate('reservation_date', '<=', $todayStr);
                   });
             })
             ->count();
@@ -443,8 +445,8 @@ class StaffChatbotController extends Controller
             $currentKey = "due_checkouts_{$dueCheckoutsCount}_{$todayStr}";
             $headline = 'Due Checkouts';
             $plural = $dueCheckoutsCount > 1 ? "{$dueCheckoutsCount} reservations" : "1 reservation";
-            $message = "Hey {$firstName}, we have {$plural} scheduled for checkout today.";
-            $followUp = "Would you like me to pull up their departure time slots and check for any outstanding balances?";
+            $message = "Hey {$firstName}, we have {$plural} due or overdue for checkout today.";
+            $followUp = "Would you like me to pull up their departure details and check for any outstanding balances or pending checkouts?";
             $quickActionPrompt = "Who is due for checkout today and do they have remaining balances?";
             $actionBtnLabel = "View Checkouts";
         } elseif ($todayRevenue > 0 && $todayRevenue >= $yesterdayRevenue) {
@@ -673,10 +675,11 @@ class StaffChatbotController extends Controller
         $checkedInCount = Reservation::where('status', 'Checked In')->count();
         $totalCheckedInGuests = (int) Reservation::where('status', 'Checked In')->sum('number_of_guests');
         $dueCheckoutsCount = Reservation::where('status', 'Checked In')
+            ->whereNull('check_out')
             ->where(function ($q) use ($todayStr) {
-                $q->whereDate('end_date', $todayStr)
+                $q->whereDate('end_date', '<=', $todayStr)
                   ->orWhere(function ($q2) use ($todayStr) {
-                      $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                      $q2->whereNull('end_date')->whereDate('reservation_date', '<=', $todayStr);
                   });
             })->count();
         $pendingCount = Reservation::where('status', 'pending')->count();
@@ -686,7 +689,7 @@ class StaffChatbotController extends Controller
 
         $context .= "\n[TODAY'S OPERATIONAL SUMMARY]:\n"
             . "- Active Checked-in: {$checkedInCount} reservations ({$totalCheckedInGuests} guests currently on site)\n"
-            . "- Due for Checkout Today: {$dueCheckoutsCount} reservations\n"
+            . "- Due / Overdue Checkouts: {$dueCheckoutsCount} reservations (scheduled today or past scheduled date with checkout pending)\n"
             . "- Pending Online Bookings Awaiting Action: {$pendingCount}\n"
             . "- Today's Collected Revenue: ₱" . number_format($todayRevenue, 2) . "\n";
 
@@ -808,24 +811,30 @@ class StaffChatbotController extends Controller
         if (!empty($topics['checkouts'])) {
             $todayDepartures = Reservation::with(['reservationAmenities.amenity'])
                 ->where('status', 'Checked In')
+                ->whereNull('check_out')
                 ->where(function ($q) use ($todayStr) {
-                    $q->whereDate('end_date', $todayStr)
+                    $q->whereDate('end_date', '<=', $todayStr)
                       ->orWhere(function ($q2) use ($todayStr) {
-                          $q2->whereNull('end_date')->whereDate('reservation_date', $todayStr);
+                          $q2->whereNull('end_date')->whereDate('reservation_date', '<=', $todayStr);
                       });
                 })
                 ->get();
 
-            $context .= "\n[CONNECTED DATABASE RECORDS - TODAY'S DUE CHECKOUTS ({$todayDepartures->count()} reservations)]:\n";
+            $context .= "\n[CONNECTED DATABASE RECORDS - DUE & OVERDUE CHECKOUTS ({$todayDepartures->count()} reservations)]:\n";
             if ($todayDepartures->isNotEmpty()) {
                 foreach ($todayDepartures as $dep) {
                     $slot = $dep->end_slot ?: $dep->start_slot;
+                    $expectedDate = $dep->end_date ?: $dep->reservation_date;
+                    $isOverdue = $expectedDate && Carbon::parse($expectedDate)->toDateString() < $todayStr;
+                    $dateNotice = $isOverdue
+                        ? "⚠️ OVERDUE (Scheduled checkout was {$expectedDate} - staff checkout pending)"
+                        : "Scheduled Today ({$todayStr})";
                     $expectedTime = strcasecmp((string)$slot, 'Nighttime') === 0 ? '6:00 AM (Next Morning)' : '5:00 PM - 6:00 PM (Today)';
                     $bal = $dep->remaining_balance > 0 ? " [⚠️ Collect balance: ₱" . number_format($dep->remaining_balance, 2) . "]" : " [Fully Paid]";
-                    $context .= "- Res #{$dep->id}: {$dep->booker_name} (Slot: {$slot} -> Checkout: {$expectedTime}){$bal}\n";
+                    $context .= "- Res #{$dep->id}: {$dep->booker_name} ({$dateNotice} - Slot: {$slot} -> Checkout: {$expectedTime}){$bal}\n";
                 }
             } else {
-                $context .= "No guests due for departure today.\n";
+                $context .= "No guests currently due or overdue for departure.\n";
             }
         }
 
@@ -1127,6 +1136,234 @@ class StaffChatbotController extends Controller
         }
 
         return $topics;
+    }
+
+    /**
+     * Context-aware, intelligent direct fallback response for Staff Operations.
+     * Guarantees 100% uptime even when the external LLM or OpenRouter API key is unavailable.
+     */
+    private function generateDirectStaffFallbackResponse(string $userMessage): string
+    {
+        $msgLower = mb_strtolower(trim($userMessage));
+        $now = now();
+        $todayStr = $now->toDateString();
+
+        $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|man|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tao|unsaon|adto|anhi|sakay|kuwang|balans)\b/i', $userMessage);
+        $isTagalog = (bool) preg_match('/\b(?:magkano|meron|saan|ano|ba|po|ulan|mainit|pwede|kami|tayo|sino|kailan|tao|bawat|paano|pumunta|sakyan|kulang)\b/i', $userMessage);
+
+        // 1. Greetings / Introduction / "hii" / "hello"
+        if (preg_match('/^(?:hi+|hello+|hey+|good\s*(?:morning|afternoon|evening)|kumusta|kamusta|halo|bren|start|sup|yo)\b/i', $msgLower) || mb_strlen($msgLower) <= 4) {
+            if ($isBisaya) {
+                return "Maayong adlaw! Ako si Bren, ang imong AI Operations Assistant dinhi sa Hinaguan Nature Park. Unsaon nako pagtabang sa mga check-in, check-out, demographics, o mga reserbasyon karon?";
+            } elseif ($isTagalog) {
+                return "Magandang araw! Ako si Bren, ang inyong AI Operations Assistant sa Hinaguan Nature Park. Paano kita matutulungan sa mga check-in, check-out, demographics, o mga reserbasyon ngayon?";
+            } else {
+                return "Hello! I am Bren, your AI Operations Assistant at Hinaguan Nature Park. How can I assist you with check-ins, departures, guest records, or demographics today?";
+            }
+        }
+
+        // 2. Due Checkouts Today / Departures
+        if (preg_match('/checkout|check[\s-]?out|due|depart|leaving|paggawas|gawas|aalis|alis/i', $msgLower)) {
+            $dueCheckouts = Reservation::where(function ($q) use ($todayStr) {
+                    $q->whereDate('end_date', '<=', $todayStr)
+                      ->orWhere(function ($q2) use ($todayStr) {
+                          $q2->whereNull('end_date')->whereDate('reservation_date', '<=', $todayStr);
+                      });
+                })
+                ->whereIn('status', ['Checked In', 'checked in'])
+                ->whereNull('check_out')
+                ->with(['reservationAmenities.amenity'])
+                ->get();
+
+            if ($dueCheckouts->isNotEmpty()) {
+                $lines = [];
+                $todayCount = 0;
+                $overdueCount = 0;
+
+                foreach ($dueCheckouts as $res) {
+                    $amenities = $res->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->implode(', ') ?: 'General Stay';
+                    $bal = (float) $res->remaining_balance;
+                    $balText = $bal > 0 ? "₱" . number_format($bal, 2) . " unpaid balance ⚠️" : "Fully Paid ✅";
+                    $slot = $res->end_slot ?: 'Daytime';
+                    $endDate = $res->end_date ?: $res->reservation_date;
+                    $isOverdue = $endDate && Carbon::parse($endDate)->toDateString() < $todayStr;
+
+                    if ($isOverdue) {
+                        $overdueCount++;
+                        $statusBadge = "⚠️ **OVERDUE** (Scheduled: " . Carbon::parse($endDate)->format('M d, Y') . " [{$slot}]) — *Staff checkout pending*";
+                    } else {
+                        $todayCount++;
+                        $statusBadge = "📅 **Scheduled Today** ({$slot})";
+                    }
+
+                    $lines[] = "• **Reservation #{$res->id}**: {$res->booker_name} ({$res->phone})\n  - Status: {$statusBadge}\n  - Amenity: {$amenities}\n  - Balance Status: {$balText}";
+                }
+
+                $header = "📋 **Checkouts Due & Overdue (" . $now->format('M d, Y') . ")**:\n";
+                if ($overdueCount > 0 && $todayCount > 0) {
+                    $header .= "Found **{$todayCount}** scheduled for today and **{$overdueCount}** overdue checkout(s) where staff has not yet recorded checkout:\n\n";
+                } elseif ($overdueCount > 0) {
+                    $header .= "Found **{$overdueCount}** overdue checkout(s) currently still checked in past their scheduled departure date (staff action required to complete checkout):\n\n";
+                } else {
+                    $header .= "Found **{$todayCount}** reservation(s) scheduled for checkout today:\n\n";
+                }
+
+                return $header . implode("\n\n", $lines);
+            } else {
+                return "There are no reservations scheduled or overdue for checkout today (" . $now->format('M d, Y') . "). All currently active guests have stays extending beyond today or have already concluded their visit and checked out.";
+            }
+        }
+
+        // 3. Demographics Mining (Kids, Teens, Adults, Seniors, Gender, Nationality)
+        if (preg_match('/demographic|kids?|seniors?|teens?|adults?|bata|tigulang|matanda|kabataan|gender|babae|lalaki|male|female|foreigner|local|headcount/i', $msgLower)) {
+            $allGuests = ReservationGuest::with('customer')
+                ->whereHas('reservation', function ($rq) {
+                    $rq->whereIn('status', ['Checked In', 'checked in', 'Confirmed', 'confirmed']);
+                })
+                ->get();
+
+            $kids = 0; $teens = 0; $adults = 0; $seniors = 0;
+            $males = 0; $females = 0; $locals = 0; $foreigners = 0;
+
+            foreach ($allGuests as $g) {
+                $c = $g->customer;
+                if (!$c) continue;
+                $age = $c->age;
+                if ($age !== null) {
+                    if ($age <= 12) $kids++;
+                    elseif ($age <= 17) $teens++;
+                    elseif ($age <= 59) $adults++;
+                    else $seniors++;
+                }
+                $gender = strtolower(trim((string)$c->gender));
+                if ($gender === 'female' || $gender === 'f') $females++;
+                elseif ($gender === 'male' || $gender === 'm') $males++;
+
+                if ($c->is_foreigner) $foreigners++;
+                else $locals++;
+            }
+
+            return "📊 **Guest Demographics Mining Summary (Active/Upcoming Reservations)**:\n"
+                . "• **Age Distribution**:\n"
+                . "  - 🧒 Kids (0-12 yrs): **{$kids}**\n"
+                . "  - 🎒 Teens (13-17 yrs): **{$teens}**\n"
+                . "  - 💼 Adults (18-59 yrs): **{$adults}**\n"
+                . "  - 🧓 Seniors (60+ yrs): **{$seniors}**\n"
+                . "• **Gender Breakdown**: 👩 Female: **{$females}** | 👨 Male: **{$males}**\n"
+                . "• **Origin**: 🇵🇭 Local Visitors: **{$locals}** | 🌐 Foreign Visitors: **{$foreigners}**\n"
+                . "• **Total Profiled Guests**: **{$allGuests->count()}**";
+        }
+
+        // 4. Active Check-ins / In-Park Guests
+        if (preg_match('/check[\s-]?ins?|checked[\s-]?in|in[\s-]?park|inside|active|kasamtangan|sino.*naka-?check|kinsa.*naka-?check/i', $msgLower)) {
+            $checkedIn = Reservation::whereIn('status', ['Checked In', 'checked in'])
+                ->with(['reservationAmenities.amenity'])
+                ->orderBy('id', 'desc')
+                ->get();
+
+            if ($checkedIn->isNotEmpty()) {
+                $lines = [];
+                foreach ($checkedIn as $res) {
+                    $amenities = $res->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->implode(', ') ?: 'General Park Visit';
+                    $checkInDate = $res->check_in ? Carbon::parse($res->check_in)->format('M d, g:i A') : ($res->reservation_date ? Carbon::parse($res->reservation_date)->format('M d, Y') : 'Today');
+                    $bal = (float) $res->remaining_balance;
+                    $balText = $bal > 0 ? "₱" . number_format($bal, 2) . " unpaid" : "Paid";
+                    $type = ucfirst($res->reservation_type ?? 'Online');
+                    $lines[] = "• **Reservation #{$res->id}** ({$type}): **{$res->booker_name}** ({$res->phone})\n  - Amenity: {$amenities}\n  - Checked-in: {$checkInDate} | Balance: {$balText}";
+                }
+                return "🏨 **Currently Checked-In Guests ({$checkedIn->count()} Active)**:\n" . implode("\n\n", $lines);
+            } else {
+                return "There are currently no guests marked as 'Checked In' in the park right now.";
+            }
+        }
+
+        // 5. Reschedule Requests
+        if (preg_match('/resched|reched|rebook|balhin|ilis|lipat|change\s*date/i', $msgLower)) {
+            $requests = RescheduleRequest::with(['reservation', 'replacementAmenity'])
+                ->whereIn('status', ['submitted', 'pending'])
+                ->latest('id')
+                ->get();
+
+            if ($requests->isNotEmpty()) {
+                $lines = [];
+                foreach ($requests as $r) {
+                    $res = $r->reservation;
+                    $guest = $res?->booker_name ?? 'Guest';
+                    $newDate = $r->requested_date ? Carbon::parse($r->requested_date)->format('M d, Y') : 'Waiting for guest';
+                    $origDate = $r->original_date ? Carbon::parse($r->original_date)->format('M d, Y') : 'N/A';
+                    $swap = $r->replacementAmenity ? " | Swap Unit: {$r->replacementAmenity->amenities_name}" : "";
+                    $status = ucfirst($r->status);
+                    $lines[] = "• **Request #{$r->id}** (Res #{$r->reservation_id} - {$guest}):\n  - Original: {$origDate} &rarr; Requested: **{$newDate}**{$swap}\n  - Status: **{$status}**";
+                }
+                return "📅 **Pending Reschedule Requests ({$requests->count()})**:\n" . implode("\n\n", $lines);
+            } else {
+                return "There are currently no pending reschedule requests awaiting review.";
+            }
+        }
+
+        // 6. Specific Reservation ID lookup (#1, res #5, id 11)
+        if (preg_match('/(?:#|\bres(?:ervation)?\s*#?|\bid\s*#?)\s*(\d+)/i', $msgLower, $m) || preg_match('/\b\d{1,6}\b/', $msgLower, $m)) {
+            $resId = (int) $m[1];
+            $res = Reservation::with(['reservationAmenities.amenity', 'reservationCharges'])->find($resId);
+            if ($res) {
+                $amenities = $res->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->implode(', ') ?: 'None';
+                $sDate = $res->reservation_date ? Carbon::parse($res->reservation_date)->format('M d, Y') : 'N/A';
+                $eDate = $res->end_date ? Carbon::parse($res->end_date)->format('M d, Y') : $sDate;
+                $tot = number_format((float) $res->total_amount, 2);
+                $paid = number_format((float) $res->amount_paid, 2);
+                $bal = number_format((float) $res->remaining_balance, 2);
+
+                return "📋 **Reservation #{$res->id} Overview**:\n"
+                    . "• **Primary Guest**: {$res->booker_name} (📞 {$res->phone} | ✉️ {$res->email})\n"
+                    . "• **Schedule**: {$sDate} ({$res->start_slot}) to {$eDate} ({$res->end_slot}) — Total: {$res->total_days} day(s)\n"
+                    . "• **Status**: **{$res->status}** ({$res->reservation_type})\n"
+                    . "• **Amenities**: {$amenities}\n"
+                    . "• **Financials**: Total: ₱{$tot} | Paid: ₱{$paid} | Balance: **₱{$bal}** ({$res->payment_status})";
+            }
+        }
+
+        // 7. Search by Booker Name
+        $searchTerms = [];
+        $words = preg_split('/[\s,\.\?!;:]+/', $msgLower);
+        $stopWords = ['the', 'and', 'for', 'are', 'what', 'who', 'how', 'pila', 'kinsa', 'unsa', 'naa', 'karon', 'kaha', 'ba', 'nga', 'ang', 'sa', 'og', 'ug', 'sino', 'ano', 'bakit', 'meron', 'wala', 'mga', 'bang', 'may', 'po', 'ngayon', 'today', 'check', 'show', 'give', 'list', 'park', 'hinaguan', 'look', 'find'];
+        foreach ($words as $w) {
+            $w = trim($w);
+            if (mb_strlen($w) >= 3 && !in_array($w, $stopWords, true) && !is_numeric($w)) {
+                $match = Reservation::where('booker_name', 'like', "%{$w}%")->first();
+                if ($match) {
+                    $amenities = $match->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->implode(', ') ?: 'None';
+                    $sDate = $match->reservation_date ? Carbon::parse($match->reservation_date)->format('M d, Y') : 'N/A';
+                    $bal = number_format((float) $match->remaining_balance, 2);
+                    return "🔍 Found **Reservation #{$match->id}** for **{$match->booker_name}**:\n"
+                        . "• Schedule: {$sDate} ({$match->start_slot})\n"
+                        . "• Status: **{$match->status}** | Amenity: {$amenities}\n"
+                        . "• Balance: ₱{$bal} | Contact: {$match->phone}";
+                }
+            }
+        }
+
+        // 8. Amenities & Rates
+        if (preg_match('/amenit|cottag|payag|a[\\s-]?house|hall|rates?|presyo|tagpila|magkano|pool/i', $msgLower)) {
+            $amenities = Amenity::where('status', true)->orderBy('daytime_price')->get();
+            $lines = [];
+            foreach ($amenities as $am) {
+                $day = number_format((float) $am->daytime_price, 2);
+                $night = number_format((float) $am->nighttime_price, 2);
+                $lines[] = "• **{$am->amenities_name}**: Day ₱{$day} | Night ₱{$night} (Capacity: {$am->minimum_capacity}-{$am->maximum_capacity} pax)";
+            }
+            return "🏡 **Hinaguan Nature Park Amenities & Rates**:\n" . implode("\n", $lines) . "\n\nStandard Day session is 8:00 AM - 5:00 PM; Night session is 6:00 PM - 8:00 AM.";
+        }
+
+        // 9. Default operational assistant response
+        $checkedCount = Reservation::whereIn('status', ['Checked In', 'checked in'])->count();
+        $pendingCount = Reservation::whereIn('status', ['Pending', 'pending'])->count();
+        $reschedCount = RescheduleRequest::where('status', 'submitted')->count();
+
+        return "I am Bren, your AI Operations Assistant. Right now in Hinaguan Nature Park:\n"
+            . "• **{$checkedCount}** reservations currently checked in\n"
+            . "• **{$pendingCount}** online reservations pending approval\n"
+            . "• **{$reschedCount}** reschedule requests awaiting review\n\n"
+            . "You can ask me about **Due Checkouts Today**, **Demographics**, **Checked-In Guests**, **Reschedule Requests**, or look up any Reservation ID or guest name!";
     }
 }
 
