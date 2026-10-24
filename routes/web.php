@@ -1484,7 +1484,17 @@ Route::get('/reservation/reschedule/{token}/availability', function (Request $re
         : ($formatLocalDate($reservation, 'reservation_date') ?: null);
     $origEndDate = $origStartDate ? \Carbon\Carbon::parse($origStartDate)->addDays($stayDays - 1)->toDateString() : null;
 
+    $getCategoryBase = function ($name) {
+        $trimmed = trim((string) $name);
+        $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+        return strtolower(!empty($base) ? $base : $trimmed);
+    };
+
+    $allActiveAmenities = \App\Models\Amenity::where('status', true)->orderBy('amenities_name')->get();
+    $bookedAmenityIds = $amenities->pluck('amenity_id')->filter()->map(fn ($id) => (string) $id)->all();
+
     $availability = [];
+    $dateDetails = [];
 
     for ($i = 0; $i < $numDays; $i++) {
         $currentDateObj = $startDate->copy()->addDays($i);
@@ -1492,17 +1502,21 @@ Route::get('/reservation/reschedule/{token}/availability', function (Request $re
 
         if ($currentDateObj->lessThan($tomorrow)) {
             $availability[$dateStr] = false;
+            $dateDetails[$dateStr] = ['available' => false, 'requires_swap' => false, 'reason' => 'past'];
             continue;
         }
 
         // Disable original scheduled dates so they cannot be picked again
         if ($origStartDate && ($dateStr === $origStartDate || ($origEndDate && $dateStr >= $origStartDate && $dateStr <= $origEndDate))) {
             $availability[$dateStr] = false;
+            $dateDetails[$dateStr] = ['available' => false, 'requires_swap' => false, 'reason' => 'original'];
             continue;
         }
 
         $targetEndDate = $currentDateObj->copy()->addDays($stayDays - 1)->toDateString();
-        $isAvailable = true;
+
+        $directAvailable = true;
+        $unavailableRa = null;
 
         foreach ($amenities as $ra) {
             $amenityId = (string) $ra->amenity_id;
@@ -1512,17 +1526,78 @@ Route::get('/reservation/reschedule/{token}/availability', function (Request $re
             $eSlot = $ra->end_slot ?: $origEndSlot;
 
             if ($isAmenityRangeTaken($amenityId, $dateStr, $targetEndDate, $sSlot, $eSlot, $reservation->id)) {
-                $isAvailable = false;
+                $directAvailable = false;
+                $unavailableRa = $ra;
                 break;
             }
         }
 
-        $availability[$dateStr] = $isAvailable;
+        if ($directAvailable) {
+            $availability[$dateStr] = true;
+            $dateDetails[$dateStr] = [
+                'available' => true,
+                'requires_swap' => false,
+            ];
+            continue;
+        }
+
+        // Current amenity is unavailable. Dynamically check for real-time available replacements in same category with identical pricing
+        $currentAmenity = $unavailableRa ? ($unavailableRa->amenity ?: \App\Models\Amenity::find($unavailableRa->amenity_id)) : null;
+        $matchingReplacements = [];
+
+        if ($currentAmenity) {
+            $currentCategory = $getCategoryBase($currentAmenity->amenities_name);
+            $currentDayPrice = (float) $currentAmenity->daytime_price;
+            $currentNightPrice = (float) $currentAmenity->nighttime_price;
+            $raSlotStart = $unavailableRa->start_slot ?: $origStartSlot;
+            $raSlotEnd = $unavailableRa->end_slot ?: $origEndSlot;
+
+            foreach ($allActiveAmenities as $cand) {
+                if ((string) $cand->id === (string) $currentAmenity->id) continue;
+                if ($getCategoryBase($cand->amenities_name) !== $currentCategory) continue;
+                if (abs((float) $cand->daytime_price - $currentDayPrice) >= 0.01 || abs((float) $cand->nighttime_price - $currentNightPrice) >= 0.01) continue;
+                if (in_array((string) $cand->id, $bookedAmenityIds, true)) continue;
+                if ($isAmenityRangeTaken((string) $cand->id, $dateStr, $targetEndDate, $raSlotStart, $raSlotEnd, $reservation->id)) continue;
+
+                $matchingReplacements[] = [
+                    'id' => (string) $cand->id,
+                    'name' => $cand->amenities_name,
+                    'category' => ucwords($currentCategory),
+                    'daytime_price' => (float) $cand->daytime_price,
+                    'nighttime_price' => (float) $cand->nighttime_price,
+                    'description' => $cand->description,
+                ];
+            }
+        }
+
+        if (! empty($matchingReplacements)) {
+            $availability[$dateStr] = true;
+            $dateDetails[$dateStr] = [
+                'available' => true,
+                'requires_swap' => true,
+                'current_amenity' => [
+                    'id' => (string) $currentAmenity->id,
+                    'name' => $currentAmenity->amenities_name,
+                    'category' => ucwords($getCategoryBase($currentAmenity->amenities_name)),
+                    'daytime_price' => (float) $currentAmenity->daytime_price,
+                    'nighttime_price' => (float) $currentAmenity->nighttime_price,
+                ],
+                'replacements' => $matchingReplacements,
+            ];
+        } else {
+            $availability[$dateStr] = false;
+            $dateDetails[$dateStr] = [
+                'available' => false,
+                'requires_swap' => false,
+                'reason' => 'booked',
+            ];
+        }
     }
 
     return response()->json([
         'success' => true,
         'availability' => $availability,
+        'date_details' => $dateDetails,
     ]);
 })->name('reservation.reschedule.guest.availability');
 
@@ -1564,6 +1639,7 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
 
     $validated = $request->validate([
         'requested_date' => 'required|date|after:today',
+        'replacement_amenity_id' => 'nullable|string',
     ]);
 
     $reservation = $requestRecord->reservation;
@@ -1584,31 +1660,70 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
         return back()->withErrors(['requested_date' => 'You cannot select your current original scheduled date. Please choose a different date.']);
     }
 
-    // Server-side availability validation
-    foreach ($reservation->reservationAmenities as $ra) {
-        $amenityId = (string) $ra->amenity_id;
-        if (empty($amenityId)) continue;
+    $replacementAmenityId = $request->input('replacement_amenity_id');
+    $replacementAmenity = null;
 
-        $sSlot = $ra->start_slot ?: $origStartSlot;
-        $eSlot = $ra->end_slot ?: $origEndSlot;
+    if (! empty($replacementAmenityId)) {
+        $replacementAmenity = \App\Models\Amenity::where('status', true)->find($replacementAmenityId);
+        if (! $replacementAmenity) {
+            return back()->withErrors(['replacement_amenity_id' => 'The selected replacement amenity is invalid or no longer active.']);
+        }
 
-        if ($isAmenityRangeTaken($amenityId, $newStartDate, $newEndDate, $sSlot, $eSlot, $reservation->id)) {
-            return back()->withErrors(['requested_date' => 'Selected date is no longer available. Please choose a different date.']);
+        // Validate that replacement unit is in same category and matching prices
+        $firstRa = $reservation->reservationAmenities->first();
+        $currAmenity = $firstRa?->amenity ?: \App\Models\Amenity::find($firstRa?->amenity_id);
+        if ($currAmenity) {
+            $getCategoryBase = function ($name) {
+                $trimmed = trim((string) $name);
+                $base = trim(preg_replace('/\s*[-_#]?\s*(?:\d+|[A-Z]\b|[IVXLCDM]+)$/i', '', $trimmed));
+                return strtolower(!empty($base) ? $base : $trimmed);
+            };
+
+            if ($getCategoryBase($replacementAmenity->amenities_name) !== $getCategoryBase($currAmenity->amenities_name)) {
+                return back()->withErrors(['replacement_amenity_id' => 'Replacement amenity must be in the same category.']);
+            }
+
+            if (abs((float) $replacementAmenity->daytime_price - (float) $currAmenity->daytime_price) >= 0.01 ||
+                abs((float) $replacementAmenity->nighttime_price - (float) $currAmenity->nighttime_price) >= 0.01) {
+                return back()->withErrors(['replacement_amenity_id' => 'Replacement amenity must have matching daytime and overnight prices.']);
+            }
+        }
+
+        // Check real-time availability of replacement amenity for new dates
+        $sSlot = $firstRa?->start_slot ?: $origStartSlot;
+        $eSlot = $firstRa?->end_slot ?: $origEndSlot;
+        if ($isAmenityRangeTaken((string) $replacementAmenity->id, $newStartDate, $newEndDate, $sSlot, $eSlot, $reservation->id)) {
+            return back()->withErrors(['replacement_amenity_id' => "The replacement unit {$replacementAmenity->amenities_name} is no longer available on {$newStartDate} to {$newEndDate}. Please choose another unit or date."]);
+        }
+    } else {
+        // Standard check: verify all current amenities are available
+        foreach ($reservation->reservationAmenities as $ra) {
+            $amenityId = (string) $ra->amenity_id;
+            if (empty($amenityId)) continue;
+
+            $sSlot = $ra->start_slot ?: $origStartSlot;
+            $eSlot = $ra->end_slot ?: $origEndSlot;
+
+            if ($isAmenityRangeTaken($amenityId, $newStartDate, $newEndDate, $sSlot, $eSlot, $reservation->id)) {
+                return back()->withErrors(['requested_date' => 'Selected date is no longer available. Please choose a different date.']);
+            }
         }
     }
 
     // Invalidate token immediately and mark submitted
     $requestRecord->update([
         'requested_date' => $newStartDate,
+        'replacement_amenity_id' => $replacementAmenity?->id,
         'status' => 'submitted',
         'used_at' => now(),
     ]);
 
     // Record activity log
+    $swapDesc = $replacementAmenity ? " with amenity swap to {$replacementAmenity->amenities_name} (Same Category & Rate)" : "";
     \App\Models\ActivityLog::log(
         activityType: 'reservation_reschedule_submitted',
         title: 'Reschedule Date Submitted by Guest',
-        description: "Guest {$reservation->booker_name} requested new date: {$newStartDate} (original: {$requestRecord->original_date})",
+        description: "Guest {$reservation->booker_name} requested new date: {$newStartDate}{$swapDesc} (original: {$requestRecord->original_date})",
         reservationId: $reservation->id,
         actorName: $reservation->booker_name ?? 'Guest',
         actorRole: 'guest',
@@ -1616,6 +1731,8 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
             'reschedule_request_id' => $requestRecord->id,
             'original_date' => $requestRecord->original_date,
             'requested_date' => $newStartDate,
+            'replacement_amenity_id' => $replacementAmenity?->id,
+            'replacement_amenity_name' => $replacementAmenity?->amenities_name,
         ]
     );
 
@@ -10219,7 +10336,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->update(['status' => 'expired']);
 
         $status = $request->query('status');
-        $query = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity', 'approver'])
+        $query = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity', 'approver', 'replacementAmenity'])
             ->orderByDesc('created_at');
 
         if (! empty($status) && $status !== 'all') {
@@ -10275,6 +10392,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'requested_date' => $reqFormatted,
                 'requested_date_raw' => $reqStart,
                 'requested_end_date_raw' => $reqEnd,
+                'replacement_amenity' => $req->replacementAmenity ? [
+                    'id' => (string) $req->replacementAmenity->id,
+                    'name' => $req->replacementAmenity->amenities_name,
+                    'daytime_price' => (float) $req->replacementAmenity->daytime_price,
+                    'nighttime_price' => (float) $req->replacementAmenity->nighttime_price,
+                ] : null,
                 'status' => $req->status,
                 'reason' => $req->reason,
                 'decline_reason' => $req->decline_reason,
@@ -10335,9 +10458,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $sSlot = $reservation->start_slot ?? 'Daytime';
         $eSlot = $reservation->end_slot ?? $sSlot;
 
+        $replacementAmenity = null;
+        if ($rescheduleRequest->replacement_amenity_id) {
+            $replacementAmenity = \App\Models\Amenity::find($rescheduleRequest->replacement_amenity_id);
+            if (! $replacementAmenity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Requested replacement amenity was not found.',
+                ], 404);
+            }
+        }
+
         // Final availability validation
         foreach ($reservation->reservationAmenities as $ra) {
-            $amenityId = (string) $ra->amenity_id;
+            $amenityId = $replacementAmenity ? (string) $replacementAmenity->id : (string) $ra->amenity_id;
             if (empty($amenityId)) continue;
 
             $raStart = $ra->start_date ? \Carbon\Carbon::parse($ra->start_date)->addDays($daysDiff)->toDateString() : $newStartDate;
@@ -10346,7 +10480,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $raESlot = $ra->end_slot ?: $eSlot;
 
             if ($isAmenityRangeTaken($amenityId, $raStart, $raEnd, $raSSlot, $raESlot, $reservation->id)) {
-                $name = $ra->amenity?->amenities_name ?? 'An amenity';
+                $name = $replacementAmenity ? $replacementAmenity->amenities_name : ($ra->amenity?->amenities_name ?? 'An amenity');
                 return response()->json([
                     'success' => false,
                     'message' => "Cannot approve reschedule: {$name} is no longer available on {$raStart} to {$raEnd}.",
@@ -10360,12 +10494,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $reservation->save();
 
         // Update reservation amenities
+        $swappedDetails = '';
         foreach ($reservation->reservationAmenities as $ra) {
             $raStart = $ra->start_date ? \Carbon\Carbon::parse($ra->start_date)->addDays($daysDiff)->toDateString() : $newStartDate;
             $raEnd = $ra->end_date ? \Carbon\Carbon::parse($ra->end_date)->addDays($daysDiff)->toDateString() : $newEndDate;
             $ra->start_date = $raStart;
             $ra->end_date = $raEnd;
-            $ra->remarks = "Rescheduled: {$raStart} ({$ra->start_slot}) to {$raEnd} ({$ra->end_slot})";
+            if ($replacementAmenity) {
+                $prevName = $ra->amenity?->amenities_name ?? 'Previous Amenity';
+                $ra->amenity_id = (string) $replacementAmenity->id;
+                $ra->remarks = "Rescheduled & swapped from {$prevName} to {$replacementAmenity->amenities_name}: {$raStart} ({$ra->start_slot}) to {$raEnd} ({$ra->end_slot})";
+                $swappedDetails = " (Amenity changed from {$prevName} to {$replacementAmenity->amenities_name})";
+            } else {
+                $ra->remarks = "Rescheduled: {$raStart} ({$ra->start_slot}) to {$raEnd} ({$ra->end_slot})";
+            }
             $ra->save();
         }
 
@@ -10406,7 +10548,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ActivityLog::log(
             activityType: 'reservation_reschedule_approved',
             title: 'Reschedule Request Approved',
-            description: "Reschedule request for Res #{$reservation->id} ({$reservation->booker_name}) approved to {$newStartDate} by {$staffName}",
+            description: "Reschedule request for Res #{$reservation->id} ({$reservation->booker_name}) approved to {$newStartDate}{$swappedDetails} by {$staffName}",
             reservationId: $reservation->id,
             actorName: $staffName,
             actorRole: $user['role'] ?? 'staff',
@@ -10415,6 +10557,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'reschedule_request_id' => $rescheduleRequest->id,
                 'old_date' => $origStartDate,
                 'new_date' => $newStartDate,
+                'replacement_amenity' => $replacementAmenity?->amenities_name,
                 'check_in' => $checkInText,
                 'check_out' => $checkOutText,
                 'sms_success' => $smsResult['success'] ?? false,

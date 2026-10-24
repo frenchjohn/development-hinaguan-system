@@ -980,7 +980,7 @@ window.addEventListener('DOMContentLoaded', function () {
     if ('scrollRestoration' in history) {
         try {
             history.scrollRestoration = 'manual';
-        } catch (e) {}
+        } catch (e) { }
     }
 
     // Pages that should NEVER auto-refresh in background (only manual refresh via button)
@@ -1306,7 +1306,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         try {
                             const selector = item.tag.toLowerCase() + '.' + item.className.trim().split(/\s+/).filter(Boolean).join('.');
                             el = currentMain.querySelector(selector);
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                     if (el) {
                         if (item.top > 0) el.scrollTop = item.top;
@@ -1423,7 +1423,7 @@ window.addEventListener('DOMContentLoaded', function () {
             subtree: true,
             attributeFilter: ['class', 'style', 'aria-hidden', 'hidden']
         });
-    } catch (e) {}
+    } catch (e) { }
 
     // Background idle heartbeat refresh (every 12 seconds)
     setInterval(() => {
@@ -1491,7 +1491,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     const parsed = JSON.parse(clean);
                     const val = parsed.reservation_id || parsed.id || parsed.resId;
                     if (val && /^\d+$/.test(String(val))) return String(val);
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // 4. Matches prefixes like #123, RES-123, REF-123, BOOKING-123
@@ -1536,7 +1536,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     osc.start();
                     osc.stop(ctx.currentTime + 0.2);
                 }
-            } catch (_) {}
+            } catch (_) { }
         }
 
         window.addEventListener('keydown', (e) => {

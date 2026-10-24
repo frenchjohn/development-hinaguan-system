@@ -282,6 +282,7 @@ class ReservationRescheduleTest extends TestCase
 
     public function test_multi_day_stay_adaptation_and_session_locking()
     {
+        Carbon::setTestNow('2026-10-10');
         $staff = $this->makeStaffSession();
 
         // Create a 5-day continuous reservation with Daytime session
@@ -364,6 +365,7 @@ class ReservationRescheduleTest extends TestCase
         $ra->refresh();
         $this->assertEquals('2026-10-20', Carbon::parse($ra->start_date)->toDateString());
         $this->assertEquals('2026-10-24', Carbon::parse($ra->end_date)->toDateString());
+        Carbon::setTestNow();
     }
 
     public function test_dates_disabled_when_availed_amenity_is_unavailable_in_stay_window()

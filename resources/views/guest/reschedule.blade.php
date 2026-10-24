@@ -73,6 +73,27 @@
             background-color: #c8a45d;
         }
 
+        .cal-day-cell.swap-required {
+            border-color: #fde68a !important;
+            background-color: #fffbeb !important;
+            color: #92400e !important;
+            font-weight: 700;
+        }
+        .cal-day-cell.swap-required:hover {
+            border-color: #f59e0b !important;
+            background-color: #fef3c7 !important;
+        }
+        .cal-day-cell.swap-required::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 5px;
+            height: 5px;
+            border-radius: 9999px;
+            background-color: #d97706;
+        }
+
         /* Continuous stay range selection styles */
         .cal-day-cell.range-single {
             background-color: #183d28 !important;
@@ -522,9 +543,14 @@
 
                         <!-- Legend -->
                         <div class="flex items-center justify-between text-[0.7rem] text-slate-500 mt-4 pt-3 border-t border-slate-100 flex-wrap gap-2">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 flex-wrap">
                                 <span class="inline-flex items-center gap-1.5">
                                     <span class="w-3 h-3 rounded-md border border-slate-300 bg-white"></span> Available
+                                </span>
+                                <span class="inline-flex items-center gap-1.5">
+                                    <span class="w-3 h-3 rounded-md border border-amber-300 bg-amber-50 relative flex items-center justify-center">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    </span> Unit Swap Available
                                 </span>
                                 @if ($stayDays > 1)
                                     <span class="inline-flex items-center gap-1.5">
@@ -548,13 +574,14 @@
                         <form id="rescheduleForm" action="{{ url('/reservation/reschedule/' . $rescheduleRequest->token) }}" method="POST" class="mt-6 pt-5 border-t border-slate-100">
                             @csrf
                             <input type="hidden" name="requested_date" id="requestedDateInput" value="">
+                            <input type="hidden" name="replacement_amenity_id" id="replacementAmenityIdInput" value="">
 
                             <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 sm:p-5 mb-5">
                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-200/60 mb-3">
                                     <div>
                                         <span class="text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800 block">
                                             @if ($stayDays > 1)
-                                                Selected {{ $stayDays }}-Day Reschedule Schedule:
+                                                 Selected {{ $stayDays }}-Day Reschedule Schedule:
                                             @else
                                                 Selected Preferred Date:
                                             @endif
@@ -597,6 +624,63 @@
                 </div>
             </div>
 
+            <!-- Amenity Swap Notice & Selection Modal -->
+            <div id="amenitySwapModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+                <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 text-left">
+                    <!-- Header -->
+                    <div class="flex items-start gap-3.5 pb-4 border-b border-slate-100">
+                        <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shrink-0">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-display font-bold text-base sm:text-lg text-slate-900 leading-tight">Amenity Unavailable on This Date</h4>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0">Swap Available</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                                Your reserved unit, <strong id="swapCurrentAmenityName" class="text-slate-800"></strong>, is already booked for this schedule.
+                            </p>
+                        </div>
+                        <button type="button" id="closeSwapModalBtn" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-lg transition-all cursor-pointer shrink-0">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Explanation Notice (better phrased) -->
+                    <div class="mt-4 p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/70 text-amber-900 text-xs leading-relaxed space-y-1">
+                        <p class="font-bold flex items-center gap-1.5 text-amber-950">
+                            <i class="bi bi-info-circle-fill text-amber-600"></i>
+                            You can still reschedule to this date!
+                        </p>
+                        <p class="text-[11px] text-amber-800/95 leading-normal">
+                            Hinaguan Nature Park allows you to switch to another available unit in the same category (<strong id="swapCategoryName"></strong>) with the <strong>exact same rate</strong>. No extra charges or fee changes will apply.
+                        </p>
+                    </div>
+
+                    <!-- Options Container -->
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[0.7rem] font-bold uppercase tracking-wider text-slate-500">Available Replacement Units</span>
+                            <span id="swapOptionsCount" class="text-[0.7rem] font-semibold text-emerald-700"></span>
+                        </div>
+                        <div id="swapOptionsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                            <!-- Dynamically injected replacement cards -->
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                        <button type="button" id="cancelSwapBtn" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-all cursor-pointer">
+                            Pick Another Date
+                        </button>
+                        <button type="button" id="confirmSwapBtn" disabled class="px-5 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
+                            <i class="bi bi-check2"></i>
+                            <span>Continue with Selected Unit</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Confirmation Modal -->
             <div id="confirmSubmitModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
                 <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center">
@@ -634,6 +718,10 @@
                                 <strong id="modalDateConfirmText" class="text-emerald-950 font-bold"></strong>
                             </div>
                         @endif
+                        <div id="modalSwapRow" class="hidden justify-between pt-1 border-t border-emerald-200/60">
+                            <span class="text-slate-500 font-medium">Assigned Unit:</span>
+                            <span class="font-bold text-amber-900"><span id="modalSwapAmenityText"></span> <span class="text-[10px] text-amber-700 font-normal">(Swapped · Same Rate)</span></span>
+                        </div>
                         <div class="flex justify-between pt-1 border-t border-emerald-200/60">
                             <span class="text-slate-500 font-medium">Session:</span>
                             <span class="font-bold text-emerald-900">Fixed (same as original)</span>
@@ -669,6 +757,12 @@
                     let selectedStartDateStr = null;
                     let selectedEndDateStr = null;
                     let availabilityMap = {}; // 'YYYY-MM-DD': boolean
+                    let dateDetailsMap = {}; // 'YYYY-MM-DD': details object
+                    let selectedReplacementAmenity = null;
+
+                    let pendingSwapDateStr = null;
+                    let pendingDayDetail = null;
+                    let pendingSelectedReplacementId = null;
 
                     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
                     const calendarMonthLabel = document.getElementById('calendarMonthLabel');
@@ -676,6 +770,7 @@
                     const prevBtn = document.getElementById('prevMonthBtn');
                     const nextBtn = document.getElementById('nextMonthBtn');
                     const requestedDateInput = document.getElementById('requestedDateInput');
+                    const replacementAmenityIdInput = document.getElementById('replacementAmenityIdInput');
                     const selectedDateDisplay = document.getElementById('selectedDateDisplay');
                     const dateBadge = document.getElementById('dateBadge');
                     const submitBtn = document.getElementById('submitRescheduleBtn');
@@ -684,8 +779,27 @@
                     const modalCheckInText = document.getElementById('modalCheckInText');
                     const modalCheckOutText = document.getElementById('modalCheckOutText');
                     const modalDateConfirmText = document.getElementById('modalDateConfirmText');
+                    const modalSwapRow = document.getElementById('modalSwapRow');
+                    const modalSwapAmenityText = document.getElementById('modalSwapAmenityText');
                     const modalCancelBtn = document.getElementById('modalCancelBtn');
                     const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+                    // Swap Modal elements
+                    const amenitySwapModal = document.getElementById('amenitySwapModal');
+                    const swapCurrentAmenityName = document.getElementById('swapCurrentAmenityName');
+                    const swapCategoryName = document.getElementById('swapCategoryName');
+                    const swapOptionsCount = document.getElementById('swapOptionsCount');
+                    const swapOptionsContainer = document.getElementById('swapOptionsContainer');
+                    const closeSwapModalBtn = document.getElementById('closeSwapModalBtn');
+                    const cancelSwapBtn = document.getElementById('cancelSwapBtn');
+                    const confirmSwapBtn = document.getElementById('confirmSwapBtn');
+
+                    const escapeHtml = (val) => String(val ?? '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
 
                     // Date arithmetic helpers (local date, avoids UTC offset shifts)
                     function parseDateString(str) {
@@ -725,8 +839,10 @@
                             const data = await res.json();
                             if (data && data.availability) {
                                 availabilityMap = data.availability;
+                                dateDetailsMap = data.date_details || {};
                             } else {
                                 availabilityMap = {};
+                                dateDetailsMap = {};
                             }
                             renderCalendar(year, month);
                         } catch (err) {
@@ -772,10 +888,11 @@
                                 (origEndDateStr && dateStr >= origStartDateStr && dateStr <= origEndDateStr)
                             );
 
-                            // availabilityMap[dateStr] checks if the full stay window is available for all reserved amenities
-                            const isAvailable = availabilityMap[dateStr] === true && !isPastOrToday && !isOriginalDate;
+                            const dayDetail = dateDetailsMap[dateStr] || null;
+                            const isDirectAvailable = availabilityMap[dateStr] === true && (!dayDetail || !dayDetail.requires_swap) && !isPastOrToday && !isOriginalDate;
+                            const isSwapAvailable = availabilityMap[dateStr] === true && (dayDetail && dayDetail.requires_swap) && !isPastOrToday && !isOriginalDate;
 
-                            if (isPastOrToday || isOriginalDate || !isAvailable) {
+                            if (isPastOrToday || isOriginalDate || (!isDirectAvailable && !isSwapAvailable)) {
                                 cell.classList.add('disabled');
                                 if (isOriginalDate) {
                                     cell.title = 'Current/original scheduled date (cannot be re-selected)';
@@ -786,6 +903,25 @@
                                         ? `One or more amenities are unavailable for a ${stayDays}-day stay starting this day` 
                                         : 'Unavailable / fully booked for your amenities';
                                 }
+                            } else if (isSwapAvailable) {
+                                cell.classList.add('available', 'swap-required');
+                                cell.title = `Your amenity is booked on this date, but matching ${dayDetail?.current_amenity?.category || 'category'} units are available at the same price!`;
+
+                                cell.addEventListener('mouseenter', () => {
+                                    if (stayDays > 1) {
+                                        previewRangeHover(dateStr);
+                                    } else {
+                                        cell.classList.add('range-hover-single');
+                                    }
+                                });
+
+                                cell.addEventListener('mouseleave', () => {
+                                    clearRangeHover();
+                                });
+
+                                cell.addEventListener('click', () => {
+                                    openAmenitySwapModal(dateStr, dayDetail);
+                                });
                             } else {
                                 cell.classList.add('available');
                                 cell.title = stayDays > 1 
@@ -806,7 +942,9 @@
                                 });
 
                                 cell.addEventListener('click', () => {
-                                    selectDateRange(dateStr);
+                                    selectedReplacementAmenity = null;
+                                    if (replacementAmenityIdInput) replacementAmenityIdInput.value = '';
+                                    selectDateRange(dateStr, null, null);
                                 });
                             }
 
@@ -844,8 +982,92 @@
                         });
                     }
 
+                    // Swap Modal Controller
+                    function openAmenitySwapModal(dateStr, dayDetail) {
+                        if (!amenitySwapModal || !dayDetail) return;
+                        pendingSwapDateStr = dateStr;
+                        pendingDayDetail = dayDetail;
+                        pendingSelectedReplacementId = null;
+
+                        const curr = dayDetail.current_amenity || {};
+                        const reps = dayDetail.replacements || [];
+
+                        if (swapCurrentAmenityName) swapCurrentAmenityName.textContent = curr.name || 'Your Reserved Unit';
+                        if (swapCategoryName) swapCategoryName.textContent = curr.category || 'amenity';
+                        if (swapOptionsCount) swapOptionsCount.textContent = `${reps.length} unit${reps.length === 1 ? '' : 's'} available`;
+
+                        if (confirmSwapBtn) {
+                            confirmSwapBtn.disabled = true;
+                        }
+
+                        if (swapOptionsContainer) {
+                            swapOptionsContainer.innerHTML = reps.map(rep => {
+                                const dayP = Number(rep.daytime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                                const nightP = Number(rep.nighttime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                                return `
+                                    <label class="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-200/90 bg-white hover:border-emerald-600 hover:bg-emerald-50/50 cursor-pointer transition-all shadow-2xs">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <input type="radio" name="reschedSwapUnit" value="${escapeHtml(rep.id)}" class="w-4 h-4 text-emerald-800 accent-emerald-800 shrink-0 cursor-pointer">
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-slate-900 text-xs truncate group-hover:text-emerald-900">${escapeHtml(rep.name)}</div>
+                                                <div class="text-[11px] text-slate-500 mt-0.5">
+                                                    Daytime: ₱${dayP} &bull; Overnight: ₱${nightP}
+                                                    <span class="text-emerald-700 font-semibold">(Price Matches)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="shrink-0 ml-2">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                                                <i class="bi bi-check-circle-fill text-[0.65rem]"></i>
+                                                Available
+                                            </span>
+                                        </div>
+                                    </label>
+                                `;
+                            }).join('');
+
+                            swapOptionsContainer.querySelectorAll('input[name="reschedSwapUnit"]').forEach(radio => {
+                                radio.addEventListener('change', () => {
+                                    pendingSelectedReplacementId = radio.value;
+                                    if (confirmSwapBtn) confirmSwapBtn.disabled = false;
+                                });
+                            });
+                        }
+
+                        amenitySwapModal.classList.remove('hidden');
+                        amenitySwapModal.classList.add('flex');
+                    }
+
+                    const closeSwapModal = () => {
+                        if (amenitySwapModal) {
+                            amenitySwapModal.classList.add('hidden');
+                            amenitySwapModal.classList.remove('flex');
+                        }
+                        pendingSwapDateStr = null;
+                        pendingDayDetail = null;
+                        pendingSelectedReplacementId = null;
+                    };
+
+                    closeSwapModalBtn?.addEventListener('click', closeSwapModal);
+                    cancelSwapBtn?.addEventListener('click', closeSwapModal);
+
+                    confirmSwapBtn?.addEventListener('click', () => {
+                        if (!pendingSwapDateStr || !pendingDayDetail || !pendingSelectedReplacementId) return;
+                        const chosenRep = (pendingDayDetail.replacements || []).find(r => String(r.id) === String(pendingSelectedReplacementId));
+                        if (!chosenRep) return;
+
+                        selectedReplacementAmenity = chosenRep;
+                        if (replacementAmenityIdInput) replacementAmenityIdInput.value = chosenRep.id;
+
+                        const dateToSelect = pendingSwapDateStr;
+                        const currAmenity = pendingDayDetail.current_amenity;
+                        closeSwapModal();
+
+                        selectDateRange(dateToSelect, chosenRep, currAmenity);
+                    });
+
                     // Select Date / Range
-                    function selectDateRange(startDateStr) {
+                    function selectDateRange(startDateStr, replacementObj, originalAmenityObj) {
                         selectedStartDateStr = startDateStr;
                         selectedEndDateStr = addDaysToDateStr(startDateStr, stayDays - 1);
                         requestedDateInput.value = startDateStr;
@@ -857,6 +1079,22 @@
                         const startFormatted = startObj.toLocaleDateString('en-US', options);
                         const endFormatted = endObj.toLocaleDateString('en-US', options);
 
+                        let swapHtml = '';
+                        if (replacementObj) {
+                            const dayPrice = Number(replacementObj.daytime_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                            swapHtml = `
+                                <div class="mt-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/90 text-amber-950 text-xs flex items-start gap-2.5">
+                                    <i class="bi bi-arrow-left-right text-amber-700 text-base shrink-0 mt-0.5"></i>
+                                    <div class="leading-relaxed">
+                                        <div><strong>Unit Swap on This Date:</strong> Switching to <strong>${escapeHtml(replacementObj.name)}</strong></div>
+                                        <div class="text-[11px] text-amber-800 mt-0.5">
+                                            Originally: ${escapeHtml(originalAmenityObj?.name || 'Current unit')} &bull; Same category (${escapeHtml(replacementObj.category)}) &bull; Identical price (₱${dayPrice} / day) &bull; No extra charge
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
                         if (stayDays > 1) {
                             selectedDateDisplay.innerHTML = `
                                 <div class="text-emerald-950 font-bold text-sm sm:text-base">
@@ -865,12 +1103,16 @@
                                 <div class="text-xs font-semibold text-emerald-800 mt-0.5">
                                     ${stayDays} Days Continuous Stay &bull; Session is fixed (same as original)
                                 </div>
+                                ${swapHtml}
                             `;
                             dateBadge.textContent = `${stayDays} Days Picked`;
                         } else {
                             selectedDateDisplay.innerHTML = `
-                                <span class="text-emerald-950 font-bold">${startFormatted}</span>
-                                <span class="text-xs font-semibold text-emerald-800 ml-2">&bull; Session is fixed (same as original)</span>
+                                <div>
+                                    <span class="text-emerald-950 font-bold">${startFormatted}</span>
+                                    <span class="text-xs font-semibold text-emerald-800 ml-2">&bull; Session is fixed (same as original)</span>
+                                </div>
+                                ${swapHtml}
                             `;
                             dateBadge.textContent = 'Date Picked';
                         }
@@ -908,7 +1150,7 @@
                     }
 
                     // Navigation buttons
-                    prevBtn.addEventListener('click', () => {
+                    prevBtn?.addEventListener('click', () => {
                         const now = new Date();
                         if (currentYear === now.getFullYear() && currentMonth <= now.getMonth()) {
                             return;
@@ -921,7 +1163,7 @@
                         loadAvailability(currentYear, currentMonth);
                     });
 
-                    nextBtn.addEventListener('click', () => {
+                    nextBtn?.addEventListener('click', () => {
                         currentMonth++;
                         if (currentMonth > 11) {
                             currentMonth = 0;
@@ -931,7 +1173,7 @@
                     });
 
                     // Intercept form submit to show confirmation modal
-                    form.addEventListener('submit', (e) => {
+                    form?.addEventListener('submit', (e) => {
                         e.preventDefault();
                         if (!requestedDateInput.value) return;
 
@@ -946,16 +1188,27 @@
                             if (modalDateConfirmText) modalDateConfirmText.textContent = `${startObj.toLocaleDateString('en-US', longOpts)}`;
                         }
 
-                        confirmModal.classList.remove('hidden');
-                        confirmModal.classList.add('flex');
+                        if (modalSwapRow && modalSwapAmenityText) {
+                            if (selectedReplacementAmenity) {
+                                modalSwapAmenityText.textContent = selectedReplacementAmenity.name;
+                                modalSwapRow.classList.remove('hidden');
+                                modalSwapRow.classList.add('flex');
+                            } else {
+                                modalSwapRow.classList.add('hidden');
+                                modalSwapRow.classList.remove('flex');
+                            }
+                        }
+
+                        confirmModal?.classList.remove('hidden');
+                        confirmModal?.classList.add('flex');
                     });
 
-                    modalCancelBtn.addEventListener('click', () => {
-                        confirmModal.classList.add('hidden');
-                        confirmModal.classList.remove('flex');
+                    modalCancelBtn?.addEventListener('click', () => {
+                        confirmModal?.classList.add('hidden');
+                        confirmModal?.classList.remove('flex');
                     });
 
-                    modalConfirmBtn.addEventListener('click', () => {
+                    modalConfirmBtn?.addEventListener('click', () => {
                         modalConfirmBtn.disabled = true;
                         modalConfirmBtn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Submitting...';
                         form.submit();

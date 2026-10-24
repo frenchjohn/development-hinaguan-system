@@ -790,8 +790,8 @@ window.AppPage['staff_reservations'] = function () {
             checkInModalCompanionPreviewCountBadge.textContent = `${totalCount} companion${totalCount === 1 ? '' : 's'}`;
         }
         if (checkInModalCompanionFooterSummary) {
-            checkInModalCompanionFooterSummary.textContent = totalCount === 0 
-                ? '0 companions added so far' 
+            checkInModalCompanionFooterSummary.textContent = totalCount === 0
+                ? '0 companions added so far'
                 : `${totalCount} companion${totalCount === 1 ? '' : 's'} staged (Ready to apply)`;
         }
         if (checkInModalCompanionClearAllBtn) {
@@ -3467,7 +3467,7 @@ window.AppPage['staff_reservations'] = function () {
                     const parsed = JSON.parse(clean);
                     const val = parsed.reservation_id || parsed.id || parsed.resId;
                     if (val && /^\d+$/.test(String(val))) return String(val);
-                } catch (_) {}
+                } catch (_) { }
             }
 
             // 4. Matches prefixes like #123, RES-123, REF-123, BOOKING-123
@@ -4109,9 +4109,9 @@ window.AppPage['staff_reservations'] = function () {
                         </div>
 
                         ${rawGuests.filter(g => !g.is_primary_guest).map(g => {
-                            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
-                            const gEmail = g.customer?.email || 'No email';
-                            return `
+            const gName = [g.customer?.first_name, g.customer?.last_name].filter(Boolean).join(' ').trim() || 'Companion Guest';
+            const gEmail = g.customer?.email || 'No email';
+            return `
                                 <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-white/10 bg-white dark:bg-white/5 shadow-2xs mt-2">
                                     <div class="flex items-center gap-3 min-w-0">
                                         <div class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center text-xs font-bold shrink-0">
@@ -4128,7 +4128,7 @@ window.AppPage['staff_reservations'] = function () {
                                     </div>
                                 </div>
                             `;
-                        }).join('')}
+        }).join('')}
                     </div>
 
                     ${rawAmenities.length > 0 ? `
@@ -6811,7 +6811,7 @@ window.AppPage['staff_reservations'] = function () {
         if (badgeEl) badgeEl.textContent = `#${resId}`;
         if (dateEl) dateEl.textContent = reservation.reservation_date ? String(reservation.reservation_date).split('T')[0] : '—';
         if (sessionEl) sessionEl.textContent = `${reservation.start_slot || 'Daytime'} - ${reservation.end_slot || 'Daytime'}`;
-        
+
         // Ensure phone starts with 09 (Philippine mobile standard)
         if (phoneInput) {
             phoneInput.value = formatPhilippinePhone(reservation.phone) || '';
@@ -6984,7 +6984,7 @@ window.AppPage['staff_reservations'] = function () {
 
         container.innerHTML = `
             <div class="space-y-3">
-                ${[1,2,3].map(() => `
+                ${[1, 2, 3].map(() => `
                     <div class="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 animate-pulse">
                         <div class="flex items-center gap-2.5 mb-3">
                             <div class="h-5 w-14 rounded-md bg-slate-200 dark:bg-white/10"></div>
@@ -7101,6 +7101,13 @@ window.AppPage['staff_reservations'] = function () {
                             </div>
 
                             ${amenitiesBadges ? `<div class="flex items-center gap-1.5 flex-wrap my-1">${amenitiesBadges}</div>` : ''}
+                            ${req.replacement_amenity ? `
+                                <div class="my-1.5">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-[0.7rem] font-bold text-amber-800 dark:text-amber-300">
+                                        <i class="bi bi-arrow-left-right text-amber-600"></i> Unit Swap Requested: <span class="underline">${escapeHtml(req.replacement_amenity.name)}</span> (Same Category &amp; Price)
+                                    </span>
+                                </div>
+                            ` : ''}
 
                             <div class="text-[0.7rem] text-slate-400 flex items-center gap-3 flex-wrap mt-2">
                                 <span><i class="bi bi-clock"></i> Sent: ${req.created_at} (${req.created_at_human})</span>
@@ -7113,7 +7120,7 @@ window.AppPage['staff_reservations'] = function () {
                         <!-- Action Buttons + 3-dot menu -->
                         <div class="shrink-0 flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
                             ${isSub ? `
-                                <button type="button" class="btn-resched-approve cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}" data-res-id="${req.reservation_id}" data-req-date="${escapeHtml(req.requested_date)}">
+                                <button type="button" class="btn-resched-approve cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-4 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}" data-res-id="${req.reservation_id}" data-req-date="${escapeHtml(req.requested_date)}" data-swap-amenity="${req.replacement_amenity ? escapeHtml(req.replacement_amenity.name) : ''}">
                                     <i class="bi bi-check-lg"></i>
                                     <span>Approve</span>
                                 </button>
@@ -7151,7 +7158,8 @@ window.AppPage['staff_reservations'] = function () {
                     const reqId = btn.dataset.reqId;
                     const resId = btn.dataset.resId;
                     const reqDate = btn.dataset.reqDate;
-                    handleApproveResched(btn, reqId, resId, reqDate);
+                    const swapAmenity = btn.dataset.swapAmenity || '';
+                    handleApproveResched(btn, reqId, resId, reqDate, swapAmenity);
                 });
             });
 
@@ -7248,10 +7256,11 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     // Handle Approve Reschedule
-    const handleApproveResched = (btnEl, requestId, reservationId, requestedDate) => {
+    const handleApproveResched = (btnEl, requestId, reservationId, requestedDate, swapAmenity = '') => {
+        const swapNotice = swapAmenity ? `\n\nNote: This will also swap the reserved unit to "${swapAmenity}" (same category & rate).` : '';
         showConfirmModal(
             'Approve Reschedule?',
-            `Are you sure you want to approve this reschedule request for Reservation #${reservationId} to ${requestedDate}? This will update the reservation date and notify the guest via SMS.`,
+            `Are you sure you want to approve this reschedule request for Reservation #${reservationId} to ${requestedDate}? This will update the reservation date and notify the guest via SMS.${swapNotice}`,
             async () => {
                 if (btnEl) {
                     btnEl.disabled = true;
@@ -7430,7 +7439,7 @@ window.AppPage['staff_reservations'] = function () {
             try {
                 const cleanUrl = window.location.pathname;
                 window.history.replaceState({ spa: true, url: cleanUrl }, '', cleanUrl);
-            } catch (_) {}
+            } catch (_) { }
         }, 150);
     }
 

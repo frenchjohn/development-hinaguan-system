@@ -17,6 +17,7 @@ class RescheduleRequest extends Model
         'token',
         'original_date',
         'requested_date',
+        'replacement_amenity_id',
         'status',
         'expires_at',
         'used_at',
@@ -37,6 +38,11 @@ class RescheduleRequest extends Model
     public function reservation(): BelongsTo
     {
         return $this->belongsTo(Reservation::class, 'reservation_id');
+    }
+
+    public function replacementAmenity(): BelongsTo
+    {
+        return $this->belongsTo(Amenity::class, 'replacement_amenity_id');
     }
 
     public function approver(): BelongsTo
