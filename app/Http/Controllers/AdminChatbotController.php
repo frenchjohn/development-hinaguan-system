@@ -174,27 +174,39 @@ class AdminChatbotController extends Controller
         ];
 
         try {
-            $response = Http::withHeaders([
+            $requestPayload = [
+                'messages' => $messagesPayload,
+                'max_tokens' => 1200,
+                'temperature' => 0.2,
+            ];
+
+            if ($model === 'openrouter/free' || empty($model)) {
+                $requestPayload['models'] = [
+                    'recursive/flint-v1.0:free',
+                    'liquid/lfm-2.5-2.6b:free',
+                    'openrouter/free',
+                ];
+            } else {
+                $requestPayload['model'] = $model;
+            }
+
+            $response = Http::timeout(15)->withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
                 'HTTP-Referer' => request()->getHttpHost(),
                 'X-Title' => 'Hinaguan Nature Park Admin Portal',
-            ])->post("https://openrouter.ai/api/v1/chat/completions", [
-                'model' => $model,
-                'messages' => $messagesPayload,
-                'max_tokens' => 1000,
-                'temperature' => 0.2,
-                'include_reasoning' => false,
-                'reasoning' => [
-                    'effort' => 'none',
-                    'exclude' => true,
-                ],
-            ]);
+            ])->post("https://openrouter.ai/api/v1/chat/completions", $requestPayload);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $rawReply = $data['choices'][0]['message']['content'] ?? 'I could not process your admin query at this moment.';
-                $reply = $this->cleanChatbotReply($rawReply);
+                $msgObj = $data['choices'][0]['message'] ?? [];
+                $rawReply = trim($msgObj['content'] ?? '');
+
+                if (empty($rawReply) && !empty($msgObj['reasoning'])) {
+                    $rawReply = $this->cleanChatbotReply($msgObj['reasoning']);
+                }
+
+                $reply = !empty($rawReply) ? $this->cleanChatbotReply($rawReply) : 'I could not process your admin query at this moment.';
 
                 if ($userId) {
                     ChatbotMessage::create([

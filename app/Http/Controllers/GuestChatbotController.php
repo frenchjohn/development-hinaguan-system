@@ -43,7 +43,10 @@ class GuestChatbotController extends Controller
             $bookingDraft = null;
         } elseif (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
             $bookingAction = 'show_picks';
-        } elseif (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower)) {
+        }
+
+        // Only activate booking action on explicit command /book
+        if (trim($msgLower) === '/book') {
             $bookingAction = 'confirm_booking_prompt';
         }
 
@@ -131,7 +134,16 @@ class GuestChatbotController extends Controller
             . "   - If sunny, warm, or clear: Recommend riverside payags (Payag 2 or 6), breezy mountain payag (Payag 3), shaded garden payag (Payag 5), or taking a refreshing swim in the pool!\n"
             . "8. GENERAL PARK POLICIES:\n"
             . "   - Outside food allowed with NO corkage fee; free grilling stations available.\n"
-            . "   - Pets allowed on leash; free parking on site.\n\n"
+            . "   - Pets allowed on leash; free parking on site.\n"
+            . "9. AMENITY AVAILABILITY & DATES (CRITICAL):\n"
+            . "   - When a guest asks about the availability of an amenity or what dates it is available (e.g., 'what date is payag 4 available?', 'is cottage 1 available?', 'when can I book payag 4?', 'available dates'):\n"
+            . "   - Carefully review section '[4. LIVE AMENITY AVAILABILITY & UPCOMING RESERVED DATES (FROM DATABASE)]'.\n"
+            . "   - If the amenity has upcoming reservations, explicitly state which dates and slots are reserved, and clarify that ALL OTHER upcoming dates are open and available!\n"
+            . "   - If it has no upcoming reservations, confirm that it is 100% available for booking on any date.\n"
+            . "   - Always encourage the guest to click 'Book via Chat' or use the 'Book Now' button to select their date and reserve it.\n"
+            . "10. BOOK VIA CHAT INQUIRIES & SUGGESTIONS:\n"
+            . "   - If the guest asks how to book via chat, or wants to start their booking, or asks if they can book here:\n"
+            . "   - Warmly let them know they can book right in this chat by clicking the green 'Book via Chat' chip at the top of the chat (or typing /book). You can also answer their questions first so they can choose the best amenity and date before starting!\n\n"
             . "=== LIVE PARK & DATABASE CONTEXT ===\n"
             . $guestContext;
 
@@ -165,26 +177,38 @@ class GuestChatbotController extends Controller
         ];
 
         try {
-            $response = Http::withHeaders([
+            $requestPayload = [
+                'messages' => $messagesPayload,
+                'max_tokens' => 1200,
+                'temperature' => 0.3,
+            ];
+
+            if ($model === 'openrouter/free' || empty($model)) {
+                $requestPayload['models'] = [
+                    'recursive/flint-v1.0:free',
+                    'liquid/lfm-2.5-2.6b:free',
+                    'openrouter/free',
+                ];
+            } else {
+                $requestPayload['model'] = $model;
+            }
+
+            $response = Http::timeout(15)->withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
                 'HTTP-Referer' => request()->getHttpHost(),
                 'X-Title' => 'Hinaguan Nature Park Guest Portal',
-            ])->post("https://openrouter.ai/api/v1/chat/completions", [
-                'model' => $model,
-                'messages' => $messagesPayload,
-                'max_tokens' => 1000,
-                'temperature' => 0.3,
-                'include_reasoning' => false,
-                'reasoning' => [
-                    'effort' => 'none',
-                    'exclude' => true,
-                ],
-            ]);
+            ])->post("https://openrouter.ai/api/v1/chat/completions", $requestPayload);
 
             if ($response->successful()) {
                 $data = $response->json();
-                $rawReply = $data['choices'][0]['message']['content'] ?? '';
+                $msgObj = $data['choices'][0]['message'] ?? [];
+                $rawReply = trim($msgObj['content'] ?? '');
+
+                if (empty($rawReply) && !empty($msgObj['reasoning'])) {
+                    $rawReply = $this->cleanChatbotReply($msgObj['reasoning'], $userMessage);
+                }
+
                 $reply = $this->cleanChatbotReply($rawReply, $userMessage);
 
                 return response()->json([
@@ -193,7 +217,41 @@ class GuestChatbotController extends Controller
                     'booking_draft' => $bookingDraft,
                 ]);
             } else {
-                Log::error('Guest Chatbot OpenRouter Error: ' . $response->body());
+                Log::warning('Guest Chatbot OpenRouter Error (engaging intelligent fallback): ' . $response->body());
+
+                // Optional fallback to Gemini if GEMINI_API_KEY is configured
+                $geminiKey = env('GEMINI_API_KEY');
+                if ($geminiKey) {
+                    try {
+                        $geminiRes = Http::timeout(5)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={$geminiKey}", [
+                            'system_instruction' => [
+                                'parts' => [['text' => $systemPrompt]]
+                            ],
+                            'contents' => [
+                                ['role' => 'user', 'parts' => [['text' => $userMessage]]]
+                            ],
+                            'generationConfig' => [
+                                'temperature' => 0.3,
+                                'maxOutputTokens' => 1000,
+                            ]
+                        ]);
+                        if ($geminiRes->successful()) {
+                            $gData = $geminiRes->json();
+                            $geminiText = $gData['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                            if (!empty(trim($geminiText))) {
+                                $reply = $this->cleanChatbotReply($geminiText, $userMessage);
+                                return response()->json([
+                                    'reply' => $reply,
+                                    'booking_action' => $bookingAction,
+                                    'booking_draft' => $bookingDraft,
+                                ]);
+                            }
+                        }
+                    } catch (\Exception $ge) {
+                        Log::warning('Guest Chatbot Gemini fallback exception: ' . $ge->getMessage());
+                    }
+                }
+
                 $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
                 return response()->json([
                     'reply' => !empty($fallback) ? $fallback : 'The assistant is temporarily unavailable. Please call 0917 861 8383.',
@@ -202,7 +260,41 @@ class GuestChatbotController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Guest Chatbot Exception: ' . $e->getMessage());
+            Log::warning('Guest Chatbot Exception (engaging intelligent fallback): ' . $e->getMessage());
+
+            // Optional fallback to Gemini if GEMINI_API_KEY is configured
+            $geminiKey = env('GEMINI_API_KEY');
+            if ($geminiKey) {
+                try {
+                    $geminiRes = Http::timeout(5)->post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={$geminiKey}", [
+                        'system_instruction' => [
+                            'parts' => [['text' => $systemPrompt]]
+                        ],
+                        'contents' => [
+                            ['role' => 'user', 'parts' => [['text' => $userMessage]]]
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.3,
+                            'maxOutputTokens' => 1000,
+                        ]
+                    ]);
+                    if ($geminiRes->successful()) {
+                        $gData = $geminiRes->json();
+                        $geminiText = $gData['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        if (!empty(trim($geminiText))) {
+                            $reply = $this->cleanChatbotReply($geminiText, $userMessage);
+                            return response()->json([
+                                'reply' => $reply,
+                                'booking_action' => $bookingAction,
+                                'booking_draft' => $bookingDraft,
+                            ]);
+                        }
+                    }
+                } catch (\Exception $ge) {
+                    Log::warning('Guest Chatbot Gemini fallback exception: ' . $ge->getMessage());
+                }
+            }
+
             $fallback = $this->generateDirectFallbackResponse($userMessage, $bookingDraft);
             return response()->json([
                 'reply' => !empty($fallback) ? $fallback : 'The guest concierge is temporarily unavailable. Please call 0917 861 8383.',
@@ -325,15 +417,47 @@ class GuestChatbotController extends Controller
     }
 
     /**
-     * Context-aware direct fallback response in case a free LLM emits only analytical scratchpad tokens.
+     * Context-aware direct fallback response in case external LLM is offline, invalid key, or times out.
+     * Comprehensive database-driven intelligence for Hinaguan Nature Park.
      */
     private function generateDirectFallbackResponse(string $userMessage, ?array $bookingDraft = null): string
     {
-        $msgLower = strtolower($userMessage);
+        $msgLower = mb_strtolower(trim($userMessage));
+        $now = now();
+        $todayStr = $now->toDateString();
 
         // Detect language
-        $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|man|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tao|unsaon|adto|anhi|sakay)\b/i', $userMessage);
-        $isTagalog = (bool) preg_match('/\b(?:magkano|meron|saan|ano|ba|po|ulan|mainit|pwede|kami|tayo|sino|kailan|tao|bawat|paano|pumunta|sakyan)\b/i', $userMessage);
+        $isBisaya = (bool) preg_match('/\b(?:pila|tagpila|asa|nindot|suba|puy-anan|unsa|init|uwan|tugnaw|daghan|gamay|kaayo|gani|diay|kinsa|kanus-a|kabuok|ka\s+tawo|unsaon|adto|anhi|swak|lahi|pagkaon|sugba|sapa)\b/i', $userMessage)
+            || preg_match('/\b(?:ug|sa)\s+(?:mga|amenity|cottage|payag|pagkaon)\b/i', $userMessage);
+
+        $isTagalog = (bool) preg_match('/\b(?:magkano|meron|saan|ano|anong|ba|po|opo|ulan|mainit|pwede|kami|tayo|sino|kailan|tao|bawat|paano|pumunta|sakyan|pagkain|maganda|sulit)\b/i', $userMessage);
+
+        // If strong Bisaya markers are present, prefer Bisaya
+        if (preg_match('/\b(?:ug|pagkaon|nindot|unsa|kabuok|ka\s+tawo|kanus-a|suba|sapa)\b/i', $userMessage)) {
+            $isBisaya = true;
+            $isTagalog = false;
+        }
+
+        // Fetch live park settings and weather from database
+        $settings = ParkSetting::first();
+        $openTime = $settings?->opening_time ? Carbon::parse($settings->opening_time)->format('g:i A') : '8:00 AM';
+        $closeTime = $settings?->closing_time ? Carbon::parse($settings->closing_time)->format('g:i A') : '5:00 PM';
+        $dayStart = $settings?->daytime_start ? Carbon::parse($settings->daytime_start)->format('g:i A') : '8:00 AM';
+        $dayEnd = $settings?->daytime_end ? Carbon::parse($settings->daytime_end)->format('g:i A') : '5:00 PM';
+        $nightStart = $settings?->nighttime_start ? Carbon::parse($settings->nighttime_start)->format('g:i A') : '6:00 PM';
+        $nightEnd = $settings?->nighttime_end ? Carbon::parse($settings->nighttime_end)->format('g:i A') : '8:00 AM';
+
+        $dayAdult = $settings ? number_format((float)($settings->daytime_adult_entrance_fee ?? 20), 2) : '20.00';
+        $nightAdult = $settings ? number_format((float)($settings->nighttime_adult_entrance_fee ?? 50), 2) : '50.00';
+        $dayPool = $settings ? number_format((float)($settings->day_pool_fee ?? 50), 2) : '50.00';
+        $nightPool = $settings ? number_format((float)($settings->night_pool_fee ?? 50), 2) : '50.00';
+        $brendaIsHere = (bool) ($settings?->brenda_available ?? true);
+
+        $latestWeather = DailyWeatherShiftLog::orderBy('log_date', 'desc')->first();
+        $weatherCond = $latestWeather ? $latestWeather->weather_condition : 'Sunny';
+        $weatherTemp = $latestWeather ? $latestWeather->temperature_celsius : '30';
+        $weatherRain = $latestWeather ? (int) $latestWeather->precipitation_probability : 10;
+        $isRainy = stripos($weatherCond, 'rain') !== false || $weatherRain >= 50;
 
         // 1. Guardrail for completely unrelated topics
         $unrelated = (bool) preg_match('/\b(?:python|javascript|php|code|coding|equation|solve|calculate|math|president|election|crypto|bitcoin|homework)\b/i', $userMessage);
@@ -347,7 +471,29 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // Request amenity picker or catalog
+        // 2. Short words / greetings / typos (e.g. "what te", "hi", "hello", "hey", "kumusta")
+        if (preg_match('/^(?:hi+|hello+|hey+|good\s*(?:morning|afternoon|evening)|kumusta|kamusta|halo|bren|sup|yo|start)\b/i', $msgLower) || mb_strlen($msgLower) <= 2) {
+            if ($isBisaya) {
+                return "Maayong adlaw! Ako si Bren, ang imong AI assistant dinhi sa Hinaguan Nature Park 🌿\n\nMakatabang ko kanimo sa:\n• 🛖 Amenities ug Rates (Payags, Cottages, A-Houses, Function Hall)\n• 📅 Live Availability ug Rekomendasyon\n• 🎟️ Entrance Fees ug Operating Hours\n• 📝 Giya sa Online Booking\n• 📍 Direksyon ug Commute Guide\n\nUnsay akong matabang kanimo karon?";
+            } elseif ($isTagalog) {
+                return "Magandang araw! Ako si Bren, ang inyong AI assistant dito sa Hinaguan Nature Park 🌿\n\nMatutulungan ko po kayo sa:\n• 🛖 Amenities at Rates (Payags, Cottages, A-Houses, Function Hall)\n• 📅 Live Availability at Rekomendasyon\n• 🎟️ Entrance Fees at Operating Hours\n• 📝 Paano mag-book online\n• 📍 Direksyon at Commute Guide\n\nAno po ang maitutulong ko sa inyo ngayon?";
+            } else {
+                return "Hello and welcome to **Hinaguan Nature Park** in Jasaan, Misamis Oriental! 🌿 I am **Bren**, your AI assistant.\n\nI can help you with:\n• 🛖 **Amenities & Rates** (Payags, Cottages, A-Houses, Function Hall)\n• 📅 **Live Availability & Recommendations**\n• 🎟️ **Entrance Fees & Operating Hours**\n• 📝 **Step-by-step Online Booking**\n• 📍 **Directions & Commute Guide**\n\nHow may I help you today?";
+            }
+        }
+
+        // Specific partial typo check like "what te", "what ti", "what the", "what is this"
+        if (preg_match('/^what\s+(?:te|ti|the|r|time)\b/i', $msgLower) || preg_match('/^(?:what|unsa|ano)\s*$/i', $msgLower)) {
+            if ($isBisaya) {
+                return "Kung nangutana ka bahin sa **oras sa park**, abli kami gikan {$openTime} hangtod {$closeTime} (Daytime: {$dayStart} – {$dayEnd}, Nighttime: {$nightStart} – {$nightEnd})!\n\nKung bahin sa **rates o amenities**, naa mi mga Cottages (₱200), Payags (₱300), A-Houses (₱300/₱500), ug Function Hall (₱5,000). Unsay imong gustong masayran?";
+            } elseif ($isTagalog) {
+                return "Kung tungkol po sa **oras ng park**, bukas kami mula {$openTime} hanggang {$closeTime} (Daytime: {$dayStart} – {$dayEnd}, Nighttime: {$nightStart} – {$nightEnd})!\n\nKung tungkol naman sa **rates o amenities**, mayroon kaming Cottages (₱200), Payags (₱300), A-Houses (₱300/₱500), at Function Hall (₱5,000). Ano po ang nais ninyong alamin?";
+            } else {
+                return "If you are inquiring about **park hours**, our daytime session runs from {$dayStart} to {$dayEnd} and nighttime from {$nightStart} to {$nightEnd}!\n\nIf you are asking about **amenities & rates**, we offer Cottages (₱200), Payags (₱300), A-Houses (₱300/₱500), and our Grand Function Hall (₱5,000). How may I assist you?";
+            }
+        }
+
+        // 3. Request amenity picker or catalog button
         if (preg_match('/(?:(?:give|show|open|reopen|display|bring\s+up|launch|view|get)\s+(?:me\s+)?(?:the\s+)?(?:amenit(?:y|ies)?(?:\s+picker|\s+selector|\s+catalog|\s+list|\s+modal)?|cottages?|payags?|options)|amenit(?:y|ies)\s+picker|pick\s+(?:an\s+)?amenity|choose\s+(?:an\s+)?amenity|select\s+(?:an\s+)?amenity|pakita\s+ang\s+amenit|patingin\s+ng\s+amenit)/i', $msgLower)) {
             $startDate = $bookingDraft['startDate'] ?? ($bookingDraft['date'] ?? null);
             $slot = $bookingDraft['startSlot'] ?? ($bookingDraft['slot'] ?? 'Daytime');
@@ -356,7 +502,7 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // Show what I availed / current picks (supports multiple amenities & date ranges)
+        // 4. Show what I availed / current picks
         if (preg_match('/(?:show\s+(?:me\s+)?(?:what\s+(?:amenit(?:y|ies)?\s+)?i\s+(?:just\s+)?avail|my\s+(?:pick|picks|selection|draft|booking)|the\s+record)|what\s+did\s+i\s+pick|unsa\s+akong\s+gipili|patingin\s+ng\s+pinili\s*ko|view\s+pick)/i', $msgLower)) {
             $amenities = !empty($bookingDraft['amenities']) && is_array($bookingDraft['amenities'])
                 ? $bookingDraft['amenities']
@@ -410,8 +556,14 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // Direct Booking Mode intent (e.g. "I want to book", "mag-book ko", "pwede mag-book")
-        if (preg_match('/(?:i\s+want\s+to\s+book|gusto\s+(?:ko|kami)\s+mag-?book|pwede\s+mag-?book|book\s+(?:a\s+)?(?:cottage|payag|a-?house|room|cabin|function\s*hall|reservation)|magpa-?reserve\s+ko|book\s+via\s+chat|\/book\b)/i', $msgLower) && !preg_match('/(?:how\s+to|paano|unsaon)/i', $msgLower)) {
+        // 5. Amenity Availability & Date Inquiries (e.g. "what date is payag 4 available", "is cottage 1 available")
+        $availabilityReply = $this->handleAmenityAvailabilityInquiry($userMessage, $isBisaya, $isTagalog);
+        if ($availabilityReply !== null) {
+            return $availabilityReply;
+        }
+
+        // 6. Direct Booking Mode command: /book
+        if (trim($msgLower) === '/book') {
             if ($isBisaya) {
                 return "Pwede kaayo! Pwede ta mag-book sa imong online reservation dinhi sa chat 🌿\n\nGusto ba nimo nga sugdan na nato ang imong booking karon?";
             } elseif ($isTagalog) {
@@ -421,142 +573,102 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 2. How to Book Online Inquiry (with 50% non-refundable downpayment rule)
-        $isBookingInquiry = (bool) preg_match('/(?:how\s+to\s+book|paano\s+(?:mag-?)?book|unsaon\s+pag-?book|unsaon\s+pag-?reserve|paano\s+mag-?reserve|steps?\s+to\s+book|online\s+booking|mag-?book|pag-?book|downpayment|down\s*payment|no\s*refund|non-?refundable|refund)/i', $msgLower);
+        // 7. Book via Chat Inquiry (e.g. "can I book via chat?", "how to book via chat", "pwede ba mag book sa chat")
+        if (preg_match('/(?:book\s+via\s+chat|book\s+sa\s+chat|mag-?book\s+sa\s+chat|pwede\s+(?:ba\s+)?(?:mag-?)?book\s+dinhi|dito\s+ba\s+mag-?book)/i', $msgLower)) {
+            if ($isBisaya) {
+                return "Oo, pwede kaayo ka mag-book dinhi mismo sa chat! 🌿\n\nI-click lang ang berdeng **Book via Chat** button sa ibabaw (o i-type ang `/book`). Giya-an ka nako sa pagpili sa petsa, amenities, ug pagkompirmar sa imong reservation.";
+            } elseif ($isTagalog) {
+                return "Opo, pwedeng-pwede po kayong mag-book dito mismo sa ating chat! 🌿\n\nI-click lamang po ang berdeng **Book via Chat** button sa itaas (o i-type ang `/book`). Gagabayan ko po kayo sa pagpili ng petsa, amenities, at pag-confirm ng inyong reservation.";
+            } else {
+                return "Yes, you can certainly book your reservation right here in our chat! 🌿\n\nSimply click the green **Book via Chat** button right above (or type `/book`). I will guide you step-by-step through selecting your dates, choosing your amenities, and receiving your digital pass.";
+            }
+        }
+
+        // 8. How to Book Online Inquiry (supports chip: "How do I book an amenity online?")
+        $isBookingInquiry = (bool) preg_match('/(?:how\s+(?:do\s+i|to|can\s+i)\s+(?:book|reserve)|paano\s+(?:mag-?)?(?:book|reserve)|unsaon\s+pag-?(?:book|reserve)|steps?\s+to\s+(?:book|reserve)|online\s+booking|booking\s+process|procedure|downpayment|down\s*payment|no\s*refund|non-?refundable|refund\s*policy)/i', $msgLower);
         if ($isBookingInquiry) {
             if ($isBisaya) {
                 return "Aron mag-book online sa Hinaguan Nature Park:\n"
-                    . "1. I-click ang 'Book Now' button sa among website.\n"
-                    . "2. Pagpili una ug petsa (target date) o pilia ang imong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
-                    . "3. Pilia ang session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM, o Continuous Stay).\n"
+                    . "1. I-click ang **Book Now** button sa website (o i-click ang **Book via Chat** sa ibabaw).\n"
+                    . "2. Pagpili una ug target date o pilia ang imong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
+                    . "3. Pilia ang session slot (Daytime: {$dayStart} – {$dayEnd}, Nighttime: {$nightStart} – {$nightEnd}, o Continuous Stay).\n"
                     . "4. Isulod ang mga detalye sa primary guest ug gidaghanon sa mga kauban.\n"
-                    . "5. Bayri ang 50% DOWNPAYMENT online aron ma-secure ug makumpirma ang imong reservation.\n\n"
-                    . "PAHINUMDOM: Ang 50% downpayment kay STRICTLY NON-REFUNDABLE (walay refund), apan pwede mohangyo ug reschedule sa petsa kung naay pahibalo.";
+                    . "5. Bayri ang **50% DOWNPAYMENT** online aron ma-secure ug makumpirma ang imong reservation.\n\n"
+                    . "⚠️ **MAHALAGANG PAHINUMDOM**: Ang 50% downpayment kay **STRICTLY NON-REFUNDABLE** (walay refund), apan pwede mohangyo ug reschedule sa petsa kung naay advance notice.";
             } elseif ($isTagalog) {
                 return "Para mag-book online sa Hinaguan Nature Park:\n"
-                    . "1. I-click ang 'Book Now' button sa aming website.\n"
-                    . "2. Pumili muna ng inyong target date o piliin ang inyong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
-                    . "3. Piliin ang session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM kinabukasan, o Continuous Stay).\n"
+                    . "1. I-click ang **Book Now** button sa website (o i-click ang **Book via Chat** sa itaas).\n"
+                    . "2. Pumili ng target date o piliin ang inyong gustong amenity (Cottage, Payag, A-House, o Function Hall).\n"
+                    . "3. Piliin ang session slot (Daytime: {$dayStart} – {$dayEnd}, Nighttime: {$nightStart} – {$nightEnd}, o Continuous Stay).\n"
                     . "4. Ilagay ang detalye ng primary guest at bilang ng mga kasama.\n"
-                    . "5. Magbayad ng 50% DOWNPAYMENT online upang ma-secure at makumpirma ang inyong reservation.\n\n"
-                    . "MAHALAGANG PAALALA: Ang 50% downpayment po ay STRICTLY NON-REFUNDABLE (walang refund), ngunit maaari kayong mag-request ng rescheduling ng petsa.";
+                    . "5. Magbayad ng **50% DOWNPAYMENT** online upang ma-secure at makumpirma ang inyong reservation.\n\n"
+                    . "⚠️ **MAHALAGANG PAALALA**: Ang 50% downpayment po ay **STRICTLY NON-REFUNDABLE** (walang refund), ngunit maaari kayong mag-request ng rescheduling ng petsa.";
             } else {
                 return "To book a reservation online at Hinaguan Nature Park:\n"
-                    . "1. Click the 'Book Now' button on our website.\n"
-                    . "2. First, either select your preferred visit date or pick your desired amenity (Cottage, Payag, A-House, or Function Hall).\n"
-                    . "3. Choose your session slot (Daytime: 8:00 AM – 5:00 PM, Nighttime: 6:00 PM – 8:00 AM next morning, or multi-day Continuous Stay).\n"
-                    . "4. Fill in your primary guest details and companion headcount.\n"
-                    . "5. Pay the required 50% DOWNPAYMENT online to lock in and confirm your reservation.\n\n"
-                    . "IMPORTANT POLICY: Please note that the 50% downpayment is STRICTLY NON-REFUNDABLE (no refund policy), though date rescheduling can be requested.";
+                    . "1. Click the **Book Now** button on our website (or click **Book via Chat** right above!).\n"
+                    . "2. Select your visit date and preferred amenity (Cottage, Payag, A-House, or Function Hall).\n"
+                    . "3. Choose your session slot (Daytime: {$dayStart} – {$dayEnd}, Nighttime: {$nightStart} – {$nightEnd}, or multi-day Continuous Stay).\n"
+                    . "4. Fill in primary guest contact details and companion headcount.\n"
+                    . "5. Pay the required **50% DOWNPAYMENT** online to lock in and confirm your reservation.\n\n"
+                    . "⚠️ **MANDATORY POLICY**: Please note that the 50% downpayment is **STRICTLY NON-REFUNDABLE** (no refund policy), though date rescheduling can be requested with advance notice.";
             }
         }
 
-        // 3. How to Go / Directions Inquiry (Solana, Jasaan, Spring View Resort landmark, inner road, Google Maps)
-        $isDirectionsInquiry = (bool) preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pag-?anhi|location|address|asa\s+dapit|saan\s+banda|saan\s+ang|spring\s*view|jasaan|solana|commute|byahe|inner\s*road|inner\s*way|google\s*map|waze)/i', $msgLower);
-        if ($isDirectionsInquiry) {
+        // 9. Available Amenities & Complete Rates Catalog (supports chip: "What amenities are available today and what are their rates?")
+        $isAmenityCatalog = (bool) preg_match('/(?:what\s+amenit|available\s+amenit|list\s+of\s+amenit|show\s+(?:all\s+)?amenit|rates?\s+of\s+amenit|all\s+amenit|catalog|mga\s+amenit|unsay\s+amenit|unsa\s+inyong\s+amenit|anong\s+amenit|ano\s+ang\s+mga\s+amenit|options?\s+(?:sa|ng|for)\s+amenit)/i', $msgLower)
+            || str_contains($msgLower, 'what amenities are available today and what are their rates');
+
+        if ($isAmenityCatalog) {
+            $weatherNote = $isRainy ? " *(Weather note: today has rain showers, so our covered A-Houses & Function Hall are top picks!)*" : " *(Weather note: today is pleasant and sunny, perfect for riverside payags & swimming!)*";
+
             if ($isBisaya) {
-                return "Unsaon pag-adto sa Hinaguan Nature Park:\n"
-                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
-                    . "• Landmark sa Highway: Manaog sa Jasaan, dapit sa sikat nga swimming pool resort nga gitawag ug 'Spring View Resort' (human gyud sa taytayan sa Solana).\n"
-                    . "• Agianan: Gikan sa highway duol sa Spring View Resort, sudla ang sulod nga agianan (inner road) paingon sa suba ug bukid.\n"
-                    . "• Sakyanan: Pwede mosakay ug habal-habal (motorcycle taxi) diretso sa park, o magdala ug kaugalingong sakyanan.\n"
-                    . "• Navigation: Pwede kaayo nimo i-check ug sundon sa Google Maps o Waze pinaagi sa pag-search sa 'Hinaguan Nature Park' o 'Spring View Resort'!";
+                return "Mao kini ang among mga available nga amenities ug rates sa Hinaguan Nature Park:{$weatherNote}\n\n"
+                    . "• 🛖 **Native Payags (Payag 1 to 6)** — ₱300 (Daytime o Nighttime)\n"
+                    . "  - Kapasidad: 1 hangtod 8 ka tawo. Gihimo gikan sa presko nga kawayan; duol sa sapa ang Payag 2 ug 6!\n\n"
+                    . "• 🏡 **Cottages (Cottage 1 to 6)** — ₱200 (Daytime o Nighttime)\n"
+                    . "  - Kapasidad: hangtod 10 ka tawo. May open-air dining tables ug lingkoranan. Walay corkage fee sa pagkaon!\n\n"
+                    . "• 🏕️ **A-Houses (A-House 1 to 8)** — ₱300 Daytime / ₱500 Nighttime\n"
+                    . "  - Kapasidad: 1 hangtod 2 ka tawo. **APIL NA ANG LIBRENG ENTRANCE UG POOL ACCESS para sa 2 ka bisita!** (Naay aircon ang A-House 2 ug 3).\n\n"
+                    . "• 🏛️ **Grand Function Hall** — ₱5,000 Daytime / ₱10,000 Nighttime\n"
+                    . "  - Kapasidad: 15 hangtod 50+ ka tawo. **APIL NA ANG LIBRENG ENTRANCE UG POOL ACCESS para sa tibuok grupo!**\n\n"
+                    . "📌 *Pahinumdom: Para sa Cottages ug Payags, lahi ang regular entrance fee (₱{$dayAdult}) ug pool access (₱{$dayPool}).*\n\n"
+                    . "I-click ang **Book via Chat** button sa ibabaw aron masusi ang mga bakanteng petsa ug makapa-book dayon!";
             } elseif ($isTagalog) {
-                return "Paano pumunta sa Hinaguan Nature Park:\n"
-                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
-                    . "• Landmark sa Highway: Bumaba sa Jasaan, sa may tapat ng pampublikong swimming pool resort na tinatawag na 'Spring View Resort' (pagkalampas ng Solana Bridge).\n"
-                    . "• Daan: Mula sa highway sa tapat ng Spring View Resort, pumasok sa inner road (panloob na daan) patungo sa ilog.\n"
-                    . "• Sasakyan: Maaari kayong sumakay ng habal-habal (motorcycle taxi) papasok sa park o mag-drive ng sariling sasakyan.\n"
-                    . "• Navigation: Maaari niyo rin itong i-check at i-navigate gamit ang Google Maps o Waze (i-search lamang ang 'Hinaguan Nature Park' o 'Spring View Resort')!";
+                return "Narito po ang aming mga available na amenities at rates sa Hinaguan Nature Park:{$weatherNote}\n\n"
+                    . "• 🛖 **Native Payags (Payag 1 to 6)** — ₱300 (Daytime o Nighttime)\n"
+                    . "  - Kapasidad: 1 hanggang 8 tao. Gawa sa preskong kawayan; malapit sa ilog ang Payag 2 at 6!\n\n"
+                    . "• 🏡 **Cottages (Cottage 1 to 6)** — ₱200 (Daytime o Nighttime)\n"
+                    . "  - Kapasidad: hanggang 10 tao. May dining tables at upuan. Walang corkage fee sa pagkain!\n\n"
+                    . "• 🏕️ **A-Houses (A-House 1 to 8)** — ₱300 Daytime / ₱500 Nighttime\n"
+                    . "  - Kapasidad: 1 hanggang 2 tao. **KASAMA NA ANG LIBRENG ENTRANCE AT SWIMMING POOL ACCESS para sa 2 guests!** (Aircon ang A-House 2 at 3).\n\n"
+                    . "• 🏛️ **Grand Function Hall** — ₱5,000 Daytime / ₱10,000 Nighttime\n"
+                    . "  - Kapasidad: 15 hanggang 50+ tao. **KASAMA NA ANG LIBRENG ENTRANCE AT POOL ACCESS para sa buong grupo!**\n\n"
+                    . "📌 *Paalala: Sa Cottages at Payags, hiwalay po ang regular entrance (₱{$dayAdult}) at pool fee (₱{$dayPool}).*\n\n"
+                    . "I-click lamang po ang **Book via Chat** button sa itaas upang tingnan ang bakanteng petsa at mag-reserve!";
             } else {
-                return "How to get to Hinaguan Nature Park:\n"
-                    . "• Location: Barangay Solana, Jasaan, Misamis Oriental.\n"
-                    . "• Landmark & Drop-off: Tell your driver to drop you off in Solana, Jasaan, right by the well-known swimming pool resort called 'Spring View Resort' (just past Solana Bridge).\n"
-                    . "• Route: From the highway at Spring View Resort, enter and take the inner road heading inland toward the river.\n"
-                    . "• Local Transport: Take a local 'habal-habal' (motorcycle taxi) directly to the park gate, or drive your private vehicle.\n"
-                    . "• Google Maps / Waze: You can easily search and navigate on Google Maps or Waze by typing 'Hinaguan Nature Park' or 'Spring View Resort'!";
+                return "Here are the available amenities and rates at Hinaguan Nature Park:{$weatherNote}\n\n"
+                    . "• 🛖 **Native Bamboo Payags (Payag 1 to 6)** — ₱300 (Daytime or Nighttime)\n"
+                    . "  - Capacity: Up to 8 guests. Authentic bamboo huts with natural breeze; Payag 2 & 6 sit right by the river!\n\n"
+                    . "• 🏡 **Open-Air Cottages (Cottage 1 to 6)** — ₱200 (Daytime or Nighttime)\n"
+                    . "  - Capacity: Up to 10 guests. Shaded wooden dining tables and benches. Outside food allowed with NO corkage!\n\n"
+                    . "• 🏕️ **Cozy A-Houses (A-House 1 to 8)** — ₱300 Daytime / ₱500 Nighttime\n"
+                    . "  - Capacity: 1 to 2 guests. **INCLUDES FREE ENTRANCE & FREE SWIMMING POOL ACCESS for 2 guests!** (A-House 2 & 3 feature air-conditioning).\n\n"
+                    . "• 🏛️ **Grand Function Hall** — ₱5,000 Daytime / ₱10,000 Nighttime\n"
+                    . "  - Capacity: 15 to 50+ guests. **INCLUDES FREE GROUP ENTRANCE & SWIMMING POOL ACCESS!** Perfect for birthdays and family reunions.\n\n"
+                    . "📌 *Policy note: Regular entrance (₱{$dayAdult} daytime adult) and pool access (₱{$dayPool}/person) apply separately for Cottages and Payags.*\n\n"
+                    . "Click the green **Book via Chat** button above to check live dates and reserve your spot!";
             }
         }
 
-        // 4. Park Activities Inquiry (from park_activities table)
-        $isActivitiesInquiry = (bool) preg_match('/(?:activit|unsa(?:ng)?\s*(?:mabuhat|buhaton)|ano(?:ng)?\s*(?:pwedeng\s*)?gawin|things\s+to\s+do|river\s*swim|pictorial|picture|swimming)/i', $msgLower);
-        if ($isActivitiesInquiry) {
-            $acts = ParkActivity::all();
-            if ($acts->isNotEmpty()) {
-                $actList = $acts->map(fn ($a) => "• {$a->activity}: {$a->description}")->implode("\n");
-                if ($isBisaya) {
-                    return "Mao kini ang mga nindot nga kalihokan (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPwede sab mo mag-relax sa among riverside payags ug mag-swimming sa pool!";
-                } elseif ($isTagalog) {
-                    return "Narito po ang mga puwedeng gawin (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPuwede rin po kayong mag-relax sa aming riverside payag at mag-swimming sa pool!";
-                } else {
-                    return "Here are the wonderful activities you can enjoy at Hinaguan Nature Park:\n{$actList}\n\nYou can also relax by the scenic riverbanks or take a swim in our pool!";
-                }
-            }
-        }
+        // 10. Amenity Suggestions & Recommendations (e.g. "suggest me an amenity pls", "recommend an amenity")
+        $isSuggestion = (bool) preg_match('/(?:suggest|recommend|rekomenda|bagay|swak|best\s+amenit|maganda(?:ng)?|nindot|what\s+(?:should|can)\s+i\s+(?:book|choose|pick|avail|get)|anong|ano\s+po|unsa|which\s+(?:amenit|cottage|payag|hut|house)|pili\s+ng\s+amenit|pilig\s+amenit)/i', $msgLower);
 
-        // 5. Reservation Status Lookup (if user provided a reservation number)
-        if (preg_match('/(?:res(?:ervation)?|booking|boking)\s*(?:#|no\.?|num(?:ber)?)?\s*(\d+)/i', $msgLower, $m)) {
-            $resId = (int) $m[1];
-            $res = Reservation::with(['reservationAmenities.amenity'])->find($resId);
-            if ($res) {
-                $ams = $res->reservationAmenities->map(fn ($ra) => $ra->amenity?->amenities_name ?? 'Amenity')->implode(', ');
-                $stay = "{$res->reservation_date} [{$res->start_slot}]";
-                return "Reservation #{$res->id} for {$res->booker_name} is currently [{$res->status}]. Stay date: {$stay}. Booked amenities: " . ($ams ?: 'None') . ". Remaining balance: ₱" . number_format($res->remaining_balance, 2) . " ({$res->payment_status}).";
-            }
-        }
+        $isCouple = (bool) preg_match('/\b(?:couple|mag-?asawa|magkasintahan|dalawa|2\s*(?:pax|people|persons|tao)?|for\s+2)\b/i', $userMessage);
 
-        // Fetch live weather from database (daily_weather_shift_logs)
-        $latestWeather = DailyWeatherShiftLog::orderBy('log_date', 'desc')->first();
-        $weatherCond = $latestWeather ? $latestWeather->weather_condition : 'Sunny';
-        $weatherTemp = $latestWeather ? $latestWeather->temperature_celsius : '30';
-        $weatherRain = $latestWeather ? (int) $latestWeather->precipitation_probability : 10;
-        $isRainy = stripos($weatherCond, 'rain') !== false || $weatherRain >= 50;
-
-        // 6. Weather inquiry
-        if (str_contains($msgLower, 'weather') || str_contains($msgLower, 'panahon') || str_contains($msgLower, 'klima') || str_contains($msgLower, 'ulan') || str_contains($msgLower, 'uwan')) {
-            if ($isBisaya) {
-                $advice = $isRainy ? "Tungod kay naay uwan, maayo mag-book sa among covered A-Houses o Function Hall para komportable mo." : "Nindot kaayo ang panahon para mag-langoy sa pool o mag-relax sa riverside Payag 2 o 6!";
-                return "Ang panahon karon sa Hinaguan kay {$weatherCond} ({$weatherTemp}°C, {$weatherRain}% tsansa sa uwan). {$advice}";
-            } elseif ($isTagalog) {
-                $advice = $isRainy ? "Dahil may tsansa ng ulan, mainam mag-book sa aming covered A-Houses o Function Hall." : "Napakaganda po ng panahon ngayon para mag-swimming sa pool o mag-relax sa aming riverside Payag!";
-                return "Ang lagay ng panahon ngayon sa Hinaguan ay {$weatherCond} ({$weatherTemp}°C, {$weatherRain}% tsansa ng ulan). {$advice}";
-            } else {
-                $advice = $isRainy ? "Since there is a chance of rain, we recommend our covered A-Houses or Function Hall to stay dry and comfortable." : "It is a wonderful day to enjoy our swimming pool and riverside Payag 2 or 6!";
-                return "Today's weather at Hinaguan Nature Park is {$weatherCond} ({$weatherTemp}°C with {$weatherRain}% chance of rain). {$advice}";
-            }
-        }
-
-        // 7. Location / Vibe inquiry (Riverside, Mountain breeze, Garden shade, Scenic view)
-        if (str_contains($msgLower, 'river') || str_contains($msgLower, 'suba') || str_contains($msgLower, 'ilog')) {
-            if ($isBisaya) {
-                return "Kung gusto kag duol sa suba nga presko ug relaxing, girekomenda namo ang Payag 2 ug Payag 6 (₱300)! Naa kini dapit sa sapa nga gilibutan sa kalasangan.";
-            } elseif ($isTagalog) {
-                return "Kung nais niyo po ng malapit sa ilog at presko, highly recommended ang Payag 2 at Payag 6 (₱300)! Tamang-tama sa tabi ng tubig at sariwang hangin.";
-            } else {
-                return "For a refreshing riverside vibe by the running water, we highly recommend Payag 2 or Payag 6 (₱300)! Both are authentic native huts right by the river.";
-            }
-        }
-
-        if (str_contains($msgLower, 'mountain') || str_contains($msgLower, 'breeze') || str_contains($msgLower, 'hangin') || str_contains($msgLower, 'bukid')) {
-            if ($isBisaya) {
-                return "Para sa refreshing mountain breeze ug hilom nga lugar, ang Payag 3 (₱300) ang pinakanindot para sa gamay nga grupo o pamilya!";
-            } else {
-                return "For a refreshing mountain breeze in a peaceful setting, Payag 3 (₱300) is the perfect choice for relaxing and quiet picnics!";
-            }
-        }
-
-        if (str_contains($msgLower, 'garden') || str_contains($msgLower, 'shade') || str_contains($msgLower, 'landong') || str_contains($msgLower, 'kahoy')) {
-            if ($isBisaya) {
-                return "Ang Payag 5 (₱300) nahimutang sa ilawom sa mga landong nga kahoy sa tanaman, bugnaw ug presko kaayo puy-an!";
-            } else {
-                return "Payag 5 (₱300) is nestled in a serene garden haven under lush shade trees, keeping it cool and comfortable all day!";
-            }
-        }
-
-        // 8. Group recommendation (pax / number of people)
-        if (preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $m) ||
+        // Group size recommendation (e.g. "for 10 pax", "group of 10 people", or "couple")
+        if ($isCouple || preg_match('/(\d+)\s*(?:people|persons|pax|guests|heads|kabuok|ka\s+tao|tao)/i', $userMessage, $m) ||
             preg_match('/for\s+(\d+)/i', $userMessage, $m)) {
-            $pax = (int) $m[1];
+            $pax = $isCouple ? 2 : (int) ($m[1] ?? 2);
 
             if ($pax >= 1 && $pax <= 2) {
                 if ($isBisaya) {
@@ -584,12 +696,268 @@ class GuestChatbotController extends Controller
             }
         }
 
-        // 9. Specific amenity inquiry (Cottage / Payag / A-House / Function Hall)
+        // General amenity suggestion without specific pax (e.g. "suggest me an amenity pls")
+        if ($isSuggestion) {
+            if ($isBisaya) {
+                return "Malipayon ko nga morekomenda sa labing angay nga amenity para kanimo sa Hinaguan Nature Park! 🌿\n\n"
+                    . "• 🏕️ **Para sa Couples o Overnight (1-2 ka tawo)**: Ang among **A-Houses** (₱300 daytime / ₱500 nighttime) ang pinakanindot kay **apil na ang libreng entrance ug libreng pool access** para sa inyong duha!\n\n"
+                    . "• 🛖 **Para sa Pamilya ug Grupo (3-10 ka tawo)**:\n"
+                    . "  - **Native Payags (₱300)**: Kung ganahan mo ug presko nga hangin ug tingog sa sapa, girekomenda namo ang **Payag 2 o 6** (riverside) o **Payag 3** (mountain breeze).\n"
+                    . "  - **Cottages (₱200)**: May mga lamesa ug lingkoranan, maayo kaayo para sa picnic ug salo-salo (walay corkage fee sa pagkaon!).\n\n"
+                    . "• 🏛️ **Para sa Dakong Grupo o Okasyon (15-50+ ka tawo)**: Ang among **Function Hall** (₱5,000 daytime) nga may libreng pool ug entrance access para sa tibuok grupo!\n\n"
+                    . "Pila kabuok ang inyong grupo, ug kanus-a ang inyong plano nga pagbisita? Pwede sab nimo i-click ang **Book via Chat** sa ibabaw aron makasugod!";
+            } elseif ($isTagalog) {
+                return "Ikinagagalak ko pong irekomenda ang pinaka-swak na amenity para sa inyong pagbisita sa Hinaguan Nature Park! 🌿\n\n"
+                    . "• 🏕️ **Para sa Couples o Overnight (1-2 tao)**: Pinakamaganda ang aming **A-Houses** (₱300 daytime / ₱500 nighttime) dahil **kasama na ang libreng entrance at libreng swimming pool access** para sa inyong 2!\n\n"
+                    . "• 🛖 **Para sa Pamilya at Barkada (3-10 tao)**:\n"
+                    . "  - **Native Payags (₱300)**: Kung nais niyo ng preskong simoy ng hangin at tunog ng tubig, piliin ang **Payag 2 o 6** (tabi ng ilog) o **Payag 3** (mountain breeze).\n"
+                    . "  - **Cottages (₱200)**: May mga dining table at upuan, perpekto para sa salo-salo (walang corkage fee sa pagkain!).\n\n"
+                    . "• 🏛️ **Para sa Malaking Grupo o Reunion (15-50+ tao)**: Ang aming **Function Hall** (₱5,000 daytime) na may libreng pool access at entrance para sa buong grupo!\n\n"
+                    . "Ilan po kayong bibisita at anong petsa ang inyong plano? Maaari rin po ninyong i-click ang **Book via Chat** sa itaas upang mag-reserve!";
+            } else {
+                return "I'd be delighted to recommend the best amenity for your visit to Hinaguan Nature Park! 🌿\n\n"
+                    . "• 🏕️ **For Couples or Overnight Stays (1-2 guests)**: Our cozy **A-Houses** (₱300 daytime / ₱500 nighttime) are ideal and include **FREE park entrance & FREE swimming pool access** for 2 guests! (A-House 2 & 3 have aircon).\n\n"
+                    . "• 🛖 **For Families & Groups (3-10 guests)**:\n"
+                    . "  - **Native Payags (₱300)**: For authentic bamboo relaxation with soothing river sounds, we recommend **Payag 2 or 6** (riverside) or **Payag 3** (mountain breeze).\n"
+                    . "  - **Open-Air Cottages (₱200)**: Great for daytime dining and picnics, with NO corkage fee on outside food!\n\n"
+                    . "• 🏛️ **For Large Groups & Celebrations (15-50+ guests)**: Our **Grand Function Hall** (₱5,000 daytime / ₱10,000 nighttime) includes FREE entrance & pool access for your entire group!\n\n"
+                    . "How many guests are in your group, and when do you plan to visit? You can also click the green **Book via Chat** button above to browse available dates!";
+            }
+        }
+
+        // 11. Celebrity Owner Brenda Mage Presence & Availability
+        $isBrendaInquiry = (bool) preg_match('/(?:brenda|brenda\s*mage|celebrity|tag[\s-]?iya|may[\s-]?ari|owner)/i', $msgLower);
+        if ($isBrendaInquiry) {
+            if ($brendaIsHere) {
+                if ($isBisaya) {
+                    return "🌟 **Oo! Anaa si Brenda Mage sa park karong adlawa!** Ang celebrity owner nga si Brenda Mage anaa sa Hinaguan Nature Park karon. Naay kahigayonan ang mga bisita nga makakita ug makapa-picture uban kaniya samtang naglingaw-lingaw sa resort!";
+                } elseif ($isTagalog) {
+                    return "🌟 **Opo! Nasa park po si Brenda Mage ngayon!** Ang aming celebrity owner na si Brenda Mage ay kasalukuyang nasa Hinaguan Nature Park. May pagkakataon po ang mga bisita na makita at magpa-picture kasama siya habang nagrerelax sa park!";
+                } else {
+                    return "🌟 **Yes! Celebrity owner Brenda Mage is in the park today!** Brenda Mage is currently on-site at Hinaguan Nature Park. Guests have the wonderful opportunity to meet Brenda and take photos while enjoying our resort and scenery!";
+                }
+            } else {
+                if ($isBisaya) {
+                    return "Wala sa park si Brenda Mage karong adlawa, apan abli kaayo ang Hinaguan Nature Park aron mohatag kaninyo ug nindot ug makalingaw nga kasinatian sa kinaiyahan ug swimming pool!";
+                } elseif ($isTagalog) {
+                    return "Wala po sa park si Brenda Mage ngayon, ngunit bukas na bukas po ang Hinaguan Nature Park upang magbigay sa inyo ng magandang karanasan sa kalikasan, swimming pools, at payag stays!";
+                } else {
+                    return "Celebrity owner Brenda Mage is not on-site at the park today, but Hinaguan Nature Park is fully open and ready to welcome you with our relaxing pools, riverside payags, and nature stays!";
+                }
+            }
+        }
+
+        // 12. Park Rules, Outside Food, Corkage, Pets, Grilling, Alcohol, Parking
+        $isRulesInquiry = (bool) preg_match('/(?:rule|rules|bawal|polic|corkage|outside\s+food|pagkaon|pagkain|food|drink|inom|alcohol|beer|liquor|pet|pets|dog|iro|aso|cat|grill|grilling|ihaw|sugba|barbecue|bbq|park(?:ing)?|smoking|sigarilyo|vape|swimwear|attire)/i', $msgLower);
+        if ($isRulesInquiry) {
+            if (preg_match('/(?:corkage|outside\s+food|pagkaon|pagkain|food|dala\s+(?:ug\s+)?pagkaon|baon|grill|ihaw|sugba)/i', $msgLower)) {
+                if ($isBisaya) {
+                    return "🍱 **Pagkaon ug Grilling Policy**:\n"
+                        . "• **PWEDE KAAYO MAGDALA UG PAGKAON UG ILIMNON NGA WALAY CORKAGE FEE!**\n"
+                        . "• Naa mi **libre nga grilling / sugbahanan stations** para sa tanang bisita (pagdala lang mo ug kaugalingong uling).\n"
+                        . "• Tugot ang alcoholic drinks sa kasarangan nga gidaghanon (hangyo lang namo ang pagmintinar sa kalinaw sa park).";
+                } elseif ($isTagalog) {
+                    return "🍱 **Pagkain at Grilling Policy**:\n"
+                        . "• **PWEDENG-PWEDE PONG MAGDALA NG SARILING PAGKAIN AT INUMIN NANG WALANG CORKAGE FEE!**\n"
+                        . "• Mayroon kaming **libreng grilling stations** para sa lahat ng bisita (magdala lamang po ng sariling uling).\n"
+                        . "• Pinapayagan ang alak nang katamtaman lamang upang mapanatili ang kapayapaan at katahimikan sa park.";
+                } else {
+                    return "🍱 **Outside Food & Grilling Policy**:\n"
+                        . "• **Outside food and drinks are 100% WELCOME with NO CORKAGE FEE!**\n"
+                        . "• We offer **free grilling stations** for all guests (please bring your own charcoal).\n"
+                        . "• Alcoholic beverages are permitted in moderation, keeping the park peaceful and family-friendly.";
+                }
+            }
+
+            if (preg_match('/(?:pet|pets|dog|iro|aso|cat)/i', $msgLower)) {
+                if ($isBisaya) {
+                    return "🐾 **Pet Policy**: Pet-friendly kaayo ang Hinaguan Nature Park! Welcome ang inyong mga binuhi basta nakahigot (on leash) ug gipanghinloan sa tag-iya ang ilang hugaw.";
+                } elseif ($isTagalog) {
+                    return "🐾 **Pet Policy**: Pet-friendly po ang Hinaguan Nature Park! Malugod pong tinatanggap ang inyong mga alaga basta't nakatali (on leash) at panatilihing malinis ang paligid.";
+                } else {
+                    return "🐾 **Pet Policy**: Hinaguan Nature Park is pet-friendly! Pets are warmly welcome on park grounds as long as they are kept on a leash and owners clean up after them.";
+                }
+            }
+
+            $dbRules = ParkRule::all();
+            $dbRulesText = '';
+            if ($dbRules->isNotEmpty()) {
+                $dbRulesText = "\n" . $dbRules->map(fn($r) => "• **{$r->rule_name}**: {$r->rule_descriptions}")->implode("\n");
+            }
+
+            if ($isBisaya) {
+                return "Mao kini ang mga sumbanan ug patakaran sa Hinaguan Nature Park:\n"
+                    . "• 🍱 **Walay Corkage Fee**: Pwede magdala ug kaugalingong pagkaon ug ilimnon. Naay libreng grilling stations.\n"
+                    . "• 🐾 **Pet-Friendly**: Tugot ang mga binuhing mananap basta nakahigot ug limpiyohan ang hugaw.\n"
+                    . "• 🏊 **Pool Attire**: Pagsul-ob ug saktong swimwear (bawal ang denim o cotton shirts sa pool).\n"
+                    . "• 🚗 **Free Parking**: Naay luag ug libreng parkinganan sa sakyanan ug motor.\n"
+                    . "• 🚭 **Smoking & Alcohol**: Sa designated areas lang ang panigarilyo; kasarangan lang ang pag-inom aron magpabiling hapsay."
+                    . $dbRulesText;
+            } elseif ($isTagalog) {
+                return "Narito po ang mga alituntunin at patakaran sa Hinaguan Nature Park:\n"
+                    . "• 🍱 **Walang Corkage Fee**: Malugod na pinapayagan ang sariling pagkain at inumin. May libreng ihawan.\n"
+                    . "• 🐾 **Pet-Friendly**: Pwedeng magdala ng alaga basta't nakatali at nililinis ang dumi.\n"
+                    . "• 🏊 **Pool Attire**: Wastong kasuotang panlangoy (bawal ang maong o bulak na t-shirt sa pool).\n"
+                    . "• 🚗 **Free Parking**: May maluwag at libreng parking space para sa kotse at motor.\n"
+                    . "• 🚭 **Smoking & Alak**: Sa tamang designated areas lamang ang paninigarilyo; bawal ang labis na kalasingan."
+                    . $dbRulesText;
+            } else {
+                return "Here are the essential park rules and policies at Hinaguan Nature Park:\n"
+                    . "• 🍱 **No Corkage Fee**: You are welcome to bring outside food and drinks! Free grilling stations available.\n"
+                    . "• 🐾 **Pet-Friendly**: Pets are allowed on leash; please clean up after your pets.\n"
+                    . "• 🏊 **Pool Attire**: Proper swimming attire required (no cotton shirts or denim in the pools).\n"
+                    . "• 🚗 **Free Parking**: Spacious complimentary parking for cars, vans, and motorcycles.\n"
+                    . "• 🚭 **Smoking & Alcohol**: Smoking/vaping in designated areas only; alcoholic drinks permitted in moderation."
+                    . $dbRulesText;
+            }
+        }
+
+        // 13. Entrance Fees & Operating Sessions / Hours (supports chip: "What are the entrance fees and operating sessions?")
+        $isFeesOrHoursInquiry = (bool) preg_match('/(?:entrance|admission|ticket|bayad\s+sa\s+entrance|bayranan|gate\s+fee|pool\s+fee|rates?|fees?|prices?|presyo|oras|hours?|schedule|opening|closing|operating\s*sessions?|what\s+time|anong\s+oras|unsang\s+orasa|open|close)/i', $msgLower);
+        if ($isFeesOrHoursInquiry) {
+            if ($isBisaya) {
+                return "Mao kini ang among Operating Sessions ug Entrance / Pool Fees sa Hinaguan Nature Park:\n\n"
+                    . "• ⏰ **Oras sa Pag-abli (Operating Sessions)**:\n"
+                    . "  - **Daytime Session**: {$dayStart} hangtod {$dayEnd} (Gate abli: {$openTime} – {$closeTime})\n"
+                    . "  - **Nighttime Session (Overnight Stays)**: {$nightStart} hangtod {$nightEnd} sunod adlaw\n\n"
+                    . "• 🎟️ **Entrance Fees**:\n"
+                    . "  - **Daytime Entrance**: ₱{$dayAdult} matag hamtong (adult) | **LIBRE ang 12 anyos paubos!**\n"
+                    . "  - **Nighttime Entrance**: ₱{$nightAdult} matag hamtong (adult) | **LIBRE ang 12 anyos paubos!**\n\n"
+                    . "• 🏊 **Swimming Pool Access**:\n"
+                    . "  - Daytime Pool: ₱{$dayPool} matag tawo\n"
+                    . "  - Nighttime Pool: ₱{$nightPool} matag tawo\n"
+                    . "  *(Libre ang entrance ug pool kung mag-book sa A-House o Function Hall!)*\n\n"
+                    . "Gusto ba nimo magsusi ug cottage o mag-book karon? I-click lang ang **Book via Chat** sa ibabaw!";
+            } elseif ($isTagalog) {
+                return "Narito po ang aming Operating Sessions at Entrance / Pool Fees sa Hinaguan Nature Park:\n\n"
+                    . "• ⏰ **Oras at Sessions (Operating Sessions)**:\n"
+                    . "  - **Daytime Session**: {$dayStart} hanggang {$dayEnd} (Gate: {$openTime} – {$closeTime})\n"
+                    . "  - **Nighttime Session (Overnight Stays)**: {$nightStart} hanggang {$nightEnd} kinabukasan\n\n"
+                    . "• 🎟️ **Entrance Fees**:\n"
+                    . "  - **Daytime Entrance**: ₱{$dayAdult} bawat adult | **LIBRE po ang mga batang 12 taong gulang pababa!**\n"
+                    . "  - **Nighttime Entrance**: ₱{$nightAdult} bawat adult | **LIBRE po ang mga batang 12 taong gulang pababa!**\n\n"
+                    . "• 🏊 **Swimming Pool Access**:\n"
+                    . "  - Daytime Pool: ₱{$dayPool} bawat tao\n"
+                    . "  - Nighttime Pool: ₱{$nightPool} bawat tao\n"
+                    . "  *(Kasama na po ang libreng entrance at pool kapag naka-book sa A-House o Function Hall!)*\n\n"
+                    . "Nais niyo po bang magpa-reserve? I-click lamang ang **Book via Chat** button sa itaas!";
+            } else {
+                return "Here are the Operating Sessions and Entrance / Pool Fees at Hinaguan Nature Park:\n\n"
+                    . "• ⏰ **Park Operating Sessions**:\n"
+                    . "  - **Daytime Session**: {$dayStart} – {$dayEnd} (Main Gate open: {$openTime} to {$closeTime})\n"
+                    . "  - **Nighttime Session (Overnight Stays)**: {$nightStart} – {$nightEnd} next morning\n\n"
+                    . "• 🎟️ **Park Entrance Fees**:\n"
+                    . "  - **Daytime Entrance**: ₱{$dayAdult} per adult | **FREE for children 12 years old and below!**\n"
+                    . "  - **Nighttime Entrance**: ₱{$nightAdult} per adult | **FREE for children 12 years old and below!**\n\n"
+                    . "• 🏊 **Swimming Pool Access**:\n"
+                    . "  - Daytime Pool: ₱{$dayPool} per person\n"
+                    . "  - Nighttime Pool: ₱{$nightPool} per person\n"
+                    . "  *(Note: Swimming pool and park entrance are included FREE with A-House and Function Hall bookings!)*\n\n"
+                    . "Would you like to check available cottages or reserve a slot? Click **Book via Chat** above!";
+            }
+        }
+
+        // 14. How to Go / Directions Inquiry
+        $isDirectionsInquiry = (bool) preg_match('/(?:how\s+to\s+go|how\s+to\s+get|directions?|paano\s+pumunta|unsaon\s+pag-?adto|unsaon\s+pag-?anhi|location|address|asa\s+dapit|saan\s+banda|saan\s+ang|spring\s*view|jasaan|solana|commute|byahe|inner\s*road|inner\s*way|google\s*map|waze)/i', $msgLower);
+        if ($isDirectionsInquiry) {
+            if ($isBisaya) {
+                return "Unsaon pag-adto sa Hinaguan Nature Park:\n"
+                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark sa Highway: Manaog sa Jasaan, dapit sa sikat nga swimming pool resort nga gitawag ug 'Spring View Resort' (human gyud sa taytayan sa Solana).\n"
+                    . "• Agianan: Gikan sa highway duol sa Spring View Resort, sudla ang sulod nga agianan (inner road) paingon sa suba ug bukid.\n"
+                    . "• Sakyanan: Pwede mosakay ug habal-habal (motorcycle taxi) diretso sa park, o magdala ug kaugalingong sakyanan.\n"
+                    . "• Navigation: Pwede kaayo nimo i-check ug sundon sa Google Maps o Waze pinaagi sa pag-search sa 'Hinaguan Nature Park' o 'Spring View Resort'!";
+            } elseif ($isTagalog) {
+                return "Paano pumunta sa Hinaguan Nature Park:\n"
+                    . "• Lokasyon: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark sa Highway: Bumaba sa Jasaan, sa may tapat ng pampublikong swimming pool resort na tinatawag na 'Spring View Resort' (pagkalampas ng Solana Bridge).\n"
+                    . "• Daan: Mula sa highway sa tapat ng Spring View Resort, pumasok sa inner road (panloob na daan) patungo sa ilog.\n"
+                    . "• Sasakyan: Maaari kayong sumakay ng habal-habal (motorcycle taxi) papasok sa park o mag-drive ng sariling sasakyan.\n"
+                    . "• Navigation: Maaari niyo rin itong i-check at i-navigate gamit ang Google Maps o Waze (i-search lamang ang 'Hinaguan Nature Park' o 'Spring View Resort')!";
+            } else {
+                return "How to get to Hinaguan Nature Park:\n"
+                    . "• Location: Barangay Solana, Jasaan, Misamis Oriental.\n"
+                    . "• Landmark & Drop-off: Tell your driver to drop you off in Solana, Jasaan, right by the well-known swimming pool resort called 'Spring View Resort' (just past Solana Bridge).\n"
+                    . "• Route: From the highway at Spring View Resort, enter and take the inner road heading inland toward the river.\n"
+                    . "• Local Transport: Take a local 'habal-habal' (motorcycle taxi) directly to the park gate, or drive your private vehicle.\n"
+                    . "• Google Maps / Waze: You can easily search and navigate on Google Maps or Waze by typing 'Hinaguan Nature Park' or 'Spring View Resort'!";
+            }
+        }
+
+        // 15. Park Activities Inquiry (from park_activities table)
+        $isActivitiesInquiry = (bool) preg_match('/(?:activit|unsa(?:ng)?\s*(?:mabuhat|buhaton)|ano(?:ng)?\s*(?:pwedeng\s*)?gawin|things\s+to\s+do|river\s*swim|pictorial|picture|swimming|nature)/i', $msgLower);
+        if ($isActivitiesInquiry) {
+            $acts = ParkActivity::all();
+            if ($acts->isNotEmpty()) {
+                $actList = $acts->map(fn ($a) => "• {$a->activity}: {$a->description}")->implode("\n");
+                if ($isBisaya) {
+                    return "Mao kini ang mga nindot nga kalihokan (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPwede sab mo mag-relax sa among riverside payags ug mag-swimming sa pool!";
+                } elseif ($isTagalog) {
+                    return "Narito po ang mga puwedeng gawin (activities) sa Hinaguan Nature Park:\n{$actList}\n\nPuwede rin po kayong mag-relax sa aming riverside payag at mag-swimming sa pool!";
+                } else {
+                    return "Here are the wonderful activities you can enjoy at Hinaguan Nature Park:\n{$actList}\n\nYou can also relax by the scenic riverbanks or take a swim in our pool!";
+                }
+            }
+        }
+
+        // 16. Reservation Status Lookup (if user provided a reservation number)
+        if (preg_match('/(?:res(?:ervation)?|booking|boking)\s*(?:#|no\.?|num(?:ber)?)?\s*(\d+)/i', $msgLower, $m)) {
+            $resId = (int) $m[1];
+            $res = Reservation::with(['reservationAmenities.amenity'])->find($resId);
+            if ($res) {
+                $ams = $res->reservationAmenities->map(fn ($ra) => $ra->amenity?->amenities_name ?? 'Amenity')->implode(', ');
+                $stay = "{$res->reservation_date} [{$res->start_slot}]";
+                return "Reservation #{$res->id} for {$res->booker_name} is currently [{$res->status}]. Stay date: {$stay}. Booked amenities: " . ($ams ?: 'None') . ". Remaining balance: ₱" . number_format($res->remaining_balance, 2) . " ({$res->payment_status}).";
+            }
+        }
+
+        // 17. Weather inquiry
+        if (str_contains($msgLower, 'weather') || str_contains($msgLower, 'panahon') || str_contains($msgLower, 'klima') || str_contains($msgLower, 'ulan') || str_contains($msgLower, 'uwan')) {
+            if ($isBisaya) {
+                $advice = $isRainy ? "Tungod kay naay uwan, maayo mag-book sa among covered A-Houses o Function Hall para komportable mo." : "Nindot kaayo ang panahon para mag-langoy sa pool o mag-relax sa riverside Payag 2 o 6!";
+                return "Ang panahon karon sa Hinaguan kay {$weatherCond} ({$weatherTemp}°C, {$weatherRain}% tsansa sa uwan). {$advice}";
+            } elseif ($isTagalog) {
+                $advice = $isRainy ? "Dahil may tsansa ng ulan, mainam mag-book sa aming covered A-Houses o Function Hall." : "Napakaganda po ng panahon ngayon para mag-swimming sa pool o mag-relax sa aming riverside Payag!";
+                return "Ang lagay ng panahon ngayon sa Hinaguan ay {$weatherCond} ({$weatherTemp}°C, {$weatherRain}% tsansa ng ulan). {$advice}";
+            } else {
+                $advice = $isRainy ? "Since there is a chance of rain, we recommend our covered A-Houses or Function Hall to stay dry and comfortable." : "It is a wonderful day to enjoy our swimming pool and riverside Payag 2 or 6!";
+                return "Today's weather at Hinaguan Nature Park is {$weatherCond} ({$weatherTemp}°C with {$weatherRain}% chance of rain). {$advice}";
+            }
+        }
+
+        // 18. Location / Vibe inquiry (Riverside, Mountain breeze, Garden shade, Scenic view)
+        if (str_contains($msgLower, 'river') || str_contains($msgLower, 'suba') || str_contains($msgLower, 'ilog')) {
+            if ($isBisaya) {
+                return "Kung gusto kag duol sa suba nga presko ug relaxing, girekomenda namo ang Payag 2 ug Payag 6 (₱300)! Naa kini dapit sa sapa nga gilibutan sa kalasangan.";
+            } elseif ($isTagalog) {
+                return "Kung nais niyo po ng malapit sa ilog at presko, highly recommended ang Payag 2 at Payag 6 (₱300)! Tamang-tama sa tabi ng tubig at sariwang hangin.";
+            } else {
+                return "For a refreshing riverside vibe by the running water, we highly recommend Payag 2 or Payag 6 (₱300)! Both are authentic native huts right by the river.";
+            }
+        }
+
+        if (str_contains($msgLower, 'mountain') || str_contains($msgLower, 'breeze') || str_contains($msgLower, 'hangin') || str_contains($msgLower, 'bukid')) {
+            if ($isBisaya) {
+                return "Para sa refreshing mountain breeze ug hilom nga lugar, ang Payag 3 (₱300) ang pinakanindot para sa gamay nga grupo o pamilya!";
+            } else {
+                return "For a refreshing mountain breeze in a peaceful setting, Payag 3 (₱300) is the perfect choice for relaxing and quiet picnics!";
+            }
+        }
+
+        if (str_contains($msgLower, 'garden') || str_contains($msgLower, 'shade') || str_contains($msgLower, 'landong') || str_contains($msgLower, 'kahoy')) {
+            if ($isBisaya) {
+                return "Ang Payag 5 (₱300) nahimutang sa ilawom sa mga landong nga kahoy sa tanaman, bugnaw ug presko kaayo puy-an!";
+            } else {
+                return "Payag 5 (₱300) is nestled in a serene garden haven under lush shade trees, keeping it cool and comfortable all day!";
+            }
+        }
+
+        // 19. Specific amenity inquiries (Cottage / Payag / A-House / Function Hall)
         if (str_contains($msgLower, 'cottage') || str_contains($msgLower, 'kubo') || str_contains($msgLower, 'shed')) {
             if ($isBisaya) {
-                return "Ang among mga Cottage (Cottage 1 to 6) kay ₱200 para sa daytime o nighttime, naay lamesa ug lingkoranan para sa pamilya hangtod 10 ka tawo (lahi ang entrance nga ₱20 ug pool nga ₱50).";
+                return "Ang among mga Cottage (Cottage 1 to 6) kay ₱200 para sa daytime o nighttime, naay lamesa ug lingkoranan para sa pamilya hangtod 10 ka tawo (lahi ang entrance nga ₱{$dayAdult} ug pool nga ₱{$dayPool}).";
             } else {
-                return "Our open-air Cottages (Cottage 1 to 6) are ₱200 for daytime or nighttime use, featuring dining tables and chairs for up to 10 guests. Regular entrance (₱20/adult) and pool access (₱50/person) apply separately.";
+                return "Our open-air Cottages (Cottage 1 to 6) are ₱200 for daytime or nighttime use, featuring dining tables and chairs for up to 10 guests. Regular entrance (₱{$dayAdult}/adult) and pool access (₱{$dayPool}/person) apply separately.";
             }
         }
 
@@ -613,40 +981,13 @@ class GuestChatbotController extends Controller
             return "Our Function Hall is ₱5,000 for daytime and ₱10,000 for nighttime (accommodating 15 to 50+ guests). It includes free entrance and free pool access for your group!";
         }
 
-        // 10. Entrance fees / swimming pool inquiry
-        if (str_contains($msgLower, 'entrance') || str_contains($msgLower, 'fee') || str_contains($msgLower, 'rate') || str_contains($msgLower, 'price') || str_contains($msgLower, 'pool')) {
-            $settings = ParkSetting::first();
-            $dayAdult = $settings ? number_format((float)($settings->daytime_adult_entrance_fee ?? 20)) : '20';
-            $dayPool = $settings ? number_format((float)($settings->day_pool_fee ?? 50)) : '50';
-            if ($isBisaya) {
-                return "Ang daytime entrance fee kay ₱{$dayAdult} sa hamtong (libre ang 12 anyos paubos), ug ang pool access kay ₱{$dayPool} matag tawo.";
-            } elseif ($isTagalog) {
-                return "Ang daytime entrance fee po ay ₱{$dayAdult} bawat adult (libre ang 12 pababa), at ₱{$dayPool} naman po bawat tao para sa swimming pool.";
-            } else {
-                return "Our daytime entrance fee is ₱{$dayAdult} per adult (free for children 12 and below), with daytime pool access at ₱{$dayPool} per person. Feel free to visit our Rates page for full details!";
-            }
-        }
-
-        // 11. Operating hours / schedule inquiry
-        if (str_contains($msgLower, 'hour') || str_contains($msgLower, 'time') || str_contains($msgLower, 'open') || str_contains($msgLower, 'schedule') || str_contains($msgLower, 'oras')) {
-            $settings = ParkSetting::first();
-            $openTime = $settings?->opening_time ? Carbon::parse($settings->opening_time)->format('g:i A') : '8:00 AM';
-            $closeTime = $settings?->closing_time ? Carbon::parse($settings->closing_time)->format('g:i A') : '5:00 PM';
-            if ($isBisaya) {
-                return "Abli ang Hinaguan Nature Park gikan {$openTime} hangtod {$closeTime} adlaw-adlaw. Naa mi daytime ug overnight stays!";
-            } elseif ($isTagalog) {
-                return "Bukas po ang Hinaguan Nature Park mula {$openTime} hanggang {$closeTime} araw-araw. May daytime at overnight cottage stays po kami!";
-            } else {
-                return "Hinaguan Nature Park is open from {$openTime} to {$closeTime} daily. We offer both daytime and overnight cottage stays!";
-            }
-        }
-
+        // 20. Intelligent default response
         if ($isBisaya) {
-            return "Maayong adlaw! Welcome sa Hinaguan Nature Park sa Jasaan, Misamis Oriental. Naa mi mga payag, cottages, swimming pool, ug A-house stays. Unsa may akong matabang kanimo karon?";
+            return "Maayong adlaw! Welcome sa Hinaguan Nature Park sa Jasaan, Misamis Oriental 🌿\n\nMakatabang ko nimo sa pag-inquire o pag-book. Mahimo kang mangutana bahin sa:\n• 🛖 **Amenities & Rates** (Cottages ₱200, Payags ₱300, A-Houses ₱300/₱500)\n• 🎟️ **Entrance Fees & Oras** (₱{$dayAdult} daytime entrance / 8 AM – 5 PM)\n• 📍 **Direksyon sa Park** (Barangay Solana duol sa Spring View Resort)\n• 📝 **Pag-book Online** (o i-click ang **Book via Chat** sa ibabaw)\n\nUnsay imong gustong mahibaloan?";
         } elseif ($isTagalog) {
-            return "Magandang araw! Maligayang pagdating sa Hinaguan Nature Park sa Jasaan, Misamis Oriental. Mayroon kaming mga payag, cottage, swimming pool, at nature stays. Paano ko po kayo matutulungan ngayon?";
+            return "Magandang araw! Maligayang pagdating sa Hinaguan Nature Park sa Jasaan, Misamis Oriental 🌿\n\nNandito po ako upang tumulong sa inyong pagbisita o pag-book. Maaari kayong magtanong tungkol sa:\n• 🛖 **Amenities & Rates** (Cottages ₱200, Payags ₱300, A-Houses ₱300/₱500)\n• 🎟️ **Entrance Fees & Oras** (₱{$dayAdult} daytime entrance / 8 AM – 5 PM)\n• 📍 **Direksyon papunta** (Barangay Solana katapat ng Spring View Resort)\n• 📝 **Paano mag-book** (o i-click ang **Book via Chat** sa itaas)\n\nAno po ang nais ninyong alamin?";
         } else {
-            return "Hello! Welcome to Hinaguan Nature Park in Jasaan, Misamis Oriental. We offer cottages, pools, and nature stays. How can I assist you with your booking or park visit today?";
+            return "Welcome to **Hinaguan Nature Park** in Jasaan, Misamis Oriental! 🌿\n\nI am **Bren**, your AI Assistant. I can assist you with:\n• 🛖 **Amenities & Rates** (Cottages ₱200, Payags ₱300, A-Houses ₱300/₱500, Function Hall)\n• 🎟️ **Entrance Fees & Hours** (₱{$dayAdult} daytime entrance / 8:00 AM – 5:00 PM)\n• 📍 **Directions & Commute** (Barangay Solana near Spring View Resort)\n• 📝 **Booking Online or via Chat** (Click **Book via Chat** above!)\n\nWhat would you like to know or reserve today?";
         }
     }
 
@@ -715,9 +1056,13 @@ class GuestChatbotController extends Controller
             $topics['is_specific'] = true;
         }
 
-        // 5. Amenities & Rates (cottage, payag, a-house, function hall, pool, rates)
+        // 5. Amenities, Rates & Availability (cottage, payag, a-house, function hall, pool, rates, dates)
         if (preg_match('/(?:amenit|cottage|cotag|kotats|payag|pyag|a-?house|ahouse|function\s*hall|kubo|pool|swim|rate|price|tagpila|magkano|pila|entrance|bayad|presyo)/i', $msg)) {
             $topics['amenities'] = true;
+            $topics['is_specific'] = true;
+        }
+        if (preg_match('/(?:availab|when|date|petsa|kanus-?a|kailan|bakante|vacant|free|open|occup|schedule)/i', $msg)) {
+            $topics['availability'] = true;
             $topics['is_specific'] = true;
         }
 
@@ -924,24 +1269,56 @@ class GuestChatbotController extends Controller
                 . "  * Inclusions: Free Entrance: {$freeEntrance} | Free Pool: {$freePool} | Air-conditioned: {$aircon}\n";
         }
 
-        // Table 5: reservation_amenities (Live occupancy check)
-        $activeBooked = ReservationAmenity::with(['reservation', 'amenity'])
-            ->whereIn('status', ['Checked In', 'Confirmed', 'active'])
-            ->whereHas('reservation', fn ($q) => $q->whereIn('status', ['Checked In', 'Confirmed', 'active']))
+        // Table 5: reservation_amenities & reservations (Live occupancy & upcoming availability)
+        $upcomingReservations = ReservationAmenity::with(['reservation', 'amenity'])
+            ->where(function ($q) {
+                $q->whereNull('status')
+                  ->orWhere('status', '!=', 'Completed');
+            })
+            ->whereHas('reservation', function ($rq) {
+                $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out']);
+            })
+            ->where(function ($q) use ($todayStr) {
+                $q->where('start_date', '>=', $todayStr)
+                  ->orWhere('end_date', '>=', $todayStr)
+                  ->orWhereHas('reservation', function ($rq) use ($todayStr) {
+                      $rq->where('reservation_date', '>=', $todayStr)
+                         ->orWhere('end_date', '>=', $todayStr)
+                         ->orWhereIn('status', ['Checked In', 'checked in', 'Active', 'active']);
+                  });
+            })
             ->get();
 
-        $context .= "\n[4. LIVE AVAILABILITY & OCCUPANCY (FROM DATABASE reservation_amenities)]:\n";
-        if ($activeBooked->isNotEmpty()) {
-            foreach ($activeBooked as $item) {
-                $amName = $item->amenity?->amenities_name ?? 'Amenity';
-                $res = $item->reservation;
-                $slot = $item->end_slot ?: ($res->end_slot ?? $res->start_slot ?? 'Daytime');
-                $endDate = $item->end_date ?: ($res->end_date ?? $res->reservation_date ?? $todayStr);
-                $expectedCheckout = strcasecmp((string)$slot, 'Nighttime') === 0 ? "6:00 AM after {$endDate}" : "6:00 PM on {$endDate}";
-                $context .= "- {$amName}: Occupied until {$endDate} [{$slot}] (Available after {$expectedCheckout})\n";
+        $context .= "\n[4. LIVE AMENITY AVAILABILITY & UPCOMING RESERVED DATES (FROM DATABASE reservation_amenities)]:\n";
+        $bookedByAmenity = [];
+        foreach ($upcomingReservations as $ra) {
+            $amName = $ra->amenity?->amenities_name;
+            if (!$amName) continue;
+            $res = $ra->reservation;
+            $sDate = $ra->start_date ? $ra->start_date->toDateString() : ($res?->reservation_date ? $res->reservation_date->toDateString() : $todayStr);
+            $eDate = $ra->end_date ? $ra->end_date->toDateString() : ($res?->end_date ? $res->end_date->toDateString() : $sDate);
+            $sSlot = $ra->start_slot ?: ($res?->start_slot ?? 'Daytime');
+            $eSlot = $ra->end_slot ?: ($res?->end_slot ?? $sSlot);
+            $resStatus = $res ? $res->status : ($ra->status ?: 'Reserved');
+
+            $dateRange = ($sDate === $eDate && $sSlot === $eSlot)
+                ? "{$sDate} [{$sSlot}]"
+                : "{$sDate} [{$sSlot}] to {$eDate} [{$eSlot}]";
+
+            $bookedByAmenity[$amName][] = "{$dateRange} ({$resStatus})";
+        }
+
+        if (!empty($bookedByAmenity)) {
+            foreach ($bookedByAmenity as $amName => $ranges) {
+                $context .= "- {$amName}: RESERVED on " . implode(', ', $ranges) . ". (Available on all other upcoming dates!)\n";
+            }
+            $allAmenityNames = Amenity::where('status', true)->pluck('amenities_name')->toArray();
+            $unreserved = array_diff($allAmenityNames, array_keys($bookedByAmenity));
+            if (!empty($unreserved)) {
+                $context .= "- All other amenities currently have NO upcoming reservations and are 100% available: " . implode(', ', $unreserved) . "\n";
             }
         } else {
-            $context .= "All amenities are currently available for booking today!\n";
+            $context .= "All amenities (Cottages 1-6, Payags 1-6, A-Houses 1-8, Function Hall) currently have NO upcoming reservations and are 100% available for booking!\n";
         }
 
         // Group size guide
@@ -1073,5 +1450,234 @@ class GuestChatbotController extends Controller
         }
 
         return $context;
+    }
+
+    /**
+     * Handle amenity availability & available dates inquiries in direct fallback mode.
+     */
+    private function handleAmenityAvailabilityInquiry(string $userMessage, bool $isBisaya = false, bool $isTagalog = false): ?string
+    {
+        $msgLower = strtolower($userMessage);
+
+        $hasDatePattern = (bool) preg_match('/(?:today|tomorrow|karon|ngayon|ugma|bukas|tonight|weekend|sabado|linggo|domingo|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}|\d{4}-\d{1,2}-\d{1,2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/i', $msgLower);
+
+        $isAvailabilityInquiry = (bool) (
+            preg_match('/(?:availab|when|date|petsa|kanus-?a|kailan|bakante|vacant|free|open|occup|schedule|what\s*day|unsa\s*nga\s*adlaw|anong\s*araw)/i', $msgLower)
+            || preg_match('/(?:can\s+(?:i|we)|pwede\s+(?:ba)?|possible\s+to|may\s+pagka-?taon|posible)\s+(?:to\s+)?(?:book|reserve|get|take|stay|avail)/i', $msgLower)
+            || ($hasDatePattern && preg_match('/(?:book|reserve|stay|visit|rent)/i', $msgLower))
+        );
+        $mentionsAmenity = (bool) preg_match('/(?:payag|cottage|a-?house|ahouse|function\s*hall|cabin|room|kubo)/i', $msgLower);
+
+        if (!$isAvailabilityInquiry || !$mentionsAmenity) {
+            return null;
+        }
+
+        $allAmenities = Amenity::where('status', true)->get();
+        if ($allAmenities->isEmpty()) {
+            return null;
+        }
+
+        $todayStr = now()->toDateString();
+
+        // 1. Check for specific amenity mention with number or exact name
+        // e.g. "Payag 4", "Cottage 2", "A-House 1", "Function Hall"
+        $targetAmenity = null;
+
+        // Try exact match against amenity names
+        foreach ($allAmenities as $am) {
+            $amLower = strtolower($am->amenities_name);
+            $amNorm = str_replace(['-', ' '], '', $amLower);
+            $msgNorm = str_replace(['-', ' '], '', $msgLower);
+
+            if (str_contains($msgNorm, $amNorm)) {
+                $targetAmenity = $am;
+                break;
+            }
+        }
+
+        // If specific amenity found
+        if ($targetAmenity) {
+            $reservations = ReservationAmenity::with('reservation')
+                ->where('amenity_id', $targetAmenity->id)
+                ->where(function ($q) {
+                    $q->whereNull('status')->orWhere('status', '!=', 'Completed');
+                })
+                ->whereHas('reservation', function ($rq) {
+                    $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out']);
+                })
+                ->where(function ($q) use ($todayStr) {
+                    $q->where('start_date', '>=', $todayStr)
+                      ->orWhere('end_date', '>=', $todayStr)
+                      ->orWhereHas('reservation', function ($rq) use ($todayStr) {
+                          $rq->where('reservation_date', '>=', $todayStr)->orWhere('end_date', '>=', $todayStr);
+                      });
+                })
+                ->orderBy('start_date', 'asc')
+                ->get();
+
+            // Check if user asked about a specific date (e.g. "today", "tomorrow", "nov 25", or specific date)
+            $parsedDate = null;
+            if (preg_match('/\b(?:today|karon|ngayon)\b/i', $msgLower)) {
+                $parsedDate = now()->toDateString();
+            } elseif (preg_match('/\b(?:tomorrow|ugma|bukas)\b/i', $msgLower)) {
+                $parsedDate = now()->addDay()->toDateString();
+            } elseif (preg_match('/\b(?:tonight|karong\s+gabii|ngayong\s+gabi)\b/i', $msgLower)) {
+                $parsedDate = now()->toDateString();
+            } elseif (preg_match('/\b(?:this|next)?\s*(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|sabado|linggo|domingo)\b/i', $msgLower, $dm)) {
+                try {
+                    $dayMap = ['sabado' => 'saturday', 'linggo' => 'sunday', 'domingo' => 'sunday'];
+                    $rawDay = strtolower(trim($dm[0]));
+                    foreach ($dayMap as $fil => $eng) {
+                        $rawDay = str_replace($fil, $eng, $rawDay);
+                    }
+                    $parsedDate = Carbon::parse($rawDay)->toDateString();
+                } catch (\Exception $e) {}
+            } elseif (preg_match('/(?:on\s+|sa\s+)?(\d{4}-\d{1,2}-\d{1,2})/i', $msgLower, $dm)) {
+                try {
+                    $parsedDate = Carbon::parse($dm[1])->toDateString();
+                } catch (\Exception $e) {}
+            } elseif (preg_match('/(?:on\s+|sa\s+)?((?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\s+\d{1,2}(?:st|nd|rd|th)?(?:\s*,\s*\d{4})?)/i', $msgLower, $dm)) {
+                try {
+                    $parsedDate = Carbon::parse($dm[1])->toDateString();
+                } catch (\Exception $e) {}
+            } elseif (preg_match('/(?:on\s+|sa\s+)?(\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*(?:\s*,\s*\d{4})?)/i', $msgLower, $dm)) {
+                try {
+                    $clean = preg_replace('/(\d+)(?:st|nd|rd|th)\s+(?:of\s+)?/i', '$1 ', $dm[1]);
+                    $parsedDate = Carbon::parse($clean)->toDateString();
+                } catch (\Exception $e) {}
+            } elseif (preg_match('/(?:on\s+|sa\s+)?(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)/i', $msgLower, $dm)) {
+                try {
+                    $parsedDate = Carbon::parse($dm[1])->toDateString();
+                } catch (\Exception $e) {}
+            }
+
+            $priceStr = "₱" . number_format((float) $targetAmenity->daytime_price, 2);
+
+            // If a specific target date was queried by user
+            if ($parsedDate) {
+                $isReservedOnDate = $reservations->contains(function ($ra) use ($parsedDate, $todayStr) {
+                    $res = $ra->reservation;
+                    $s = $ra->start_date ? $ra->start_date->toDateString() : ($res?->reservation_date ? $res->reservation_date->toDateString() : $todayStr);
+                    $e = $ra->end_date ? $ra->end_date->toDateString() : ($res?->end_date ? $res->end_date->toDateString() : $s);
+                    return $parsedDate >= $s && $parsedDate <= $e;
+                });
+
+                $formattedDate = Carbon::parse($parsedDate)->format('F j, Y');
+
+                if ($isReservedOnDate) {
+                    if ($isBisaya) {
+                        return "Ang {$targetAmenity->amenities_name} kay nareserba na sa maong petsa ({$formattedDate}).\n\nApan abli ug bakante kini sa ubang mga petsa, o pwede ka mopili sa laing parehas nga amenity! I-click ang **Book via Chat** o **Book Now** aron makita ang tanang bakante.";
+                    } elseif ($isTagalog) {
+                        return "Ang {$targetAmenity->amenities_name} po ay may nakareserba na sa petsang iyon ({$formattedDate}).\n\nNgunit available po ito sa ibang darating na mga petsa, o maaari kayong pumili ng ibang bakanteng amenity! I-click lamang po ang **Book via Chat** o **Book Now** para makita ang mga bukas.";
+                    } else {
+                        return "{$targetAmenity->amenities_name} is already reserved on {$formattedDate}.\n\nHowever, it is open and available on other dates, or you can choose an alternative open amenity! Feel free to click **Book via Chat** or the **Book Now** button to check all open dates.";
+                    }
+                } else {
+                    if ($isBisaya) {
+                        return "Oo, available kaayo ang {$targetAmenity->amenities_name} ({$priceStr}) sa {$formattedDate}! 🌿\n\nGusto ba nimo kini i-book karon? I-click lang ang **Book via Chat** o gamita ang **Book Now** button sa website.";
+                    } elseif ($isTagalog) {
+                        return "Opo, available na available po ang {$targetAmenity->amenities_name} ({$priceStr}) sa {$formattedDate}! 🌿\n\nGusto niyo po bang i-book ito ngayon? I-click lamang po ang **Book via Chat** o ang **Book Now** button sa website.";
+                    } else {
+                        return "Yes! {$targetAmenity->amenities_name} ({$priceStr}) is completely available on {$formattedDate}! 🌿\n\nWould you like to book it now? Click **Book via Chat** or use the **Book Now** button on our website to confirm.";
+                    }
+                }
+            }
+
+            // If no specific date was asked (e.g. "what date is the payag 4 available?")
+            if ($reservations->isNotEmpty()) {
+                $reservedRanges = [];
+                foreach ($reservations as $ra) {
+                    $res = $ra->reservation;
+                    $s = $ra->start_date ? $ra->start_date->toDateString() : ($res?->reservation_date ? $res->reservation_date->toDateString() : $todayStr);
+                    $e = $ra->end_date ? $ra->end_date->toDateString() : ($res?->end_date ? $res->end_date->toDateString() : $s);
+                    $slot = $ra->start_slot ?: ($res?->start_slot ?? 'Daytime');
+
+                    $sFmt = Carbon::parse($s)->format('M j, Y');
+                    $eFmt = Carbon::parse($e)->format('M j, Y');
+                    $rangeStr = ($s === $e) ? "{$sFmt} [{$slot}]" : "{$sFmt} to {$eFmt} [{$slot}]";
+                    $reservedRanges[] = "• {$rangeStr}";
+                }
+
+                $bookedList = implode("\n", $reservedRanges);
+
+                if ($isBisaya) {
+                    return "Ang {$targetAmenity->amenities_name} ({$priceStr}) kay abli ug available sa kadaghanang petsa!\n\nNareserba lang kini sa mosunod nga petsa:\n{$bookedList}\n\nAng tanang ubang petsa (apil ang karon ug ubang adlaw) kay libre ug bakante pa kaayo! Pwede nimo i-click ang **Book via Chat** o ang **Book Now** button sa website aron makapili ka sa imong target date.";
+                } elseif ($isTagalog) {
+                    return "Ang {$targetAmenity->amenities_name} ({$priceStr}) po ay available at bukas sa halos lahat ng darating na petsa!\n\nNareserba lamang po ito sa mga sumusunod na petsa:\n{$bookedList}\n\nLahat po ng iba pang petsa (kasama ang ngayon, bukas, at iba pang araw) ay bakante at puwedeng-puwede ninyong i-book! I-click lamang po ang **Book via Chat** o ang **Book Now** button sa website upang piliin ang inyong target date.";
+                } else {
+                    return "{$targetAmenity->amenities_name} ({$priceStr}) is open and available for booking on almost all dates!\n\nIt is currently reserved only on the following date(s):\n{$bookedList}\n\nAll other upcoming dates (including today, tomorrow, and surrounding days) are wide open! You can click **Book via Chat** or use the **Book Now** button on our website to pick your date and secure your reservation.";
+                }
+            } else {
+                if ($isBisaya) {
+                    return "Nindot nga balita! Ang {$targetAmenity->amenities_name} ({$priceStr}) kay 100% available ug walay nakareserba sa tanang umaabot nga petsa.\n\nMahimo kang mopili sa bisan unsang petsa pinaagi sa pag-click sa **Book via Chat** o sa **Book Now** button!";
+                } elseif ($isTagalog) {
+                    return "Magandang balita po! Ang {$targetAmenity->amenities_name} ({$priceStr}) ay 100% available at walang nakareserba sa darating na mga petsa.\n\nMaaari kayong pumili ng kahit anong petsa sa pamamagitan ng pag-click sa **Book via Chat** o sa **Book Now** button!";
+                } else {
+                    return "Good news! {$targetAmenity->amenities_name} ({$priceStr}) currently has NO upcoming reservations and is 100% available on all upcoming dates!\n\nYou can click **Book via Chat** or use the **Book Now** button on our website to pick your preferred date and reserve it.";
+                }
+            }
+        }
+
+        // 2. If general category inquiry (e.g. "what dates are payags available?", "are cottages available?")
+        $category = null;
+        if (preg_match('/payag|hut|kubo/i', $msgLower)) {
+            $category = 'Payag';
+        } elseif (preg_match('/cottage|shed/i', $msgLower)) {
+            $category = 'Cottage';
+        } elseif (preg_match('/a-?house|ahouse|cabin|room/i', $msgLower)) {
+            $category = 'A-House';
+        } elseif (preg_match('/function\s*hall|hall|event/i', $msgLower)) {
+            $category = 'Function Hall';
+        }
+
+        if ($category) {
+            $catAmenities = $allAmenities->filter(fn ($a) => stripos($a->amenities_name, $category) !== false);
+
+            if ($catAmenities->isNotEmpty()) {
+                $statusLines = [];
+                foreach ($catAmenities as $am) {
+                    $hasRes = ReservationAmenity::with('reservation')
+                        ->where('amenity_id', $am->id)
+                        ->where(function ($q) {
+                            $q->whereNull('status')->orWhere('status', '!=', 'Completed');
+                        })
+                        ->whereHas('reservation', function ($rq) {
+                            $rq->whereNotIn('status', ['Cancelled', 'Checked Out', 'cancelled', 'checked out', 'checked_out', 'checked-out']);
+                        })
+                        ->where(function ($q) use ($todayStr) {
+                            $q->where('start_date', '>=', $todayStr)
+                              ->orWhere('end_date', '>=', $todayStr)
+                              ->orWhereHas('reservation', function ($rq) use ($todayStr) {
+                                  $rq->where('reservation_date', '>=', $todayStr)->orWhere('end_date', '>=', $todayStr);
+                              });
+                        })
+                        ->first();
+
+                    if ($hasRes) {
+                        $res = $hasRes->reservation;
+                        $s = $hasRes->start_date ? $hasRes->start_date->toDateString() : ($res?->reservation_date ? $res->reservation_date->toDateString() : $todayStr);
+                        $e = $hasRes->end_date ? $hasRes->end_date->toDateString() : ($res?->end_date ? $res->end_date->toDateString() : $s);
+                        $sFmt = Carbon::parse($s)->format('M j');
+                        $eFmt = Carbon::parse($e)->format('M j');
+                        $dateTxt = ($s === $e) ? $sFmt : "{$sFmt} - {$eFmt}";
+                        $statusLines[] = "• **{$am->amenities_name}**: Reserved on {$dateTxt} (available on other dates)";
+                    } else {
+                        $statusLines[] = "• **{$am->amenities_name}**: Available on all upcoming dates";
+                    }
+                }
+
+                $listTxt = implode("\n", $statusLines);
+
+                if ($isBisaya) {
+                    return "Mao kini ang availability sa among mga {$category}s:\n{$listTxt}\n\nPwede ka mag-book sa imong gustong petsa pinaagi sa pag-click sa **Book via Chat** o **Book Now** button!";
+                } elseif ($isTagalog) {
+                    return "Narito po ang availability ng aming mga {$category}:\n{$listTxt}\n\nMaaari po kayong mag-book sa inyong napiling petsa sa pamamagitan ng pag-click sa **Book via Chat** o **Book Now** button!";
+                } else {
+                    return "Here is the current availability for our {$category}s:\n{$listTxt}\n\nYou can reserve your preferred dates by clicking **Book via Chat** or using the **Book Now** button on our website!";
+                }
+            }
+        }
+
+        return null;
     }
 }
