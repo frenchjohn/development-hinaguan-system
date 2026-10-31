@@ -482,5 +482,69 @@ class StaffRecordsPageTest extends TestCase
         $this->assertStringContainsString('data-checked-in-by="alice checker"', $content);
         $this->assertStringContainsString('data-checked-out-by="bob departure"', $content);
     }
+
+    public function test_records_calculates_correct_entrance_fee_when_amenity_and_pool_fee_leave_missing_admission_balance()
+    {
+        $this->makeStaffSession();
+
+        $amenity = \App\Models\Amenity::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'amenities_name' => 'A-House 3',
+            'daytime_price' => 700,
+            'nighttime_price' => 1000,
+            'additional_per_head' => 100,
+            'minimum_capacity' => 1,
+            'maximum_capacity' => 2,
+            'status' => 1,
+        ]);
+
+        $res = Reservation::create([
+            'booker_name' => 'frenchjohn famador',
+            'email' => 'frenchjohnfamador.s@gmail.com',
+            'phone' => '09930457138',
+            'reservation_date' => now()->subDays(2)->toDateString(),
+            'end_date' => now()->subDays(2)->toDateString(),
+            'start_slot' => 'Nighttime',
+            'end_slot' => 'Nighttime',
+            'check_in' => now()->subDays(2)->setTime(18, 0)->toDateTimeString(),
+            'check_out' => now()->subDays(1)->setTime(8, 0)->toDateTimeString(),
+            'status' => 'Checked Out',
+            'reservation_type' => 'walk_in',
+            'number_of_guests' => 7,
+            'total_amount' => 1580.00,
+            'amount_paid' => 1580.00,
+            'remaining_balance' => 0.00,
+            'payment_status' => 'Paid',
+        ]);
+
+        \App\Models\ReservationAmenity::create([
+            'reservation_id' => $res->id,
+            'amenity_id' => $amenity->id,
+            'pricing_type' => 'Nighttime Aircon',
+            'price_at_booking' => 1000.00,
+            'quantity' => 1,
+        ]);
+
+        // Scenario like res #9 where total_amount was stored as 100 and pool_fee was 280
+        \App\Models\ReservationEntranceFee::create([
+            'reservation_id' => $res->id,
+            'pricing_type' => 'Nighttime',
+            'pool_option' => 'specific',
+            'total_amount' => 100.00,
+            'pool_fee' => 280.00,
+            'pool_access_count' => 7,
+            'adult_count' => 7,
+            'child_count' => 0,
+        ]);
+
+        $response = $this->get('/staff/records');
+        $response->assertOk();
+
+        $resData = $response->viewData('reservationData');
+        $this->assertArrayHasKey($res->id, $resData);
+        $this->assertEquals(300.00, $resData[$res->id]['entrance_fee']['base_entrance_fee']);
+        $this->assertEquals(280.00, $resData[$res->id]['entrance_fee']['pool_fee']);
+        $this->assertEquals(580.00, $resData[$res->id]['entrance_fee']['total_entrance_fee']);
+    }
 }
 

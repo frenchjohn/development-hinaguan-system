@@ -659,15 +659,27 @@ window.AppPage['staff_records'] = function () {
         };
 
         // Entrance fee total
-        const derivedEntranceFee = (totalAmount > (amenitiesTotal + poolFee)) ? (totalAmount - amenitiesTotal - poolFee) : 0;
-        const entranceFeeTotal = parseFloat(reservation.entrance_fee?.total_entrance_fee ?? reservation.entrance_fee?.total_amount ?? derivedEntranceFee) || derivedEntranceFee;
-        const baseEntranceFee = parseFloat(reservation.entrance_fee?.base_entrance_fee ?? Math.max(0, entranceFeeTotal - poolFee));
+        const derivedEntranceFee = (totalAmount > (amenitiesTotal + poolFee + chargesTotal))
+            ? Math.round((totalAmount - amenitiesTotal - poolFee - chargesTotal) * 100) / 100
+            : 0;
+
+        let baseEntranceFee = parseFloat(reservation.entrance_fee?.base_entrance_fee ?? 0);
+        if (baseEntranceFee <= 0 && derivedEntranceFee > 0) {
+            baseEntranceFee = derivedEntranceFee;
+        }
         const addHeadFee = parseFloat(reservation.entrance_fee?.additional_guest_fee || 0);
+        const entranceFeeTotal = parseFloat(reservation.entrance_fee?.total_entrance_fee ?? (baseEntranceFee + poolFee + addHeadFee)) || (baseEntranceFee + poolFee + addHeadFee);
 
         // True Billed Calculation:
         // Do not add chargesTotal on top of totalAmount if totalAmount in database already accounts for them
-        const computedItemsTotal = amenitiesTotal + entranceFeeTotal + chargesTotal;
+        const computedItemsTotal = Math.round((amenitiesTotal + baseEntranceFee + poolFee + addHeadFee + chargesTotal) * 100) / 100;
         const finalBilledTotal = Math.max(totalAmount, computedItemsTotal);
+
+        // Reconciliation: Guarantee that all itemized charges add up exactly to finalBilledTotal
+        const itemDiscrepancy = Math.round((finalBilledTotal - (amenitiesTotal + baseEntranceFee + poolFee + addHeadFee + chargesTotal)) * 100) / 100;
+        if (itemDiscrepancy > 0) {
+            baseEntranceFee = Math.round((baseEntranceFee + itemDiscrepancy) * 100) / 100;
+        }
 
         // True Settled Payment Calculation:
         const sumPaymentHistory = paymentHistory.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
@@ -948,16 +960,20 @@ window.AppPage['staff_records'] = function () {
                             </div>
                             <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(baseEntranceFee)}</span>
                         </div>
-                    ` : (entranceFeeTotal > 0 && poolFee <= 0 ? `
+                    ` : ''}
+
+                    <!-- 3. Additional Guest Fee / Extra Head (if any) -->
+                    ${addHeadFee > 0 ? `
                         <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
                             <div class="min-w-0 pr-2">
-                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Park Entrance Admission</span>
+                                <span class="font-medium text-[#0d2c1d] dark:text-[#f5f5f0]">Additional Guest Fee</span>
+                                <span class="text-[0.68rem] text-[#889b8a] ml-1">(Capacity Limit)</span>
                             </div>
-                            <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(entranceFeeTotal)}</span>
+                            <span class="font-semibold text-[#0d2c1d] dark:text-[#f5f5f0] tabular-nums shrink-0">₱${formatMoney(addHeadFee)}</span>
                         </div>
-                    ` : '')}
+                    ` : ''}
 
-                    <!-- 3. Pool Access Passes (if any) -->
+                    <!-- 4. Pool Access Passes (if any) -->
                     ${poolFee > 0 ? `
                         <div class="flex items-center justify-between py-1.5 border-b border-[#f8faf8] dark:border-[#1d211f]">
                             <div class="min-w-0 pr-2">

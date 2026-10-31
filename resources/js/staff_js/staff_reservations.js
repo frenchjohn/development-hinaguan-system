@@ -4,6 +4,18 @@ import { openChargeCheckout } from './charge_checkout.js';
 
 window.AppPage = window.AppPage || {};
 window.AppPage['staff_reservations'] = function () {
+    if (window.__staffReservationsAbortController) {
+        window.__staffReservationsAbortController.abort();
+    }
+    window.__staffReservationsAbortController = new AbortController();
+    const pageSignal = window.__staffReservationsAbortController.signal;
+
+    window.addEventListener('spa:leaving', () => {
+        if (window.__staffReservationsAbortController) {
+            window.__staffReservationsAbortController.abort();
+            window.__staffReservationsAbortController = null;
+        }
+    }, { once: true });
 
     const modal = document.getElementById('reservationModal');
     const modalBody = document.getElementById('reservationModalBody');
@@ -266,6 +278,25 @@ window.AppPage['staff_reservations'] = function () {
     const getResAmenityBenefits = (amenityId) => {
         if (!amenityId) return { free_entrance: false, free_pool: false };
         const resAmenities = currentReservationData?.reservation_amenities || [];
+        if (amenityId === 'all') {
+            const nonChargeable = resAmenities.filter(ra => {
+                const am = ra.amenity || {};
+                const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
+                const perHead = parseFloat(am.additional_per_head ?? fullAm?.additional_per_head ?? ra.additional_per_head ?? 0) || 0;
+                return perHead <= 0;
+            });
+            const hasFreeEntrance = nonChargeable.some(ra => {
+                const am = ra.amenity || {};
+                const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
+                return Boolean(am.free_entrance || am.benefits?.free_entrance || fullAm?.benefits?.free_entrance || fullAm?.free_entrance);
+            });
+            const hasFreePool = nonChargeable.some(ra => {
+                const am = ra.amenity || {};
+                const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(am.id || ra.amenity_id));
+                return Boolean(am.free_pool || am.benefits?.free_pool || fullAm?.benefits?.free_pool || fullAm?.free_pool);
+            });
+            return { free_entrance: hasFreeEntrance, free_pool: hasFreePool };
+        }
         const ra = resAmenities.find(r => String(r.amenity?.id || r.amenity_id) === String(amenityId));
         if (!ra) {
             const fullAm = (window.ALL_AMENITIES || []).find(a => String(a.id) === String(amenityId));
@@ -601,7 +632,10 @@ window.AppPage['staff_reservations'] = function () {
 
         const resAmenities = currentReservationData?.reservation_amenities || [];
         if (checkInGroupEditAmenityBadge) {
-            if (group.amenity_id) {
+            if (group.amenity_id === 'all') {
+                checkInGroupEditAmenityBadge.innerHTML = `<i class="bi bi-house-door-fill me-1"></i>All Availed Amenities (No Extra Head Charge)`;
+                checkInGroupEditAmenityBadge.classList.remove('hidden');
+            } else if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
                     const amName = foundAm?.amenity?.amenities_name || 'Amenity';
@@ -751,6 +785,7 @@ window.AppPage['staff_reservations'] = function () {
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
         updateCheckInFeeSummary();
+        syncCheckInCompanionAmenityDropdowns();
         closeCheckInGroupEditModal();
     });
 
@@ -775,6 +810,7 @@ window.AppPage['staff_reservations'] = function () {
         renderCheckInCompanions();
         renderCheckInModalCompanionPreview();
         updateCheckInFeeSummary();
+        syncCheckInCompanionAmenityDropdowns();
     };
 
     const renderCheckInModalCompanionPreview = () => {
@@ -858,7 +894,9 @@ window.AppPage['staff_reservations'] = function () {
                 : '';
 
             let amenityName = '';
-            if (companion.amenity_id) {
+            if (companion.amenity_id === 'all') {
+                amenityName = 'All Availed Amenities (No Extra Head Charge)';
+            } else if (companion.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
                     amenityName = foundAm?.amenity?.amenities_name || '';
@@ -945,7 +983,9 @@ window.AppPage['staff_reservations'] = function () {
                 : '';
 
             let bulkAmenityName = '';
-            if (group.amenity_id) {
+            if (group.amenity_id === 'all') {
+                bulkAmenityName = 'All Availed Amenities (No Extra Head Charge)';
+            } else if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
                     bulkAmenityName = foundAm?.amenity?.amenities_name || '';
@@ -1021,6 +1061,7 @@ window.AppPage['staff_reservations'] = function () {
                         renderCheckInCompanions();
                         renderCheckInModalCompanionPreview();
                         updateCheckInFeeSummary();
+                        syncCheckInCompanionAmenityDropdowns();
                     }
                 );
             }
@@ -1042,6 +1083,7 @@ window.AppPage['staff_reservations'] = function () {
                         renderCheckInCompanions();
                         renderCheckInModalCompanionPreview();
                         updateCheckInFeeSummary();
+                        syncCheckInCompanionAmenityDropdowns();
                     }
                 );
             }
@@ -1086,6 +1128,7 @@ window.AppPage['staff_reservations'] = function () {
                 renderCheckInCompanions();
                 renderCheckInModalCompanionPreview();
                 updateCheckInFeeSummary();
+                syncCheckInCompanionAmenityDropdowns();
             }
         );
     });
@@ -1134,7 +1177,7 @@ window.AppPage['staff_reservations'] = function () {
         const defaultAmId = resAmenities.length === 1 ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '';
 
         checkInCompanions.forEach((c) => {
-            const cAmId = (c.amenity_id !== undefined && c.amenity_id !== null && c.amenity_id !== '') ? String(c.amenity_id) : defaultAmId;
+            const cAmId = (c.amenity_id !== undefined && c.amenity_id !== null) ? String(c.amenity_id) : '';
             const cBenefits = getResAmenityBenefits(cAmId);
             const hasPool = (opt === 'all_paid' || opt === 'all_free' || cBenefits.free_pool) ? true : !!c.has_pool_access;
             allCompanions.push({
@@ -1145,7 +1188,7 @@ window.AppPage['staff_reservations'] = function () {
         });
 
         bulkCompanionGroups.forEach((group) => {
-            const gAmId = (group.amenity_id !== undefined && group.amenity_id !== null && group.amenity_id !== '') ? String(group.amenity_id) : defaultAmId;
+            const gAmId = (group.amenity_id !== undefined && group.amenity_id !== null) ? String(group.amenity_id) : '';
             const gBenefits = getResAmenityBenefits(gAmId);
             const poolLimit = (opt === 'all_paid' || opt === 'all_free' || gBenefits.free_pool) ? group.quantity : (group.pool_quantity || 0);
             for (let i = 0; i < group.quantity; i++) {
@@ -1245,7 +1288,9 @@ window.AppPage['staff_reservations'] = function () {
                 : '';
 
             let amenityName = '';
-            if (companion.amenity_id) {
+            if (companion.amenity_id === 'all') {
+                amenityName = 'All Availed Amenities (No Extra Head Charge)';
+            } else if (companion.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(companion.amenity_id));
                 if (foundAm) {
                     amenityName = foundAm?.amenity?.amenities_name || '';
@@ -1329,7 +1374,9 @@ window.AppPage['staff_reservations'] = function () {
                 : '';
 
             let bulkAmenityName = '';
-            if (group.amenity_id) {
+            if (group.amenity_id === 'all') {
+                bulkAmenityName = 'All Availed Amenities (No Extra Head Charge)';
+            } else if (group.amenity_id) {
                 const foundAm = resAmenities.find(ra => String(ra.amenity?.id || ra.amenity_id) === String(group.amenity_id));
                 if (foundAm) {
                     bulkAmenityName = foundAm?.amenity?.amenities_name || '';
@@ -1743,8 +1790,8 @@ window.AppPage['staff_reservations'] = function () {
             if (hasPrimary) {
                 const pAmenityId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
                     ? String(checkInPrimaryGuest.amenity_id).trim()
-                    : ((document.getElementById('checkInMainAmenity')?.value || '').trim() || defaultAmenityId);
-                if (pAmenityId) {
+                    : ((document.getElementById('checkInMainAmenity')?.value || '').trim());
+                if (pAmenityId && pAmenityId !== 'all' && pAmenityId !== 'no_amenity') {
                     amenityCounts[pAmenityId] = (amenityCounts[pAmenityId] || 0) + 1;
                 }
             }
@@ -1752,8 +1799,8 @@ window.AppPage['staff_reservations'] = function () {
             companions.forEach(c => {
                 const cAmenityId = (c.amenity_id !== undefined && c.amenity_id !== null)
                     ? String(c.amenity_id).trim()
-                    : defaultAmenityId;
-                if (cAmenityId) {
+                    : '';
+                if (cAmenityId && cAmenityId !== 'all' && cAmenityId !== 'no_amenity') {
                     amenityCounts[cAmenityId] = (amenityCounts[cAmenityId] || 0) + 1;
                 }
             });
@@ -2156,6 +2203,7 @@ window.AppPage['staff_reservations'] = function () {
             renderCheckInCompanions();
             renderCheckInModalCompanionPreview();
             updateCheckInFeeSummary();
+            syncCheckInCompanionAmenityDropdowns();
         });
     };
     bindCheckInMainGuestInputs();
@@ -2488,6 +2536,7 @@ window.AppPage['staff_reservations'] = function () {
                             renderCheckInCompanions();
                             renderCheckInModalCompanionPreview();
                             updateCheckInFeeSummary();
+                            syncCheckInCompanionAmenityDropdowns();
                         }
                     );
                 }
@@ -2506,6 +2555,7 @@ window.AppPage['staff_reservations'] = function () {
                             renderCheckInCompanions();
                             renderCheckInModalCompanionPreview();
                             updateCheckInFeeSummary();
+                            syncCheckInCompanionAmenityDropdowns();
                         }
                     );
                 }
@@ -2636,40 +2686,142 @@ window.AppPage['staff_reservations'] = function () {
         const mainAmenitySelect = document.getElementById('checkInMainAmenity');
 
         if (resAmenities.length >= 1) {
-            const isSingle = resAmenities.length === 1;
-            const singleAmId = isSingle ? String(resAmenities[0].amenity?.id || resAmenities[0].amenity_id || '') : '';
+            const guestModeVal = (checkInForm?.querySelector('input[name="check_in_guest_mode"]:checked')?.value)
+                || (checkInForm?.querySelector('input[name="check_in_guest_mode"]')?.value)
+                || 'with_primary';
+            const hasPrimary = guestModeVal !== 'without_primary';
+            const primaryAssignedId = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null)
+                ? String(checkInPrimaryGuest.amenity_id).trim()
+                : (mainAmenitySelect?.value || '').trim();
 
-            let optionsHtml = `<option value="" selected>No amenity</option>`;
-            resAmenities.forEach(ra => {
-                const am = ra.amenity || {};
-                const amId = String(am.id || ra.amenity_id || '');
-                const name = am.amenities_name || 'Amenity';
-                const max = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '') ? `Max: ${am.maximum_capacity}` : 'No limit';
-                const addFee = parseFloat(am.additional_per_head) > 0 ? ` (+₱${parseFloat(am.additional_per_head).toFixed(2)}/extra head)` : '';
-                optionsHtml += `<option value="${amId}">${escapeHtml(name)} (${max}${addFee})</option>`;
+            // ONLY include amenities with additional per head charges in the capacity tracking feature
+            const amenitiesWithExtraFee = resAmenities.filter(ra => {
+                const am = ra.amenity || ra;
+                return (parseFloat(am.additional_per_head) || 0) > 0;
             });
 
+            const amenityStats = [];
+
+            amenitiesWithExtraFee.forEach(ra => {
+                const am = ra.amenity || ra;
+                const amId = String(am.id || ra.amenity_id || ra.id || '');
+                const name = am.amenities_name || ra.amenity_name || 'Amenity';
+                const maxCap = (am.maximum_capacity !== null && am.maximum_capacity !== undefined && am.maximum_capacity !== '')
+                    ? parseInt(am.maximum_capacity, 10) : null;
+                const perHeadFee = parseFloat(am.additional_per_head) || 0;
+
+                let assignedCount = 0;
+                if (hasPrimary && primaryAssignedId && primaryAssignedId === amId) {
+                    assignedCount += 1;
+                }
+
+                // Single staged companions
+                if (Array.isArray(checkInCompanions)) {
+                    assignedCount += checkInCompanions.filter(c => String(c.amenity_id || '') === amId).length;
+                }
+
+                // Bulk companion groups
+                if (Array.isArray(bulkCompanionGroups)) {
+                    assignedCount += bulkCompanionGroups
+                        .filter(g => String(g.amenity_id || '') === amId)
+                        .reduce((sum, g) => sum + (parseInt(g.quantity, 10) || 0), 0);
+                }
+
+                const isFull = maxCap !== null && assignedCount >= maxCap;
+
+                amenityStats.push({
+                    amId,
+                    name,
+                    maxCap,
+                    perHeadFee,
+                    assignedCount,
+                    isFull,
+                    freeEntrance: Boolean(ra.free_entrance || am.benefits?.free_entrance),
+                    freePool: Boolean(ra.free_pool || am.benefits?.free_pool),
+                });
+            });
+
+            const amenitiesWithoutExtraFee = resAmenities.filter(ra => {
+                const am = ra.amenity || ra;
+                return (parseFloat(am.additional_per_head) || 0) <= 0;
+            });
+
+            // Determine ideal default:
+            // 1. If there are amenities with additional per head charges: default is the first non-full one
+            // 2. If that is full or none: default is 'all' (if non-chargeable amenities exist) or '' (no amenity)
+            let idealDefault = amenitiesWithoutExtraFee.length > 0 ? 'all' : '';
+            if (amenityStats.length > 0) {
+                const availableWithCharge = amenityStats.find(a => !a.isFull);
+                idealDefault = availableWithCharge ? availableWithCharge.amId : (amenitiesWithoutExtraFee.length > 0 ? 'all' : '');
+            }
+
+            let optionsHtml = '';
+            if (amenityStats.length > 0) {
+                amenityStats.forEach(item => {
+                    let capStr = '';
+                    if (item.maxCap !== null) {
+                        capStr = item.isFull ? `${item.assignedCount}/${item.maxCap} - Full` : `${item.assignedCount}/${item.maxCap}`;
+                    } else {
+                        capStr = `${item.assignedCount} assigned`;
+                    }
+                    const addFee = ` (+₱${item.perHeadFee.toFixed(2)}/extra head)`;
+                    optionsHtml += `<option value="${item.amId}">${escapeHtml(item.name)} (${capStr}${addFee})</option>`;
+                });
+            }
+
+            if (amenitiesWithoutExtraFee.length > 0) {
+                optionsHtml += '<option value="all">All Availed Amenities (No Extra Head Charge)</option>';
+            }
+            optionsHtml += '<option value="">No amenity</option>';
+
             if (companionAmenitySelect) {
+                const curVal = companionAmenitySelect.value;
                 companionAmenitySelect.innerHTML = optionsHtml;
-                companionAmenitySelect.value = '';
+                const curItem = amenityStats.find(a => a.amId === curVal);
+                if (curItem && curItem.isFull) {
+                    companionAmenitySelect.value = idealDefault;
+                } else if (curVal === 'all' || curVal === '' || curItem) {
+                    companionAmenitySelect.value = curVal;
+                } else {
+                    companionAmenitySelect.value = idealDefault;
+                }
             }
+
             if (bulkAmenitySelect) {
+                const curVal = bulkAmenitySelect.value;
                 bulkAmenitySelect.innerHTML = optionsHtml;
-                bulkAmenitySelect.value = '';
+                const curItem = amenityStats.find(a => a.amId === curVal);
+                if (curItem && curItem.isFull) {
+                    bulkAmenitySelect.value = idealDefault;
+                } else if (curVal === 'all' || curVal === '' || curItem) {
+                    bulkAmenitySelect.value = curVal;
+                } else {
+                    bulkAmenitySelect.value = idealDefault;
+                }
             }
+
             if (mainAmenitySelect) {
                 const wasInitialized = mainAmenitySelect.dataset.initialized === 'true';
-                const curVal = checkInPrimaryGuest.amenity_id;
+                const curVal = (checkInPrimaryGuest.amenity_id !== undefined && checkInPrimaryGuest.amenity_id !== null && checkInPrimaryGuest.amenity_id !== '')
+                    ? String(checkInPrimaryGuest.amenity_id).trim()
+                    : (mainAmenitySelect.value || '');
                 mainAmenitySelect.innerHTML = optionsHtml;
                 let chosenMain = '';
                 if (wasInitialized) {
-                    if (curVal === '' || resAmenities.some(ra => String(ra.amenity?.id || ra.amenity_id) === String(curVal))) {
+                    const isValidAmenity = curVal && resAmenities.some(ra => {
+                        const am = ra.amenity || ra;
+                        return String(am.id || ra.amenity_id || ra.id || '') === String(curVal);
+                    });
+                    const isAllOption = (curVal === 'all') && (amenitiesWithoutExtraFee.length > 0 || resAmenities.length > 0);
+                    const isNoAmenity = (curVal === '');
+
+                    if (isValidAmenity || isAllOption || isNoAmenity) {
                         chosenMain = curVal;
                     } else {
-                        chosenMain = isSingle ? singleAmId : '';
+                        chosenMain = idealDefault;
                     }
                 } else {
-                    chosenMain = isSingle ? singleAmId : '';
+                    chosenMain = idealDefault;
                     mainAmenitySelect.dataset.initialized = 'true';
                 }
                 mainAmenitySelect.value = chosenMain;
@@ -2677,13 +2829,15 @@ window.AppPage['staff_reservations'] = function () {
                 const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
                 if (hAmenity) hAmenity.value = chosenMain;
             }
+
             if (companionAmenityWrap) companionAmenityWrap.classList.remove('hidden');
             if (bulkAmenityWrap) bulkAmenityWrap.classList.remove('hidden');
             if (mainAmenityWrap) mainAmenityWrap.classList.remove('hidden');
         } else {
-            if (companionAmenitySelect) companionAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (bulkAmenitySelect) bulkAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
-            if (mainAmenitySelect) mainAmenitySelect.innerHTML = '<option value="" selected>No amenity</option>';
+            const noAmHtml = '<option value="" selected>No amenity</option>';
+            if (companionAmenitySelect) { companionAmenitySelect.innerHTML = noAmHtml; companionAmenitySelect.value = ''; }
+            if (bulkAmenitySelect) { bulkAmenitySelect.innerHTML = noAmHtml; bulkAmenitySelect.value = ''; }
+            if (mainAmenitySelect) { mainAmenitySelect.innerHTML = noAmHtml; mainAmenitySelect.value = ''; }
             checkInPrimaryGuest.amenity_id = '';
             const hAmenity = document.getElementById('checkInHiddenPrimaryAmenityId');
             if (hAmenity) hAmenity.value = '';
@@ -3410,6 +3564,9 @@ window.AppPage['staff_reservations'] = function () {
             has_pool_access: custPool,
             amenity_id: defaultAmId,
         };
+
+        const mainAmenitySelect = document.getElementById('checkInMainAmenity');
+        if (mainAmenitySelect) mainAmenitySelect.dataset.initialized = 'false';
 
         syncCheckInCompanionAmenityDropdowns();
         syncCheckInPrimaryGuestUI();
@@ -6125,7 +6282,7 @@ window.AppPage['staff_reservations'] = function () {
         if (event.key === 'Escape' && editCalendarModal && editCalendarModal.classList.contains('is-open')) {
             closeEditCalendarModal();
         }
-    });
+    }, { signal: pageSignal });
 
     editCalYear?.addEventListener('change', () => {
         editCalState.year = Number(editCalYear.value) || editCalState.year;
@@ -6379,7 +6536,7 @@ window.AppPage['staff_reservations'] = function () {
     };
 
     modal?.addEventListener('click', handleReservationActionClick);
-    document.addEventListener('click', handleReservationActionClick);
+    document.addEventListener('click', handleReservationActionClick, { signal: pageSignal });
 
     checkInForm?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -6685,7 +6842,7 @@ window.AppPage['staff_reservations'] = function () {
             searchInput?.focus();
             searchInput?.select();
         }
-    });
+    }, { signal: pageSignal });
 
     filterToggle?.addEventListener('click', () => {
         const isExpanded = filterToggle.getAttribute('aria-expanded') === 'true';
@@ -7242,7 +7399,7 @@ window.AppPage['staff_reservations'] = function () {
             });
 
             // Close menus on outside click
-            document.addEventListener('click', closeAllDotMenus, { once: false });
+            document.addEventListener('click', closeAllDotMenus, { once: false, signal: pageSignal });
 
         } catch (err) {
             console.error('Error loading reschedule requests:', err);
@@ -7396,7 +7553,7 @@ window.AppPage['staff_reservations'] = function () {
                 return;
             }
         }
-    });
+    }, { signal: pageSignal });
 
     // Badge Count Poll / Fetcher
     const fetchReschedBadgeCount = async () => {

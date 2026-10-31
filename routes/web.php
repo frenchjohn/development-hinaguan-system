@@ -5287,6 +5287,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     return [
                         'id' => $guestEntry->id,
                         'customer_id' => $customer?->id,
+                        'amenity_id' => $guestEntry->amenity_id,
                         'is_primary_guest' => (bool) $guestEntry->is_primary_guest,
                         'customer' => [
                             'first_name' => $customer?->first_name,
@@ -6005,6 +6006,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     return [
                         'id' => $guestEntry->id,
                         'customer_id' => $customer?->id,
+                        'amenity_id' => $guestEntry->amenity_id,
                         'is_primary_guest' => (bool) $guestEntry->is_primary_guest,
                         'has_pool_access' => (bool) $guestEntry->has_pool_access,
                         'checked_out_at' => $guestEntry->checked_out_at,
@@ -6600,6 +6602,24 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $checkedOutAt = $reservation->check_out ? \Carbon\Carbon::parse($reservation->check_out)->format('M d, Y · h:i A') : null;
             }
 
+            $resAmenitiesTotal = $reservation->reservationAmenities->reduce(function ($sum, $a) {
+                $price = (float) ($a->subtotal ?? (($a->price_at_booking ?? $a->price ?? 0) * ($a->quantity ?? 1)));
+                return $sum + $price;
+            }, 0.0);
+            $resChargesTotal = (float) $reservation->reservationCharges->sum('amount');
+            $resTotalAmount = (float) ($reservation->total_amount ?? 0);
+            $derivedEntranceFee = max(0.0, round($resTotalAmount - $resAmenitiesTotal - $poolFee - $resChargesTotal, 2));
+
+            $rawEfTotal = (float) ($reservation->entranceFee?->total_amount ?? 0);
+            $rawPoolFee = (float) ($reservation->entranceFee?->pool_fee ?? $poolFee);
+            $rawBaseEntrance = max(0.0, round($rawEfTotal - $rawPoolFee, 2));
+
+            $effectiveBaseEntrance = ($derivedEntranceFee > 0)
+                ? $derivedEntranceFee
+                : ($rawBaseEntrance > 0 ? $rawBaseEntrance : max(0.0, $rawEfTotal));
+
+            $effectiveEntranceTotal = round($effectiveBaseEntrance + $rawPoolFee, 2);
+
             return [$reservation->id => [
                 'id' => $reservation->id,
                 'booker_name' => $reservation->booker_name,
@@ -6631,18 +6651,18 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'created_at' => $reservation->created_at ? $reservation->created_at->format('M d, Y h:i A') : null,
                 'bulk_groups' => array_values($bulkGroupsForRes),
                 'companions_checkout_summary' => $companionsCheckoutSummary,
-                'entrance_fee' => $reservation->entranceFee ? [
-                    'pricing_type' => $reservation->entranceFee->pricing_type,
-                    'base_entrance_fee' => (float) max(0, ($reservation->entranceFee->total_amount ?? 0) - ($reservation->entranceFee->pool_fee ?? 0)),
-                    'adult_count' => (int) ($reservation->entranceFee->adult_count ?? 0),
+                'entrance_fee' => ($reservation->entranceFee || $effectiveBaseEntrance > 0) ? [
+                    'pricing_type' => $reservation->entranceFee->pricing_type ?? ($reservation->start_slot ?? 'Daytime'),
+                    'base_entrance_fee' => $effectiveBaseEntrance,
+                    'adult_count' => (int) ($reservation->entranceFee->adult_count ?? $reservation->number_of_guests ?? 0),
                     'child_count' => (int) ($reservation->entranceFee->child_count ?? 0),
                     'senior_pwd_count' => (int) ($reservation->entranceFee->senior_pwd_count ?? 0),
                     'additional_guest_fee' => (float) ($reservation->entranceFee->additional_guest_fee ?? 0),
-                    'total_entrance_fee' => (float) ($reservation->entranceFee->total_amount ?? 0),
-                    'total_amount' => (float) ($reservation->entranceFee->total_amount ?? 0),
-                    'pool_fee' => (float) ($reservation->entranceFee->pool_fee ?? 0),
-                    'pool_option' => $reservation->entranceFee->pool_option,
-                    'pool_access_count' => (int) ($reservation->entranceFee->pool_access_count ?? 0),
+                    'total_entrance_fee' => $effectiveEntranceTotal,
+                    'total_amount' => $effectiveEntranceTotal,
+                    'pool_fee' => $rawPoolFee,
+                    'pool_option' => $reservation->entranceFee->pool_option ?? ($rawPoolFee > 0 ? 'all_paid' : 'no_pool'),
+                    'pool_access_count' => (int) ($reservation->entranceFee->pool_access_count ?? $poolAccessCount),
                 ] : null,
                 'reservation_guests' => $reservation->reservationGuests->map(function ($guest) use ($reservation) {
                     return [
@@ -7020,6 +7040,11 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $amenityBenefitsMap = [];
         if (! empty($processedAmenities)) {
+            $nonChargeable = array_filter($processedAmenities, fn($pAm) => ((float) ($pAm['amenity']->additional_per_head ?? 0)) <= 0);
+            $amenityBenefitsMap['all'] = [
+                'free_entrance' => collect($nonChargeable)->contains(fn($pAm) => !empty($pAm['amenity']->benefit?->free_entrance)),
+                'free_pool' => collect($nonChargeable)->contains(fn($pAm) => !empty($pAm['amenity']->benefit?->free_pool)),
+            ];
             foreach ($processedAmenities as $pAm) {
                 $amId = (string) $pAm['amenity_id'];
                 $benefit = $pAm['amenity']->benefit;
@@ -7125,7 +7150,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $pAmId = array_key_exists('amenity_id', $data['primary_guest'] ?? [])
                     ? (string) ($data['primary_guest']['amenity_id'] ?? '')
                     : ($defaultAmenityId ?? '');
-                if ($pAmId !== '') {
+                if ($pAmId !== '' && $pAmId !== 'all' && $pAmId !== 'no_amenity') {
                     $amenityGuestCounts[$pAmId] = ($amenityGuestCounts[$pAmId] ?? 0) + 1;
                 }
             }
@@ -7134,7 +7159,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $cAmId = array_key_exists('amenity_id', $companionData)
                     ? (string) ($companionData['amenity_id'] ?? '')
                     : ($defaultAmenityId ?? '');
-                if ($cAmId !== '') {
+                if ($cAmId !== '' && $cAmId !== 'all' && $cAmId !== 'no_amenity') {
                     $amenityGuestCounts[$cAmId] = ($amenityGuestCounts[$cAmId] ?? 0) + 1;
                 }
             }
@@ -7220,11 +7245,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $primaryEmail,
             ]);
 
+            $pAmId = array_key_exists('amenity_id', $primaryGuestData ?? [])
+                ? (string) ($primaryGuestData['amenity_id'] ?? '')
+                : ($defaultAmenityId ?? '');
+            $primaryAmenityId = ($pAmId !== '' && $pAmId !== 'all' && $pAmId !== 'no_amenity') ? $pAmId : null;
+
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
                 'customer_id' => $primaryCustomer->id,
                 'is_primary_guest' => true,
                 'has_pool_access' => $primaryHasPool,
+                'amenity_id' => $primaryAmenityId,
             ]);
         }
 
@@ -7248,11 +7279,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $companionEmail,
             ]);
 
+            $cAmId = array_key_exists('amenity_id', $companionData)
+                ? (string) ($companionData['amenity_id'] ?? '')
+                : ($defaultAmenityId ?? '');
+            $compAmenityId = ($cAmId !== '' && $cAmId !== 'all' && $cAmId !== 'no_amenity') ? $cAmId : null;
+
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
                 'has_pool_access' => $companionsWithPoolFlags[$cIdx] ?? false,
+                'amenity_id' => $compAmenityId,
             ]);
         }
 
@@ -7513,12 +7550,22 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         // Check amenity benefits and map by amenity ID
         $resAmenities = $reservation->reservationAmenities()->with('amenity.benefit')->get();
         $amenityBenefitsMap = [];
+        $hasAnyFreeEntrance = false;
+        $hasAnyFreePool = false;
         foreach ($resAmenities as $ra) {
+            $am = $ra->amenity;
+            $perHeadFee = (float) ($am->additional_per_head ?? 0);
+            $benefit = $am?->benefit;
+            $freeEnt = (bool) ($benefit->free_entrance ?? false);
+            $freePl = (bool) ($benefit->free_pool ?? false);
+            if ($perHeadFee <= 0) {
+                if ($freeEnt) $hasAnyFreeEntrance = true;
+                if ($freePl) $hasAnyFreePool = true;
+            }
             $amId = (string) $ra->amenity_id;
-            $benefit = $ra->amenity?->benefit;
             $amenityBenefitsMap[$amId] = [
-                'free_entrance' => (bool) ($benefit->free_entrance ?? false),
-                'free_pool' => (bool) ($benefit->free_pool ?? false),
+                'free_entrance' => $freeEnt,
+                'free_pool' => $freePl,
             ];
         }
 
@@ -7532,7 +7579,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $pAmId = array_key_exists('amenity_id', $data['primary_guest'])
                 ? (string) ($data['primary_guest']['amenity_id'] ?? '')
                 : ($defaultAmenityId ?? '');
-            $pBenefitPool = !empty($amenityBenefitsMap[$pAmId]['free_pool']);
+            $pBenefitPool = ($pAmId === 'all') ? $hasAnyFreePool : !empty($amenityBenefitsMap[$pAmId]['free_pool']);
             if ($poolOption === 'all_paid' || $poolOption === 'all_free' || $pBenefitPool) {
                 $primaryHasPool = true;
             } elseif ($poolOption === 'specific') {
@@ -7547,7 +7594,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $cAmId = array_key_exists('amenity_id', $companionData)
                 ? (string) ($companionData['amenity_id'] ?? '')
                 : ($defaultAmenityId ?? '');
-            $cBenefitPool = !empty($amenityBenefitsMap[$cAmId]['free_pool']);
+            $cBenefitPool = ($cAmId === 'all') ? $hasAnyFreePool : !empty($amenityBenefitsMap[$cAmId]['free_pool']);
             $cHasPool = false;
             if ($poolOption === 'all_paid' || $poolOption === 'all_free' || $cBenefitPool) {
                 $cHasPool = true;
@@ -7587,11 +7634,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $primaryEmail,
             ]);
 
+            $pAmId = array_key_exists('amenity_id', $primaryGuestData ?? [])
+                ? (string) ($primaryGuestData['amenity_id'] ?? '')
+                : ($defaultAmenityId ?? '');
+            $primaryAmenityId = ($pAmId !== '' && $pAmId !== 'all' && $pAmId !== 'no_amenity') ? $pAmId : null;
+
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
                 'customer_id' => $primaryCustomer->id,
                 'is_primary_guest' => true,
                 'has_pool_access' => $primaryHasPool,
+                'amenity_id' => $primaryAmenityId,
             ]);
         }
 
@@ -7615,11 +7668,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'email' => $companionEmail,
             ]);
 
+            $cAmId = array_key_exists('amenity_id', $companionData)
+                ? (string) ($companionData['amenity_id'] ?? '')
+                : ($defaultAmenityId ?? '');
+            $compAmenityId = ($cAmId !== '' && $cAmId !== 'all' && $cAmId !== 'no_amenity') ? $cAmId : null;
+
             ReservationGuest::create([
                 'reservation_id' => $reservation->id,
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
                 'has_pool_access' => $companionsWithPoolFlags[$cIdx] ?? false,
+                'amenity_id' => $compAmenityId,
             ]);
         }
 
@@ -7704,7 +7763,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 ? (string) ($data['primary_guest']['amenity_id'] ?? '')
                 : ($defaultAmenityId ?? '');
             $pHasFreeEnt = ($entranceOption === 'all_free')
-                || (!empty($amenityBenefitsMap[$pAmId]['free_entrance']));
+                || (($pAmId === 'all') ? $hasAnyFreeEntrance : !empty($amenityBenefitsMap[$pAmId]['free_entrance']));
             if (! $pHasFreeEnt) {
                 $primaryAge = (int) ($data['primary_guest']['age'] ?? 99);
                 if ($primaryAge <= 12) {
@@ -7720,7 +7779,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 ? (string) ($companionData['amenity_id'] ?? '')
                 : ($defaultAmenityId ?? '');
             $cHasFreeEnt = ($entranceOption === 'all_free')
-                || (!empty($amenityBenefitsMap[$cAmId]['free_entrance']));
+                || (($cAmId === 'all') ? $hasAnyFreeEntrance : !empty($amenityBenefitsMap[$cAmId]['free_entrance']));
             if (! $cHasFreeEnt) {
                 if (($companionData['age_group'] ?? null) === '0-12' || ((int) ($companionData['age'] ?? 99)) <= 12) {
                     $payingChildCount++;
@@ -7747,7 +7806,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $pAmId = array_key_exists('amenity_id', $data['primary_guest'])
                 ? (string) ($data['primary_guest']['amenity_id'] ?? '')
                 : ($defaultAmenityId ?? '');
-            if ($poolOption !== 'all_free' && empty($amenityBenefitsMap[$pAmId]['free_pool'])) {
+            $pFreePool = ($pAmId === 'all') ? $hasAnyFreePool : !empty($amenityBenefitsMap[$pAmId]['free_pool']);
+            if ($poolOption !== 'all_free' && !$pFreePool) {
                 $payingPoolCount++;
             }
         }
@@ -7757,7 +7817,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $cAmId = array_key_exists('amenity_id', $companionData)
                     ? (string) ($companionData['amenity_id'] ?? '')
                     : ($defaultAmenityId ?? '');
-                if ($poolOption !== 'all_free' && empty($amenityBenefitsMap[$cAmId]['free_pool'])) {
+                $cFreePool = ($cAmId === 'all') ? $hasAnyFreePool : !empty($amenityBenefitsMap[$cAmId]['free_pool']);
+                if ($poolOption !== 'all_free' && !$cFreePool) {
                     $payingPoolCount++;
                 }
             }
@@ -7775,7 +7836,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $pAmId = array_key_exists('amenity_id', $data['primary_guest'])
                     ? (string) ($data['primary_guest']['amenity_id'] ?? '')
                     : ($defaultAmenityId ?? '');
-                if ($pAmId !== '') {
+                if ($pAmId !== '' && $pAmId !== 'all' && $pAmId !== 'no_amenity') {
                     $amenityGuestCounts[$pAmId] = ($amenityGuestCounts[$pAmId] ?? 0) + 1;
                 }
             }
@@ -7784,7 +7845,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $cAmId = array_key_exists('amenity_id', $companionData)
                     ? (string) ($companionData['amenity_id'] ?? '')
                     : ($defaultAmenityId ?? '');
-                if ($cAmId !== '') {
+                if ($cAmId !== '' && $cAmId !== 'all' && $cAmId !== 'no_amenity') {
                     $amenityGuestCounts[$cAmId] = ($amenityGuestCounts[$cAmId] ?? 0) + 1;
                 }
             }
@@ -7930,14 +7991,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
             $hasFreeEntrance = false;
             $hasFreePool = false;
-            if ($cAmId && $resAmenities->isNotEmpty()) {
-                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
-                $am = $ra?->amenity;
-                if ($am) {
-                    $benefit = $am->benefits ?? $am->benefit ?? null;
-                    if ($benefit) {
-                        if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
-                        if (!empty($benefit->free_pool)) $hasFreePool = true;
+            if ($cAmId && $cAmId !== 'no_amenity' && $resAmenities->isNotEmpty()) {
+                if ($cAmId === 'all') {
+                    foreach ($resAmenities as $ra) {
+                        $am = $ra->amenity;
+                        $perHead = (float) ($am?->additional_per_head ?? 0);
+                        if ($perHead <= 0) {
+                            $benefit = $am?->benefits ?? $am?->benefit ?? null;
+                            if (!empty($benefit?->free_entrance)) $hasFreeEntrance = true;
+                            if (!empty($benefit?->free_pool)) $hasFreePool = true;
+                        }
+                    }
+                } else {
+                    $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                    $am = $ra?->amenity;
+                    if ($am) {
+                        $benefit = $am->benefits ?? $am->benefit ?? null;
+                        if ($benefit) {
+                            if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
+                            if (!empty($benefit->free_pool)) $hasFreePool = true;
+                        }
                     }
                 }
             }
@@ -8036,25 +8109,39 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $newPoolTotal = round($payingPoolCount * $poolRate, 2);
 
         // Additional per head fee if reservation has amenities with limits
-        // Only companions explicitly assigned to an amenity consume its capacity
+        // Only companions explicitly assigned to a specific amenity consume its capacity
         $newExtraHeadFee = 0;
         if ($resAmenities->isNotEmpty()) {
-            $existingGuestsCount = $reservation->reservationGuests()->whereNull('checked_out_at')->count();
+            $amenityCounts = [];
+            foreach ($resAmenities as $ra) {
+                $amId = (string) ($ra->amenity_id ?: $ra->amenity?->id ?: $ra->id);
+                $amenityCounts[$amId] = $reservation->reservationGuests()
+                    ->whereNull('checked_out_at')
+                    ->where(function ($q) use ($amId, $resAmenities) {
+                        $q->where('amenity_id', $amId);
+                        if ($resAmenities->count() === 1) {
+                            $q->orWhereNull('amenity_id');
+                        }
+                    })
+                    ->count();
+            }
 
             foreach ($data['companions'] ?? [] as $companionData) {
                 $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
-                if (! $cAmId) {
-                    continue; // No amenity chosen: no extra head fee!
+                if (! $cAmId || $cAmId === 'all' || $cAmId === 'no_amenity') {
+                    continue; // "All Availed Amenities (No Extra Head Charge)" or "No amenity": no extra head fee for a specific amenity
                 }
 
                 $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
                 $am = $ra?->amenity;
                 if ($am) {
+                    $realAmId = (string) ($ra->amenity_id ?: $am->id);
                     $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
-                    if ($maxCap !== null && $existingGuestsCount >= $maxCap) {
+                    $currentCount = $amenityCounts[$realAmId] ?? 0;
+                    if ($maxCap !== null && $currentCount >= $maxCap) {
                         $newExtraHeadFee += (float) ($am->additional_per_head ?? 0);
                     }
-                    $existingGuestsCount++;
+                    $amenityCounts[$realAmId] = $currentCount + 1;
                 }
             }
         }
@@ -8084,13 +8171,32 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ]);
 
             $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
+            $targetAmenityId = ($cAmId && $cAmId !== 'all' && $cAmId !== 'no_amenity') ? $cAmId : null;
+            if ($targetAmenityId && $resAmenities->isNotEmpty()) {
+                $ra = $resAmenities->firstWhere('amenity_id', $targetAmenityId) ?: $resAmenities->firstWhere('id', $targetAmenityId);
+                if ($ra && $ra->amenity_id) {
+                    $targetAmenityId = (string) $ra->amenity_id;
+                }
+            }
+
             $hasFreePool = false;
-            if ($cAmId && $resAmenities->isNotEmpty()) {
-                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
-                $am = $ra?->amenity;
-                $benefit = $am?->benefits ?? $am?->benefit ?? null;
-                if (!empty($benefit?->free_pool)) {
-                    $hasFreePool = true;
+            if ($cAmId && $cAmId !== 'no_amenity' && $resAmenities->isNotEmpty()) {
+                if ($cAmId === 'all') {
+                    foreach ($resAmenities as $ra) {
+                        $am = $ra->amenity;
+                        $benefit = $am?->benefits ?? $am?->benefit ?? null;
+                        if (!empty($benefit?->free_pool)) {
+                            $hasFreePool = true;
+                            break;
+                        }
+                    }
+                } else {
+                    $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                    $am = $ra?->amenity;
+                    $benefit = $am?->benefits ?? $am?->benefit ?? null;
+                    if (!empty($benefit?->free_pool)) {
+                        $hasFreePool = true;
+                    }
                 }
             }
 
@@ -8099,6 +8205,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'customer_id' => $companionCustomer->id,
                 'is_primary_guest' => false,
                 'has_pool_access' => ! empty($companionData['pool_access']) || ! empty($companionData['has_pool_access']) || $hasFreePool,
+                'amenity_id' => $targetAmenityId,
             ]);
         }
 
@@ -8166,6 +8273,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return [
                 'id' => $rg->id,
                 'customer_id' => $rg->customer_id,
+                'amenity_id' => $rg->amenity_id,
                 'is_primary_guest' => (bool) $rg->is_primary_guest,
                 'has_pool_access' => (bool) $rg->has_pool_access,
                 'checked_out_at' => $rg->checked_out_at,
@@ -8230,14 +8338,26 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
             $hasFreeEntrance = false;
             $hasFreePool = false;
-            if ($cAmId && $resAmenities->isNotEmpty()) {
-                $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
-                $am = $ra?->amenity;
-                if ($am) {
-                    $benefit = $am->benefits ?? $am->benefit ?? null;
-                    if ($benefit) {
-                        if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
-                        if (!empty($benefit->free_pool)) $hasFreePool = true;
+            if ($cAmId && $cAmId !== 'no_amenity' && $resAmenities->isNotEmpty()) {
+                if ($cAmId === 'all') {
+                    foreach ($resAmenities as $ra) {
+                        $am = $ra->amenity;
+                        $perHead = (float) ($am?->additional_per_head ?? 0);
+                        if ($perHead <= 0) {
+                            $benefit = $am?->benefits ?? $am?->benefit ?? null;
+                            if (!empty($benefit?->free_entrance)) $hasFreeEntrance = true;
+                            if (!empty($benefit?->free_pool)) $hasFreePool = true;
+                        }
+                    }
+                } else {
+                    $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
+                    $am = $ra?->amenity;
+                    if ($am) {
+                        $benefit = $am->benefits ?? $am->benefit ?? null;
+                        if ($benefit) {
+                            if (!empty($benefit->free_entrance)) $hasFreeEntrance = true;
+                            if (!empty($benefit->free_pool)) $hasFreePool = true;
+                        }
                     }
                 }
             }
@@ -8331,23 +8451,37 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $newExtraHeadFee = 0;
         $extraHeadCount = 0;
         if ($resAmenities->isNotEmpty()) {
-            $existingGuestsCount = $reservation->reservationGuests()->whereNull('checked_out_at')->count();
+            $amenityCounts = [];
+            foreach ($resAmenities as $ra) {
+                $amId = (string) ($ra->amenity_id ?: $ra->amenity?->id ?: $ra->id);
+                $amenityCounts[$amId] = $reservation->reservationGuests()
+                    ->whereNull('checked_out_at')
+                    ->where(function ($q) use ($amId, $resAmenities) {
+                        $q->where('amenity_id', $amId);
+                        if ($resAmenities->count() === 1) {
+                            $q->orWhereNull('amenity_id');
+                        }
+                    })
+                    ->count();
+            }
 
             foreach ($data['companions'] ?? [] as $companionData) {
                 $cAmId = !empty($companionData['amenity_id']) ? (string) $companionData['amenity_id'] : null;
-                if (! $cAmId) {
-                    continue; // No amenity chosen: no extra head fee!
+                if (! $cAmId || $cAmId === 'all' || $cAmId === 'no_amenity') {
+                    continue; // "All Availed Amenities (No Extra Head Charge)" or "No amenity": no extra head fee for a specific amenity
                 }
 
                 $ra = $resAmenities->firstWhere('amenity_id', $cAmId) ?: $resAmenities->firstWhere('id', $cAmId);
                 $am = $ra?->amenity;
                 if ($am) {
+                    $realAmId = (string) ($ra->amenity_id ?: $am->id);
                     $maxCap = ($am->maximum_capacity !== null && $am->maximum_capacity !== '') ? (int) $am->maximum_capacity : null;
-                    if ($maxCap !== null && $existingGuestsCount >= $maxCap) {
+                    $currentCount = $amenityCounts[$realAmId] ?? 0;
+                    if ($maxCap !== null && $currentCount >= $maxCap) {
                         $newExtraHeadFee += (float) ($am->additional_per_head ?? 0);
                         $extraHeadCount++;
                     }
-                    $existingGuestsCount++;
+                    $amenityCounts[$realAmId] = $currentCount + 1;
                 }
             }
         }
@@ -10202,6 +10336,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     $customer = $guestEntry->customer;
                     return [
                         'id' => $guestEntry->id,
+                        'customer_id' => $customer?->id,
+                        'amenity_id' => $guestEntry->amenity_id,
                         'is_primary_guest' => $guestEntry->is_primary_guest,
                         'checked_out_at' => $guestEntry->checked_out_at,
                         'customer' => $customer ? [
@@ -10716,6 +10852,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     $customer = $guestEntry->customer;
                     return [
                         'id' => $guestEntry->id,
+                        'customer_id' => $customer?->id,
+                        'amenity_id' => $guestEntry->amenity_id,
                         'is_primary_guest' => $guestEntry->is_primary_guest,
                         'checked_out_at' => $guestEntry->checked_out_at,
                         'customer' => $customer ? [

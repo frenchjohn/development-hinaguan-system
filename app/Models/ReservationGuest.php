@@ -14,6 +14,7 @@ class ReservationGuest extends Model
     protected $fillable = [
         'reservation_id',
         'customer_id',
+        'amenity_id',
         'is_primary_guest',
         'has_pool_access',
         'checked_out_at',
@@ -32,5 +33,10 @@ class ReservationGuest extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function amenity()
+    {
+        return $this->belongsTo(Amenity::class, 'amenity_id');
     }
 }
