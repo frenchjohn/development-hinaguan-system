@@ -1580,17 +1580,20 @@
                                     <span id="checkInCompanionAmenityBenefitText">Includes Free Entrance & Free Pool Access</span>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between rounded-xl border border-glass-border bg-glass p-2.5 !mb-0" id="checkInCompanionPoolWrap">
-                                <div class="flex items-center gap-2">
-                                    <i class="bi bi-water text-base text-sky-600 dark:text-sky-400"></i>
-                                    <div>
-                                        <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200">Include Pool Pass</p>
-                                        <p class="m-0 text-[0.68rem] text-hp-text-muted">Grant pool access under specific pool policy</p>
+                            <div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2.5 dark:border-sky-500/20 !mb-0" id="checkInCompanionPoolWrap">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i class="bi bi-water text-base text-sky-600 dark:text-sky-400 shrink-0"></i>
+                                    <div class="min-w-0">
+                                        <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Pass</p>
+                                        <p class="m-0 text-[0.68rem] text-hp-text-muted truncate" id="checkInCompanionPoolSubtext">Grant pool access</p>
                                     </div>
                                 </div>
-                                <label class="relative inline-flex cursor-pointer items-center">
-                                    <input type="checkbox" name="has_pool_access" id="checkInCompanionHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
-                                </label>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span id="checkInCompanionPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
+                                    <label class="relative inline-flex cursor-pointer items-center shrink-0">
+                                        <input type="checkbox" name="has_pool_access" id="checkInCompanionHasPool" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="guest-form__actions flex flex-wrap justify-end pt-1 !mt-1 !border-t-0">
@@ -1680,15 +1683,22 @@
                                 </div>
                             </div>
 
-                            <!-- Row 4: Pool Access Quantity -->
-                            <div class="flex flex-col gap-1.5 w-full rounded-xl border border-glass-border bg-glass p-2.5 !mb-0" id="checkInBulkCompanionPoolWrap">
-                                <div class="flex items-center justify-between">
-                                    <label class="guest-form__label text-xs font-semibold text-hp-text flex items-center gap-1.5 m-0 cursor-pointer" for="checkInBulkPoolQuantity">
-                                        <i class="bi bi-water text-sky-600"></i> Pool Access Quantity
-                                    </label>
-                                    <span class="text-[0.68rem] text-hp-text-muted font-medium" id="checkInBulkPoolQtyHint">0 of 1</span>
+                            <!-- Row 4: Pool Access Checkbox Card -->
+                            <div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2.5 dark:border-sky-500/20 w-full !mb-0" id="checkInBulkCompanionPoolWrap">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i class="bi bi-water text-base text-sky-600 dark:text-sky-400 shrink-0"></i>
+                                    <div class="min-w-0">
+                                        <p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Access Pass</p>
+                                        <p class="m-0 text-[0.68rem] text-hp-text-muted truncate" id="checkInBulkCompanionPoolSubtext">Grant pool access for these companions</p>
+                                    </div>
                                 </div>
-                                <input type="number" name="pool_access_quantity" id="checkInBulkPoolQuantity" min="0" max="1" value="0" class="guest-form__input w-full rounded-xl border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text transition-colors focus:border-hp-green focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6]">
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span id="checkInBulkCompanionPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
+                                    <label class="relative inline-flex cursor-pointer items-center shrink-0">
+                                        <input type="checkbox" name="has_pool_access" id="checkInBulkCompanionHasPool" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
+                                    </label>
+                                </div>
+                                <input type="hidden" name="pool_access_quantity" id="checkInBulkPoolQuantity" value="0">
                             </div>
                         </div>
                         <!-- Row 5: Add Companions Submit Button -->

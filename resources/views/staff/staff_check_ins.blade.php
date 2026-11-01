@@ -2169,12 +2169,15 @@
 													<i class="bi bi-water text-sm text-sky-600 dark:text-sky-400 shrink-0"></i>
 													<div class="min-w-0">
 														<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Pass</p>
-														<p class="m-0 text-[0.65rem] text-hp-text-muted truncate">Grant pool access</p>
+														<p class="m-0 text-[0.65rem] text-hp-text-muted truncate" id="singleCompanionPoolSubtext">Grant pool access</p>
 													</div>
 												</div>
-												<label class="relative inline-flex cursor-pointer items-center shrink-0">
-													<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
-												</label>
+												<div class="flex items-center gap-2 shrink-0">
+													<span id="singleCompanionPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
+													<label class="relative inline-flex cursor-pointer items-center shrink-0">
+														<input type="checkbox" name="has_pool_access" id="companion_has_pool_access" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
+													</label>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -2259,7 +2262,7 @@
 											</select>
 										</div>
 
-										<div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="bulkCompanionAccessRow">
+										<div class="grid grid-cols-1 gap-2" id="bulkCompanionAccessRow">
 											<!-- Free Entrance Compact Stepper Card -->
 											<div class="rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="bulkCompanionFreeEntranceWrap" style="display: none;">
 												<div class="flex items-center justify-between gap-1">
@@ -2275,19 +2278,22 @@
 												</div>
 											</div>
 
-											<!-- Pool Access Compact Stepper Card -->
-											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all" id="bulkCompanionPoolWrap" style="display: none;">
-												<div class="flex items-center justify-between gap-1">
-													<label class="text-[0.7rem] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="bulk_companion_pool_quantity">
-														<i class="bi bi-water text-sky-600"></i> Pool Access
+											<!-- Pool Access Checkbox Card -->
+											<div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2.5 dark:border-sky-500/20" id="bulkCompanionPoolWrap">
+												<div class="flex items-center gap-2 min-w-0">
+													<i class="bi bi-water text-base text-sky-600 dark:text-sky-400 shrink-0"></i>
+													<div class="min-w-0">
+														<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Access Pass</p>
+														<p class="m-0 text-[0.68rem] text-hp-text-muted truncate" id="bulkCompanionPoolSubtext">Grant pool access for these companions</p>
+													</div>
+												</div>
+												<div class="flex items-center gap-2 shrink-0">
+													<span id="bulkCompanionPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
+													<label class="relative inline-flex cursor-pointer items-center shrink-0">
+														<input type="checkbox" name="bulk_has_pool_access" id="bulk_companion_has_pool" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
 													</label>
-													<span class="text-[0.65rem] font-bold text-sky-800 dark:text-sky-300 shrink-0" id="bulkPoolQtyHint">0 of 1</span>
 												</div>
-												<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
-													<button type="button" id="walkInBulkPoolMinusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool access">−</button>
-													<input type="number" name="pool_access_quantity" id="bulk_companion_pool_quantity" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-													<button type="button" id="walkInBulkPoolPlusBtn" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase pool access">+</button>
-												</div>
+												<input type="hidden" name="pool_access_quantity" id="bulk_companion_pool_quantity" value="0">
 											</div>
 										</div>
 									</div>
@@ -2902,18 +2908,22 @@
 												</div>
 											</div>
 
-											<!-- Pool Access Compact Stepper Card -->
-											<div class="rounded-xl border border-sky-500/30 bg-sky-500/5 dark:bg-sky-500/10 p-2 flex flex-col justify-between gap-1 transition-all w-full" id="resAddBulkPoolWrap">
-												<div class="flex items-center justify-between gap-1">
-													<label class="text-[0.7rem] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1 cursor-pointer m-0 select-none truncate" for="resadd_bulk_pool_passes">
-														<i class="bi bi-water text-sky-600"></i> Pool Access <span id="resAddBulkPoolHint" class="font-normal text-sky-700 dark:text-sky-300">(0 of 1 with pool access)</span>
+											<!-- Pool Access Checkbox Card -->
+											<div class="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/5 p-2.5 dark:border-sky-500/20 w-full" id="resAddBulkPoolWrap">
+												<div class="flex items-center gap-2 min-w-0">
+													<i class="bi bi-water text-base text-sky-600 dark:text-sky-400 shrink-0"></i>
+													<div class="min-w-0">
+														<p class="m-0 text-xs font-bold text-sky-900 dark:text-sky-200 truncate">Pool Access Pass</p>
+														<p class="m-0 text-[0.68rem] text-hp-text-muted truncate" id="resAddBulkPoolSubtext">Grant pool access for these companions</p>
+													</div>
+												</div>
+												<div class="flex items-center gap-2 shrink-0">
+													<span id="resAddBulkPoolBenefitBadge" class="hidden text-[0.68rem] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">Free Benefit</span>
+													<label class="relative inline-flex cursor-pointer items-center shrink-0">
+														<input type="checkbox" name="bulk_has_pool_access" id="resadd_bulk_has_pool" value="1" class="h-4 w-4 accent-hp-green rounded cursor-pointer">
 													</label>
 												</div>
-												<div class="flex items-center gap-1 rounded-lg border border-sky-500/20 bg-white/90 dark:bg-black/20 p-0.5 shadow-2xs">
-													<button type="button" id="resAddBulkPoolMinus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Decrease pool access">−</button>
-													<input type="number" name="pool_passes" id="resadd_bulk_pool_passes" min="0" max="1" value="0" class="no-spinners m-0 w-full flex-1 border-0 bg-transparent text-center font-display text-xs font-bold text-sky-950 dark:text-sky-100 focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none">
-													<button type="button" id="resAddBulkPoolPlus" class="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md border-0 bg-black/5 dark:bg-white/10 text-xs font-extrabold text-sky-900 dark:text-sky-200 hover:bg-black/10 active:scale-95 transition-all" title="Increase pool access">+</button>
-												</div>
+												<input type="hidden" name="pool_passes" id="resadd_bulk_pool_passes" value="0">
 											</div>
 										</div>
 									</div>

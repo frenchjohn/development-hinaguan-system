@@ -391,14 +391,26 @@ window.AppPage['staff_reservations'] = function () {
         const bulkBenefits = getResAmenityBenefits(bulkAmId);
 
         const bulkPoolWrap = document.getElementById('checkInBulkCompanionPoolWrap');
+        const bulkPoolCheckbox = document.getElementById('checkInBulkCompanionHasPool');
+        const bulkPoolBadge = document.getElementById('checkInBulkCompanionPoolBenefitBadge');
+        const bulkPoolSubtext = document.getElementById('checkInBulkCompanionPoolSubtext');
         const bulkBenefitBadge = document.getElementById('checkInBulkCompanionAmenityBenefitBadge');
         const bulkBenefitText = document.getElementById('checkInBulkCompanionAmenityBenefitText');
 
-        if (bulkPoolWrap) {
+        if (bulkPoolWrap && bulkPoolCheckbox) {
+            bulkPoolWrap.style.display = 'flex';
             if (bulkBenefits.free_pool) {
-                bulkPoolWrap.style.display = 'none';
+                bulkPoolCheckbox.checked = true;
+                bulkPoolCheckbox.disabled = true;
+                if (bulkPoolBadge) bulkPoolBadge.classList.remove('hidden');
+                if (bulkPoolSubtext) bulkPoolSubtext.textContent = 'Complimentary with assigned amenity';
             } else {
-                bulkPoolWrap.style.display = 'flex';
+                bulkPoolCheckbox.disabled = false;
+                if (bulkPoolCheckbox.dataset.manuallyChecked !== 'true') {
+                    bulkPoolCheckbox.checked = false;
+                }
+                if (bulkPoolBadge) bulkPoolBadge.classList.add('hidden');
+                if (bulkPoolSubtext) bulkPoolSubtext.textContent = 'Standard pool access fee applies (₱40/guest)';
             }
         }
 
@@ -421,14 +433,26 @@ window.AppPage['staff_reservations'] = function () {
         const singleBenefits = getResAmenityBenefits(singleAmId);
 
         const singlePoolWrap = document.getElementById('checkInCompanionPoolWrap');
+        const singlePoolCheckbox = document.getElementById('checkInCompanionHasPool');
+        const singlePoolBadge = document.getElementById('checkInCompanionPoolBenefitBadge');
+        const singlePoolSubtext = document.getElementById('checkInCompanionPoolSubtext');
         const singleBenefitBadge = document.getElementById('checkInCompanionAmenityBenefitBadge');
         const singleBenefitText = document.getElementById('checkInCompanionAmenityBenefitText');
 
-        if (singlePoolWrap) {
+        if (singlePoolWrap && singlePoolCheckbox) {
+            singlePoolWrap.style.display = 'flex';
             if (singleBenefits.free_pool) {
-                singlePoolWrap.style.display = 'none';
+                singlePoolCheckbox.checked = true;
+                singlePoolCheckbox.disabled = true;
+                if (singlePoolBadge) singlePoolBadge.classList.remove('hidden');
+                if (singlePoolSubtext) singlePoolSubtext.textContent = 'Complimentary with assigned amenity';
             } else {
-                singlePoolWrap.style.display = 'flex';
+                singlePoolCheckbox.disabled = false;
+                if (singlePoolCheckbox.dataset.manuallyChecked !== 'true') {
+                    singlePoolCheckbox.checked = false;
+                }
+                if (singlePoolBadge) singlePoolBadge.classList.add('hidden');
+                if (singlePoolSubtext) singlePoolSubtext.textContent = 'Grant pool access (Standard fee applies)';
             }
         }
 
@@ -1451,8 +1475,19 @@ window.AppPage['staff_reservations'] = function () {
 
     const openCheckInCompanionModal = () => {
         checkInCompanionForm?.reset();
+        const singlePoolCheckbox = document.getElementById('checkInCompanionHasPool');
+        if (singlePoolCheckbox) {
+            singlePoolCheckbox.checked = false;
+            singlePoolCheckbox.dataset.manuallyChecked = 'false';
+        }
         checkInBulkCompanionForm?.reset();
+        const bulkPoolCheckbox = document.getElementById('checkInBulkCompanionHasPool');
+        if (bulkPoolCheckbox) {
+            bulkPoolCheckbox.checked = false;
+            bulkPoolCheckbox.dataset.manuallyChecked = 'false';
+        }
         syncCheckInCompanionAmenityDropdowns();
+        syncCheckInCompanionAmenityBenefitsUI();
         syncCheckInPoolOptionUI();
         syncCheckInBulkPoolMax();
         renderCheckInModalCompanionPreview();
@@ -2416,11 +2451,10 @@ window.AppPage['staff_reservations'] = function () {
         }
 
         const cBenefits = getResAmenityBenefits(cAmenityId);
+        const singlePoolCheckbox = document.getElementById('checkInCompanionHasPool');
         const companionHasPool = cBenefits.free_pool
             ? true
-            : (currentPoolOpt === 'all_paid'
-                ? true
-                : (formData.get('has_pool_access') === '1' || Boolean(checkInCompanionHasPool?.checked)));
+            : Boolean(singlePoolCheckbox?.checked || formData.get('has_pool_access') === '1');
 
         const companion = {
             first_name: firstName || 'Companion',
@@ -2444,8 +2478,13 @@ window.AppPage['staff_reservations'] = function () {
         updateCheckInFeeSummary();
 
         checkInCompanionForm.reset();
+        if (singlePoolCheckbox) {
+            singlePoolCheckbox.checked = false;
+            singlePoolCheckbox.dataset.manuallyChecked = 'false';
+        }
         if (checkInCompanionIsForeigner) checkInCompanionIsForeigner.value = '0';
         syncCheckInCompanionAmenityDropdowns();
+        syncCheckInCompanionAmenityBenefitsUI();
     });
 
     // Bulk companion form submission with duplicate validation & 1s anti-double-click lock
@@ -2462,11 +2501,9 @@ window.AppPage['staff_reservations'] = function () {
         const bAmenityId = String(formData.get('amenity_id') || '');
 
         const bBenefits = getResAmenityBenefits(bAmenityId);
-        const rawPoolQty = parseInt(formData.get('pool_access_quantity'), 10) || 0;
-        let poolQty = Math.min(Math.max(0, rawPoolQty), quantity);
-        if (bBenefits.free_pool || currentPoolOpt === 'all_paid') {
-            poolQty = quantity;
-        }
+        const bulkPoolCheckbox = document.getElementById('checkInBulkCompanionHasPool');
+        const bulkPoolChecked = Boolean(bulkPoolCheckbox?.checked || formData.get('has_pool_access') === '1');
+        const poolQty = (bBenefits.free_pool || bulkPoolChecked) ? quantity : 0;
 
         // Check for duplicate bulk group with exact same demographic profile & amenity
         const duplicateGroup = bulkCompanionGroups.find(
@@ -2510,8 +2547,24 @@ window.AppPage['staff_reservations'] = function () {
 
         checkInBulkCompanionForm.reset();
         if (checkInBulkCompanionQuantity) checkInBulkCompanionQuantity.value = '1';
+        if (bulkPoolCheckbox) {
+            bulkPoolCheckbox.checked = false;
+            bulkPoolCheckbox.dataset.manuallyChecked = 'false';
+        }
         syncCheckInCompanionAmenityDropdowns();
+        syncCheckInCompanionAmenityBenefitsUI();
         syncCheckInBulkPoolMax();
+    });
+
+    document.getElementById('checkInBulkCompanionHasPool')?.addEventListener('change', (e) => {
+        if (!e.target.disabled) {
+            e.target.dataset.manuallyChecked = e.target.checked ? 'true' : 'false';
+        }
+    });
+    document.getElementById('checkInCompanionHasPool')?.addEventListener('change', (e) => {
+        if (!e.target.disabled) {
+            e.target.dataset.manuallyChecked = e.target.checked ? 'true' : 'false';
+        }
     });
 
     // Delete / Toggle companion handlers on the main check-in card
