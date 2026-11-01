@@ -3759,7 +3759,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <div class="flex items-center justify-between gap-3 p-3 rounded-xl border ${isCheckedOut ? 'border-glass-border/30 bg-black/[0.02] dark:bg-white/[0.02] opacity-60' : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50 transition-all'}">
                         <div class="flex items-center gap-3 min-w-0">
                             ${!isCheckedOut ? `
-                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${primaryGuest.id || primaryGuest.customer_id}" data-is-primary="true" data-guest-name="${escapeHtml(fullName)}" checked>
+                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${primaryGuest.id || primaryGuest.customer_id}" data-is-primary="true" data-guest-name="${escapeHtml(fullName)}">
                             ` : `
                                 <span class="h-4 w-4 inline-flex items-center justify-center text-slate-400 font-bold"><i class="bi bi-check-lg"></i></span>
                             `}
@@ -3818,7 +3818,7 @@ window.AppPage['staff_check_ins'] = function () {
                     <div class="flex items-center justify-between gap-3 p-3 rounded-xl border ${isCheckedOut ? 'border-glass-border/30 bg-black/[0.02] dark:bg-white/[0.02] opacity-60' : 'border-glass-border bg-hp-cream/60 dark:bg-white/5 hover:border-hp-green/40 transition-all'}">
                         <div class="flex items-center gap-3 min-w-0">
                             ${!isCheckedOut ? `
-                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${g.id || g.customer_id}" data-guest-name="${escapeHtml(fullName)}" checked>
+                                <input type="checkbox" class="companion-single-checkbox h-4 w-4 rounded accent-hp-green cursor-pointer" data-rg-id="${g.id || g.customer_id}" data-guest-name="${escapeHtml(fullName)}">
                             ` : `
                                 <span class="h-4 w-4 inline-flex items-center justify-center text-slate-400"><i class="bi bi-check-lg"></i></span>
                             `}

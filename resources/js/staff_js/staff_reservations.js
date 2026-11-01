@@ -1683,10 +1683,10 @@ window.AppPage['staff_reservations'] = function () {
         nighttime_child_entrance_fee: 0,
         day_pool_fee: 0,
         night_pool_fee: 0,
-        daytime_start: '06:00',
-        daytime_end: '18:00',
+        daytime_start: '08:00',
+        daytime_end: '17:00',
         nighttime_start: '18:00',
-        nighttime_end: '06:00',
+        nighttime_end: '08:00',
     };
     try {
         const raw = JSON.parse(document.querySelector('.resv-metrics')?.dataset.parkSettings || '{}');
@@ -3469,7 +3469,124 @@ window.AppPage['staff_reservations'] = function () {
         openEditCalendarModal();
     });
 
+    /**
+     * Checks if an online reservation is eligible for check-in:
+     * Allowed if current time is now or up to 1 hour before scheduled start time.
+     * If before that window, check-in is not scheduled yet.
+     */
+    const getReservationScheduleCheck = (res) => {
+        if (!res) {
+            return { canCheckIn: true, message: '', earliestCheckIn: null, scheduledStart: null, formattedEarliest: '' };
+        }
+
+        let rawDate = res.reservation_date;
+        if (!rawDate && res.reservation_amenities && res.reservation_amenities.length > 0) {
+            rawDate = res.reservation_amenities[0].start_date;
+        }
+        if (!rawDate) {
+            return { canCheckIn: true, message: '', earliestCheckIn: null, scheduledStart: null, formattedEarliest: '' };
+        }
+
+        let dateStr = '';
+        const cleanStr = String(rawDate).trim();
+        if (/^\d{4}-\d{2}-\d{2}/.test(cleanStr)) {
+            dateStr = cleanStr.substring(0, 10);
+        } else {
+            const dt = new Date(cleanStr);
+            if (!isNaN(dt.getTime())) {
+                const y = dt.getFullYear();
+                const m = String(dt.getMonth() + 1).padStart(2, '0');
+                const d = String(dt.getDate()).padStart(2, '0');
+                dateStr = `${y}-${m}-${d}`;
+            }
+        }
+
+        if (!dateStr) {
+            return { canCheckIn: true, message: '', earliestCheckIn: null, scheduledStart: null, formattedEarliest: '' };
+        }
+
+        const [year, month, day] = dateStr.split('-').map(Number);
+
+        let slot = String(res.start_slot || '').toLowerCase();
+        if (!slot && res.time_slots && res.time_slots.length > 0) {
+            slot = String(res.time_slots[0]).toLowerCase();
+        }
+        if (!slot && res.reservation_amenities && res.reservation_amenities.length > 0) {
+            const firstA = res.reservation_amenities[0];
+            slot = String(firstA.start_slot || firstA.pricing_type || 'daytime').toLowerCase();
+        }
+        if (!slot) slot = 'daytime';
+
+        // Refresh settings from DOM if needed
+        if (!checkInParkSettings.daytime_start || checkInParkSettings.daytime_start === '06:00') {
+            try {
+                const raw = JSON.parse(document.querySelector('.resv-metrics')?.dataset.parkSettings || '{}');
+                checkInParkSettings = { ...checkInParkSettings, ...raw };
+            } catch (e) { /* ignore */ }
+        }
+
+        let startTimeStr = '08:00';
+        if (slot.includes('night')) {
+            startTimeStr = checkInParkSettings.nighttime_start || '18:00';
+        } else {
+            startTimeStr = checkInParkSettings.daytime_start || '08:00';
+        }
+
+        const timeParts = startTimeStr.split(':').map(Number);
+        const h = timeParts[0] || 0;
+        const m = timeParts[1] || 0;
+
+        const scheduledStart = new Date(year, month - 1, day, h, m, 0, 0);
+        // Earliest check-in is 1 hour before scheduled start
+        const earliestCheckIn = new Date(scheduledStart.getTime() - (60 * 60 * 1000));
+        const now = new Date();
+
+        if (now < earliestCheckIn) {
+            const formattedDate = earliestCheckIn.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            });
+            const formattedTime = earliestCheckIn.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            });
+            const formattedEarliest = `${formattedDate} · ${formattedTime}`;
+
+            return {
+                canCheckIn: false,
+                earliestCheckIn,
+                scheduledStart,
+                formattedEarliest,
+                message: `Not scheduled yet. Check-in opens 1 hour before the scheduled time (${formattedEarliest}).`,
+            };
+        }
+
+        return {
+            canCheckIn: true,
+            earliestCheckIn,
+            scheduledStart,
+            formattedEarliest: '',
+            message: '',
+        };
+    };
+
     const openCheckInModal = (reservationId) => {
+        // Get reservation data
+        const reservation = reservationData[reservationId];
+        if (reservation) {
+            const schedCheck = getReservationScheduleCheck(reservation);
+            if (!schedCheck.canCheckIn) {
+                if (typeof showToast === 'function') {
+                    showToast(schedCheck.message, 'warning');
+                } else {
+                    alert(schedCheck.message);
+                }
+                return;
+            }
+        }
+
         closeModal();
         pendingReservationId = reservationId;
         checkInCompanions = [];
@@ -3483,8 +3600,6 @@ window.AppPage['staff_reservations'] = function () {
             checkInTitle.textContent = `Check In Reservation #${reservationId}`;
         }
 
-        // Get reservation data
-        const reservation = reservationData[reservationId];
         currentReservationData = reservation;
         const resAmenities = reservation?.reservation_amenities || [];
 
@@ -3780,6 +3895,16 @@ window.AppPage['staff_reservations'] = function () {
                         if (isCurrentlyCheckedIn) {
                             // Lead to staff checkins page and open the modal of that reservation
                             window.location.href = `/staff/check-ins?reservation_id=${encodeURIComponent(reservationId)}`;
+                            return;
+                        }
+
+                        // Check schedule eligibility for online reservation check-in
+                        const schedCheck = getReservationScheduleCheck(body.reservation);
+                        if (!schedCheck.canCheckIn) {
+                            qrScannerStatus.textContent = schedCheck.message;
+                            if (typeof showToast === 'function') {
+                                showToast(schedCheck.message, 'warning');
+                            }
                             return;
                         }
 
@@ -4084,6 +4209,8 @@ window.AppPage['staff_reservations'] = function () {
         const isPendingOrConfirmed = ['pending', 'confirmed'].includes(statusLower);
         const isPastArrival = resDateStr && resDateStr < todayStr && isPendingOrConfirmed;
 
+        const scheduleCheck = getReservationScheduleCheck(reservation);
+
         let overdueBannerHtml = '';
         if (isPastArrival) {
             const rDate = new Date(resDateStr);
@@ -4096,6 +4223,18 @@ window.AppPage['staff_reservations'] = function () {
                     </svg>
                     <div>
                         <strong>Arrival Reminder:</strong> Scheduled arrival was <strong>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, reservation.start_slot, reservation.end_slot))}</strong> (${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} ago). The guest has not yet checked in.
+                    </div>
+                </div>
+            `;
+        }
+
+        let scheduleBannerHtml = '';
+        if (isPendingOrConfirmed && !isPastArrival && !scheduleCheck.canCheckIn) {
+            scheduleBannerHtml = `
+                <div class="mb-4 p-3.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200 text-xs font-medium flex items-center gap-2.5">
+                    <i class="bi bi-clock-history text-amber-600 dark:text-amber-400 text-base shrink-0"></i>
+                    <div>
+                        <strong>Upcoming Schedule:</strong> This booking is scheduled for <strong>${escapeHtml(formatStayDate(reservation.reservation_date, reservation.end_date, reservation.total_days, reservation.start_slot, reservation.end_slot))}</strong>. Check-in opens 1 hour before scheduled time (<strong>${escapeHtml(scheduleCheck.formattedEarliest)}</strong>).
                     </div>
                 </div>
             `;
@@ -4194,6 +4333,7 @@ window.AppPage['staff_reservations'] = function () {
         modalBody.innerHTML = `
             <div class="space-y-4">
                 ${overdueBannerHtml}
+                ${scheduleBannerHtml}
 
                 <!-- Main White Spacious Content Card -->
                 <div class="rounded-2xl border border-gray-100 dark:border-white/10 bg-white dark:bg-[#1c221e] p-5 sm:p-6">
@@ -4445,15 +4585,31 @@ window.AppPage['staff_reservations'] = function () {
                     </div>
                 `;
             } else if (isPendingOrConfirmed) {
-                rightActionsHtml = `
-                    <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
-                        <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
-                        <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-md active:scale-[0.98] inline-flex items-center gap-2" id="reservationModalConfirmBtn" data-open-check-in-modal="${reservation.id}">
-                            <i class="bi bi-check2-circle text-sm"></i>
-                            <span>Confirm</span>
-                        </button>
-                    </div>
-                `;
+                if (!scheduleCheck.canCheckIn) {
+                    rightActionsHtml = `
+                        <div class="flex items-center gap-2.5 ml-auto shrink-0 flex-wrap justify-end" id="reservationModalFooterRight">
+                            <div class="text-[11px] text-amber-700 dark:text-amber-300 font-medium hidden sm:inline-flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2.5 py-1 rounded-lg">
+                                <i class="bi bi-clock-history text-xs"></i>
+                                <span>Check-in opens: ${escapeHtml(scheduleCheck.formattedEarliest)}</span>
+                            </div>
+                            <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                            <button type="button" disabled class="cursor-not-allowed opacity-60 rounded-xl border border-gray-300/80 bg-gray-200 dark:bg-white/10 dark:border-white/15 dark:text-gray-400 px-6 py-2.5 text-xs font-bold text-gray-500 shadow-none inline-flex items-center gap-2 select-none" id="reservationModalConfirmBtn" title="${escapeHtml(scheduleCheck.message)}">
+                                <i class="bi bi-clock-history text-sm"></i>
+                                <span>Not Scheduled Yet</span>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    rightActionsHtml = `
+                        <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
+                            <button type="button" class="cursor-pointer rounded-xl border border-glass-border bg-white/80 dark:bg-white/10 px-5 py-2.5 text-xs font-semibold text-hp-text transition-all hover:bg-white dark:hover:bg-white/15 shadow-2xs" data-close-reservation-modal="true">Close</button>
+                            <button type="button" class="cursor-pointer rounded-xl border-0 bg-hp-green px-7 py-2.5 text-xs font-bold text-white transition-all hover:bg-hp-green-dark shadow-md active:scale-[0.98] inline-flex items-center gap-2" id="reservationModalConfirmBtn" data-open-check-in-modal="${reservation.id}">
+                                <i class="bi bi-check2-circle text-sm"></i>
+                                <span>Confirm</span>
+                            </button>
+                        </div>
+                    `;
+                }
             } else {
                 rightActionsHtml = `
                     <div class="flex items-center gap-2.5 ml-auto shrink-0" id="reservationModalFooterRight">
@@ -4473,6 +4629,12 @@ window.AppPage['staff_reservations'] = function () {
                 confirmBtn.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    if (confirmBtn.disabled || !scheduleCheck.canCheckIn) {
+                        if (typeof showToast === 'function') {
+                            showToast(scheduleCheck.message, 'warning');
+                        }
+                        return;
+                    }
                     openCheckInModal(reservation.id);
                 });
             }
@@ -6578,6 +6740,11 @@ window.AppPage['staff_reservations'] = function () {
 
         const trigger = event.target.closest('[data-open-check-in-modal]');
         if (!trigger) {
+            return;
+        }
+
+        if (trigger.disabled || trigger.getAttribute('disabled') !== null) {
+            event.preventDefault();
             return;
         }
 

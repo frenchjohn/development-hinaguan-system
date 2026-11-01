@@ -7505,10 +7505,37 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
     })->name('checkins.visit-only-check-in');
 
-    Route::post('/reservations/{reservation}/check-in', function (Request $request, Reservation $reservation) {
+    Route::post('/reservations/{reservation}/check-in', function (Request $request, Reservation $reservation) use ($formatLocalDate) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'staff') {
             return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Guard: Online reservations that are not scheduled yet cannot be checked in.
+        // Check-in opens 1 hour before scheduled start time.
+        if (strtolower($reservation->reservation_type ?? '') === 'online') {
+            $parkSettings = \App\Models\ParkSetting::first();
+            $startSlot = strtolower($reservation->start_slot ?? 'daytime');
+            $startTimeStr = str_contains($startSlot, 'night')
+                ? ($parkSettings?->nighttime_start ?? '18:00')
+                : ($parkSettings?->daytime_start ?? '08:00');
+
+            $startTimeFormatted = substr($startTimeStr, 0, 5);
+            $resDateStr = $formatLocalDate ? $formatLocalDate($reservation, 'reservation_date') : substr((string) ($reservation->reservation_date ?? ''), 0, 10);
+            if ($resDateStr) {
+                try {
+                    $scheduledStart = \Carbon\Carbon::parse("{$resDateStr} {$startTimeFormatted}", config('app.timezone', 'Asia/Manila'));
+                    $earliestCheckIn = $scheduledStart->copy()->subHour();
+                    if (now(config('app.timezone', 'Asia/Manila'))->lessThan($earliestCheckIn)) {
+                        $formattedEarliest = $earliestCheckIn->format('M j, Y · g:i A');
+                        return response()->json([
+                            'message' => "This reservation is not scheduled yet. Check-in opens 1 hour before the scheduled time ({$formattedEarliest}).",
+                        ], 422);
+                    }
+                } catch (\Throwable $e) {
+                    // proceed on parse error
+                }
+            }
         }
 
         $data = $request->validate([
