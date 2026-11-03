@@ -372,17 +372,21 @@
 						}
 					@endphp
 
+					@php
+						$currentCheckInTab = request('tab') === 'dashboard' ? 'dashboard' : 'reservation';
+					@endphp
+
 					<!-- MASTER TABS -->
 					<div class="mb-5 flex items-center justify-start">
 						<div class="inline-flex items-center gap-1.5 rounded-2xl border border-glass-border bg-glass p-1.5 shadow-glass backdrop-blur-md dark:border-white/10 dark:bg-[#181b19]/80" role="tablist">
-							<button type="button" class="checkins-tab is-active inline-flex cursor-pointer items-center gap-2 rounded-xl bg-hp-green px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-150" data-tab-target="reservation" role="tab" aria-selected="true">
+							<button type="button" class="checkins-tab {{ $currentCheckInTab === 'reservation' ? 'is-active bg-hp-green text-white shadow-sm' : 'bg-transparent text-hp-text-muted hover:bg-glass-hover hover:text-hp-text dark:text-[#9ca3af] dark:hover:text-[#f3f4f6]' }} inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150" data-tab-target="reservation" role="tab" aria-selected="{{ $currentCheckInTab === 'reservation' ? 'true' : 'false' }}">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
 								<span>Reservations</span>
 								@if($hasAnyReservationAmenityDue || ($resSummaryCheckoutDue ?? 0) > 0)
 									<span class="master-resv-due-dot inline-block h-2 w-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)] animate-pulse" title="Reservations have checkouts due"></span>
 								@endif
 							</button>
-							<button type="button" class="checkins-tab inline-flex cursor-pointer items-center gap-2 rounded-xl bg-transparent px-4 py-2 text-sm font-semibold text-hp-text-muted transition-all duration-150 hover:bg-glass-hover hover:text-hp-text dark:text-[#9ca3af] dark:hover:text-[#f3f4f6]" data-tab-target="dashboard" role="tab" aria-selected="false">
+							<button type="button" class="checkins-tab {{ $currentCheckInTab === 'dashboard' ? 'is-active bg-hp-green text-white shadow-sm' : 'bg-transparent text-hp-text-muted hover:bg-glass-hover hover:text-hp-text dark:text-[#9ca3af] dark:hover:text-[#f3f4f6]' }} inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150" data-tab-target="dashboard" role="tab" aria-selected="{{ $currentCheckInTab === 'dashboard' ? 'true' : 'false' }}">
 								<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
 								<span>Analytics Dashboard</span>
 							</button>
@@ -391,10 +395,10 @@
 
 
 
-					<div id="dashboardSection" class="tab-content-section" style="display: none;">
+					<div id="dashboardSection" class="tab-content-section" style="{{ $currentCheckInTab === 'dashboard' ? '' : 'display: none;' }}">
 						<div class="premium-dashboard grid grid-cols-1 gap-6 xl:grid-cols-2">
 						<!-- Widget 1: Overview -->
-						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+						<div id="widgetOverview" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
 							<div class="premium-widget__header mb-4 flex items-center gap-3">
 								<div class="widget-icon widget-icon--green flex h-9 w-9 items-center justify-center rounded-lg bg-[#e7f3ec] text-[#1c5c3c] dark:bg-[#1e2220] dark:text-[#6ab88c]">
 									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
@@ -468,7 +472,7 @@
 						</div>
 
 						<!-- Widget 2: Demographics -->
-						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+						<div id="widgetDemographics" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
 							<div class="premium-widget__header mb-4 flex items-center gap-3">
 								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
 									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -532,7 +536,7 @@
 						</div>
 
 						<!-- Widget 4: Age Groups -->
-						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+						<div id="widgetAgeGroups" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
 							<div class="premium-widget__header mb-4 flex items-center gap-3">
 								<div class="widget-icon widget-icon--blue flex h-9 w-9 items-center justify-center rounded-lg bg-[#e5f0f6] text-[#2a6a8f] dark:bg-[#182c38] dark:text-[#6ea9c9]">
 									<svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -610,7 +614,7 @@
 						</div>
 
 						<!-- Widget 5: Pool & Swimming Activity -->
-						<div class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass">
+						<div id="widgetPool" class="premium-widget rounded-2xl border border-glass-border bg-glass p-6 shadow-glass scroll-mt-6">
 							<div class="premium-widget__header mb-4 flex items-center justify-between">
 								<div class="flex items-center gap-3">
 									<div class="widget-icon flex h-9 w-9 items-center justify-center rounded-lg bg-[#e0f2fe] text-[#0284c7] dark:bg-[#082f49] dark:text-[#38bdf8]">
@@ -687,7 +691,7 @@
 						</div>
 
 						<!-- Widget 3: Checkout Alerts -->
-						<div class="premium-widget premium-widget--alert flex flex-wrap gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass xl:col-span-2">
+						<div id="widgetCheckoutAlerts" class="premium-widget premium-widget--alert flex flex-wrap gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-glass xl:col-span-2 scroll-mt-6">
 							<div class="min-w-[300px] flex-1">
 								<div class="premium-widget__header mb-4 flex items-center gap-3">
 									<div class="widget-icon widget-icon--orange flex h-9 w-9 items-center justify-center rounded-lg bg-[#fef3c7] text-[#b45309] dark:bg-[#3a2f14] dark:text-[#e5c35c]">
@@ -766,7 +770,7 @@
 					</div>
 
 					{{-- RESERVATION TABLE --}}
-					<div id="reservationTableSection" class="tab-content-section">
+					<div id="reservationTableSection" class="tab-content-section" style="{{ $currentCheckInTab === 'dashboard' ? 'display: none;' : '' }}">
 						<section class="rounded-2xl border border-glass-border bg-glass shadow-glass dark:border-white/15 dark:bg-[#181b19]/80 relative">
 							<div class="flex items-center justify-between gap-4 border-b border-glass-border px-6 py-5 rounded-t-2xl dark:border-white/10">
 								<div class="flex items-center">

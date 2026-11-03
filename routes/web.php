@@ -2987,14 +2987,118 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->pluck('total', 'status')
             ->toArray();
 
-        // Revenue per day for the last 7 days (bar chart)
-        $weekRevenue = [];
+        // 7-day executive financial & booking trend analysis
+        $paymentTypes = [
+            'walkin_created', 'check_in', 'online_reservation_created',
+            'companion_added', 'amenity_added', 'additional_charge_paid',
+            'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+        ];
+
         $weekDays = [];
+        $weekDates = [];
+        $weekFullDates = [];
+        $weekRevenue = [];
+        $weekDeskRevenue = [];
+        $weekOnlineRevenue = [];
+        $weekBookings = [];
+        $weekGuests = [];
+
         for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $weekDays[] = $date->format('D');
-            $weekRevenue[] = (int) Reservation::whereDate('check_in', $date->toDateString())->sum('amount_paid');
+            $dt = now()->subDays($i);
+            $dateStr = $dt->toDateString();
+            $weekDays[] = $dt->format('D');
+            $weekDates[] = $dt->format('M d');
+            $weekFullDates[] = $dt->format('l, M d, Y');
+
+            // Front-desk collections handled by staff
+            $deskCol = (float) \App\Models\ActivityLog::query()
+                ->whereIn('activity_type', $paymentTypes)
+                ->whereDate('created_at', $dateStr)
+                ->whereNotNull('staff_id')
+                ->sum('payment_amount');
+
+            // Online payments / downpayments
+            $onlineCol = (float) \App\Models\ActivityLog::query()
+                ->whereIn('activity_type', $paymentTypes)
+                ->whereDate('created_at', $dateStr)
+                ->where(function ($q) {
+                    $q->whereNull('staff_id')->orWhere('actor_role', 'guest');
+                })
+                ->sum('payment_amount');
+
+            $onlineResCreated = \App\Models\ActivityLog::query()
+                ->where('activity_type', 'online_reservation_created')
+                ->whereDate('created_at', $dateStr)
+                ->where('payment_amount', '<=', 0)
+                ->with('reservation')
+                ->get();
+            foreach ($onlineResCreated as $log) {
+                $dep = (float) ($log->metadata['amount_paid'] ?? ($log->reservation->amount_paid ?? 0));
+                if ($dep <= 0 && $log->reservation && (float) $log->reservation->total_amount > 0) {
+                    $dep = round((float) $log->reservation->total_amount * 0.50, 2);
+                }
+                $onlineCol += $dep;
+            }
+
+            $dayTotalCol = $deskCol + $onlineCol;
+            $checkInPaidFallback = (float) Reservation::query()
+                ->whereDate('check_in', $dateStr)
+                ->whereNotIn('status', ['Cancelled'])
+                ->sum('amount_paid');
+            if ($dayTotalCol <= 0 && $checkInPaidFallback > 0) {
+                $dayTotalCol = $checkInPaidFallback;
+                $deskCol = $checkInPaidFallback;
+            }
+
+            $weekDeskRevenue[] = round($deskCol, 2);
+            $weekOnlineRevenue[] = round($onlineCol, 2);
+            $weekRevenue[] = round($dayTotalCol, 2);
+
+            $dayBookings = Reservation::query()
+                ->where(function ($q) use ($dateStr) {
+                    $q->whereDate('created_at', $dateStr)
+                      ->orWhereDate('reservation_date', $dateStr);
+                })
+                ->whereNotIn('status', ['Cancelled'])
+                ->count();
+
+            $dayGuests = (int) Reservation::query()
+                ->where(function ($q) use ($dateStr) {
+                    $q->whereDate('check_in', $dateStr)
+                      ->orWhereDate('reservation_date', $dateStr);
+                })
+                ->whereNotIn('status', ['Cancelled'])
+                ->sum('number_of_guests');
+
+            $weekBookings[] = $dayBookings;
+            $weekGuests[] = $dayGuests;
         }
+
+        $total7DayRevenue = array_sum($weekRevenue);
+        $avgDailyRevenue = count($weekRevenue) > 0 ? $total7DayRevenue / count($weekRevenue) : 0;
+
+        $peakRevIdx = 0;
+        $maxRev = 0;
+        foreach ($weekRevenue as $idx => $rVal) {
+            if ($rVal > $maxRev) {
+                $maxRev = $rVal;
+                $peakRevIdx = $idx;
+            }
+        }
+        $peakRevDay = $maxRev > 0 ? "{$weekDays[$peakRevIdx]} (₱" . number_format($maxRev, 2) . ")" : 'None';
+
+        $total7DayBookings = array_sum($weekBookings);
+        $total7DayGuests = array_sum($weekGuests);
+
+        $peakBookIdx = 0;
+        $maxBook = 0;
+        foreach ($weekBookings as $idx => $bVal) {
+            if ($bVal > $maxBook) {
+                $maxBook = $bVal;
+                $peakBookIdx = $idx;
+            }
+        }
+        $peakBookDay = $maxBook > 0 ? "{$weekDays[$peakBookIdx]} ({$maxBook} bookings)" : 'None';
 
         $recentActivities = ActivityLog::orderByDesc('created_at')->take(10)->get();
 
@@ -3014,7 +3118,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'recentActivities' => $recentActivities,
             'statusBreakdown' => $statusBreakdown,
             'weekRevenue' => $weekRevenue,
+            'weekDeskRevenue' => $weekDeskRevenue,
+            'weekOnlineRevenue' => $weekOnlineRevenue,
+            'weekBookings' => $weekBookings,
+            'weekGuests' => $weekGuests,
             'weekDays' => $weekDays,
+            'weekDates' => $weekDates,
+            'weekFullDates' => $weekFullDates,
+            'total7DayRevenue' => $total7DayRevenue,
+            'avgDailyRevenue' => $avgDailyRevenue,
+            'peakRevDay' => $peakRevDay,
+            'total7DayBookings' => $total7DayBookings,
+            'total7DayGuests' => $total7DayGuests,
+            'peakBookDay' => $peakBookDay,
             'predictionReport' => $predictionReport,
         ]);
     })->name('dashboard');
@@ -4076,6 +4192,240 @@ Route::prefix('admin')->name('admin.')->group(function () {
         ));
     })->name('payment');
 
+    Route::get('/payment/pdf', function (Request $request) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || $user['role'] !== 'admin') {
+            return redirect()->route('login');
+        }
+
+        $startDate = trim((string) $request->query('start_date', ''));
+        $endDate   = trim((string) $request->query('end_date', ''));
+        $session   = trim((string) $request->query('session', ''));
+        $type      = trim((string) $request->query('type', ''));
+        $staff     = trim((string) $request->query('staff', ''));
+        $search    = trim((string) $request->query('search', ''));
+
+        if ($startDate !== '' && $endDate !== '' && $startDate > $endDate) {
+            $tmp = $startDate;
+            $startDate = $endDate;
+            $endDate = $tmp;
+        }
+
+        $paymentTypes = [
+            'walkin_created', 'check_in', 'online_reservation_created',
+            'companion_added', 'amenity_added', 'additional_charge_paid',
+            'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+        ];
+
+        $rawLogs = \App\Models\ActivityLog::with('reservation')
+            ->whereIn('activity_type', $paymentTypes)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $parkSettings = \App\Models\ParkSetting::first();
+        $dayStart   = $parkSettings->daytime_start ?? '08:00:00';
+        $dayEnd     = $parkSettings->daytime_end   ?? '17:00:00';
+        $nightStart = $parkSettings->nighttime_start ?? '18:00:00';
+        $nightEnd   = $parkSettings->nighttime_end   ?? '08:00:00';
+
+        $formatTimeStr = function ($val, $fallback) {
+            if (!$val) return $fallback;
+            try {
+                $clean = strlen($val) === 5 ? $val . ':00' : $val;
+                return \Carbon\Carbon::createFromFormat('H:i:s', $clean)->format('g:i A');
+            } catch (\Exception $e) {
+                return $val;
+            }
+        };
+
+        $daytimeHoursFormatted   = $formatTimeStr($dayStart, '8:00 AM') . ' – ' . $formatTimeStr($dayEnd, '5:00 PM');
+        $overnightHoursFormatted = $formatTimeStr($nightStart, '6:00 PM') . ' – ' . $formatTimeStr($nightEnd, '8:00 AM');
+
+        $transactions = $rawLogs->map(function ($log) use ($dayStart, $dayEnd, $nightStart, $nightEnd) {
+            $isOnline = ($log->actor_role === 'guest') || is_null($log->staff_id);
+            $amount = (float) ($log->payment_amount ?? 0);
+            if ($amount <= 0 && $log->activity_type === 'online_reservation_created') {
+                $amount = (float) ($log->metadata['amount_paid'] ?? ($log->reservation->amount_paid ?? 0));
+                if ($amount <= 0 && $log->reservation && (float) $log->reservation->total_amount > 0) {
+                    $amount = round((float) $log->reservation->total_amount * 0.50, 2);
+                }
+            }
+
+            $time24 = $log->created_at->format('H:i:s');
+            $resSlot = strtolower($log->reservation->start_slot ?? '');
+            $isDay = ($time24 >= $dayStart && $time24 <= $dayEnd);
+            $isNight = ($nightStart > $nightEnd)
+                ? ($time24 >= $nightStart || $time24 <= $nightEnd)
+                : ($time24 >= $nightStart && $time24 <= $nightEnd);
+
+            if ($isDay) {
+                $session = 'daytime';
+            } elseif ($isNight) {
+                $session = 'overnight';
+            } elseif (str_contains($resSlot, 'night')) {
+                $session = 'overnight';
+            } else {
+                $session = 'daytime';
+            }
+
+            return [
+                'id'              => $log->id,
+                'date'            => $log->created_at->format('M d, Y'),
+                'time'            => $log->created_at->format('h:i A'),
+                'time_24'         => $time24,
+                'session'         => $session,
+                'datetime_iso'    => $log->created_at->format('Y-m-d'),
+                'timestamp'       => $log->created_at->timestamp,
+                'reservation_id'  => $log->reservation_id,
+                'activity_type'   => $log->activity_type,
+                'title'           => $log->title,
+                'description'     => $log->description,
+                'payment_amount'  => $amount,
+                'actor_name'      => $log->actor_name,
+                'actor_role'      => $log->actor_role,
+                'staff_id'        => $log->staff_id,
+                'is_online'       => $isOnline,
+            ];
+        });
+
+        // 1. Date filter (exact single date or bounded range)
+        if ($startDate !== '' && $endDate !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($startDate, $endDate) {
+                return $tx['datetime_iso'] >= $startDate && $tx['datetime_iso'] <= $endDate;
+            });
+        } elseif ($startDate !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($startDate) {
+                return $tx['datetime_iso'] === $startDate;
+            });
+        } elseif ($endDate !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($endDate) {
+                return $tx['datetime_iso'] <= $endDate;
+            });
+        }
+
+        // 2. Session filter
+        if ($session !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($session) {
+                return $tx['session'] === $session;
+            });
+        }
+
+        // 3. Type filter
+        if ($type !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($type) {
+                return $tx['activity_type'] === $type;
+            });
+        }
+
+        // 4. Staff filter
+        if ($staff !== '') {
+            $transactions = $transactions->filter(function ($tx) use ($staff) {
+                if ($staff === '__online__') {
+                    return $tx['is_online'];
+                }
+                return (! $tx['is_online']) && ($tx['actor_name'] === $staff);
+            });
+        }
+
+        // 5. Search query filter
+        if ($search !== '') {
+            $q = mb_strtolower($search);
+            $transactions = $transactions->filter(function ($tx) use ($q) {
+                $searchTarget = mb_strtolower(
+                    ($tx['title'] ?? '') . ' ' .
+                    ($tx['actor_name'] ?? '') . ' ' .
+                    ($tx['reservation_id'] ?? '') . ' ' .
+                    ($tx['description'] ?? '')
+                );
+                return str_contains($searchTarget, $q);
+            });
+        }
+
+        // Reset collection keys
+        $transactions = $transactions->values();
+
+        $totalCollected    = (float) $transactions->sum('payment_amount');
+        $totalOnline       = (float) $transactions->where('is_online', true)->sum('payment_amount');
+        $totalStaffHandled = $totalCollected - $totalOnline;
+        $transactionCount  = $transactions->count();
+
+        // Descriptive filter labels for header metadata
+        $dateFilterLabel = 'All Dates';
+        if ($startDate !== '' && $endDate !== '') {
+            if ($startDate === $endDate) {
+                try {
+                    $dateFilterLabel = \Carbon\Carbon::parse($startDate)->format('M d, Y');
+                } catch (\Throwable $e) {
+                    $dateFilterLabel = $startDate;
+                }
+            } else {
+                try {
+                    $dateFilterLabel = \Carbon\Carbon::parse($startDate)->format('M d, Y') . ' — ' . \Carbon\Carbon::parse($endDate)->format('M d, Y');
+                } catch (\Throwable $e) {
+                    $dateFilterLabel = "{$startDate} — {$endDate}";
+                }
+            }
+        } elseif ($startDate !== '') {
+            try {
+                $dateFilterLabel = \Carbon\Carbon::parse($startDate)->format('M d, Y');
+            } catch (\Throwable $e) {
+                $dateFilterLabel = $startDate;
+            }
+        } elseif ($endDate !== '') {
+            try {
+                $dateFilterLabel = 'Until ' . \Carbon\Carbon::parse($endDate)->format('M d, Y');
+            } catch (\Throwable $e) {
+                $dateFilterLabel = "Until {$endDate}";
+            }
+        }
+
+        $sessionFilterLabel = 'All Sessions';
+        if ($session === 'daytime') {
+            $sessionFilterLabel = 'Daytime (' . $daytimeHoursFormatted . ')';
+        } elseif ($session === 'overnight') {
+            $sessionFilterLabel = 'Overnight (' . $overnightHoursFormatted . ')';
+        }
+
+        $typeLabelMap = [
+            'walkin_created'              => 'Walk-In Check-In',
+            'check_in'                    => 'Check-In Payment',
+            'online_reservation_created'  => 'Online Downpayment',
+            'companion_added'             => 'Companion Added',
+            'amenity_added'               => 'Amenity Added',
+            'additional_charge_paid'      => 'Damage / Extra Charge',
+            'stay_extended'               => 'Stay Extension',
+            'amenity_extended'            => 'Amenity Extension',
+            'check_out'                   => 'Check-Out',
+            'amenity_checked_out'         => 'Amenity Check-Out',
+        ];
+        $typeFilterLabel = $type !== '' ? ($typeLabelMap[$type] ?? ucfirst($type)) : 'All Types';
+
+        $staffFilterLabel = 'All Staff / Online';
+        if ($staff === '__online__') {
+            $staffFilterLabel = 'Online / Guest';
+        } elseif ($staff !== '') {
+            $staffFilterLabel = $staff;
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.payment-transactions', [
+            'transactions'        => $transactions,
+            'totalCollected'     => $totalCollected,
+            'totalOnline'        => $totalOnline,
+            'totalStaffHandled'  => $totalStaffHandled,
+            'transactionCount'   => $transactionCount,
+            'dateFilterLabel'    => $dateFilterLabel,
+            'sessionFilterLabel' => $sessionFilterLabel,
+            'typeFilterLabel'    => $typeFilterLabel,
+            'staffFilterLabel'   => $staffFilterLabel,
+            'searchQuery'        => $search,
+            'generatedAt'        => now()->format('M d, Y h:i A'),
+            'generatedBy'        => $user['name'] ?? 'Admin',
+        ])->setPaper('a4', 'landscape');
+
+        $fileName = 'Payment_Transactions_' . now()->format('Y-m-d_His') . '.pdf';
+        return $pdf->stream($fileName);
+    })->name('payment.pdf');
+
     Route::get('/settings', function (Request $request) {
         $user = $request->session()->get('auth_user');
         if (! $user || $user['role'] !== 'admin') {
@@ -4997,24 +5347,98 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ];
         })->values();
 
-        // ---- Chart data for the redesigned dashboard ----
-        // Bookings + collected revenue for the last 7 days (oldest first).
+        // ---- Chart data for the staff operational dashboard ----
+        // 7-day daily guest traffic, check-ins, and front-desk collections
         $weekDays = [];
+        $weekDates = [];
+        $weekFullDates = [];
+        $weekCheckInCounts = [];
+        $weekWalkInCheckIns = [];
+        $weekOnlineCheckIns = [];
+        $weekGuestsAdmitted = [];
+        $weekDeskCollections = [];
+        $weekTotalCollections = [];
         $weekReservationCounts = [];
         $weekRevenue = [];
+
+        $paymentTypes = [
+            'walkin_created', 'check_in', 'online_reservation_created',
+            'companion_added', 'amenity_added', 'additional_charge_paid',
+            'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+        ];
+
         for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $weekDays[] = $date->format('D');
+            $dt = now()->subDays($i);
+            $dateStr = $dt->toDateString();
+            $dayShort = $dt->format('D');
+            $dateShort = $dt->format('M d');
+            $fullDateStr = $dt->format('D, M d, Y');
+
+            $weekDays[] = $dayShort;
+            $weekDates[] = $dateShort;
+            $weekFullDates[] = $fullDateStr;
+
+            // Check-ins handled on this date
+            $dayCheckIns = Reservation::query()
+                ->whereDate('check_in', $dateStr)
+                ->whereNotIn('status', ['Cancelled'])
+                ->get(['id', 'reservation_type', 'number_of_guests', 'amount_paid']);
+
+            $checkInTotal = $dayCheckIns->count();
+            $walkInCount = $dayCheckIns->where('reservation_type', 'walk-in')->count();
+            $onlineCount = $checkInTotal - $walkInCount;
+
+            // Guests admitted on this date
+            $guestsCount = (int) $dayCheckIns->sum('number_of_guests');
+            if ($guestsCount === 0 && $checkInTotal > 0) {
+                $guestsCount = ReservationGuest::query()
+                    ->whereHas('reservation', fn($q) => $q->whereDate('check_in', $dateStr)->whereNotIn('status', ['Cancelled']))
+                    ->count();
+            }
+
+            // Desk collections (staff-handled activity logs)
+            $deskCol = (float) \App\Models\ActivityLog::query()
+                ->whereIn('activity_type', $paymentTypes)
+                ->whereDate('created_at', $dateStr)
+                ->whereNotNull('staff_id')
+                ->sum('payment_amount');
+
+            // Total payments recorded on this date
+            $totalCol = (float) \App\Models\ActivityLog::query()
+                ->whereIn('activity_type', $paymentTypes)
+                ->whereDate('created_at', $dateStr)
+                ->sum('payment_amount');
+
+            $weekCheckInCounts[] = $checkInTotal;
+            $weekWalkInCheckIns[] = $walkInCount;
+            $weekOnlineCheckIns[] = $onlineCount;
+            $weekGuestsAdmitted[] = $guestsCount;
+            $weekDeskCollections[] = $deskCol;
+            $weekTotalCollections[] = $totalCol;
+
+            // Backward compatibility
             $weekReservationCounts[] = Reservation::query()
-                ->whereDate('reservation_date', $date)
+                ->whereDate('reservation_date', $dt)
                 ->whereNotIn('status', ['Cancelled'])
                 ->count();
-            $weekRevenue[] = (float) Reservation::query()
-                ->whereDate('check_in', $date)
-                ->whereNotIn('status', ['Cancelled'])
-                ->sum('amount_paid');
+            $weekRevenue[] = (float) $dayCheckIns->sum('amount_paid');
         }
-        $todayRevenue = $weekRevenue[6] ?? 0;
+
+        $todayRevenue = $weekDeskCollections[6] ?? ($weekRevenue[6] ?? 0);
+        $totalWeekGuests = array_sum($weekGuestsAdmitted);
+        $totalWeekCheckIns = array_sum($weekCheckInCounts);
+        $totalWeekDeskCollections = array_sum($weekDeskCollections);
+
+        // Peak guest activity day
+        $peakIdx = 0;
+        $maxGuests = 0;
+        foreach ($weekGuestsAdmitted as $idx => $gCount) {
+            if ($gCount > $maxGuests) {
+                $maxGuests = $gCount;
+                $peakIdx = $idx;
+            }
+        }
+        $peakDayLabel = $maxGuests > 0 ? "{$weekDays[$peakIdx]} ({$maxGuests} guests)" : 'None';
 
         // Reservation status breakdown (only statuses that actually exist).
         $statusCounts = Reservation::query()
@@ -5163,6 +5587,18 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'guestsOnSiteCount',
             'activityItems',
             'weekDays',
+            'weekDates',
+            'weekFullDates',
+            'weekCheckInCounts',
+            'weekWalkInCheckIns',
+            'weekOnlineCheckIns',
+            'weekGuestsAdmitted',
+            'weekDeskCollections',
+            'weekTotalCollections',
+            'totalWeekGuests',
+            'totalWeekCheckIns',
+            'totalWeekDeskCollections',
+            'peakDayLabel',
             'weekReservationCounts',
             'weekRevenue',
             'todayRevenue',

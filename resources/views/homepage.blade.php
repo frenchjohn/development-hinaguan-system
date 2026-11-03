@@ -799,24 +799,18 @@
                 </div>
             </div>
 
-            <div class="text-center mt-10 relative z-10 flex flex-col items-center justify-center gap-3">
-                <a href="{{ route('feedback', ['write' => 'true']) }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
-                    <i class="bi bi-pencil-square text-sm"></i>
-                    <span>Write a Review</span>
-                </a>
-                <a href="{{ route('feedback') }}" class="text-xs text-emerald-200/80 hover:text-[#a3e635] transition-colors underline underline-offset-4 decoration-emerald-500/50 hover:decoration-[#a3e635] font-medium">
-                    View other reviews
+            <div class="text-center mt-10 relative z-10 flex flex-col items-center justify-center gap-2">
+                <a href="{{ route('feedback') }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
+                    <i class="bi bi-chat-square-quote text-sm"></i>
+                    <span>View All Reviews</span>
                 </a>
             </div>
         @else
             <div class="text-center py-12 max-w-md mx-auto relative z-10 flex flex-col items-center justify-center gap-3">
-                <p class="text-emerald-100/70 mb-2">No guest reviews yet. Be the first to share your Hinaguan experience!</p>
-                <a href="{{ route('feedback', ['write' => 'true']) }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
-                    <i class="bi bi-pencil-square text-sm"></i>
-                    <span>Write a Review</span>
-                </a>
-                <a href="{{ route('feedback') }}" class="text-xs text-emerald-200/80 hover:text-[#a3e635] transition-colors underline underline-offset-4 decoration-emerald-500/50 hover:decoration-[#a3e635] font-medium">
-                    View other reviews
+                <p class="text-emerald-100/70 mb-2">No guest reviews yet. Reviews are invited from verified guests following checkout.</p>
+                <a href="{{ route('feedback') }}" class="inline-flex items-center gap-2 bg-[#a3e635] hover:bg-[#bef264] text-[#082214] font-extrabold px-8 py-3.5 rounded-full text-xs uppercase tracking-wider transition-all duration-300 shadow-[0_2px_15px_rgba(163,230,53,0.35)] transform hover:scale-105 active:scale-95 no-underline">
+                    <i class="bi bi-chat-square-quote text-sm"></i>
+                    <span>View All Reviews</span>
                 </a>
             </div>
         @endif

@@ -9,19 +9,17 @@
     {{-- Header Strip --}}
     <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-glass-border pb-2">
         <div class="flex items-center gap-2">
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-hp-green-dark dark:text-[#f3f4f6]">
-                    Visitor Traffic Prediction
+            <span class="text-xs font-bold uppercase tracking-wider text-hp-green-dark dark:text-[#f3f4f6]">
+                Visitor Traffic Prediction
+            </span>
+            <span class="rounded bg-black/5 px-2 py-0.5 text-[0.68rem] font-semibold text-hp-text-muted dark:bg-white/10">
+                {{ $predictionReport['day_name'] }}
+            </span>
+            @if ($predictionReport['is_holiday'])
+                <span class="rounded bg-amber-500/15 px-2 py-0.5 text-[0.68rem] font-bold text-amber-800 dark:text-amber-300">
+                    Holiday: {{ $predictionReport['holiday_name'] }}
                 </span>
-                <span class="rounded bg-black/5 px-2 py-0.5 text-[0.68rem] font-semibold text-hp-text-muted dark:bg-white/10">
-                    {{ $predictionReport['day_name'] }}
-                </span>
-                @if ($predictionReport['is_holiday'])
-                    <span class="rounded bg-amber-500/15 px-2 py-0.5 text-[0.68rem] font-bold text-amber-800 dark:text-amber-300">
-                        Holiday: {{ $predictionReport['holiday_name'] }}
-                    </span>
-                @endif
-            </div>
+            @endif
         </div>
 
         <div class="flex items-center gap-1.5 text-xs">

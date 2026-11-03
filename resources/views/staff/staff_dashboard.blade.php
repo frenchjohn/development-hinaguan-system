@@ -169,8 +169,15 @@
                 </section>
 
                 {{-- ===== LIVE ANALYTICS: 2-column first card + 4 cards (5 total) ===== --}}
-                <h3 class="mb-3 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Live Analytics</h3>
+                <div class="mb-3 flex items-center justify-between">
+                    <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Live Analytics</h3>
+                    <a href="{{ route('staff.checkins', ['tab' => 'dashboard']) }}#dashboardSection" class="inline-flex items-center gap-1 text-xs font-semibold text-hp-green hover:underline dark:text-emerald-400" title="Go to Analytics Dashboard in Check-Ins">
+                        <span>Check-Ins Analytics</span>
+                        <i class="bi bi-arrow-right text-[0.7rem]"></i>
+                    </a>
+                </div>
                 @php
+                    $checkinsDashboardUrl = route('staff.checkins', ['tab' => 'dashboard']);
                     $laPoolNoPct = 100 - $laPoolAccessPct;
                     $laWalkInGuestPct = $laTotalLive > 0 ? round(($activeWalkInGuests / $laTotalLive) * 100) : 0;
                     $laOnlineGuestPct = $laTotalLive > 0 ? max(0, 100 - $laWalkInGuestPct) : 0;
@@ -183,15 +190,16 @@
                     <div class="lg:col-span-2 flex flex-col justify-between rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
                         {{-- Card Header --}}
                         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-glass-border/60 pb-2 dark:border-white/5">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green">
+                            <a href="{{ $checkinsDashboardUrl }}#dashboardSection" class="group/title flex items-center gap-2 text-inherit no-underline hover:opacity-85 transition-opacity" title="Open Analytics Dashboard in Check-Ins">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green group-hover/title:bg-hp-green group-hover/title:text-white transition-colors">
                                     <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                 </span>
                                 <div class="flex items-center gap-1.5">
-                                    <span class="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-hp-text dark:text-[#f3f4f6]">Active Overview</span>
+                                    <span class="text-[0.7rem] font-bold uppercase tracking-[0.08em] text-hp-text group-hover/title:text-hp-green dark:text-[#f3f4f6] dark:group-hover/title:text-emerald-400 transition-colors">Active Overview</span>
                                     <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-hp-green" title="Live"></span>
+                                    <i class="bi bi-arrow-up-right text-[0.65rem] text-hp-text-muted opacity-0 group-hover/title:opacity-100 transition-opacity"></i>
                                 </div>
-                            </div>
+                            </a>
 
                             {{-- Channel Legends & View Switcher --}}
                             <div class="flex items-center gap-2.5">
@@ -211,6 +219,10 @@
                                         <i class="bi bi-bar-chart-fill"></i> Bars
                                     </button>
                                 </div>
+                                <a href="{{ $checkinsDashboardUrl }}#dashboardSection" class="inline-flex items-center gap-1 text-[0.65rem] font-semibold text-hp-green hover:underline dark:text-emerald-400" title="Open Analytics Dashboard">
+                                    <span>Analytics Dashboard</span>
+                                    <i class="bi bi-arrow-right text-[0.6rem]"></i>
+                                </a>
                             </div>
                         </div>
 
@@ -220,10 +232,10 @@
                             <div class="relative flex flex-col items-center justify-center">
                                 <div class="relative h-[105px] w-[105px]">
                                     <canvas id="activeOverviewDonutCanvas" class="h-full w-full"></canvas>
-                                    <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-                                        <span class="font-display text-xl font-extrabold leading-none text-[#1c5c3c] dark:text-[#f3f4f6]">{{ $laTotalLive }}</span>
+                                    <a href="{{ $checkinsDashboardUrl }}#dashboardSection" class="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center text-center group/center hover:scale-105 transition-transform" title="Go to Analytics Dashboard in Check-Ins">
+                                        <span class="font-display text-xl font-extrabold leading-none text-[#1c5c3c] group-hover/center:text-hp-green dark:text-[#f3f4f6] dark:group-hover/center:text-emerald-400 transition-colors">{{ $laTotalLive }}</span>
                                         <span class="mt-0.5 text-[0.55rem] font-bold uppercase tracking-wider text-hp-text-muted">On-Site</span>
-                                    </div>
+                                    </a>
                                 </div>
                             </div>
 
@@ -237,7 +249,7 @@
                                     </div>
                                     <div class="flex h-2.5 w-full overflow-hidden rounded-full bg-black/5 p-0.5 dark:bg-white/10">
                                         @if($laTotalLive > 0)
-                                            @if($activeWalkInGuests > 0)
+                                             @if($activeWalkInGuests > 0)
                                                 <div class="h-full rounded-l-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] transition-all duration-500" style="width: {{ $laWalkInGuestPct }}%" title="Walk-in: {{ $activeWalkInGuests }} ({{ $laWalkInGuestPct }}%)"></div>
                                             @endif
                                             @if($activeOnlineGuests > 0)
@@ -298,10 +310,13 @@
                     </script>
 
                     {{-- Card 2: Demographics --}}
-                    <div class="flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                    <a href="{{ $checkinsDashboardUrl }}#widgetDemographics" class="group flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] hover:border-hp-green/30 dark:border-white/10 dark:bg-[#181b19]/80 cursor-pointer block text-inherit no-underline" title="View Demographics in Check-Ins Analytics Dashboard">
                         <div class="flex items-center justify-between">
-                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Demographics</span>
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(42,106,143,0.12)] text-[#2a6a8f]">
+                            <span class="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted group-hover:text-hp-green dark:group-hover:text-emerald-400 transition-colors">
+                                <span>Demographics</span>
+                                <i class="bi bi-arrow-up-right text-[0.6rem] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(42,106,143,0.12)] text-[#2a6a8f] group-hover:bg-[#2a6a8f] group-hover:text-white transition-colors">
                                 <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                             </span>
                         </div>
@@ -329,13 +344,16 @@
                                 <div class="text-[0.6rem] font-bold text-[#f59e0b]">{{ $laPctForeign }}%</div>
                             </div>
                         </div>
-                    </div>
+                    </a>
 
                     {{-- Card 3: Age Groups --}}
-                    <div class="flex flex-col gap-2 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                    <a href="{{ $checkinsDashboardUrl }}#widgetAgeGroups" class="group flex flex-col gap-2 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] hover:border-hp-green/30 dark:border-white/10 dark:bg-[#181b19]/80 cursor-pointer block text-inherit no-underline" title="View Age Groups in Check-Ins Analytics Dashboard">
                         <div class="flex items-center justify-between">
-                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Age Groups</span>
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(168,85,247,0.12)] text-[#7c3aed]">
+                            <span class="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted group-hover:text-hp-green dark:group-hover:text-emerald-400 transition-colors">
+                                <span>Age Groups</span>
+                                <i class="bi bi-arrow-up-right text-[0.6rem] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(168,85,247,0.12)] text-[#7c3aed] group-hover:bg-[#7c3aed] group-hover:text-white transition-colors">
                                 <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </span>
                         </div>
@@ -373,13 +391,16 @@
                             <span class="inline-block h-1 w-1 animate-pulse rounded-full bg-hp-green"></span>
                             {{ $laTotalLive }} on-site now
                         </div>
-                    </div>
+                    </a>
 
                     {{-- Card 4: Pool Activity --}}
-                    <div class="flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] dark:border-white/10 dark:bg-[#181b19]/80">
+                    <a href="{{ $checkinsDashboardUrl }}#widgetPool" class="group flex flex-col gap-2.5 rounded-2xl border border-glass-border bg-glass p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] hover:border-[#0284c7]/30 dark:border-white/10 dark:bg-[#181b19]/80 cursor-pointer block text-inherit no-underline" title="View Pool Activity in Check-Ins Analytics Dashboard">
                         <div class="flex items-center justify-between">
-                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted">Pool Activity</span>
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(2,132,199,0.12)] text-[#0284c7]">
+                            <span class="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.08em] text-hp-text-muted group-hover:text-[#0284c7] transition-colors">
+                                <span>Pool Activity</span>
+                                <i class="bi bi-arrow-up-right text-[0.6rem] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[rgba(2,132,199,0.12)] text-[#0284c7] group-hover:bg-[#0284c7] group-hover:text-white transition-colors">
                                 <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0M2.25 16.5c1.5 1 3 1 4.5 0s3-1 4.5 0 3 1 4.5 0 3-1 4.5 0"/></svg>
                             </span>
                         </div>
@@ -403,13 +424,16 @@
                             <div class="rounded-l-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8]" style="width:{{ $laPoolAccessPct }}%;"></div>
                             <div class="rounded-r-full bg-slate-200 dark:bg-slate-700" style="width:{{ $laPoolNoPct }}%;"></div>
                         </div>
-                    </div>
+                    </a>
 
                     {{-- Card 5: Checkout Alerts --}}
-                    <div class="flex flex-col gap-2.5 rounded-2xl border p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] {{ $dashboardGuestsDue > 0 ? 'border-[rgba(225,29,72,0.35)] bg-[rgba(225,29,72,0.03)]' : 'border-glass-border bg-glass dark:border-white/10 dark:bg-[#181b19]/80' }}">
+                    <a href="{{ $checkinsDashboardUrl }}#widgetCheckoutAlerts" class="group flex flex-col gap-2.5 rounded-2xl border p-3.5 shadow-glass transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(13,44,29,0.12)] hover:border-hp-green/30 cursor-pointer block text-inherit no-underline {{ $dashboardGuestsDue > 0 ? 'border-[rgba(225,29,72,0.35)] bg-[rgba(225,29,72,0.03)]' : 'border-glass-border bg-glass dark:border-white/10 dark:bg-[#181b19]/80' }}" title="View Checkout Alerts in Check-Ins Analytics Dashboard">
                         <div class="flex items-center justify-between">
-                            <span class="text-[0.65rem] font-bold uppercase tracking-[0.08em] {{ $dashboardGuestsDue > 0 ? 'text-[#e11d48]' : 'text-hp-text-muted' }}">Checkout Alerts</span>
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ $dashboardGuestsDue > 0 ? 'bg-[rgba(225,29,72,0.12)] text-[#e11d48]' : 'bg-[rgba(245,158,11,0.12)] text-[#b45309]' }}">
+                            <span class="flex items-center gap-1.5 text-[0.65rem] font-bold uppercase tracking-[0.08em] {{ $dashboardGuestsDue > 0 ? 'text-[#e11d48]' : 'text-hp-text-muted' }} group-hover:text-hp-green dark:group-hover:text-emerald-400 transition-colors">
+                                <span>Checkout Alerts</span>
+                                <i class="bi bi-arrow-up-right text-[0.6rem] opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </span>
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ $dashboardGuestsDue > 0 ? 'bg-[rgba(225,29,72,0.12)] text-[#e11d48]' : 'bg-[rgba(245,158,11,0.12)] text-[#b45309]' }} group-hover:scale-105 transition-transform">
                                 <svg width="13" height="13" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                             </span>
                         </div>
@@ -436,7 +460,7 @@
                         @else
                             <div class="text-[0.65rem] font-semibold text-hp-text-muted">All clear</div>
                         @endif
-                    </div>
+                    </a>
 
                 </div>{{-- /.analytics grid --}}
 
@@ -447,25 +471,99 @@
                     </div>
                 @endif
 
+                {{-- ===== OPERATIONAL TRENDS ===== --}}
+                <h3 class="mb-3 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Operational Trends</h3>
+
                 {{-- ===== MAIN GRID: Chart | Donut ===== --}}
                 <div class="mb-4 grid grid-cols-1 items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-                    {{-- LEFT: Area Chart --}}
-                    <section class="sd-chart-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Bookings &amp; Revenue &ndash; Last 7 Days</h3>
-                            <div class="flex gap-4">
-                                <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-hp-text-muted">
-                                    <i class="sd-legend-swatch sd-legend-swatch--bookings inline-block h-[0.7rem] w-[0.7rem] rounded-[0.2rem] bg-hp-green"></i>Bookings
+                    {{-- LEFT: Operations Chart (Guest Traffic & Check-Ins / Collections) --}}
+                    <section class="sd-chart-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass transition-all duration-200 dark:border-white/10 dark:bg-[#181b19]/80">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-glass-border/70 px-5 py-3.5 dark:border-white/5">
+                            <a href="{{ route('staff.reports') }}" class="group/hdr flex items-center gap-2.5 text-inherit no-underline hover:opacity-85 transition-opacity" title="View Full Analytics & Reports">
+                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[rgba(23,138,82,0.12)] text-hp-green group-hover/hdr:bg-hp-green group-hover/hdr:text-white transition-colors dark:bg-emerald-950/60 dark:text-emerald-400">
+                                    <svg width="14" height="14" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                                 </span>
-                                <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-hp-text-muted">
-                                    <i class="sd-legend-swatch sd-legend-swatch--revenue inline-block h-[0.7rem] w-[0.7rem] rounded-[0.2rem] bg-[#c8a45d]"></i>Revenue
-                                </span>
+                                <div>
+                                    <h3 class="m-0 flex items-center gap-1.5 font-display text-sm sm:text-base font-bold text-hp-text group-hover/hdr:text-hp-green dark:text-[#f3f4f6] dark:group-hover/hdr:text-emerald-400 transition-colors" id="sdChartTitle">
+                                        <span>Daily Guest Traffic &amp; Check-Ins</span>
+                                        <i class="bi bi-arrow-up-right text-xs opacity-0 group-hover/hdr:opacity-100 transition-opacity"></i>
+                                    </h3>
+                                    <p class="m-0 text-[0.65rem] text-hp-text-muted" id="sdChartSubtitle">
+                                        7-day operational volume of admitted guests and front-desk check-ins
+                                    </p>
+                                </div>
+                            </a>
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                {{-- Dynamic Legend --}}
+                                <div id="sdChartLegend" class="flex items-center gap-3">
+                                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-[#16a34a] inline-block"></span> Guests Admitted
+                                    </span>
+                                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                                        <span class="h-2.5 w-2.5 rounded-sm bg-[#0d9488] inline-block"></span> Check-Ins
+                                    </span>
+                                </div>
+
+                                {{-- Mode Switcher Tabs --}}
+                                <div class="inline-flex rounded-lg bg-black/5 p-0.5 dark:bg-white/5" role="tablist">
+                                    <button type="button" id="sdTabTraffic" class="sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-bold transition-all bg-white text-hp-text shadow-sm dark:bg-[#222723] dark:text-[#f3f4f6]" title="Guest Traffic & Check-Ins">
+                                        <i class="bi bi-people-fill text-xs"></i> Traffic
+                                    </button>
+                                    <button type="button" id="sdTabCollections" class="sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-semibold text-hp-text-muted transition-all hover:text-hp-text dark:hover:text-[#f3f4f6]" title="Front-Desk Collections">
+                                        <i class="bi bi-cash-stack text-xs"></i> Collections
+                                    </button>
+                                </div>
+
+                                {{-- Direct Link to Reports --}}
+                                <a href="{{ route('staff.reports') }}" class="inline-flex items-center gap-1 rounded-md border border-glass-border bg-black/[0.03] px-2.5 py-1 text-[0.68rem] font-bold text-hp-text-muted hover:border-hp-green hover:bg-hp-green/10 hover:text-hp-green dark:border-white/10 dark:bg-white/5 dark:text-[#f3f4f6] dark:hover:border-emerald-400 dark:hover:text-emerald-400 transition-all" title="Open Reports & Analytics">
+                                    <span>Reports</span>
+                                    <i class="bi bi-arrow-right text-[0.65rem]"></i>
+                                </a>
                             </div>
                         </div>
-                        <div class="sd-area-chart relative min-h-[240px] flex-1 p-4" id="sdAreaChart">
-                            <canvas id="sdAreaChartCanvas" class="h-full w-full"></canvas>
+
+                        {{-- Summary Metric Strip --}}
+                        <div class="grid grid-cols-3 border-b border-glass-border/60 bg-black/[0.015] px-5 py-2 text-xs dark:border-white/5 dark:bg-white/[0.02]">
+                            <div class="border-r border-glass-border/60 pr-3 dark:border-white/5">
+                                <span class="block text-[0.62rem] font-semibold uppercase tracking-wider text-hp-text-muted" id="sdStat1Label">7-Day Guests</span>
+                                <span class="font-display text-sm font-bold text-hp-text dark:text-[#f3f4f6]" id="sdStat1Val">{{ $totalWeekGuests }} <span class="text-[0.65rem] font-normal text-hp-text-muted">guests</span></span>
+                            </div>
+                            <div class="border-r border-glass-border/60 px-3 dark:border-white/5">
+                                <span class="block text-[0.62rem] font-semibold uppercase tracking-wider text-hp-text-muted" id="sdStat2Label">7-Day Check-Ins</span>
+                                <span class="font-display text-sm font-bold text-hp-text dark:text-[#f3f4f6]" id="sdStat2Val">{{ $totalWeekCheckIns }} <span class="text-[0.65rem] font-normal text-hp-text-muted">check-ins</span></span>
+                            </div>
+                            <div class="pl-3">
+                                <span class="block text-[0.62rem] font-semibold uppercase tracking-wider text-hp-text-muted" id="sdStat3Label">Peak Activity</span>
+                                <span class="font-display text-sm font-bold text-hp-green dark:text-emerald-400" id="sdStat3Val">{{ $peakDayLabel }}</span>
+                            </div>
                         </div>
+
+                        {{-- Interactive Canvas Container with Tooltip --}}
+                        <div class="sd-area-chart relative min-h-[240px] flex-1 p-4" id="sdAreaChart">
+                            <canvas id="sdAreaChartCanvas" class="h-full w-full cursor-crosshair"></canvas>
+                            <div id="sdChartTooltip" class="pointer-events-none absolute z-20 hidden -translate-x-1/2 -translate-y-full rounded-xl border border-white/10 bg-[#0d2c1d]/95 px-3 py-2 text-white shadow-xl backdrop-blur-md transition-opacity duration-150">
+                                {{-- Dynamically populated on hover in JS --}}
+                            </div>
+                        </div>
+
                         <script>
+                            window.__sdOpsChartData = {
+                                labels: @json($weekDays),
+                                dates: @json($weekDates),
+                                fullDates: @json($weekFullDates),
+                                guests: @json($weekGuestsAdmitted),
+                                checkIns: @json($weekCheckInCounts),
+                                walkIns: @json($weekWalkInCheckIns),
+                                online: @json($weekOnlineCheckIns),
+                                deskCollections: @json($weekDeskCollections),
+                                totalCollections: @json($weekTotalCollections),
+                                totalGuests: {{ (int) $totalWeekGuests }},
+                                totalCheckIns: {{ (int) $totalWeekCheckIns }},
+                                totalCollectionsSum: {{ (float) $totalWeekDeskCollections }},
+                                peakDay: @json($peakDayLabel),
+                            };
+                            // Backward compatibility
                             window.__sdChartData = {
                                 labels: @json($weekDays),
                                 bookings: @json($weekReservationCounts),
@@ -476,22 +574,34 @@
 
                     {{-- RIGHT: Donut --}}
                     <section class="sd-donut-panel flex flex-col overflow-hidden rounded-2xl border border-glass-border bg-glass shadow-glass">
-                        <div class="border-b border-glass-border px-5 py-4">
-                            <h3 class="m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Status</h3>
+                        <div class="flex items-center justify-between border-b border-glass-border px-5 py-4">
+                            <a href="{{ route('staff.reservations') }}" class="group flex items-center gap-1.5 font-display text-base font-bold text-hp-text text-inherit no-underline hover:text-hp-green dark:text-[#f3f4f6] dark:hover:text-emerald-400 transition-colors" title="Manage Reservations">
+                                <span>Reservation Status</span>
+                                <i class="bi bi-arrow-up-right text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </a>
+                            <a href="{{ route('staff.reservations') }}" class="inline-flex items-center gap-1 text-[0.72rem] font-semibold text-hp-green hover:underline dark:text-emerald-400" title="Go to Reservations">
+                                <span>Reservations</span>
+                                <i class="bi bi-arrow-right text-[0.65rem]"></i>
+                            </a>
                         </div>
                         <div class="sd-donut-panel__body flex flex-1 flex-col items-center justify-center gap-4 p-5">
                             @if ($donutTotal > 0)
-                                <div class="sd-donut-ring flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(13,44,29,0.06)] max-[768px]:h-[120px] max-[768px]:w-[120px]" style="{{ $donutStyle }}">
-                                    <div class="sd-donut-ring__hole flex h-[90px] w-[90px] flex-col items-center justify-center rounded-full bg-glass max-[768px]:h-[72px] max-[768px]:w-[72px]">
-                                        <span class="sd-donut-ring__total font-display text-[1.75rem] font-bold leading-none text-hp-green-dark dark:text-[#f3f4f6]">{{ $donutTotal }}</span>
+                                <a href="{{ route('staff.reservations') }}" class="sd-donut-ring group/ring flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(13,44,29,0.06)] hover:scale-105 transition-transform max-[768px]:h-[120px] max-[768px]:w-[120px] cursor-pointer" style="{{ $donutStyle }}" title="View Reservations">
+                                    <div class="sd-donut-ring__hole flex h-[90px] w-[90px] flex-col items-center justify-center rounded-full bg-glass group-hover/ring:bg-white/90 dark:group-hover/ring-[#222723] transition-colors max-[768px]:h-[72px] max-[768px]:w-[72px]">
+                                        <span class="sd-donut-ring__total font-display text-[1.75rem] font-bold leading-none text-hp-green-dark group-hover/ring:text-hp-green dark:text-[#f3f4f6] dark:group-hover/ring:text-emerald-400 transition-colors">{{ $donutTotal }}</span>
                                         <small class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-hp-text-muted">Total</small>
                                     </div>
-                                </div>
+                                </a>
                                 <ul class="sd-donut-legend m-0 flex w-full list-none flex-col gap-1.5 p-0">
                                     @foreach ($statusBreakdown as $status => $count)
-                                        <li class="flex items-center gap-2 text-[0.75rem] font-medium text-hp-text">
-                                             <i class="inline-block h-[0.6rem] w-[0.6rem] shrink-0 rounded-full" style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
-                                            {{ $status }}
+                                        <li class="flex items-center justify-between text-[0.75rem] font-medium text-hp-text">
+                                            <span class="flex items-center gap-2">
+                                                <i class="inline-block h-[0.6rem] w-[0.6rem] shrink-0 rounded-full" style="background: {{ $donutColors[$status] ?? '#c8a45d' }}"></i>
+                                                {{ $status }}
+                                            </span>
+                                            <a href="{{ route('staff.reservations') }}" class="font-bold text-hp-text hover:text-hp-green dark:text-[#f3f4f6] dark:hover:text-emerald-400 transition-colors" title="Filter by {{ $status }}">
+                                                {{ $count }}
+                                            </a>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -506,20 +616,27 @@
                 <div class="sd-bottom-grid grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <section class="dash-panel dash-chart overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
                         <div class="dash-panel__head flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Most Booked Amenities</h3>
+                            <a href="{{ route('staff.occupancy-monitor') }}" class="group flex items-center gap-1.5 font-display text-base font-bold text-hp-text text-inherit no-underline hover:text-hp-green dark:text-[#f3f4f6] dark:hover:text-emerald-400 transition-colors" title="Go to Occupancy Monitor">
+                                <span class="dash-panel__title m-0">Most Booked Amenities</span>
+                                <i class="bi bi-arrow-up-right text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </a>
+                            <a href="{{ route('staff.occupancy-monitor') }}" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] font-semibold text-hp-green hover:bg-hp-green/10 dark:text-emerald-400 dark:hover:bg-emerald-400/10 transition-colors" title="View Amenity Occupancy">
+                                <span>Occupancy Monitor</span>
+                                <i class="bi bi-arrow-right text-[0.65rem]"></i>
+                            </a>
                         </div>
                         @if ($topAmenities->isNotEmpty())
                             <div class="dash-hbars grid gap-4 p-5">
                                 @foreach ($topAmenities as $amenity)
-                                    <div class="dash-hbar">
-                                        <div class="dash-hbar__row mb-1.5 flex items-baseline justify-between text-[0.8125rem] text-hp-text">
+                                    <a href="{{ route('staff.occupancy-monitor') }}" class="dash-hbar group/item block no-underline cursor-pointer" title="View {{ $amenity['name'] }} in Occupancy Monitor">
+                                        <div class="dash-hbar__row mb-1.5 flex items-baseline justify-between text-[0.8125rem] text-hp-text group-hover/item:text-hp-green dark:group-hover/item:text-emerald-400 transition-colors">
                                             <span>{{ $amenity['name'] }}</span>
-                                            <strong class="text-hp-green-dark dark:text-[#f3f4f6]">{{ $amenity['total'] }}</strong>
+                                            <strong class="text-hp-green-dark group-hover/item:text-hp-green dark:text-[#f3f4f6] dark:group-hover/item:text-emerald-400 transition-colors">{{ $amenity['total'] }}</strong>
                                         </div>
                                         <div class="dash-hbar__track h-2 overflow-hidden rounded-full bg-glass-hover dark:bg-[#0d2812]">
                                             <div class="dash-hbar__fill h-full w-0 rounded-full bg-gradient-to-r from-hp-green-mid to-hp-green-dark transition-[width] duration-[600ms] ease-[cubic-bezier(0.22,0.8,0.32,1)] [&.is-animated]:w-[var(--val)]" style="--val: {{ round($amenity['total'] / $topAmenityMax * 100) }}%"></div>
                                         </div>
-                                    </div>
+                                    </a>
                                 @endforeach
                             </div>
                         @else
@@ -528,12 +645,19 @@
                     </section>
 
                     <section class="dash-panel overflow-visible rounded-2xl border border-glass-border bg-glass shadow-glass">
-                        <div class="dash-panel__head border-b border-glass-border px-5 py-4">
-                            <h3 class="dash-panel__title m-0 font-display text-base font-bold text-hp-text dark:text-[#f3f4f6]">Today's Expected Arrivals</h3>
+                        <div class="dash-panel__head flex flex-wrap items-center justify-between gap-4 border-b border-glass-border px-5 py-4">
+                            <a href="{{ route('staff.reservations') }}" class="group flex items-center gap-1.5 font-display text-base font-bold text-hp-text text-inherit no-underline hover:text-hp-green dark:text-[#f3f4f6] dark:hover:text-emerald-400 transition-colors" title="Manage Reservations">
+                                <span class="dash-panel__title m-0">Today's Expected Arrivals</span>
+                                <i class="bi bi-arrow-up-right text-xs opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </a>
+                            <a href="{{ route('staff.reservations') }}" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.72rem] font-semibold text-hp-green hover:bg-hp-green/10 dark:text-emerald-400 dark:hover:bg-emerald-400/10 transition-colors" title="Go to Reservations">
+                                <span>Reservations</span>
+                                <i class="bi bi-arrow-right text-[0.65rem]"></i>
+                            </a>
                         </div>
                         <ul class="dash-arrivals m-0 list-none p-4">
                             @forelse ($todayArrivals as $arrival)
-                                <li class="dash-arrival flex items-center gap-3.5 border-b border-glass-border py-3.5 last:border-none">
+                                <li class="dash-arrival flex items-center gap-3.5 border-b border-glass-border py-3.5 last:border-none hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors rounded-lg px-2 cursor-pointer" onclick="window.location.href='{{ route('staff.reservations') }}'" title="Click to view in Reservations">
                                     <span class="dash-arrival__dot h-[0.55rem] w-[0.55rem] shrink-0 rounded-full bg-hp-gold shadow-glass" aria-hidden="true"></span>
                                     <div class="dash-arrival__body min-w-0 flex-1">
                                         <p class="dash-arrival__name m-0 text-sm font-semibold text-hp-text">{{ $arrival->booker_name }}</p>

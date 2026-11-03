@@ -88,7 +88,37 @@
             position: relative !important;
             z-index: 1 !important;
         }
-    </style>
+    
+        @media print {
+            aside, nav, .dash-sidebar, .dash-header, header,
+            #paymentSearchInput, #typeFilterSelect, #staffFilterSelect,
+            #openDateFilterModalBtn, #clearFiltersBtn, #refreshPaymentBtn, #printPdfBtn,
+            #paymentPaginationWrap, #dateFilterModal, .chatbot-container {
+                display: none !important;
+            }
+            body.admin-portal {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            body.admin-portal .dash-main::before {
+                display: none !important;
+            }
+            #paymentTableContainer {
+                max-height: none !important;
+                overflow: visible !important;
+                border: 1px solid #000000 !important;
+            }
+            table {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+            th, td {
+                border: 1px solid #000000 !important;
+                color: #000000 !important;
+                background: #ffffff !important;
+            }
+        }
+</style>
 </head>
 <body class="antialiased admin-portal">
     <div class="dash-layout">
@@ -264,6 +294,17 @@
                         >
                             <i class="bi bi-arrow-clockwise text-xs"></i>
                             <span>Refresh</span>
+                        </button>
+
+                        {{-- Print as PDF --}}
+                        <button
+                            type="button"
+                            id="printPdfBtn"
+                            title="Export and print filtered transactions as PDF"
+                            class="h-9 flex items-center gap-1.5 px-3.5 rounded-xl border border-[var(--border)] bg-gray-50 dark:bg-neutral-900/40 text-xs font-semibold text-[var(--ink)] hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer shadow-2xs"
+                        >
+                            <i class="bi bi-printer text-xs"></i>
+                            <span>Print as PDF</span>
                         </button>
                     </div>
 

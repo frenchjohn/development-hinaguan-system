@@ -25,16 +25,164 @@ window.AppPage['staff_dashboard'] = function () {
     // Active Overview Graph (Donut Gauge & Grouped Bar Chart)
     const aoControl = initActiveOverviewGraph();
 
-    // Area chart rendering
-    const chartData = window.__sdChartData;
+    // Staff Operations Chart (Guest Traffic & Check-Ins / Desk Collections)
+    const opsChartControl = initStaffOperationsChart();
+
+    // Redraw on resize
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            opsChartControl?.redraw();
+            aoControl?.redraw();
+        }, 150);
+    });
+
+    // Redraw on theme change
+    const observer = new MutationObserver(() => {
+        setTimeout(() => {
+            opsChartControl?.redraw();
+            aoControl?.redraw();
+        }, 100);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+};
+
+function initStaffOperationsChart() {
+    const rawData = window.__sdOpsChartData || {};
     const canvas = document.getElementById('sdAreaChartCanvas');
-    let drawChart = function () {};
+    const container = document.getElementById('sdAreaChart');
+    const tooltip = document.getElementById('sdChartTooltip');
+    const tabTraffic = document.getElementById('sdTabTraffic');
+    const tabCollections = document.getElementById('sdTabCollections');
+    const titleEl = document.getElementById('sdChartTitle');
+    const subtitleEl = document.getElementById('sdChartSubtitle');
+    const legendEl = document.getElementById('sdChartLegend');
 
-    if (chartData && canvas) {
-        const ctx = canvas.getContext('2d');
-        const container = canvas.parentElement;
+    const stat1Label = document.getElementById('sdStat1Label');
+    const stat1Val = document.getElementById('sdStat1Val');
+    const stat2Label = document.getElementById('sdStat2Label');
+    const stat2Val = document.getElementById('sdStat2Val');
+    const stat3Label = document.getElementById('sdStat3Label');
+    const stat3Val = document.getElementById('sdStat3Val');
 
-        drawChart = function () {
+    if (!canvas || !container) return null;
+    const ctx = canvas.getContext('2d');
+
+    const labels = rawData.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const fullDates = rawData.fullDates || labels;
+    const guests = rawData.guests || [0, 0, 0, 0, 0, 0, 0];
+    const checkIns = rawData.checkIns || [0, 0, 0, 0, 0, 0, 0];
+    const walkIns = rawData.walkIns || [0, 0, 0, 0, 0, 0, 0];
+    const online = rawData.online || [0, 0, 0, 0, 0, 0, 0];
+    const collections = rawData.deskCollections || [0, 0, 0, 0, 0, 0, 0];
+    const totalCollections = rawData.totalCollections || collections;
+
+    const n = labels.length;
+    if (n === 0) return null;
+
+    let currentMode = 'traffic';
+    try {
+        currentMode = localStorage.getItem('sd_ops_chart_mode') || 'traffic';
+    } catch (e) {
+        currentMode = 'traffic';
+    }
+
+    let hoveredIndex = null;
+
+    function formatPeso(num) {
+        return '₱' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        try {
+            localStorage.setItem('sd_ops_chart_mode', mode);
+        } catch (e) { }
+
+        const isTraffic = mode === 'traffic';
+
+        if (tabTraffic && tabCollections) {
+            tabTraffic.className = isTraffic
+                ? 'sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-bold transition-all bg-white text-hp-text shadow-sm dark:bg-[#222723] dark:text-[#f3f4f6]'
+                : 'sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-semibold text-hp-text-muted transition-all hover:text-hp-text dark:hover:text-[#f3f4f6]';
+            tabCollections.className = !isTraffic
+                ? 'sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-bold transition-all bg-white text-hp-text shadow-sm dark:bg-[#222723] dark:text-[#f3f4f6]'
+                : 'sd-mode-tab-btn inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[0.68rem] font-semibold text-hp-text-muted transition-all hover:text-hp-text dark:hover:text-[#f3f4f6]';
+        }
+
+        if (titleEl) {
+            titleEl.textContent = isTraffic ? 'Daily Guest Traffic & Check-Ins' : 'Front-Desk Collections & Settlements';
+        }
+        if (subtitleEl) {
+            subtitleEl.textContent = isTraffic
+                ? '7-day operational volume of admitted guests and front-desk check-ins'
+                : '7-day staff cash and electronic payment collections (PHP)';
+        }
+
+        if (legendEl) {
+            if (isTraffic) {
+                legendEl.innerHTML = `
+                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#16a34a] inline-block"></span> Guests Admitted
+                    </span>
+                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                        <span class="h-2.5 w-2.5 rounded-sm bg-[#0d9488] inline-block"></span> Check-Ins
+                    </span>
+                `;
+            } else {
+                legendEl.innerHTML = `
+                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                        <span class="h-2.5 w-2.5 rounded-full bg-[#d97706] inline-block"></span> Desk Collections
+                    </span>
+                    <span class="sd-legend-item inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-hp-text-muted">
+                        <span class="h-2.5 w-2.5 rounded-sm border border-[#d97706] inline-block"></span> Total Payments
+                    </span>
+                `;
+            }
+        }
+
+        // Update summary strip
+        if (stat1Label && stat1Val) {
+            if (isTraffic) {
+                stat1Label.textContent = '7-Day Guests';
+                stat1Val.innerHTML = `${rawData.totalGuests ?? 0} <span class="text-[0.65rem] font-normal text-hp-text-muted">guests</span>`;
+            } else {
+                stat1Label.textContent = '7-Day Collections';
+                stat1Val.textContent = formatPeso(rawData.totalCollectionsSum ?? 0);
+            }
+        }
+
+        if (stat2Label && stat2Val) {
+            if (isTraffic) {
+                stat2Label.textContent = '7-Day Check-Ins';
+                stat2Val.innerHTML = `${rawData.totalCheckIns ?? 0} <span class="text-[0.65rem] font-normal text-hp-text-muted">check-ins</span>`;
+            } else {
+                stat2Label.textContent = "Today's Desk Payments";
+                const todayCol = collections[n - 1] || 0;
+                stat2Val.textContent = formatPeso(todayCol);
+            }
+        }
+
+        if (stat3Label && stat3Val) {
+            if (isTraffic) {
+                stat3Label.textContent = 'Peak Activity';
+                stat3Val.textContent = rawData.peakDay || 'None';
+            } else {
+                stat3Label.textContent = 'Daily Average';
+                const avgCol = (rawData.totalCollectionsSum || 0) / Math.max(1, n);
+                stat3Val.textContent = formatPeso(avgCol);
+            }
+        }
+
+        hideTooltip();
+        render();
+    }
+
+    tabTraffic?.addEventListener('click', () => setMode('traffic'));
+    tabCollections?.addEventListener('click', () => setMode('collections'));
+
+    function render() {
         const dpr = window.devicePixelRatio || 1;
         const rect = container.getBoundingClientRect();
         const W = rect.width;
@@ -46,50 +194,53 @@ window.AppPage['staff_dashboard'] = function () {
         canvas.style.height = H + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        const labels = chartData.labels;
-        const bookings = chartData.bookings;
-        // Normalize revenue relative to booking scale for overlay
-        const revenueRaw = window.__sdChartData_revenueRaw || chartData.revenue;
-
-        const n = labels.length;
-        if (n === 0) return;
-
-        const padL = 35;
-        const padR = 15;
+        const padL = currentMode === 'traffic' ? 36 : 60;
+        const padR = 20;
         const padT = 20;
         const padB = 30;
-        const chartW = W - padL - padR;
-        const chartH = H - padT - padB;
+        const chartW = Math.max(10, W - padL - padR);
+        const chartH = Math.max(10, H - padT - padB);
 
-        // Compute max for y-axis (bookings scale)
-        const maxBooking = Math.max(1, ...bookings);
-        // Revenue max for its own scale
-        const maxRevenue = Math.max(1, ...revenueRaw);
-
-        // Nice y-axis ticks for bookings
-        const tickCount = 5;
-        const step = Math.ceil(maxBooking / tickCount);
-        const yMax = step * tickCount;
-
-        // Clear
         ctx.clearRect(0, 0, W, H);
 
-        // Draw grid lines and y-axis labels
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+        const isTraffic = currentMode === 'traffic';
+
+        let maxVal = 1;
+        if (isTraffic) {
+            maxVal = Math.max(4, ...guests, ...checkIns);
+        } else {
+            maxVal = Math.max(500, ...collections, ...totalCollections);
+        }
+
+        // Ticks
+        const tickCount = 4;
+        let step = Math.ceil(maxVal / tickCount);
+        if (!isTraffic) {
+            if (step > 1000) step = Math.ceil(step / 500) * 500;
+            else if (step > 100) step = Math.ceil(step / 100) * 100;
+            else step = Math.max(50, Math.ceil(step / 50) * 50);
+        }
+        const yMax = Math.max(step * tickCount, maxVal);
+
+        // Grid lines & Y labels
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
         ctx.lineWidth = 1;
-        ctx.font = '500 11px Montserrat, sans-serif';
-        ctx.fillStyle = isDark ? '#9baaa1' : '#5c6b62';
+        ctx.font = '500 10.5px Montserrat, sans-serif';
+        ctx.fillStyle = isDark ? '#9baaa1' : '#6b7280';
         ctx.textAlign = 'right';
 
         for (let i = 0; i <= tickCount; i++) {
             const val = step * i;
+            if (val > yMax) continue;
             const y = padT + chartH - (val / yMax) * chartH;
             ctx.beginPath();
             ctx.moveTo(padL, y);
             ctx.lineTo(W - padR, y);
             ctx.stroke();
-            ctx.fillText(val.toString(), padL - 6, y + 4);
+
+            const lbl = isTraffic ? String(val) : '₱' + (val >= 1000 ? (val / 1000).toFixed(val % 1000 === 0 ? 0 : 1) + 'k' : val);
+            ctx.fillText(lbl, padL - 8, y + 3.5);
         }
 
         // X positions
@@ -99,117 +250,264 @@ window.AppPage['staff_dashboard'] = function () {
         // Draw x labels
         ctx.textAlign = 'center';
         ctx.font = '600 11px Montserrat, sans-serif';
-        ctx.fillStyle = isDark ? '#9baaa1' : '#5c6b62';
         labels.forEach((label, i) => {
+            ctx.fillStyle = (i === hoveredIndex)
+                ? (isDark ? '#f3f4f6' : '#111827')
+                : (isDark ? '#9baaa1' : '#6b7280');
             ctx.fillText(label, xPositions[i], H - 8);
         });
 
-        // Helper: smooth curve through points
-        function drawSmoothLine(points) {
-            if (points.length < 2) return;
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 0; i < points.length - 1; i++) {
-                const cp = (points[i + 1].x - points[i].x) / 2.5;
+        // Helper: smooth bezier curve through points
+        function drawSmoothCurve(pts) {
+            if (pts.length < 2) return;
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 0; i < pts.length - 1; i++) {
+                const cp = (pts[i + 1].x - pts[i].x) / 2.6;
                 ctx.bezierCurveTo(
-                    points[i].x + cp, points[i].y,
-                    points[i + 1].x - cp, points[i + 1].y,
-                    points[i + 1].x, points[i + 1].y
+                    pts[i].x + cp, pts[i].y,
+                    pts[i + 1].x - cp, pts[i + 1].y,
+                    pts[i + 1].x, pts[i + 1].y
                 );
             }
         }
 
-        // Booking points
-        const bookingPts = bookings.map((val, i) => ({
-            x: xPositions[i],
-            y: padT + chartH - (val / yMax) * chartH
-        }));
+        if (isTraffic) {
+            // Data series 1: Guests Admitted (Area + Line)
+            const guestPts = guests.map((val, i) => ({
+                x: xPositions[i],
+                y: padT + chartH - (val / yMax) * chartH
+            }));
 
-        // Revenue points (scaled to their own max, but mapped to chartH)
-        const revenuePts = revenueRaw.map((val, i) => ({
-            x: xPositions[i],
-            y: padT + chartH - (val / (maxRevenue || 1)) * chartH * 0.85
-        }));
-
-        // Draw Revenue area (behind bookings — gold/tan)
-        ctx.save();
-        ctx.beginPath();
-        drawSmoothLine(revenuePts);
-        ctx.lineTo(xPositions[n - 1], padT + chartH);
-        ctx.lineTo(xPositions[0], padT + chartH);
-        ctx.closePath();
-        const revGrad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
-        revGrad.addColorStop(0, isDark ? 'rgba(200,164,93,0.35)' : 'rgba(200,164,93,0.35)');
-        revGrad.addColorStop(1, isDark ? 'rgba(200,164,93,0.05)' : 'rgba(200,164,93,0.05)');
-        ctx.fillStyle = revGrad;
-        ctx.fill();
-        ctx.restore();
-
-        // Revenue line
-        ctx.save();
-        ctx.beginPath();
-        drawSmoothLine(revenuePts);
-        ctx.strokeStyle = isDark ? '#d4b06a' : '#c8a45d';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-
-        // Draw Bookings area (green)
-        ctx.save();
-        ctx.beginPath();
-        drawSmoothLine(bookingPts);
-        ctx.lineTo(xPositions[n - 1], padT + chartH);
-        ctx.lineTo(xPositions[0], padT + chartH);
-        ctx.closePath();
-        const bookGrad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
-        bookGrad.addColorStop(0, isDark ? 'rgba(28,92,60,0.5)' : 'rgba(28,92,60,0.45)');
-        bookGrad.addColorStop(1, isDark ? 'rgba(28,92,60,0.05)' : 'rgba(28,92,60,0.05)');
-        ctx.fillStyle = bookGrad;
-        ctx.fill();
-        ctx.restore();
-
-        // Bookings line
-        ctx.save();
-        ctx.beginPath();
-        drawSmoothLine(bookingPts);
-        ctx.strokeStyle = isDark ? '#4c9a5f' : '#1c5c3c';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        ctx.restore();
-
-        // Draw dots for bookings
-        bookingPts.forEach((pt) => {
+            // Area
+            ctx.save();
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 3.5, 0, Math.PI * 2);
-            ctx.fillStyle = isDark ? '#4c9a5f' : '#1c5c3c';
+            drawSmoothCurve(guestPts);
+            ctx.lineTo(xPositions[n - 1], padT + chartH);
+            ctx.lineTo(xPositions[0], padT + chartH);
+            ctx.closePath();
+            const guestGrad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+            guestGrad.addColorStop(0, isDark ? 'rgba(22,163,74,0.38)' : 'rgba(22,163,74,0.30)');
+            guestGrad.addColorStop(1, isDark ? 'rgba(22,163,74,0.02)' : 'rgba(22,163,74,0.01)');
+            ctx.fillStyle = guestGrad;
             ctx.fill();
-            ctx.strokeStyle = isDark ? '#14211a' : '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        });
-        };
+            ctx.restore();
 
-        drawChart();
+            // Line
+            ctx.save();
+            ctx.beginPath();
+            drawSmoothCurve(guestPts);
+            ctx.strokeStyle = isDark ? '#22c55e' : '#16a34a';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // Data series 2: Check-Ins (Teal dotted line)
+            const checkInPts = checkIns.map((val, i) => ({
+                x: xPositions[i],
+                y: padT + chartH - (val / yMax) * chartH
+            }));
+
+            ctx.save();
+            ctx.beginPath();
+            drawSmoothCurve(checkInPts);
+            ctx.strokeStyle = isDark ? '#2dd4bf' : '#0d9488';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 3]);
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw Check-In Diamond / Square Nodes
+            checkInPts.forEach((pt) => {
+                ctx.fillStyle = isDark ? '#2dd4bf' : '#0d9488';
+                ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
+            });
+
+            // Draw Guest Circles
+            guestPts.forEach((pt, i) => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, (i === hoveredIndex ? 5.5 : 3.5), 0, Math.PI * 2);
+                ctx.fillStyle = isDark ? '#22c55e' : '#16a34a';
+                ctx.fill();
+                ctx.strokeStyle = isDark ? '#181b19' : '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+        } else {
+            // Mode: Collections
+            const colPts = collections.map((val, i) => ({
+                x: xPositions[i],
+                y: padT + chartH - (val / yMax) * chartH
+            }));
+
+            // Area
+            ctx.save();
+            ctx.beginPath();
+            drawSmoothCurve(colPts);
+            ctx.lineTo(xPositions[n - 1], padT + chartH);
+            ctx.lineTo(xPositions[0], padT + chartH);
+            ctx.closePath();
+            const colGrad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+            colGrad.addColorStop(0, isDark ? 'rgba(217,119,6,0.38)' : 'rgba(217,119,6,0.28)');
+            colGrad.addColorStop(1, isDark ? 'rgba(217,119,6,0.02)' : 'rgba(217,119,6,0.01)');
+            ctx.fillStyle = colGrad;
+            ctx.fill();
+            ctx.restore();
+
+            // Line
+            ctx.save();
+            ctx.beginPath();
+            drawSmoothCurve(colPts);
+            ctx.strokeStyle = isDark ? '#f59e0b' : '#d97706';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // Dots
+            colPts.forEach((pt, i) => {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, (i === hoveredIndex ? 5.5 : 3.5), 0, Math.PI * 2);
+                ctx.fillStyle = isDark ? '#f59e0b' : '#d97706';
+                ctx.fill();
+                ctx.strokeStyle = isDark ? '#181b19' : '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+
+        // Draw hover vertical crosshair if active
+        if (hoveredIndex !== null && xPositions[hoveredIndex] !== undefined) {
+            const hx = xPositions[hoveredIndex];
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(hx, padT);
+            ctx.lineTo(hx, padT + chartH);
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
-    // Redraw on resize
-    let resizeTimer;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-            drawChart();
-            aoControl?.redraw();
-        }, 150);
+    function showTooltip(index, clientX, clientY) {
+        if (!tooltip || index < 0 || index >= n) return;
+        const isTraffic = currentMode === 'traffic';
+        const dateText = fullDates[index] || labels[index];
+
+        let html = `<div class="mb-1 text-[0.68rem] font-bold text-emerald-300 border-b border-white/10 pb-1">${dateText}</div>`;
+
+        if (isTraffic) {
+            const gCount = guests[index] || 0;
+            const cCount = checkIns[index] || 0;
+            const wCount = walkIns[index] || 0;
+            const oCount = online[index] || 0;
+
+            html += `
+                <div class="flex items-center justify-between gap-4 text-xs">
+                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-100">
+                        <span class="h-2 w-2 rounded-full bg-[#16a34a]"></span> Guests Admitted:
+                    </span>
+                    <span class="font-extrabold text-white">${gCount}</span>
+                </div>
+                <div class="flex items-center justify-between gap-4 text-xs mt-0.5">
+                    <span class="inline-flex items-center gap-1.5 font-medium text-emerald-100">
+                        <span class="h-2 w-2 rounded-sm bg-[#0d9488]"></span> Check-Ins:
+                    </span>
+                    <span class="font-extrabold text-white">${cCount}</span>
+                </div>
+                <div class="mt-1 text-[0.62rem] text-emerald-200/70 border-t border-white/5 pt-0.5 flex justify-between gap-2">
+                    <span>Walk-In: <strong>${wCount}</strong></span>
+                    <span>Online: <strong>${oCount}</strong></span>
+                </div>
+            `;
+        } else {
+            const dCol = collections[index] || 0;
+            const tCol = totalCollections[index] || dCol;
+
+            html += `
+                <div class="flex items-center justify-between gap-4 text-xs">
+                    <span class="inline-flex items-center gap-1.5 font-medium text-amber-200">
+                        <span class="h-2 w-2 rounded-full bg-[#d97706]"></span> Front-Desk:
+                    </span>
+                    <span class="font-extrabold text-white">${formatPeso(dCol)}</span>
+                </div>
+                <div class="flex items-center justify-between gap-4 text-xs mt-0.5">
+                    <span class="inline-flex items-center gap-1.5 font-medium text-amber-200">
+                        <span class="h-2 w-2 rounded-sm border border-amber-400"></span> Total Recorded:
+                    </span>
+                    <span class="font-bold text-white/90">${formatPeso(tCol)}</span>
+                </div>
+            `;
+        }
+
+        tooltip.innerHTML = html;
+        tooltip.classList.remove('hidden');
+
+        const rect = container.getBoundingClientRect();
+        const posX = Math.max(70, Math.min(rect.width - 70, clientX - rect.left));
+        const posY = Math.max(50, clientY - rect.top - 12);
+
+        tooltip.style.left = posX + 'px';
+        tooltip.style.top = posY + 'px';
+    }
+
+    function hideTooltip() {
+        if (!tooltip) return;
+        tooltip.classList.add('hidden');
+        hoveredIndex = null;
+    }
+
+    function handlePointerMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const x = clientX - rect.left;
+
+        const padL = currentMode === 'traffic' ? 36 : 60;
+        const padR = 20;
+        const chartW = Math.max(10, rect.width - padL - padR);
+        const xStep = chartW / (n - 1 || 1);
+
+        let nearestIdx = 0;
+        let minDist = Infinity;
+        for (let i = 0; i < n; i++) {
+            const px = padL + i * xStep;
+            const dist = Math.abs(x - px);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestIdx = i;
+            }
+        }
+
+        if (minDist < xStep * 0.75) {
+            hoveredIndex = nearestIdx;
+            render();
+            showTooltip(nearestIdx, clientX, clientY);
+        } else {
+            hideTooltip();
+            render();
+        }
+    }
+
+    canvas.addEventListener('mousemove', handlePointerMove);
+    canvas.addEventListener('touchmove', handlePointerMove, { passive: true });
+    canvas.addEventListener('mouseleave', () => {
+        hideTooltip();
+        render();
+    });
+    canvas.addEventListener('touchend', () => {
+        hideTooltip();
+        render();
     });
 
-    // Redraw on theme change
-    const observer = new MutationObserver(() => {
-        setTimeout(() => {
-            drawChart();
-            aoControl?.redraw();
-        }, 100);
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-};
+    setMode(currentMode);
+
+    return {
+        redraw: () => render(),
+        setMode: (m) => setMode(m),
+    };
+}
 
 function initActiveOverviewGraph() {
     const data = window.__sdActiveOverviewData;
@@ -233,7 +531,7 @@ function initActiveOverviewGraph() {
         currentMode = mode;
         try {
             localStorage.setItem('sd_ao_view', mode);
-        } catch (e) {}
+        } catch (e) { }
 
         if (mode === 'columns') {
             splitView?.classList.add('hidden');

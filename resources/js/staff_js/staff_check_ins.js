@@ -157,6 +157,19 @@ window.AppPage['staff_check_ins'] = function () {
         });
     });
 
+    // Check if URL specifies dashboard tab or hash (e.g., redirected from Live Analytics)
+    const initialCheckInParams = new URLSearchParams(window.location.search);
+    const hashTarget = window.location.hash;
+    if (initialCheckInParams.get('tab') === 'dashboard' || hashTarget === '#dashboardSection' || hashTarget.startsWith('#widget')) {
+        switchTab('dashboard');
+        if (hashTarget) {
+            setTimeout(() => {
+                const targetEl = document.querySelector(hashTarget);
+                if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 200);
+        }
+    }
+
     // ── Checkout countdowns ──────────────────────────────────────────────
     const CHECKOUT_NEAR_MS = 2 * 60 * 60 * 1000;   // 2 hours before checkout (near checkout)
     const CHECKOUT_WARN_MS = 15 * 60 * 1000;       // 15 minutes before checkout

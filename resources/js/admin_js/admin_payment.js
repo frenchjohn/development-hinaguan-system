@@ -6,6 +6,7 @@ window.AppPage['admin_payment'] = function () {
     const staffSelect           = document.getElementById('staffFilterSelect');
     const clearBtn              = document.getElementById('clearFiltersBtn');
     const clearBtnAlt           = document.getElementById('clearFiltersBtnAlt');
+    const printPdfBtn           = document.getElementById('printPdfBtn');
     const noResultsRow          = document.getElementById('paymentNoResultsRow');
     const visibleCountEl        = document.getElementById('visibleCount');
     const visibleRangeEl        = document.getElementById('visibleRange');
@@ -428,6 +429,27 @@ window.AppPage['admin_payment'] = function () {
         if (currentPage < totalPages) {
             goToPage(currentPage + 1);
         }
+    });
+
+    
+    printPdfBtn?.addEventListener('click', () => {
+        const params = new URLSearchParams();
+        if (appliedStartDate) params.set('start_date', appliedStartDate);
+        if (appliedEndDate)   params.set('end_date', appliedEndDate);
+        if (appliedSession)   params.set('session', appliedSession);
+
+        const typeVal = typeSelect?.value?.trim();
+        if (typeVal) params.set('type', typeVal);
+
+        const staffVal = staffSelect?.value?.trim();
+        if (staffVal) params.set('staff', staffVal);
+
+        const searchVal = searchInput?.value?.trim();
+        if (searchVal) params.set('search', searchVal);
+
+        const queryStr = params.toString();
+        const url = '/admin/payment/pdf' + (queryStr ? ('?' + queryStr) : '');
+        window.open(url, '_blank');
     });
 
     function clearAllFilters() {

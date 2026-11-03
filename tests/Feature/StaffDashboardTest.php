@@ -72,5 +72,31 @@ class StaffDashboardTest extends TestCase
         $response->assertSee('activeOverviewDonutCanvas');
         $response->assertSee('activeOverviewBarCanvas');
         $response->assertSee('window.__sdActiveOverviewData');
+        $response->assertViewHas('weekCheckInCounts');
+        $response->assertViewHas('weekGuestsAdmitted');
+        $response->assertViewHas('totalWeekGuests');
+        $response->assertSee('sdTabTraffic');
+        $response->assertSee('sdTabCollections');
+        $response->assertSee('window.__sdOpsChartData');
+        $response->assertSee(route('staff.checkins'));
+        $response->assertSee(route('staff.checkins', ['tab' => 'dashboard']));
+        $response->assertSee(route('staff.reports'));
+        $response->assertSee(route('staff.occupancy-monitor'));
+        $response->assertSee(route('staff.reservations'));
+    }
+
+    public function test_staff_checkins_page_opens_dashboard_tab_when_requested(): void
+    {
+        session(['auth_user' => ['id' => 1, 'name' => 'Staff', 'email' => 'staff@example.com', 'role' => 'staff']]);
+
+        $response = $this->get('/staff/check-ins?tab=dashboard');
+
+        $response->assertOk();
+        $response->assertSee('id="dashboardSection"', false);
+        $response->assertSee('id="widgetOverview"', false);
+        $response->assertSee('id="widgetDemographics"', false);
+        $response->assertSee('id="widgetAgeGroups"', false);
+        $response->assertSee('id="widgetPool"', false);
+        $response->assertSee('id="widgetCheckoutAlerts"', false);
     }
 }

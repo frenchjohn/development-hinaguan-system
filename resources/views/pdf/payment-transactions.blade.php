@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Payment Transactions Report - Hinaguan Nature Park</title>
+    <style>
+        @page {
+            size: a4 landscape;
+            margin: 25px 28px 32px 28px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            color: #000000;
+            font-family: 'DejaVu Sans', Helvetica, Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.35;
+        }
+
+        /* Header */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 0.75px solid #444444;
+            padding-bottom: 7px;
+            margin-bottom: 12px;
+        }
+
+        .brand-title {
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 2px 0;
+            color: #000000;
+        }
+
+        .brand-subtitle {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0;
+            color: #222222;
+        }
+
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+
+        .meta-table td {
+            padding: 1px 0;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #333333;
+            width: 85px;
+        }
+
+        .meta-value {
+            color: #000000;
+        }
+
+        /* Scope & Summary Boxes */
+        .summary-wrapper {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .summary-wrapper td {
+            vertical-align: top;
+        }
+
+        .box {
+            border: 0.5px solid #888888;
+            padding: 6px 9px;
+        }
+
+        .box-title {
+            font-size: 8.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border-bottom: 0.5px solid #cccccc;
+            padding-bottom: 3px;
+            margin-bottom: 5px;
+            color: #222222;
+        }
+
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+
+        .grid-table td {
+            padding: 1.5px 0;
+        }
+
+        .grid-label {
+            width: 48%;
+            color: #444444;
+        }
+
+        .grid-value {
+            width: 52%;
+            font-weight: bold;
+            color: #000000;
+            text-align: right;
+        }
+
+        /* Main Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5px;
+        }
+
+        .data-table thead {
+            display: table-header-group;
+        }
+
+        .data-table tr {
+            page-break-inside: avoid;
+        }
+
+        .data-table th {
+            background-color: #fcfcfc;
+            color: #000000;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8px;
+            letter-spacing: 0.2px;
+            border-top: 0.75px solid #444444;
+            border-bottom: 0.75px solid #444444;
+            border-left: 0.5px solid #dcdcdc;
+            border-right: 0.5px solid #dcdcdc;
+            padding: 5px 6px;
+            text-align: left;
+        }
+
+        .data-table td {
+            border: 0.5px solid #dcdcdc;
+            padding: 4px 6px;
+            vertical-align: top;
+            color: #111111;
+        }
+
+        .data-table tfoot td {
+            font-weight: bold;
+            border-top: 0.75px solid #444444;
+            border-bottom: 0.75px solid #444444;
+            border-left: 0.5px solid #dcdcdc;
+            border-right: 0.5px solid #dcdcdc;
+            padding: 5px 6px;
+        }
+
+        /* Page Footer */
+        .footer {
+            position: fixed;
+            bottom: -18px;
+            left: 0;
+            right: 0;
+            height: 15px;
+            border-top: 0.5px solid #cccccc;
+            padding-top: 3px;
+            font-size: 7.5px;
+            color: #555555;
+        }
+    </style>
+</head>
+<body>
+
+    {{-- Top Header --}}
+    <table class="header-table">
+        <tr>
+            <td style="vertical-align: top; width: 62%;">
+                <div class="brand-title">HINAGUAN NATURE PARK</div>
+                <div class="brand-subtitle">Payment Transactions Report</div>
+            </td>
+            <td style="vertical-align: top; width: 38%; text-align: right;">
+                <table class="meta-table" style="float: right; width: auto;">
+                    <tr>
+                        <td class="meta-label">Generated:</td>
+                        <td class="meta-value">{{ $generatedAt }}</td>
+                    </tr>
+                    <tr>
+                        <td class="meta-label">Generated By:</td>
+                        <td class="meta-value">{{ $generatedBy }} (Admin)</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Scope & Financial Summary --}}
+    <table class="summary-wrapper">
+        <tr>
+            <td style="width: 49%; padding-right: 6px;">
+                <div class="box">
+                    <div class="box-title">REPORT SCOPE &amp; FILTERS</div>
+                    <table class="grid-table">
+                        <tr>
+                            <td class="grid-label">Date Period:</td>
+                            <td class="grid-value">{{ $dateFilterLabel }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Operating Session:</td>
+                            <td class="grid-value">{{ $sessionFilterLabel }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Transaction Type:</td>
+                            <td class="grid-value">{{ $typeFilterLabel }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Handled By:</td>
+                            <td class="grid-value">{{ $staffFilterLabel }}</td>
+                        </tr>
+                        @if(!empty($searchQuery))
+                        <tr>
+                            <td class="grid-label">Search Query:</td>
+                            <td class="grid-value">"{{ $searchQuery }}"</td>
+                        </tr>
+                        @endif
+                    </table>
+                </div>
+            </td>
+            <td style="width: 49%; padding-left: 6px;">
+                <div class="box">
+                    <div class="box-title">FINANCIAL SUMMARY</div>
+                    <table class="grid-table">
+                        <tr>
+                            <td class="grid-label">Total Amount Collected:</td>
+                            <td class="grid-value">PHP {{ number_format($totalCollected, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Staff / Front Desk Handled:</td>
+                            <td class="grid-value">PHP {{ number_format($totalStaffHandled, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Online Downpayments:</td>
+                            <td class="grid-value">PHP {{ number_format($totalOnline, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="grid-label">Total Transactions:</td>
+                            <td class="grid-value">{{ $transactionCount }} record{{ $transactionCount == 1 ? '' : 's' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- Data Table --}}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 24px; text-align: center;">#</th>
+                <th style="width: 82px;">Date &amp; Time</th>
+                <th style="width: 48px; text-align: center;">Ref #</th>
+                <th style="width: 72px;">Type</th>
+                <th>Transaction Title &amp; Details</th>
+                <th style="width: 62px; text-align: center;">Session</th>
+                <th style="width: 105px;">Handled By</th>
+                <th style="width: 80px; text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($transactions as $index => $tx)
+                @php
+                    $typeMap = [
+                        'walkin_created'              => 'Walk-In',
+                        'check_in'                    => 'Check-In',
+                        'online_reservation_created'  => 'Online',
+                        'companion_added'             => 'Companion',
+                        'amenity_added'               => 'Amenity',
+                        'additional_charge_paid'      => 'Charge',
+                        'stay_extended'               => 'Extension',
+                        'amenity_extended'            => 'Extension',
+                        'check_out'                   => 'Check-Out',
+                        'amenity_checked_out'         => 'Check-Out',
+                    ];
+                    $typeLabel = $typeMap[$tx['activity_type']] ?? ucfirst($tx['activity_type']);
+                @endphp
+                <tr>
+                    <td style="text-align: center;">{{ $index + 1 }}</td>
+                    <td>
+                        <div style="font-weight: bold;">{{ $tx['date'] }}</div>
+                        <div style="font-size: 7.5px; color: #444444;">{{ $tx['time'] }}</div>
+                    </td>
+                    <td style="text-align: center;">
+                        @if($tx['reservation_id'])
+                            #{{ $tx['reservation_id'] }}
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td>{{ $typeLabel }}</td>
+                    <td>
+                        <div style="font-weight: bold;">{{ $tx['title'] }}</div>
+                        @if(!empty($tx['description']))
+                            <div style="font-size: 7.5px; color: #444444; margin-top: 1px;">{{ $tx['description'] }}</div>
+                        @endif
+                    </td>
+                    <td style="text-align: center;">
+                        {{ ucfirst($tx['session']) }}
+                    </td>
+                    <td>
+                        @if($tx['is_online'])
+                            Online / Guest
+                        @else
+                            {{ $tx['actor_name'] }}
+                        @endif
+                    </td>
+                    <td style="text-align: right; font-weight: bold;">
+                        PHP {{ number_format($tx['payment_amount'], 2) }}
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 22px 10px; color: #555555;">
+                        No payment transactions found matching the selected filters.
+                    </td>
+                </tr>
+            @endforelse
+        </tbody>
+        @if(count($transactions) > 0)
+            <tfoot>
+                <tr>
+                    <td colspan="7" style="text-align: right; text-transform: uppercase;">
+                        TOTAL AMOUNT COLLECTED:
+                    </td>
+                    <td style="text-align: right;">
+                        PHP {{ number_format($totalCollected, 2) }}
+                    </td>
+                </tr>
+            </tfoot>
+        @endif
+    </table>
+
+    {{-- Fixed Page Footer --}}
+    <div class="footer">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="text-align: left; width: 60%;">
+                    Hinaguan Nature Park — Official Payment Transactions Record
+                </td>
+                <td style="text-align: right; width: 40%;">
+                    Confidential • Generated on {{ $generatedAt }}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {{-- Dompdf Page Numbers Script --}}
+    <script type="text/php">
+        if (isset($pdf)) {
+            $text = "Page {PAGE_NUM} of {PAGE_COUNT}";
+            $size = 7.5;
+            $font = $fontMetrics->getFont("DejaVu Sans", "normal");
+            $width = $fontMetrics->getTextWidth($text, $font, $size);
+            $x = ($pdf->get_width() - $width) / 2;
+            $y = $pdf->get_height() - 20;
+            $pdf->page_text($x, $y, $text, $font, $size, array(0.3, 0.3, 0.3));
+        }
+    </script>
+</body>
+</html>
