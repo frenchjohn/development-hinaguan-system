@@ -175,6 +175,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 badgeBg: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
                 svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>'
             };
+        } else if (t.includes('refund')) {
+            return {
+                label: '50% Refund Sent',
+                bg: 'bg-amber-500/15 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400',
+                badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+            };
         } else if (t.includes('cancel')) {
             return {
                 label: 'Cancellation',
@@ -301,9 +308,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `<span class="notif-new-badge text-[0.6rem] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-red-600 text-white tracking-wide shadow-sm">NEW</span>`
             : `<span class="notif-new-badge hidden text-[0.6rem] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-red-600 text-white tracking-wide shadow-sm">NEW</span>`;
 
-        const amountBadge = (parseFloat(act.payment_amount || 0) > 0 || act.formatted_amount)
-            ? `<span class="text-[0.68rem] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 tabular-nums">${escapeHtml(act.formatted_amount || '₱' + Number(act.payment_amount).toFixed(2))}</span>`
-            : '';
+        let amountBadge = '';
+        const numAmt = parseFloat(act.payment_amount || 0);
+        if (numAmt < 0) {
+            amountBadge = `<span class="text-[0.68rem] font-bold px-1.5 py-0.2 rounded bg-rose-500/15 text-rose-700 dark:text-rose-400 tabular-nums">-₱${Math.abs(numAmt).toFixed(2)}</span>`;
+        } else if (numAmt > 0 || act.formatted_amount) {
+            amountBadge = `<span class="text-[0.68rem] font-bold px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 tabular-nums">${escapeHtml(act.formatted_amount || '₱' + numAmt.toFixed(2))}</span>`;
+        }
 
         const actorHtml = act.actor_name
             ? `<div class="mt-1 flex items-center justify-between text-[0.66rem] font-medium">
@@ -400,9 +411,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const paymentEl = document.getElementById('notifDetailPayment');
         if (paymentWrapEl && paymentEl) {
             const amt = parseFloat(act.payment_amount || 0);
-            if (amt > 0 || act.formatted_amount) {
+            if (amt !== 0 || act.formatted_amount) {
                 paymentWrapEl.classList.remove('hidden');
-                paymentEl.textContent = act.formatted_amount || `₱${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                if (amt < 0) {
+                    paymentEl.textContent = act.formatted_amount || `-₱${Math.abs(amt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    paymentEl.className = 'font-bold text-rose-600 dark:text-rose-400';
+                } else {
+                    paymentEl.textContent = act.formatted_amount || `₱${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    paymentEl.className = 'font-bold text-emerald-600 dark:text-emerald-400';
+                }
             } else {
                 paymentWrapEl.classList.add('hidden');
             }
@@ -591,9 +608,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-[#178a52] dark:text-[#8fd0ab]">#RES-${act.reservation_id}</span>`
                     : '';
 
-                const paymentBadgeHtml = (parseFloat(act.payment_amount || 0) > 0 || act.formatted_amount)
-                    ? `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 tabular-nums">+ ${escapeHtml(act.formatted_amount || '₱' + Number(act.payment_amount).toFixed(2))}</span>`
-                    : '';
+                const numAmt = parseFloat(act.payment_amount || 0);
+                let paymentBadgeHtml = '';
+                if (numAmt < 0) {
+                    paymentBadgeHtml = `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-700 dark:text-rose-300 tabular-nums">- ₱${Math.abs(numAmt).toFixed(2)}</span>`;
+                } else if (numAmt > 0 || act.formatted_amount) {
+                    paymentBadgeHtml = `<span class="inline-flex items-center gap-1 text-[0.68rem] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 tabular-nums">+ ${escapeHtml(act.formatted_amount || '₱' + numAmt.toFixed(2))}</span>`;
+                }
 
                 card.innerHTML = `
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}">

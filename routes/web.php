@@ -1637,6 +1637,62 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
         ]);
     }
 
+    $actionType = $request->input('action_type', $request->input('request_type', 'reschedule'));
+
+    // ── Handle 50% Refund Request from Guest ────────────────────────────────
+    if ($actionType === 'refund') {
+        $validated = $request->validate([
+            'ewallet_provider' => 'required|string|max:50',
+            'ewallet_account_number' => 'required|string|min:10|max:20',
+            'ewallet_account_name' => 'required|string|min:2|max:100',
+            'refund_reason' => 'nullable|string|max:500',
+        ]);
+
+        $reservation = $requestRecord->reservation;
+        $originalPaid = (float) $reservation->amount_paid;
+        if ($originalPaid <= 0 && (float) $reservation->total_amount > 0) {
+            $originalPaid = round((float) $reservation->total_amount * 0.50, 2);
+        }
+        $refundAmount = round($originalPaid * 0.50, 2);
+
+        $requestRecord->update([
+            'request_type' => 'refund',
+            'refund_amount' => $refundAmount,
+            'ewallet_provider' => $validated['ewallet_provider'],
+            'ewallet_account_number' => $validated['ewallet_account_number'],
+            'ewallet_account_name' => $validated['ewallet_account_name'],
+            'reason' => $validated['refund_reason'] ?? 'Guest requested 50% downpayment refund',
+            'status' => 'submitted',
+            'used_at' => now(),
+        ]);
+
+        // Record activity log
+        \App\Models\ActivityLog::log(
+            activityType: 'reservation_refund_submitted',
+            title: '50% Refund Requested by Guest',
+            description: "Guest {$reservation->booker_name} requested 50% refund of ₱" . number_format($refundAmount, 2) . " via {$validated['ewallet_provider']} ({$validated['ewallet_account_number']}) for Res #{$reservation->id}",
+            reservationId: $reservation->id,
+            actorName: $reservation->booker_name ?? 'Guest',
+            actorRole: 'guest',
+            metadata: [
+                'reschedule_request_id' => $requestRecord->id,
+                'refund_amount' => $refundAmount,
+                'original_paid' => $originalPaid,
+                'ewallet_provider' => $validated['ewallet_provider'],
+                'ewallet_account_number' => $validated['ewallet_account_number'],
+                'ewallet_account_name' => $validated['ewallet_account_name'],
+                'reason' => $validated['refund_reason'] ?? null,
+            ]
+        );
+
+        return response()->view('guest.reschedule', [
+            'state' => 'submitted_refund_success',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $reservation,
+        ]);
+    }
+
     $validated = $request->validate([
         'requested_date' => 'required|date|after:today',
         'replacement_amenity_id' => 'nullable|string',
@@ -1743,6 +1799,12 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
         'reservation' => $reservation,
     ]);
 })->name('reservation.reschedule.guest.submit');
+
+Route::post('/reservation/reschedule/{token}/refund', function (Request $request, string $token) {
+    $request->merge(['action_type' => 'refund']);
+    $routeAction = Route::getRoutes()->getByName('reservation.reschedule.guest.submit')->getAction()['uses'];
+    return app()->call($routeAction, ['request' => $request, 'token' => $token]);
+})->name('reservation.reschedule.guest.refund');
 
 Route::get('/reservation', function (WeatherService $weather) {
     $amenities = Amenity::with('benefits')
@@ -2992,6 +3054,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'walkin_created', 'check_in', 'online_reservation_created',
             'companion_added', 'amenity_added', 'additional_charge_paid',
             'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+            'reservation_refund_processed',
         ];
 
         $weekDays = [];
@@ -4105,6 +4168,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'walkin_created', 'check_in', 'online_reservation_created',
             'companion_added', 'amenity_added', 'additional_charge_paid',
             'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+            'reservation_refund_processed',
         ];
 
         $rawLogs = \App\Models\ActivityLog::with('reservation')
@@ -4215,6 +4279,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             'walkin_created', 'check_in', 'online_reservation_created',
             'companion_added', 'amenity_added', 'additional_charge_paid',
             'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+            'reservation_refund_processed',
         ];
 
         $rawLogs = \App\Models\ActivityLog::with('reservation')
@@ -5027,12 +5092,18 @@ Route::get('/api/activity-notifications', function (Request $request) {
         'last_seen_id' => $effectiveLastSeenId,
         'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
             $paymentAmount = (float) ($act->payment_amount ?? 0);
+            $formattedAmount = null;
+            if ($paymentAmount > 0) {
+                $formattedAmount = '₱' . number_format($paymentAmount, 2);
+            } elseif ($paymentAmount < 0) {
+                $formattedAmount = '-₱' . number_format(abs($paymentAmount), 2);
+            }
             return [
                 'id' => $act->id,
                 'type' => $act->activity_type,
                 'action' => $act->action ?: $act->activity_type,
                 'payment_amount' => $paymentAmount,
-                'formatted_amount' => $paymentAmount > 0 ? '₱' . number_format($paymentAmount, 2) : null,
+                'formatted_amount' => $formattedAmount,
                 'title' => $act->title,
                 'description' => $act->description,
                 'reservation_id' => $act->reservation_id,
@@ -5129,12 +5200,18 @@ Route::get('/api/activity-notifications/all', function (Request $request) {
         'total' => $activities->count(),
         'activities' => $activities->map(function ($act) use ($effectiveLastSeenId) {
             $paymentAmount = (float) ($act->payment_amount ?? 0);
+            $formattedAmount = null;
+            if ($paymentAmount > 0) {
+                $formattedAmount = '₱' . number_format($paymentAmount, 2);
+            } elseif ($paymentAmount < 0) {
+                $formattedAmount = '-₱' . number_format(abs($paymentAmount), 2);
+            }
             return [
                 'id' => $act->id,
                 'type' => $act->activity_type,
                 'action' => $act->action ?: $act->activity_type,
                 'payment_amount' => $paymentAmount,
-                'formatted_amount' => $paymentAmount > 0 ? '₱' . number_format($paymentAmount, 2) : null,
+                'formatted_amount' => $formattedAmount,
                 'title' => $act->title,
                 'description' => $act->description,
                 'reservation_id' => $act->reservation_id,
@@ -5365,6 +5442,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'walkin_created', 'check_in', 'online_reservation_created',
             'companion_added', 'amenity_added', 'additional_charge_paid',
             'stay_extended', 'amenity_extended', 'check_out', 'amenity_checked_out',
+            'reservation_refund_processed',
         ];
 
         for ($i = 6; $i >= 0; $i--) {
@@ -10859,12 +10937,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
 
         $inputMsg = trim((string) $request->input('message'));
         if (empty($inputMsg)) {
-            $actualMessage = "Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
+            $actualMessage = "Hinaguan Nature Park offers options to reschedule your reservation or request a 50% refund. Please choose your option using this single-use link: {$rescheduleUrl} (link expires in 24 hours).";
         } else {
             if (str_contains($inputMsg, '{link}')) {
                 $actualMessage = str_replace('{link}', $rescheduleUrl, $inputMsg);
             } elseif (! str_contains($inputMsg, $rescheduleUrl)) {
-                $actualMessage = $inputMsg . " Reschedule link: " . $rescheduleUrl . " (valid for 24 hours).";
+                $actualMessage = $inputMsg . " Reschedule/Refund link: " . $rescheduleUrl . " (valid for 24 hours).";
             } else {
                 $actualMessage = $inputMsg;
             }
@@ -10942,7 +11020,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             ->orderByDesc('created_at');
 
         if (! empty($status) && $status !== 'all') {
-            $query->where('status', $status);
+            if ($status === 'refund') {
+                $query->where('request_type', 'refund');
+            } elseif ($status === 'reschedule') {
+                $query->where('request_type', 'reschedule');
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         $allRequests = $query->get();
@@ -10952,6 +11036,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'pending' => \App\Models\RescheduleRequest::where('status', 'pending')->where('expires_at', '>=', now())->count(),
             'approved' => \App\Models\RescheduleRequest::where('status', 'approved')->count(),
             'declined' => \App\Models\RescheduleRequest::where('status', 'declined')->count(),
+            'refund' => \App\Models\RescheduleRequest::where('request_type', 'refund')->count(),
         ];
 
         $items = $allRequests->map(function ($req) use ($formatLocalDate) {
@@ -10981,6 +11066,19 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 $reqFormatted .= " ({$slot})";
             }
 
+            $refundAmt = (float) ($req->refund_amount ?? 0);
+            $amountPaid = (float) ($res?->amount_paid ?? 0);
+            $totalAmount = (float) ($res?->total_amount ?? 0);
+
+            $approverName = $req->approver?->name;
+            if (! $approverName && $req->approved_by) {
+                $approverName = \App\Models\AdminAccount::find($req->approved_by)?->name 
+                    ?: \App\Models\StaffAccount::find($req->approved_by)?->name;
+            }
+            if (! $approverName && $req->approved_at) {
+                $approverName = 'Staff User';
+            }
+
             return [
                 'id' => $req->id,
                 'reservation_id' => $req->reservation_id,
@@ -10994,6 +11092,20 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'requested_date' => $reqFormatted,
                 'requested_date_raw' => $reqStart,
                 'requested_end_date_raw' => $reqEnd,
+                'request_type' => $req->request_type ?? 'reschedule',
+                'is_refund' => $req->isRefund(),
+                'refund_amount' => $refundAmt,
+                'refund_amount_formatted' => '₱' . number_format($refundAmt, 2),
+                'ewallet_provider' => $req->ewallet_provider ?? 'GCash',
+                'ewallet_account_number' => $req->ewallet_account_number ?? '',
+                'ewallet_account_name' => $req->ewallet_account_name ?? '',
+                'refund_reference_number' => $req->refund_reference_number ?? '',
+                'refund_notes' => $req->refund_notes ?? '',
+                'refunded_at' => $req->refunded_at ? $req->refunded_at->format('M d, Y g:i A') : null,
+                'amount_paid' => $amountPaid,
+                'amount_paid_formatted' => '₱' . number_format($amountPaid, 2),
+                'total_amount' => $totalAmount,
+                'total_amount_formatted' => '₱' . number_format($totalAmount, 2),
                 'replacement_amenity' => $req->replacementAmenity ? [
                     'id' => (string) $req->replacementAmenity->id,
                     'name' => $req->replacementAmenity->amenities_name,
@@ -11010,7 +11122,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'created_at_human' => $req->created_at ? $req->created_at->diffForHumans() : '',
                 'submitted_at_human' => $req->used_at ? $req->used_at->diffForHumans() : null,
                 'approved_at' => $req->approved_at ? $req->approved_at->format('M d, Y g:i A') : null,
-                'approver_name' => $req->approver?->name ?? 'Staff',
+                'approver_name' => $approverName,
                 'amenities' => $res?->reservationAmenities->map(fn($ra) => $ra->amenity?->amenities_name)->filter()->values()->all() ?? [],
             ];
         });
@@ -11033,7 +11145,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         if ($rescheduleRequest->status !== 'submitted') {
             return response()->json([
                 'success' => false,
-                'message' => 'Only submitted reschedule requests can be approved.',
+                'message' => 'Only submitted reschedule or refund requests can be approved.',
             ], 422);
         }
 
@@ -11042,6 +11154,101 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return response()->json(['success' => false, 'message' => 'Reservation not found.'], 404);
         }
 
+        $staffId = $user['id'] ?? null;
+        $staffName = $user['name'] ?? 'Staff User';
+
+        // ── Case A: Process 50% Refund Request ───────────────────────────
+        if ($rescheduleRequest->isRefund()) {
+            $refNumber = trim((string) $request->input('reference_number', ''));
+            $refundNotes = trim((string) $request->input('notes', ''));
+
+            $originalPaid = (float) $reservation->amount_paid;
+            if ($originalPaid <= 0 && (float) $reservation->total_amount > 0) {
+                $originalPaid = round((float) $reservation->total_amount * 0.50, 2);
+            }
+            $refundAmount = (float) ($rescheduleRequest->refund_amount ?: round($originalPaid * 0.50, 2));
+            $retainedAmount = max(0, round($originalPaid - $refundAmount, 2));
+
+            // Update reservation: amount_paid reduces to retained 50%, refunded_amount holds the 50% returned, status becomes Cancelled
+            $reservation->update([
+                'amount_paid' => $retainedAmount,
+                'refunded_amount' => $refundAmount,
+                'remaining_balance' => 0.00,
+                'status' => 'Cancelled',
+            ]);
+
+            // Release reserved amenities so date slots become available to other guests
+            // Uses 'Completed' status to respect enum constraint and free slot availability
+            $reservation->reservationAmenities()->update(['status' => 'Completed']);
+
+            // Update request record
+            $rescheduleRequest->update([
+                'status' => 'approved',
+                'approved_by' => $staffId,
+                'approved_at' => now(),
+                'refunded_at' => now(),
+                'refund_reference_number' => $refNumber ?: null,
+                'refund_notes' => $refundNotes ?: null,
+            ]);
+
+            // Log activity with explicit staff / actor attribution for notification and activity ledger
+            $refText = $refNumber ? " (Ref: {$refNumber})" : "";
+            $staffRole = $user['role'] ?? 'staff';
+            $roleDisplay = ucfirst($staffRole);
+
+            \App\Models\ActivityLog::log(
+                activityType: 'reservation_refund_processed',
+                title: "50% Refund Sent by {$staffName}",
+                description: "50% refund of ₱" . number_format($refundAmount, 2) . " processed & sent by {$roleDisplay} {$staffName} via {$rescheduleRequest->ewallet_provider} ({$rescheduleRequest->ewallet_account_number}) to {$rescheduleRequest->ewallet_account_name}{$refText}. Reservation #{$reservation->id} cancelled. ₱" . number_format($retainedAmount, 2) . " retained.",
+                reservationId: $reservation->id,
+                actorName: $staffName,
+                actorRole: $staffRole,
+                staffId: (string) ($staffId ?? ''),
+                paymentAmount: -($refundAmount),
+                metadata: [
+                    'reschedule_request_id' => $rescheduleRequest->id,
+                    'original_paid' => $originalPaid,
+                    'refund_amount' => $refundAmount,
+                    'retained_amount' => $retainedAmount,
+                    'ewallet_provider' => $rescheduleRequest->ewallet_provider,
+                    'ewallet_account_number' => $rescheduleRequest->ewallet_account_number,
+                    'ewallet_account_name' => $rescheduleRequest->ewallet_account_name,
+                    'reference_number' => $refNumber,
+                    'notes' => $refundNotes,
+                    'refunded_by' => $staffName,
+                    'refunded_by_role' => $staffRole,
+                    'refunded_by_id' => $staffId,
+                ]
+            );
+
+            // Send SMS notification to guest confirming refund is done & successful
+            $smsResult = ['success' => false, 'message' => 'SMS not sent'];
+            try {
+                $philSms = app(\App\Services\PhilSmsService::class);
+                $targetPhone = !empty($reservation->phone) ? $reservation->phone : ($rescheduleRequest->ewallet_account_number ?: '');
+                $smsResult = $philSms->sendRefundApproved(
+                    $reservation,
+                    $refundAmount,
+                    $rescheduleRequest->ewallet_provider ?: 'GCash',
+                    $rescheduleRequest->ewallet_account_number ?: $targetPhone,
+                    $refNumber ?: null
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send refund approved SMS for reservation #{$reservation->id}: " . $e->getMessage());
+                $smsResult = ['success' => false, 'error' => $e->getMessage()];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "50% refund of ₱" . number_format($refundAmount, 2) . " has been successfully processed by {$staffName}. Reservation #{$reservation->id} is cancelled and an SMS confirmation was dispatched to the guest.",
+                'refund_amount' => $refundAmount,
+                'retained_amount' => $retainedAmount,
+                'refunded_by' => $staffName,
+                'sms_result' => $smsResult,
+            ]);
+        }
+
+        // ── Case B: Reschedule Date Change Request (Existing) ────────────
         $newStartDate = $rescheduleRequest->requested_date;
         if (empty($newStartDate)) {
             return response()->json(['success' => false, 'message' => 'No requested date found on this request.'], 422);
@@ -11192,12 +11399,39 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         ]);
 
         $reservation = $rescheduleRequest->reservation;
+        $staffName = $user['name'] ?? 'Staff User';
+
+        if ($rescheduleRequest->isRefund()) {
+            if ($reservation) {
+                $philSms = app(\App\Services\PhilSmsService::class);
+                $philSms->sendRefundDeclined($reservation, $declineReason ?: null);
+            }
+
+            ActivityLog::log(
+                activityType: 'reservation_refund_declined',
+                title: '50% Refund Request Declined',
+                description: "50% refund request #{$rescheduleRequest->id} for Res #{$rescheduleRequest->reservation_id} declined by {$staffName}",
+                reservationId: $rescheduleRequest->reservation_id,
+                actorName: $staffName,
+                actorRole: $user['role'] ?? 'staff',
+                staffId: (string) ($user['id'] ?? ''),
+                metadata: [
+                    'reschedule_request_id' => $rescheduleRequest->id,
+                    'decline_reason' => $declineReason,
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => '50% Refund request has been declined and notification SMS sent to the guest.',
+            ]);
+        }
+
         if ($reservation) {
             $philSms = app(\App\Services\PhilSmsService::class);
             $philSms->sendRescheduleDeclined($reservation, $declineReason ?: null);
         }
 
-        $staffName = $user['name'] ?? 'Staff User';
         ActivityLog::log(
             activityType: 'reservation_reschedule_declined',
             title: 'Reschedule Request Declined',

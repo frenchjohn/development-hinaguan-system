@@ -316,4 +316,66 @@ class PhilSmsService
 
         return $this->sendSms($phone, $message);
     }
+
+    /**
+     * Send refund approved and disbursed SMS to the booker.
+     *
+     * @param  Reservation  $reservation
+     * @param  float  $refundAmount
+     * @param  string  $ewalletProvider
+     * @param  string  $ewalletAccount
+     * @param  string|null  $refNumber
+     * @return array{success: bool, message: string, error: ?string, data: ?array}
+     */
+    public function sendRefundApproved(Reservation $reservation, float $refundAmount, string $ewalletProvider, string $ewalletAccount, ?string $refNumber = null): array
+    {
+        $phone = $reservation->phone ?: $ewalletAccount;
+        if (empty(trim($phone))) {
+            return [
+                'success' => false,
+                'message' => 'No phone number provided for this reservation.',
+                'error' => 'NO_PHONE_NUMBER',
+                'data' => null,
+            ];
+        }
+
+        $parkSettings = ParkSetting::first();
+        $parkContact = $parkSettings->contact_number ?? '0917 861 8383';
+        $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
+        $fmtAmount = 'PHP ' . number_format($refundAmount, 2);
+        $refText = !empty($refNumber) ? " (Ref: {$refNumber})" : '';
+
+        $message = "Hinaguan Nature Park: Hi {$firstName}! Your refund request for Reservation #{$reservation->id} is DONE and successful. Your 50% refund of {$fmtAmount} has been sent to your {$ewalletProvider} ({$ewalletAccount}){$refText}. Reservation is now cancelled. Inquiries: {$parkContact}.";
+
+        return $this->sendSms($phone, $message);
+    }
+
+    /**
+     * Send refund request declined SMS to the booker.
+     *
+     * @param  Reservation  $reservation
+     * @param  string|null  $reason
+     * @return array{success: bool, message: string, error: ?string, data: ?array}
+     */
+    public function sendRefundDeclined(Reservation $reservation, ?string $reason = null): array
+    {
+        $phone = $reservation->phone ?? '';
+        if (empty(trim($phone))) {
+            return [
+                'success' => false,
+                'message' => 'No phone number provided for this reservation.',
+                'error' => 'NO_PHONE_NUMBER',
+                'data' => null,
+            ];
+        }
+
+        $parkSettings = ParkSetting::first();
+        $parkContact = $parkSettings->contact_number ?? '0917 861 8383';
+        $firstName = trim(explode(' ', (string) $reservation->booker_name)[0] ?? 'Guest');
+        $reasonText = !empty($reason) ? " Reason: {$reason}." : '';
+
+        $message = "Hinaguan Nature Park: Hi {$firstName}, your refund request for Reservation #{$reservation->id} was reviewed and declined.{$reasonText} Please contact us at {$parkContact}.";
+
+        return $this->sendSms($phone, $message);
+    }
 }

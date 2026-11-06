@@ -805,9 +805,9 @@
                 <div>
                     <div class="flex items-center gap-2">
                         <i class="bi bi-calendar2-range text-lg text-emerald-800 dark:text-emerald-400"></i>
-                        <h3 id="reschedRequestsModalTitle" class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Reschedule Requests</h3>
+                        <h3 id="reschedRequestsModalTitle" class="m-0 font-display text-xl font-bold text-hp-text dark:text-[#f3f4f6]">Reservation Reschedule &amp; Refund Requests</h3>
                     </div>
-                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Manage guest date change requests dispatched via single-use SMS links</p>
+                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Manage guest date change and 50% downpayment refund requests</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="refreshReschedRequestsBtn" class="cursor-pointer h-8 px-3 rounded-xl border border-gray-300/80 bg-white/80 hover:bg-gray-100 text-gray-700 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20 flex items-center gap-1.5 text-xs font-semibold shadow-xs transition-colors">
@@ -827,6 +827,9 @@
                 </button>
                 <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="submitted">
                     Awaiting Action (<span id="reschedCountSubmitted">0</span>)
+                </button>
+                <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="refund">
+                    50% Refunds (<span id="reschedCountRefund">0</span>)
                 </button>
                 <button type="button" class="resched-tab-btn cursor-pointer px-3 py-1 rounded-xl text-xs font-semibold text-hp-text transition-all hover:bg-black/5 dark:hover:bg-white/10 shrink-0" data-resched-tab="pending">
                     Link Sent / Pending (<span id="reschedCountPending">0</span>)
@@ -981,6 +984,95 @@
             <div class="flex items-center justify-center gap-3">
                 <button type="button" class="cursor-pointer px-4 py-2 rounded-xl border border-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10" data-close-decline-resched-modal="true">Cancel</button>
                 <button type="button" id="confirmDeclineReschedBtn" class="cursor-pointer px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-sm">Yes, Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROCESS 50% REFUND MODAL -->
+    <div class="guest-modal fixed inset-0 z-[1450] hidden items-center justify-center is-open:flex" style="z-index: 1450 !important;" id="processRefundModal" aria-hidden="true">
+        <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-xs" data-close-process-refund-modal="true"></div>
+        <div class="guest-modal__content relative z-[1] w-full max-w-[500px] rounded-3xl bg-white dark:bg-[#1a1e1c] border border-glass-border shadow-2xl p-6 text-left mx-3 my-auto" role="dialog" aria-modal="true" aria-labelledby="processRefundTitle">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/10 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center text-lg">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <div>
+                        <h4 id="processRefundTitle" class="font-display font-bold text-base sm:text-lg text-slate-900 dark:text-white m-0">Confirm 50% Refund Sent</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 m-0">Manual GCash / E-Wallet Refund Disbursement</p>
+                    </div>
+                </div>
+                <button type="button" class="cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 flex items-center justify-center transition-all shadow-xs" data-close-process-refund-modal="true">
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Refund Info Card -->
+            <div class="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 text-xs mb-4 space-y-2">
+                <div class="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-800/40">
+                    <span class="text-slate-600 dark:text-slate-400 font-medium">Guest Booker:</span>
+                    <span class="font-bold text-slate-900 dark:text-white" id="refundModalBookerName">—</span>
+                </div>
+                <div class="flex items-center justify-between pb-2 border-b border-amber-200/60 dark:border-amber-800/40">
+                    <span class="text-slate-600 dark:text-slate-400 font-medium">Reservation ID:</span>
+                    <span class="font-mono font-bold text-emerald-800 dark:text-emerald-400" id="refundModalResId">#0</span>
+                </div>
+                <div class="flex items-center justify-between py-1">
+                    <span class="text-amber-950 dark:text-amber-300 font-bold uppercase text-[0.7rem]">50% Refund Amount to Send:</span>
+                    <span class="font-display font-extrabold text-emerald-700 dark:text-emerald-400 text-lg" id="refundModalAmount">₱0.00</span>
+                </div>
+                <div class="pt-2 border-t border-amber-200/60 dark:border-amber-800/40">
+                    <span class="text-slate-600 dark:text-slate-400 font-medium block mb-1">Recipient Account:</span>
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/80 dark:bg-white/5 border border-amber-200/60 dark:border-white/10">
+                        <div class="min-w-0">
+                            <span class="font-bold text-slate-900 dark:text-white text-xs block" id="refundModalAccountName">—</span>
+                            <span class="text-slate-500 font-mono text-[0.72rem]" id="refundModalProviderAndNumber">GCash &middot; 09XXXXXXXXX</span>
+                        </div>
+                        <button type="button" id="copyRefundNumberBtn" class="cursor-pointer px-2.5 py-1 rounded-lg border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 text-[0.68rem] font-bold flex items-center gap-1 transition-colors">
+                            <i class="bi bi-clipboard"></i>
+                            <span id="copyRefundNumberBtnText">Copy</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reference Number & Notes Form -->
+            <form id="processRefundForm" class="space-y-3">
+                <input type="hidden" id="processRefundRequestId" value="">
+
+                <div>
+                    <label for="refundRefNumber" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        GCash / E-Wallet Reference Number:
+                    </label>
+                    <input type="text" id="refundRefNumber" class="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-slate-200 dark:border-white/15 dark:bg-white/5 dark:text-white focus:border-emerald-600 focus:outline-none" placeholder="e.g. 1002 9384 8123">
+                    <p class="text-[0.68rem] text-slate-400 mt-1">Found on the GCash transaction receipt screenshot.</p>
+                </div>
+
+                <div>
+                    <label for="refundStaffNotes" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Staff Remarks / Notes (Optional):
+                    </label>
+                    <input type="text" id="refundStaffNotes" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-white/15 dark:bg-white/5 dark:text-white focus:border-emerald-600 focus:outline-none" placeholder="e.g. Sent via Front Desk GCash terminal">
+                </div>
+
+                <div class="pt-2">
+                    <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <input type="checkbox" id="confirmRefundTransferCheck" required class="mt-0.5 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600">
+                        <span>
+                            I confirm that I have <strong>manually sent the 50% refund</strong> to the guest's GCash account.
+                        </span>
+                    </label>
+                </div>
+            </form>
+
+            <div class="flex items-center justify-end gap-2.5 mt-5 pt-4 border-t border-slate-100 dark:border-white/10">
+                <button type="button" class="cursor-pointer px-4 py-2 rounded-xl border border-slate-200 text-slate-700 dark:text-slate-300 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-white/10" data-close-process-refund-modal="true">
+                    Cancel
+                </button>
+                <button type="button" id="confirmProcessRefundBtn" class="cursor-pointer px-5 py-2 rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+                    <i class="bi bi-check2-circle text-xs"></i>
+                    <span>Confirm Refund Sent</span>
+                </button>
             </div>
         </div>
     </div>

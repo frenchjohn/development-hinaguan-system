@@ -33,6 +33,7 @@ class Reservation extends Model
         'status',
         'total_amount',
         'amount_paid',
+        'refunded_amount',
         'remaining_balance',
         'payment_status',
         'payment_intent_id',
@@ -47,6 +48,7 @@ class Reservation extends Model
         'check_out' => 'datetime',
         'total_amount' => 'decimal:2',
         'amount_paid' => 'decimal:2',
+        'refunded_amount' => 'decimal:2',
         'remaining_balance' => 'decimal:2',
     ];
 

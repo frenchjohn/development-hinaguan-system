@@ -7164,6 +7164,7 @@ window.AppPage['staff_reservations'] = function () {
     const reschedRequestsModal = document.getElementById('reschedRequestsModal');
     const requestReschedModal = document.getElementById('requestReschedModal');
     const declineReschedModal = document.getElementById('declineReschedModal');
+    const processRefundModal = document.getElementById('processRefundModal');
     const reschedRequestsBadge = document.getElementById('reschedRequestsBadge');
 
     let currentReschedFilter = 'all';
@@ -7406,6 +7407,7 @@ window.AppPage['staff_reservations'] = function () {
 
             const countAll = document.getElementById('reschedCountAll');
             const countSub = document.getElementById('reschedCountSubmitted');
+            const countRefund = document.getElementById('reschedCountRefund');
             const countPend = document.getElementById('reschedCountPending');
             const countApp = document.getElementById('reschedCountApproved');
             const countDec = document.getElementById('reschedCountDeclined');
@@ -7413,6 +7415,7 @@ window.AppPage['staff_reservations'] = function () {
             if (data.counts) {
                 if (countAll) countAll.textContent = data.counts.all ?? 0;
                 if (countSub) countSub.textContent = data.counts.submitted ?? 0;
+                if (countRefund) countRefund.textContent = data.counts.refund ?? 0;
                 if (countPend) countPend.textContent = data.counts.pending ?? 0;
                 if (countApp) countApp.textContent = data.counts.approved ?? 0;
                 if (countDec) countDec.textContent = data.counts.declined ?? 0;
@@ -7425,7 +7428,7 @@ window.AppPage['staff_reservations'] = function () {
                 container.innerHTML = `
                     <div class="py-12 text-center text-hp-text-muted text-xs">
                         <i class="bi bi-inbox text-3xl text-gray-300 dark:text-white/20 block mb-2"></i>
-                        No reschedule requests found in this view.
+                        No reschedule or refund requests found in this view.
                     </div>
                 `;
                 return;
@@ -7437,6 +7440,125 @@ window.AppPage['staff_reservations'] = function () {
                 const isDec = req.status === 'declined';
                 const isPend = req.status === 'pending';
                 const isExp = req.status === 'expired' || req.is_expired;
+
+                // ── 50% Refund Request Card ───────────────────────────────
+                if (req.is_refund) {
+                    let refundStatusBadge = '';
+                    if (isSub) {
+                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300"><i class="bi bi-clock"></i> Awaiting Staff GCash Transfer</span>`;
+                    } else if (isApp) {
+                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300"><i class="bi bi-check-circle-fill"></i> Refund Sent by ${escapeHtml(req.approver_name || 'Staff')}</span>`;
+                    } else if (isDec) {
+                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300"><i class="bi bi-x-circle"></i> Refund Declined</span>`;
+                    } else {
+                        refundStatusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-white/10 dark:text-slate-300"><i class="bi bi-hourglass-bottom"></i> Expired</span>`;
+                    }
+
+                    const phoneDisplay = formatPhilippinePhone(req.phone);
+
+                    return `
+                        <div class="p-4 rounded-2xl border ${isSub ? 'border-amber-400/80 bg-amber-50/25 shadow-xs' : 'border-slate-200 dark:border-white/10 bg-white dark:bg-white/5'} flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
+                                    <span class="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">#${req.reservation_id}</span>
+                                    <span class="font-bold text-slate-900 dark:text-white text-sm truncate">${escapeHtml(req.booker_name)}</span>
+                                    <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone text-[0.75rem]"></i> ${escapeHtml(phoneDisplay)}</span>
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-100/90 text-amber-900 border border-amber-300/80">
+                                        <i class="bi bi-cash-stack"></i> 50% Refund Request
+                                    </span>
+                                    ${refundStatusBadge}
+                                </div>
+
+                                <div class="my-2 p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/70 dark:border-amber-800/30 text-xs">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <div>
+                                            <span class="text-slate-500 text-[0.68rem] uppercase font-semibold block">50% Refund Amount:</span>
+                                            <span class="font-display font-extrabold text-emerald-700 dark:text-emerald-400 text-base">${escapeHtml(req.refund_amount_formatted)}</span>
+                                            <span class="text-[0.68rem] text-slate-400 block">(Downpayment: ${escapeHtml(req.amount_paid_formatted || req.total_amount_formatted)})</span>
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <span class="text-slate-500 text-[0.68rem] uppercase font-semibold block">Receiving E-Wallet / GCash:</span>
+                                            <div class="flex items-center gap-2 flex-wrap mt-0.5">
+                                                <span class="font-bold text-slate-800 dark:text-slate-100">${escapeHtml(req.ewallet_provider)} &bull; </span>
+                                                <span class="font-mono font-bold text-slate-900 dark:text-white text-xs">${escapeHtml(req.ewallet_account_number)}</span>
+                                                <button type="button" class="btn-copy-ewallet cursor-pointer px-2 py-0.5 rounded text-[10px] font-bold border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 transition-colors" data-copy-text="${escapeHtml(req.ewallet_account_number)}" title="Copy number">
+                                                    <i class="bi bi-clipboard"></i> Copy
+                                                </button>
+                                            </div>
+                                            <div class="text-[0.72rem] text-slate-600 dark:text-slate-300 mt-0.5">
+                                                Account Name: <strong class="text-slate-800 dark:text-slate-100">${escapeHtml(req.ewallet_account_name)}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    ${req.refund_reference_number ? `
+                                        <div class="mt-2 pt-2 border-t border-amber-200/60 dark:border-white/10 flex items-center gap-2 text-[0.72rem] flex-wrap">
+                                            <span class="text-slate-500 font-medium">Disbursed GCash Ref #:</span>
+                                            <span class="font-mono font-bold text-emerald-800 dark:text-emerald-300">${escapeHtml(req.refund_reference_number)}</span>
+                                            ${req.approver_name ? `<span class="text-slate-600 dark:text-slate-300 font-medium">&bull; Disbursed by: <strong class="text-emerald-700 dark:text-emerald-400">${escapeHtml(req.approver_name)}</strong></span>` : ''}
+                                            ${req.refunded_at ? `<span class="text-slate-400">(${escapeHtml(req.refunded_at)})</span>` : ''}
+                                        </div>
+                                    ` : ''}
+
+                                    ${req.reason ? `
+                                        <div class="mt-2 pt-2 border-t border-amber-200/60 dark:border-white/10 text-[0.72rem] text-slate-600 dark:text-slate-300">
+                                            <span class="text-slate-500">Reason:</span> &ldquo;${escapeHtml(req.reason)}&rdquo;
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                <div class="text-[0.7rem] text-slate-400 flex items-center gap-3 flex-wrap mt-1">
+                                    <span><i class="bi bi-clock"></i> Sent: ${req.created_at} (${req.created_at_human})</span>
+                                    ${req.used_at ? `<span><i class="bi bi-check-all text-emerald-600"></i> Guest Requested: ${req.used_at}</span>` : ''}
+                                    ${req.approved_at ? `<span class="text-emerald-700 dark:text-emerald-300 font-semibold"><i class="bi bi-shield-check text-emerald-600"></i> Refund Disbursed by: <strong>${escapeHtml(req.approver_name || 'Staff')}</strong> (${escapeHtml(req.approved_at)})</span>` : ''}
+                                    ${req.decline_reason ? `<span class="text-rose-600 font-medium">Decline reason: "${escapeHtml(req.decline_reason)}"</span>` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons + 3-dot menu -->
+                            <div class="shrink-0 flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                ${isSub ? `
+                                    <button type="button" class="btn-refund-process cursor-pointer rounded-xl bg-hp-green hover:bg-hp-green-dark active:scale-95 text-white px-3.5 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm"
+                                        data-req-id="${req.id}"
+                                        data-res-id="${req.reservation_id}"
+                                        data-booker="${escapeHtml(req.booker_name)}"
+                                        data-refund-amount="${req.refund_amount}"
+                                        data-refund-formatted="${escapeHtml(req.refund_amount_formatted)}"
+                                        data-ewallet-provider="${escapeHtml(req.ewallet_provider)}"
+                                        data-ewallet-number="${escapeHtml(req.ewallet_account_number)}"
+                                        data-ewallet-name="${escapeHtml(req.ewallet_account_name)}">
+                                        <i class="bi bi-send-check"></i>
+                                        <span>Confirm Refund Sent</span>
+                                    </button>
+                                    <button type="button" class="btn-resched-decline cursor-pointer rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3 py-2 text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-sm" data-req-id="${req.id}">
+                                        <i class="bi bi-x-lg"></i>
+                                        <span>Decline</span>
+                                    </button>
+                                ` : ''}
+
+                                <!-- 3-dot dropdown -->
+                                <div class="relative">
+                                    <button type="button" class="btn-resched-dots w-8 h-8 flex items-center justify-center rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/10 transition-all cursor-pointer" data-req-id="${req.id}" aria-label="More actions">
+                                        <i class="bi bi-three-dots-vertical text-sm"></i>
+                                    </button>
+                                    <div class="resched-dots-menu hidden absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1c211e] shadow-xl z-20 overflow-hidden py-1" data-req-id="${req.id}">
+                                        <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer" data-dots-action="view" data-res-id="${req.reservation_id}">
+                                            <i class="bi bi-eye text-slate-400 dark:text-slate-500"></i>
+                                            View Reservation
+                                        </button>
+                                        <div class="h-px mx-3 bg-slate-100 dark:bg-white/10"></div>
+                                        <button type="button" class="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" data-dots-action="delete" data-req-id="${req.id}">
+                                            <i class="bi bi-trash text-rose-400"></i>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // ── Standard Reschedule Request Card ──────────────────────
 
                 let statusBadgeHtml = '';
                 if (isSub) {
@@ -7537,6 +7659,50 @@ window.AppPage['staff_reservations'] = function () {
                     const reqDate = btn.dataset.reqDate;
                     const swapAmenity = btn.dataset.swapAmenity || '';
                     handleApproveResched(btn, reqId, resId, reqDate, swapAmenity);
+                });
+            });
+
+            // Wire up 50% refund process modal button
+            container.querySelectorAll('.btn-refund-process').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const req = {
+                        id: btn.dataset.reqId,
+                        reservation_id: btn.dataset.resId,
+                        booker_name: btn.dataset.booker,
+                        refund_amount: btn.dataset.refundAmount,
+                        refund_amount_formatted: btn.dataset.refundFormatted,
+                        ewallet_provider: btn.dataset.ewalletProvider,
+                        ewallet_account_number: btn.dataset.ewalletNumber,
+                        ewallet_account_name: btn.dataset.ewalletName,
+                    };
+                    openProcessRefundModal(req);
+                });
+            });
+
+            // Wire up copy e-wallet number buttons on cards
+            container.querySelectorAll('.btn-copy-ewallet').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const text = btn.dataset.copyText;
+                    if (text) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            const originalHtml = btn.innerHTML;
+                            btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+                            setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+                        }).catch(() => {
+                            // Fallback if clipboard API is blocked
+                            const tempInput = document.createElement('input');
+                            tempInput.value = text;
+                            document.body.appendChild(tempInput);
+                            tempInput.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(tempInput);
+                            btn.innerHTML = '<i class="bi bi-check2"></i> Copied!';
+                            setTimeout(() => { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 2000);
+                        });
+                    }
                 });
             });
 
@@ -7757,9 +7923,139 @@ window.AppPage['staff_reservations'] = function () {
         }
     });
 
+    // ── Process 50% Refund Modal Handlers ───────────────────────────
+    const openProcessRefundModal = (req) => {
+        if (!processRefundModal || !req) return;
+        const idInput = document.getElementById('processRefundRequestId');
+        const bookerEl = document.getElementById('refundModalBookerName');
+        const resIdEl = document.getElementById('refundModalResId');
+        const amountEl = document.getElementById('refundModalAmount');
+        const accountNameEl = document.getElementById('refundModalAccountName');
+        const providerAndNumberEl = document.getElementById('refundModalProviderAndNumber');
+        const copyBtn = document.getElementById('copyRefundNumberBtn');
+        const copyBtnText = document.getElementById('copyRefundNumberBtnText');
+        const refInput = document.getElementById('refundRefNumber');
+        const notesInput = document.getElementById('refundStaffNotes');
+        const confirmCheck = document.getElementById('confirmRefundTransferCheck');
+
+        if (idInput) idInput.value = req.id;
+        if (bookerEl) bookerEl.textContent = req.booker_name || 'Guest';
+        if (resIdEl) resIdEl.textContent = `#${req.reservation_id}`;
+        if (amountEl) amountEl.textContent = req.refund_amount_formatted || `₱${Number(req.refund_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        if (accountNameEl) accountNameEl.textContent = req.ewallet_account_name || '—';
+        if (providerAndNumberEl) providerAndNumberEl.textContent = `${req.ewallet_provider || 'GCash'} · ${req.ewallet_account_number || '—'}`;
+        if (copyBtn) copyBtn.dataset.copyText = req.ewallet_account_number || '';
+        if (copyBtnText) copyBtnText.textContent = 'Copy';
+        if (refInput) refInput.value = '';
+        if (notesInput) notesInput.value = '';
+        if (confirmCheck) confirmCheck.checked = false;
+
+        processRefundModal.classList.add('is-open');
+        processRefundModal.classList.remove('hidden');
+        processRefundModal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    const closeProcessRefundModal = () => {
+        if (processRefundModal) {
+            processRefundModal.classList.remove('is-open');
+            processRefundModal.classList.add('hidden');
+            processRefundModal.setAttribute('aria-hidden', 'true');
+            const anyOpen = document.querySelectorAll('.guest-modal.is-open').length > 0;
+            if (!anyOpen) {
+                document.body.classList.remove('overflow-hidden');
+            }
+            window.dispatchEvent(new CustomEvent('modal:closed'));
+        }
+    };
+
+    document.querySelectorAll('[data-close-process-refund-modal="true"]').forEach(btn => {
+        btn.addEventListener('click', closeProcessRefundModal);
+    });
+
+    document.getElementById('copyRefundNumberBtn')?.addEventListener('click', (e) => {
+        const text = e.currentTarget.dataset.copyText;
+        if (text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const textSpan = document.getElementById('copyRefundNumberBtnText');
+                if (textSpan) {
+                    textSpan.textContent = 'Copied!';
+                    setTimeout(() => { textSpan.textContent = 'Copy'; }, 2000);
+                }
+            }).catch(() => {
+                const tempInput = document.createElement('input');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                const textSpan = document.getElementById('copyRefundNumberBtnText');
+                if (textSpan) {
+                    textSpan.textContent = 'Copied!';
+                    setTimeout(() => { textSpan.textContent = 'Copy'; }, 2000);
+                }
+            });
+        }
+    });
+
+    document.getElementById('confirmProcessRefundBtn')?.addEventListener('click', async () => {
+        const requestId = document.getElementById('processRefundRequestId')?.value;
+        const confirmCheck = document.getElementById('confirmRefundTransferCheck');
+        const refNumber = document.getElementById('refundRefNumber')?.value.trim();
+        const staffNotes = document.getElementById('refundStaffNotes')?.value.trim();
+
+        if (confirmCheck && !confirmCheck.checked) {
+            alert('Please check the confirmation box verifying that you have manually sent the 50% refund to the guest via GCash / e-wallet.');
+            return;
+        }
+
+        if (!requestId) return;
+
+        const btn = document.getElementById('confirmProcessRefundBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-repeat animate-spin mr-1"></i> Recording Refund...';
+
+        try {
+            const response = await fetch(`/staff/reschedule-requests/${requestId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    reference_number: refNumber,
+                    notes: staffNotes,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                closeProcessRefundModal();
+                showSuccessModal(data.message || '50% Refund has been processed and recorded successfully!');
+                loadRescheduleRequests(currentReschedFilter);
+                fetchReschedBadgeCount();
+                document.getElementById('refreshTableBtn')?.click();
+            } else {
+                showToast(data.message || 'Failed to process refund request.', 'error');
+            }
+        } catch (err) {
+            console.error('Error confirming refund:', err);
+            showToast('A network error occurred while processing the refund.', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle text-xs"></i> <span>Confirm Refund Sent</span>';
+        }
+    });
+
     // Close any active reschedule modal on Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            if (processRefundModal && processRefundModal.classList.contains('is-open')) {
+                closeProcessRefundModal();
+                return;
+            }
             if (declineReschedModal && declineReschedModal.classList.contains('is-open')) {
                 closeDeclineReschedModal();
                 return;

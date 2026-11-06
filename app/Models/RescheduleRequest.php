@@ -18,6 +18,14 @@ class RescheduleRequest extends Model
         'original_date',
         'requested_date',
         'replacement_amenity_id',
+        'request_type',
+        'refund_amount',
+        'ewallet_provider',
+        'ewallet_account_number',
+        'ewallet_account_name',
+        'refund_reference_number',
+        'refund_notes',
+        'refunded_at',
         'status',
         'expires_at',
         'used_at',
@@ -30,10 +38,22 @@ class RescheduleRequest extends Model
     protected $casts = [
         'original_date' => 'date:Y-m-d',
         'requested_date' => 'date:Y-m-d',
+        'refund_amount' => 'decimal:2',
+        'refunded_at' => 'datetime',
         'expires_at' => 'datetime',
         'used_at' => 'datetime',
         'approved_at' => 'datetime',
     ];
+
+    public function isRefund(): bool
+    {
+        return $this->request_type === 'refund';
+    }
+
+    public static function generateToken(): string
+    {
+        return \Illuminate\Support\Str::random(40);
+    }
 
     public function reservation(): BelongsTo
     {
