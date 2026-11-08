@@ -536,54 +536,195 @@
             </div>
 
         @else
-            <!-- Active Rescheduling / Refund Form State -->
-            <!-- Options Selection Bar: Reschedule vs 50% Refund -->
-            <div class="mb-6">
-                <div class="text-center sm:text-left mb-3">
-                    <span class="text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800">Please choose an option</span>
-                    <h2 class="font-display text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">How would you like to proceed?</h2>
+            @php
+                $initialMode = $errors->any() ? (old('action_type') === 'refund' ? 'refund' : 'reschedule') : null;
+            @endphp
+
+            <!-- ======================================================== -->
+            <!-- STEP 1: INITIAL OPTION SELECTION SCREEN (BUTTONS FIRST)  -->
+            <!-- ======================================================== -->
+            <div id="optionSelectionScreen" class="{{ $initialMode ? 'hidden' : '' }} max-w-3xl mx-auto transition-all duration-300">
+                <!-- Summary Card of Current Booking -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 shadow-sm border border-emerald-950/10 mb-8">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg shrink-0 font-bold">
+                                <i class="bi bi-bookmark-check-fill"></i>
+                            </div>
+                            <div>
+                                <span class="text-[0.68rem] font-bold uppercase tracking-wider text-emerald-800 block">Current Reservation</span>
+                                <h2 class="font-display text-lg sm:text-xl font-bold text-slate-900">{{ $reservation->booker_name }}</h2>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-900 font-mono font-bold text-xs border border-emerald-200">
+                                #{{ $reservation->id }}
+                            </span>
+                            <span class="text-xs text-slate-500 font-mono"><i class="bi bi-phone"></i> {{ $displayPhone }}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 text-xs">
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span class="text-slate-500 text-[0.68rem] font-medium block uppercase tracking-wider">Scheduled Date:</span>
+                            <span class="font-bold text-slate-800 mt-0.5 block">
+                                @if ($stayDays > 1)
+                                    {{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }} &ndash; {{ \Carbon\Carbon::parse($origEnd)->format('M d, Y') }}
+                                @else
+                                    {{ \Carbon\Carbon::parse($origStart)->format('M d, Y') }}
+                                @endif
+                            </span>
+                            <span class="text-[0.68rem] text-slate-500">({{ $stayDays }} Day Continuous Stay)</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <span class="text-slate-500 text-[0.68rem] font-medium block uppercase tracking-wider">Total Booking:</span>
+                            <span class="font-bold text-slate-800 text-sm mt-0.5 block">₱{{ number_format($reservation->total_amount, 2) }}</span>
+                            <span class="text-[0.68rem] text-slate-500">{{ $reservation->number_of_guests }} registered guests</span>
+                        </div>
+                        <div class="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/70">
+                            <span class="text-emerald-800 text-[0.68rem] font-bold block uppercase tracking-wider">Downpayment Paid:</span>
+                            <span class="font-display font-extrabold text-emerald-800 text-base mt-0.5 block">₱{{ number_format($origPaid, 2) }}</span>
+                            <span class="text-[0.68rem] text-emerald-700">Eligible 50% refund: <strong>₱{{ number_format($refundAmount, 2) }}</strong></span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Option 1: Reschedule Dates -->
-                    <button type="button" id="tabOptionResched" class="guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-emerald-700 bg-emerald-50/60 ring-2 ring-emerald-600/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group">
-                        <div class="flex items-start gap-3.5">
-                            <div class="w-11 h-11 rounded-2xl bg-emerald-800 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
-                                <i class="bi bi-calendar2-range"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between gap-2 mb-0.5">
-                                    <h4 class="font-display font-bold text-base text-emerald-950">Option 1: Reschedule Dates</h4>
-                                    <span class="px-2 py-0.5 rounded-full text-[0.65rem] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">100% Value Kept</span>
-                                </div>
-                                <p class="text-xs text-emerald-900/80 leading-relaxed">
-                                    Choose new dates for your visit at no change penalty. Retain full deposit value.
-                                </p>
-                            </div>
-                        </div>
-                    </button>
+                <!-- Step 1 Heading & Prompt -->
+                <div class="text-center mb-8">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200 mb-2">
+                        <i class="bi bi-ui-radios-grid"></i> Step 1 of 2: Pick an Option
+                    </span>
+                    <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">
+                        How would you like to proceed?
+                    </h2>
+                    <p class="text-slate-600 text-xs sm:text-sm mt-2 max-w-xl mx-auto leading-relaxed">
+                        Please choose one of the two options below to enter its process. You can reschedule to new visit dates or request a 50% refund of your downpayment.
+                    </p>
+                </div>
 
-                    <!-- Option 2: Cancel & 50% Refund -->
-                    <button type="button" id="tabOptionRefund" class="guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group">
-                        <div class="flex items-start gap-3.5">
-                            <div class="w-11 h-11 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
-                                <i class="bi bi-cash-stack"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center justify-between gap-2 mb-0.5">
-                                    <h4 class="font-display font-bold text-base text-slate-900">Option 2: Cancel &amp; 50% Refund</h4>
-                                    <span class="px-2 py-0.5 rounded-full text-[0.65rem] font-bold bg-amber-100 text-amber-800 border border-amber-200">50% Downpayment Refund</span>
+                <!-- Two Big Interactive Option Cards / Buttons -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                    <!-- Option 1 Button Card: Reschedule Dates -->
+                    <div id="cardSelectResched" class="group text-left p-6 sm:p-7 rounded-3xl border-2 border-emerald-600/70 bg-gradient-to-br from-emerald-50/80 via-white to-white hover:border-emerald-700 hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-800 text-white flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                    <i class="bi bi-calendar2-range"></i>
                                 </div>
-                                <p class="text-xs text-slate-600 leading-relaxed">
-                                    Cancel booking and receive <strong>50% (₱{{ number_format($refundAmount, 2) }})</strong> of your downpayment sent directly to your GCash / e-wallet.
-                                </p>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    100% Value Kept
+                                </span>
                             </div>
+
+                            <h3 class="font-display font-bold text-lg sm:text-xl text-emerald-950 mb-2">
+                                Option 1: Reschedule Dates
+                            </h3>
+                            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                                Choose new dates for your visit from our real-time availability calendar. Retain 100% of your deposit value with zero penalty.
+                            </p>
+
+                            <ul class="space-y-2 text-xs text-slate-700 mb-6">
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
+                                    <span>Keep full deposit value (<strong>₱{{ number_format($origPaid, 2) }}</strong>)</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
+                                    <span>Pick any available dates in our calendar</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-emerald-600"></i>
+                                    <span>Same-category unit swap if current unit is occupied</span>
+                                </li>
+                            </ul>
                         </div>
-                    </button>
+
+                        <button type="button" id="btnSelectResched" class="w-full py-3.5 px-5 rounded-2xl bg-emerald-800 hover:bg-emerald-900 group-hover:bg-emerald-900 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98">
+                            <span>Choose New Dates</span>
+                            <i class="bi bi-arrow-right text-base transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+
+                    <!-- Option 2 Button Card: 50% Refund -->
+                    <div id="cardSelectRefund" class="group text-left p-6 sm:p-7 rounded-3xl border-2 border-amber-500/70 bg-gradient-to-br from-amber-50/80 via-white to-white hover:border-amber-600 hover:shadow-xl hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-amber-600 text-white flex items-center justify-center text-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                    50% Refund to GCash
+                                </span>
+                            </div>
+
+                            <h3 class="font-display font-bold text-lg sm:text-xl text-slate-900 mb-2">
+                                Option 2: Cancel &amp; 50% Refund
+                            </h3>
+                            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                                Cancel your reservation and request 50% of your paid downpayment sent directly to your GCash or Maya e-wallet account.
+                            </p>
+
+                            <ul class="space-y-2 text-xs text-slate-700 mb-6">
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
+                                    <span>Receive <strong>₱{{ number_format($refundAmount, 2) }}</strong> (50% downpayment)</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
+                                    <span>Sent directly to your GCash or Maya account</span>
+                                </li>
+                                <li class="flex items-center gap-2">
+                                    <i class="bi bi-check-circle-fill text-amber-600"></i>
+                                    <span>SMS notification with transaction ref # once disbursed</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <button type="button" id="btnSelectRefund" class="w-full py-3.5 px-5 rounded-2xl bg-amber-600 hover:bg-amber-700 group-hover:bg-amber-700 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98">
+                            <span>Request 50% Refund</span>
+                            <i class="bi bi-arrow-right text-base transition-transform group-hover:translate-x-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer notice on Option Selection Screen -->
+                <div class="flex items-center justify-center gap-2 text-[0.72rem] text-slate-500 text-center">
+                    <i class="bi bi-clock-history"></i>
+                    <span>This secure link expires in <strong>{{ $rescheduleRequest->expires_at->diffForHumans(['parts' => 2]) }}</strong> (valid for 24 hours).</span>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- ======================================================== -->
+            <!-- STEP 2: PROCESS SCREEN (ENTERED ONLY AFTER CLICKING AN OPTION) -->
+            <!-- ======================================================== -->
+            <div id="processScreen" class="{{ $initialMode ? '' : 'hidden' }} transition-all duration-300">
+                <!-- Navigation & Option Switcher Top Bar -->
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl border border-emerald-950/10 shadow-xs">
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="btnBackToOptions" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Back to Options</span>
+                        </button>
+                        <span id="processStepTitle" class="text-xs text-slate-500 font-medium hidden sm:inline">
+                            Step 2: <strong class="text-emerald-950 font-bold">Choose New Dates (Option 1)</strong>
+                        </span>
+                    </div>
+
+                    <!-- Option Switcher Pills inside process -->
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <span class="text-[0.68rem] text-slate-400 font-semibold uppercase tracking-wider hidden md:inline">Switch:</span>
+                        <button type="button" id="tabOptionResched" class="guest-action-tab text-left px-3.5 py-2 rounded-xl border-2 border-emerald-700 bg-emerald-50 text-emerald-900 font-bold text-xs transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5">
+                            <i class="bi bi-calendar2-range"></i>
+                            <span>Reschedule</span>
+                        </button>
+                        <button type="button" id="tabOptionRefund" class="guest-action-tab text-left px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 text-slate-700 font-semibold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5">
+                            <i class="bi bi-cash-stack"></i>
+                            <span>50% Refund</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
                 <!-- Left: Reservation Details & Notice -->
                 <div class="lg:col-span-5 flex flex-col gap-6">
@@ -929,11 +1070,10 @@
                                 <span>Submit 50% Refund Request (₱{{ number_format($refundAmount, 2) }})</span>
                             </button>
                         </form>
-                    </div>
-                </div>
-            </div>
-                </div>
-            </div>
+                    </div><!-- /#refundContainer -->
+                </div><!-- /.lg:col-span-7 -->
+            </div><!-- /.grid -->
+        </div><!-- /#processScreen -->
 
             <!-- Amenity Swap Notice & Selection Modal -->
             <div id="amenitySwapModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
@@ -1105,36 +1245,93 @@
                     const cancelSwapBtn = document.getElementById('cancelSwapBtn');
                     const confirmSwapBtn = document.getElementById('confirmSwapBtn');
 
-                    // Option Tabs & Containers (Reschedule vs 50% Refund)
+                    // Step 1 Selection Screen vs Step 2 Process Screen
+                    const optionSelectionScreen = document.getElementById('optionSelectionScreen');
+                    const processScreen = document.getElementById('processScreen');
+                    const btnSelectResched = document.getElementById('btnSelectResched');
+                    const btnSelectRefund = document.getElementById('btnSelectRefund');
+                    const cardSelectResched = document.getElementById('cardSelectResched');
+                    const cardSelectRefund = document.getElementById('cardSelectRefund');
+                    const btnBackToOptions = document.getElementById('btnBackToOptions');
+                    const processStepTitle = document.getElementById('processStepTitle');
+
+                    // Option Tabs & Containers inside Process Screen
                     const tabOptionResched = document.getElementById('tabOptionResched');
                     const tabOptionRefund = document.getElementById('tabOptionRefund');
                     const calendarContainer = document.getElementById('calendarContainer');
                     const refundContainer = document.getElementById('refundContainer');
 
                     const switchToReschedTab = () => {
-                        if (!tabOptionResched || !tabOptionRefund) return;
-                        // Resched Tab Active
-                        tabOptionResched.className = 'guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-emerald-700 bg-emerald-50/60 ring-2 ring-emerald-600/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group';
-                        // Refund Tab Inactive
-                        tabOptionRefund.className = 'guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group';
+                        if (tabOptionResched && tabOptionRefund) {
+                            tabOptionResched.className = 'guest-action-tab text-left px-3.5 py-2 rounded-xl border-2 border-emerald-700 bg-emerald-50 text-emerald-900 font-bold text-xs transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5';
+                            tabOptionRefund.className = 'guest-action-tab text-left px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:border-amber-400 text-slate-700 font-semibold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5';
+                        }
                         
                         if (calendarContainer) calendarContainer.classList.remove('hidden');
                         if (refundContainer) refundContainer.classList.add('hidden');
+                        if (processStepTitle) {
+                            processStepTitle.innerHTML = 'Step 2: <strong class="text-emerald-950 font-bold">Choose New Dates (Option 1)</strong>';
+                        }
                     };
 
                     const switchToRefundTab = () => {
-                        if (!tabOptionResched || !tabOptionRefund) return;
-                        // Refund Tab Active
-                        tabOptionRefund.className = 'guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-amber-600 bg-amber-50/60 ring-2 ring-amber-500/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group';
-                        // Resched Tab Inactive
-                        tabOptionResched.className = 'guest-action-tab text-left p-4 sm:p-5 rounded-3xl border-2 border-slate-200 bg-white hover:border-emerald-500 hover:bg-emerald-50/30 transition-all cursor-pointer shadow-sm relative overflow-hidden group';
+                        if (tabOptionResched && tabOptionRefund) {
+                            tabOptionRefund.className = 'guest-action-tab text-left px-3.5 py-2 rounded-xl border-2 border-amber-600 bg-amber-50 text-amber-900 font-bold text-xs transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5';
+                            tabOptionResched.className = 'guest-action-tab text-left px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:border-emerald-500 text-slate-700 font-semibold text-xs transition-all cursor-pointer inline-flex items-center gap-1.5';
+                        }
 
                         if (calendarContainer) calendarContainer.classList.add('hidden');
                         if (refundContainer) refundContainer.classList.remove('hidden');
+                        if (processStepTitle) {
+                            processStepTitle.innerHTML = 'Step 2: <strong class="text-amber-950 font-bold">Enter GCash Details for 50% Refund (Option 2)</strong>';
+                        }
                     };
 
+                    const enterProcess = (option) => {
+                        if (optionSelectionScreen) optionSelectionScreen.classList.add('hidden');
+                        if (processScreen) processScreen.classList.remove('hidden');
+
+                        if (option === 'refund') {
+                            switchToRefundTab();
+                        } else {
+                            switchToReschedTab();
+                        }
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+
+                    const backToOptions = () => {
+                        if (processScreen) processScreen.classList.add('hidden');
+                        if (optionSelectionScreen) optionSelectionScreen.classList.remove('hidden');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    };
+
+                    btnSelectResched?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        enterProcess('reschedule');
+                    });
+                    cardSelectResched?.addEventListener('click', () => {
+                        enterProcess('reschedule');
+                    });
+
+                    btnSelectRefund?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        enterProcess('refund');
+                    });
+                    cardSelectRefund?.addEventListener('click', () => {
+                        enterProcess('refund');
+                    });
+
+                    btnBackToOptions?.addEventListener('click', backToOptions);
                     tabOptionResched?.addEventListener('click', switchToReschedTab);
                     tabOptionRefund?.addEventListener('click', switchToRefundTab);
+
+                    // If page loaded with validation errors or old input, directly enter that process
+                    const initialMode = @json($initialMode ?? null);
+                    if (initialMode === 'refund') {
+                        enterProcess('refund');
+                    } else if (initialMode === 'reschedule') {
+                        enterProcess('reschedule');
+                    }
 
                     // E-wallet radio toggle styling
                     const walletRadios = document.querySelectorAll('input[name="ewallet_provider"]');

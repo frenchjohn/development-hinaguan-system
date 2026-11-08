@@ -176,6 +176,16 @@ class PhilSmsService
      */
     public function sendReservationConfirmation(Reservation $reservation): array
     {
+        if (method_exists($reservation, 'canReceiveSms') && ! $reservation->canReceiveSms()) {
+            Log::info("[PhilSMS] Skipping confirmation SMS for reservation #{$reservation->id}: guest opted out of SMS notifications (privacy preference).");
+            return [
+                'success' => true,
+                'message' => 'Guest opted out of SMS notifications.',
+                'error' => null,
+                'data' => ['opted_out' => true],
+            ];
+        }
+
         $phone = $reservation->phone ?? '';
         if (empty(trim($phone))) {
             return [

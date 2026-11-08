@@ -5289,6 +5289,11 @@ window.AppPage['staff_check_ins'] = function () {
         // Mirror to primaryGuestHiddenInputs container inside addGuestForm
         const hiddenInputsContainer = document.getElementById('primaryGuestHiddenInputs');
         if (hiddenInputsContainer) {
+            const walkInAllowSms = document.getElementById('walkInAllowSms');
+            const walkInAllowEmail = document.getElementById('walkInAllowEmail');
+            const smsVal = walkInAllowSms ? (walkInAllowSms.checked ? '1' : '0') : '1';
+            const emailValInput = walkInAllowEmail ? (walkInAllowEmail.checked ? '1' : '0') : '1';
+
             hiddenInputsContainer.innerHTML = `
                 <input type="hidden" name="primary_guest[first_name]" value="${escapeHtml(firstName)}">
                 <input type="hidden" name="primary_guest[middle_name]" value="${escapeHtml(middleName)}">
@@ -5299,6 +5304,8 @@ window.AppPage['staff_check_ins'] = function () {
                 <input type="hidden" name="primary_guest[phone]" value="${escapeHtml(phoneVal)}">
                 <input type="hidden" name="primary_guest[email]" value="${escapeHtml(emailVal)}">
                 <input type="hidden" name="primary_guest[amenity_id]" value="${escapeHtml(primaryAmenityId)}">
+                <input type="hidden" name="allow_sms" value="${smsVal}">
+                <input type="hidden" name="allow_email" value="${emailValInput}">
             `;
         }
         if (typeof updateGrandTotal === 'function') {
@@ -5358,6 +5365,13 @@ window.AppPage['staff_check_ins'] = function () {
         if (input) {
             input.checked = e.target.checked;
         }
+    });
+
+    document.getElementById('walkInAllowSms')?.addEventListener('change', () => {
+        syncMainGuestCardUI();
+    });
+    document.getElementById('walkInAllowEmail')?.addEventListener('change', () => {
+        syncMainGuestCardUI();
     });
 
     document.getElementById('primary_amenity_id')?.addEventListener('change', (e) => {

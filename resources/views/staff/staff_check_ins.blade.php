@@ -1799,6 +1799,43 @@
 									<input type="checkbox" id="walkInModalPrimaryHasPool" class="h-4 w-4 accent-hp-green cursor-pointer">
 								</label>
 							</div>
+
+							<!-- Walk-In Privacy & Notification Preferences -->
+							<div class="mt-2.5 rounded-xl border border-glass-border bg-hp-cream/60 dark:bg-white/[0.03] p-3.5 space-y-2.5">
+								<div class="flex items-center justify-between gap-2">
+									<div class="flex items-center gap-2">
+										<div class="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs">
+											<i class="bi bi-shield-check"></i>
+										</div>
+										<div>
+											<p class="m-0 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Privacy & Notifications</p>
+											<p class="m-0 text-[0.7rem] text-hp-text-muted">Guest communication & notifications preference</p>
+										</div>
+									</div>
+									<span class="text-[0.68rem] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Discreet Stay Protection</span>
+								</div>
+
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-glass-border/60">
+									<label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+										<input type="checkbox" id="walkInAllowSms" name="allow_sms" value="1" checked form="addGuestForm" class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+										<div class="min-w-0">
+											<span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow SMS Messages</span>
+											<span class="block text-[0.68rem] text-hp-text-muted leading-tight">SMS alerts, confirmations & park notices</span>
+										</div>
+									</label>
+
+									<label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+										<input type="checkbox" id="walkInAllowEmail" name="allow_email" value="1" checked form="addGuestForm" class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+										<div class="min-w-0">
+											<span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow Email Notifications</span>
+											<span class="block text-[0.68rem] text-hp-text-muted leading-tight">Checkout receipt emails & notifications</span>
+										</div>
+									</label>
+								</div>
+								<p class="m-0 text-[0.67rem] text-amber-700/90 dark:text-amber-400/80 italic">
+									<i class="bi bi-info-circle mr-1"></i>Uncheck either option if the guest requests privacy and does not want automated SMS or email receipts sent.
+								</p>
+							</div>
 						</div>
 
 						<!-- Validation error message in modal -->
@@ -2713,6 +2750,44 @@
 									</label>
 								</div>
 							</div>
+
+							<!-- Privacy & Notification Preferences -->
+							<div class="guest-form__section grid gap-2.5 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
+								<div class="flex items-center justify-between gap-2">
+									<div class="flex items-center gap-2">
+										<div class="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs">
+											<i class="bi bi-shield-check"></i>
+										</div>
+										<div>
+											<p class="m-0 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Privacy & Notifications</p>
+											<p class="m-0 text-[0.7rem] text-hp-text-muted">Guest communication & notifications preference</p>
+										</div>
+									</div>
+									<span class="text-[0.68rem] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Discreet Stay Protection</span>
+								</div>
+
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-glass-border/60">
+									<label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+										<input type="checkbox" id="checkInPageAllowSms" name="allow_sms" value="1" checked class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+										<div class="min-w-0">
+											<span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow SMS Messages</span>
+											<span class="block text-[0.68rem] text-hp-text-muted leading-tight">Confirmations, announcements & text updates</span>
+										</div>
+									</label>
+
+									<label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+										<input type="checkbox" id="checkInPageAllowEmail" name="allow_email" value="1" checked class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+										<div class="min-w-0">
+											<span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow Email Notifications</span>
+											<span class="block text-[0.68rem] text-hp-text-muted leading-tight">Checkout receipt emails & digital receipts</span>
+										</div>
+									</label>
+								</div>
+								<p class="m-0 text-[0.67rem] text-amber-700/90 dark:text-amber-400/80 italic">
+									<i class="bi bi-info-circle mr-1"></i>Uncheck either option if the guest requests privacy and does not want automated SMS or email receipts sent.
+								</p>
+							</div>
+
 							<div class="guest-form__section grid gap-3 rounded-2xl border border-glass-border bg-hp-cream p-4 transition-colors duration-300 dark:bg-white/5">
 								<div class="guest-form__section-header mb-1 flex items-center justify-between gap-2">
 									<h4 class="guest-form__section-title m-0 text-base font-bold text-hp-text dark:text-[#f3f4f6]">Companions</h4>

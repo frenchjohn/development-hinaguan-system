@@ -3739,6 +3739,15 @@ window.AppPage['staff_reservations'] = function () {
         syncCheckInCompanionAmenityDropdowns();
         syncCheckInPrimaryGuestUI();
 
+        const checkInAllowSms = document.getElementById('checkInAllowSms');
+        if (checkInAllowSms) {
+            checkInAllowSms.checked = reservation?.allow_sms !== false && reservation?.allow_sms !== 0 && reservation?.allow_sms !== '0';
+        }
+        const checkInAllowEmail = document.getElementById('checkInAllowEmail');
+        if (checkInAllowEmail) {
+            checkInAllowEmail.checked = reservation?.allow_email !== false && reservation?.allow_email !== 0 && reservation?.allow_email !== '0';
+        }
+
         const guestModeWithPrimary = checkInForm.querySelector('input[name="check_in_guest_mode"][value="with_primary"]');
         if (guestModeWithPrimary) guestModeWithPrimary.checked = true;
 
@@ -4364,6 +4373,16 @@ window.AppPage['staff_reservations'] = function () {
                             <div class="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300 mt-1">
                                 <svg class="w-3.5 h-3.5 text-[#1b4332] dark:text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                 <span class="truncate">${escapeHtml(reservation.email || 'No email')}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                                <span class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.67rem] font-semibold ${(reservation.allow_sms !== false && reservation.allow_sms !== 0 && reservation.allow_sms !== '0') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40'}" title="${(reservation.allow_sms !== false && reservation.allow_sms !== 0 && reservation.allow_sms !== '0') ? 'Guest receives SMS alerts & notices' : 'Guest opted out of SMS for privacy'}">
+                                    <i class="bi ${(reservation.allow_sms !== false && reservation.allow_sms !== 0 && reservation.allow_sms !== '0') ? 'bi-chat-dots-fill' : 'bi-bell-slash-fill'}"></i>
+                                    <span>SMS: ${(reservation.allow_sms !== false && reservation.allow_sms !== 0 && reservation.allow_sms !== '0') ? 'Allowed' : 'Opted Out'}</span>
+                                </span>
+                                <span class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.67rem] font-semibold ${(reservation.allow_email !== false && reservation.allow_email !== 0 && reservation.allow_email !== '0') ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40'}" title="${(reservation.allow_email !== false && reservation.allow_email !== 0 && reservation.allow_email !== '0') ? 'Guest receives email receipts & updates' : 'Guest opted out of email receipts for privacy'}">
+                                    <i class="bi ${(reservation.allow_email !== false && reservation.allow_email !== 0 && reservation.allow_email !== '0') ? 'bi-envelope-check-fill' : 'bi-envelope-slash-fill'}"></i>
+                                    <span>Email: ${(reservation.allow_email !== false && reservation.allow_email !== 0 && reservation.allow_email !== '0') ? 'Allowed' : 'Opted Out'}</span>
+                                </span>
                             </div>
                         </div>
                         <div>
@@ -6916,6 +6935,8 @@ window.AppPage['staff_reservations'] = function () {
                     include_pool: (poolOpt === 'all_paid' || poolOpt === 'specific' || poolOpt === 'all_free') ? '1' : '0',
                     total_amount_to_pay: checkInGrandTotal,
                     amount_collected: checkInGrandTotal,
+                    allow_sms: document.getElementById('checkInAllowSms') ? document.getElementById('checkInAllowSms').checked : true,
+                    allow_email: document.getElementById('checkInAllowEmail') ? document.getElementById('checkInAllowEmail').checked : true,
                 }),
             });
 
@@ -6927,6 +6948,8 @@ window.AppPage['staff_reservations'] = function () {
             if (window.reservationsData && window.reservationsData[pendingReservationId]) {
                 window.reservationsData[pendingReservationId].status = 'Checked In';
                 window.reservationsData[pendingReservationId].payment_status = 'Paid';
+                window.reservationsData[pendingReservationId].allow_sms = document.getElementById('checkInAllowSms')?.checked ?? true;
+                window.reservationsData[pendingReservationId].allow_email = document.getElementById('checkInAllowEmail')?.checked ?? true;
             }
             const resRow = document.querySelector(`tr[data-reservation-id="${pendingReservationId}"]`);
             if (resRow) {
@@ -7195,7 +7218,7 @@ window.AppPage['staff_reservations'] = function () {
             phoneInput.value = formatPhilippinePhone(reservation.phone) || '';
         }
 
-        if (messageInput) messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date using this link: {link} within 24 hours.`;
+        if (messageInput) messageInput.value = `Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours.`;
         if (prefixEl) prefixEl.textContent = `hi ${bookerName} of reservation_${resId}, `;
 
         const errAlert = document.getElementById('sendReschedErrorAlert');

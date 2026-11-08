@@ -880,8 +880,8 @@
         <div class="guest-modal__content relative z-[1] w-full max-w-[540px] max-h-[92vh] flex flex-col overflow-hidden rounded-3xl bg-white dark:bg-[#1a1e1c] border border-glass-border shadow-2xl mx-3 sm:mx-4 my-auto" role="dialog" aria-modal="true" aria-labelledby="requestReschedModalTitle">
             <div class="shrink-0 flex items-center justify-between gap-3 px-6 py-4 border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream dark:bg-white/[0.02]">
                 <div>
-                    <h3 id="requestReschedModalTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Send Reschedule Link (SMS)</h3>
-                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Send a temporary 24-hour single-use link for guest to choose a new date</p>
+                    <h3 id="requestReschedModalTitle" class="m-0 font-display text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Send Reschedule / Refund Link (SMS)</h3>
+                    <p class="m-0 text-xs text-hp-text-muted mt-0.5">Send a temporary 24-hour single-use link for guest to choose a new date or request a 50% refund</p>
                 </div>
                 <button type="button" class="group cursor-pointer w-8 h-8 rounded-full border border-gray-300/80 bg-white/80 hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 dark:border-white/15 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-red-950/40 dark:hover:border-red-800/60 dark:hover:text-red-400 flex items-center justify-center transition-all duration-200 shadow-xs hover:scale-105 active:scale-95" data-close-request-resched-modal="true" aria-label="Close modal">
                     <i class="bi bi-x-lg text-xs font-bold transition-transform duration-200 group-hover:rotate-90"></i>
@@ -933,9 +933,9 @@
                 <!-- Message Textarea -->
                 <div>
                     <label for="sendReschedMessage" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                        Rescheduling Explanation / Message:
+                        Rescheduling &amp; 50% Refund Message:
                     </label>
-                    <textarea id="sendReschedMessage" rows="3" class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none leading-relaxed" placeholder="Enter message for guest..."></textarea>
+                    <textarea id="sendReschedMessage" rows="3" class="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white dark:bg-white/5 dark:border-white/15 dark:text-white focus:border-emerald-600 focus:outline-none leading-relaxed" placeholder="Hinaguan Nature Park will be unavailable on your scheduled date. Please choose your preferred new date or request a 50% refund using this link: {link} within 24 hours."></textarea>
                     <p class="text-[0.68rem] text-slate-400 mt-1">
                         The secure link placeholder <code class="bg-slate-100 dark:bg-white/10 px-1 py-0.5 rounded text-emerald-700 dark:text-emerald-400">{link}</code> will be replaced automatically.
                     </p>
@@ -1387,6 +1387,43 @@
                                 <label class="relative inline-flex cursor-pointer items-center">
                                     <input type="checkbox" id="checkInPrimaryGuestHasPool" value="1" class="h-4 w-4 accent-hp-green cursor-pointer">
                                 </label>
+                            </div>
+
+                            <!-- Privacy & Notification Preferences -->
+                            <div class="mt-2.5 rounded-xl border border-glass-border bg-hp-cream/60 dark:bg-white/[0.03] p-3.5 space-y-2.5">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-xs">
+                                            <i class="bi bi-shield-check"></i>
+                                        </div>
+                                        <div>
+                                            <p class="m-0 text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Privacy & Notifications</p>
+                                            <p class="m-0 text-[0.7rem] text-hp-text-muted">Guest communication and notification preferences</p>
+                                        </div>
+                                    </div>
+                                    <span class="text-[0.68rem] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">Discreet Stay Protection</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-glass-border/60">
+                                    <label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+                                        <input type="checkbox" id="checkInAllowSms" name="allow_sms" value="1" checked class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+                                        <div class="min-w-0">
+                                            <span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow SMS Messages</span>
+                                            <span class="block text-[0.68rem] text-hp-text-muted leading-tight">Confirmations, announcements & text updates</span>
+                                        </div>
+                                    </label>
+
+                                    <label class="flex items-start gap-2.5 rounded-lg border border-glass-border bg-white/70 dark:bg-[#1f2421] p-2.5 cursor-pointer hover:bg-white dark:hover:bg-[#252c28] transition-colors">
+                                        <input type="checkbox" id="checkInAllowEmail" name="allow_email" value="1" checked class="mt-0.5 h-4 w-4 accent-hp-green cursor-pointer shrink-0">
+                                        <div class="min-w-0">
+                                            <span class="block text-xs font-bold text-hp-text dark:text-[#f3f4f6]">Allow Email Notifications</span>
+                                            <span class="block text-[0.68rem] text-hp-text-muted leading-tight">Checkout receipt emails & digital receipts</span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <p class="m-0 text-[0.67rem] text-amber-700/90 dark:text-amber-400/80 italic">
+                                    <i class="bi bi-info-circle mr-1"></i>Uncheck either option if the guest requests privacy and does not want automated SMS or email receipts sent.
+                                </p>
                             </div>
 
                             <!-- Inline Validation Error -->
@@ -2320,7 +2357,7 @@
                         if (sessionEl) sessionEl.textContent = btn.dataset.sessionLabel || 'Daytime';
                         if (messageInput) {
                             const sessionNote = btn.dataset.sessionLabel ? ` (${btn.dataset.sessionLabel} session)` : '';
-                            messageInput.value = `Dear guest, due to weather (${btn.dataset.condition}) forecast on ${btn.dataset.dateLabel}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date using this link: {link} (valid for 24 hours).`;
+                            messageInput.value = `Dear guest, due to weather (${btn.dataset.condition}) forecast on ${btn.dataset.dateLabel}${sessionNote}, we advise rescheduling your reservation at Hinaguan Nature Park for your safety. Please choose a new date or request a 50% refund using this link: {link} (valid for 24 hours).`;
                         }
 
                         existingModal.classList.add('is-open');

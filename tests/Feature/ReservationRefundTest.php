@@ -89,6 +89,37 @@ class ReservationRefundTest extends TestCase
         return $res;
     }
 
+    public function test_guest_sees_option_selection_buttons_first_before_entering_process()
+    {
+        $reservation = $this->createSampleReservation(total: 1000.00, downpayment: 500.00);
+
+        $requestRecord = RescheduleRequest::create([
+            'reservation_id' => $reservation->id,
+            'token' => RescheduleRequest::generateToken(),
+            'status' => 'pending',
+            'original_date' => $reservation->reservation_date,
+            'expires_at' => now()->addHours(24),
+        ]);
+
+        $response = $this->get("/reservation/reschedule/{$requestRecord->token}");
+        $response->assertStatus(200);
+        $response->assertViewIs('guest.reschedule');
+        $response->assertViewHas('state', 'active');
+
+        // Verify Step 1 option selection screen and choice buttons exist
+        $response->assertSee('optionSelectionScreen');
+        $response->assertSee('btnSelectResched');
+        $response->assertSee('btnSelectRefund');
+        $response->assertSee('Option 1: Reschedule Dates');
+        $response->assertSee('Option 2: Cancel &amp; 50% Refund', false);
+        $response->assertSee('Choose New Dates');
+        $response->assertSee('Request 50% Refund');
+
+        // Verify Step 2 process screen is present with back button
+        $response->assertSee('processScreen');
+        $response->assertSee('btnBackToOptions');
+    }
+
     public function test_guest_can_request_50_percent_downpayment_refund()
     {
         $reservation = $this->createSampleReservation(total: 1000.00, downpayment: 500.00);

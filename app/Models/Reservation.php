@@ -38,6 +38,8 @@ class Reservation extends Model
         'payment_status',
         'payment_intent_id',
         'payment_method',
+        'allow_sms',
+        'allow_email',
     ];
 
     protected $casts = [
@@ -50,7 +52,25 @@ class Reservation extends Model
         'amount_paid' => 'decimal:2',
         'refunded_amount' => 'decimal:2',
         'remaining_balance' => 'decimal:2',
+        'allow_sms' => 'boolean',
+        'allow_email' => 'boolean',
     ];
+
+    /**
+     * Determine if the guest has opted in to receive SMS messages.
+     */
+    public function canReceiveSms(): bool
+    {
+        return (bool) ($this->allow_sms ?? true);
+    }
+
+    /**
+     * Determine if the guest has opted in to receive Email notifications.
+     */
+    public function canReceiveEmail(): bool
+    {
+        return (bool) ($this->allow_email ?? true);
+    }
 
     public function reservationAmenities()
     {

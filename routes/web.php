@@ -2011,7 +2011,7 @@ $createReservationFromPayment = function (string $paymentIntentId, ?string $paym
     if ($reservation) {
         Cache::forget("pending_reservation_{$paymentIntentId}");
 
-        if (!empty($reservation->email)) {
+        if (!empty($reservation->email) && $reservation->canReceiveEmail()) {
             $emailSentKey = "reservation_email_sent_{$reservation->id}";
             if (!Cache::has($emailSentKey)) {
                 try {
@@ -2790,7 +2790,7 @@ Route::post('/reservation/prototype', function (Request $request) use ($isAmenit
         return $res;
     });
 
-    if (!empty($data['email'])) {
+    if (!empty($data['email']) && $reservation->canReceiveEmail()) {
         $emailSentKey = "reservation_email_sent_{$reservation->id}";
         if (!Cache::has($emailSentKey)) {
             try {
@@ -2960,10 +2960,17 @@ Route::post('/reservation/check-in/{reservation}', function (Request $request, R
         ]);
     }
 
-    $reservation->update([
+    $updateData = [
         'status' => 'Checked In',
         'check_in' => now()->toDateTimeString(),
-    ]);
+    ];
+    if ($request->has('allow_sms')) {
+        $updateData['allow_sms'] = filter_var($request->input('allow_sms'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+    }
+    if ($request->has('allow_email')) {
+        $updateData['allow_email'] = filter_var($request->input('allow_email'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+    }
+    $reservation->update($updateData);
 
     $staffName = $user['name'] ?? 'Staff User';
     ActivityLog::log(
@@ -3730,6 +3737,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
             $guestName = $primaryGuest?->customer
                 ? trim(($primaryGuest->customer->first_name ?? '') . ' ' . ($primaryGuest->customer->last_name ?? ''))
                 : ($reservation->booker_name ?: "Guest #{$reservation->id}");
+
+            if (method_exists($reservation, 'canReceiveSms') && ! $reservation->canReceiveSms()) {
+                $deliveryDetails[] = [
+                    'reservation_id' => $reservation->id,
+                    'guest_name' => $guestName,
+                    'phone' => $phone,
+                    'status' => 'skipped',
+                    'reason' => 'Guest opted out of SMS notifications (Privacy preference)',
+                ];
+                continue;
+            }
 
             if (empty($phone)) {
                 $failedCount++;
@@ -7386,6 +7404,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'selected_amenities.*.is_aircon' => ['nullable', 'boolean'],
             'selected_amenities.*.quantity' => ['nullable', 'integer', 'min:1'],
             'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'allow_sms' => ['nullable'],
+            'allow_email' => ['nullable'],
         ]);
 
         $startDate = $data['start_date'] ?? ($data['check_in'] ?? now()->toDateString());
@@ -7700,6 +7720,13 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $primaryLastName = trim((string) ($data['primary_guest']['last_name'] ?? '')) ?: 'Guest';
         $bookerName = trim("{$primaryFirstName} {$primaryLastName}");
 
+        $allowSmsVal = $request->has('allow_sms')
+            ? (filter_var($request->input('allow_sms'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true)
+            : true;
+        $allowEmailVal = $request->has('allow_email')
+            ? (filter_var($request->input('allow_email'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true)
+            : true;
+
         $reservation = Reservation::create([
             'booker_name' => $bookerName,
             'phone' => $data['primary_guest']['phone'] ?? '',
@@ -7717,6 +7744,8 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'amount_paid' => $grandTotal,
             'remaining_balance' => 0,
             'payment_status' => 'Paid',
+            'allow_sms' => $allowSmsVal,
+            'allow_email' => $allowEmailVal,
         ]);
 
         $entrancePricingType = match ($effectivePeriod) {
@@ -8439,14 +8468,23 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $newPaid = round(min($newTotal, $oldPaid + $amountCollectedAtCounter), 2);
         $newRemainingBalance = round(max(0, $newTotal - $newPaid), 2);
         
-        $reservation->update([
+        $reservationUpdates = [
             'check_in' => now()->toDateTimeString(),
             'status' => 'Checked In',
             'total_amount' => $newTotal,
             'amount_paid' => $newPaid,
             'remaining_balance' => $newRemainingBalance,
-            'payment_status' => $newRemainingBalance <= 0 ? 'Paid' : 'Partial Payment',
-        ]);
+            'payment_status' => $newRemainingBalance <= 0 ? 'Paid' : 'Partially Paid',
+        ];
+
+        if ($request->has('allow_sms')) {
+            $reservationUpdates['allow_sms'] = filter_var($request->input('allow_sms'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        }
+        if ($request->has('allow_email')) {
+            $reservationUpdates['allow_email'] = filter_var($request->input('allow_email'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        }
+
+        $reservation->update($reservationUpdates);
 
         $actualGuestCount = $reservation->reservationGuests()->count();
         if ((int) $reservation->number_of_guests !== $actualGuestCount) {
@@ -8482,8 +8520,50 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             'payment_status' => $reservation->payment_status,
             'entrance_fee' => $grandTotal,
             'collected_amount' => $amountCollectedAtCounter,
+            'allow_sms' => (bool) ($reservation->allow_sms ?? true),
+            'allow_email' => (bool) ($reservation->allow_email ?? true),
         ]);
     })->name('reservations.check-in');
+
+    Route::post('/reservations/{reservation}/privacy-preferences', function (Request $request, Reservation $reservation) {
+        $user = $request->session()->get('auth_user');
+        if (! $user || ! in_array($user['role'], ['staff', 'admin'], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'allow_sms' => ['required', 'boolean'],
+            'allow_email' => ['required', 'boolean'],
+        ]);
+
+        $reservation->update([
+            'allow_sms' => (bool) $validated['allow_sms'],
+            'allow_email' => (bool) $validated['allow_email'],
+        ]);
+
+        $staffName = $user['name'] ?? 'Staff User';
+        ActivityLog::log(
+            action: 'updated',
+            activityType: 'privacy_preferences_updated',
+            title: 'Privacy Preferences Updated',
+            description: "Privacy preferences for Reservation #{$reservation->id} updated by {$staffName} (SMS: " . ($reservation->allow_sms ? 'Allowed' : 'Opted Out') . ", Email: " . ($reservation->allow_email ? 'Allowed' : 'Opted Out') . ")",
+            reservationId: $reservation->id,
+            actorName: $staffName,
+            actorRole: $user['role'] ?? 'staff',
+            staffId: isset($user['id']) && is_numeric($user['id']) ? (int) $user['id'] : null,
+            metadata: [
+                'allow_sms' => (bool) $reservation->allow_sms,
+                'allow_email' => (bool) $reservation->allow_email,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Privacy preferences updated successfully.',
+            'allow_sms' => (bool) $reservation->allow_sms,
+            'allow_email' => (bool) $reservation->allow_email,
+        ]);
+    })->name('reservations.privacy-preferences');
 
     // Add companion(s) — single or bulk — to an already checked-in reservation
     // (from the reservation detail modal on the staff check-ins page).
@@ -9735,26 +9815,30 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'total_cost' => $totalCost,
             ]);
 
-            foreach ($recipientMap as $email => $targetCustomer) {
-                try {
-                    \Log::info('Sending checkout receipt to: ' . $email);
-                    Mail::to($email)->send(
-                        new \App\Mail\CheckoutReceiptMail(
-                            $targetCustomer,
-                            $reservation,
-                            $amenities,
-                            $checkInDateTime,
-                            $checkOutDateTime,
-                            $totalCost
-                        )
-                    );
-                    \Log::info('Checkout receipt sent successfully to: ' . $email);
-                } catch (\Throwable $e) {
-                    \Log::error('Failed to send checkout receipt email to ' . $email . ': ' . $e->getMessage(), [
-                        'email' => $email,
-                        'reservation_id' => $reservation->id,
-                    ]);
+            if ($reservation->canReceiveEmail()) {
+                foreach ($recipientMap as $email => $targetCustomer) {
+                    try {
+                        \Log::info('Sending checkout receipt to: ' . $email);
+                        Mail::to($email)->send(
+                            new \App\Mail\CheckoutReceiptMail(
+                                $targetCustomer,
+                                $reservation,
+                                $amenities,
+                                $checkInDateTime,
+                                $checkOutDateTime,
+                                $totalCost
+                            )
+                        );
+                        \Log::info('Checkout receipt sent successfully to: ' . $email);
+                    } catch (\Throwable $e) {
+                        \Log::error('Failed to send checkout receipt email to ' . $email . ': ' . $e->getMessage(), [
+                            'email' => $email,
+                            'reservation_id' => $reservation->id,
+                        ]);
+                    }
                 }
+            } else {
+                \Log::info("Skipping checkout receipt email for reservation #{$reservation->id}: guest opted out of email notifications (privacy preference).");
             }
         } catch (\Throwable $receiptEx) {
             \Log::error('Failed to process receipt generation/sending: ' . $receiptEx->getMessage(), [
@@ -11640,25 +11724,29 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                     }
                 }
 
-                \Log::info('Sending checkout receipt', [
-                    'customer_email' => $customer->email,
-                    'total_cost' => $totalCost,
-                ]);
+                if (!$reservation || $reservation->canReceiveEmail()) {
+                    \Log::info('Sending checkout receipt', [
+                        'customer_email' => $customer->email,
+                        'total_cost' => $totalCost,
+                    ]);
 
-                Mail::to($customer->email)->send(
-                    new \App\Mail\CheckoutReceiptMail(
-                        $customer,
-                        $reservation,
-                        $amenities,
-                        $checkInDateTime,
-                        $checkOutDateTime,
-                        $totalCost
-                    )
-                );
+                    Mail::to($customer->email)->send(
+                        new \App\Mail\CheckoutReceiptMail(
+                            $customer,
+                            $reservation,
+                            $amenities,
+                            $checkInDateTime,
+                            $checkOutDateTime,
+                            $totalCost
+                        )
+                    );
 
-                \Log::info('Checkout receipt sent successfully', [
-                    'customer_email' => $customer->email,
-                ]);
+                    \Log::info('Checkout receipt sent successfully', [
+                        'customer_email' => $customer->email,
+                    ]);
+                } else {
+                    \Log::info("Skipping checkout receipt email for reservation #{$reservation->id}: guest opted out of email notifications (privacy preference).");
+                }
             } catch (\Throwable $e) {
                 \Log::error('Failed to send checkout receipt email: ' . $e->getMessage(), [
                     'customer_id' => $customer->id,
