@@ -260,86 +260,95 @@ class WeatherService
         }
 
         $today = now()->startOfDay();
-        $maxForecastDate = $today->copy()->addDays(3)->startOfDay();
+        $maxForecastDate = $today->copy()->addDays(2)->endOfDay();
 
         if ($targetDate->lt($today) || $targetDate->gt($maxForecastDate)) {
             return null;
         }
 
-        return Cache::remember(
-            'reservation_weather_'.md5($location.'_'.$targetDate->toDateString()),
-            now()->addMinutes(30),
-            function () use ($key, $location, $targetDate, $today) {
-                try {
-                    if ($targetDate->equalTo($today)) {
-                        $response = Http::timeout(2.5)->get('https://api.weatherapi.com/v1/current.json', [
-                            'key' => $key,
-                            'q' => $location,
-                        ]);
+        $dateStr = $targetDate->toDateString();
+        $cacheKey = 'reservation_weather_v2_'.md5($location.'_'.$dateStr);
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
 
-                        if (! $response->successful()) {
-                            return null;
-                        }
+        // Try getting from multi-day forecast first if available
+        $multiDay = $this->getMultiDayForecast(3);
+        if ($multiDay && ! empty($multiDay['days'])) {
+            foreach ($multiDay['days'] as $forecastDay) {
+                if (($forecastDay['date'] ?? null) === $dateStr) {
+                    $result = [
+                        'date' => $forecastDay['date'],
+                        'condition' => $forecastDay['condition'] ?? null,
+                        'icon' => $forecastDay['icon'] ?? null,
+                        'max_temp_c' => $forecastDay['max_temp_c'] ?? null,
+                        'min_temp_c' => $forecastDay['min_temp_c'] ?? null,
+                        'avg_temp_c' => $forecastDay['avg_temp_c'] ?? null,
+                        'chance_of_rain' => $forecastDay['chance_of_rain'] ?? null,
+                        'is_current' => ! empty($forecastDay['is_today']),
+                    ];
+                    Cache::put($cacheKey, $result, now()->addMinutes(30));
+                    return $result;
+                }
+            }
+        }
 
-                        $data = $response->json();
-                        $icon = $data['current']['condition']['icon'] ?? null;
+        // Fetch forecast from WeatherAPI with a reliable timeout and retry
+        try {
+            $response = Http::timeout(6.0)->retry(2, 200)->get('https://api.weatherapi.com/v1/forecast.json', [
+                'key' => $key,
+                'q' => $location,
+                'days' => 3,
+                'aqi' => 'no',
+                'alerts' => 'no',
+            ]);
 
+            if ($response->successful()) {
+                $data = $response->json();
+                $forecastDays = $data['forecast']['forecastday'] ?? [];
+                $matched = null;
+
+                foreach ($forecastDays as $forecastDay) {
+                    $fDate = $forecastDay['date'] ?? null;
+                    if ($fDate) {
+                        $icon = $forecastDay['day']['condition']['icon'] ?? null;
                         if ($icon && ! str_starts_with($icon, 'http')) {
                             $icon = 'https:'.$icon;
                         }
 
-                        return [
-                            'date' => $targetDate->toDateString(),
-                            'condition' => $data['current']['condition']['text'] ?? null,
+                        $dailyChance = isset($forecastDay['day']['daily_chance_of_rain']) ? (int) $forecastDay['day']['daily_chance_of_rain'] : null;
+                        if (preg_match('/rain|drizzle|shower|thunder|storm/i', (string) ($forecastDay['day']['condition']['text'] ?? '')) || (float) ($forecastDay['day']['totalprecip_mm'] ?? 0) > 0) {
+                            $dailyChance = max($dailyChance ?? 0, 65);
+                        }
+
+                        $item = [
+                            'date' => $fDate,
+                            'condition' => $forecastDay['day']['condition']['text'] ?? null,
                             'icon' => $icon,
-                            'temp_c' => $data['current']['temp_c'] ?? null,
-                            'feelslike_c' => $data['current']['feelslike_c'] ?? null,
-                            'humidity' => $data['current']['humidity'] ?? null,
-                            'is_current' => true,
+                            'max_temp_c' => $forecastDay['day']['maxtemp_c'] ?? null,
+                            'min_temp_c' => $forecastDay['day']['mintemp_c'] ?? null,
+                            'avg_temp_c' => $forecastDay['day']['avgtemp_c'] ?? null,
+                            'chance_of_rain' => $dailyChance ?? 0,
+                            'is_current' => $fDate === $today->toDateString(),
                         ];
-                    }
 
-                    $response = Http::timeout(2.5)->get('https://api.weatherapi.com/v1/forecast.json', [
-                        'key' => $key,
-                        'q' => $location,
-                        'days' => 3,
-                        'aqi' => 'no',
-                        'alerts' => 'no',
-                    ]);
+                        Cache::put('reservation_weather_v2_'.md5($location.'_'.$fDate), $item, now()->addMinutes(30));
 
-                    if (! $response->successful()) {
-                        return null;
-                    }
-
-                    $data = $response->json();
-                    $forecastDays = $data['forecast']['forecastday'] ?? [];
-
-                    foreach ($forecastDays as $forecastDay) {
-                        if (($forecastDay['date'] ?? null) === $targetDate->toDateString()) {
-                            $icon = $forecastDay['day']['condition']['icon'] ?? null;
-
-                            if ($icon && ! str_starts_with($icon, 'http')) {
-                                $icon = 'https:'.$icon;
-                            }
-
-                            return [
-                                'date' => $forecastDay['date'] ?? $targetDate->toDateString(),
-                                'condition' => $forecastDay['day']['condition']['text'] ?? null,
-                                'icon' => $icon,
-                                'max_temp_c' => $forecastDay['day']['maxtemp_c'] ?? null,
-                                'min_temp_c' => $forecastDay['day']['mintemp_c'] ?? null,
-                                'avg_temp_c' => $forecastDay['day']['avgtemp_c'] ?? null,
-                                'chance_of_rain' => $forecastDay['day']['daily_chance_of_rain'] ?? null,
-                                'is_current' => false,
-                            ];
+                        if ($fDate === $dateStr) {
+                            $matched = $item;
                         }
                     }
+                }
 
-                    return null;
-                } catch (\Throwable $e) {
-                    return null;
+                if ($matched !== null) {
+                    return $matched;
                 }
             }
-        );
+        } catch (\Throwable $e) {
+            // Silently fail without caching null so subsequent requests can retry
+        }
+
+        return null;
     }
 }

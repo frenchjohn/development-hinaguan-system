@@ -44,6 +44,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const cbAmenityModalFooter = document.getElementById('cbAmenityModalFooter');
     const chatbotAmenityModalSubtitle = document.getElementById('chatbotAmenityModalSubtitle');
 
+    // Terms & Conditions and Agreement Modal elements
+    const chatbotTermsModal = document.getElementById('chatbotTermsModal');
+    const cbTermsModalClose = document.getElementById('cbTermsModalClose');
+    const cbAgreeTermsCheckbox = document.getElementById('cbAgreeTermsCheckbox');
+    const cbCancelTermsBtn = document.getElementById('cbCancelTermsBtn');
+    const cbProceedTermsBtn = document.getElementById('cbProceedTermsBtn');
+
+    const TERMS_STORAGE_KEY = 'hnp_guest_terms_accepted';
+
+    const hasAcceptedTerms = () => {
+        try {
+            return sessionStorage.getItem(TERMS_STORAGE_KEY) === '1';
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const markTermsAccepted = () => {
+        try {
+            sessionStorage.setItem(TERMS_STORAGE_KEY, '1');
+        } catch (e) { }
+    };
+
+    const updateTermsModalUI = () => {
+        const accepted = hasAcceptedTerms();
+        if (cbAgreeTermsCheckbox) cbAgreeTermsCheckbox.checked = accepted;
+        if (cbProceedTermsBtn) cbProceedTermsBtn.disabled = !accepted;
+    };
+
+    const openTermsModal = () => {
+        if (!chatbotTermsModal) return;
+        updateTermsModalUI();
+        chatbotTermsModal.hidden = false;
+        chatbotTermsModal.classList.remove('hidden');
+    };
+
+    const closeTermsModal = () => {
+        if (!chatbotTermsModal) return;
+        chatbotTermsModal.hidden = true;
+        chatbotTermsModal.classList.add('hidden');
+    };
+
     // Date & Session Range Modal elements
     const chatbotDateModal = document.getElementById('chatbotDateModal');
     const cbDateModalClose = document.getElementById('cbDateModalClose');
@@ -619,13 +661,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const card = createDateSlotCard();
         addCustomCardMessage(
-            "Welcome to online booking at Hinaguan Nature Park. Let's arrange your reservation through our conversation.\n\nPlease choose your **Check-in & Check-out dates and session slots** in our schedule chooser modal:",
+            "Welcome to online booking at Hinaguan Nature Park. Let's arrange your reservation through our conversation.\n\nPlease review and agree to our **Terms & Conditions**, then choose your **Check-in & Check-out dates and session slots** in our schedule chooser:",
             card
         );
 
-        // Open Date Selection Modal automatically for comfortable, spacious picking
+        // Open Terms Modal first if not yet accepted in this session, otherwise open Date modal
         setTimeout(() => {
-            openDateModal();
+            if (!hasAcceptedTerms()) {
+                openTermsModal();
+            } else {
+                openDateModal();
+            }
         }, 150);
     };
 
@@ -636,6 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const renderCardContent = () => {
             const hasDate = Boolean(bookingDraft.startDate);
+            const accepted = hasAcceptedTerms();
             const startFmt = formatDateReadable(bookingDraft.startDate || getOffsetDateString(1));
             const endFmt = formatDateReadable(bookingDraft.endDate || bookingDraft.startDate || getOffsetDateString(1));
             const startSlot = bookingDraft.startSlot || 'Daytime';
@@ -658,14 +705,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
 
                 <p style="font-size:0.72rem;color:#4b5563;margin:0.25rem 0 0.45rem;line-height:1.4;">
-                    ${hasDate ? 'Schedule is saved. Click below to adjust dates/sessions or proceed to choose amenities.' : 'Open our schedule chooser dialog to pick check-in & check-out dates and daytime/nighttime sessions.'}
+                    ${accepted
+                        ? (hasDate ? 'Schedule is saved. Click below to adjust dates/sessions or proceed to choose amenities.' : 'Open our schedule chooser dialog to pick check-in & check-out dates and daytime/nighttime sessions.')
+                        : 'Please review and agree to our Terms & Conditions to proceed with picking dates & sessions.'}
                 </p>
 
-                <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbOpenDateModalBtn">
-                    ${hasDate ? '<i class="bi bi-pencil-square me-1.5"></i> Modify Schedule (Modal)' : '<i class="bi bi-calendar2-range me-1.5"></i> Open Schedule Chooser (Modal)'}
-                </button>
+                <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                    <button type="button" class="chatbot-action-btn chatbot-action-btn--primary" id="cbOpenDateModalBtn" style="flex:1;">
+                        ${!accepted ? '<i class="bi bi-file-earmark-text me-1.5"></i> Review Terms &amp; Pick Dates' : (hasDate ? '<i class="bi bi-pencil-square me-1.5"></i> Modify Schedule' : '<i class="bi bi-calendar2-range me-1.5"></i> Select Dates &amp; Sessions')}
+                    </button>
+                    ${accepted ? `
+                    <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbRevisitTermsBtn" title="Review Park Policies & Terms" style="padding:0.4rem 0.6rem;">
+                        <i class="bi bi-file-text"></i>
+                    </button>
+                    ` : ''}
+                </div>
 
-                ${hasDate ? `
+                ${accepted && hasDate ? `
                 <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbInChatProceedDateBtn" style="margin-top:0.35rem;">
                     Check Available Amenities <i class="bi bi-arrow-right ms-1"></i>
                 </button>
@@ -673,7 +729,15 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             card.querySelector('#cbOpenDateModalBtn')?.addEventListener('click', () => {
-                openDateModal();
+                if (!hasAcceptedTerms()) {
+                    openTermsModal();
+                } else {
+                    openDateModal();
+                }
+            });
+
+            card.querySelector('#cbRevisitTermsBtn')?.addEventListener('click', () => {
+                openTermsModal();
             });
 
             card.querySelector('#cbInChatProceedDateBtn')?.addEventListener('click', () => {
@@ -691,6 +755,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Step 1 Modal: Open Date & Session Range Choosing Modal (Image 2 Calendar Picker Style)
     const openDateModal = () => {
+        if (!hasAcceptedTerms()) {
+            openTermsModal();
+            return;
+        }
         if (!chatbotDateModal || !cbDateModalBody || !cbDateModalFooter) return;
 
         const todayStr = getOffsetDateString(0);
@@ -831,6 +899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="chatbot-date-footer-summary__out" id="cbCalCheckoutDateText">—</div>
                     <div class="chatbot-date-footer-summary__in" id="cbCalSummaryScheduleText">Check-In: —</div>
                     <div class="chatbot-date-footer-summary__badge" id="cbCalStayBadge">Daytime Stay</div>
+                    <div class="chatbot-date-footer-weather" id="cbCalWeatherPreview" style="display:none;"></div>
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
                     <button type="button" class="chatbot-action-btn chatbot-action-btn--secondary" id="cbCalCancelBtn" style="padding:0.5rem 0.85rem;font-size:0.8rem;">
@@ -924,6 +993,83 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSummaryAndControls();
             });
         });
+
+        // Live weather forecast preview fetcher for the selected check-in date
+        let weatherAbortController = null;
+        const fetchDateWeather = async (targetDate) => {
+            const weatherContainer = cbDateModalFooter.querySelector('#cbCalWeatherPreview');
+            if (!weatherContainer) return;
+            if (!targetDate) {
+                weatherContainer.style.display = 'none';
+                weatherContainer.innerHTML = '';
+                return;
+            }
+
+            if (weatherAbortController) {
+                weatherAbortController.abort();
+            }
+            weatherAbortController = new AbortController();
+
+            // Display loading indicator
+            weatherContainer.style.display = 'flex';
+            weatherContainer.innerHTML = `
+                <div class="chatbot-weather-pill chatbot-weather-pill--loading">
+                    <i class="bi bi-cloud-sun text-emerald-600 me-1 animate-pulse"></i> Checking forecast…
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/reservation/weather-preview?date=${encodeURIComponent(targetDate)}`, {
+                    signal: weatherAbortController.signal,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!res.ok) {
+                    weatherContainer.style.display = 'none';
+                    weatherContainer.innerHTML = '';
+                    return;
+                }
+
+                const data = await res.json();
+                if (data && data.available) {
+                    const iconHtml = data.icon
+                        ? `<img src="${data.icon}" alt="${data.condition || 'Weather'}" class="chatbot-weather-pill__icon" />`
+                        : '<i class="bi bi-cloud-sun text-emerald-600"></i>';
+
+                    const tempStr = (data.max_temp_c !== null && data.min_temp_c !== null)
+                        ? `${Math.round(data.max_temp_c)}° / ${Math.round(data.min_temp_c)}°C`
+                        : (data.temp_c !== null ? `${Math.round(data.temp_c)}°C` : '');
+
+                    const rainStr = (data.chance_of_rain !== null && data.chance_of_rain !== undefined)
+                        ? `<span class="chatbot-weather-pill__rain"><i class="bi bi-cloud-rain me-1"></i>${data.chance_of_rain}% rain</span>`
+                        : '';
+
+                    weatherContainer.innerHTML = `
+                        <div class="chatbot-weather-pill" title="Live weather forecast for ${formatDateReadable(targetDate)}">
+                            ${iconHtml}
+                            <div class="chatbot-weather-pill__details">
+                                <span class="chatbot-weather-pill__cond">${data.condition || 'Forecast Available'}</span>
+                                ${tempStr ? `<span class="chatbot-weather-pill__temp">${tempStr}</span>` : ''}
+                                ${rainStr}
+                            </div>
+                        </div>
+                    `;
+                    weatherContainer.style.display = 'flex';
+                } else {
+                    weatherContainer.innerHTML = `
+                        <div class="chatbot-weather-pill chatbot-weather-pill--info" title="${data?.message || 'Weather forecast is available for up to 3 days ahead.'}">
+                            <i class="bi bi-info-circle me-1"></i> Forecast available up to 3 days ahead
+                        </div>
+                    `;
+                    weatherContainer.style.display = 'flex';
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    weatherContainer.style.display = 'none';
+                    weatherContainer.innerHTML = '';
+                }
+            }
+        };
 
         // Update top summary cards, session pills, and footer details
         const updateSummaryAndControls = () => {
@@ -1032,6 +1178,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     calStepHelp.textContent = 'Dates selected! Click any date to change check-in.';
                 }
             }
+
+            // Live weather preview on bottom-left of date picker modal
+            fetchDateWeather(selectedStartDate);
         };
 
         // Render monthly calendar grid
@@ -1875,6 +2024,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     };
 
+    // Terms & Conditions Modal listeners
+    cbTermsModalClose?.addEventListener('click', closeTermsModal);
+    cbCancelTermsBtn?.addEventListener('click', closeTermsModal);
+
+    cbAgreeTermsCheckbox?.addEventListener('change', () => {
+        if (cbProceedTermsBtn) {
+            cbProceedTermsBtn.disabled = !cbAgreeTermsCheckbox.checked;
+        }
+    });
+
+    cbProceedTermsBtn?.addEventListener('click', () => {
+        markTermsAccepted();
+        closeTermsModal();
+        openDateModal();
+    });
+
+    chatbotTermsModal?.addEventListener('click', (e) => {
+        if (e.target === chatbotTermsModal) closeTermsModal();
+    });
+
     cbAmenityModalClose?.addEventListener('click', closeAmenityModal);
 
     chatbotAmenityModal?.addEventListener('click', (e) => {
@@ -1895,6 +2064,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+            if (chatbotTermsModal && !chatbotTermsModal.hidden) {
+                closeTermsModal();
+            }
             if (chatbotDateModal && !chatbotDateModal.hidden) {
                 closeDateModal();
             }
@@ -2780,7 +2952,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const dateBtn = e.target.closest('#cbOpenDateModalBtn');
         if (dateBtn) {
             e.preventDefault();
-            openDateModal();
+            if (!hasAcceptedTerms()) {
+                openTermsModal();
+            } else {
+                openDateModal();
+            }
+            return;
+        }
+
+        const termsBtn = e.target.closest('#cbRevisitTermsBtn');
+        if (termsBtn) {
+            e.preventDefault();
+            openTermsModal();
             return;
         }
 
@@ -3157,6 +3340,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-quick-reply]').forEach((chip) => {
         chip.addEventListener('click', () => {
             if (!chatbotInput || !chatbotForm) return;
+
+            // Direct start for "Book via Chat" chip
+            if (chip.classList.contains('chatbot-chip--booking')) {
+                addMessage("Book via Chat", false);
+                chatbotWidget.classList.add('is-conversation');
+                conversationCleared = false;
+                startBookingMode();
+                return;
+            }
+
             chatbotInput.value = chip.dataset.quickReply || '';
             if (typeof chatbotForm.requestSubmit === 'function') {
                 chatbotForm.requestSubmit();
@@ -3246,7 +3439,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Direct Interception: Start Booking Mode (Asks for confirmation first)
+        // 2. Direct Interception: Start Booking Mode (Direct start for /book or "book via chat", confirmation for general queries)
+        if (/^(?:\/book|book\s+via\s+chat)$/i.test(rawMessage)) {
+            startBookingMode();
+            return;
+        }
+
         if (isStartBookingQuery(rawMessage)) {
             askBookingConfirmation();
             return;

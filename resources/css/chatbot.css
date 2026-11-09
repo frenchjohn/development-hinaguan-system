@@ -4005,6 +4005,118 @@
     color: #34d399;
 }
 
+/* Date Modal Footer Weather Preview */
+.chatbot-date-footer-weather {
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+}
+
+.chatbot-weather-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    animation: cbFadeIn 0.25s ease-out;
+}
+
+[data-theme="dark"] .chatbot-weather-pill,
+.dark .chatbot-weather-pill {
+    background: rgba(6, 78, 59, 0.45);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+}
+
+.chatbot-weather-pill__icon {
+    width: 1.35rem;
+    height: 1.35rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.chatbot-weather-pill__details {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.chatbot-weather-pill__cond {
+    font-weight: 700;
+}
+
+.chatbot-weather-pill__temp {
+    color: #047857;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .chatbot-weather-pill__temp,
+.dark .chatbot-weather-pill__temp {
+    color: #6ee7b7;
+}
+
+.chatbot-weather-pill__rain {
+    font-size: 0.68rem;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 0.05rem 0.35rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+[data-theme="dark"] .chatbot-weather-pill__rain,
+.dark .chatbot-weather-pill__rain {
+    background: rgba(2, 132, 199, 0.3);
+    color: #7dd3fc;
+}
+
+.chatbot-weather-pill--loading {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #64748b;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .chatbot-weather-pill--loading,
+.dark .chatbot-weather-pill--loading {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(71, 85, 105, 0.4);
+    color: #94a3b8;
+}
+
+.chatbot-weather-pill--info {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569;
+    font-size: 0.68rem;
+}
+
+[data-theme="dark"] .chatbot-weather-pill--info,
+.dark .chatbot-weather-pill--info {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(71, 85, 105, 0.4);
+    color: #94a3b8;
+}
+
+@keyframes cbFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 .spin-icon {
     display: inline-block;
