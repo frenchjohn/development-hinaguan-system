@@ -753,7 +753,7 @@ class AdminChatbotController extends Controller
 
         // 6. EXTRA CHARGES & PENALTIES (reservation_charges)
         if (!empty($topics['charges'])) {
-            $charges = ReservationCharge::with(['reservation', 'amenity'])->orderByDesc('id')->take(10)->get();
+            $charges = ReservationCharge::with(['reservation'])->orderByDesc('id')->take(10)->get();
             $context .= "\n[CONNECTED DATABASE RECORDS - EXTRA CHARGES (reservation_charges)]:\n";
             if ($charges->isNotEmpty()) {
                 foreach ($charges as $c) {

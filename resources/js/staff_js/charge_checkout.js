@@ -70,10 +70,6 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
     const modalId = 'reservationChargesModal';
     let modal = document.getElementById(modalId);
     
-    // Track charges in memory only (not persisted to DB yet)
-    let tempCharges = [];
-    let tempAmenities = [];
-    
     if (!modal) {
         modal = document.createElement('div');
         modal.id = modalId;
@@ -88,75 +84,200 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
 
     modal.innerHTML = `
         <div class="guest-modal__backdrop absolute inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm" data-charge-close="true"></div>
-        <div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-2xl bg-glass shadow-glass dark:bg-[rgba(30,30,30,0.95)]" role="dialog" aria-modal="true" aria-labelledby="reservationChargesModalTitle" style="width: min(94vw, 780px) !important; max-width: 780px !important; height: min(92vh, 880px) !important; min-height: min(86vh, 760px) !important; max-height: 94vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
-            <button type="button" class="guest-modal__close absolute right-4 top-4 cursor-pointer border-0 bg-transparent text-2xl text-hp-text z-10 hover:text-red-500 transition-colors" data-charge-close="true" aria-label="Close charges">&times;</button>
-            <div class="guest-modal__header p-5 pb-3 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 shrink-0">
+        <div class="guest-modal__content relative z-[1] flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-hp-cream dark:bg-[#181c19] shadow-2xl border border-glass-border dark:border-white/10" role="dialog" aria-modal="true" aria-labelledby="reservationChargesModalTitle" style="width: min(94vw, 760px) !important; max-width: 760px !important; max-height: 92vh !important; padding: 0 !important; display: flex !important; flex-direction: column !important;">
+            
+            <!-- HEADER -->
+            <div class="p-4 sm:p-5 pb-3 sm:pb-4 flex items-center justify-between border-b border-[rgba(13,44,29,0.1)] dark:border-white/10 shrink-0 bg-white/40 dark:bg-white/5">
                 <div class="flex items-center gap-2.5">
-                    <h3 id="reservationChargesModalTitle" class="guest-modal__title m-0 font-display text-xl text-hp-text">Additional Charges</h3>
-                    <span class="guest-modal__role-badge inline-flex items-center rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-[0.04em] bg-amber-500/15 text-amber-700 dark:text-amber-400">Checkout Review</span>
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-base shrink-0">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 id="reservationChargesModalTitle" class="m-0 font-display text-base sm:text-lg font-bold text-hp-text dark:text-[#f3f4f6]">Additional Charges</h3>
+                            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">Checkout Review</span>
+                        </div>
+                        <p class="text-[11px] sm:text-xs text-hp-text-muted m-0 mt-0.5">Declare any incidental fees or penalties incurred by the guest before checkout.</p>
+                    </div>
                 </div>
+                <button type="button" class="cursor-pointer border-0 bg-transparent text-2xl text-hp-text-muted hover:text-red-500 transition-colors p-1 leading-none rounded-lg" data-charge-close="true" aria-label="Close charges">&times;</button>
             </div>
             
-            <div class="guest-modal__body p-6 overflow-y-auto flex-1 space-y-4" style="display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; overflow-y: auto !important; padding: 1.5rem 1.75rem !important;">
-                <p class="text-xs text-hp-text-muted m-0 shrink-0">Review any damage, cleaning, lost-item, or other charges before checkout.</p>
+            <!-- BODY: 4 CORNERS / 2 PER ROW -->
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4 [scrollbar-width:thin]" style="min-height: 0;">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 min-h-0">
-                    <!-- LEFT SIDE: Charge Maker Form -->
-                    <div class="flex flex-col">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-hp-text mb-2.5">Add Charge</h4>
-                        <form id="reservationChargeForm" class="grid gap-3 rounded-xl border border-glass-border bg-glass/60 p-4 dark:border-white/10 dark:bg-white/5">
-                            <label class="grid gap-1 text-xs font-semibold text-hp-text dark:text-gray-200">
-                                Amenity
-                                <select name="amenity_id" id="chargeAmenity" class="rounded-lg border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text dark:border-white/10 dark:bg-white/10"></select>
-                            </label>
-                            <label class="grid gap-1 text-xs font-semibold text-hp-text dark:text-gray-200">
-                                Charge type
-                                <select name="charge_type" class="rounded-lg border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text dark:border-white/10 dark:bg-white/10">
-                                    <option value="damage">Damage</option>
-                                    <option value="cleaning">Cleaning</option>
-                                    <option value="lost">Lost item</option>
-                                    <option value="others">Others</option>
-                                </select>
-                            </label>
-                            <label class="grid gap-1 text-xs font-semibold text-hp-text dark:text-gray-200">
-                                Description <span class="text-hp-text-muted">(optional)</span>
-                                <textarea name="description" rows="2" class="rounded-lg border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text dark:border-white/10 dark:bg-white/10 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none" placeholder="Describe the charge (optional)"></textarea>
-                            </label>
-                            <label class="grid gap-1 text-xs font-semibold text-hp-text dark:text-gray-200">
-                                Amount
-                                <input name="amount" type="number" min="0.01" step="0.01" required class="rounded-lg border border-glass-border bg-glass px-3 py-2 text-xs text-hp-text dark:border-white/10 dark:bg-white/10 placeholder:text-hp-text-muted/60 focus:border-hp-green focus:outline-none" placeholder="0.00">
-                            </label>
-                            <button type="submit" class="w-full rounded-xl border-0 bg-hp-green px-4 py-2 text-xs font-bold text-white transition-colors duration-200 hover:bg-hp-green-dark cursor-pointer shadow-xs">Add Charge</button>
-                        </form>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                     
-                    <!-- RIGHT SIDE: Charges List & Total -->
-                    <div class="flex flex-col min-h-0">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-hp-text mb-2.5">Charges List</h4>
-                        <div id="reservationChargesList" class="grid gap-2 rounded-xl border border-glass-border bg-glass/60 p-3 dark:border-white/10 dark:bg-white/5 mb-3 flex-1 min-h-[160px] max-h-[340px] overflow-y-auto"></div>
-                        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 mt-auto">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold uppercase tracking-wider text-hp-text dark:text-white">Total Charges</span>
-                                <strong id="reservationChargesTotal" class="text-xl font-extrabold text-emerald-600 dark:text-emerald-400">₱0.00</strong>
+                    <!-- 1. DAMAGE -->
+                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="damage">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center text-xs font-bold">
+                                        <i class="bi bi-hammer"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Damage</h4>
+                                        <span class="text-[10px] text-hp-text-muted block">Property, furniture, fixtures</span>
+                                    </div>
+                                </div>
+                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-800 dark:text-amber-300">Active</span>
+                            </div>
+
+                            <div class="mt-2.5 space-y-2">
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
+                                        Amount (₱)
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
+                                        <input type="number" step="0.01" min="0" data-charge-type="damage" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-amber-500 focus:outline-none transition-colors" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
+                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
+                                    </label>
+                                    <input type="text" data-charge-desc="damage" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-amber-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Broken chair, damaged lamp">
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- 2. CLEANING -->
+                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="cleaning">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-400 flex items-center justify-center text-xs font-bold">
+                                        <i class="bi bi-stars"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Cleaning</h4>
+                                        <span class="text-[10px] text-hp-text-muted block">Excess trash, stains, sanitizing</span>
+                                    </div>
+                                </div>
+                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-500/20 text-sky-800 dark:text-sky-300">Active</span>
+                            </div>
+
+                            <div class="mt-2.5 space-y-2">
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
+                                        Amount (₱)
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
+                                        <input type="number" step="0.01" min="0" data-charge-type="cleaning" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-sky-500 focus:outline-none transition-colors" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
+                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
+                                    </label>
+                                    <input type="text" data-charge-desc="cleaning" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-sky-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Heavy stain cleanup, left waste">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. LOST ITEM -->
+                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="lost">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-lg bg-rose-500/15 text-rose-700 dark:text-rose-400 flex items-center justify-center text-xs font-bold">
+                                        <i class="bi bi-tag"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Lost Item</h4>
+                                        <span class="text-[10px] text-hp-text-muted block">Keys, towels, rented gear</span>
+                                    </div>
+                                </div>
+                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-800 dark:text-rose-300">Active</span>
+                            </div>
+
+                            <div class="mt-2.5 space-y-2">
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
+                                        Amount (₱)
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
+                                        <input type="number" step="0.01" min="0" data-charge-type="lost" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-rose-500 focus:outline-none transition-colors" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
+                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
+                                    </label>
+                                    <input type="text" data-charge-desc="lost" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-rose-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Missing key, lost pool towel">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. OTHERS -->
+                    <div class="charge-corner-card relative flex flex-col justify-between rounded-2xl border-2 border-glass-border dark:border-white/10 bg-white/70 dark:bg-white/5 p-3.5 sm:p-4 transition-all duration-200 hover:shadow-sm" data-card-type="others">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-700 dark:text-purple-400 flex items-center justify-center text-xs font-bold">
+                                        <i class="bi bi-three-dots"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="m-0 text-xs sm:text-sm font-bold text-hp-text dark:text-[#f3f4f6]">Others</h4>
+                                        <span class="text-[10px] text-hp-text-muted block">Late checkout, noise, incidental</span>
+                                    </div>
+                                </div>
+                                <span class="active-pill hidden px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/20 text-purple-800 dark:text-purple-300">Active</span>
+                            </div>
+
+                            <div class="mt-2.5 space-y-2">
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-hp-text dark:text-[#e5e7eb] mb-1">
+                                        Amount (₱)
+                                    </label>
+                                    <div class="relative flex items-center">
+                                        <span class="absolute left-3 text-xs font-bold text-hp-text-muted pointer-events-none">₱</span>
+                                        <input type="number" step="0.01" min="0" data-charge-type="others" class="charge-amount-input w-full pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-purple-500 focus:outline-none transition-colors" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] sm:text-[11px] font-medium text-hp-text-muted mb-1">
+                                        Description / Details <span class="text-[9px] opacity-70">(optional)</span>
+                                    </label>
+                                    <input type="text" data-charge-desc="others" class="charge-desc-input w-full px-3 py-1.5 text-xs rounded-xl border border-glass-border bg-white dark:bg-[#1a201c] text-hp-text dark:text-[#f3f4f6] focus:border-purple-500 focus:outline-none placeholder:text-hp-text-muted/60 transition-colors" placeholder="e.g. Late checkout fee, noise penalty">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+
+                <!-- TOTAL SUMMARY STRIP -->
+                <div class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 dark:bg-emerald-950/30 p-3.5 sm:p-4 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-hp-text dark:text-[#f3f4f6] block">Total Additional Charges</span>
+                        <p class="m-0 text-[11px] text-hp-text-muted" id="chargeSummarySubtext">No additional charges declared</p>
+                    </div>
+                    <div class="text-right">
+                        <strong id="chargeTotalDisplay" class="text-xl sm:text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 font-display tabular-nums">₱0.00</strong>
+                    </div>
+                </div>
+
             </div>
             
-            <!-- FOOTER -->
-            <div class="guest-form__actions p-4 px-6 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/90 dark:bg-[#1a201c] backdrop-blur-md shrink-0 flex items-center justify-end gap-3" id="chargeModalActions">
-                <button type="button" data-charge-close="true" class="guest-form__button--secondary cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text transition-all duration-200 hover:bg-glass-hover hover:border-glass-border-strong">Cancel</button>
-                <button type="button" id="proceedCheckout" class="guest-form__button cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs font-semibold text-white transition-colors duration-200 hover:bg-hp-green-dark">Checkout</button>
+            <!-- FOOTER ACTIONS -->
+            <div class="p-3.5 sm:p-4 px-4 sm:px-6 border-t border-[rgba(13,44,29,0.1)] dark:border-white/10 bg-hp-cream/90 dark:bg-[#1a201c] backdrop-blur-md shrink-0 flex items-center justify-end gap-3" id="chargeModalActions">
+                <button type="button" data-charge-close="true" class="cursor-pointer rounded-xl border border-glass-border bg-glass px-4 py-2 text-xs font-semibold text-hp-text hover:bg-glass-hover transition-all">Cancel</button>
+                <button type="button" id="proceedCheckout" class="cursor-pointer rounded-xl border-0 bg-hp-green px-5 py-2 text-xs sm:text-sm font-bold text-white transition-all hover:bg-hp-green-dark shadow-xs">Checkout</button>
             </div>
         </div>`;
 
-    const form = modal.querySelector('#reservationChargeForm');
-    const list = modal.querySelector('#reservationChargesList');
-    const total = modal.querySelector('#reservationChargesTotal');
-    const amenity = modal.querySelector('#chargeAmenity');
-    const proceedBtn = modal.querySelector('#proceedCheckout');
-    
     const close = () => { 
         modal.classList.remove('is-open');
         modal.classList.add('hidden'); 
@@ -169,65 +290,90 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
     };
     modal.querySelectorAll('[data-charge-close]').forEach((button) => button.onclick = close);
 
-    const render = () => {
-        const formAmount = parseFloat(form.querySelector('[name="amount"]')?.value || 0);
-        const unpaidTotal = tempCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
-        const combinedTotal = unpaidTotal + (formAmount > 0 ? formAmount : 0);
-        
-        list.innerHTML = tempCharges.length ? tempCharges.map((charge, idx) => `
-            <div class="flex items-start justify-between gap-3 rounded-lg border border-glass-border bg-white/70 dark:bg-white/5 p-2.5 text-xs shadow-2xs">
-                <div>
-                    <strong class="text-hp-text dark:text-white uppercase font-bold text-[0.72rem]">${charge.charge_type.toUpperCase()}</strong>
-                    ${charge.amenity_name ? `<p class="m-0 text-hp-text-muted text-[0.68rem]">${charge.amenity_name}</p>` : ''}
-                    ${charge.description ? `<p class="m-0 text-hp-text-muted text-[0.68rem] italic line-clamp-1">${charge.description}</p>` : ''}
-                </div>
-                <div class="flex gap-2 items-center shrink-0">
-                    <strong class="text-hp-green dark:text-emerald-400 text-xs font-bold">₱${Number(charge.amount).toFixed(2)}</strong>
-                    <button type="button" data-idx="${idx}" class="delete-charge-btn text-red-500 hover:text-red-700 font-bold text-base leading-none cursor-pointer border-0 bg-transparent p-0" title="Remove charge">×</button>
-                </div>
-            </div>
-        `).join('') : '<p class="text-xs text-hp-text-muted text-center py-6">No charges added yet.</p>';
-        
-        total.textContent = `₱${unpaidTotal.toFixed(2)}`;
-        
-        // Attach delete handlers - no confirmation needed
-        list.querySelectorAll('.delete-charge-btn').forEach(btn => {
-            btn.onclick = (e) => {
-                e.preventDefault();
-                const idx = parseInt(btn.dataset.idx);
-                tempCharges.splice(idx, 1);
-                render();
-            };
+    const amountInputs = modal.querySelectorAll('.charge-amount-input');
+    const descInputs = modal.querySelectorAll('.charge-desc-input');
+    const totalDisplay = modal.querySelector('#chargeTotalDisplay');
+    const subtext = modal.querySelector('#chargeSummarySubtext');
+    const proceedBtn = modal.querySelector('#proceedCheckout');
+
+    const computeTotals = () => {
+        let total = 0;
+        let activeTypes = [];
+
+        amountInputs.forEach((input) => {
+            const val = parseFloat(input.value || 0);
+            const type = input.dataset.chargeType;
+            const card = modal.querySelector(`.charge-corner-card[data-card-type="${type}"]`);
+            const pill = card?.querySelector('.active-pill');
+
+            if (val > 0) {
+                total += val;
+                const formattedType = type === 'damage' ? 'Damage' : (type === 'cleaning' ? 'Cleaning' : (type === 'lost' ? 'Lost Item' : 'Others'));
+                activeTypes.push(`${formattedType} (₱${val.toFixed(2)})`);
+
+                card?.classList.add('border-emerald-600', 'shadow-xs', 'bg-emerald-50/20');
+                card?.classList.remove('border-glass-border', 'dark:border-white/10');
+                if (pill) pill.classList.remove('hidden');
+            } else {
+                card?.classList.remove('border-emerald-600', 'shadow-xs', 'bg-emerald-50/20');
+                card?.classList.add('border-glass-border', 'dark:border-white/10');
+                if (pill) pill.classList.add('hidden');
+            }
         });
-        
-        // Update button text based on charges
-        if (combinedTotal > 0) {
-            proceedBtn.textContent = `Pay & Checkout (₱${combinedTotal.toFixed(2)})`;
-            proceedBtn.dataset.hasCharges = 'true';
+
+        total = Math.round(total * 100) / 100;
+        totalDisplay.textContent = `₱${total.toFixed(2)}`;
+
+        if (total > 0) {
+            subtext.textContent = `${activeTypes.length} charge${activeTypes.length > 1 ? 's' : ''}: ${activeTypes.join(', ')}`;
+            proceedBtn.textContent = `Pay & Checkout (₱${total.toFixed(2)})`;
+            proceedBtn.classList.remove('bg-hp-green');
+            proceedBtn.classList.add('bg-emerald-700');
         } else {
+            subtext.textContent = 'No additional charges declared';
             proceedBtn.textContent = 'Checkout';
-            proceedBtn.dataset.hasCharges = 'false';
+            proceedBtn.classList.add('bg-hp-green');
+            proceedBtn.classList.remove('bg-emerald-700');
         }
+
+        return total;
     };
 
-    // Load amenities
-    const response = await fetch(`/staff/reservations/${reservationId}/charges`, { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || 'Unable to load data.');
-    tempAmenities = payload.amenities || [];
-    
-    // Initialize amenity dropdown
-    amenity.innerHTML = '<option value="">No amenity</option>' + tempAmenities.map((item) => `<option value="${item.id}">${item.name}</option>`).join('');
-    render();
-
-    // Listen to form input changes to update Pay & Checkout button live
-    const amountInput = form.querySelector('[name="amount"]');
-    amountInput?.addEventListener('input', () => {
-        render();
+    // Listen to real-time input changes on all amount inputs
+    amountInputs.forEach(input => {
+        input.addEventListener('input', computeTotals);
     });
-    
+
+    // Load any existing charges from database for this reservation
+    try {
+        const response = await fetch(`/staff/reservations/${reservationId}/charges`, {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (response.ok) {
+            const payload = await response.json();
+            const existingCharges = payload.charges || [];
+
+            existingCharges.forEach((c) => {
+                if (c.status === 'unpaid' || c.status === 'paid') {
+                    const type = c.charge_type;
+                    const amountInput = modal.querySelector(`[data-charge-type="${type}"]`);
+                    const descInput = modal.querySelector(`[data-charge-desc="${type}"]`);
+                    if (amountInput && (parseFloat(amountInput.value || 0) === 0)) {
+                        amountInput.value = parseFloat(c.amount || 0).toFixed(2);
+                        if (descInput && c.description) {
+                            descInput.value = c.description;
+                        }
+                    }
+                }
+            });
+            computeTotals();
+        }
+    } catch (e) {
+        console.warn('Failed to pre-load reservation charges:', e);
+    }
+
     // Open modal with top stacking
-    document.body.appendChild(modal); // Ensure last in DOM
+    document.body.appendChild(modal);
     modal.classList.add('is-open');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -239,69 +385,41 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
     modal.style.zIndex = '2500';
     onReady?.();
 
-    form.onsubmit = async (event) => {
-        event.preventDefault();
-        const formData = new FormData(form);
-        const amenityId = formData.get('amenity_id');
-        const parsedAmount = parseFloat(formData.get('amount') || 0);
-        if (!parsedAmount || parsedAmount <= 0) return;
-        
-        tempCharges.push({
-            amenity_id: amenityId && amenityId !== '' ? amenityId : null,
-            amenity_name: amenityId ? tempAmenities.find(a => a.id == amenityId)?.name : null,
-            charge_type: formData.get('charge_type') || 'damage',
-            description: formData.get('description') || '',
-            amount: parsedAmount,
-        });
-        
-        form.reset();
-        render();
-    };
-
     proceedBtn.onclick = async () => {
-        // Automatically add any charge that the user typed into the form but didn't click "Add Charge"
-        const formAmount = parseFloat(form.querySelector('[name="amount"]')?.value || 0);
-        if (formAmount > 0) {
-            const formData = new FormData(form);
-            const amenityId = formData.get('amenity_id');
-            tempCharges.push({
-                amenity_id: amenityId && amenityId !== '' ? amenityId : null,
-                amenity_name: amenityId ? tempAmenities.find(a => a.id == amenityId)?.name : null,
-                charge_type: formData.get('charge_type') || 'damage',
-                description: formData.get('description') || '',
-                amount: formAmount,
-            });
-            form.reset();
-            render();
-        }
+        const total = computeTotals();
+        const chargesToSubmit = [];
 
-        const unpaidTotal = tempCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
-        const hasCharges = unpaidTotal > 0;
-        const message = hasCharges 
-            ? `Total charges: <strong>₱${unpaidTotal.toFixed(2)}</strong><br><br>Has this been paid already?`
-            : `No additional charges?`;
-        
+        ['damage', 'cleaning', 'lost', 'others'].forEach(type => {
+            const amountEl = modal.querySelector(`[data-charge-type="${type}"]`);
+            const descEl = modal.querySelector(`[data-charge-desc="${type}"]`);
+            const amt = parseFloat(amountEl?.value || 0);
+            if (amt > 0) {
+                chargesToSubmit.push({
+                    charge_type: type,
+                    amount: amt,
+                    description: descEl?.value?.trim() || null,
+                });
+            }
+        });
+
+        const hasCharges = total > 0 && chargesToSubmit.length > 0;
+        const confirmMessage = hasCharges
+            ? `Total additional charges to collect: <strong class="text-emerald-700 dark:text-emerald-400">₱${total.toFixed(2)}</strong><br><br>Has this payment been collected and received from the guest?`
+            : `No additional charges have been declared.<br><br>Are you sure you want to proceed with guest checkout?`;
+
         const confirmed = await showConfirmModal(
             hasCharges ? 'Confirm Payment & Checkout' : 'Confirm Checkout',
-            message
+            confirmMessage
         );
-        
+
         if (!confirmed) return;
-        
+
         close();
         showLoadingScreen('Processing checkout...');
-        
-        try {
-            const savedCharges = [...tempCharges];
 
-            // Save all charges to database only after confirmation
-            for (const charge of savedCharges) {
-                const chargePayload = {
-                    amenity_id: charge.amenity_id || null,
-                    charge_type: charge.charge_type,
-                    description: charge.description,
-                    amount: charge.amount,
-                };
+        try {
+            // Save each charge directly to database
+            for (const charge of chargesToSubmit) {
                 const chargeResponse = await fetch(`/staff/reservations/${reservationId}/charges`, {
                     method: 'POST',
                     headers: { 
@@ -310,16 +428,21 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(chargePayload)
+                    body: JSON.stringify({
+                        charge_type: charge.charge_type,
+                        amount: charge.amount,
+                        description: charge.description
+                    })
                 });
+
                 const chargeResult = await chargeResponse.json().catch(() => ({}));
                 if (!chargeResponse.ok) {
-                    throw new Error(chargeResult.message || 'Failed to save charge to database.');
+                    throw new Error(chargeResult.message || 'Failed to record additional charge.');
                 }
             }
-            
-            // Mark all charges as paid if there are any
-            if (hasCharges && unpaidTotal > 0) {
+
+            // Settle / mark all charges as paid
+            if (hasCharges) {
                 const payResponse = await fetch(`/staff/reservations/${reservationId}/charges/pay`, {
                     method: 'POST',
                     headers: { 
@@ -328,15 +451,14 @@ export const openChargeCheckout = async (reservationId, onPaid, onReady) => {
                         'X-Requested-With': 'XMLHttpRequest' 
                     }
                 });
+
                 const payResult = await payResponse.json().catch(() => ({}));
                 if (!payResponse.ok) {
                     throw new Error(payResult.message || 'Failed to process charge payment.');
                 }
             }
-            
-            // Clear temp charges for next time modal opens
-            tempCharges = [];
-            
+
+            // Trigger caller's completion callback (finishes checkout process)
             await onPaid?.();
         } catch (error) {
             hideLoadingScreen();

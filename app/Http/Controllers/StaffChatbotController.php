@@ -776,7 +776,7 @@ class StaffChatbotController extends Controller
 
         // 3. CHARGES & UNPAID BALANCES (reservation_charges & reservations)
         if (!empty($topics['charges'])) {
-            $charges = ReservationCharge::with(['reservation', 'amenity'])->orderByDesc('id')->take(10)->get();
+            $charges = ReservationCharge::with(['reservation'])->orderByDesc('id')->take(10)->get();
             $unpaidReservations = Reservation::where('remaining_balance', '>', 0)
                 ->whereIn('status', ['Confirmed', 'Checked In'])
                 ->orderByDesc('remaining_balance')

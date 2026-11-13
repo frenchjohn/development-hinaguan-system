@@ -1801,9 +1801,91 @@ Route::post('/reservation/reschedule/{token}', function (Request $request, strin
 })->name('reservation.reschedule.guest.submit');
 
 Route::post('/reservation/reschedule/{token}/refund', function (Request $request, string $token) {
-    $request->merge(['action_type' => 'refund']);
-    $routeAction = Route::getRoutes()->getByName('reservation.reschedule.guest.submit')->getAction()['uses'];
-    return app()->call($routeAction, ['request' => $request, 'token' => $token]);
+    $requestRecord = \App\Models\RescheduleRequest::with(['reservation.reservationAmenities.amenity'])
+        ->where('token', $token)
+        ->first();
+
+    $parkSettings = \App\Models\ParkSetting::first();
+    $parkContact = $parkSettings?->contact_number ?? '0917 861 8383';
+
+    if (! $requestRecord) {
+        return response()->view('guest.reschedule', [
+            'state' => 'invalid',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => null,
+            'reservation' => null,
+        ], 404);
+    }
+
+    if ($requestRecord->isUsed() || in_array($requestRecord->status, ['submitted', 'approved', 'declined'], true)) {
+        return response()->view('guest.reschedule', [
+            'state' => 'used',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    if ($requestRecord->isExpired()) {
+        $requestRecord->update(['status' => 'expired']);
+        return response()->view('guest.reschedule', [
+            'state' => 'expired',
+            'parkContact' => $parkContact,
+            'rescheduleRequest' => $requestRecord,
+            'reservation' => $requestRecord->reservation,
+        ]);
+    }
+
+    $validated = $request->validate([
+        'ewallet_provider' => 'required|string|max:50',
+        'ewallet_account_number' => 'required|string|min:10|max:20',
+        'ewallet_account_name' => 'required|string|min:2|max:100',
+        'refund_reason' => 'nullable|string|max:500',
+    ]);
+
+    $reservation = $requestRecord->reservation;
+    $originalPaid = (float) $reservation->amount_paid;
+    if ($originalPaid <= 0 && (float) $reservation->total_amount > 0) {
+        $originalPaid = round((float) $reservation->total_amount * 0.50, 2);
+    }
+    $refundAmount = round($originalPaid * 0.50, 2);
+
+    $requestRecord->update([
+        'request_type' => 'refund',
+        'refund_amount' => $refundAmount,
+        'ewallet_provider' => $validated['ewallet_provider'],
+        'ewallet_account_number' => $validated['ewallet_account_number'],
+        'ewallet_account_name' => $validated['ewallet_account_name'],
+        'reason' => $validated['refund_reason'] ?? 'Guest requested 50% downpayment refund',
+        'status' => 'submitted',
+        'used_at' => now(),
+    ]);
+
+    // Record activity log
+    \App\Models\ActivityLog::log(
+        activityType: 'reservation_refund_submitted',
+        title: '50% Refund Requested by Guest',
+        description: "Guest {$reservation->booker_name} requested 50% refund of ₱" . number_format($refundAmount, 2) . " via {$validated['ewallet_provider']} ({$validated['ewallet_account_number']}) for Res #{$reservation->id}",
+        reservationId: $reservation->id,
+        actorName: $reservation->booker_name ?? 'Guest',
+        actorRole: 'guest',
+        metadata: [
+            'reschedule_request_id' => $requestRecord->id,
+            'refund_amount' => $refundAmount,
+            'original_paid' => $originalPaid,
+            'ewallet_provider' => $validated['ewallet_provider'],
+            'ewallet_account_number' => $validated['ewallet_account_number'],
+            'ewallet_account_name' => $validated['ewallet_account_name'],
+            'reason' => $validated['refund_reason'] ?? null,
+        ]
+    );
+
+    return response()->view('guest.reschedule', [
+        'state' => 'submitted_refund_success',
+        'parkContact' => $parkContact,
+        'rescheduleRequest' => $requestRecord,
+        'reservation' => $reservation,
+    ]);
 })->name('reservation.reschedule.guest.refund');
 
 Route::get('/reservation', function (WeatherService $weather) {
@@ -6908,7 +6990,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         $bulkGroupData = $bulkGroups->mapWithKeys(fn ($group) => [$group['key'] => $group]);
 
         // Get all completed/history reservations with status Checked Out, No Show, or Cancelled
-        $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges.amenity'])
+        $checkedOutReservations = Reservation::with(['reservationAmenities.amenity', 'reservationGuests.customer', 'entranceFee', 'reservationCharges'])
             ->where(function ($query) {
                 $query->whereIn('status', ['Checked Out', 'No Show', 'Cancelled'])
                     ->orWhereNotNull('check_out')
@@ -7238,7 +7320,7 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                         'description' => $charge->description ?? 'Additional Fee',
                         'amount' => (float) ($charge->amount ?? 0),
                         'status' => $charge->status ?? 'Paid',
-                        'amenity_name' => $charge->amenity?->amenities_name ?? null,
+                        'amenity_name' => null,
                         'created_at' => $charge->created_at ? $charge->created_at->format('M d, Y h:i A') : null,
                     ];
                 })->toArray(),
@@ -9565,25 +9647,17 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $reservation->load(['reservationCharges.amenity', 'reservationAmenities.amenity']);
+        $reservation->load(['reservationCharges']);
         $charges = $reservation->reservationCharges->map(fn ($charge) => [
             'id' => $charge->id,
             'description' => $charge->description,
             'charge_type' => $charge->charge_type,
             'amount' => (float) $charge->amount,
             'status' => $charge->status,
-            'amenity_name' => $charge->amenity?->amenities_name,
         ])->values();
-
-        $amenities = $reservation->reservationAmenities
-            ->filter(fn ($item) => $item->amenity)
-            ->unique('amenity_id')
-            ->map(fn ($item) => ['id' => $item->amenity_id, 'name' => $item->amenity->amenities_name])
-            ->values();
 
         return response()->json([
             'charges' => $charges,
-            'amenities' => $amenities,
             'unpaid_total' => (float) $reservation->reservationCharges->where('status', 'unpaid')->sum('amount'),
         ]);
     })->name('reservations.charges.index');
@@ -9595,20 +9669,12 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
         }
 
         $validated = $request->validate([
-            'amenity_id' => ['nullable'],
             'description' => ['nullable', 'string', 'max:2000'],
             'charge_type' => ['required', 'in:damage,cleaning,lost,others'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:99999999.99'],
         ]);
 
-        if (empty($validated['amenity_id']) || $validated['amenity_id'] === 'null') {
-            $validated['amenity_id'] = null;
-        } elseif (! \App\Models\Amenity::where('id', $validated['amenity_id'])->exists()) {
-            $validated['amenity_id'] = null;
-        }
-
         $charge = $reservation->reservationCharges()->create($validated + ['status' => 'unpaid']);
-        $charge->load('amenity');
 
         return response()->json([
             'success' => true,
@@ -9618,7 +9684,6 @@ Route::prefix('staff')->name('staff.')->group(function () use ($isAmenitySlotTak
                 'charge_type' => $charge->charge_type,
                 'amount' => (float) $charge->amount,
                 'status' => $charge->status,
-                'amenity_name' => $charge->amenity?->amenities_name,
             ],
         ]);
     })->name('reservations.charges.store');

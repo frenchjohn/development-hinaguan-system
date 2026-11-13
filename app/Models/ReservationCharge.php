@@ -11,7 +11,6 @@ class ReservationCharge extends Model
 
     protected $fillable = [
         'reservation_id',
-        'amenity_id',
         'description',
         'charge_type',
         'amount',
@@ -25,10 +24,5 @@ class ReservationCharge extends Model
     public function reservation()
     {
         return $this->belongsTo(Reservation::class);
-    }
-
-    public function amenity()
-    {
-        return $this->belongsTo(Amenity::class);
     }
 }
